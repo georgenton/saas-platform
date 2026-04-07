@@ -109,6 +109,30 @@ importers:
         specifier: ^5.1.4
         version: 5.1.4(webpack@5.105.4)
 
+  apps/api-platform:
+    dependencies:
+      '@nestjs/common':
+        specifier: ^11.0.0
+        version: 11.1.18(reflect-metadata@0.1.14)(rxjs@7.8.1)
+      '@nestjs/core':
+        specifier: ^11.0.0
+        version: 11.1.18(@nestjs/common@11.1.18(reflect-metadata@0.1.14)(rxjs@7.8.1))(@nestjs/platform-express@11.1.18)(reflect-metadata@0.1.14)(rxjs@7.8.1)
+      '@nestjs/platform-express':
+        specifier: ^11.0.0
+        version: 11.1.18(@nestjs/common@11.1.18(reflect-metadata@0.1.14)(rxjs@7.8.1))(@nestjs/core@11.1.18)
+      '@prisma/client':
+        specifier: 5.22.0
+        version: 5.22.0(prisma@5.22.0)
+      prisma:
+        specifier: 5.22.0
+        version: 5.22.0
+      reflect-metadata:
+        specifier: ^0.1.13
+        version: 0.1.14
+      rxjs:
+        specifier: ^7.8.0
+        version: 7.8.1
+
 packages:
 
   '@angular-devkit/core@19.2.23':

@@ -1,0 +1,7 @@
+{
+  "name": "infra-prisma",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/infra/prisma/src",
+  "projectType": "library",
+  "tags": ["scope:shared", "type:infra", "layer:infrastructure"]
+}

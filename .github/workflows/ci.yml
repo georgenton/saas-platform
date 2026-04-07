@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.20.1
+          cache: pnpm
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm prisma:generate
+
+      - name: Validate Prisma schema
+        run: pnpm prisma:validate
+
+      - name: Build API
+        run: pnpm build
+
+      - name: Run E2E tests
+        run: pnpm test
+
+      - name: Upload API artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-platform-dist
+          path: dist/apps/api-platform
+          if-no-files-found: error

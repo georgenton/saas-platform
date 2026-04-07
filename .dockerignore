@@ -1,0 +1,12 @@
+.git
+.github
+.nx
+.vscode
+coverage
+dist
+node_modules
+tmp
+.env
+.env.*
+README.md
+docs

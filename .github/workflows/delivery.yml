@@ -1,0 +1,58 @@
+name: Delivery
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.20.1
+          cache: pnpm
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm prisma:generate
+
+      - name: Validate Prisma schema
+        run: pnpm prisma:validate
+
+      - name: Run production build
+        run: pnpm package:api
+
+      - name: Run Prisma migrations when DATABASE_URL is configured
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -n "$DATABASE_URL" ]; then
+            pnpm prisma:migrate:deploy
+          else
+            echo "DATABASE_URL is not configured; skipping prisma migrate deploy."
+          fi
+
+      - name: Upload deployable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-platform-delivery
+          path: dist/apps/api-platform
+          if-no-files-found: error
+
+      - name: Build Docker image
+        run: docker build -t saas-platform-api:${{ github.sha }} .

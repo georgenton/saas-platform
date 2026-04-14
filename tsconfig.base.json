@@ -14,8 +14,20 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@saas-platform/identity-application": [
+        "packages/core/identity/application/src/index.ts"
+      ],
+      "@saas-platform/identity-domain": [
+        "packages/core/identity/domain/src/index.ts"
+      ],
       "@saas-platform/infra-prisma": [
         "packages/infra/prisma/src/index.ts"
+      ],
+      "@saas-platform/tenancy-application": [
+        "packages/core/tenancy/application/src/index.ts"
+      ],
+      "@saas-platform/tenancy-domain": [
+        "packages/core/tenancy/domain/src/index.ts"
       ]
     }
   },

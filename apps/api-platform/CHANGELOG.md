@@ -1,5 +1,15 @@
 # api-platform
 
+## 0.2.0
+
+### Minor Changes
+
+- 434777b: Add validated identity and tenancy API endpoints backed by Prisma persistence.
+
+  This release introduces register-user and create-tenant flows, wires the first
+  transactional tenant provisioning path, and adds HTTP-level validation and
+  supertest coverage for the initial SaaS backend slices.
+
 ## 0.1.0
 
 ### Minor Changes

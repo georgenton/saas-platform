@@ -1,5 +1,5 @@
 ---
-'api-platform': major
+'api-platform': minor
 ---
 
 primer commit

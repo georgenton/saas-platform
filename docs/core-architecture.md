@@ -63,3 +63,13 @@ Implement infrastructure adapters for:
 - `UserRepository`
 
 using Prisma-backed implementations under infrastructure libraries, and then expose application services through Nest modules in the API app.
+
+## Current progress
+
+This step is now partially implemented:
+
+- Prisma schema includes `User`, `Tenant`, and `Membership`
+- Prisma-backed repository adapters exist for the current core ports
+- Nest modules wire the initial use cases through dependency injection
+
+The next iteration should expose these use cases through HTTP controllers and add migrations plus tests around the adapters.

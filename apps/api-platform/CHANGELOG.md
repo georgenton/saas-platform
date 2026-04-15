@@ -1,5 +1,15 @@
 # api-platform
 
+## 0.3.0
+
+### Minor Changes
+
+- 0d0e952: Add tenant read endpoints and the first tenant access authorization flow.
+
+  This release introduces user and tenant lookup routes, tenant membership query
+  endpoints, and a first pass at tenant-context resolution with owner-only access
+  control for sensitive tenancy resources.
+
 ## 0.2.0
 
 ### Minor Changes

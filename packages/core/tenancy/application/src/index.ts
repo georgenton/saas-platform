@@ -1,3 +1,6 @@
+export * from './lib/errors/membership-not-found.error';
+export * from './lib/errors/tenant-access-denied.error';
+export * from './lib/errors/tenant-not-found.error';
 export * from './lib/errors/tenant-slug-already-in-use.error';
 export * from './lib/ports/membership-id.generator';
 export * from './lib/ports/membership.repository';
@@ -6,3 +9,7 @@ export * from './lib/ports/tenant-provisioning.repository';
 export * from './lib/ports/tokens';
 export * from './lib/ports/tenant.repository';
 export * from './lib/use-cases/create-tenant.use-case';
+export * from './lib/use-cases/get-tenant-by-slug.use-case';
+export * from './lib/use-cases/get-tenant-membership-by-user.use-case';
+export * from './lib/use-cases/list-tenant-memberships.use-case';
+export * from './lib/use-cases/resolve-tenant-access.use-case';

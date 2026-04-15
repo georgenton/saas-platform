@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import {
+  GetUserByIdUseCase,
   RegisterUserUseCase,
   USER_ID_GENERATOR,
   USER_REPOSITORY,
@@ -12,12 +13,17 @@ import { IdentityController } from './identity.controller';
   controllers: [IdentityController],
   providers: [
     {
+      provide: GetUserByIdUseCase,
+      inject: [USER_REPOSITORY],
+      useFactory: (userRepository) => new GetUserByIdUseCase(userRepository),
+    },
+    {
       provide: RegisterUserUseCase,
       inject: [USER_REPOSITORY, USER_ID_GENERATOR],
       useFactory: (userRepository, userIdGenerator) =>
         new RegisterUserUseCase(userRepository, userIdGenerator),
     },
   ],
-  exports: [RegisterUserUseCase],
+  exports: [GetUserByIdUseCase, RegisterUserUseCase],
 })
 export class IdentityModule {}

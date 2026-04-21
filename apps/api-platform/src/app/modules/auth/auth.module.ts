@@ -1,11 +1,4 @@
 import { Module } from '@nestjs/common';
-import {
-  ListUserTenanciesUseCase,
-  MEMBERSHIP_REPOSITORY,
-  TENANT_ACCESS_REPOSITORY,
-  TENANT_REPOSITORY,
-} from '@saas-platform/tenancy-application';
-import { TenancyPersistenceModule } from '@saas-platform/infra-prisma';
 import { AuthController } from './auth.controller';
 import { JWT_VERIFIER } from './jwt-verifier';
 import { JwtAuthenticationGuard } from './jwt-authentication.guard';
@@ -13,7 +6,6 @@ import { LocalJwtVerifier } from './local-jwt-verifier';
 import { ProviderJwtVerifier } from './provider-jwt-verifier';
 
 @Module({
-  imports: [TenancyPersistenceModule],
   controllers: [AuthController],
   providers: [
     LocalJwtVerifier,

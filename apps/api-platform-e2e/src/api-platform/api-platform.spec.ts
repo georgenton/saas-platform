@@ -255,6 +255,19 @@ describe('API', () => {
       .expect({ message: 'Hello API' });
   });
 
+  it('GET /api/auth/me should return the authenticated user context', async () => {
+    await request(httpServer)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'user_123',
+        email: 'hello@saas-platform.dev',
+        provider: 'password',
+        externalAuthId: null,
+      });
+  });
+
   it('GET /api/identity/users/:id should return a user', async () => {
     await request(httpServer)
       .get('/api/identity/users/user_123')
@@ -511,6 +524,10 @@ describe('API', () => {
     await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform/memberships')
       .expect(401);
+  });
+
+  it('GET /api/auth/me should require a bearer token', async () => {
+    await request(httpServer).get('/api/auth/me').expect(401);
   });
 
   it('GET /api/tenancy/tenants/:slug/memberships should reject a token with invalid audience', async () => {

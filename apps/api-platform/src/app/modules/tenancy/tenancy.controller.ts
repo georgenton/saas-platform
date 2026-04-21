@@ -30,7 +30,7 @@ import {
 } from '@saas-platform/tenancy-application';
 import { AssignMembershipRoleRequestDto } from './dto/assign-membership-role.request';
 import { CreateTenantRequestDto } from './dto/create-tenant.request';
-import { DevelopmentAuthenticationGuard } from '../auth/development-authentication.guard';
+import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
 import {
   MemberAccessResponseDto,
   toMemberAccessResponseDto,
@@ -61,7 +61,7 @@ export class TenancyController {
   ) {}
 
   @Get(':slug')
-  @UseGuards(DevelopmentAuthenticationGuard, TenantMembershipGuard)
+  @UseGuards(JwtAuthenticationGuard, TenantMembershipGuard)
   @RequireTenantPermission(TENANT_PERMISSIONS.READ)
   async getTenantBySlug(
     @Param('slug') slug: string,
@@ -84,7 +84,7 @@ export class TenancyController {
 
   @Get(':slug/memberships')
   @UseGuards(
-    DevelopmentAuthenticationGuard,
+    JwtAuthenticationGuard,
     TenantMembershipGuard,
     TenantPermissionGuard,
   )
@@ -112,7 +112,7 @@ export class TenancyController {
 
   @Get(':slug/memberships/:userId/access')
   @UseGuards(
-    DevelopmentAuthenticationGuard,
+    JwtAuthenticationGuard,
     TenantMembershipGuard,
     TenantPermissionGuard,
   )
@@ -144,7 +144,7 @@ export class TenancyController {
 
   @Get(':slug/memberships/:userId')
   @UseGuards(
-    DevelopmentAuthenticationGuard,
+    JwtAuthenticationGuard,
     TenantMembershipGuard,
     TenantPermissionGuard,
   )
@@ -177,7 +177,7 @@ export class TenancyController {
   @Post(':slug/memberships/:userId/roles')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(
-    DevelopmentAuthenticationGuard,
+    JwtAuthenticationGuard,
     TenantMembershipGuard,
     TenantPermissionGuard,
   )
@@ -219,7 +219,7 @@ export class TenancyController {
   @Delete(':slug/memberships/:userId/roles/:roleKey')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(
-    DevelopmentAuthenticationGuard,
+    JwtAuthenticationGuard,
     TenantMembershipGuard,
     TenantPermissionGuard,
   )

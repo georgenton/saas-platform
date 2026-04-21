@@ -1,4 +1,5 @@
 import { INestApplication } from '@nestjs/common';
+import { createHmac } from 'node:crypto';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import {
@@ -41,6 +42,10 @@ describe('API', () => {
   let removeMembershipRoleUseCase: { execute: jest.Mock };
   let resolveTenantAccessUseCase: { execute: jest.Mock };
   let createTenantUseCase: { execute: jest.Mock };
+  let ownerToken: string;
+  let memberToken: string;
+
+  const jwtSecret = 'test-jwt-secret';
 
   const registeredAt = new Date('2026-04-14T17:00:00.000Z');
   const tenantCreatedAt = new Date('2026-04-14T17:30:00.000Z');
@@ -72,7 +77,38 @@ describe('API', () => {
     updatedAt: tenantCreatedAt,
   });
 
+  const signJwt = (payload: Record<string, unknown>): string => {
+    const encode = (value: unknown): string =>
+      Buffer.from(JSON.stringify(value))
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/g, '');
+
+    const header = encode({ alg: 'HS256', typ: 'JWT' });
+    const body = encode(payload);
+    const signature = createHmac('sha256', jwtSecret)
+      .update(`${header}.${body}`)
+      .digest('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+
+    return `${header}.${body}.${signature}`;
+  };
+
   beforeAll(async () => {
+    process.env.AUTH_JWT_SECRET = jwtSecret;
+    ownerToken = signJwt({
+      sub: 'user_123',
+      email: 'hello@saas-platform.dev',
+      provider: 'password',
+    });
+    memberToken = signJwt({
+      sub: 'user_456',
+      email: 'member@saas-platform.dev',
+      provider: 'password',
+    });
     getUserByIdUseCase = {
       execute: jest.fn().mockResolvedValue(user),
     };
@@ -263,7 +299,7 @@ describe('API', () => {
   it('GET /api/tenancy/tenants/:slug should return a tenant', async () => {
     await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform')
-      .set('x-user-id', 'user_123')
+      .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect({
         id: 'tenant_123',
@@ -286,7 +322,7 @@ describe('API', () => {
   it('GET /api/tenancy/tenants/:slug/memberships should list memberships', async () => {
     await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform/memberships')
-      .set('x-user-id', 'user_123')
+      .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect([
         {
@@ -312,7 +348,7 @@ describe('API', () => {
   it('GET /api/tenancy/tenants/:slug/memberships/:userId/access should return effective access', async () => {
     await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform/memberships/user_123/access')
-      .set('x-user-id', 'user_123')
+      .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect({
         userId: 'user_123',
@@ -336,7 +372,7 @@ describe('API', () => {
   it('GET /api/tenancy/tenants/:slug/memberships/:userId should return one membership', async () => {
     await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform/memberships/user_123')
-      .set('x-user-id', 'user_123')
+      .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect({
         id: 'membership_123',
@@ -357,7 +393,7 @@ describe('API', () => {
   it('POST /api/tenancy/tenants/:slug/memberships/:userId/roles should assign a role', async () => {
     await request(httpServer)
       .post('/api/tenancy/tenants/saas-platform/memberships/user_123/roles')
-      .set('x-user-id', 'user_123')
+      .set('Authorization', `Bearer ${ownerToken}`)
       .send({ roleKey: 'tenant_member' })
       .expect(204);
 
@@ -374,7 +410,7 @@ describe('API', () => {
       .delete(
         '/api/tenancy/tenants/saas-platform/memberships/user_123/roles/tenant_member',
       )
-      .set('x-user-id', 'user_123')
+      .set('Authorization', `Bearer ${ownerToken}`)
       .expect(204);
 
     expect(removeMembershipRoleUseCase.execute).toHaveBeenCalledWith({
@@ -386,7 +422,7 @@ describe('API', () => {
     });
   });
 
-  it('GET /api/tenancy/tenants/:slug/memberships should require x-user-id', async () => {
+  it('GET /api/tenancy/tenants/:slug/memberships should require a bearer token', async () => {
     await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform/memberships')
       .expect(401);
@@ -405,7 +441,7 @@ describe('API', () => {
 
     await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform/memberships')
-      .set('x-user-id', 'user_456')
+      .set('Authorization', `Bearer ${memberToken}`)
       .expect(403);
   });
 
@@ -425,7 +461,7 @@ describe('API', () => {
 
     await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform/memberships/user_123/access')
-      .set('x-user-id', 'user_456')
+      .set('Authorization', `Bearer ${memberToken}`)
       .expect(403);
   });
 
@@ -446,7 +482,7 @@ describe('API', () => {
 
     await request(httpServer)
       .post('/api/tenancy/tenants/saas-platform/memberships/user_123/roles')
-      .set('x-user-id', 'user_456')
+      .set('Authorization', `Bearer ${memberToken}`)
       .send({ roleKey: 'tenant_member' })
       .expect(403);
   });
@@ -460,7 +496,7 @@ describe('API', () => {
 
     await request(httpServer)
       .post('/api/tenancy/tenants/saas-platform/memberships/user_123/roles')
-      .set('x-user-id', 'user_123')
+      .set('Authorization', `Bearer ${ownerToken}`)
       .send({ roleKey: 'tenant_owner' })
       .expect(403);
   });
@@ -476,7 +512,7 @@ describe('API', () => {
       .delete(
         '/api/tenancy/tenants/saas-platform/memberships/user_123/roles/tenant_owner',
       )
-      .set('x-user-id', 'user_123')
+      .set('Authorization', `Bearer ${ownerToken}`)
       .expect(403);
   });
 

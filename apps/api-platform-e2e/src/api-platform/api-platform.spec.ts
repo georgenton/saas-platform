@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { createHmac } from 'node:crypto';
+import { createSign, generateKeyPairSync } from 'node:crypto';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import {
@@ -44,8 +44,8 @@ describe('API', () => {
   let createTenantUseCase: { execute: jest.Mock };
   let ownerToken: string;
   let memberToken: string;
-
-  const jwtSecret = 'test-jwt-secret';
+  let issuer: string;
+  let audience: string;
 
   const registeredAt = new Date('2026-04-14T17:00:00.000Z');
   const tenantCreatedAt = new Date('2026-04-14T17:30:00.000Z');
@@ -85,11 +85,12 @@ describe('API', () => {
         .replace(/\//g, '_')
         .replace(/=+$/g, '');
 
-    const header = encode({ alg: 'HS256', typ: 'JWT' });
+    const header = encode({ alg: 'RS256', typ: 'JWT' });
     const body = encode(payload);
-    const signature = createHmac('sha256', jwtSecret)
+    const signature = createSign('RSA-SHA256')
       .update(`${header}.${body}`)
-      .digest('base64')
+      .sign(privateKey)
+      .toString('base64')
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/g, '');
@@ -97,15 +98,37 @@ describe('API', () => {
     return `${header}.${body}.${signature}`;
   };
 
+  const { privateKey, publicKey } = generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+  });
+
   beforeAll(async () => {
-    process.env.AUTH_JWT_SECRET = jwtSecret;
+    issuer = 'https://auth.saas-platform.local/realms/main';
+    audience = 'saas-platform-api';
+    process.env.AUTH_JWT_VERIFIER_MODE = 'provider';
+    process.env.AUTH_JWT_PUBLIC_KEY = publicKey.export({
+      type: 'spki',
+      format: 'pem',
+    }) as string;
+    process.env.AUTH_JWT_ISSUER = issuer;
+    process.env.AUTH_JWT_AUDIENCE = audience;
+
+    const now = Math.floor(Date.now() / 1000);
     ownerToken = signJwt({
       sub: 'user_123',
+      iss: issuer,
+      aud: audience,
+      iat: now,
+      exp: now + 3600,
       email: 'hello@saas-platform.dev',
       provider: 'password',
     });
     memberToken = signJwt({
       sub: 'user_456',
+      iss: issuer,
+      aud: audience,
+      iat: now,
+      exp: now + 3600,
       email: 'member@saas-platform.dev',
       provider: 'password',
     });
@@ -425,6 +448,24 @@ describe('API', () => {
   it('GET /api/tenancy/tenants/:slug/memberships should require a bearer token', async () => {
     await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform/memberships')
+      .expect(401);
+  });
+
+  it('GET /api/tenancy/tenants/:slug/memberships should reject a token with invalid audience', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const wrongAudienceToken = signJwt({
+      sub: 'user_123',
+      iss: issuer,
+      aud: 'wrong-audience',
+      iat: now,
+      exp: now + 3600,
+      email: 'hello@saas-platform.dev',
+      provider: 'password',
+    });
+
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/memberships')
+      .set('Authorization', `Bearer ${wrongAudienceToken}`)
       .expect(401);
   });
 

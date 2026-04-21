@@ -1,19 +1,37 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
+import { ListUserTenanciesUseCase } from '@saas-platform/tenancy-application';
 import { AuthenticatedUser } from './authenticated-user.decorator';
+import { AuthenticatedUserContext } from './authenticated-user-context';
 import { JwtAuthenticationGuard } from './jwt-authentication.guard';
 import {
-  AuthenticatedUserResponseDto,
-  toAuthenticatedUserResponseDto,
+  AuthenticatedUserResponse,
+  toAuthenticatedUserResponse,
 } from './dto/authenticated-user.response';
-import { AuthenticatedUserContext } from './authenticated-user-context';
 
 @Controller('auth')
 export class AuthController {
+  constructor(
+    private readonly listUserTenanciesUseCase: ListUserTenanciesUseCase,
+  ) {}
+
   @Get('me')
   @UseGuards(JwtAuthenticationGuard)
-  getAuthenticatedUser(
-    @AuthenticatedUser() authenticatedUser: AuthenticatedUserContext,
-  ): AuthenticatedUserResponseDto {
-    return toAuthenticatedUserResponseDto(authenticatedUser);
+  async getAuthenticatedUser(
+    @AuthenticatedUser() authenticatedUser: AuthenticatedUserContext | undefined,
+  ): Promise<AuthenticatedUserResponse> {
+    if (!authenticatedUser) {
+      throw new UnauthorizedException('Authenticated user context is required.');
+    }
+
+    const tenancies = await this.listUserTenanciesUseCase.execute(
+      authenticatedUser.id,
+    );
+
+    return toAuthenticatedUserResponse(authenticatedUser, tenancies);
   }
 }

@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { AuthController } from './auth.controller';
 import { JWT_VERIFIER } from './jwt-verifier';
 import { JwtAuthenticationGuard } from './jwt-authentication.guard';
 import { LocalJwtVerifier } from './local-jwt-verifier';
 import { ProviderJwtVerifier } from './provider-jwt-verifier';
 
 @Module({
+  controllers: [AuthController],
   providers: [
     LocalJwtVerifier,
     ProviderJwtVerifier,

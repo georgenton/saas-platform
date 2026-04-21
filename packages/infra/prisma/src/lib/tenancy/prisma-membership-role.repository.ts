@@ -40,6 +40,36 @@ export class PrismaMembershipRoleRepository implements MembershipRoleRepository 
     });
   }
 
+  async countMembershipsWithRole(
+    tenantId: string,
+    roleKey: string,
+  ): Promise<number> {
+    return this.prisma.membershipRole.count({
+      where: {
+        role: {
+          key: roleKey,
+        },
+        membership: {
+          tenantId,
+        },
+      },
+    });
+  }
+
+  async hasRole(membershipId: string, roleKey: string): Promise<boolean> {
+    const membershipRole = await this.prisma.membershipRole.findFirst({
+      where: {
+        membershipId,
+        role: {
+          key: roleKey,
+        },
+      },
+      select: { id: true },
+    });
+
+    return Boolean(membershipRole);
+  }
+
   async removeRole(membershipId: string, roleKey: string): Promise<void> {
     const role = await this.prisma.role.findUnique({
       where: { key: roleKey },

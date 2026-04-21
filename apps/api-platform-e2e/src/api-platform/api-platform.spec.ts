@@ -17,6 +17,7 @@ import {
   RemoveMembershipRoleUseCase,
   ResolveTenantAccessUseCase,
   TENANT_PERMISSIONS,
+  TenantRoleManagementPolicyError,
 } from '@saas-platform/tenancy-application';
 import {
   Membership,
@@ -361,6 +362,7 @@ describe('API', () => {
       .expect(204);
 
     expect(assignMembershipRoleUseCase.execute).toHaveBeenCalledWith({
+      actorRoleKeys: ['tenant_owner'],
       tenantSlug: 'saas-platform',
       userId: 'user_123',
       roleKey: 'tenant_member',
@@ -376,6 +378,8 @@ describe('API', () => {
       .expect(204);
 
     expect(removeMembershipRoleUseCase.execute).toHaveBeenCalledWith({
+      actorMembershipId: 'membership_123',
+      actorRoleKeys: ['tenant_owner'],
       tenantSlug: 'saas-platform',
       userId: 'user_123',
       roleKey: 'tenant_member',
@@ -444,6 +448,35 @@ describe('API', () => {
       .post('/api/tenancy/tenants/saas-platform/memberships/user_123/roles')
       .set('x-user-id', 'user_456')
       .send({ roleKey: 'tenant_member' })
+      .expect(403);
+  });
+
+  it('POST /api/tenancy/tenants/:slug/memberships/:userId/roles should reject protected owner assignment by policy', async () => {
+    assignMembershipRoleUseCase.execute.mockRejectedValueOnce(
+      new TenantRoleManagementPolicyError(
+        'Only tenant owners can assign the tenant_owner role.',
+      ),
+    );
+
+    await request(httpServer)
+      .post('/api/tenancy/tenants/saas-platform/memberships/user_123/roles')
+      .set('x-user-id', 'user_123')
+      .send({ roleKey: 'tenant_owner' })
+      .expect(403);
+  });
+
+  it('DELETE /api/tenancy/tenants/:slug/memberships/:userId/roles/:roleKey should reject removing the last owner', async () => {
+    removeMembershipRoleUseCase.execute.mockRejectedValueOnce(
+      new TenantRoleManagementPolicyError(
+        'A tenant must keep at least one tenant_owner.',
+      ),
+    );
+
+    await request(httpServer)
+      .delete(
+        '/api/tenancy/tenants/saas-platform/memberships/user_123/roles/tenant_owner',
+      )
+      .set('x-user-id', 'user_123')
       .expect(403);
   });
 

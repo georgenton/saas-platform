@@ -3,6 +3,7 @@ import {
   ConflictException,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -22,7 +23,9 @@ import {
   RemoveMembershipRoleUseCase,
   RoleNotFoundError,
   TENANT_PERMISSIONS,
+  TenantAccessContext,
   TenantNotFoundError,
+  TenantRoleManagementPolicyError,
   TenantSlugAlreadyInUseError,
 } from '@saas-platform/tenancy-application';
 import { AssignMembershipRoleRequestDto } from './dto/assign-membership-role.request';
@@ -61,7 +64,7 @@ export class TenancyController {
   @RequireTenantPermission(TENANT_PERMISSIONS.READ)
   async getTenantBySlug(
     @Param('slug') slug: string,
-    @TenantAccess() tenantAccess?: { tenantSlug: string },
+    @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<TenantResponseDto> {
     try {
       const tenant = await this.getTenantBySlugUseCase.execute(
@@ -83,7 +86,7 @@ export class TenancyController {
   @RequireTenantPermission(TENANT_PERMISSIONS.MEMBERSHIPS_READ)
   async listTenantMemberships(
     @Param('slug') slug: string,
-    @TenantAccess() tenantAccess?: { tenantSlug: string },
+    @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<MembershipResponseDto[]> {
     try {
       const memberships = await this.listTenantMembershipsUseCase.execute(
@@ -108,7 +111,7 @@ export class TenancyController {
   async getTenantMemberAccess(
     @Param('slug') slug: string,
     @Param('userId') userId: string,
-    @TenantAccess() tenantAccess?: { tenantSlug: string },
+    @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<MemberAccessResponseDto> {
     try {
       const access = await this.getTenantMemberAccessUseCase.execute({
@@ -136,7 +139,7 @@ export class TenancyController {
   async getTenantMembershipByUser(
     @Param('slug') slug: string,
     @Param('userId') userId: string,
-    @TenantAccess() tenantAccess?: { tenantSlug: string },
+    @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<MembershipResponseDto> {
     try {
       const membership = await this.getTenantMembershipByUserUseCase.execute({
@@ -166,10 +169,11 @@ export class TenancyController {
     @Param('slug') slug: string,
     @Param('userId') userId: string,
     @Body() body: AssignMembershipRoleRequestDto,
-    @TenantAccess() tenantAccess?: { tenantSlug: string },
+    @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<void> {
     try {
       await this.assignMembershipRoleUseCase.execute({
+        actorRoleKeys: tenantAccess?.roleKeys ?? [],
         tenantSlug: tenantAccess?.tenantSlug ?? slug,
         userId,
         roleKey: body.roleKey,
@@ -187,6 +191,10 @@ export class TenancyController {
         throw new NotFoundException(error.message);
       }
 
+      if (error instanceof TenantRoleManagementPolicyError) {
+        throw new ForbiddenException(error.message);
+      }
+
       throw error;
     }
   }
@@ -199,10 +207,12 @@ export class TenancyController {
     @Param('slug') slug: string,
     @Param('userId') userId: string,
     @Param('roleKey') roleKey: string,
-    @TenantAccess() tenantAccess?: { tenantSlug: string },
+    @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<void> {
     try {
       await this.removeMembershipRoleUseCase.execute({
+        actorMembershipId: tenantAccess?.membershipId ?? '',
+        actorRoleKeys: tenantAccess?.roleKeys ?? [],
         tenantSlug: tenantAccess?.tenantSlug ?? slug,
         userId,
         roleKey,
@@ -218,6 +228,10 @@ export class TenancyController {
 
       if (error instanceof RoleNotFoundError) {
         throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof TenantRoleManagementPolicyError) {
+        throw new ForbiddenException(error.message);
       }
 
       throw error;

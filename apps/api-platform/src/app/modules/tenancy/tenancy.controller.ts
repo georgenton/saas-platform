@@ -30,6 +30,7 @@ import {
 } from '@saas-platform/tenancy-application';
 import { AssignMembershipRoleRequestDto } from './dto/assign-membership-role.request';
 import { CreateTenantRequestDto } from './dto/create-tenant.request';
+import { DevelopmentAuthenticationGuard } from '../auth/development-authentication.guard';
 import {
   MemberAccessResponseDto,
   toMemberAccessResponseDto,
@@ -60,7 +61,7 @@ export class TenancyController {
   ) {}
 
   @Get(':slug')
-  @UseGuards(TenantMembershipGuard)
+  @UseGuards(DevelopmentAuthenticationGuard, TenantMembershipGuard)
   @RequireTenantPermission(TENANT_PERMISSIONS.READ)
   async getTenantBySlug(
     @Param('slug') slug: string,
@@ -82,7 +83,11 @@ export class TenancyController {
   }
 
   @Get(':slug/memberships')
-  @UseGuards(TenantMembershipGuard, TenantPermissionGuard)
+  @UseGuards(
+    DevelopmentAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
   @RequireTenantPermission(TENANT_PERMISSIONS.MEMBERSHIPS_READ)
   async listTenantMemberships(
     @Param('slug') slug: string,
@@ -106,7 +111,11 @@ export class TenancyController {
   }
 
   @Get(':slug/memberships/:userId/access')
-  @UseGuards(TenantMembershipGuard, TenantPermissionGuard)
+  @UseGuards(
+    DevelopmentAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
   @RequireTenantPermission(TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ)
   async getTenantMemberAccess(
     @Param('slug') slug: string,
@@ -134,7 +143,11 @@ export class TenancyController {
   }
 
   @Get(':slug/memberships/:userId')
-  @UseGuards(TenantMembershipGuard, TenantPermissionGuard)
+  @UseGuards(
+    DevelopmentAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
   @RequireTenantPermission(TENANT_PERMISSIONS.MEMBERSHIPS_READ)
   async getTenantMembershipByUser(
     @Param('slug') slug: string,
@@ -163,7 +176,11 @@ export class TenancyController {
 
   @Post(':slug/memberships/:userId/roles')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(TenantMembershipGuard, TenantPermissionGuard)
+  @UseGuards(
+    DevelopmentAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
   @RequireTenantPermission(TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE)
   async assignMembershipRole(
     @Param('slug') slug: string,
@@ -201,7 +218,11 @@ export class TenancyController {
 
   @Delete(':slug/memberships/:userId/roles/:roleKey')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(TenantMembershipGuard, TenantPermissionGuard)
+  @UseGuards(
+    DevelopmentAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
   @RequireTenantPermission(TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE)
   async removeMembershipRole(
     @Param('slug') slug: string,

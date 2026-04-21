@@ -11,6 +11,7 @@ import {
   TenantAccessDeniedError,
   TenantNotFoundError,
 } from '@saas-platform/tenancy-application';
+import { AuthenticatedUserContext } from '../auth/authenticated-user-context';
 
 @Injectable()
 export class TenantMembershipGuard implements CanActivate {
@@ -21,10 +22,15 @@ export class TenantMembershipGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const slug = request.params.slug as string | undefined;
-    const userId = request.headers['x-user-id'] as string | undefined;
+    const authenticatedUser = request.authenticatedUser as
+      | AuthenticatedUserContext
+      | undefined;
+    const userId = authenticatedUser?.id;
 
     if (!userId) {
-      throw new UnauthorizedException('x-user-id header is required.');
+      throw new UnauthorizedException(
+        'An authenticated user context is required.',
+      );
     }
 
     if (!slug) {

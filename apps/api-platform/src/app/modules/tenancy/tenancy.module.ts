@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import {
   AssignMembershipRoleUseCase,
   CreateTenantUseCase,
@@ -22,7 +23,7 @@ import { TenantPermissionGuard } from './tenant-permission.guard';
 import { TenancyController } from './tenancy.controller';
 
 @Module({
-  imports: [TenancyPersistenceModule],
+  imports: [AuthModule, TenancyPersistenceModule],
   controllers: [TenancyController],
   providers: [
     {

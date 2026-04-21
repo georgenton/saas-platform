@@ -1,5 +1,23 @@
 # api-platform
 
+## 0.5.0
+
+### Minor Changes
+
+- 7d4db62: Introduce provider-backed JWT verification with configurable verifier selection.
+
+  This change separates JWT verification behind a dedicated contract, adds a provider-oriented
+  RS256 verifier with issuer, audience, and temporal claim validation, and keeps a local verifier
+  available as a development fallback. The authentication guard now depends on the verifier contract
+  instead of embedding token verification logic directly.
+
+- d1d8917: Introduce JWT-backed authenticated user context for tenancy and RBAC flows.
+
+  This change replaces the development-only header authentication guard with a minimal
+  Bearer JWT guard, keeps the authenticated user context stable for tenancy access
+  resolution, and prepares the API boundary for later integration with a real identity
+  provider without changing the multi-tenant authorization layer.
+
 ## 0.4.0
 
 ### Minor Changes

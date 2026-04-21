@@ -3,6 +3,8 @@ export * from './lib/identity/prisma-user.repository';
 export * from './lib/prisma.module';
 export * from './lib/prisma.service';
 export * from './lib/tenancy/prisma-membership.repository';
+export * from './lib/tenancy/prisma-membership-role.repository';
+export * from './lib/tenancy/prisma-tenant-access.repository';
 export * from './lib/tenancy/prisma-tenant-provisioning.repository';
 export * from './lib/tenancy/prisma-tenant.repository';
 export * from './lib/tenancy/tenancy-persistence.module';

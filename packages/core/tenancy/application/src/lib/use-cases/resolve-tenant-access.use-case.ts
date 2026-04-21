@@ -1,7 +1,7 @@
 import { MembershipStatus } from '@saas-platform/tenancy-domain';
 import { TenantAccessDeniedError } from '../errors/tenant-access-denied.error';
 import { TenantNotFoundError } from '../errors/tenant-not-found.error';
-import { MembershipRepository } from '../ports/membership.repository';
+import { TenantAccessRepository } from '../ports/tenant-access.repository';
 import { TenantRepository } from '../ports/tenant.repository';
 
 export interface ResolveTenantAccessCommand {
@@ -15,13 +15,14 @@ export interface TenantAccessContext {
   userId: string;
   membershipId: string;
   membershipStatus: MembershipStatus;
-  membershipRole: 'owner' | 'member';
+  roleKeys: string[];
+  permissionKeys: string[];
 }
 
 export class ResolveTenantAccessUseCase {
   constructor(
     private readonly tenantRepository: TenantRepository,
-    private readonly membershipRepository: MembershipRepository,
+    private readonly tenantAccessRepository: TenantAccessRepository,
   ) {}
 
   async execute(
@@ -33,12 +34,12 @@ export class ResolveTenantAccessUseCase {
       throw new TenantNotFoundError(command.tenantSlug);
     }
 
-    const membership = await this.membershipRepository.findByTenantAndUser(
+    const access = await this.tenantAccessRepository.findByTenantAndUser(
       tenant.id,
       command.userId,
     );
 
-    if (!membership || membership.status !== MembershipStatus.Active) {
+    if (!access || access.membershipStatus !== MembershipStatus.Active) {
       throw new TenantAccessDeniedError(command.tenantSlug, command.userId);
     }
 
@@ -46,12 +47,10 @@ export class ResolveTenantAccessUseCase {
       tenantId: tenant.id,
       tenantSlug: tenant.slug,
       userId: command.userId,
-      membershipId: membership.id,
-      membershipStatus: membership.status,
-      membershipRole:
-        membership.userId === membership.toPrimitives().invitedBy
-          ? 'owner'
-          : 'member',
+      membershipId: access.membershipId,
+      membershipStatus: access.membershipStatus as MembershipStatus,
+      roleKeys: access.roleKeys,
+      permissionKeys: access.permissionKeys,
     };
   }
 }

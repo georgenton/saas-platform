@@ -5,6 +5,7 @@ import request from 'supertest';
 import {
   GetUserByIdUseCase,
   RegisterUserUseCase,
+  USER_REPOSITORY,
 } from '@saas-platform/identity-application';
 import { AuthProvider, User } from '@saas-platform/identity-domain';
 import { PrismaService } from '@saas-platform/infra-prisma';
@@ -35,6 +36,11 @@ describe('API', () => {
   let httpServer: any;
   let getUserByIdUseCase: { execute: jest.Mock };
   let registerUserUseCase: { execute: jest.Mock };
+  let userRepository: {
+    findById: jest.Mock;
+    findByEmail: jest.Mock;
+    save: jest.Mock;
+  };
   let assignMembershipRoleUseCase: { execute: jest.Mock };
   let getTenantBySlugUseCase: { execute: jest.Mock };
   let getTenantMemberAccessUseCase: { execute: jest.Mock };
@@ -58,6 +64,7 @@ describe('API', () => {
     avatarUrl: null,
     authProvider: AuthProvider.Password,
     externalAuthId: null,
+    preferredTenantId: null,
     createdAt: registeredAt,
     updatedAt: registeredAt,
   });
@@ -157,6 +164,11 @@ describe('API', () => {
     registerUserUseCase = {
       execute: jest.fn().mockResolvedValue(user),
     };
+    userRepository = {
+      findById: jest.fn().mockResolvedValue(user),
+      findByEmail: jest.fn(),
+      save: jest.fn().mockResolvedValue(undefined),
+    };
 
     getTenantBySlugUseCase = {
       execute: jest.fn().mockResolvedValue(tenant),
@@ -234,6 +246,8 @@ describe('API', () => {
       .useValue(getUserByIdUseCase)
       .overrideProvider(RegisterUserUseCase)
       .useValue(registerUserUseCase)
+      .overrideProvider(USER_REPOSITORY)
+      .useValue(userRepository)
       .overrideProvider(GetTenantBySlugUseCase)
       .useValue(getTenantBySlugUseCase)
       .overrideProvider(GetTenantMemberAccessUseCase)
@@ -352,6 +366,110 @@ describe('API', () => {
     expect(listUserTenanciesUseCase.execute).toHaveBeenCalledWith('user_123');
   });
 
+  it('GET /api/auth/me should prefer the persisted preferredTenantId when no tenantSlug is provided', async () => {
+    userRepository.findById.mockResolvedValueOnce(
+      User.create({
+        id: 'user_123',
+        email: 'hello@saas-platform.dev',
+        name: 'Jorge',
+        avatarUrl: null,
+        authProvider: AuthProvider.Password,
+        externalAuthId: null,
+        preferredTenantId: 'tenant_456',
+        createdAt: registeredAt,
+        updatedAt: registeredAt,
+      }),
+    );
+    listUserTenanciesUseCase.execute.mockResolvedValueOnce([
+      {
+        tenant,
+        membership,
+        roleKeys: ['tenant_owner'],
+        permissionKeys: [
+          TENANT_PERMISSIONS.READ,
+          TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+          TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+          TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+        ],
+      },
+      {
+        tenant: secondaryTenant,
+        membership: secondaryMembership,
+        roleKeys: ['tenant_member'],
+        permissionKeys: [TENANT_PERMISSIONS.READ],
+      },
+    ]);
+
+    await request(httpServer)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'user_123',
+        email: 'hello@saas-platform.dev',
+        provider: 'password',
+        externalAuthId: null,
+        currentTenancy: {
+          tenant: {
+            id: 'tenant_456',
+            name: 'Analytics Workspace',
+            slug: 'analytics-workspace',
+            status: TenantStatus.Active,
+          },
+          membership: {
+            id: 'membership_456',
+            status: MembershipStatus.Active,
+            invitedBy: 'user_999',
+            createdAt: secondaryMembership.toPrimitives().createdAt.toISOString(),
+            updatedAt: secondaryMembership.toPrimitives().updatedAt.toISOString(),
+          },
+          roleKeys: ['tenant_member'],
+          permissionKeys: [TENANT_PERMISSIONS.READ],
+        },
+        tenancies: [
+          {
+            tenant: {
+              id: 'tenant_456',
+              name: 'Analytics Workspace',
+              slug: 'analytics-workspace',
+              status: TenantStatus.Active,
+            },
+            membership: {
+              id: 'membership_456',
+              status: MembershipStatus.Active,
+              invitedBy: 'user_999',
+              createdAt: secondaryMembership.toPrimitives().createdAt.toISOString(),
+              updatedAt: secondaryMembership.toPrimitives().updatedAt.toISOString(),
+            },
+            roleKeys: ['tenant_member'],
+            permissionKeys: [TENANT_PERMISSIONS.READ],
+          },
+          {
+            tenant: {
+              id: 'tenant_123',
+              name: 'SaaS Platform',
+              slug: 'saas-platform',
+              status: TenantStatus.Draft,
+            },
+            membership: {
+              id: 'membership_123',
+              status: MembershipStatus.Active,
+              invitedBy: 'user_123',
+              createdAt: tenantCreatedAt.toISOString(),
+              updatedAt: tenantCreatedAt.toISOString(),
+            },
+            roleKeys: ['tenant_owner'],
+            permissionKeys: [
+              TENANT_PERMISSIONS.READ,
+              TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+              TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+              TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+            ],
+          },
+        ],
+      });
+  });
+
   it('GET /api/auth/me should resolve the requested tenant as currentTenancy', async () => {
     listUserTenanciesUseCase.execute.mockResolvedValueOnce([
       {
@@ -448,6 +566,134 @@ describe('API', () => {
       .get('/api/auth/me?tenantSlug=missing-tenant')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(404);
+  });
+
+  it('PUT /api/auth/me/current-tenancy should persist a tenant preference and return the updated session', async () => {
+    const availableTenancies = [
+      {
+        tenant,
+        membership,
+        roleKeys: ['tenant_owner'],
+        permissionKeys: [
+          TENANT_PERMISSIONS.READ,
+          TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+          TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+          TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+        ],
+      },
+      {
+        tenant: secondaryTenant,
+        membership: secondaryMembership,
+        roleKeys: ['tenant_member'],
+        permissionKeys: [TENANT_PERMISSIONS.READ],
+      },
+    ];
+    listUserTenanciesUseCase.execute
+      .mockResolvedValueOnce(availableTenancies)
+      .mockResolvedValueOnce(availableTenancies);
+
+    await request(httpServer)
+      .put('/api/auth/me/current-tenancy')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ tenantSlug: 'analytics-workspace' })
+      .expect(200)
+      .expect({
+        id: 'user_123',
+        email: 'hello@saas-platform.dev',
+        provider: 'password',
+        externalAuthId: null,
+        currentTenancy: {
+          tenant: {
+            id: 'tenant_456',
+            name: 'Analytics Workspace',
+            slug: 'analytics-workspace',
+            status: TenantStatus.Active,
+          },
+          membership: {
+            id: 'membership_456',
+            status: MembershipStatus.Active,
+            invitedBy: 'user_999',
+            createdAt: secondaryMembership.toPrimitives().createdAt.toISOString(),
+            updatedAt: secondaryMembership.toPrimitives().updatedAt.toISOString(),
+          },
+          roleKeys: ['tenant_member'],
+          permissionKeys: [TENANT_PERMISSIONS.READ],
+        },
+        tenancies: [
+          {
+            tenant: {
+              id: 'tenant_456',
+              name: 'Analytics Workspace',
+              slug: 'analytics-workspace',
+              status: TenantStatus.Active,
+            },
+            membership: {
+              id: 'membership_456',
+              status: MembershipStatus.Active,
+              invitedBy: 'user_999',
+              createdAt: secondaryMembership.toPrimitives().createdAt.toISOString(),
+              updatedAt: secondaryMembership.toPrimitives().updatedAt.toISOString(),
+            },
+            roleKeys: ['tenant_member'],
+            permissionKeys: [TENANT_PERMISSIONS.READ],
+          },
+          {
+            tenant: {
+              id: 'tenant_123',
+              name: 'SaaS Platform',
+              slug: 'saas-platform',
+              status: TenantStatus.Draft,
+            },
+            membership: {
+              id: 'membership_123',
+              status: MembershipStatus.Active,
+              invitedBy: 'user_123',
+              createdAt: tenantCreatedAt.toISOString(),
+              updatedAt: tenantCreatedAt.toISOString(),
+            },
+            roleKeys: ['tenant_owner'],
+            permissionKeys: [
+              TENANT_PERMISSIONS.READ,
+              TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+              TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+              TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+            ],
+          },
+        ],
+      });
+
+    expect(userRepository.save).toHaveBeenCalledTimes(1);
+    expect(userRepository.save.mock.calls[0][0].toPrimitives()).toMatchObject({
+      id: 'user_123',
+      preferredTenantId: 'tenant_456',
+    });
+  });
+
+  it('PUT /api/auth/me/current-tenancy should clear the tenant preference when tenantSlug is null', async () => {
+    userRepository.findById.mockResolvedValueOnce(
+      User.create({
+        id: 'user_123',
+        email: 'hello@saas-platform.dev',
+        name: 'Jorge',
+        avatarUrl: null,
+        authProvider: AuthProvider.Password,
+        externalAuthId: null,
+        preferredTenantId: 'tenant_456',
+        createdAt: registeredAt,
+        updatedAt: registeredAt,
+      }),
+    );
+
+    await request(httpServer)
+      .put('/api/auth/me/current-tenancy')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ tenantSlug: null })
+      .expect(200);
+
+    expect(userRepository.save.mock.calls.at(-1)?.[0].toPrimitives()).toMatchObject({
+      id: 'user_123',
+      preferredTenantId: null,
+    });
   });
 
   it('GET /api/auth/me should require a bearer token', async () => {

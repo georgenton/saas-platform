@@ -3,6 +3,7 @@ import {
   TENANT_ROLES,
   UserTenancyView,
 } from '@saas-platform/tenancy-application';
+import { UserRepository } from '@saas-platform/identity-application';
 import { MembershipStatus } from '@saas-platform/tenancy-domain';
 import { AuthenticatedUserContext } from './authenticated-user-context';
 import { AuthenticatedSessionTenantNotFoundError } from './authenticated-session-tenant-not-found.error';
@@ -20,12 +21,14 @@ export interface AuthenticatedSessionView {
 
 export class ResolveAuthenticatedSessionUseCase {
   constructor(
+    private readonly userRepository: UserRepository,
     private readonly listUserTenanciesUseCase: ListUserTenanciesUseCase,
   ) {}
 
   async execute(
     command: ResolveAuthenticatedSessionCommand,
   ): Promise<AuthenticatedSessionView> {
+    const user = await this.userRepository.findById(command.authenticatedUser.id);
     const tenancies = await this.listUserTenanciesUseCase.execute(
       command.authenticatedUser.id,
     );
@@ -33,6 +36,7 @@ export class ResolveAuthenticatedSessionUseCase {
     const currentTenancy = this.resolveCurrentTenancy(
       sortedTenancies,
       command.tenantSlug,
+      user?.preferredTenantId ?? null,
     );
 
     return {
@@ -45,6 +49,7 @@ export class ResolveAuthenticatedSessionUseCase {
   private resolveCurrentTenancy(
     tenancies: UserTenancyView[],
     requestedTenantSlug?: string,
+    preferredTenantId?: string | null,
   ): UserTenancyView | null {
     if (tenancies.length === 0) {
       return null;
@@ -60,6 +65,16 @@ export class ResolveAuthenticatedSessionUseCase {
       }
 
       return requestedTenancy;
+    }
+
+    if (preferredTenantId) {
+      const preferredTenancy = tenancies.find(
+        (tenancy) => tenancy.tenant.id === preferredTenantId,
+      );
+
+      if (preferredTenancy) {
+        return preferredTenancy;
+      }
     }
 
     return tenancies[0] ?? null;

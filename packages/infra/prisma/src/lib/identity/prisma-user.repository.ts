@@ -18,6 +18,7 @@ export class PrismaUserRepository implements UserRepository {
         avatarUrl: data.avatarUrl,
         authProvider: data.authProvider,
         externalAuthId: data.externalAuthId,
+        preferredTenantId: data.preferredTenantId,
         updatedAt: data.updatedAt,
       },
       create: {
@@ -27,6 +28,7 @@ export class PrismaUserRepository implements UserRepository {
         avatarUrl: data.avatarUrl,
         authProvider: data.authProvider,
         externalAuthId: data.externalAuthId,
+        preferredTenantId: data.preferredTenantId,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
       },
@@ -56,6 +58,7 @@ export class PrismaUserRepository implements UserRepository {
     avatarUrl: string | null;
     authProvider: string;
     externalAuthId: string | null;
+    preferredTenantId: string | null;
     createdAt: Date;
     updatedAt: Date;
   }): User {
@@ -66,6 +69,7 @@ export class PrismaUserRepository implements UserRepository {
       avatarUrl: record.avatarUrl,
       authProvider: record.authProvider as AuthProvider,
       externalAuthId: record.externalAuthId,
+      preferredTenantId: record.preferredTenantId,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     });

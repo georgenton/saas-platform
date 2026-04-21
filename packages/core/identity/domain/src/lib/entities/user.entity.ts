@@ -7,6 +7,7 @@ export interface UserProps {
   avatarUrl?: string | null;
   authProvider: AuthProvider;
   externalAuthId?: string | null;
+  preferredTenantId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +32,18 @@ export class User {
 
   get authProvider(): AuthProvider {
     return this.props.authProvider;
+  }
+
+  get preferredTenantId(): string | null {
+    return this.props.preferredTenantId ?? null;
+  }
+
+  setPreferredTenant(updatedAt: Date, preferredTenantId?: string | null): User {
+    return new User({
+      ...this.props,
+      preferredTenantId: preferredTenantId ?? null,
+      updatedAt,
+    });
   }
 
   toPrimitives(): UserProps {

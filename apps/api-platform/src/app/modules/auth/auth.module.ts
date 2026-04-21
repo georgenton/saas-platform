@@ -7,6 +7,7 @@ import {
 } from '@saas-platform/tenancy-application';
 import { TenancyPersistenceModule } from '@saas-platform/infra-prisma';
 import { AuthController } from './auth.controller';
+import { ResolveAuthenticatedSessionUseCase } from './resolve-authenticated-session.use-case';
 import { JWT_VERIFIER } from './jwt-verifier';
 import { JwtAuthenticationGuard } from './jwt-authentication.guard';
 import { LocalJwtVerifier } from './local-jwt-verifier';
@@ -37,6 +38,12 @@ import { ProviderJwtVerifier } from './provider-jwt-verifier';
         ),
     },
     {
+      provide: ResolveAuthenticatedSessionUseCase,
+      inject: [ListUserTenanciesUseCase],
+      useFactory: (listUserTenanciesUseCase) =>
+        new ResolveAuthenticatedSessionUseCase(listUserTenanciesUseCase),
+    },
+    {
       provide: JWT_VERIFIER,
       inject: [LocalJwtVerifier, ProviderJwtVerifier],
       useFactory: (
@@ -52,6 +59,11 @@ import { ProviderJwtVerifier } from './provider-jwt-verifier';
     },
     JwtAuthenticationGuard,
   ],
-  exports: [JWT_VERIFIER, JwtAuthenticationGuard, ListUserTenanciesUseCase],
+  exports: [
+    JWT_VERIFIER,
+    JwtAuthenticationGuard,
+    ListUserTenanciesUseCase,
+    ResolveAuthenticatedSessionUseCase,
+  ],
 })
 export class AuthModule {}

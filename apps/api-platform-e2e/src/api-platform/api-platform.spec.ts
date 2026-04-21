@@ -78,6 +78,23 @@ describe('API', () => {
     createdAt: tenantCreatedAt,
     updatedAt: tenantCreatedAt,
   });
+  const secondaryTenant = Tenant.create({
+    id: 'tenant_456',
+    name: 'Analytics Workspace',
+    slug: 'analytics-workspace',
+    status: TenantStatus.Active,
+    createdAt: new Date('2026-04-15T10:00:00.000Z'),
+    updatedAt: new Date('2026-04-15T10:00:00.000Z'),
+  });
+  const secondaryMembership = Membership.create({
+    id: 'membership_456',
+    tenantId: 'tenant_456',
+    userId: 'user_123',
+    status: MembershipStatus.Active,
+    invitedBy: 'user_999',
+    createdAt: new Date('2026-04-15T10:00:00.000Z'),
+    updatedAt: new Date('2026-04-15T10:00:00.000Z'),
+  });
 
   const signJwt = (payload: Record<string, unknown>): string => {
     const encode = (value: unknown): string =>
@@ -284,6 +301,28 @@ describe('API', () => {
         email: 'hello@saas-platform.dev',
         provider: 'password',
         externalAuthId: null,
+        currentTenancy: {
+          tenant: {
+            id: 'tenant_123',
+            name: 'SaaS Platform',
+            slug: 'saas-platform',
+            status: TenantStatus.Draft,
+          },
+          membership: {
+            id: 'membership_123',
+            status: MembershipStatus.Active,
+            invitedBy: 'user_123',
+            createdAt: tenantCreatedAt.toISOString(),
+            updatedAt: tenantCreatedAt.toISOString(),
+          },
+          roleKeys: ['tenant_owner'],
+          permissionKeys: [
+            TENANT_PERMISSIONS.READ,
+            TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+            TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+            TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+          ],
+        },
         tenancies: [
           {
             tenant: {
@@ -311,6 +350,104 @@ describe('API', () => {
       });
 
     expect(listUserTenanciesUseCase.execute).toHaveBeenCalledWith('user_123');
+  });
+
+  it('GET /api/auth/me should resolve the requested tenant as currentTenancy', async () => {
+    listUserTenanciesUseCase.execute.mockResolvedValueOnce([
+      {
+        tenant: secondaryTenant,
+        membership: secondaryMembership,
+        roleKeys: ['tenant_member'],
+        permissionKeys: [TENANT_PERMISSIONS.READ],
+      },
+      {
+        tenant,
+        membership,
+        roleKeys: ['tenant_owner'],
+        permissionKeys: [
+          TENANT_PERMISSIONS.READ,
+          TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+          TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+          TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+        ],
+      },
+    ]);
+
+    await request(httpServer)
+      .get('/api/auth/me?tenantSlug=analytics-workspace')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'user_123',
+        email: 'hello@saas-platform.dev',
+        provider: 'password',
+        externalAuthId: null,
+        currentTenancy: {
+          tenant: {
+            id: 'tenant_456',
+            name: 'Analytics Workspace',
+            slug: 'analytics-workspace',
+            status: TenantStatus.Active,
+          },
+          membership: {
+            id: 'membership_456',
+            status: MembershipStatus.Active,
+            invitedBy: 'user_999',
+            createdAt: secondaryMembership.toPrimitives().createdAt.toISOString(),
+            updatedAt: secondaryMembership.toPrimitives().updatedAt.toISOString(),
+          },
+          roleKeys: ['tenant_member'],
+          permissionKeys: [TENANT_PERMISSIONS.READ],
+        },
+        tenancies: [
+          {
+            tenant: {
+              id: 'tenant_456',
+              name: 'Analytics Workspace',
+              slug: 'analytics-workspace',
+              status: TenantStatus.Active,
+            },
+            membership: {
+              id: 'membership_456',
+              status: MembershipStatus.Active,
+              invitedBy: 'user_999',
+              createdAt: secondaryMembership.toPrimitives().createdAt.toISOString(),
+              updatedAt: secondaryMembership.toPrimitives().updatedAt.toISOString(),
+            },
+            roleKeys: ['tenant_member'],
+            permissionKeys: [TENANT_PERMISSIONS.READ],
+          },
+          {
+            tenant: {
+              id: 'tenant_123',
+              name: 'SaaS Platform',
+              slug: 'saas-platform',
+              status: TenantStatus.Draft,
+            },
+            membership: {
+              id: 'membership_123',
+              status: MembershipStatus.Active,
+              invitedBy: 'user_123',
+              createdAt: tenantCreatedAt.toISOString(),
+              updatedAt: tenantCreatedAt.toISOString(),
+            },
+            roleKeys: ['tenant_owner'],
+            permissionKeys: [
+              TENANT_PERMISSIONS.READ,
+              TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+              TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+              TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+            ],
+          },
+        ],
+      });
+  });
+
+  it('GET /api/auth/me should reject an unavailable requested tenant', async () => {
+    await request(httpServer)
+      .get('/api/auth/me?tenantSlug=missing-tenant')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(404);
   });
 
   it('GET /api/auth/me should require a bearer token', async () => {

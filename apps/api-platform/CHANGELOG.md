@@ -1,5 +1,35 @@
 # api-platform
 
+## 0.6.0
+
+### Minor Changes
+
+- dccd72a: Add an authenticated session view for frontend-facing auth flows.
+
+  This change introduces `GET /api/auth/me`, returning the authenticated user
+  context together with a summarized view of the user's tenant memberships,
+  effective roles, and permissions.
+
+  It also extends tenancy application and Prisma persistence to list memberships
+  by user so session-oriented frontend experiences can be built on top of the
+  existing RBAC foundation.
+
+- 4986a66: Add current-tenant session semantics to the authenticated session view.
+
+  This change enriches `GET /api/auth/me` so clients can resolve a `currentTenancy`
+  explicitly via `tenantSlug` or let the backend choose a default tenancy through a
+  deterministic priority rule.
+
+  It also keeps the tenant session selection logic outside the controller so
+  frontend session bootstrapping can evolve without coupling transport code to
+  selection rules.
+
+- a5c5b60: Add an authenticated user introspection endpoint.
+
+  This change exposes `GET /api/auth/me` so clients can inspect the resolved
+  authenticated user context behind Bearer JWT authentication, making it easier
+  to verify auth integration and bootstrap frontend session awareness.
+
 ## 0.5.0
 
 ### Minor Changes

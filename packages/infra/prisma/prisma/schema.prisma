@@ -20,6 +20,7 @@ model User {
   avatarUrl      String?
   authProvider   String
   externalAuthId String?
+  preferredTenantId String?
   memberships    Membership[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt

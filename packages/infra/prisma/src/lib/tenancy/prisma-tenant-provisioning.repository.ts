@@ -12,9 +12,18 @@ export class PrismaTenantProvisioningRepository
   async createTenantWithOwner(
     tenant: Tenant,
     membership: Membership,
+    ownerRoleKey: string,
   ): Promise<void> {
     const tenantData = tenant.toPrimitives();
     const membershipData = membership.toPrimitives();
+
+    const ownerRole = await this.prisma.role.findUnique({
+      where: { key: ownerRoleKey },
+    });
+
+    if (!ownerRole) {
+      throw new Error(`Role "${ownerRoleKey}" was not found.`);
+    }
 
     await this.prisma.$transaction([
       this.prisma.tenant.create({
@@ -36,6 +45,14 @@ export class PrismaTenantProvisioningRepository
           invitedBy: membershipData.invitedBy,
           createdAt: membershipData.createdAt,
           updatedAt: membershipData.updatedAt,
+        },
+      }),
+      this.prisma.membershipRole.create({
+        data: {
+          id: `${membershipData.id}:${ownerRole.id}`,
+          membershipId: membershipData.id,
+          roleId: ownerRole.id,
+          createdAt: membershipData.createdAt,
         },
       }),
     ]);

@@ -54,6 +54,7 @@ export class CreateTenantUseCase {
     await this.tenantProvisioningRepository.createTenantWithOwner(
       tenant,
       membership,
+      'tenant_owner',
     );
 
     return tenant;

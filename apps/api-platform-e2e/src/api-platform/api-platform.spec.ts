@@ -8,11 +8,15 @@ import {
 import { AuthProvider, User } from '@saas-platform/identity-domain';
 import { PrismaService } from '@saas-platform/infra-prisma';
 import {
+  AssignMembershipRoleUseCase,
   CreateTenantUseCase,
   GetTenantBySlugUseCase,
+  GetTenantMemberAccessUseCase,
   GetTenantMembershipByUserUseCase,
   ListTenantMembershipsUseCase,
+  RemoveMembershipRoleUseCase,
   ResolveTenantAccessUseCase,
+  TENANT_PERMISSIONS,
 } from '@saas-platform/tenancy-application';
 import {
   Membership,
@@ -25,12 +29,15 @@ import { configureApp } from '../../../api-platform/src/app/app.setup';
 
 describe('API', () => {
   let app: INestApplication;
-  let httpApp: any;
+  let httpServer: any;
   let getUserByIdUseCase: { execute: jest.Mock };
   let registerUserUseCase: { execute: jest.Mock };
+  let assignMembershipRoleUseCase: { execute: jest.Mock };
   let getTenantBySlugUseCase: { execute: jest.Mock };
+  let getTenantMemberAccessUseCase: { execute: jest.Mock };
   let getTenantMembershipByUserUseCase: { execute: jest.Mock };
   let listTenantMembershipsUseCase: { execute: jest.Mock };
+  let removeMembershipRoleUseCase: { execute: jest.Mock };
   let resolveTenantAccessUseCase: { execute: jest.Mock };
   let createTenantUseCase: { execute: jest.Mock };
 
@@ -75,6 +82,20 @@ describe('API', () => {
     getTenantBySlugUseCase = {
       execute: jest.fn().mockResolvedValue(tenant),
     };
+    getTenantMemberAccessUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        userId: 'user_123',
+        membershipId: 'membership_123',
+        membershipStatus: MembershipStatus.Active,
+        roleKeys: ['tenant_owner'],
+        permissionKeys: [
+          TENANT_PERMISSIONS.READ,
+          TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+          TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+          TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+        ],
+      }),
+    };
     getTenantMembershipByUserUseCase = {
       execute: jest.fn().mockResolvedValue(membership),
     };
@@ -88,8 +109,20 @@ describe('API', () => {
         userId: 'user_123',
         membershipId: 'membership_123',
         membershipStatus: MembershipStatus.Active,
-        membershipRole: 'owner',
+        roleKeys: ['tenant_owner'],
+        permissionKeys: [
+          TENANT_PERMISSIONS.READ,
+          TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+          TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+          TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+        ],
       }),
+    };
+    assignMembershipRoleUseCase = {
+      execute: jest.fn().mockResolvedValue(undefined),
+    };
+    removeMembershipRoleUseCase = {
+      execute: jest.fn().mockResolvedValue(undefined),
     };
     createTenantUseCase = {
       execute: jest.fn().mockResolvedValue(tenant),
@@ -109,10 +142,16 @@ describe('API', () => {
       .useValue(registerUserUseCase)
       .overrideProvider(GetTenantBySlugUseCase)
       .useValue(getTenantBySlugUseCase)
+      .overrideProvider(GetTenantMemberAccessUseCase)
+      .useValue(getTenantMemberAccessUseCase)
       .overrideProvider(GetTenantMembershipByUserUseCase)
       .useValue(getTenantMembershipByUserUseCase)
       .overrideProvider(ListTenantMembershipsUseCase)
       .useValue(listTenantMembershipsUseCase)
+      .overrideProvider(AssignMembershipRoleUseCase)
+      .useValue(assignMembershipRoleUseCase)
+      .overrideProvider(RemoveMembershipRoleUseCase)
+      .useValue(removeMembershipRoleUseCase)
       .overrideProvider(ResolveTenantAccessUseCase)
       .useValue(resolveTenantAccessUseCase)
       .overrideProvider(CreateTenantUseCase)
@@ -122,7 +161,8 @@ describe('API', () => {
     app = moduleFixture.createNestApplication();
     configureApp(app);
     await app.init();
-    httpApp = app.getHttpAdapter().getInstance();
+    await app.listen(0);
+    httpServer = app.getHttpServer();
   });
 
   afterAll(async () => {
@@ -130,14 +170,14 @@ describe('API', () => {
   });
 
   it('GET /api should return a message', async () => {
-    await request(httpApp)
+    await request(httpServer)
       .get('/api')
       .expect(200)
       .expect({ message: 'Hello API' });
   });
 
   it('GET /api/identity/users/:id should return a user', async () => {
-    await request(httpApp)
+    await request(httpServer)
       .get('/api/identity/users/user_123')
       .expect(200)
       .expect({
@@ -156,7 +196,7 @@ describe('API', () => {
   });
 
   it('POST /api/identity/users should register a user', async () => {
-    await request(httpApp)
+    await request(httpServer)
       .post('/api/identity/users')
       .send({
         email: 'hello@saas-platform.dev',
@@ -185,7 +225,7 @@ describe('API', () => {
   });
 
   it('POST /api/identity/users should validate the payload', async () => {
-    await request(httpApp)
+    await request(httpServer)
       .post('/api/identity/users')
       .send({
         email: 'not-an-email',
@@ -195,7 +235,7 @@ describe('API', () => {
   });
 
   it('POST /api/tenancy/tenants should create a tenant', async () => {
-    await request(httpApp)
+    await request(httpServer)
       .post('/api/tenancy/tenants')
       .send({
         name: 'SaaS Platform',
@@ -220,7 +260,7 @@ describe('API', () => {
   });
 
   it('GET /api/tenancy/tenants/:slug should return a tenant', async () => {
-    await request(httpApp)
+    await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform')
       .set('x-user-id', 'user_123')
       .expect(200)
@@ -243,7 +283,7 @@ describe('API', () => {
   });
 
   it('GET /api/tenancy/tenants/:slug/memberships should list memberships', async () => {
-    await request(httpApp)
+    await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform/memberships')
       .set('x-user-id', 'user_123')
       .expect(200)
@@ -268,8 +308,32 @@ describe('API', () => {
     });
   });
 
+  it('GET /api/tenancy/tenants/:slug/memberships/:userId/access should return effective access', async () => {
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/memberships/user_123/access')
+      .set('x-user-id', 'user_123')
+      .expect(200)
+      .expect({
+        userId: 'user_123',
+        membershipId: 'membership_123',
+        membershipStatus: MembershipStatus.Active,
+        roleKeys: ['tenant_owner'],
+        permissionKeys: [
+          TENANT_PERMISSIONS.READ,
+          TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+          TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+          TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+        ],
+      });
+
+    expect(getTenantMemberAccessUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      userId: 'user_123',
+    });
+  });
+
   it('GET /api/tenancy/tenants/:slug/memberships/:userId should return one membership', async () => {
-    await request(httpApp)
+    await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform/memberships/user_123')
       .set('x-user-id', 'user_123')
       .expect(200)
@@ -289,30 +353,102 @@ describe('API', () => {
     });
   });
 
+  it('POST /api/tenancy/tenants/:slug/memberships/:userId/roles should assign a role', async () => {
+    await request(httpServer)
+      .post('/api/tenancy/tenants/saas-platform/memberships/user_123/roles')
+      .set('x-user-id', 'user_123')
+      .send({ roleKey: 'tenant_member' })
+      .expect(204);
+
+    expect(assignMembershipRoleUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      userId: 'user_123',
+      roleKey: 'tenant_member',
+    });
+  });
+
+  it('DELETE /api/tenancy/tenants/:slug/memberships/:userId/roles/:roleKey should remove a role', async () => {
+    await request(httpServer)
+      .delete(
+        '/api/tenancy/tenants/saas-platform/memberships/user_123/roles/tenant_member',
+      )
+      .set('x-user-id', 'user_123')
+      .expect(204);
+
+    expect(removeMembershipRoleUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      userId: 'user_123',
+      roleKey: 'tenant_member',
+    });
+  });
+
   it('GET /api/tenancy/tenants/:slug/memberships should require x-user-id', async () => {
-    await request(httpApp)
+    await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform/memberships')
       .expect(401);
   });
 
-  it('GET /api/tenancy/tenants/:slug/memberships should require owner role', async () => {
+  it('GET /api/tenancy/tenants/:slug/memberships should require membership read permission', async () => {
     resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
       tenantId: 'tenant_123',
       tenantSlug: 'saas-platform',
       userId: 'user_456',
       membershipId: 'membership_456',
       membershipStatus: MembershipStatus.Active,
-      membershipRole: 'member',
+      roleKeys: ['tenant_member'],
+      permissionKeys: [TENANT_PERMISSIONS.READ],
     });
 
-    await request(httpApp)
+    await request(httpServer)
       .get('/api/tenancy/tenants/saas-platform/memberships')
       .set('x-user-id', 'user_456')
       .expect(403);
   });
 
+  it('GET /api/tenancy/tenants/:slug/memberships/:userId/access should require access read permission', async () => {
+    resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
+      tenantId: 'tenant_123',
+      tenantSlug: 'saas-platform',
+      userId: 'user_456',
+      membershipId: 'membership_456',
+      membershipStatus: MembershipStatus.Active,
+      roleKeys: ['tenant_member'],
+      permissionKeys: [
+        TENANT_PERMISSIONS.READ,
+        TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+      ],
+    });
+
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/memberships/user_123/access')
+      .set('x-user-id', 'user_456')
+      .expect(403);
+  });
+
+  it('POST /api/tenancy/tenants/:slug/memberships/:userId/roles should require roles manage permission', async () => {
+    resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
+      tenantId: 'tenant_123',
+      tenantSlug: 'saas-platform',
+      userId: 'user_456',
+      membershipId: 'membership_456',
+      membershipStatus: MembershipStatus.Active,
+      roleKeys: ['tenant_member'],
+      permissionKeys: [
+        TENANT_PERMISSIONS.READ,
+        TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+        TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+      ],
+    });
+
+    await request(httpServer)
+      .post('/api/tenancy/tenants/saas-platform/memberships/user_123/roles')
+      .set('x-user-id', 'user_456')
+      .send({ roleKey: 'tenant_member' })
+      .expect(403);
+  });
+
   it('POST /api/tenancy/tenants should validate the payload', async () => {
-    await request(httpApp)
+    await request(httpServer)
       .post('/api/tenancy/tenants')
       .send({
         name: 'S',

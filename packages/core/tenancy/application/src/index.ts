@@ -20,5 +20,6 @@ export * from './lib/use-cases/get-tenant-by-slug.use-case';
 export * from './lib/use-cases/get-tenant-member-access.use-case';
 export * from './lib/use-cases/get-tenant-membership-by-user.use-case';
 export * from './lib/use-cases/list-tenant-memberships.use-case';
+export * from './lib/use-cases/list-user-tenancies.use-case';
 export * from './lib/use-cases/remove-membership-role.use-case';
 export * from './lib/use-cases/resolve-tenant-access.use-case';

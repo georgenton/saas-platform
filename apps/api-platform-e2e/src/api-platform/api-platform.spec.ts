@@ -14,6 +14,7 @@ import {
   GetTenantBySlugUseCase,
   GetTenantMemberAccessUseCase,
   GetTenantMembershipByUserUseCase,
+  ListUserTenanciesUseCase,
   ListTenantMembershipsUseCase,
   RemoveMembershipRoleUseCase,
   ResolveTenantAccessUseCase,
@@ -38,6 +39,7 @@ describe('API', () => {
   let getTenantBySlugUseCase: { execute: jest.Mock };
   let getTenantMemberAccessUseCase: { execute: jest.Mock };
   let getTenantMembershipByUserUseCase: { execute: jest.Mock };
+  let listUserTenanciesUseCase: { execute: jest.Mock };
   let listTenantMembershipsUseCase: { execute: jest.Mock };
   let removeMembershipRoleUseCase: { execute: jest.Mock };
   let resolveTenantAccessUseCase: { execute: jest.Mock };
@@ -159,6 +161,21 @@ describe('API', () => {
     getTenantMembershipByUserUseCase = {
       execute: jest.fn().mockResolvedValue(membership),
     };
+    listUserTenanciesUseCase = {
+      execute: jest.fn().mockResolvedValue([
+        {
+          tenant,
+          membership,
+          roleKeys: ['tenant_owner'],
+          permissionKeys: [
+            TENANT_PERMISSIONS.READ,
+            TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+            TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+            TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+          ],
+        },
+      ]),
+    };
     listTenantMembershipsUseCase = {
       execute: jest.fn().mockResolvedValue([membership]),
     };
@@ -206,6 +223,8 @@ describe('API', () => {
       .useValue(getTenantMemberAccessUseCase)
       .overrideProvider(GetTenantMembershipByUserUseCase)
       .useValue(getTenantMembershipByUserUseCase)
+      .overrideProvider(ListUserTenanciesUseCase)
+      .useValue(listUserTenanciesUseCase)
       .overrideProvider(ListTenantMembershipsUseCase)
       .useValue(listTenantMembershipsUseCase)
       .overrideProvider(AssignMembershipRoleUseCase)
@@ -253,6 +272,49 @@ describe('API', () => {
 
     expect(registerUserUseCase.execute).toHaveBeenCalledTimes(0);
     expect(getUserByIdUseCase.execute).toHaveBeenCalledWith('user_123');
+  });
+
+  it('GET /api/auth/me should return the authenticated user session view', async () => {
+    await request(httpServer)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'user_123',
+        email: 'hello@saas-platform.dev',
+        provider: 'password',
+        externalAuthId: null,
+        tenancies: [
+          {
+            tenant: {
+              id: 'tenant_123',
+              name: 'SaaS Platform',
+              slug: 'saas-platform',
+              status: TenantStatus.Draft,
+            },
+            membership: {
+              id: 'membership_123',
+              status: MembershipStatus.Active,
+              invitedBy: 'user_123',
+              createdAt: tenantCreatedAt.toISOString(),
+              updatedAt: tenantCreatedAt.toISOString(),
+            },
+            roleKeys: ['tenant_owner'],
+            permissionKeys: [
+              TENANT_PERMISSIONS.READ,
+              TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+              TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+              TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+            ],
+          },
+        ],
+      });
+
+    expect(listUserTenanciesUseCase.execute).toHaveBeenCalledWith('user_123');
+  });
+
+  it('GET /api/auth/me should require a bearer token', async () => {
+    await request(httpServer).get('/api/auth/me').expect(401);
   });
 
   it('POST /api/identity/users should register a user', async () => {

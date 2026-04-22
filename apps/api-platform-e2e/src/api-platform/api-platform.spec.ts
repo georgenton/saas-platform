@@ -12,11 +12,14 @@ import { PrismaService } from '@saas-platform/infra-prisma';
 import {
   AcceptTenantInvitationUseCase,
   AssignMembershipRoleUseCase,
+  CancelTenantInvitationUseCase,
   CreateTenantUseCase,
   GetTenantBySlugUseCase,
   GetTenantMemberAccessUseCase,
   GetTenantMembershipByUserUseCase,
   InviteUserToTenantUseCase,
+  ListTenantInvitationsUseCase,
+  ListUserPendingInvitationsUseCase,
   ListUserTenanciesUseCase,
   ListTenantMembershipsUseCase,
   RemoveMembershipRoleUseCase,
@@ -32,6 +35,7 @@ import {
   Tenant,
   TenantStatus,
 } from '@saas-platform/tenancy-domain';
+import { AcceptAuthenticatedUserInvitationUseCase } from '../../../api-platform/src/app/modules/auth/accept-authenticated-user-invitation.use-case';
 import { AppModule } from '../../../api-platform/src/app/app.module';
 import { configureApp } from '../../../api-platform/src/app/app.setup';
 
@@ -46,17 +50,22 @@ describe('API', () => {
     save: jest.Mock;
   };
   let assignMembershipRoleUseCase: { execute: jest.Mock };
+  let acceptAuthenticatedUserInvitationUseCase: { execute: jest.Mock };
   let acceptTenantInvitationUseCase: { execute: jest.Mock };
+  let cancelTenantInvitationUseCase: { execute: jest.Mock };
   let getTenantBySlugUseCase: { execute: jest.Mock };
   let getTenantMemberAccessUseCase: { execute: jest.Mock };
   let getTenantMembershipByUserUseCase: { execute: jest.Mock };
   let inviteUserToTenantUseCase: { execute: jest.Mock };
+  let listTenantInvitationsUseCase: { execute: jest.Mock };
+  let listUserPendingInvitationsUseCase: { execute: jest.Mock };
   let listUserTenanciesUseCase: { execute: jest.Mock };
   let listTenantMembershipsUseCase: { execute: jest.Mock };
   let removeMembershipRoleUseCase: { execute: jest.Mock };
   let resolveTenantAccessUseCase: { execute: jest.Mock };
   let createTenantUseCase: { execute: jest.Mock };
   let ownerToken: string;
+  let inviteeToken: string;
   let memberToken: string;
   let issuer: string;
   let audience: string;
@@ -178,6 +187,15 @@ describe('API', () => {
       email: 'member@saas-platform.dev',
       provider: 'password',
     });
+    inviteeToken = signJwt({
+      sub: 'user_456',
+      iss: issuer,
+      aud: audience,
+      iat: now,
+      exp: now + 3600,
+      email: 'invitee@saas-platform.dev',
+      provider: 'password',
+    });
     getUserByIdUseCase = {
       execute: jest.fn().mockResolvedValue(user),
     };
@@ -196,8 +214,42 @@ describe('API', () => {
     inviteUserToTenantUseCase = {
       execute: jest.fn().mockResolvedValue(invitation),
     };
+    listTenantInvitationsUseCase = {
+      execute: jest.fn().mockResolvedValue([invitation]),
+    };
+    cancelTenantInvitationUseCase = {
+      execute: jest.fn().mockResolvedValue(undefined),
+    };
     acceptTenantInvitationUseCase = {
       execute: jest.fn().mockResolvedValue(membership),
+    };
+    acceptAuthenticatedUserInvitationUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        authenticatedUser: {
+          id: 'user_456',
+          email: 'invitee@saas-platform.dev',
+          provider: 'password',
+          externalAuthId: null,
+        },
+        currentTenancy: {
+          tenant,
+          membership,
+          roleKeys: ['tenant_member'],
+          permissionKeys: [TENANT_PERMISSIONS.READ],
+        },
+        pendingInvitations: [],
+        tenancies: [
+          {
+            tenant,
+            membership,
+            roleKeys: ['tenant_member'],
+            permissionKeys: [TENANT_PERMISSIONS.READ],
+          },
+        ],
+      }),
+    };
+    listUserPendingInvitationsUseCase = {
+      execute: jest.fn().mockResolvedValue([]),
     };
     getTenantMemberAccessUseCase = {
       execute: jest.fn().mockResolvedValue({
@@ -281,10 +333,18 @@ describe('API', () => {
       .useValue(getTenantBySlugUseCase)
       .overrideProvider(InviteUserToTenantUseCase)
       .useValue(inviteUserToTenantUseCase)
+      .overrideProvider(ListTenantInvitationsUseCase)
+      .useValue(listTenantInvitationsUseCase)
+      .overrideProvider(CancelTenantInvitationUseCase)
+      .useValue(cancelTenantInvitationUseCase)
       .overrideProvider(AcceptTenantInvitationUseCase)
       .useValue(acceptTenantInvitationUseCase)
+      .overrideProvider(AcceptAuthenticatedUserInvitationUseCase)
+      .useValue(acceptAuthenticatedUserInvitationUseCase)
       .overrideProvider(GetTenantMemberAccessUseCase)
       .useValue(getTenantMemberAccessUseCase)
+      .overrideProvider(ListUserPendingInvitationsUseCase)
+      .useValue(listUserPendingInvitationsUseCase)
       .overrideProvider(GetTenantMembershipByUserUseCase)
       .useValue(getTenantMembershipByUserUseCase)
       .overrideProvider(ListUserTenanciesUseCase)
@@ -348,6 +408,7 @@ describe('API', () => {
         email: 'hello@saas-platform.dev',
         provider: 'password',
         externalAuthId: null,
+        pendingInvitations: [],
         currentTenancy: {
           tenant: {
             id: 'tenant_123',
@@ -445,6 +506,7 @@ describe('API', () => {
         email: 'hello@saas-platform.dev',
         provider: 'password',
         externalAuthId: null,
+        pendingInvitations: [],
         currentTenancy: {
           tenant: {
             id: 'tenant_456',
@@ -538,6 +600,7 @@ describe('API', () => {
         email: 'hello@saas-platform.dev',
         provider: 'password',
         externalAuthId: null,
+        pendingInvitations: [],
         currentTenancy: {
           tenant: {
             id: 'tenant_456',
@@ -607,6 +670,64 @@ describe('API', () => {
       .expect(404);
   });
 
+  it('GET /api/auth/me should expose pending invitations for frontend onboarding', async () => {
+    userRepository.findById.mockResolvedValueOnce(
+      User.create({
+        id: 'user_456',
+        email: 'invitee@saas-platform.dev',
+        name: 'Invitee',
+        avatarUrl: null,
+        authProvider: AuthProvider.Password,
+        externalAuthId: null,
+        preferredTenantId: null,
+        createdAt: registeredAt,
+        updatedAt: registeredAt,
+      }),
+    );
+    listUserTenanciesUseCase.execute.mockResolvedValueOnce([]);
+    listUserPendingInvitationsUseCase.execute.mockResolvedValueOnce([
+      {
+        invitation,
+        tenant,
+      },
+    ]);
+
+    await request(httpServer)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${inviteeToken}`)
+      .expect(200)
+      .expect({
+        id: 'user_456',
+        email: 'invitee@saas-platform.dev',
+        provider: 'password',
+        externalAuthId: null,
+        currentTenancy: null,
+        pendingInvitations: [
+          {
+            invitation: {
+              id: 'invitation_123',
+              email: 'invitee@saas-platform.dev',
+              roleKey: 'tenant_member',
+              status: InvitationStatus.Pending,
+              invitedByUserId: 'user_123',
+              acceptedByUserId: null,
+              expiresAt: invitation.toPrimitives().expiresAt.toISOString(),
+              acceptedAt: null,
+              createdAt: invitationCreatedAt.toISOString(),
+              updatedAt: invitationCreatedAt.toISOString(),
+            },
+            tenant: {
+              id: 'tenant_123',
+              name: 'SaaS Platform',
+              slug: 'saas-platform',
+              status: TenantStatus.Draft,
+            },
+          },
+        ],
+        tenancies: [],
+      });
+  });
+
   it('PUT /api/auth/me/current-tenancy should persist a tenant preference and return the updated session', async () => {
     const availableTenancies = [
       {
@@ -642,6 +763,7 @@ describe('API', () => {
         email: 'hello@saas-platform.dev',
         provider: 'password',
         externalAuthId: null,
+        pendingInvitations: [],
         currentTenancy: {
           tenant: {
             id: 'tenant_456',
@@ -734,6 +856,66 @@ describe('API', () => {
     expect(userRepository.save.mock.calls.at(-1)?.[0].toPrimitives()).toMatchObject({
       id: 'user_123',
       preferredTenantId: null,
+    });
+  });
+
+  it('POST /api/auth/invitations/:invitationId/accept should return the refreshed authenticated session', async () => {
+    await request(httpServer)
+      .post('/api/auth/invitations/invitation_123/accept')
+      .set('Authorization', `Bearer ${inviteeToken}`)
+      .expect(201)
+      .expect({
+        id: 'user_456',
+        email: 'invitee@saas-platform.dev',
+        provider: 'password',
+        externalAuthId: null,
+        currentTenancy: {
+          tenant: {
+            id: 'tenant_123',
+            name: 'SaaS Platform',
+            slug: 'saas-platform',
+            status: TenantStatus.Draft,
+          },
+          membership: {
+            id: 'membership_123',
+            status: MembershipStatus.Active,
+            invitedBy: 'user_123',
+            createdAt: tenantCreatedAt.toISOString(),
+            updatedAt: tenantCreatedAt.toISOString(),
+          },
+          roleKeys: ['tenant_member'],
+          permissionKeys: [TENANT_PERMISSIONS.READ],
+        },
+        pendingInvitations: [],
+        tenancies: [
+          {
+            tenant: {
+              id: 'tenant_123',
+              name: 'SaaS Platform',
+              slug: 'saas-platform',
+              status: TenantStatus.Draft,
+            },
+            membership: {
+              id: 'membership_123',
+              status: MembershipStatus.Active,
+              invitedBy: 'user_123',
+              createdAt: tenantCreatedAt.toISOString(),
+              updatedAt: tenantCreatedAt.toISOString(),
+            },
+            roleKeys: ['tenant_member'],
+            permissionKeys: [TENANT_PERMISSIONS.READ],
+          },
+        ],
+      });
+
+    expect(acceptAuthenticatedUserInvitationUseCase.execute).toHaveBeenCalledWith({
+      invitationId: 'invitation_123',
+      authenticatedUser: {
+        id: 'user_456',
+        email: 'invitee@saas-platform.dev',
+        provider: 'password',
+        externalAuthId: null,
+      },
     });
   });
 
@@ -927,6 +1109,32 @@ describe('API', () => {
     });
   });
 
+  it('GET /api/tenancy/tenants/:slug/invitations should list invitations', async () => {
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/invitations')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'invitation_123',
+          tenantId: 'tenant_123',
+          email: 'invitee@saas-platform.dev',
+          roleKey: 'tenant_member',
+          status: InvitationStatus.Pending,
+          invitedByUserId: 'user_123',
+          acceptedByUserId: null,
+          expiresAt: invitation.toPrimitives().expiresAt.toISOString(),
+          acceptedAt: null,
+          createdAt: invitationCreatedAt.toISOString(),
+          updatedAt: invitationCreatedAt.toISOString(),
+        },
+      ]);
+
+    expect(listTenantInvitationsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
   it('POST /api/tenancy/invitations/:invitationId/accept should accept an invitation', async () => {
     await request(httpServer)
       .post('/api/tenancy/invitations/invitation_123/accept')
@@ -946,6 +1154,18 @@ describe('API', () => {
       invitationId: 'invitation_123',
       authenticatedUserId: 'user_456',
       authenticatedUserEmail: 'member@saas-platform.dev',
+    });
+  });
+
+  it('DELETE /api/tenancy/tenants/:slug/invitations/:invitationId should cancel an invitation', async () => {
+    await request(httpServer)
+      .delete('/api/tenancy/tenants/saas-platform/invitations/invitation_123')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(204);
+
+    expect(cancelTenantInvitationUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invitationId: 'invitation_123',
     });
   });
 

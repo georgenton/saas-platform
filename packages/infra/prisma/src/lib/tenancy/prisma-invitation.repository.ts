@@ -48,6 +48,15 @@ export class PrismaInvitationRepository implements InvitationRepository {
     return invitation ? this.toDomain(invitation) : null;
   }
 
+  async findByTenantId(tenantId: string): Promise<Invitation[]> {
+    const invitations = await this.prisma.invitation.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return invitations.map((invitation) => this.toDomain(invitation));
+  }
+
   async findPendingByTenantAndEmail(
     tenantId: string,
     email: string,
@@ -62,6 +71,18 @@ export class PrismaInvitationRepository implements InvitationRepository {
     });
 
     return invitation ? this.toDomain(invitation) : null;
+  }
+
+  async findPendingByEmail(email: string): Promise<Invitation[]> {
+    const invitations = await this.prisma.invitation.findMany({
+      where: {
+        email: email.trim().toLowerCase(),
+        status: InvitationStatus.Pending,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return invitations.map((invitation) => this.toDomain(invitation));
   }
 
   private toDomain(record: {

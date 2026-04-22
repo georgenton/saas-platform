@@ -3,7 +3,12 @@ import {
   USER_REPOSITORY,
 } from '@saas-platform/identity-application';
 import {
+  AcceptTenantInvitationUseCase,
+  INVITATION_REPOSITORY,
+  INVITATION_ACCEPTANCE_REPOSITORY,
   ListUserTenanciesUseCase,
+  ListUserPendingInvitationsUseCase,
+  MEMBERSHIP_ID_GENERATOR,
   MEMBERSHIP_REPOSITORY,
   TENANT_ACCESS_REPOSITORY,
   TENANT_REPOSITORY,
@@ -13,6 +18,7 @@ import {
   TenancyPersistenceModule,
 } from '@saas-platform/infra-prisma';
 import { AuthController } from './auth.controller';
+import { AcceptAuthenticatedUserInvitationUseCase } from './accept-authenticated-user-invitation.use-case';
 import { ResolveAuthenticatedSessionUseCase } from './resolve-authenticated-session.use-case';
 import { PersistAuthenticatedSessionTenancyPreferenceUseCase } from './persist-authenticated-session-tenancy-preference.use-case';
 import { JWT_VERIFIER } from './jwt-verifier';
@@ -45,12 +51,57 @@ import { ProviderJwtVerifier } from './provider-jwt-verifier';
         ),
     },
     {
+      provide: AcceptTenantInvitationUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        USER_REPOSITORY,
+        MEMBERSHIP_REPOSITORY,
+        INVITATION_REPOSITORY,
+        INVITATION_ACCEPTANCE_REPOSITORY,
+        MEMBERSHIP_ID_GENERATOR,
+      ],
+      useFactory: (
+        tenantRepository,
+        userRepository,
+        membershipRepository,
+        invitationRepository,
+        invitationAcceptanceRepository,
+        membershipIdGenerator,
+      ) =>
+        new AcceptTenantInvitationUseCase(
+          tenantRepository,
+          userRepository,
+          membershipRepository,
+          invitationRepository,
+          invitationAcceptanceRepository,
+          membershipIdGenerator,
+        ),
+    },
+    {
+      provide: ListUserPendingInvitationsUseCase,
+      inject: [TENANT_REPOSITORY, INVITATION_REPOSITORY],
+      useFactory: (tenantRepository, invitationRepository) =>
+        new ListUserPendingInvitationsUseCase(
+          tenantRepository,
+          invitationRepository,
+        ),
+    },
+    {
       provide: ResolveAuthenticatedSessionUseCase,
-      inject: [USER_REPOSITORY, ListUserTenanciesUseCase],
-      useFactory: (userRepository, listUserTenanciesUseCase) =>
+      inject: [
+        USER_REPOSITORY,
+        ListUserTenanciesUseCase,
+        ListUserPendingInvitationsUseCase,
+      ],
+      useFactory: (
+        userRepository,
+        listUserTenanciesUseCase,
+        listUserPendingInvitationsUseCase,
+      ) =>
         new ResolveAuthenticatedSessionUseCase(
           userRepository,
           listUserTenanciesUseCase,
+          listUserPendingInvitationsUseCase,
         ),
     },
     {
@@ -60,6 +111,27 @@ import { ProviderJwtVerifier } from './provider-jwt-verifier';
         new PersistAuthenticatedSessionTenancyPreferenceUseCase(
           userRepository,
           listUserTenanciesUseCase,
+        ),
+    },
+    {
+      provide: AcceptAuthenticatedUserInvitationUseCase,
+      inject: [
+        USER_REPOSITORY,
+        TENANT_REPOSITORY,
+        AcceptTenantInvitationUseCase,
+        ResolveAuthenticatedSessionUseCase,
+      ],
+      useFactory: (
+        userRepository,
+        tenantRepository,
+        acceptTenantInvitationUseCase,
+        resolveAuthenticatedSessionUseCase,
+      ) =>
+        new AcceptAuthenticatedUserInvitationUseCase(
+          userRepository,
+          tenantRepository,
+          acceptTenantInvitationUseCase,
+          resolveAuthenticatedSessionUseCase,
         ),
     },
     {
@@ -82,8 +154,10 @@ import { ProviderJwtVerifier } from './provider-jwt-verifier';
     JWT_VERIFIER,
     JwtAuthenticationGuard,
     ListUserTenanciesUseCase,
+    ListUserPendingInvitationsUseCase,
     ResolveAuthenticatedSessionUseCase,
     PersistAuthenticatedSessionTenancyPreferenceUseCase,
+    AcceptAuthenticatedUserInvitationUseCase,
   ],
 })
 export class AuthModule {}

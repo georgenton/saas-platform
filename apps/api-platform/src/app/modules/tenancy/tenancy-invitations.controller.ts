@@ -1,8 +1,10 @@
 import {
+  Delete,
   Body,
   ConflictException,
   Controller,
   ForbiddenException,
+  Get,
   HttpCode,
   HttpStatus,
   NotFoundException,
@@ -15,12 +17,14 @@ import { AuthenticatedUserContext } from '../auth/authenticated-user-context';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
 import {
   AcceptTenantInvitationUseCase,
+  CancelTenantInvitationUseCase,
   InvitationAlreadyExistsError,
   InvitationAlreadyProcessedError,
   InvitationEmailMismatchError,
   InvitationExpiredError,
   InvitationNotFoundError,
   InviteUserToTenantUseCase,
+  ListTenantInvitationsUseCase,
   MembershipAlreadyExistsError,
   MembershipNotFoundError,
   TENANT_PERMISSIONS,
@@ -44,9 +48,37 @@ import { TenantPermissionGuard } from './tenant-permission.guard';
 @Controller('tenancy')
 export class TenancyInvitationsController {
   constructor(
+    private readonly cancelTenantInvitationUseCase: CancelTenantInvitationUseCase,
     private readonly inviteUserToTenantUseCase: InviteUserToTenantUseCase,
+    private readonly listTenantInvitationsUseCase: ListTenantInvitationsUseCase,
     private readonly acceptTenantInvitationUseCase: AcceptTenantInvitationUseCase,
   ) {}
+
+  @Get('tenants/:slug/invitations')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.INVITATIONS_MANAGE)
+  async listInvitations(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvitationResponseDto[]> {
+    try {
+      const invitations = await this.listTenantInvitationsUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+      );
+
+      return invitations.map((invitation) => toInvitationResponseDto(invitation));
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
 
   @Post('tenants/:slug/invitations')
   @UseGuards(
@@ -74,6 +106,41 @@ export class TenancyInvitationsController {
       }
 
       if (error instanceof InvitationAlreadyExistsError) {
+        throw new ConflictException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Delete('tenants/:slug/invitations/:invitationId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.INVITATIONS_MANAGE)
+  async cancelInvitation(
+    @Param('slug') slug: string,
+    @Param('invitationId') invitationId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<void> {
+    try {
+      await this.cancelTenantInvitationUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        invitationId,
+      });
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof InvitationNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof InvitationAlreadyProcessedError) {
         throw new ConflictException(error.message);
       }
 

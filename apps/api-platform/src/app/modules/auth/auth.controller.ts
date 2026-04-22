@@ -19,7 +19,8 @@ import {
   InvitationNotFoundError,
   MembershipAlreadyExistsError,
   MembershipNotFoundError,
-} from './accept-authenticated-user-invitation.use-case';
+  GetAuthenticatedUserInvitationUseCase,
+} from '@saas-platform/tenancy-application';
 import { AcceptAuthenticatedUserInvitationUseCase } from './accept-authenticated-user-invitation.use-case';
 import { AuthenticatedUser } from './authenticated-user.decorator';
 import { AuthenticatedUserContext } from './authenticated-user-context';
@@ -27,6 +28,10 @@ import { AuthenticatedSessionTenantNotFoundError } from './authenticated-session
 import { JwtAuthenticationGuard } from './jwt-authentication.guard';
 import { PersistAuthenticatedSessionTenancyPreferenceUseCase } from './persist-authenticated-session-tenancy-preference.use-case';
 import { ResolveAuthenticatedSessionUseCase } from './resolve-authenticated-session.use-case';
+import {
+  AuthenticatedInvitationResponse,
+  toAuthenticatedInvitationResponse,
+} from './dto/authenticated-invitation.response';
 import {
   AuthenticatedUserResponse,
   toAuthenticatedUserResponse,
@@ -37,6 +42,7 @@ import { SetCurrentTenancyRequestDto } from './dto/set-current-tenancy.request';
 export class AuthController {
   constructor(
     private readonly acceptAuthenticatedUserInvitationUseCase: AcceptAuthenticatedUserInvitationUseCase,
+    private readonly getAuthenticatedUserInvitationUseCase: GetAuthenticatedUserInvitationUseCase,
     private readonly persistAuthenticatedSessionTenancyPreferenceUseCase: PersistAuthenticatedSessionTenancyPreferenceUseCase,
     private readonly resolveAuthenticatedSessionUseCase: ResolveAuthenticatedSessionUseCase,
   ) {}
@@ -122,6 +128,40 @@ export class AuthController {
         error instanceof MembershipNotFoundError
       ) {
         throw new ConflictException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('invitations/:invitationId')
+  @UseGuards(JwtAuthenticationGuard)
+  async getInvitation(
+    @Param('invitationId') invitationId: string,
+    @AuthenticatedUser() authenticatedUser: AuthenticatedUserContext | undefined,
+  ): Promise<AuthenticatedInvitationResponse> {
+    if (!authenticatedUser) {
+      throw new UnauthorizedException('Authenticated user context is required.');
+    }
+
+    if (!authenticatedUser.email) {
+      throw new UnauthorizedException(
+        'Authenticated user email is required to inspect invitations.',
+      );
+    }
+
+    try {
+      const invitation = await this.getAuthenticatedUserInvitationUseCase.execute(
+        {
+          invitationId,
+          authenticatedUserEmail: authenticatedUser.email,
+        },
+      );
+
+      return toAuthenticatedInvitationResponse(invitation);
+    } catch (error) {
+      if (error instanceof InvitationNotFoundError) {
+        throw new NotFoundException(error.message);
       }
 
       throw error;

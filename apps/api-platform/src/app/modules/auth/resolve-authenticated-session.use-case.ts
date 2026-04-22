@@ -19,7 +19,19 @@ export interface AuthenticatedSessionView {
   authenticatedUser: AuthenticatedUserContext;
   currentTenancy: UserTenancyView | null;
   pendingInvitations: UserPendingInvitationView[];
+  sessionState: AuthenticatedSessionState;
   tenancies: UserTenancyView[];
+}
+
+export interface AuthenticatedSessionState {
+  canSelectTenancy: boolean;
+  hasPendingInvitations: boolean;
+  hasTenancies: boolean;
+  recommendedFlow:
+    | 'workspace'
+    | 'select-tenancy'
+    | 'accept-invitation'
+    | 'empty';
 }
 
 export class ResolveAuthenticatedSessionUseCase {
@@ -54,7 +66,56 @@ export class ResolveAuthenticatedSessionUseCase {
       authenticatedUser: command.authenticatedUser,
       currentTenancy,
       pendingInvitations,
+      sessionState: this.resolveSessionState(
+        currentTenancy,
+        sortedTenancies,
+        pendingInvitations,
+      ),
       tenancies: this.prioritizeCurrentTenancy(sortedTenancies, currentTenancy),
+    };
+  }
+
+  private resolveSessionState(
+    currentTenancy: UserTenancyView | null,
+    tenancies: UserTenancyView[],
+    pendingInvitations: UserPendingInvitationView[],
+  ): AuthenticatedSessionState {
+    const hasTenancies = tenancies.length > 0;
+    const hasPendingInvitations = pendingInvitations.length > 0;
+    const canSelectTenancy = tenancies.length > 1;
+
+    if (!hasTenancies && hasPendingInvitations) {
+      return {
+        canSelectTenancy,
+        hasPendingInvitations,
+        hasTenancies,
+        recommendedFlow: 'accept-invitation',
+      };
+    }
+
+    if (canSelectTenancy) {
+      return {
+        canSelectTenancy,
+        hasPendingInvitations,
+        hasTenancies,
+        recommendedFlow: 'select-tenancy',
+      };
+    }
+
+    if (currentTenancy) {
+      return {
+        canSelectTenancy,
+        hasPendingInvitations,
+        hasTenancies,
+        recommendedFlow: 'workspace',
+      };
+    }
+
+    return {
+      canSelectTenancy,
+      hasPendingInvitations,
+      hasTenancies,
+      recommendedFlow: 'empty',
     };
   }
 

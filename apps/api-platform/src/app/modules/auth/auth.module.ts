@@ -4,6 +4,7 @@ import {
 } from '@saas-platform/identity-application';
 import {
   AcceptTenantInvitationUseCase,
+  GetAuthenticatedUserInvitationUseCase,
   INVITATION_REPOSITORY,
   INVITATION_ACCEPTANCE_REPOSITORY,
   ListUserTenanciesUseCase,
@@ -48,6 +49,15 @@ import { ProviderJwtVerifier } from './provider-jwt-verifier';
           tenantRepository,
           membershipRepository,
           tenantAccessRepository,
+        ),
+    },
+    {
+      provide: GetAuthenticatedUserInvitationUseCase,
+      inject: [TENANT_REPOSITORY, INVITATION_REPOSITORY],
+      useFactory: (tenantRepository, invitationRepository) =>
+        new GetAuthenticatedUserInvitationUseCase(
+          tenantRepository,
+          invitationRepository,
         ),
     },
     {
@@ -155,6 +165,7 @@ import { ProviderJwtVerifier } from './provider-jwt-verifier';
     JwtAuthenticationGuard,
     ListUserTenanciesUseCase,
     ListUserPendingInvitationsUseCase,
+    GetAuthenticatedUserInvitationUseCase,
     ResolveAuthenticatedSessionUseCase,
     PersistAuthenticatedSessionTenancyPreferenceUseCase,
     AcceptAuthenticatedUserInvitationUseCase,

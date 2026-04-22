@@ -14,7 +14,9 @@ import {
   AssignMembershipRoleUseCase,
   CancelTenantInvitationUseCase,
   CreateTenantUseCase,
+  GetAuthenticatedUserInvitationUseCase,
   GetTenantBySlugUseCase,
+  GetTenantInvitationByIdUseCase,
   GetTenantMemberAccessUseCase,
   GetTenantMembershipByUserUseCase,
   InviteUserToTenantUseCase,
@@ -23,6 +25,7 @@ import {
   ListUserTenanciesUseCase,
   ListTenantMembershipsUseCase,
   RemoveMembershipRoleUseCase,
+  ResendTenantInvitationUseCase,
   ResolveTenantAccessUseCase,
   TENANT_PERMISSIONS,
   TenantRoleManagementPolicyError,
@@ -53,7 +56,9 @@ describe('API', () => {
   let acceptAuthenticatedUserInvitationUseCase: { execute: jest.Mock };
   let acceptTenantInvitationUseCase: { execute: jest.Mock };
   let cancelTenantInvitationUseCase: { execute: jest.Mock };
+  let getAuthenticatedUserInvitationUseCase: { execute: jest.Mock };
   let getTenantBySlugUseCase: { execute: jest.Mock };
+  let getTenantInvitationByIdUseCase: { execute: jest.Mock };
   let getTenantMemberAccessUseCase: { execute: jest.Mock };
   let getTenantMembershipByUserUseCase: { execute: jest.Mock };
   let inviteUserToTenantUseCase: { execute: jest.Mock };
@@ -62,6 +67,7 @@ describe('API', () => {
   let listUserTenanciesUseCase: { execute: jest.Mock };
   let listTenantMembershipsUseCase: { execute: jest.Mock };
   let removeMembershipRoleUseCase: { execute: jest.Mock };
+  let resendTenantInvitationUseCase: { execute: jest.Mock };
   let resolveTenantAccessUseCase: { execute: jest.Mock };
   let createTenantUseCase: { execute: jest.Mock };
   let ownerToken: string;
@@ -220,6 +226,24 @@ describe('API', () => {
     cancelTenantInvitationUseCase = {
       execute: jest.fn().mockResolvedValue(undefined),
     };
+    getAuthenticatedUserInvitationUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        invitation,
+        tenant,
+        canAccept: true,
+      }),
+    };
+    getTenantInvitationByIdUseCase = {
+      execute: jest.fn().mockResolvedValue(invitation),
+    };
+    resendTenantInvitationUseCase = {
+      execute: jest.fn().mockResolvedValue(
+        invitation.resend(
+          new Date('2026-04-23T12:00:00.000Z'),
+          new Date('2026-04-30T12:00:00.000Z'),
+        ),
+      ),
+    };
     acceptTenantInvitationUseCase = {
       execute: jest.fn().mockResolvedValue(membership),
     };
@@ -238,6 +262,12 @@ describe('API', () => {
           permissionKeys: [TENANT_PERMISSIONS.READ],
         },
         pendingInvitations: [],
+        sessionState: {
+          canSelectTenancy: false,
+          hasPendingInvitations: false,
+          hasTenancies: true,
+          recommendedFlow: 'workspace',
+        },
         tenancies: [
           {
             tenant,
@@ -337,6 +367,12 @@ describe('API', () => {
       .useValue(listTenantInvitationsUseCase)
       .overrideProvider(CancelTenantInvitationUseCase)
       .useValue(cancelTenantInvitationUseCase)
+      .overrideProvider(GetAuthenticatedUserInvitationUseCase)
+      .useValue(getAuthenticatedUserInvitationUseCase)
+      .overrideProvider(GetTenantInvitationByIdUseCase)
+      .useValue(getTenantInvitationByIdUseCase)
+      .overrideProvider(ResendTenantInvitationUseCase)
+      .useValue(resendTenantInvitationUseCase)
       .overrideProvider(AcceptTenantInvitationUseCase)
       .useValue(acceptTenantInvitationUseCase)
       .overrideProvider(AcceptAuthenticatedUserInvitationUseCase)
@@ -409,6 +445,12 @@ describe('API', () => {
         provider: 'password',
         externalAuthId: null,
         pendingInvitations: [],
+        sessionState: {
+          canSelectTenancy: false,
+          hasPendingInvitations: false,
+          hasTenancies: true,
+          recommendedFlow: 'workspace',
+        },
         currentTenancy: {
           tenant: {
             id: 'tenant_123',
@@ -507,6 +549,12 @@ describe('API', () => {
         provider: 'password',
         externalAuthId: null,
         pendingInvitations: [],
+        sessionState: {
+          canSelectTenancy: true,
+          hasPendingInvitations: false,
+          hasTenancies: true,
+          recommendedFlow: 'select-tenancy',
+        },
         currentTenancy: {
           tenant: {
             id: 'tenant_456',
@@ -601,6 +649,12 @@ describe('API', () => {
         provider: 'password',
         externalAuthId: null,
         pendingInvitations: [],
+        sessionState: {
+          canSelectTenancy: true,
+          hasPendingInvitations: false,
+          hasTenancies: true,
+          recommendedFlow: 'select-tenancy',
+        },
         currentTenancy: {
           tenant: {
             id: 'tenant_456',
@@ -702,6 +756,12 @@ describe('API', () => {
         provider: 'password',
         externalAuthId: null,
         currentTenancy: null,
+        sessionState: {
+          canSelectTenancy: false,
+          hasPendingInvitations: true,
+          hasTenancies: false,
+          recommendedFlow: 'accept-invitation',
+        },
         pendingInvitations: [
           {
             invitation: {
@@ -764,6 +824,12 @@ describe('API', () => {
         provider: 'password',
         externalAuthId: null,
         pendingInvitations: [],
+        sessionState: {
+          canSelectTenancy: true,
+          hasPendingInvitations: false,
+          hasTenancies: true,
+          recommendedFlow: 'select-tenancy',
+        },
         currentTenancy: {
           tenant: {
             id: 'tenant_456',
@@ -887,6 +953,12 @@ describe('API', () => {
           permissionKeys: [TENANT_PERMISSIONS.READ],
         },
         pendingInvitations: [],
+        sessionState: {
+          canSelectTenancy: false,
+          hasPendingInvitations: false,
+          hasTenancies: true,
+          recommendedFlow: 'workspace',
+        },
         tenancies: [
           {
             tenant: {
@@ -916,6 +988,39 @@ describe('API', () => {
         provider: 'password',
         externalAuthId: null,
       },
+    });
+  });
+
+  it('GET /api/auth/invitations/:invitationId should return invitation detail for the authenticated invitee', async () => {
+    await request(httpServer)
+      .get('/api/auth/invitations/invitation_123')
+      .set('Authorization', `Bearer ${inviteeToken}`)
+      .expect(200)
+      .expect({
+        invitation: {
+          id: 'invitation_123',
+          email: 'invitee@saas-platform.dev',
+          roleKey: 'tenant_member',
+          status: InvitationStatus.Pending,
+          invitedByUserId: 'user_123',
+          acceptedByUserId: null,
+          expiresAt: invitation.toPrimitives().expiresAt.toISOString(),
+          acceptedAt: null,
+          createdAt: invitationCreatedAt.toISOString(),
+          updatedAt: invitationCreatedAt.toISOString(),
+        },
+        tenant: {
+          id: 'tenant_123',
+          name: 'SaaS Platform',
+          slug: 'saas-platform',
+          status: TenantStatus.Draft,
+        },
+        canAccept: true,
+      });
+
+    expect(getAuthenticatedUserInvitationUseCase.execute).toHaveBeenCalledWith({
+      invitationId: 'invitation_123',
+      authenticatedUserEmail: 'invitee@saas-platform.dev',
     });
   });
 
@@ -1135,6 +1240,31 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/tenancy/tenants/:slug/invitations/:invitationId should return one invitation', async () => {
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/invitations/invitation_123')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'invitation_123',
+        tenantId: 'tenant_123',
+        email: 'invitee@saas-platform.dev',
+        roleKey: 'tenant_member',
+        status: InvitationStatus.Pending,
+        invitedByUserId: 'user_123',
+        acceptedByUserId: null,
+        expiresAt: invitation.toPrimitives().expiresAt.toISOString(),
+        acceptedAt: null,
+        createdAt: invitationCreatedAt.toISOString(),
+        updatedAt: invitationCreatedAt.toISOString(),
+      });
+
+    expect(getTenantInvitationByIdUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invitationId: 'invitation_123',
+    });
+  });
+
   it('POST /api/tenancy/invitations/:invitationId/accept should accept an invitation', async () => {
     await request(httpServer)
       .post('/api/tenancy/invitations/invitation_123/accept')
@@ -1164,6 +1294,31 @@ describe('API', () => {
       .expect(204);
 
     expect(cancelTenantInvitationUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invitationId: 'invitation_123',
+    });
+  });
+
+  it('POST /api/tenancy/tenants/:slug/invitations/:invitationId/resend should resend an invitation', async () => {
+    await request(httpServer)
+      .post('/api/tenancy/tenants/saas-platform/invitations/invitation_123/resend')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect({
+        id: 'invitation_123',
+        tenantId: 'tenant_123',
+        email: 'invitee@saas-platform.dev',
+        roleKey: 'tenant_member',
+        status: InvitationStatus.Pending,
+        invitedByUserId: 'user_123',
+        acceptedByUserId: null,
+        expiresAt: '2026-04-30T12:00:00.000Z',
+        acceptedAt: null,
+        createdAt: invitationCreatedAt.toISOString(),
+        updatedAt: '2026-04-23T12:00:00.000Z',
+      });
+
+    expect(resendTenantInvitationUseCase.execute).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       invitationId: 'invitation_123',
     });

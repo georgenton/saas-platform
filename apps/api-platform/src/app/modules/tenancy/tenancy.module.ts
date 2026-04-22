@@ -5,6 +5,7 @@ import {
   AssignMembershipRoleUseCase,
   CancelTenantInvitationUseCase,
   CreateTenantUseCase,
+  GetTenantInvitationByIdUseCase,
   GetTenantBySlugUseCase,
   GetTenantMemberAccessUseCase,
   GetTenantMembershipByUserUseCase,
@@ -18,6 +19,7 @@ import {
   MEMBERSHIP_ROLE_REPOSITORY,
   MEMBERSHIP_REPOSITORY,
   RemoveMembershipRoleUseCase,
+  ResendTenantInvitationUseCase,
   ResolveTenantAccessUseCase,
   TENANT_ACCESS_REPOSITORY,
   TENANT_ID_GENERATOR,
@@ -150,10 +152,28 @@ import { USER_REPOSITORY } from '@saas-platform/identity-application';
         ),
     },
     {
+      provide: GetTenantInvitationByIdUseCase,
+      inject: [TENANT_REPOSITORY, INVITATION_REPOSITORY],
+      useFactory: (tenantRepository, invitationRepository) =>
+        new GetTenantInvitationByIdUseCase(
+          tenantRepository,
+          invitationRepository,
+        ),
+    },
+    {
       provide: ListTenantInvitationsUseCase,
       inject: [TENANT_REPOSITORY, INVITATION_REPOSITORY],
       useFactory: (tenantRepository, invitationRepository) =>
         new ListTenantInvitationsUseCase(
+          tenantRepository,
+          invitationRepository,
+        ),
+    },
+    {
+      provide: ResendTenantInvitationUseCase,
+      inject: [TENANT_REPOSITORY, INVITATION_REPOSITORY],
+      useFactory: (tenantRepository, invitationRepository) =>
+        new ResendTenantInvitationUseCase(
           tenantRepository,
           invitationRepository,
         ),
@@ -202,6 +222,7 @@ import { USER_REPOSITORY } from '@saas-platform/identity-application';
     AssignMembershipRoleUseCase,
     CancelTenantInvitationUseCase,
     CreateTenantUseCase,
+    GetTenantInvitationByIdUseCase,
     GetTenantBySlugUseCase,
     GetTenantMemberAccessUseCase,
     GetTenantMembershipByUserUseCase,
@@ -209,6 +230,7 @@ import { USER_REPOSITORY } from '@saas-platform/identity-application';
     ListTenantInvitationsUseCase,
     ListTenantMembershipsUseCase,
     RemoveMembershipRoleUseCase,
+    ResendTenantInvitationUseCase,
     ResolveTenantAccessUseCase,
   ],
 })

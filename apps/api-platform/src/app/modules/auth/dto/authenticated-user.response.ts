@@ -47,6 +47,16 @@ export interface AuthenticatedUserResponse {
   externalAuthId: string | null;
   currentTenancy: AuthenticatedUserTenancyResponse | null;
   pendingInvitations: AuthenticatedUserPendingInvitationResponse[];
+  sessionState: {
+    canSelectTenancy: boolean;
+    hasPendingInvitations: boolean;
+    hasTenancies: boolean;
+    recommendedFlow:
+      | 'workspace'
+      | 'select-tenancy'
+      | 'accept-invitation'
+      | 'empty';
+  };
   tenancies: AuthenticatedUserTenancyResponse[];
 }
 
@@ -108,6 +118,7 @@ export const toAuthenticatedUserResponse = (
       },
     };
   }),
+  sessionState: session.sessionState,
   tenancies: session.tenancies.map((tenancy) => {
     const membership = tenancy.membership.toPrimitives();
 

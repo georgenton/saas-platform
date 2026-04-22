@@ -78,6 +78,17 @@ export class Invitation {
     });
   }
 
+  resend(updatedAt: Date, expiresAt: Date): Invitation {
+    return new Invitation({
+      ...this.props,
+      status: InvitationStatus.Pending,
+      acceptedByUserId: null,
+      acceptedAt: null,
+      expiresAt,
+      updatedAt,
+    });
+  }
+
   toPrimitives(): InvitationProps {
     return { ...this.props };
   }

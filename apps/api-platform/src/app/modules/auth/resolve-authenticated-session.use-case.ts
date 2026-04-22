@@ -1,6 +1,8 @@
 import {
+  ListUserPendingInvitationsUseCase,
   ListUserTenanciesUseCase,
   TENANT_ROLES,
+  UserPendingInvitationView,
   UserTenancyView,
 } from '@saas-platform/tenancy-application';
 import { UserRepository } from '@saas-platform/identity-application';
@@ -16,6 +18,7 @@ export interface ResolveAuthenticatedSessionCommand {
 export interface AuthenticatedSessionView {
   authenticatedUser: AuthenticatedUserContext;
   currentTenancy: UserTenancyView | null;
+  pendingInvitations: UserPendingInvitationView[];
   tenancies: UserTenancyView[];
 }
 
@@ -23,6 +26,7 @@ export class ResolveAuthenticatedSessionUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly listUserTenanciesUseCase: ListUserTenanciesUseCase,
+    private readonly listUserPendingInvitationsUseCase: ListUserPendingInvitationsUseCase,
   ) {}
 
   async execute(
@@ -32,7 +36,14 @@ export class ResolveAuthenticatedSessionUseCase {
     const tenancies = await this.listUserTenanciesUseCase.execute(
       command.authenticatedUser.id,
     );
-    const sortedTenancies = this.sortTenancies(tenancies);
+    const [pendingInvitations, sortedTenancies] = await Promise.all([
+      command.authenticatedUser.email
+        ? this.listUserPendingInvitationsUseCase.execute(
+            command.authenticatedUser.email,
+          )
+        : Promise.resolve([]),
+      Promise.resolve(this.sortTenancies(tenancies)),
+    ]);
     const currentTenancy = this.resolveCurrentTenancy(
       sortedTenancies,
       command.tenantSlug,
@@ -42,6 +53,7 @@ export class ResolveAuthenticatedSessionUseCase {
     return {
       authenticatedUser: command.authenticatedUser,
       currentTenancy,
+      pendingInvitations,
       tenancies: this.prioritizeCurrentTenancy(sortedTenancies, currentTenancy),
     };
   }

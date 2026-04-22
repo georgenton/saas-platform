@@ -19,12 +19,34 @@ export interface AuthenticatedUserTenancyResponse {
   permissionKeys: string[];
 }
 
+export interface AuthenticatedUserPendingInvitationResponse {
+  invitation: {
+    id: string;
+    email: string;
+    roleKey: string;
+    status: string;
+    invitedByUserId: string;
+    acceptedByUserId: string | null;
+    expiresAt: string;
+    acceptedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+  tenant: {
+    id: string;
+    name: string;
+    slug: string;
+    status: string;
+  };
+}
+
 export interface AuthenticatedUserResponse {
   id: string;
   email: string | null;
   provider: string | null;
   externalAuthId: string | null;
   currentTenancy: AuthenticatedUserTenancyResponse | null;
+  pendingInvitations: AuthenticatedUserPendingInvitationResponse[];
   tenancies: AuthenticatedUserTenancyResponse[];
 }
 
@@ -62,6 +84,30 @@ export const toAuthenticatedUserResponse = (
   currentTenancy: session.currentTenancy
     ? toTenancyResponse(session.currentTenancy)
     : null,
+  pendingInvitations: session.pendingInvitations.map((view) => {
+    const invitation = view.invitation.toPrimitives();
+
+    return {
+      invitation: {
+        id: invitation.id,
+        email: invitation.email,
+        roleKey: invitation.roleKey,
+        status: invitation.status,
+        invitedByUserId: invitation.invitedByUserId,
+        acceptedByUserId: invitation.acceptedByUserId ?? null,
+        expiresAt: invitation.expiresAt.toISOString(),
+        acceptedAt: invitation.acceptedAt?.toISOString() ?? null,
+        createdAt: invitation.createdAt.toISOString(),
+        updatedAt: invitation.updatedAt.toISOString(),
+      },
+      tenant: {
+        id: view.tenant.id,
+        name: view.tenant.name,
+        slug: view.tenant.slug,
+        status: view.tenant.status,
+      },
+    };
+  }),
   tenancies: session.tenancies.map((tenancy) => {
     const membership = tenancy.membership.toPrimitives();
 

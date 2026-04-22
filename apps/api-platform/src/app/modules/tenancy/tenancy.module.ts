@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import {
   AcceptTenantInvitationUseCase,
   AssignMembershipRoleUseCase,
+  CancelTenantInvitationUseCase,
   CreateTenantUseCase,
   GetTenantBySlugUseCase,
   GetTenantMemberAccessUseCase,
@@ -11,6 +12,7 @@ import {
   INVITATION_ID_GENERATOR,
   INVITATION_REPOSITORY,
   ListTenantMembershipsUseCase,
+  ListTenantInvitationsUseCase,
   InviteUserToTenantUseCase,
   MEMBERSHIP_ID_GENERATOR,
   MEMBERSHIP_ROLE_REPOSITORY,
@@ -148,6 +150,15 @@ import { USER_REPOSITORY } from '@saas-platform/identity-application';
         ),
     },
     {
+      provide: ListTenantInvitationsUseCase,
+      inject: [TENANT_REPOSITORY, INVITATION_REPOSITORY],
+      useFactory: (tenantRepository, invitationRepository) =>
+        new ListTenantInvitationsUseCase(
+          tenantRepository,
+          invitationRepository,
+        ),
+    },
+    {
       provide: AcceptTenantInvitationUseCase,
       inject: [
         TENANT_REPOSITORY,
@@ -174,17 +185,28 @@ import { USER_REPOSITORY } from '@saas-platform/identity-application';
           membershipIdGenerator,
         ),
     },
+    {
+      provide: CancelTenantInvitationUseCase,
+      inject: [TENANT_REPOSITORY, INVITATION_REPOSITORY],
+      useFactory: (tenantRepository, invitationRepository) =>
+        new CancelTenantInvitationUseCase(
+          tenantRepository,
+          invitationRepository,
+        ),
+    },
     TenantMembershipGuard,
     TenantPermissionGuard,
   ],
   exports: [
     AcceptTenantInvitationUseCase,
     AssignMembershipRoleUseCase,
+    CancelTenantInvitationUseCase,
     CreateTenantUseCase,
     GetTenantBySlugUseCase,
     GetTenantMemberAccessUseCase,
     GetTenantMembershipByUserUseCase,
     InviteUserToTenantUseCase,
+    ListTenantInvitationsUseCase,
     ListTenantMembershipsUseCase,
     RemoveMembershipRoleUseCase,
     ResolveTenantAccessUseCase,

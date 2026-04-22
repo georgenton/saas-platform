@@ -1,12 +1,17 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import {
+  AcceptTenantInvitationUseCase,
   AssignMembershipRoleUseCase,
   CreateTenantUseCase,
   GetTenantBySlugUseCase,
   GetTenantMemberAccessUseCase,
   GetTenantMembershipByUserUseCase,
+  INVITATION_ACCEPTANCE_REPOSITORY,
+  INVITATION_ID_GENERATOR,
+  INVITATION_REPOSITORY,
   ListTenantMembershipsUseCase,
+  InviteUserToTenantUseCase,
   MEMBERSHIP_ID_GENERATOR,
   MEMBERSHIP_ROLE_REPOSITORY,
   MEMBERSHIP_REPOSITORY,
@@ -17,14 +22,16 @@ import {
   TENANT_PROVISIONING_REPOSITORY,
   TENANT_REPOSITORY,
 } from '@saas-platform/tenancy-application';
-import { TenancyPersistenceModule } from '@saas-platform/infra-prisma';
+import { IdentityPersistenceModule, TenancyPersistenceModule } from '@saas-platform/infra-prisma';
 import { TenantMembershipGuard } from './tenant-membership.guard';
 import { TenantPermissionGuard } from './tenant-permission.guard';
+import { TenancyInvitationsController } from './tenancy-invitations.controller';
 import { TenancyController } from './tenancy.controller';
+import { USER_REPOSITORY } from '@saas-platform/identity-application';
 
 @Module({
-  imports: [AuthModule, TenancyPersistenceModule],
-  controllers: [TenancyController],
+  imports: [AuthModule, IdentityPersistenceModule, TenancyPersistenceModule],
+  controllers: [TenancyController, TenancyInvitationsController],
   providers: [
     {
       provide: GetTenantBySlugUseCase,
@@ -122,15 +129,62 @@ import { TenancyController } from './tenancy.controller';
           tenantProvisioningRepository,
         ),
     },
+    {
+      provide: InviteUserToTenantUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        INVITATION_REPOSITORY,
+        INVITATION_ID_GENERATOR,
+      ],
+      useFactory: (
+        tenantRepository,
+        invitationRepository,
+        invitationIdGenerator,
+      ) =>
+        new InviteUserToTenantUseCase(
+          tenantRepository,
+          invitationRepository,
+          invitationIdGenerator,
+        ),
+    },
+    {
+      provide: AcceptTenantInvitationUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        USER_REPOSITORY,
+        MEMBERSHIP_REPOSITORY,
+        INVITATION_REPOSITORY,
+        INVITATION_ACCEPTANCE_REPOSITORY,
+        MEMBERSHIP_ID_GENERATOR,
+      ],
+      useFactory: (
+        tenantRepository,
+        userRepository,
+        membershipRepository,
+        invitationRepository,
+        invitationAcceptanceRepository,
+        membershipIdGenerator,
+      ) =>
+        new AcceptTenantInvitationUseCase(
+          tenantRepository,
+          userRepository,
+          membershipRepository,
+          invitationRepository,
+          invitationAcceptanceRepository,
+          membershipIdGenerator,
+        ),
+    },
     TenantMembershipGuard,
     TenantPermissionGuard,
   ],
   exports: [
+    AcceptTenantInvitationUseCase,
     AssignMembershipRoleUseCase,
     CreateTenantUseCase,
     GetTenantBySlugUseCase,
     GetTenantMemberAccessUseCase,
     GetTenantMembershipByUserUseCase,
+    InviteUserToTenantUseCase,
     ListTenantMembershipsUseCase,
     RemoveMembershipRoleUseCase,
     ResolveTenantAccessUseCase,

@@ -10,11 +10,13 @@ import {
 import { AuthProvider, User } from '@saas-platform/identity-domain';
 import { PrismaService } from '@saas-platform/infra-prisma';
 import {
+  AcceptTenantInvitationUseCase,
   AssignMembershipRoleUseCase,
   CreateTenantUseCase,
   GetTenantBySlugUseCase,
   GetTenantMemberAccessUseCase,
   GetTenantMembershipByUserUseCase,
+  InviteUserToTenantUseCase,
   ListUserTenanciesUseCase,
   ListTenantMembershipsUseCase,
   RemoveMembershipRoleUseCase,
@@ -23,6 +25,8 @@ import {
   TenantRoleManagementPolicyError,
 } from '@saas-platform/tenancy-application';
 import {
+  Invitation,
+  InvitationStatus,
   Membership,
   MembershipStatus,
   Tenant,
@@ -42,9 +46,11 @@ describe('API', () => {
     save: jest.Mock;
   };
   let assignMembershipRoleUseCase: { execute: jest.Mock };
+  let acceptTenantInvitationUseCase: { execute: jest.Mock };
   let getTenantBySlugUseCase: { execute: jest.Mock };
   let getTenantMemberAccessUseCase: { execute: jest.Mock };
   let getTenantMembershipByUserUseCase: { execute: jest.Mock };
+  let inviteUserToTenantUseCase: { execute: jest.Mock };
   let listUserTenanciesUseCase: { execute: jest.Mock };
   let listTenantMembershipsUseCase: { execute: jest.Mock };
   let removeMembershipRoleUseCase: { execute: jest.Mock };
@@ -57,6 +63,7 @@ describe('API', () => {
 
   const registeredAt = new Date('2026-04-14T17:00:00.000Z');
   const tenantCreatedAt = new Date('2026-04-14T17:30:00.000Z');
+  const invitationCreatedAt = new Date('2026-04-22T20:00:00.000Z');
   const user = User.create({
     id: 'user_123',
     email: 'hello@saas-platform.dev',
@@ -101,6 +108,19 @@ describe('API', () => {
     invitedBy: 'user_999',
     createdAt: new Date('2026-04-15T10:00:00.000Z'),
     updatedAt: new Date('2026-04-15T10:00:00.000Z'),
+  });
+  const invitation = Invitation.create({
+    id: 'invitation_123',
+    tenantId: 'tenant_123',
+    email: 'invitee@saas-platform.dev',
+    roleKey: 'tenant_member',
+    status: InvitationStatus.Pending,
+    invitedByUserId: 'user_123',
+    acceptedByUserId: null,
+    expiresAt: new Date('2026-04-29T20:00:00.000Z'),
+    acceptedAt: null,
+    createdAt: invitationCreatedAt,
+    updatedAt: invitationCreatedAt,
   });
 
   const signJwt = (payload: Record<string, unknown>): string => {
@@ -173,6 +193,12 @@ describe('API', () => {
     getTenantBySlugUseCase = {
       execute: jest.fn().mockResolvedValue(tenant),
     };
+    inviteUserToTenantUseCase = {
+      execute: jest.fn().mockResolvedValue(invitation),
+    };
+    acceptTenantInvitationUseCase = {
+      execute: jest.fn().mockResolvedValue(membership),
+    };
     getTenantMemberAccessUseCase = {
       execute: jest.fn().mockResolvedValue({
         userId: 'user_123',
@@ -184,6 +210,7 @@ describe('API', () => {
           TENANT_PERMISSIONS.MEMBERSHIPS_READ,
           TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
           TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+          TENANT_PERMISSIONS.INVITATIONS_MANAGE,
         ],
       }),
     };
@@ -201,6 +228,7 @@ describe('API', () => {
             TENANT_PERMISSIONS.MEMBERSHIPS_READ,
             TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
             TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+            TENANT_PERMISSIONS.INVITATIONS_MANAGE,
           ],
         },
       ]),
@@ -221,6 +249,7 @@ describe('API', () => {
           TENANT_PERMISSIONS.MEMBERSHIPS_READ,
           TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
           TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+          TENANT_PERMISSIONS.INVITATIONS_MANAGE,
         ],
       }),
     };
@@ -250,6 +279,10 @@ describe('API', () => {
       .useValue(userRepository)
       .overrideProvider(GetTenantBySlugUseCase)
       .useValue(getTenantBySlugUseCase)
+      .overrideProvider(InviteUserToTenantUseCase)
+      .useValue(inviteUserToTenantUseCase)
+      .overrideProvider(AcceptTenantInvitationUseCase)
+      .useValue(acceptTenantInvitationUseCase)
       .overrideProvider(GetTenantMemberAccessUseCase)
       .useValue(getTenantMemberAccessUseCase)
       .overrideProvider(GetTenantMembershipByUserUseCase)
@@ -335,6 +368,7 @@ describe('API', () => {
             TENANT_PERMISSIONS.MEMBERSHIPS_READ,
             TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
             TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+            TENANT_PERMISSIONS.INVITATIONS_MANAGE,
           ],
         },
         tenancies: [
@@ -358,6 +392,7 @@ describe('API', () => {
               TENANT_PERMISSIONS.MEMBERSHIPS_READ,
               TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
               TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+              TENANT_PERMISSIONS.INVITATIONS_MANAGE,
             ],
           },
         ],
@@ -390,6 +425,7 @@ describe('API', () => {
           TENANT_PERMISSIONS.MEMBERSHIPS_READ,
           TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
           TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+          TENANT_PERMISSIONS.INVITATIONS_MANAGE,
         ],
       },
       {
@@ -464,6 +500,7 @@ describe('API', () => {
               TENANT_PERMISSIONS.MEMBERSHIPS_READ,
               TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
               TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+              TENANT_PERMISSIONS.INVITATIONS_MANAGE,
             ],
           },
         ],
@@ -487,6 +524,7 @@ describe('API', () => {
           TENANT_PERMISSIONS.MEMBERSHIPS_READ,
           TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
           TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+          TENANT_PERMISSIONS.INVITATIONS_MANAGE,
         ],
       },
     ]);
@@ -555,6 +593,7 @@ describe('API', () => {
               TENANT_PERMISSIONS.MEMBERSHIPS_READ,
               TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
               TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+              TENANT_PERMISSIONS.INVITATIONS_MANAGE,
             ],
           },
         ],
@@ -579,6 +618,7 @@ describe('API', () => {
           TENANT_PERMISSIONS.MEMBERSHIPS_READ,
           TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
           TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+          TENANT_PERMISSIONS.INVITATIONS_MANAGE,
         ],
       },
       {
@@ -657,6 +697,7 @@ describe('API', () => {
               TENANT_PERMISSIONS.MEMBERSHIPS_READ,
               TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
               TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+              TENANT_PERMISSIONS.INVITATIONS_MANAGE,
             ],
           },
         ],
@@ -828,6 +869,7 @@ describe('API', () => {
           TENANT_PERMISSIONS.MEMBERSHIPS_READ,
           TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
           TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+          TENANT_PERMISSIONS.INVITATIONS_MANAGE,
         ],
       });
 
@@ -856,6 +898,73 @@ describe('API', () => {
       tenantSlug: 'saas-platform',
       userId: 'user_123',
     });
+  });
+
+  it('POST /api/tenancy/tenants/:slug/invitations should create an invitation', async () => {
+    await request(httpServer)
+      .post('/api/tenancy/tenants/saas-platform/invitations')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ email: 'invitee@saas-platform.dev' })
+      .expect(201)
+      .expect({
+        id: 'invitation_123',
+        tenantId: 'tenant_123',
+        email: 'invitee@saas-platform.dev',
+        roleKey: 'tenant_member',
+        status: InvitationStatus.Pending,
+        invitedByUserId: 'user_123',
+        acceptedByUserId: null,
+        expiresAt: invitation.toPrimitives().expiresAt.toISOString(),
+        acceptedAt: null,
+        createdAt: invitationCreatedAt.toISOString(),
+        updatedAt: invitationCreatedAt.toISOString(),
+      });
+
+    expect(inviteUserToTenantUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      email: 'invitee@saas-platform.dev',
+      invitedByUserId: 'user_123',
+    });
+  });
+
+  it('POST /api/tenancy/invitations/:invitationId/accept should accept an invitation', async () => {
+    await request(httpServer)
+      .post('/api/tenancy/invitations/invitation_123/accept')
+      .set('Authorization', `Bearer ${memberToken}`)
+      .expect(200)
+      .expect({
+        id: 'membership_123',
+        tenantId: 'tenant_123',
+        userId: 'user_123',
+        status: MembershipStatus.Active,
+        invitedBy: 'user_123',
+        createdAt: tenantCreatedAt.toISOString(),
+        updatedAt: tenantCreatedAt.toISOString(),
+      });
+
+    expect(acceptTenantInvitationUseCase.execute).toHaveBeenCalledWith({
+      invitationId: 'invitation_123',
+      authenticatedUserId: 'user_456',
+      authenticatedUserEmail: 'member@saas-platform.dev',
+    });
+  });
+
+  it('POST /api/tenancy/tenants/:slug/invitations should require invitations permission', async () => {
+    resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
+      tenantId: 'tenant_123',
+      tenantSlug: 'saas-platform',
+      userId: 'user_456',
+      membershipId: 'membership_456',
+      membershipStatus: MembershipStatus.Active,
+      roleKeys: ['tenant_member'],
+      permissionKeys: [TENANT_PERMISSIONS.READ],
+    });
+
+    await request(httpServer)
+      .post('/api/tenancy/tenants/saas-platform/invitations')
+      .set('Authorization', `Bearer ${memberToken}`)
+      .send({ email: 'invitee@saas-platform.dev' })
+      .expect(403);
   });
 
   it('POST /api/tenancy/tenants/:slug/memberships/:userId/roles should assign a role', async () => {

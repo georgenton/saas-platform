@@ -1,5 +1,12 @@
 # api-platform
 
+## 0.8.0
+
+### Minor Changes
+
+- 8938054: Add invitation lifecycle management and frontend-friendly onboarding session flows, including tenant invitation listing and cancellation, pending invitation visibility in auth session responses, and authenticated invitation acceptance that returns a refreshed session.
+- 900db5e: Extend invitation onboarding with resend and detail APIs plus frontend-oriented auth session state for invitation review and tenancy selection flows.
+
 ## 0.7.0
 
 ### Minor Changes

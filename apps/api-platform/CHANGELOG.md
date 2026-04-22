@@ -1,5 +1,20 @@
 # api-platform
 
+## 0.7.0
+
+### Minor Changes
+
+- 7cb975b: Persist the authenticated user's preferred tenant selection.
+
+  This change stores a `preferredTenantId` for the authenticated user and adds an
+  API to set or clear that preference through `/api/auth/me/current-tenancy`.
+
+  It also teaches `/api/auth/me` to honor the persisted tenant preference when no
+  explicit `tenantSlug` is provided, making multi-tenant frontend sessions feel
+  stable across requests.
+
+- 0725d93: Add multi-tenant invitation onboarding flows for inviting users, accepting invitations, and creating memberships from the invitation lifecycle.
+
 ## 0.6.0
 
 ### Minor Changes

@@ -32,6 +32,7 @@ model Tenant {
   slug        String       @unique
   status      String
   memberships Membership[]
+  invitations Invitation[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -49,6 +50,23 @@ model Membership {
   updatedAt       DateTime         @updatedAt
 
   @@unique([tenantId, userId])
+}
+
+model Invitation {
+  id               String   @id
+  tenantId         String
+  email            String
+  roleKey          String
+  status           String
+  invitedByUserId  String
+  acceptedByUserId String?
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([tenantId, email, status])
 }
 
 model Role {

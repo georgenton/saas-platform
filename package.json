@@ -12,6 +12,7 @@
     "build": "pnpm nx build api-platform",
     "build:web": "pnpm nx build web-platform",
     "dev:web": "pnpm nx dev web-platform",
+    "auth:token:local": "node tools/auth/generate-local-jwt.mjs",
     "package:api": "pnpm nx build api-platform && pnpm nx run api-platform:prune",
     "test": "pnpm nx test api-platform-e2e",
     "check": "pnpm prisma:validate && pnpm build",

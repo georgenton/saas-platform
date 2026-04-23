@@ -3,6 +3,13 @@ import { createSign, generateKeyPairSync } from 'node:crypto';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import {
+  GetProductByKeyUseCase,
+  ListProductModulesUseCase,
+  ListProductsUseCase,
+  ProductNotFoundError,
+} from '@saas-platform/catalog-application';
+import { PlatformModule, Product } from '@saas-platform/catalog-domain';
+import {
   GetUserByIdUseCase,
   RegisterUserUseCase,
   USER_REPOSITORY,
@@ -46,6 +53,7 @@ describe('API', () => {
   let app: INestApplication;
   let httpServer: any;
   let getUserByIdUseCase: { execute: jest.Mock };
+  let getProductByKeyUseCase: { execute: jest.Mock };
   let registerUserUseCase: { execute: jest.Mock };
   let userRepository: {
     findById: jest.Mock;
@@ -62,6 +70,8 @@ describe('API', () => {
   let getTenantMemberAccessUseCase: { execute: jest.Mock };
   let getTenantMembershipByUserUseCase: { execute: jest.Mock };
   let inviteUserToTenantUseCase: { execute: jest.Mock };
+  let listProductModulesUseCase: { execute: jest.Mock };
+  let listProductsUseCase: { execute: jest.Mock };
   let listTenantInvitationsUseCase: { execute: jest.Mock };
   let listUserPendingInvitationsUseCase: { execute: jest.Mock };
   let listUserTenanciesUseCase: { execute: jest.Mock };
@@ -137,6 +147,48 @@ describe('API', () => {
     createdAt: invitationCreatedAt,
     updatedAt: invitationCreatedAt,
   });
+  const invoicingProduct = Product.create({
+    id: 'product_invoicing',
+    key: 'invoicing',
+    name: 'Invoicing',
+    description: 'Facturacion, clientes, catalogo y reportes.',
+    isActive: true,
+    createdAt: new Date('2026-04-23T17:00:00.000Z'),
+    updatedAt: new Date('2026-04-23T17:00:00.000Z'),
+  });
+  const psychologyProduct = Product.create({
+    id: 'product_psychology',
+    key: 'psychology',
+    name: 'Psychology',
+    description: 'Gestion de profesionales, pacientes y sesiones.',
+    isActive: true,
+    createdAt: new Date('2026-04-23T17:00:00.000Z'),
+    updatedAt: new Date('2026-04-23T17:00:00.000Z'),
+  });
+  const invoicingModules = [
+    PlatformModule.create({
+      id: 'module_invoicing_customers',
+      productId: 'product_invoicing',
+      key: 'customers',
+      name: 'Customers',
+      description: 'Gestion de clientes.',
+      isCore: true,
+      isActive: true,
+      createdAt: new Date('2026-04-23T17:00:00.000Z'),
+      updatedAt: new Date('2026-04-23T17:00:00.000Z'),
+    }),
+    PlatformModule.create({
+      id: 'module_invoicing_invoices',
+      productId: 'product_invoicing',
+      key: 'invoices',
+      name: 'Invoices',
+      description: 'Emision de facturas.',
+      isCore: true,
+      isActive: true,
+      createdAt: new Date('2026-04-23T17:00:00.000Z'),
+      updatedAt: new Date('2026-04-23T17:00:00.000Z'),
+    }),
+  ];
 
   const signJwt = (payload: Record<string, unknown>): string => {
     const encode = (value: unknown): string =>
@@ -205,6 +257,9 @@ describe('API', () => {
     getUserByIdUseCase = {
       execute: jest.fn().mockResolvedValue(user),
     };
+    getProductByKeyUseCase = {
+      execute: jest.fn().mockResolvedValue(invoicingProduct),
+    };
     registerUserUseCase = {
       execute: jest.fn().mockResolvedValue(user),
     };
@@ -219,6 +274,15 @@ describe('API', () => {
     };
     inviteUserToTenantUseCase = {
       execute: jest.fn().mockResolvedValue(invitation),
+    };
+    listProductsUseCase = {
+      execute: jest.fn().mockResolvedValue([
+        invoicingProduct,
+        psychologyProduct,
+      ]),
+    };
+    listProductModulesUseCase = {
+      execute: jest.fn().mockResolvedValue(invoicingModules),
     };
     listTenantInvitationsUseCase = {
       execute: jest.fn().mockResolvedValue([invitation]),
@@ -355,6 +419,8 @@ describe('API', () => {
       })
       .overrideProvider(GetUserByIdUseCase)
       .useValue(getUserByIdUseCase)
+      .overrideProvider(GetProductByKeyUseCase)
+      .useValue(getProductByKeyUseCase)
       .overrideProvider(RegisterUserUseCase)
       .useValue(registerUserUseCase)
       .overrideProvider(USER_REPOSITORY)
@@ -363,6 +429,10 @@ describe('API', () => {
       .useValue(getTenantBySlugUseCase)
       .overrideProvider(InviteUserToTenantUseCase)
       .useValue(inviteUserToTenantUseCase)
+      .overrideProvider(ListProductModulesUseCase)
+      .useValue(listProductModulesUseCase)
+      .overrideProvider(ListProductsUseCase)
+      .useValue(listProductsUseCase)
       .overrideProvider(ListTenantInvitationsUseCase)
       .useValue(listTenantInvitationsUseCase)
       .overrideProvider(CancelTenantInvitationUseCase)
@@ -432,6 +502,94 @@ describe('API', () => {
 
     expect(registerUserUseCase.execute).toHaveBeenCalledTimes(0);
     expect(getUserByIdUseCase.execute).toHaveBeenCalledWith('user_123');
+  });
+
+  it('GET /api/platform/products should return the platform catalog products', async () => {
+    await request(httpServer)
+      .get('/api/platform/products')
+      .expect(200)
+      .expect([
+        {
+          id: 'product_invoicing',
+          key: 'invoicing',
+          name: 'Invoicing',
+          description: 'Facturacion, clientes, catalogo y reportes.',
+          isActive: true,
+          createdAt: '2026-04-23T17:00:00.000Z',
+          updatedAt: '2026-04-23T17:00:00.000Z',
+        },
+        {
+          id: 'product_psychology',
+          key: 'psychology',
+          name: 'Psychology',
+          description: 'Gestion de profesionales, pacientes y sesiones.',
+          isActive: true,
+          createdAt: '2026-04-23T17:00:00.000Z',
+          updatedAt: '2026-04-23T17:00:00.000Z',
+        },
+      ]);
+  });
+
+  it('GET /api/platform/products/:productKey should return one product', async () => {
+    await request(httpServer)
+      .get('/api/platform/products/invoicing')
+      .expect(200)
+      .expect({
+        id: 'product_invoicing',
+        key: 'invoicing',
+        name: 'Invoicing',
+        description: 'Facturacion, clientes, catalogo y reportes.',
+        isActive: true,
+        createdAt: '2026-04-23T17:00:00.000Z',
+        updatedAt: '2026-04-23T17:00:00.000Z',
+      });
+
+    expect(getProductByKeyUseCase.execute).toHaveBeenCalledWith('invoicing');
+  });
+
+  it('GET /api/platform/products/:productKey should return 404 when the product does not exist', async () => {
+    getProductByKeyUseCase.execute.mockRejectedValueOnce(new ProductNotFoundError('unknown'));
+
+    await request(httpServer)
+      .get('/api/platform/products/unknown')
+      .expect(404)
+      .expect({
+        statusCode: 404,
+        message: 'Product with key "unknown" was not found.',
+        error: 'Not Found',
+      });
+  });
+
+  it('GET /api/platform/products/:productKey/modules should return catalog modules', async () => {
+    await request(httpServer)
+      .get('/api/platform/products/invoicing/modules')
+      .expect(200)
+      .expect([
+        {
+          id: 'module_invoicing_customers',
+          productId: 'product_invoicing',
+          key: 'customers',
+          name: 'Customers',
+          description: 'Gestion de clientes.',
+          isCore: true,
+          isActive: true,
+          createdAt: '2026-04-23T17:00:00.000Z',
+          updatedAt: '2026-04-23T17:00:00.000Z',
+        },
+        {
+          id: 'module_invoicing_invoices',
+          productId: 'product_invoicing',
+          key: 'invoices',
+          name: 'Invoices',
+          description: 'Emision de facturas.',
+          isCore: true,
+          isActive: true,
+          createdAt: '2026-04-23T17:00:00.000Z',
+          updatedAt: '2026-04-23T17:00:00.000Z',
+        },
+      ]);
+
+    expect(listProductModulesUseCase.execute).toHaveBeenCalledWith('invoicing');
   });
 
   it('GET /api/auth/me should return the authenticated user session view', async () => {

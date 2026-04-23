@@ -20,6 +20,12 @@
       "@saas-platform/catalog-domain": [
         "packages/core/catalog/domain/src/index.ts"
       ],
+      "@saas-platform/commercial-application": [
+        "packages/core/commercial/application/src/index.ts"
+      ],
+      "@saas-platform/commercial-domain": [
+        "packages/core/commercial/domain/src/index.ts"
+      ],
       "@saas-platform/identity-application": [
         "packages/core/identity/application/src/index.ts"
       ],

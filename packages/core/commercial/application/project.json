@@ -1,0 +1,7 @@
+{
+  "name": "commercial-application",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/commercial/application/src",
+  "projectType": "library",
+  "tags": ["scope:core", "domain:commercial", "type:application", "layer:application"]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "commercial-domain",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/commercial/domain/src",
+  "projectType": "library",
+  "tags": ["scope:core", "domain:commercial", "type:domain", "layer:domain"]
+}

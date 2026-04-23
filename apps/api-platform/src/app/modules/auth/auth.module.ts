@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
 import {
+  ENTITLEMENT_REPOSITORY,
+  SUBSCRIPTION_REPOSITORY,
+} from '@saas-platform/commercial-application';
+import {
   USER_REPOSITORY,
 } from '@saas-platform/identity-application';
 import {
@@ -15,6 +19,7 @@ import {
   TENANT_REPOSITORY,
 } from '@saas-platform/tenancy-application';
 import {
+  CommercialPersistenceModule,
   IdentityPersistenceModule,
   TenancyPersistenceModule,
 } from '@saas-platform/infra-prisma';
@@ -28,7 +33,11 @@ import { LocalJwtVerifier } from './local-jwt-verifier';
 import { ProviderJwtVerifier } from './provider-jwt-verifier';
 
 @Module({
-  imports: [IdentityPersistenceModule, TenancyPersistenceModule],
+  imports: [
+    CommercialPersistenceModule,
+    IdentityPersistenceModule,
+    TenancyPersistenceModule,
+  ],
   controllers: [AuthController],
   providers: [
     LocalJwtVerifier,
@@ -100,16 +109,22 @@ import { ProviderJwtVerifier } from './provider-jwt-verifier';
       provide: ResolveAuthenticatedSessionUseCase,
       inject: [
         USER_REPOSITORY,
+        SUBSCRIPTION_REPOSITORY,
+        ENTITLEMENT_REPOSITORY,
         ListUserTenanciesUseCase,
         ListUserPendingInvitationsUseCase,
       ],
       useFactory: (
         userRepository,
+        subscriptionRepository,
+        entitlementRepository,
         listUserTenanciesUseCase,
         listUserPendingInvitationsUseCase,
       ) =>
         new ResolveAuthenticatedSessionUseCase(
           userRepository,
+          subscriptionRepository,
+          entitlementRepository,
           listUserTenanciesUseCase,
           listUserPendingInvitationsUseCase,
         ),

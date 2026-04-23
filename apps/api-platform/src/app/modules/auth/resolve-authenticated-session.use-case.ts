@@ -1,4 +1,12 @@
 import {
+  Entitlement,
+  Subscription,
+} from '@saas-platform/commercial-domain';
+import {
+  EntitlementRepository,
+  SubscriptionRepository,
+} from '@saas-platform/commercial-application';
+import {
   ListUserPendingInvitationsUseCase,
   ListUserTenanciesUseCase,
   TENANT_ROLES,
@@ -17,10 +25,15 @@ export interface ResolveAuthenticatedSessionCommand {
 
 export interface AuthenticatedSessionView {
   authenticatedUser: AuthenticatedUserContext;
-  currentTenancy: UserTenancyView | null;
+  currentTenancy: AuthenticatedSessionTenancyView | null;
   pendingInvitations: UserPendingInvitationView[];
   sessionState: AuthenticatedSessionState;
   tenancies: UserTenancyView[];
+}
+
+export interface AuthenticatedSessionTenancyView extends UserTenancyView {
+  entitlements: Entitlement[];
+  subscription: Subscription | null;
 }
 
 export interface AuthenticatedSessionState {
@@ -37,6 +50,8 @@ export interface AuthenticatedSessionState {
 export class ResolveAuthenticatedSessionUseCase {
   constructor(
     private readonly userRepository: UserRepository,
+    private readonly subscriptionRepository: SubscriptionRepository,
+    private readonly entitlementRepository: EntitlementRepository,
     private readonly listUserTenanciesUseCase: ListUserTenanciesUseCase,
     private readonly listUserPendingInvitationsUseCase: ListUserPendingInvitationsUseCase,
   ) {}
@@ -61,13 +76,14 @@ export class ResolveAuthenticatedSessionUseCase {
       command.tenantSlug,
       user?.preferredTenantId ?? null,
     );
+    const enrichedCurrentTenancy = await this.enrichCurrentTenancy(currentTenancy);
 
     return {
       authenticatedUser: command.authenticatedUser,
-      currentTenancy,
+      currentTenancy: enrichedCurrentTenancy,
       pendingInvitations,
       sessionState: this.resolveSessionState(
-        currentTenancy,
+        enrichedCurrentTenancy,
         sortedTenancies,
         pendingInvitations,
       ),
@@ -75,8 +91,27 @@ export class ResolveAuthenticatedSessionUseCase {
     };
   }
 
-  private resolveSessionState(
+  private async enrichCurrentTenancy(
     currentTenancy: UserTenancyView | null,
+  ): Promise<AuthenticatedSessionTenancyView | null> {
+    if (!currentTenancy) {
+      return null;
+    }
+
+    const [subscription, entitlements] = await Promise.all([
+      this.subscriptionRepository.findByTenantId(currentTenancy.tenant.id),
+      this.entitlementRepository.findByTenantId(currentTenancy.tenant.id),
+    ]);
+
+    return {
+      ...currentTenancy,
+      subscription,
+      entitlements,
+    };
+  }
+
+  private resolveSessionState(
+    currentTenancy: AuthenticatedSessionTenancyView | null,
     tenancies: UserTenancyView[],
     pendingInvitations: UserPendingInvitationView[],
   ): AuthenticatedSessionState {

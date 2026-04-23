@@ -1,5 +1,5 @@
+import { Entitlement, Subscription } from '@saas-platform/commercial-domain';
 import { AuthenticatedSessionView } from '../resolve-authenticated-session.use-case';
-import { AuthenticatedUserContext } from '../authenticated-user-context';
 
 export interface AuthenticatedUserTenancyResponse {
   tenant: {
@@ -17,6 +17,8 @@ export interface AuthenticatedUserTenancyResponse {
   };
   roleKeys: string[];
   permissionKeys: string[];
+  subscription?: AuthenticatedUserSubscriptionResponse | null;
+  entitlements?: AuthenticatedUserEntitlementResponse[];
 }
 
 export interface AuthenticatedUserPendingInvitationResponse {
@@ -60,6 +62,54 @@ export interface AuthenticatedUserResponse {
   tenancies: AuthenticatedUserTenancyResponse[];
 }
 
+export interface AuthenticatedUserSubscriptionResponse {
+  id: string;
+  tenantId: string;
+  planId: string;
+  status: string;
+  startedAt: string;
+  expiresAt: string | null;
+  trialEndsAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuthenticatedUserEntitlementResponse {
+  id: string;
+  tenantId: string;
+  key: string;
+  value: unknown;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const toSubscriptionResponse = (
+  subscription: Subscription,
+): AuthenticatedUserSubscriptionResponse => ({
+  id: subscription.id,
+  tenantId: subscription.tenantId,
+  planId: subscription.planId,
+  status: subscription.status,
+  startedAt: subscription.startedAt.toISOString(),
+  expiresAt: subscription.expiresAt?.toISOString() ?? null,
+  trialEndsAt: subscription.trialEndsAt?.toISOString() ?? null,
+  createdAt: subscription.createdAt.toISOString(),
+  updatedAt: subscription.updatedAt.toISOString(),
+});
+
+const toEntitlementResponse = (
+  entitlement: Entitlement,
+): AuthenticatedUserEntitlementResponse => ({
+  id: entitlement.id,
+  tenantId: entitlement.tenantId,
+  key: entitlement.key,
+  value: entitlement.value,
+  source: entitlement.source,
+  createdAt: entitlement.createdAt.toISOString(),
+  updatedAt: entitlement.updatedAt.toISOString(),
+});
+
 const toTenancyResponse = (
   tenancy: AuthenticatedSessionView['tenancies'][number],
 ): AuthenticatedUserTenancyResponse => {
@@ -84,6 +134,18 @@ const toTenancyResponse = (
   };
 };
 
+const toCurrentTenancyResponse = (
+  tenancy: NonNullable<AuthenticatedSessionView['currentTenancy']>,
+): AuthenticatedUserTenancyResponse => ({
+  ...toTenancyResponse(tenancy),
+  subscription: tenancy.subscription
+    ? toSubscriptionResponse(tenancy.subscription)
+    : null,
+  entitlements: tenancy.entitlements.map((entitlement) =>
+    toEntitlementResponse(entitlement),
+  ),
+});
+
 export const toAuthenticatedUserResponse = (
   session: AuthenticatedSessionView,
 ): AuthenticatedUserResponse => ({
@@ -92,7 +154,7 @@ export const toAuthenticatedUserResponse = (
   provider: session.authenticatedUser.provider,
   externalAuthId: session.authenticatedUser.externalAuthId,
   currentTenancy: session.currentTenancy
-    ? toTenancyResponse(session.currentTenancy)
+    ? toCurrentTenancyResponse(session.currentTenancy)
     : null,
   pendingInvitations: session.pendingInvitations.map((view) => {
     const invitation = view.invitation.toPrimitives();

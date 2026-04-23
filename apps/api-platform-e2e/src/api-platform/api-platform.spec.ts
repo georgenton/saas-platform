@@ -4,12 +4,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import {
   ChangeTenantPlanUseCase,
+  ENTITLEMENT_REPOSITORY,
   GetPlanByKeyUseCase,
   GetTenantSubscriptionUseCase,
   ListPlanEntitlementsUseCase,
   ListPlansUseCase,
   ListTenantEntitlementsUseCase,
   PlanNotFoundError,
+  SUBSCRIPTION_REPOSITORY,
   SubscriptionNotFoundError,
 } from '@saas-platform/commercial-application';
 import {
@@ -69,6 +71,7 @@ describe('API', () => {
   let app: INestApplication;
   let httpServer: any;
   let changeTenantPlanUseCase: { execute: jest.Mock };
+  let entitlementRepository: { findByTenantId: jest.Mock };
   let getPlanByKeyUseCase: { execute: jest.Mock };
   let getUserByIdUseCase: { execute: jest.Mock };
   let getProductByKeyUseCase: { execute: jest.Mock };
@@ -76,6 +79,7 @@ describe('API', () => {
   let listPlanEntitlementsUseCase: { execute: jest.Mock };
   let listPlansUseCase: { execute: jest.Mock };
   let registerUserUseCase: { execute: jest.Mock };
+  let subscriptionRepository: { findByTenantId: jest.Mock };
   let userRepository: {
     findById: jest.Mock;
     findByEmail: jest.Mock;
@@ -366,6 +370,11 @@ describe('API', () => {
         entitlements: tenantEntitlements,
       }),
     };
+    entitlementRepository = {
+      findByTenantId: jest.fn().mockImplementation((tenantId: string) =>
+        tenantId === 'tenant_123' ? Promise.resolve(tenantEntitlements) : Promise.resolve([]),
+      ),
+    };
     getPlanByKeyUseCase = {
       execute: jest.fn().mockResolvedValue(growthPlan),
     };
@@ -386,6 +395,11 @@ describe('API', () => {
     };
     registerUserUseCase = {
       execute: jest.fn().mockResolvedValue(user),
+    };
+    subscriptionRepository = {
+      findByTenantId: jest.fn().mockImplementation((tenantId: string) =>
+        tenantId === 'tenant_123' ? Promise.resolve(tenantSubscription) : Promise.resolve(null),
+      ),
     };
     userRepository = {
       findById: jest.fn().mockResolvedValue(user),
@@ -455,6 +469,8 @@ describe('API', () => {
             TENANT_PERMISSIONS.SUBSCRIPTION_READ,
             TENANT_PERMISSIONS.ENTITLEMENTS_READ,
           ],
+          subscription: tenantSubscription,
+          entitlements: tenantEntitlements,
         },
         pendingInvitations: [],
         sessionState: {
@@ -536,6 +552,8 @@ describe('API', () => {
       })
       .overrideProvider(ChangeTenantPlanUseCase)
       .useValue(changeTenantPlanUseCase)
+      .overrideProvider(ENTITLEMENT_REPOSITORY)
+      .useValue(entitlementRepository)
       .overrideProvider(GetPlanByKeyUseCase)
       .useValue(getPlanByKeyUseCase)
       .overrideProvider(GetUserByIdUseCase)
@@ -550,6 +568,8 @@ describe('API', () => {
       .useValue(listPlansUseCase)
       .overrideProvider(RegisterUserUseCase)
       .useValue(registerUserUseCase)
+      .overrideProvider(SUBSCRIPTION_REPOSITORY)
+      .useValue(subscriptionRepository)
       .overrideProvider(USER_REPOSITORY)
       .useValue(userRepository)
       .overrideProvider(GetTenantBySlugUseCase)
@@ -954,6 +974,37 @@ describe('API', () => {
           },
           roleKeys: ['tenant_owner'],
           permissionKeys: ownerTenantPermissionKeys,
+          subscription: {
+            id: 'subscription_123',
+            tenantId: 'tenant_123',
+            planId: 'plan_growth_monthly',
+            status: 'active',
+            startedAt: '2026-04-23T18:00:00.000Z',
+            expiresAt: null,
+            trialEndsAt: null,
+            createdAt: '2026-04-23T18:00:00.000Z',
+            updatedAt: '2026-04-23T18:00:00.000Z',
+          },
+          entitlements: [
+            {
+              id: 'entitlement_tenant_123_max_users',
+              tenantId: 'tenant_123',
+              key: 'max_users',
+              value: 15,
+              source: 'plan',
+              createdAt: '2026-04-23T18:00:00.000Z',
+              updatedAt: '2026-04-23T18:00:00.000Z',
+            },
+            {
+              id: 'entitlement_tenant_123_products',
+              tenantId: 'tenant_123',
+              key: 'products',
+              value: ['invoicing', 'learning'],
+              source: 'plan',
+              createdAt: '2026-04-23T18:00:00.000Z',
+              updatedAt: '2026-04-23T18:00:00.000Z',
+            },
+          ],
         },
         tenancies: [
           {
@@ -1040,6 +1091,8 @@ describe('API', () => {
           },
           roleKeys: ['tenant_member'],
           permissionKeys: [TENANT_PERMISSIONS.READ],
+          subscription: null,
+          entitlements: [],
         },
         tenancies: [
           {
@@ -1128,6 +1181,8 @@ describe('API', () => {
           },
           roleKeys: ['tenant_member'],
           permissionKeys: [TENANT_PERMISSIONS.READ],
+          subscription: null,
+          entitlements: [],
         },
         tenancies: [
           {
@@ -1291,6 +1346,8 @@ describe('API', () => {
           },
           roleKeys: ['tenant_member'],
           permissionKeys: [TENANT_PERMISSIONS.READ],
+          subscription: null,
+          entitlements: [],
         },
         tenancies: [
           {
@@ -1393,6 +1450,37 @@ describe('API', () => {
             TENANT_PERMISSIONS.READ,
             TENANT_PERMISSIONS.SUBSCRIPTION_READ,
             TENANT_PERMISSIONS.ENTITLEMENTS_READ,
+          ],
+          subscription: {
+            id: 'subscription_123',
+            tenantId: 'tenant_123',
+            planId: 'plan_growth_monthly',
+            status: 'active',
+            startedAt: '2026-04-23T18:00:00.000Z',
+            expiresAt: null,
+            trialEndsAt: null,
+            createdAt: '2026-04-23T18:00:00.000Z',
+            updatedAt: '2026-04-23T18:00:00.000Z',
+          },
+          entitlements: [
+            {
+              id: 'entitlement_tenant_123_max_users',
+              tenantId: 'tenant_123',
+              key: 'max_users',
+              value: 15,
+              source: 'plan',
+              createdAt: '2026-04-23T18:00:00.000Z',
+              updatedAt: '2026-04-23T18:00:00.000Z',
+            },
+            {
+              id: 'entitlement_tenant_123_products',
+              tenantId: 'tenant_123',
+              key: 'products',
+              value: ['invoicing', 'learning'],
+              source: 'plan',
+              createdAt: '2026-04-23T18:00:00.000Z',
+              updatedAt: '2026-04-23T18:00:00.000Z',
+            },
           ],
         },
         pendingInvitations: [],

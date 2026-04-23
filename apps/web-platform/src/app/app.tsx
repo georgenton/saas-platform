@@ -7,6 +7,8 @@ import {
   fetchInvitationForInvitee,
   fetchSession,
   getTenantInvitation,
+  listPlans,
+  listProducts,
   listTenantInvitations,
   resendInvitation,
   setCurrentTenancy,
@@ -15,7 +17,10 @@ import {
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   InvitationResponse,
+  PlatformPlan,
+  PlatformProduct,
   SessionPendingInvitation,
+  SessionEntitlement,
   SessionTenancy,
 } from './types';
 
@@ -64,6 +69,48 @@ function flowLabel(flow: AuthenticatedSessionResponse['sessionState']['recommend
   }
 }
 
+function formatMoney(priceInCents: number, currency: string): string {
+  return new Intl.NumberFormat('es-EC', {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 2,
+  }).format(priceInCents / 100);
+}
+
+function getEntitlementValue(
+  entitlements: SessionEntitlement[],
+  key: string,
+): unknown | null {
+  return entitlements.find((entitlement) => entitlement.key === key)?.value ?? null;
+}
+
+function getStringArrayEntitlement(
+  entitlements: SessionEntitlement[],
+  key: string,
+): string[] {
+  const value = getEntitlementValue(entitlements, key);
+
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+function getBooleanEntitlement(
+  entitlements: SessionEntitlement[],
+  key: string,
+): boolean | null {
+  const value = getEntitlementValue(entitlements, key);
+
+  return typeof value === 'boolean' ? value : null;
+}
+
+function getNumberEntitlement(
+  entitlements: SessionEntitlement[],
+  key: string,
+): number | null {
+  const value = getEntitlementValue(entitlements, key);
+
+  return typeof value === 'number' ? value : null;
+}
+
 function findPendingInvitation(
   session: AuthenticatedSessionResponse | null,
   invitationId: string | null,
@@ -90,6 +137,10 @@ export function App() {
   );
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(false);
+  const [planCatalog, setPlanCatalog] = useState<PlatformPlan[]>([]);
+  const [productCatalog, setProductCatalog] = useState<PlatformProduct[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
 
   const [tenantInvitations, setTenantInvitations] = useState<InvitationResponse[]>(
     [],
@@ -115,6 +166,8 @@ export function App() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const currentTenancy = session?.currentTenancy ?? null;
+  const currentEntitlements = currentTenancy?.entitlements ?? [];
+  const currentSubscription = currentTenancy?.subscription ?? null;
   const canManageInvitations = Boolean(
     currentTenancy?.permissionKeys.includes('tenant.invitations.manage'),
   );
@@ -138,6 +191,42 @@ export function App() {
 
     return 'La sesion existe, pero todavia no tiene un workspace activo.';
   }, [session]);
+
+  const currentPlan = useMemo(() => {
+    if (!currentSubscription) {
+      return null;
+    }
+
+    return (
+      planCatalog.find((plan) => plan.id === currentSubscription.planId) ?? null
+    );
+  }, [currentSubscription, planCatalog]);
+
+  const enabledProductKeys = useMemo(
+    () => new Set(getStringArrayEntitlement(currentEntitlements, 'products')),
+    [currentEntitlements],
+  );
+
+  const enabledProducts = useMemo(
+    () =>
+      productCatalog.filter((product) => enabledProductKeys.has(product.key)),
+    [enabledProductKeys, productCatalog],
+  );
+
+  const lockedProducts = useMemo(
+    () =>
+      productCatalog.filter(
+        (product) => product.isActive && !enabledProductKeys.has(product.key),
+      ),
+    [enabledProductKeys, productCatalog],
+  );
+
+  const aiEnabled = getBooleanEntitlement(currentEntitlements, 'ai_enabled');
+  const maxUsers = getNumberEntitlement(currentEntitlements, 'max_users');
+  const storageLimit = getNumberEntitlement(
+    currentEntitlements,
+    'storage_limit_gb',
+  );
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -199,6 +288,58 @@ export function App() {
       cancelled = true;
     };
   }, [deepLinkedInvitationId, token]);
+
+  useEffect(() => {
+    if (!token) {
+      setPlanCatalog([]);
+      setProductCatalog([]);
+      setCatalogError(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadCatalog() {
+      setCatalogLoading(true);
+      setCatalogError(null);
+
+      try {
+        const [plans, products] = await Promise.all([
+          listPlans(token),
+          listProducts(token),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setPlanCatalog(plans);
+          setProductCatalog(products);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setCatalogError(
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el catalogo comercial.',
+        );
+      } finally {
+        if (!cancelled) {
+          setCatalogLoading(false);
+        }
+      }
+    }
+
+    void loadCatalog();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   useEffect(() => {
     if (!token || !selectedPendingInvitationId) {
@@ -559,6 +700,19 @@ export function App() {
               <strong>{API_BASE_URL}</strong>
             </div>
             <div className={styles.metric}>
+              <span>Plan actual</span>
+              <strong>
+                {currentPlan
+                  ? `${currentPlan.name} · ${formatMoney(
+                      currentPlan.priceInCents,
+                      currentPlan.currency,
+                    )}/${currentPlan.billingCycle}`
+                  : session?.currentTenancy
+                    ? 'Sin plan resuelto'
+                    : 'Sin workspace'}
+              </strong>
+            </div>
+            <div className={styles.metric}>
               <span>Flow recomendado</span>
               <strong>{session ? flowLabel(session.sessionState.recommendedFlow) : 'Sin sesion'}</strong>
             </div>
@@ -676,6 +830,90 @@ export function App() {
                             {roleKey}
                           </span>
                         ))}
+                      </div>
+                      <div className={styles.planSpotlight}>
+                        <div className={styles.planSpotlightHeader}>
+                          <div>
+                            <span className={styles.label}>Commercial access</span>
+                            <h3>
+                              {currentPlan?.name ??
+                                currentSubscription?.planId ??
+                                'Sin plan'}
+                            </h3>
+                          </div>
+                          {currentPlan ? (
+                            <span className={styles.planPrice}>
+                              {formatMoney(
+                                currentPlan.priceInCents,
+                                currentPlan.currency,
+                              )}
+                              /{currentPlan.billingCycle}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className={styles.commercialGrid}>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Subscription status</span>
+                            <strong>{currentSubscription?.status ?? 'No registrada'}</strong>
+                          </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Max users</span>
+                            <strong>{maxUsers ?? 'No definido'}</strong>
+                          </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Storage</span>
+                            <strong>
+                              {storageLimit !== null
+                                ? `${storageLimit} GB`
+                                : 'No definido'}
+                            </strong>
+                          </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>AI enabled</span>
+                            <strong>
+                              {aiEnabled === null
+                                ? 'No definido'
+                                : aiEnabled
+                                  ? 'Yes'
+                                  : 'No'}
+                            </strong>
+                          </div>
+                        </div>
+
+                        <div className={styles.sectionHeading}>
+                          <div>
+                            <span className={styles.label}>Feature gating</span>
+                            <h3>Productos habilitados por el plan</h3>
+                          </div>
+                        </div>
+
+                        {catalogError ? (
+                          <p className={styles.errorBanner}>{catalogError}</p>
+                        ) : null}
+
+                        <div className={styles.featureGrid}>
+                          {enabledProducts.map((product) => (
+                            <article className={styles.featureCard} key={product.id}>
+                              <span className={styles.statusPill}>Enabled</span>
+                              <strong>{product.name}</strong>
+                              <p>{product.description ?? 'Sin descripcion'}</p>
+                            </article>
+                          ))}
+                          {lockedProducts.map((product) => (
+                            <article
+                              className={`${styles.featureCard} ${styles.featureCardLocked}`}
+                              key={product.id}
+                            >
+                              <span className={styles.statusPill}>Locked</span>
+                              <strong>{product.name}</strong>
+                              <p>{product.description ?? 'Sin descripcion'}</p>
+                            </article>
+                          ))}
+                        </div>
+                        {catalogLoading ? (
+                          <p className={styles.muted}>Cargando catalogo comercial...</p>
+                        ) : null}
                       </div>
                     </>
                   ) : (

@@ -2,6 +2,8 @@ import {
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   InvitationResponse,
+  PlatformPlan,
+  PlatformProduct,
 } from './types';
 
 const API_BASE_URL =
@@ -45,6 +47,20 @@ export async function fetchSession(
     : '';
 
   return request<AuthenticatedSessionResponse>(`/auth/me${query}`, {
+    method: 'GET',
+    token,
+  });
+}
+
+export async function listPlans(token: string): Promise<PlatformPlan[]> {
+  return request<PlatformPlan[]>('/platform/plans', {
+    method: 'GET',
+    token,
+  });
+}
+
+export async function listProducts(token: string): Promise<PlatformProduct[]> {
+  return request<PlatformProduct[]>('/platform/products', {
     method: 'GET',
     token,
   });

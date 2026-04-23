@@ -3,6 +3,22 @@ import { createSign, generateKeyPairSync } from 'node:crypto';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import {
+  ChangeTenantPlanUseCase,
+  GetPlanByKeyUseCase,
+  GetTenantSubscriptionUseCase,
+  ListPlanEntitlementsUseCase,
+  ListPlansUseCase,
+  ListTenantEntitlementsUseCase,
+  PlanNotFoundError,
+  SubscriptionNotFoundError,
+} from '@saas-platform/commercial-application';
+import {
+  Entitlement,
+  Plan,
+  PlanEntitlement,
+  Subscription,
+} from '@saas-platform/commercial-domain';
+import {
   GetProductByKeyUseCase,
   ListProductModulesUseCase,
   ListProductsUseCase,
@@ -52,8 +68,13 @@ import { configureApp } from '../../../api-platform/src/app/app.setup';
 describe('API', () => {
   let app: INestApplication;
   let httpServer: any;
+  let changeTenantPlanUseCase: { execute: jest.Mock };
+  let getPlanByKeyUseCase: { execute: jest.Mock };
   let getUserByIdUseCase: { execute: jest.Mock };
   let getProductByKeyUseCase: { execute: jest.Mock };
+  let getTenantSubscriptionUseCase: { execute: jest.Mock };
+  let listPlanEntitlementsUseCase: { execute: jest.Mock };
+  let listPlansUseCase: { execute: jest.Mock };
   let registerUserUseCase: { execute: jest.Mock };
   let userRepository: {
     findById: jest.Mock;
@@ -73,6 +94,7 @@ describe('API', () => {
   let listProductModulesUseCase: { execute: jest.Mock };
   let listProductsUseCase: { execute: jest.Mock };
   let listTenantInvitationsUseCase: { execute: jest.Mock };
+  let listTenantEntitlementsUseCase: { execute: jest.Mock };
   let listUserPendingInvitationsUseCase: { execute: jest.Mock };
   let listUserTenanciesUseCase: { execute: jest.Mock };
   let listTenantMembershipsUseCase: { execute: jest.Mock };
@@ -89,6 +111,17 @@ describe('API', () => {
   const registeredAt = new Date('2026-04-14T17:00:00.000Z');
   const tenantCreatedAt = new Date('2026-04-14T17:30:00.000Z');
   const invitationCreatedAt = new Date('2026-04-22T20:00:00.000Z');
+  const commercialCreatedAt = new Date('2026-04-23T18:00:00.000Z');
+  const ownerTenantPermissionKeys = [
+    TENANT_PERMISSIONS.READ,
+    TENANT_PERMISSIONS.MEMBERSHIPS_READ,
+    TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
+    TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
+    TENANT_PERMISSIONS.INVITATIONS_MANAGE,
+    TENANT_PERMISSIONS.SUBSCRIPTION_READ,
+    TENANT_PERMISSIONS.SUBSCRIPTION_MANAGE,
+    TENANT_PERMISSIONS.ENTITLEMENTS_READ,
+  ];
   const user = User.create({
     id: 'user_123',
     email: 'hello@saas-platform.dev',
@@ -189,6 +222,79 @@ describe('API', () => {
       updatedAt: new Date('2026-04-23T17:00:00.000Z'),
     }),
   ];
+  const growthPlan = Plan.create({
+    id: 'plan_growth_monthly',
+    key: 'growth',
+    name: 'Growth',
+    description: 'Plan para equipos en crecimiento con multiples capacidades activas.',
+    priceInCents: 9900,
+    currency: 'USD',
+    billingCycle: 'monthly',
+    isActive: true,
+    createdAt: commercialCreatedAt,
+    updatedAt: commercialCreatedAt,
+  });
+  const enterprisePlan = Plan.create({
+    id: 'plan_enterprise_monthly',
+    key: 'enterprise',
+    name: 'Enterprise',
+    description: 'Plan avanzado con acceso amplio a productos y limites elevados.',
+    priceInCents: 29900,
+    currency: 'USD',
+    billingCycle: 'monthly',
+    isActive: true,
+    createdAt: commercialCreatedAt,
+    updatedAt: commercialCreatedAt,
+  });
+  const growthPlanEntitlements = [
+    PlanEntitlement.create({
+      id: 'plan_entitlement_growth_products',
+      planId: 'plan_growth_monthly',
+      key: 'products',
+      value: ['invoicing', 'learning'],
+      createdAt: commercialCreatedAt,
+      updatedAt: commercialCreatedAt,
+    }),
+    PlanEntitlement.create({
+      id: 'plan_entitlement_growth_max_users',
+      planId: 'plan_growth_monthly',
+      key: 'max_users',
+      value: 15,
+      createdAt: commercialCreatedAt,
+      updatedAt: commercialCreatedAt,
+    }),
+  ];
+  const tenantSubscription = Subscription.create({
+    id: 'subscription_123',
+    tenantId: 'tenant_123',
+    planId: 'plan_growth_monthly',
+    status: 'active',
+    startedAt: commercialCreatedAt,
+    expiresAt: null,
+    trialEndsAt: null,
+    createdAt: commercialCreatedAt,
+    updatedAt: commercialCreatedAt,
+  });
+  const tenantEntitlements = [
+    Entitlement.create({
+      id: 'entitlement_tenant_123_max_users',
+      tenantId: 'tenant_123',
+      key: 'max_users',
+      value: 15,
+      source: 'plan',
+      createdAt: commercialCreatedAt,
+      updatedAt: commercialCreatedAt,
+    }),
+    Entitlement.create({
+      id: 'entitlement_tenant_123_products',
+      tenantId: 'tenant_123',
+      key: 'products',
+      value: ['invoicing', 'learning'],
+      source: 'plan',
+      createdAt: commercialCreatedAt,
+      updatedAt: commercialCreatedAt,
+    }),
+  ];
 
   const signJwt = (payload: Record<string, unknown>): string => {
     const encode = (value: unknown): string =>
@@ -254,11 +360,29 @@ describe('API', () => {
       email: 'invitee@saas-platform.dev',
       provider: 'password',
     });
+    changeTenantPlanUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        subscription: tenantSubscription,
+        entitlements: tenantEntitlements,
+      }),
+    };
+    getPlanByKeyUseCase = {
+      execute: jest.fn().mockResolvedValue(growthPlan),
+    };
     getUserByIdUseCase = {
       execute: jest.fn().mockResolvedValue(user),
     };
     getProductByKeyUseCase = {
       execute: jest.fn().mockResolvedValue(invoicingProduct),
+    };
+    getTenantSubscriptionUseCase = {
+      execute: jest.fn().mockResolvedValue(tenantSubscription),
+    };
+    listPlanEntitlementsUseCase = {
+      execute: jest.fn().mockResolvedValue(growthPlanEntitlements),
+    };
+    listPlansUseCase = {
+      execute: jest.fn().mockResolvedValue([growthPlan, enterprisePlan]),
     };
     registerUserUseCase = {
       execute: jest.fn().mockResolvedValue(user),
@@ -286,6 +410,9 @@ describe('API', () => {
     };
     listTenantInvitationsUseCase = {
       execute: jest.fn().mockResolvedValue([invitation]),
+    };
+    listTenantEntitlementsUseCase = {
+      execute: jest.fn().mockResolvedValue(tenantEntitlements),
     };
     cancelTenantInvitationUseCase = {
       execute: jest.fn().mockResolvedValue(undefined),
@@ -323,7 +450,11 @@ describe('API', () => {
           tenant,
           membership,
           roleKeys: ['tenant_member'],
-          permissionKeys: [TENANT_PERMISSIONS.READ],
+          permissionKeys: [
+            TENANT_PERMISSIONS.READ,
+            TENANT_PERMISSIONS.SUBSCRIPTION_READ,
+            TENANT_PERMISSIONS.ENTITLEMENTS_READ,
+          ],
         },
         pendingInvitations: [],
         sessionState: {
@@ -337,7 +468,11 @@ describe('API', () => {
             tenant,
             membership,
             roleKeys: ['tenant_member'],
-            permissionKeys: [TENANT_PERMISSIONS.READ],
+            permissionKeys: [
+              TENANT_PERMISSIONS.READ,
+              TENANT_PERMISSIONS.SUBSCRIPTION_READ,
+              TENANT_PERMISSIONS.ENTITLEMENTS_READ,
+            ],
           },
         ],
       }),
@@ -351,13 +486,7 @@ describe('API', () => {
         membershipId: 'membership_123',
         membershipStatus: MembershipStatus.Active,
         roleKeys: ['tenant_owner'],
-        permissionKeys: [
-          TENANT_PERMISSIONS.READ,
-          TENANT_PERMISSIONS.MEMBERSHIPS_READ,
-          TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
-          TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
-          TENANT_PERMISSIONS.INVITATIONS_MANAGE,
-        ],
+        permissionKeys: ownerTenantPermissionKeys,
       }),
     };
     getTenantMembershipByUserUseCase = {
@@ -369,13 +498,7 @@ describe('API', () => {
           tenant,
           membership,
           roleKeys: ['tenant_owner'],
-          permissionKeys: [
-            TENANT_PERMISSIONS.READ,
-            TENANT_PERMISSIONS.MEMBERSHIPS_READ,
-            TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
-            TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
-            TENANT_PERMISSIONS.INVITATIONS_MANAGE,
-          ],
+          permissionKeys: ownerTenantPermissionKeys,
         },
       ]),
     };
@@ -390,13 +513,7 @@ describe('API', () => {
         membershipId: 'membership_123',
         membershipStatus: MembershipStatus.Active,
         roleKeys: ['tenant_owner'],
-        permissionKeys: [
-          TENANT_PERMISSIONS.READ,
-          TENANT_PERMISSIONS.MEMBERSHIPS_READ,
-          TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
-          TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
-          TENANT_PERMISSIONS.INVITATIONS_MANAGE,
-        ],
+        permissionKeys: ownerTenantPermissionKeys,
       }),
     };
     assignMembershipRoleUseCase = {
@@ -417,10 +534,20 @@ describe('API', () => {
         onModuleInit: jest.fn(),
         onModuleDestroy: jest.fn(),
       })
+      .overrideProvider(ChangeTenantPlanUseCase)
+      .useValue(changeTenantPlanUseCase)
+      .overrideProvider(GetPlanByKeyUseCase)
+      .useValue(getPlanByKeyUseCase)
       .overrideProvider(GetUserByIdUseCase)
       .useValue(getUserByIdUseCase)
       .overrideProvider(GetProductByKeyUseCase)
       .useValue(getProductByKeyUseCase)
+      .overrideProvider(GetTenantSubscriptionUseCase)
+      .useValue(getTenantSubscriptionUseCase)
+      .overrideProvider(ListPlanEntitlementsUseCase)
+      .useValue(listPlanEntitlementsUseCase)
+      .overrideProvider(ListPlansUseCase)
+      .useValue(listPlansUseCase)
       .overrideProvider(RegisterUserUseCase)
       .useValue(registerUserUseCase)
       .overrideProvider(USER_REPOSITORY)
@@ -435,6 +562,8 @@ describe('API', () => {
       .useValue(listProductsUseCase)
       .overrideProvider(ListTenantInvitationsUseCase)
       .useValue(listTenantInvitationsUseCase)
+      .overrideProvider(ListTenantEntitlementsUseCase)
+      .useValue(listTenantEntitlementsUseCase)
       .overrideProvider(CancelTenantInvitationUseCase)
       .useValue(cancelTenantInvitationUseCase)
       .overrideProvider(GetAuthenticatedUserInvitationUseCase)
@@ -592,6 +721,206 @@ describe('API', () => {
     expect(listProductModulesUseCase.execute).toHaveBeenCalledWith('invoicing');
   });
 
+  it('GET /api/platform/plans should return the commercial plan catalog', async () => {
+    await request(httpServer)
+      .get('/api/platform/plans')
+      .expect(200)
+      .expect([
+        {
+          id: 'plan_growth_monthly',
+          key: 'growth',
+          name: 'Growth',
+          description:
+            'Plan para equipos en crecimiento con multiples capacidades activas.',
+          priceInCents: 9900,
+          currency: 'USD',
+          billingCycle: 'monthly',
+          isActive: true,
+          createdAt: '2026-04-23T18:00:00.000Z',
+          updatedAt: '2026-04-23T18:00:00.000Z',
+        },
+        {
+          id: 'plan_enterprise_monthly',
+          key: 'enterprise',
+          name: 'Enterprise',
+          description:
+            'Plan avanzado con acceso amplio a productos y limites elevados.',
+          priceInCents: 29900,
+          currency: 'USD',
+          billingCycle: 'monthly',
+          isActive: true,
+          createdAt: '2026-04-23T18:00:00.000Z',
+          updatedAt: '2026-04-23T18:00:00.000Z',
+        },
+      ]);
+  });
+
+  it('GET /api/platform/plans/:planKey should return one plan', async () => {
+    await request(httpServer)
+      .get('/api/platform/plans/growth')
+      .expect(200)
+      .expect({
+        id: 'plan_growth_monthly',
+        key: 'growth',
+        name: 'Growth',
+        description:
+          'Plan para equipos en crecimiento con multiples capacidades activas.',
+        priceInCents: 9900,
+        currency: 'USD',
+        billingCycle: 'monthly',
+        isActive: true,
+        createdAt: '2026-04-23T18:00:00.000Z',
+        updatedAt: '2026-04-23T18:00:00.000Z',
+      });
+
+    expect(getPlanByKeyUseCase.execute).toHaveBeenCalledWith('growth');
+  });
+
+  it('GET /api/platform/plans/:planKey/entitlements should return the plan entitlements', async () => {
+    await request(httpServer)
+      .get('/api/platform/plans/growth/entitlements')
+      .expect(200)
+      .expect([
+        {
+          id: 'plan_entitlement_growth_products',
+          planId: 'plan_growth_monthly',
+          key: 'products',
+          value: ['invoicing', 'learning'],
+          createdAt: '2026-04-23T18:00:00.000Z',
+          updatedAt: '2026-04-23T18:00:00.000Z',
+        },
+        {
+          id: 'plan_entitlement_growth_max_users',
+          planId: 'plan_growth_monthly',
+          key: 'max_users',
+          value: 15,
+          createdAt: '2026-04-23T18:00:00.000Z',
+          updatedAt: '2026-04-23T18:00:00.000Z',
+        },
+      ]);
+
+    expect(listPlanEntitlementsUseCase.execute).toHaveBeenCalledWith('growth');
+  });
+
+  it('GET /api/platform/plans/:planKey should return 404 when the plan does not exist', async () => {
+    getPlanByKeyUseCase.execute.mockRejectedValueOnce(new PlanNotFoundError('missing'));
+
+    await request(httpServer)
+      .get('/api/platform/plans/missing')
+      .expect(404)
+      .expect({
+        statusCode: 404,
+        message: 'Plan with key "missing" was not found.',
+        error: 'Not Found',
+      });
+  });
+
+  it('GET /api/tenancy/tenants/:slug/subscription should return the current tenant subscription', async () => {
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/subscription')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'subscription_123',
+        tenantId: 'tenant_123',
+        planId: 'plan_growth_monthly',
+        status: 'active',
+        startedAt: '2026-04-23T18:00:00.000Z',
+        expiresAt: null,
+        trialEndsAt: null,
+        createdAt: '2026-04-23T18:00:00.000Z',
+        updatedAt: '2026-04-23T18:00:00.000Z',
+      });
+
+    expect(getTenantSubscriptionUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('PUT /api/tenancy/tenants/:slug/subscription should change the tenant plan and return the new commercial snapshot', async () => {
+    await request(httpServer)
+      .put('/api/tenancy/tenants/saas-platform/subscription')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        planKey: 'growth',
+        status: 'active',
+      })
+      .expect(200)
+      .expect({
+        subscription: {
+          id: 'subscription_123',
+          tenantId: 'tenant_123',
+          planId: 'plan_growth_monthly',
+          status: 'active',
+          startedAt: '2026-04-23T18:00:00.000Z',
+          expiresAt: null,
+          trialEndsAt: null,
+          createdAt: '2026-04-23T18:00:00.000Z',
+          updatedAt: '2026-04-23T18:00:00.000Z',
+        },
+        entitlements: [
+          {
+            id: 'entitlement_tenant_123_max_users',
+            tenantId: 'tenant_123',
+            key: 'max_users',
+            value: 15,
+            source: 'plan',
+            createdAt: '2026-04-23T18:00:00.000Z',
+            updatedAt: '2026-04-23T18:00:00.000Z',
+          },
+          {
+            id: 'entitlement_tenant_123_products',
+            tenantId: 'tenant_123',
+            key: 'products',
+            value: ['invoicing', 'learning'],
+            source: 'plan',
+            createdAt: '2026-04-23T18:00:00.000Z',
+            updatedAt: '2026-04-23T18:00:00.000Z',
+          },
+        ],
+      });
+
+    expect(changeTenantPlanUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      planKey: 'growth',
+      status: 'active',
+      startedAt: undefined,
+      expiresAt: null,
+      trialEndsAt: null,
+    });
+  });
+
+  it('GET /api/tenancy/tenants/:slug/entitlements should return effective tenant entitlements', async () => {
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/entitlements')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'entitlement_tenant_123_max_users',
+          tenantId: 'tenant_123',
+          key: 'max_users',
+          value: 15,
+          source: 'plan',
+          createdAt: '2026-04-23T18:00:00.000Z',
+          updatedAt: '2026-04-23T18:00:00.000Z',
+        },
+        {
+          id: 'entitlement_tenant_123_products',
+          tenantId: 'tenant_123',
+          key: 'products',
+          value: ['invoicing', 'learning'],
+          source: 'plan',
+          createdAt: '2026-04-23T18:00:00.000Z',
+          updatedAt: '2026-04-23T18:00:00.000Z',
+        },
+      ]);
+
+    expect(listTenantEntitlementsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
   it('GET /api/auth/me should return the authenticated user session view', async () => {
     await request(httpServer)
       .get('/api/auth/me')
@@ -624,13 +953,7 @@ describe('API', () => {
             updatedAt: tenantCreatedAt.toISOString(),
           },
           roleKeys: ['tenant_owner'],
-          permissionKeys: [
-            TENANT_PERMISSIONS.READ,
-            TENANT_PERMISSIONS.MEMBERSHIPS_READ,
-            TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
-            TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
-            TENANT_PERMISSIONS.INVITATIONS_MANAGE,
-          ],
+          permissionKeys: ownerTenantPermissionKeys,
         },
         tenancies: [
           {
@@ -648,13 +971,7 @@ describe('API', () => {
               updatedAt: tenantCreatedAt.toISOString(),
             },
             roleKeys: ['tenant_owner'],
-            permissionKeys: [
-              TENANT_PERMISSIONS.READ,
-              TENANT_PERMISSIONS.MEMBERSHIPS_READ,
-              TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
-              TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
-              TENANT_PERMISSIONS.INVITATIONS_MANAGE,
-            ],
+            permissionKeys: ownerTenantPermissionKeys,
           },
         ],
       });
@@ -681,13 +998,7 @@ describe('API', () => {
         tenant,
         membership,
         roleKeys: ['tenant_owner'],
-        permissionKeys: [
-          TENANT_PERMISSIONS.READ,
-          TENANT_PERMISSIONS.MEMBERSHIPS_READ,
-          TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
-          TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
-          TENANT_PERMISSIONS.INVITATIONS_MANAGE,
-        ],
+        permissionKeys: ownerTenantPermissionKeys,
       },
       {
         tenant: secondaryTenant,
@@ -763,13 +1074,7 @@ describe('API', () => {
               updatedAt: tenantCreatedAt.toISOString(),
             },
             roleKeys: ['tenant_owner'],
-            permissionKeys: [
-              TENANT_PERMISSIONS.READ,
-              TENANT_PERMISSIONS.MEMBERSHIPS_READ,
-              TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
-              TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
-              TENANT_PERMISSIONS.INVITATIONS_MANAGE,
-            ],
+            permissionKeys: ownerTenantPermissionKeys,
           },
         ],
       });
@@ -787,13 +1092,7 @@ describe('API', () => {
         tenant,
         membership,
         roleKeys: ['tenant_owner'],
-        permissionKeys: [
-          TENANT_PERMISSIONS.READ,
-          TENANT_PERMISSIONS.MEMBERSHIPS_READ,
-          TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
-          TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
-          TENANT_PERMISSIONS.INVITATIONS_MANAGE,
-        ],
+        permissionKeys: ownerTenantPermissionKeys,
       },
     ]);
 
@@ -863,13 +1162,7 @@ describe('API', () => {
               updatedAt: tenantCreatedAt.toISOString(),
             },
             roleKeys: ['tenant_owner'],
-            permissionKeys: [
-              TENANT_PERMISSIONS.READ,
-              TENANT_PERMISSIONS.MEMBERSHIPS_READ,
-              TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
-              TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
-              TENANT_PERMISSIONS.INVITATIONS_MANAGE,
-            ],
+            permissionKeys: ownerTenantPermissionKeys,
           },
         ],
       });
@@ -952,13 +1245,7 @@ describe('API', () => {
         tenant,
         membership,
         roleKeys: ['tenant_owner'],
-        permissionKeys: [
-          TENANT_PERMISSIONS.READ,
-          TENANT_PERMISSIONS.MEMBERSHIPS_READ,
-          TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
-          TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
-          TENANT_PERMISSIONS.INVITATIONS_MANAGE,
-        ],
+        permissionKeys: ownerTenantPermissionKeys,
       },
       {
         tenant: secondaryTenant,
@@ -1038,13 +1325,7 @@ describe('API', () => {
               updatedAt: tenantCreatedAt.toISOString(),
             },
             roleKeys: ['tenant_owner'],
-            permissionKeys: [
-              TENANT_PERMISSIONS.READ,
-              TENANT_PERMISSIONS.MEMBERSHIPS_READ,
-              TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
-              TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
-              TENANT_PERMISSIONS.INVITATIONS_MANAGE,
-            ],
+            permissionKeys: ownerTenantPermissionKeys,
           },
         ],
       });
@@ -1108,7 +1389,11 @@ describe('API', () => {
             updatedAt: tenantCreatedAt.toISOString(),
           },
           roleKeys: ['tenant_member'],
-          permissionKeys: [TENANT_PERMISSIONS.READ],
+          permissionKeys: [
+            TENANT_PERMISSIONS.READ,
+            TENANT_PERMISSIONS.SUBSCRIPTION_READ,
+            TENANT_PERMISSIONS.ENTITLEMENTS_READ,
+          ],
         },
         pendingInvitations: [],
         sessionState: {
@@ -1133,7 +1418,11 @@ describe('API', () => {
               updatedAt: tenantCreatedAt.toISOString(),
             },
             roleKeys: ['tenant_member'],
-            permissionKeys: [TENANT_PERMISSIONS.READ],
+            permissionKeys: [
+              TENANT_PERMISSIONS.READ,
+              TENANT_PERMISSIONS.SUBSCRIPTION_READ,
+              TENANT_PERMISSIONS.ENTITLEMENTS_READ,
+            ],
           },
         ],
       });
@@ -1309,13 +1598,7 @@ describe('API', () => {
         membershipId: 'membership_123',
         membershipStatus: MembershipStatus.Active,
         roleKeys: ['tenant_owner'],
-        permissionKeys: [
-          TENANT_PERMISSIONS.READ,
-          TENANT_PERMISSIONS.MEMBERSHIPS_READ,
-          TENANT_PERMISSIONS.MEMBERSHIP_ACCESS_READ,
-          TENANT_PERMISSIONS.MEMBERSHIP_ROLES_MANAGE,
-          TENANT_PERMISSIONS.INVITATIONS_MANAGE,
-        ],
+        permissionKeys: ownerTenantPermissionKeys,
       });
 
     expect(getTenantMemberAccessUseCase.execute).toHaveBeenCalledWith({

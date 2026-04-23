@@ -10,6 +10,13 @@ export const TENANCY_PERMISSION_CATALOG = {
   invitations: {
     manage: 'tenant.invitations.manage',
   },
+  subscription: {
+    read: 'tenant.subscription.read',
+    manage: 'tenant.subscription.manage',
+  },
+  entitlements: {
+    read: 'tenant.entitlements.read',
+  },
 } as const;
 
 export const TENANT_PERMISSIONS = {
@@ -20,4 +27,7 @@ export const TENANT_PERMISSIONS = {
   MEMBERSHIP_ROLES_MANAGE:
     TENANCY_PERMISSION_CATALOG.memberships.rolesManage,
   INVITATIONS_MANAGE: TENANCY_PERMISSION_CATALOG.invitations.manage,
+  SUBSCRIPTION_READ: TENANCY_PERMISSION_CATALOG.subscription.read,
+  SUBSCRIPTION_MANAGE: TENANCY_PERMISSION_CATALOG.subscription.manage,
+  ENTITLEMENTS_READ: TENANCY_PERMISSION_CATALOG.entitlements.read,
 } as const;

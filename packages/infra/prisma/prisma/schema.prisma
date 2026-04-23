@@ -33,6 +33,8 @@ model Tenant {
   status      String
   memberships Membership[]
   invitations Invitation[]
+  subscriptions Subscription[]
+  entitlements Entitlement[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -46,6 +48,60 @@ model Product {
   platformModules PlatformModule[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+}
+
+model Plan {
+  id               String            @id
+  key              String            @unique
+  name             String
+  description      String?
+  priceInCents     Int
+  currency         String
+  billingCycle     String
+  isActive         Boolean           @default(true)
+  planEntitlements PlanEntitlement[]
+  subscriptions    Subscription[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model PlanEntitlement {
+  id          String   @id
+  planId      String
+  key         String
+  value       Json
+  plan        Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([planId, key])
+}
+
+model Subscription {
+  id          String   @id
+  tenantId     String   @unique
+  planId      String
+  status      String
+  startedAt   DateTime
+  expiresAt   DateTime?
+  trialEndsAt DateTime?
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan        Plan     @relation(fields: [planId], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Entitlement {
+  id          String   @id
+  tenantId    String
+  key         String
+  value       Json
+  source      String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, key])
 }
 
 model PlatformModule {

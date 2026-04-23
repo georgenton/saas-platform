@@ -1,3 +1,6 @@
+export * from './lib/catalog/catalog-persistence.module';
+export * from './lib/catalog/prisma-platform-module.repository';
+export * from './lib/catalog/prisma-product.repository';
 export * from './lib/identity/identity-persistence.module';
 export * from './lib/identity/prisma-user.repository';
 export * from './lib/prisma.module';

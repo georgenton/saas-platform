@@ -14,6 +14,12 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@saas-platform/catalog-application": [
+        "packages/core/catalog/application/src/index.ts"
+      ],
+      "@saas-platform/catalog-domain": [
+        "packages/core/catalog/domain/src/index.ts"
+      ],
       "@saas-platform/identity-application": [
         "packages/core/identity/application/src/index.ts"
       ],

@@ -50,6 +50,28 @@ export interface SessionTenancy {
   };
   roleKeys: string[];
   permissionKeys: string[];
+  subscription?: {
+    id: string;
+    tenantId: string;
+    planId: string;
+    status: string;
+    startedAt: string;
+    expiresAt: string | null;
+    trialEndsAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+  entitlements?: SessionEntitlement[];
+}
+
+export interface SessionEntitlement {
+  id: string;
+  tenantId: string;
+  key: string;
+  value: unknown;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SessionPendingInvitation {
@@ -91,4 +113,27 @@ export interface AuthenticatedSessionResponse {
       | 'empty';
   };
   tenancies: SessionTenancy[];
+}
+
+export interface PlatformPlan {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  priceInCents: number;
+  currency: string;
+  billingCycle: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlatformProduct {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }

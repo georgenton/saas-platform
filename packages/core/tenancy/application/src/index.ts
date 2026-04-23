@@ -13,6 +13,7 @@ export * from './lib/errors/tenant-slug-already-in-use.error';
 export * from './lib/permissions/tenant-permissions';
 export * from './lib/roles/tenant-roles';
 export * from './lib/ports/invitation-acceptance.repository';
+export * from './lib/ports/invitation-email.sender';
 export * from './lib/ports/invitation-id.generator';
 export * from './lib/ports/invitation.repository';
 export * from './lib/ports/membership-id.generator';

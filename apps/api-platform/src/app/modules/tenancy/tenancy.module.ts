@@ -10,6 +10,7 @@ import {
   GetTenantMemberAccessUseCase,
   GetTenantMembershipByUserUseCase,
   INVITATION_ACCEPTANCE_REPOSITORY,
+  INVITATION_EMAIL_SENDER,
   INVITATION_ID_GENERATOR,
   INVITATION_REPOSITORY,
   ListTenantMembershipsUseCase,
@@ -32,11 +33,25 @@ import { TenantPermissionGuard } from './tenant-permission.guard';
 import { TenancyInvitationsController } from './tenancy-invitations.controller';
 import { TenancyController } from './tenancy.controller';
 import { USER_REPOSITORY } from '@saas-platform/identity-application';
+import { SmtpInvitationEmailSender } from './smtp-invitation-email-sender';
 
 @Module({
   imports: [AuthModule, IdentityPersistenceModule, TenancyPersistenceModule],
   controllers: [TenancyController, TenancyInvitationsController],
   providers: [
+    {
+      provide: INVITATION_EMAIL_SENDER,
+      useFactory: () =>
+        new SmtpInvitationEmailSender({
+          fromAddress: process.env.INVITATION_EMAIL_FROM,
+          smtpHost: process.env.INVITATION_SMTP_HOST,
+          smtpPassword: process.env.INVITATION_SMTP_PASSWORD,
+          smtpPort: process.env.INVITATION_SMTP_PORT,
+          smtpSecure: process.env.INVITATION_SMTP_SECURE,
+          smtpUser: process.env.INVITATION_SMTP_USER,
+          webBaseUrl: process.env.WEB_PLATFORM_BASE_URL,
+        }),
+    },
     {
       provide: GetTenantBySlugUseCase,
       inject: [TENANT_REPOSITORY],
@@ -139,16 +154,19 @@ import { USER_REPOSITORY } from '@saas-platform/identity-application';
         TENANT_REPOSITORY,
         INVITATION_REPOSITORY,
         INVITATION_ID_GENERATOR,
+        INVITATION_EMAIL_SENDER,
       ],
       useFactory: (
         tenantRepository,
         invitationRepository,
         invitationIdGenerator,
+        invitationEmailSender,
       ) =>
         new InviteUserToTenantUseCase(
           tenantRepository,
           invitationRepository,
           invitationIdGenerator,
+          invitationEmailSender,
         ),
     },
     {
@@ -171,11 +189,20 @@ import { USER_REPOSITORY } from '@saas-platform/identity-application';
     },
     {
       provide: ResendTenantInvitationUseCase,
-      inject: [TENANT_REPOSITORY, INVITATION_REPOSITORY],
-      useFactory: (tenantRepository, invitationRepository) =>
+      inject: [
+        TENANT_REPOSITORY,
+        INVITATION_REPOSITORY,
+        INVITATION_EMAIL_SENDER,
+      ],
+      useFactory: (
+        tenantRepository,
+        invitationRepository,
+        invitationEmailSender,
+      ) =>
         new ResendTenantInvitationUseCase(
           tenantRepository,
           invitationRepository,
+          invitationEmailSender,
         ),
     },
     {

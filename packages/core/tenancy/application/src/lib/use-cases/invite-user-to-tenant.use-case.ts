@@ -3,6 +3,7 @@ import {
   InvitationStatus,
 } from '@saas-platform/tenancy-domain';
 import { InvitationAlreadyExistsError } from '../errors/invitation-already-exists.error';
+import { InvitationEmailSender } from '../ports/invitation-email.sender';
 import { InvitationIdGenerator } from '../ports/invitation-id.generator';
 import { InvitationRepository } from '../ports/invitation.repository';
 import { TenantRepository } from '../ports/tenant.repository';
@@ -20,6 +21,7 @@ export class InviteUserToTenantUseCase {
     private readonly tenantRepository: TenantRepository,
     private readonly invitationRepository: InvitationRepository,
     private readonly invitationIdGenerator: InvitationIdGenerator,
+    private readonly invitationEmailSender: InvitationEmailSender,
   ) {}
 
   async execute(command: InviteUserToTenantCommand): Promise<Invitation> {
@@ -55,6 +57,15 @@ export class InviteUserToTenantUseCase {
     });
 
     await this.invitationRepository.save(invitation);
+    await this.invitationEmailSender.sendInvitation({
+      invitationId: invitation.id,
+      recipientEmail: invitation.email,
+      tenantName: tenant.name,
+      tenantSlug: tenant.slug,
+      roleKey: invitation.roleKey,
+      expiresAt: invitation.expiresAt,
+      reason: 'created',
+    });
 
     return invitation;
   }

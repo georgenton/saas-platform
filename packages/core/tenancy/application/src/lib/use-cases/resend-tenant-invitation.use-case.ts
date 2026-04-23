@@ -1,6 +1,7 @@
 import { InvitationStatus, Invitation } from '@saas-platform/tenancy-domain';
 import { InvitationAlreadyProcessedError } from '../errors/invitation-already-processed.error';
 import { InvitationNotFoundError } from '../errors/invitation-not-found.error';
+import { InvitationEmailSender } from '../ports/invitation-email.sender';
 import { InvitationRepository } from '../ports/invitation.repository';
 import { TenantRepository } from '../ports/tenant.repository';
 import { TenantNotFoundError } from '../errors/tenant-not-found.error';
@@ -14,6 +15,7 @@ export class ResendTenantInvitationUseCase {
   constructor(
     private readonly tenantRepository: TenantRepository,
     private readonly invitationRepository: InvitationRepository,
+    private readonly invitationEmailSender: InvitationEmailSender,
   ) {}
 
   async execute(command: ResendTenantInvitationCommand): Promise<Invitation> {
@@ -42,6 +44,15 @@ export class ResendTenantInvitationUseCase {
     );
 
     await this.invitationRepository.save(resentInvitation);
+    await this.invitationEmailSender.sendInvitation({
+      invitationId: resentInvitation.id,
+      recipientEmail: resentInvitation.email,
+      tenantName: tenant.name,
+      tenantSlug: tenant.slug,
+      roleKey: resentInvitation.roleKey,
+      expiresAt: resentInvitation.expiresAt,
+      reason: 'resent',
+    });
 
     return resentInvitation;
   }

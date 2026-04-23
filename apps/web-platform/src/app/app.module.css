@@ -1,0 +1,447 @@
+.shell {
+  min-height: 100vh;
+  position: relative;
+}
+
+.backdrop {
+  background:
+    radial-gradient(circle at top left, rgba(255, 174, 91, 0.24), transparent 30%),
+    radial-gradient(circle at 80% 12%, rgba(94, 177, 255, 0.18), transparent 25%),
+    linear-gradient(180deg, #f7f0e4 0%, #ece6dd 45%, #dfd8cf 100%);
+  inset: 0;
+  pointer-events: none;
+  position: fixed;
+}
+
+.page {
+  margin: 0 auto;
+  max-width: 1260px;
+  padding: 48px 24px 96px;
+  position: relative;
+}
+
+.hero {
+  align-items: end;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 1.6fr 1fr;
+  margin-bottom: 28px;
+}
+
+.heroText h1 {
+  color: #1c1b19;
+  font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
+  font-size: clamp(2.8rem, 5vw, 4.8rem);
+  letter-spacing: -0.06em;
+  line-height: 0.96;
+  margin: 0 0 18px;
+  max-width: 14ch;
+}
+
+.heroText p {
+  color: #514a43;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  margin: 0;
+  max-width: 64ch;
+}
+
+.eyebrow,
+.label {
+  color: #8f5631;
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.heroMeta {
+  backdrop-filter: blur(18px);
+  background: rgba(255, 249, 242, 0.82);
+  border: 1px solid rgba(87, 72, 59, 0.12);
+  border-radius: 28px;
+  box-shadow: 0 18px 50px rgba(79, 64, 54, 0.12);
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.metric {
+  border-bottom: 1px solid rgba(87, 72, 59, 0.1);
+  display: grid;
+  gap: 6px;
+  padding-bottom: 14px;
+}
+
+.metric:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.metric span,
+.muted {
+  color: #73685d;
+  font-size: 0.88rem;
+}
+
+.metric strong {
+  color: #1f1a14;
+  font-size: 1rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.tokenCard,
+.panel,
+.adminPanel {
+  backdrop-filter: blur(18px);
+  background: rgba(255, 251, 246, 0.78);
+  border: 1px solid rgba(87, 72, 59, 0.12);
+  border-radius: 30px;
+  box-shadow: 0 24px 60px rgba(82, 64, 47, 0.11);
+  padding: 28px;
+}
+
+.contentGrid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 24px;
+}
+
+.adminPanel {
+  margin-top: 24px;
+}
+
+.sectionHeading {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.sectionHeading h2,
+.sectionHeading h3 {
+  color: #1f1a14;
+  font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+
+.sectionHeading h2 {
+  font-size: 1.7rem;
+}
+
+.sectionHeading h3 {
+  font-size: 1.35rem;
+}
+
+.tokenForm,
+.inlineForm,
+.field {
+  display: grid;
+  gap: 12px;
+}
+
+.tokenForm {
+  align-items: end;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.inlineForm {
+  align-items: end;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.field span {
+  color: #4f473e;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.field textarea,
+.field input {
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(115, 92, 70, 0.18);
+  border-radius: 18px;
+  color: #1f1a14;
+  font: inherit;
+  padding: 16px 18px;
+  width: 100%;
+}
+
+.field textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.field textarea:focus,
+.field input:focus {
+  border-color: #8f5631;
+  box-shadow: 0 0 0 3px rgba(143, 86, 49, 0.12);
+  outline: none;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.ghostButton,
+.selectorCard,
+.invitationCard {
+  cursor: pointer;
+  font: inherit;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.ghostButton {
+  border: none;
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 14px 18px;
+}
+
+.primaryButton {
+  background: linear-gradient(135deg, #1c5ea5 0%, #2d8bcf 100%);
+  box-shadow: 0 16px 28px rgba(33, 100, 171, 0.24);
+  color: #f8fcff;
+}
+
+.secondaryButton {
+  background: #f0ddbf;
+  color: #3a2a1f;
+}
+
+.dangerButton {
+  background: #7d2a22;
+  color: #fff4f1;
+}
+
+.ghostButton {
+  background: rgba(87, 72, 59, 0.06);
+  color: #5a5045;
+}
+
+.primaryButton:hover,
+.secondaryButton:hover,
+.dangerButton:hover,
+.ghostButton:hover,
+.selectorCard:hover,
+.invitationCard:hover {
+  transform: translateY(-1px);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled,
+.ghostButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+  transform: none;
+}
+
+.identityBlock,
+.sessionStateGrid,
+.detailGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.identityBlock {
+  margin-bottom: 18px;
+}
+
+.identityBlock > div,
+.stateCard,
+.detailGrid > div,
+.currentWorkspace,
+.detailCard,
+.emptyState {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(87, 72, 59, 0.1);
+  border-radius: 22px;
+  padding: 18px;
+}
+
+.identityBlock strong,
+.stateCard strong,
+.detailGrid strong {
+  color: #201913;
+  display: block;
+  margin-top: 4px;
+}
+
+.badgeRow,
+.tokenList,
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.badge,
+.tokenPill,
+.statusPill {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 8px 12px;
+}
+
+.badge {
+  background: rgba(28, 94, 165, 0.08);
+  color: #1d528d;
+}
+
+.tokenPill {
+  background: rgba(240, 221, 191, 0.62);
+  color: #5f431d;
+}
+
+.statusPill {
+  background: rgba(87, 72, 59, 0.08);
+  color: #5a5045;
+}
+
+.pending {
+  background: rgba(32, 111, 193, 0.12);
+  color: #1f5e9b;
+}
+
+.accepted {
+  background: rgba(39, 137, 91, 0.14);
+  color: #236944;
+}
+
+.expired {
+  background: rgba(171, 112, 42, 0.16);
+  color: #8b5818;
+}
+
+.cancelled {
+  background: rgba(125, 42, 34, 0.14);
+  color: #7d2a22;
+}
+
+.currentWorkspace {
+  margin: 20px 0;
+}
+
+.selectorGrid,
+.twoColumn {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.selectorCard,
+.invitationCard {
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(115, 92, 70, 0.1);
+  border-radius: 20px;
+  color: #2c241d;
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  text-align: left;
+}
+
+.selectorCard span,
+.invitationCard span {
+  font-weight: 700;
+}
+
+.selectorCard small,
+.invitationCard small {
+  color: #6f6358;
+}
+
+.selectorCardActive,
+.invitationCardActive {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 233, 202, 0.82) 100%);
+  border-color: rgba(143, 86, 49, 0.34);
+  box-shadow: 0 16px 30px rgba(143, 86, 49, 0.14);
+}
+
+.invitationSection {
+  margin-top: 20px;
+}
+
+.stack {
+  display: grid;
+  gap: 12px;
+}
+
+.detailCard {
+  display: grid;
+  gap: 16px;
+}
+
+.errorBanner,
+.successBanner {
+  border-radius: 18px;
+  margin: 16px 0 0;
+  padding: 14px 16px;
+}
+
+.errorBanner {
+  background: rgba(125, 42, 34, 0.1);
+  color: #7d2a22;
+}
+
+.successBanner {
+  background: rgba(39, 137, 91, 0.1);
+  color: #236944;
+}
+
+@media (max-width: 1080px) {
+  .hero,
+  .contentGrid,
+  .twoColumn {
+    grid-template-columns: 1fr;
+  }
+
+  .identityBlock,
+  .sessionStateGrid,
+  .detailGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 28px 16px 64px;
+  }
+
+  .tokenForm,
+  .inlineForm,
+  .selectorGrid,
+  .identityBlock,
+  .sessionStateGrid,
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .tokenCard,
+  .panel,
+  .adminPanel {
+    border-radius: 24px;
+    padding: 22px;
+  }
+
+  .sectionHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,337 @@
+{
+  "info": {
+    "_postman_id": "b0a90256-0d77-4a79-a4bc-71b3416cc184",
+    "name": "SaaS Platform Local",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Coleccion local para probar identidad, tenancy, auth session e invitaciones."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000/api"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "API / Hello",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Identity",
+      "item": [
+        {
+          "name": "Register Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  pm.environment.set('ownerUserId', data.id);",
+                  "  pm.environment.set('ownerEmail', data.email);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ownerEmail}}\",\n  \"authProvider\": \"password\",\n  \"name\": \"Owner Local\"\n}"
+            },
+            "url": "{{baseUrl}}/identity/users"
+          }
+        },
+        {
+          "name": "Register Invitee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  pm.environment.set('inviteeUserId', data.id);",
+                  "  pm.environment.set('inviteeEmail', data.email);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{inviteeEmail}}\",\n  \"authProvider\": \"password\",\n  \"name\": \"Invitee Local\"\n}"
+            },
+            "url": "{{baseUrl}}/identity/users"
+          }
+        },
+        {
+          "name": "Get Owner By Id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/identity/users/{{ownerUserId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tenancy",
+      "item": [
+        {
+          "name": "Create Tenant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.environment.set('tenantSlug', data.slug);",
+                  "  pm.environment.set('tenantId', data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"SaaS Platform Local\",\n  \"slug\": \"{{tenantSlug}}\",\n  \"ownerUserId\": \"{{ownerUserId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/tenancy/tenants"
+          }
+        },
+        {
+          "name": "Get Tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}"
+          }
+        },
+        {
+          "name": "List Memberships",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/memberships"
+          }
+        },
+        {
+          "name": "Get Member Access",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/memberships/{{inviteeUserId}}/access"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get Session",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          }
+        },
+        {
+          "name": "Set Current Tenancy",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tenantSlug\": \"{{tenantSlug}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/me/current-tenancy"
+          }
+        },
+        {
+          "name": "Get Invitation For Invitee",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{inviteeToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/invitations/{{invitationId}}"
+          }
+        },
+        {
+          "name": "Accept Invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{inviteeToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/invitations/{{invitationId}}/accept"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invitations",
+      "item": [
+        {
+          "name": "Create Invitation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.environment.set('invitationId', data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{inviteeEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/invitations"
+          }
+        },
+        {
+          "name": "List Tenant Invitations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/invitations"
+          }
+        },
+        {
+          "name": "Get Tenant Invitation Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/invitations/{{invitationId}}"
+          }
+        },
+        {
+          "name": "Resend Invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/invitations/{{invitationId}}/resend"
+          }
+        },
+        {
+          "name": "Cancel Invitation",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/invitations/{{invitationId}}"
+          }
+        }
+      ]
+    }
+  ]
+}

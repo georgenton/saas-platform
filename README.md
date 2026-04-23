@@ -42,6 +42,24 @@ Puedes cambiarlo con:
 VITE_API_BASE_URL
 ```
 
+Para consumo desde navegador, el backend ahora soporta CORS y puedes restringir orígenes con:
+
+```txt
+CORS_ORIGIN=http://127.0.0.1:5173,http://localhost:5173
+```
+
+## Manual testing
+
+Dejamos una guia practica para pruebas locales en:
+
+- [manual-testing.md](/Users/jorgequizamanchuro/Projects_local/saas-platform/docs/manual-testing.md)
+
+Incluye:
+- flujo completo API + web
+- JWT local para desarrollo
+- Mailpit para email local
+- coleccion y environment de Postman
+
 ## Email de invitaciones
 
 El backend ya puede enviar invitaciones reales por SMTP. Si no configuras SMTP, la invitacion se sigue creando y el sistema deja un warning en logs con el link de onboarding.

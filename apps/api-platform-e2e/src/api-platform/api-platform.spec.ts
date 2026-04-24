@@ -7,6 +7,7 @@ import {
   ENTITLEMENT_REPOSITORY,
   GetPlanByKeyUseCase,
   GetTenantSubscriptionUseCase,
+  ListTenantEnabledProductsUseCase,
   ListPlanEntitlementsUseCase,
   ListPlansUseCase,
   ListTenantEntitlementsUseCase,
@@ -76,6 +77,7 @@ describe('API', () => {
   let getUserByIdUseCase: { execute: jest.Mock };
   let getProductByKeyUseCase: { execute: jest.Mock };
   let getTenantSubscriptionUseCase: { execute: jest.Mock };
+  let listTenantEnabledProductsUseCase: { execute: jest.Mock };
   let listPlanEntitlementsUseCase: { execute: jest.Mock };
   let listPlansUseCase: { execute: jest.Mock };
   let registerUserUseCase: { execute: jest.Mock };
@@ -428,6 +430,9 @@ describe('API', () => {
     listTenantEntitlementsUseCase = {
       execute: jest.fn().mockResolvedValue(tenantEntitlements),
     };
+    listTenantEnabledProductsUseCase = {
+      execute: jest.fn().mockResolvedValue([invoicingProduct]),
+    };
     cancelTenantInvitationUseCase = {
       execute: jest.fn().mockResolvedValue(undefined),
     };
@@ -562,6 +567,8 @@ describe('API', () => {
       .useValue(getProductByKeyUseCase)
       .overrideProvider(GetTenantSubscriptionUseCase)
       .useValue(getTenantSubscriptionUseCase)
+      .overrideProvider(ListTenantEnabledProductsUseCase)
+      .useValue(listTenantEnabledProductsUseCase)
       .overrideProvider(ListPlanEntitlementsUseCase)
       .useValue(listPlanEntitlementsUseCase)
       .overrideProvider(ListPlansUseCase)
@@ -855,6 +862,51 @@ describe('API', () => {
     expect(getTenantSubscriptionUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
     );
+  });
+
+  it('GET /api/tenancy/tenants/:slug/products should return the enabled tenant products', async () => {
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/products')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'product_invoicing',
+          key: 'invoicing',
+          name: 'Invoicing',
+          description: 'Facturacion, clientes, catalogo y reportes.',
+          isActive: true,
+          createdAt: '2026-04-23T17:00:00.000Z',
+          updatedAt: '2026-04-23T17:00:00.000Z',
+        },
+      ]);
+
+    expect(listTenantEnabledProductsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/tenancy/tenants/:slug/products should require entitlement visibility permission', async () => {
+    resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
+      tenantId: 'tenant_123',
+      tenantSlug: 'saas-platform',
+      userId: 'user_456',
+      membershipId: 'membership_456',
+      membershipStatus: MembershipStatus.Active,
+      roleKeys: ['tenant_member'],
+      permissionKeys: [TENANT_PERMISSIONS.READ],
+    });
+
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/products')
+      .set('Authorization', `Bearer ${memberToken}`)
+      .expect(403)
+      .expect({
+        statusCode: 403,
+        message:
+          'Permission "tenant.entitlements.read" is required for this tenant resource.',
+        error: 'Forbidden',
+      });
   });
 
   it('PUT /api/tenancy/tenants/:slug/subscription should change the tenant plan and return the new commercial snapshot', async () => {

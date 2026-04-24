@@ -13,4 +13,5 @@ export * from './lib/use-cases/get-plan-by-key.use-case';
 export * from './lib/use-cases/get-tenant-subscription.use-case';
 export * from './lib/use-cases/list-plan-entitlements.use-case';
 export * from './lib/use-cases/list-plans.use-case';
+export * from './lib/use-cases/list-tenant-enabled-products.use-case';
 export * from './lib/use-cases/list-tenant-entitlements.use-case';

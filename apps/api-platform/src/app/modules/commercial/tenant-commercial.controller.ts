@@ -10,6 +10,7 @@ import {
 import {
   ChangeTenantPlanUseCase,
   GetTenantSubscriptionUseCase,
+  ListTenantEnabledProductsUseCase,
   ListTenantEntitlementsUseCase,
   PlanNotFoundError,
   SubscriptionNotFoundError,
@@ -24,6 +25,10 @@ import { RequireTenantPermission } from '../tenancy/require-tenant-permission.de
 import { TenantAccess } from '../tenancy/tenant-access.decorator';
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
+import {
+  EnabledProductResponseDto,
+  toEnabledProductResponseDto,
+} from './dto/enabled-product.response';
 import {
   EntitlementResponseDto,
   toEntitlementResponseDto,
@@ -43,6 +48,7 @@ export class TenantCommercialController {
   constructor(
     private readonly changeTenantPlanUseCase: ChangeTenantPlanUseCase,
     private readonly getTenantSubscriptionUseCase: GetTenantSubscriptionUseCase,
+    private readonly listTenantEnabledProductsUseCase: ListTenantEnabledProductsUseCase,
     private readonly listTenantEntitlementsUseCase: ListTenantEntitlementsUseCase,
   ) {}
 
@@ -68,6 +74,32 @@ export class TenantCommercialController {
         error instanceof TenantNotFoundError ||
         error instanceof SubscriptionNotFoundError
       ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/products')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async listTenantEnabledProducts(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EnabledProductResponseDto[]> {
+    try {
+      const products = await this.listTenantEnabledProductsUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+      );
+
+      return products.map((product) => toEnabledProductResponseDto(product));
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
       }
 

@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
+import { PRODUCT_REPOSITORY } from '@saas-platform/catalog-application';
 import {
   ChangeTenantPlanUseCase,
   ENTITLEMENT_REPOSITORY,
   GetPlanByKeyUseCase,
   GetTenantSubscriptionUseCase,
+  ListTenantEnabledProductsUseCase,
   ListPlanEntitlementsUseCase,
   ListPlansUseCase,
   ListTenantEntitlementsUseCase,
@@ -14,6 +16,7 @@ import {
   TENANT_COMMERCIAL_PROVISIONING_REPOSITORY,
 } from '@saas-platform/commercial-application';
 import {
+  CatalogPersistenceModule,
   CommercialPersistenceModule,
   TenancyPersistenceModule,
 } from '@saas-platform/infra-prisma';
@@ -29,7 +32,12 @@ import { PlatformCommercialController } from './platform-commercial.controller';
 import { TenantCommercialController } from './tenant-commercial.controller';
 
 @Module({
-  imports: [AuthModule, CommercialPersistenceModule, TenancyPersistenceModule],
+  imports: [
+    AuthModule,
+    CatalogPersistenceModule,
+    CommercialPersistenceModule,
+    TenancyPersistenceModule,
+  ],
   controllers: [PlatformCommercialController, TenantCommercialController],
   providers: [
     {
@@ -67,6 +75,16 @@ import { TenantCommercialController } from './tenant-commercial.controller';
         new ListTenantEntitlementsUseCase(
           tenantRepository,
           entitlementRepository,
+        ),
+    },
+    {
+      provide: ListTenantEnabledProductsUseCase,
+      inject: [TENANT_REPOSITORY, ENTITLEMENT_REPOSITORY, PRODUCT_REPOSITORY],
+      useFactory: (tenantRepository, entitlementRepository, productRepository) =>
+        new ListTenantEnabledProductsUseCase(
+          tenantRepository,
+          entitlementRepository,
+          productRepository,
         ),
     },
     {

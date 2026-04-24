@@ -1,0 +1,7 @@
+{
+  "name": "feature-flags-domain",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/feature-flags/domain/src",
+  "projectType": "library",
+  "tags": ["scope:core", "domain:feature-flags", "type:domain", "layer:domain"]
+}

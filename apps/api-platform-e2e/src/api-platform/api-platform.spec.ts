@@ -36,6 +36,11 @@ import {
   USER_REPOSITORY,
 } from '@saas-platform/identity-application';
 import { AuthProvider, User } from '@saas-platform/identity-domain';
+import {
+  ListTenantFeatureFlagsUseCase,
+  SetTenantFeatureFlagUseCase,
+} from '@saas-platform/feature-flags-application';
+import { FeatureFlag } from '@saas-platform/feature-flags-domain';
 import { PrismaService } from '@saas-platform/infra-prisma';
 import {
   AcceptTenantInvitationUseCase,
@@ -81,6 +86,7 @@ describe('API', () => {
   let getProductByKeyUseCase: { execute: jest.Mock };
   let getTenantSubscriptionUseCase: { execute: jest.Mock };
   let listTenantEnabledProductsUseCase: { execute: jest.Mock };
+  let listTenantFeatureFlagsUseCase: { execute: jest.Mock };
   let listPlanEntitlementsUseCase: { execute: jest.Mock };
   let listPlansUseCase: { execute: jest.Mock };
   let registerUserUseCase: { execute: jest.Mock };
@@ -110,6 +116,7 @@ describe('API', () => {
   let removeMembershipRoleUseCase: { execute: jest.Mock };
   let resendTenantInvitationUseCase: { execute: jest.Mock };
   let resolveTenantAccessUseCase: { execute: jest.Mock };
+  let setTenantFeatureFlagUseCase: { execute: jest.Mock };
   let createTenantUseCase: { execute: jest.Mock };
   let ownerToken: string;
   let inviteeToken: string;
@@ -130,6 +137,8 @@ describe('API', () => {
     TENANT_PERMISSIONS.SUBSCRIPTION_READ,
     TENANT_PERMISSIONS.SUBSCRIPTION_MANAGE,
     TENANT_PERMISSIONS.ENTITLEMENTS_READ,
+    TENANT_PERMISSIONS.FEATURE_FLAGS_READ,
+    TENANT_PERMISSIONS.FEATURE_FLAGS_MANAGE,
   ];
   const user = User.create({
     id: 'user_123',
@@ -304,6 +313,14 @@ describe('API', () => {
       updatedAt: commercialCreatedAt,
     }),
   ];
+  const psychologyProductDisabledFlag = FeatureFlag.create({
+    id: 'feature_flag_tenant_123_product.psychology.enabled',
+    tenantId: 'tenant_123',
+    key: 'product.psychology.enabled',
+    enabled: false,
+    createdAt: commercialCreatedAt,
+    updatedAt: commercialCreatedAt,
+  });
 
   const signJwt = (payload: Record<string, unknown>): string => {
     const encode = (value: unknown): string =>
@@ -438,6 +455,12 @@ describe('API', () => {
     };
     listTenantEnabledProductsUseCase = {
       execute: jest.fn().mockResolvedValue([invoicingProduct]),
+    };
+    listTenantFeatureFlagsUseCase = {
+      execute: jest.fn().mockResolvedValue([psychologyProductDisabledFlag]),
+    };
+    setTenantFeatureFlagUseCase = {
+      execute: jest.fn().mockResolvedValue(psychologyProductDisabledFlag),
     };
     cancelTenantInvitationUseCase = {
       execute: jest.fn().mockResolvedValue(undefined),
@@ -577,6 +600,8 @@ describe('API', () => {
       .useValue(getTenantSubscriptionUseCase)
       .overrideProvider(ListTenantEnabledProductsUseCase)
       .useValue(listTenantEnabledProductsUseCase)
+      .overrideProvider(ListTenantFeatureFlagsUseCase)
+      .useValue(listTenantFeatureFlagsUseCase)
       .overrideProvider(ListPlanEntitlementsUseCase)
       .useValue(listPlanEntitlementsUseCase)
       .overrideProvider(ListPlansUseCase)
@@ -607,6 +632,8 @@ describe('API', () => {
       .useValue(getTenantInvitationByIdUseCase)
       .overrideProvider(ResendTenantInvitationUseCase)
       .useValue(resendTenantInvitationUseCase)
+      .overrideProvider(SetTenantFeatureFlagUseCase)
+      .useValue(setTenantFeatureFlagUseCase)
       .overrideProvider(AcceptTenantInvitationUseCase)
       .useValue(acceptTenantInvitationUseCase)
       .overrideProvider(AcceptAuthenticatedUserInvitationUseCase)
@@ -1068,6 +1095,96 @@ describe('API', () => {
     expect(listTenantEntitlementsUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
     );
+  });
+
+  it('GET /api/tenancy/tenants/:slug/feature-flags should return tenant feature flags', async () => {
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/feature-flags')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'feature_flag_tenant_123_product.psychology.enabled',
+          tenantId: 'tenant_123',
+          key: 'product.psychology.enabled',
+          enabled: false,
+          createdAt: '2026-04-23T18:00:00.000Z',
+          updatedAt: '2026-04-23T18:00:00.000Z',
+        },
+      ]);
+
+    expect(listTenantFeatureFlagsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('PUT /api/tenancy/tenants/:slug/feature-flags/:key should upsert a tenant feature flag', async () => {
+    await request(httpServer)
+      .put('/api/tenancy/tenants/saas-platform/feature-flags/product.psychology.enabled')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ enabled: false })
+      .expect(200)
+      .expect({
+        id: 'feature_flag_tenant_123_product.psychology.enabled',
+        tenantId: 'tenant_123',
+        key: 'product.psychology.enabled',
+        enabled: false,
+        createdAt: '2026-04-23T18:00:00.000Z',
+        updatedAt: '2026-04-23T18:00:00.000Z',
+      });
+
+    expect(setTenantFeatureFlagUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      key: 'product.psychology.enabled',
+      enabled: false,
+    });
+  });
+
+  it('GET /api/tenancy/tenants/:slug/feature-flags should require feature flag visibility permission', async () => {
+    resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
+      tenantId: 'tenant_123',
+      tenantSlug: 'saas-platform',
+      userId: 'user_456',
+      membershipId: 'membership_456',
+      membershipStatus: MembershipStatus.Active,
+      roleKeys: ['tenant_member'],
+      permissionKeys: [TENANT_PERMISSIONS.READ],
+    });
+
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/feature-flags')
+      .set('Authorization', `Bearer ${memberToken}`)
+      .expect(403)
+      .expect({
+        statusCode: 403,
+        message:
+          'Permission "tenant.feature-flags.read" is required for this tenant resource.',
+        error: 'Forbidden',
+      });
+  });
+
+  it('PUT /api/tenancy/tenants/:slug/feature-flags/:key should require feature flag manage permission', async () => {
+    resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
+      tenantId: 'tenant_123',
+      tenantSlug: 'saas-platform',
+      userId: 'user_456',
+      membershipId: 'membership_456',
+      membershipStatus: MembershipStatus.Active,
+      roleKeys: ['tenant_member'],
+      permissionKeys: [TENANT_PERMISSIONS.READ, TENANT_PERMISSIONS.FEATURE_FLAGS_READ],
+    });
+
+    await request(httpServer)
+      .put('/api/tenancy/tenants/saas-platform/feature-flags/product.psychology.enabled')
+      .set('Authorization', `Bearer ${memberToken}`)
+      .send({ enabled: true })
+      .expect(403)
+      .expect({
+        statusCode: 403,
+        message:
+          'Permission "tenant.feature-flags.manage" is required for this tenant resource.',
+        error: 'Forbidden',
+      });
   });
 
   it('GET /api/auth/me should return the authenticated user session view', async () => {

@@ -17,6 +17,10 @@ export const TENANCY_PERMISSION_CATALOG = {
   entitlements: {
     read: 'tenant.entitlements.read',
   },
+  featureFlags: {
+    read: 'tenant.feature-flags.read',
+    manage: 'tenant.feature-flags.manage',
+  },
 } as const;
 
 export const TENANT_PERMISSIONS = {
@@ -30,4 +34,6 @@ export const TENANT_PERMISSIONS = {
   SUBSCRIPTION_READ: TENANCY_PERMISSION_CATALOG.subscription.read,
   SUBSCRIPTION_MANAGE: TENANCY_PERMISSION_CATALOG.subscription.manage,
   ENTITLEMENTS_READ: TENANCY_PERMISSION_CATALOG.entitlements.read,
+  FEATURE_FLAGS_READ: TENANCY_PERMISSION_CATALOG.featureFlags.read,
+  FEATURE_FLAGS_MANAGE: TENANCY_PERMISSION_CATALOG.featureFlags.manage,
 } as const;

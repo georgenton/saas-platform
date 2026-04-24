@@ -1,0 +1,7 @@
+{
+  "name": "feature-flags-application",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/feature-flags/application/src",
+  "projectType": "library",
+  "tags": ["scope:core", "domain:feature-flags", "type:application", "layer:application"]
+}

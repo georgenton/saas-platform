@@ -20,9 +20,11 @@ import {
   SUBSCRIPTION_REPOSITORY,
   TENANT_COMMERCIAL_PROVISIONING_REPOSITORY,
 } from '@saas-platform/commercial-application';
+import { FEATURE_FLAG_REPOSITORY } from '@saas-platform/feature-flags-application';
 import {
   CatalogPersistenceModule,
   CommercialPersistenceModule,
+  FeatureFlagsPersistenceModule,
   TenancyPersistenceModule,
 } from '@saas-platform/infra-prisma';
 import {
@@ -42,6 +44,7 @@ import { TenantCommercialController } from './tenant-commercial.controller';
     AuthModule,
     CatalogPersistenceModule,
     CommercialPersistenceModule,
+    FeatureFlagsPersistenceModule,
     TenancyPersistenceModule,
   ],
   controllers: [PlatformCommercialController, TenantCommercialController],
@@ -85,12 +88,23 @@ import { TenantCommercialController } from './tenant-commercial.controller';
     },
     {
       provide: ListTenantEnabledProductsUseCase,
-      inject: [TENANT_REPOSITORY, ENTITLEMENT_REPOSITORY, PRODUCT_REPOSITORY],
-      useFactory: (tenantRepository, entitlementRepository, productRepository) =>
+      inject: [
+        TENANT_REPOSITORY,
+        ENTITLEMENT_REPOSITORY,
+        PRODUCT_REPOSITORY,
+        FEATURE_FLAG_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        entitlementRepository,
+        productRepository,
+        featureFlagRepository,
+      ) =>
         new ListTenantEnabledProductsUseCase(
           tenantRepository,
           entitlementRepository,
           productRepository,
+          featureFlagRepository,
         ),
     },
     {

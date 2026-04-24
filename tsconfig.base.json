@@ -26,6 +26,12 @@
       "@saas-platform/commercial-domain": [
         "packages/core/commercial/domain/src/index.ts"
       ],
+      "@saas-platform/feature-flags-application": [
+        "packages/core/feature-flags/application/src/index.ts"
+      ],
+      "@saas-platform/feature-flags-domain": [
+        "packages/core/feature-flags/domain/src/index.ts"
+      ],
       "@saas-platform/identity-application": [
         "packages/core/identity/application/src/index.ts"
       ],

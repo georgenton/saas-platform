@@ -8,6 +8,8 @@ export * from './lib/commercial/prisma-plan.repository';
 export * from './lib/commercial/prisma-subscription.repository';
 export * from './lib/commercial/prisma-tenant-commercial-provisioning.repository';
 export * from './lib/commercial/uuid-subscription-id.generator';
+export * from './lib/feature-flags/feature-flags-persistence.module';
+export * from './lib/feature-flags/prisma-feature-flag.repository';
 export * from './lib/identity/identity-persistence.module';
 export * from './lib/identity/prisma-user.repository';
 export * from './lib/prisma.module';

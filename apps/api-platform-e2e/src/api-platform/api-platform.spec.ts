@@ -6,6 +6,7 @@ import {
   ChangeTenantPlanUseCase,
   ENTITLEMENT_REPOSITORY,
   GetPlanByKeyUseCase,
+  GetTenantEnabledProductByKeyUseCase,
   GetTenantSubscriptionUseCase,
   ListTenantEnabledProductsUseCase,
   ListPlanEntitlementsUseCase,
@@ -14,6 +15,7 @@ import {
   PlanNotFoundError,
   SUBSCRIPTION_REPOSITORY,
   SubscriptionNotFoundError,
+  TenantProductAccessDeniedError,
 } from '@saas-platform/commercial-application';
 import {
   Entitlement,
@@ -74,6 +76,7 @@ describe('API', () => {
   let changeTenantPlanUseCase: { execute: jest.Mock };
   let entitlementRepository: { findByTenantId: jest.Mock };
   let getPlanByKeyUseCase: { execute: jest.Mock };
+  let getTenantEnabledProductByKeyUseCase: { execute: jest.Mock };
   let getUserByIdUseCase: { execute: jest.Mock };
   let getProductByKeyUseCase: { execute: jest.Mock };
   let getTenantSubscriptionUseCase: { execute: jest.Mock };
@@ -380,6 +383,9 @@ describe('API', () => {
     getPlanByKeyUseCase = {
       execute: jest.fn().mockResolvedValue(growthPlan),
     };
+    getTenantEnabledProductByKeyUseCase = {
+      execute: jest.fn().mockResolvedValue(invoicingProduct),
+    };
     getUserByIdUseCase = {
       execute: jest.fn().mockResolvedValue(user),
     };
@@ -561,6 +567,8 @@ describe('API', () => {
       .useValue(entitlementRepository)
       .overrideProvider(GetPlanByKeyUseCase)
       .useValue(getPlanByKeyUseCase)
+      .overrideProvider(GetTenantEnabledProductByKeyUseCase)
+      .useValue(getTenantEnabledProductByKeyUseCase)
       .overrideProvider(GetUserByIdUseCase)
       .useValue(getUserByIdUseCase)
       .overrideProvider(GetProductByKeyUseCase)
@@ -906,6 +914,75 @@ describe('API', () => {
         message:
           'Permission "tenant.entitlements.read" is required for this tenant resource.',
         error: 'Forbidden',
+      });
+  });
+
+  it('GET /api/tenancy/tenants/:slug/products/:productKey/modules should return enabled modules for the tenant product', async () => {
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/products/invoicing/modules')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'module_invoicing_customers',
+          productId: 'product_invoicing',
+          key: 'customers',
+          name: 'Customers',
+          description: 'Gestion de clientes.',
+          isCore: true,
+          isActive: true,
+          createdAt: '2026-04-23T17:00:00.000Z',
+          updatedAt: '2026-04-23T17:00:00.000Z',
+        },
+        {
+          id: 'module_invoicing_invoices',
+          productId: 'product_invoicing',
+          key: 'invoices',
+          name: 'Invoices',
+          description: 'Emision de facturas.',
+          isCore: true,
+          isActive: true,
+          createdAt: '2026-04-23T17:00:00.000Z',
+          updatedAt: '2026-04-23T17:00:00.000Z',
+        },
+      ]);
+
+    expect(getTenantEnabledProductByKeyUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoicing',
+    );
+    expect(listProductModulesUseCase.execute).toHaveBeenCalledWith('invoicing');
+  });
+
+  it('GET /api/tenancy/tenants/:slug/products/:productKey/modules should return 403 when the product is not enabled for the tenant', async () => {
+    getTenantEnabledProductByKeyUseCase.execute.mockRejectedValueOnce(
+      new TenantProductAccessDeniedError('saas-platform', 'psychology'),
+    );
+
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/products/psychology/modules')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(403)
+      .expect({
+        statusCode: 403,
+        message: 'Product "psychology" is not enabled for tenant "saas-platform".',
+        error: 'Forbidden',
+      });
+  });
+
+  it('GET /api/tenancy/tenants/:slug/products/:productKey/modules should return 404 when the product does not exist', async () => {
+    getTenantEnabledProductByKeyUseCase.execute.mockRejectedValueOnce(
+      new ProductNotFoundError('unknown'),
+    );
+
+    await request(httpServer)
+      .get('/api/tenancy/tenants/saas-platform/products/unknown/modules')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(404)
+      .expect({
+        statusCode: 404,
+        message: 'Product with key "unknown" was not found.',
+        error: 'Not Found',
       });
   });
 

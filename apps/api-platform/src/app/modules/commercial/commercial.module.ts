@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
-import { PRODUCT_REPOSITORY } from '@saas-platform/catalog-application';
+import {
+  PLATFORM_MODULE_REPOSITORY,
+  ListProductModulesUseCase,
+  PRODUCT_REPOSITORY,
+} from '@saas-platform/catalog-application';
 import {
   ChangeTenantPlanUseCase,
   ENTITLEMENT_REPOSITORY,
   GetPlanByKeyUseCase,
+  GetTenantEnabledProductByKeyUseCase,
   GetTenantSubscriptionUseCase,
   ListTenantEnabledProductsUseCase,
   ListPlanEntitlementsUseCase,
@@ -28,6 +33,7 @@ import {
 import { AuthModule } from '../auth/auth.module';
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
+import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import { PlatformCommercialController } from './platform-commercial.controller';
 import { TenantCommercialController } from './tenant-commercial.controller';
 
@@ -88,6 +94,24 @@ import { TenantCommercialController } from './tenant-commercial.controller';
         ),
     },
     {
+      provide: GetTenantEnabledProductByKeyUseCase,
+      inject: [PRODUCT_REPOSITORY, ListTenantEnabledProductsUseCase],
+      useFactory: (productRepository, listTenantEnabledProductsUseCase) =>
+        new GetTenantEnabledProductByKeyUseCase(
+          productRepository,
+          listTenantEnabledProductsUseCase,
+        ),
+    },
+    {
+      provide: ListProductModulesUseCase,
+      inject: [PRODUCT_REPOSITORY, PLATFORM_MODULE_REPOSITORY],
+      useFactory: (productRepository, platformModuleRepository) =>
+        new ListProductModulesUseCase(
+          productRepository,
+          platformModuleRepository,
+        ),
+    },
+    {
       provide: ChangeTenantPlanUseCase,
       inject: [
         TENANT_REPOSITORY,
@@ -119,6 +143,7 @@ import { TenantCommercialController } from './tenant-commercial.controller';
     },
     TenantMembershipGuard,
     TenantPermissionGuard,
+    TenantProductAccessGuard,
   ],
 })
 export class CommercialModule {}

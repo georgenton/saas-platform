@@ -1,5 +1,6 @@
 export * from './lib/errors/plan-not-found.error';
 export * from './lib/errors/subscription-not-found.error';
+export * from './lib/errors/tenant-product-access-denied.error';
 export * from './lib/ports/entitlement.repository';
 export * from './lib/ports/plan-entitlement.repository';
 export * from './lib/ports/plan.repository';
@@ -10,6 +11,7 @@ export * from './lib/ports/tokens';
 export * from './lib/types/tenant-commercial-snapshot';
 export * from './lib/use-cases/change-tenant-plan.use-case';
 export * from './lib/use-cases/get-plan-by-key.use-case';
+export * from './lib/use-cases/get-tenant-enabled-product-by-key.use-case';
 export * from './lib/use-cases/get-tenant-subscription.use-case';
 export * from './lib/use-cases/list-plan-entitlements.use-case';
 export * from './lib/use-cases/list-plans.use-case';

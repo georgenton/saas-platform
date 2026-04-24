@@ -1,5 +1,21 @@
 # api-platform
 
+## 0.13.0
+
+### Minor Changes
+
+- 833b170: Expose tenant-enabled product modules and enforce commercial product access in the backend.
+
+  This change adds a tenant-aware endpoint to list modules for an enabled product and introduces a reusable product access guard/decorator that resolves whether the tenant can actually use the requested product.
+
+  It strengthens the bridge from catalog and entitlements into real backend enforcement, preparing future product slices to rely on effective tenant commercial access instead of UI-only gating.
+
+- cdbaf4c: Expose tenant-enabled product access derived from effective entitlements.
+
+  This change adds a tenant-aware API snapshot for the products currently enabled for a tenant based on its effective commercial entitlements.
+
+  It creates the first backend bridge between platform catalog data and commercial access enforcement, preparing future module-level access resolution and product guards.
+
 ## 0.12.0
 
 ### Minor Changes

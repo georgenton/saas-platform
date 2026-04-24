@@ -15,6 +15,7 @@ import {
   PlanNotFoundError,
   SubscriptionNotFoundError,
 } from '@saas-platform/commercial-application';
+import { ListProductModulesUseCase } from '@saas-platform/catalog-application';
 import {
   TENANT_PERMISSIONS,
   TenantAccessContext,
@@ -22,9 +23,12 @@ import {
 } from '@saas-platform/tenancy-application';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
 import { RequireTenantPermission } from '../tenancy/require-tenant-permission.decorator';
+import { RequireTenantProductAccess } from '../tenancy/require-tenant-product-access.decorator';
 import { TenantAccess } from '../tenancy/tenant-access.decorator';
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
+import { TenantProduct } from '../tenancy/tenant-product.decorator';
+import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import {
   EnabledProductResponseDto,
   toEnabledProductResponseDto,
@@ -33,6 +37,10 @@ import {
   EntitlementResponseDto,
   toEntitlementResponseDto,
 } from './dto/entitlement.response';
+import {
+  PlatformModuleResponseDto,
+  toPlatformModuleResponseDto,
+} from '../catalog/dto/platform-module.response';
 import { SetTenantSubscriptionRequestDto } from './dto/set-tenant-subscription.request';
 import {
   SubscriptionResponseDto,
@@ -48,6 +56,7 @@ export class TenantCommercialController {
   constructor(
     private readonly changeTenantPlanUseCase: ChangeTenantPlanUseCase,
     private readonly getTenantSubscriptionUseCase: GetTenantSubscriptionUseCase,
+    private readonly listProductModulesUseCase: ListProductModulesUseCase,
     private readonly listTenantEnabledProductsUseCase: ListTenantEnabledProductsUseCase,
     private readonly listTenantEntitlementsUseCase: ListTenantEntitlementsUseCase,
   ) {}
@@ -105,6 +114,23 @@ export class TenantCommercialController {
 
       throw error;
     }
+  }
+
+  @Get(':slug/products/:productKey/modules')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+    TenantProductAccessGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  @RequireTenantProductAccess()
+  async listTenantEnabledProductModules(
+    @TenantProduct() product: { key: string } | undefined,
+  ): Promise<PlatformModuleResponseDto[]> {
+    const modules = await this.listProductModulesUseCase.execute(product!.key);
+
+    return modules.map((module) => toPlatformModuleResponseDto(module));
   }
 
   @Put(':slug/subscription')

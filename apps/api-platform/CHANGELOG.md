@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.15.0
+
+### Minor Changes
+
+- 37807f0: Add the first invoicing product domain slice with tenant-scoped customers, invoices, and invoice items protected by commercial product access.
+
 ## 0.14.0
 
 ### Minor Changes

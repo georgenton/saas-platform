@@ -1,7 +1,11 @@
 import {
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
+  CustomerResponse,
+  InvoiceDetailResponse,
   InvitationResponse,
+  InvoiceItemResponse,
+  InvoiceSummaryResponse,
   PlatformPlan,
   PlatformProduct,
 } from './types';
@@ -64,6 +68,19 @@ export async function listProducts(token: string): Promise<PlatformProduct[]> {
     method: 'GET',
     token,
   });
+}
+
+export async function listTenantEnabledProducts(
+  token: string,
+  tenantSlug: string,
+): Promise<PlatformProduct[]> {
+  return request<PlatformProduct[]>(
+    `/tenancy/tenants/${encodeURIComponent(tenantSlug)}/products`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
 }
 
 export async function setCurrentTenancy(
@@ -175,6 +192,112 @@ export async function resendInvitation(
     {
       method: 'POST',
       token,
+    },
+  );
+}
+
+export async function listCustomers(
+  token: string,
+  tenantSlug: string,
+): Promise<CustomerResponse[]> {
+  return request<CustomerResponse[]>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/customers`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function createCustomer(
+  token: string,
+  tenantSlug: string,
+  body: {
+    name: string;
+    email?: string | null;
+    taxId?: string | null;
+  },
+): Promise<CustomerResponse> {
+  return request<CustomerResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/customers`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function listInvoices(
+  token: string,
+  tenantSlug: string,
+): Promise<InvoiceSummaryResponse[]> {
+  return request<InvoiceSummaryResponse[]>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/invoices`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchInvoiceDetail(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+): Promise<InvoiceDetailResponse> {
+  return request<InvoiceDetailResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function createInvoice(
+  token: string,
+  tenantSlug: string,
+  body: {
+    customerId: string;
+    number: string;
+    currency: string;
+    status?: string;
+    issuedAt?: string;
+    dueAt?: string | null;
+    notes?: string | null;
+  },
+): Promise<InvoiceDetailResponse> {
+  return request<InvoiceDetailResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/invoices`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function createInvoiceItem(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+  body: {
+    description: string;
+    quantity: number;
+    unitPriceInCents: number;
+  },
+): Promise<InvoiceItemResponse> {
+  return request<InvoiceItemResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/items`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
     },
   );
 }

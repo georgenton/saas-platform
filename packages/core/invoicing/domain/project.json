@@ -1,0 +1,7 @@
+{
+  "name": "invoicing-domain",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/invoicing/domain/src",
+  "projectType": "library",
+  "tags": ["scope:core", "domain:invoicing", "type:domain", "layer:domain"]
+}

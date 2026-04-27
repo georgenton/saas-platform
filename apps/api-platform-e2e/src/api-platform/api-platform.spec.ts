@@ -41,6 +41,21 @@ import {
   SetTenantFeatureFlagUseCase,
 } from '@saas-platform/feature-flags-application';
 import { FeatureFlag } from '@saas-platform/feature-flags-domain';
+import {
+  CreateTenantCustomerUseCase,
+  CreateTenantInvoiceUseCase,
+  CreateTenantInvoiceItemUseCase,
+  GetTenantCustomerByIdUseCase,
+  GetTenantInvoiceDetailUseCase,
+  GetTenantInvoiceByIdUseCase,
+  GetTenantInvoiceItemByIdUseCase,
+  INVOICING_PERMISSIONS,
+  ListTenantCustomersUseCase,
+  ListTenantInvoiceItemsUseCase,
+  ListTenantInvoiceSummariesUseCase,
+  ListTenantInvoicesUseCase,
+} from '@saas-platform/invoicing-application';
+import { Customer, Invoice, InvoiceItem } from '@saas-platform/invoicing-domain';
 import { PrismaService } from '@saas-platform/infra-prisma';
 import {
   AcceptTenantInvitationUseCase,
@@ -84,7 +99,15 @@ describe('API', () => {
   let getTenantEnabledProductByKeyUseCase: { execute: jest.Mock };
   let getUserByIdUseCase: { execute: jest.Mock };
   let getProductByKeyUseCase: { execute: jest.Mock };
+  let getTenantCustomerByIdUseCase: { execute: jest.Mock };
+  let getTenantInvoiceDetailUseCase: { execute: jest.Mock };
+  let getTenantInvoiceByIdUseCase: { execute: jest.Mock };
+  let getTenantInvoiceItemByIdUseCase: { execute: jest.Mock };
   let getTenantSubscriptionUseCase: { execute: jest.Mock };
+  let listTenantCustomersUseCase: { execute: jest.Mock };
+  let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
+  let listTenantInvoiceSummariesUseCase: { execute: jest.Mock };
+  let listTenantInvoicesUseCase: { execute: jest.Mock };
   let listTenantEnabledProductsUseCase: { execute: jest.Mock };
   let listTenantFeatureFlagsUseCase: { execute: jest.Mock };
   let listPlanEntitlementsUseCase: { execute: jest.Mock };
@@ -117,6 +140,9 @@ describe('API', () => {
   let resendTenantInvitationUseCase: { execute: jest.Mock };
   let resolveTenantAccessUseCase: { execute: jest.Mock };
   let setTenantFeatureFlagUseCase: { execute: jest.Mock };
+  let createTenantCustomerUseCase: { execute: jest.Mock };
+  let createTenantInvoiceUseCase: { execute: jest.Mock };
+  let createTenantInvoiceItemUseCase: { execute: jest.Mock };
   let createTenantUseCase: { execute: jest.Mock };
   let ownerToken: string;
   let inviteeToken: string;
@@ -139,6 +165,10 @@ describe('API', () => {
     TENANT_PERMISSIONS.ENTITLEMENTS_READ,
     TENANT_PERMISSIONS.FEATURE_FLAGS_READ,
     TENANT_PERMISSIONS.FEATURE_FLAGS_MANAGE,
+    INVOICING_PERMISSIONS.CUSTOMERS_READ,
+    INVOICING_PERMISSIONS.CUSTOMERS_MANAGE,
+    INVOICING_PERMISSIONS.INVOICES_READ,
+    INVOICING_PERMISSIONS.INVOICES_MANAGE,
   ];
   const user = User.create({
     id: 'user_123',
@@ -321,6 +351,77 @@ describe('API', () => {
     createdAt: commercialCreatedAt,
     updatedAt: commercialCreatedAt,
   });
+  const customerCreatedAt = new Date('2026-04-27T15:00:00.000Z');
+  const acmeCustomer = Customer.create({
+    id: 'customer_acme',
+    tenantId: 'tenant_123',
+    name: 'Acme Corp',
+    email: 'billing@acme.dev',
+    taxId: 'RUC-001',
+    createdAt: customerCreatedAt,
+    updatedAt: customerCreatedAt,
+  });
+  const globexCustomer = Customer.create({
+    id: 'customer_globex',
+    tenantId: 'tenant_123',
+    name: 'Globex LLC',
+    email: null,
+    taxId: null,
+    createdAt: new Date('2026-04-27T15:10:00.000Z'),
+    updatedAt: new Date('2026-04-27T15:10:00.000Z'),
+  });
+  const invoiceCreatedAt = new Date('2026-04-27T16:00:00.000Z');
+  const draftInvoice = Invoice.create({
+    id: 'invoice_001',
+    tenantId: 'tenant_123',
+    customerId: 'customer_acme',
+    number: 'INV-001',
+    status: 'draft',
+    currency: 'USD',
+    issuedAt: invoiceCreatedAt,
+    dueAt: new Date('2026-05-11T16:00:00.000Z'),
+    notes: 'Primer borrador para onboarding de invoicing.',
+    createdAt: invoiceCreatedAt,
+    updatedAt: invoiceCreatedAt,
+  });
+  const issuedInvoice = Invoice.create({
+    id: 'invoice_002',
+    tenantId: 'tenant_123',
+    customerId: 'customer_globex',
+    number: 'INV-002',
+    status: 'issued',
+    currency: 'USD',
+    issuedAt: new Date('2026-04-27T17:00:00.000Z'),
+    dueAt: null,
+    notes: null,
+    createdAt: new Date('2026-04-27T17:00:00.000Z'),
+    updatedAt: new Date('2026-04-27T17:00:00.000Z'),
+  });
+  const invoiceItemCreatedAt = new Date('2026-04-27T16:05:00.000Z');
+  const firstInvoiceItem = InvoiceItem.create({
+    id: 'invoice_item_001',
+    tenantId: 'tenant_123',
+    invoiceId: 'invoice_001',
+    position: 1,
+    description: 'Suscripcion mensual Growth',
+    quantity: 2,
+    unitPriceInCents: 5000,
+    lineTotalInCents: 10000,
+    createdAt: invoiceItemCreatedAt,
+    updatedAt: invoiceItemCreatedAt,
+  });
+  const secondInvoiceItem = InvoiceItem.create({
+    id: 'invoice_item_002',
+    tenantId: 'tenant_123',
+    invoiceId: 'invoice_001',
+    position: 2,
+    description: 'Setup inicial',
+    quantity: 1,
+    unitPriceInCents: 2500,
+    lineTotalInCents: 2500,
+    createdAt: new Date('2026-04-27T16:06:00.000Z'),
+    updatedAt: new Date('2026-04-27T16:06:00.000Z'),
+  });
 
   const signJwt = (payload: Record<string, unknown>): string => {
     const encode = (value: unknown): string =>
@@ -409,6 +510,26 @@ describe('API', () => {
     getProductByKeyUseCase = {
       execute: jest.fn().mockResolvedValue(invoicingProduct),
     };
+    getTenantCustomerByIdUseCase = {
+      execute: jest.fn().mockResolvedValue(acmeCustomer),
+    };
+    getTenantInvoiceDetailUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        invoice: draftInvoice,
+        items: [firstInvoiceItem, secondInvoiceItem],
+        totals: {
+          subtotalInCents: 12500,
+          taxInCents: 0,
+          totalInCents: 12500,
+        },
+      }),
+    };
+    getTenantInvoiceByIdUseCase = {
+      execute: jest.fn().mockResolvedValue(draftInvoice),
+    };
+    getTenantInvoiceItemByIdUseCase = {
+      execute: jest.fn().mockResolvedValue(firstInvoiceItem),
+    };
     getTenantSubscriptionUseCase = {
       execute: jest.fn().mockResolvedValue(tenantSubscription),
     };
@@ -456,11 +577,54 @@ describe('API', () => {
     listTenantEnabledProductsUseCase = {
       execute: jest.fn().mockResolvedValue([invoicingProduct]),
     };
+    listTenantCustomersUseCase = {
+      execute: jest.fn().mockResolvedValue([acmeCustomer, globexCustomer]),
+    };
+    listTenantInvoiceItemsUseCase = {
+      execute: jest.fn().mockResolvedValue([
+        firstInvoiceItem,
+        secondInvoiceItem,
+      ]),
+    };
+    listTenantInvoiceSummariesUseCase = {
+      execute: jest.fn().mockResolvedValue([
+        {
+          invoice: draftInvoice,
+          itemCount: 2,
+          totals: {
+            subtotalInCents: 12500,
+            taxInCents: 0,
+            totalInCents: 12500,
+          },
+        },
+        {
+          invoice: issuedInvoice,
+          itemCount: 0,
+          totals: {
+            subtotalInCents: 0,
+            taxInCents: 0,
+            totalInCents: 0,
+          },
+        },
+      ]),
+    };
+    listTenantInvoicesUseCase = {
+      execute: jest.fn().mockResolvedValue([draftInvoice, issuedInvoice]),
+    };
     listTenantFeatureFlagsUseCase = {
       execute: jest.fn().mockResolvedValue([psychologyProductDisabledFlag]),
     };
     setTenantFeatureFlagUseCase = {
       execute: jest.fn().mockResolvedValue(psychologyProductDisabledFlag),
+    };
+    createTenantCustomerUseCase = {
+      execute: jest.fn().mockResolvedValue(acmeCustomer),
+    };
+    createTenantInvoiceUseCase = {
+      execute: jest.fn().mockResolvedValue(draftInvoice),
+    };
+    createTenantInvoiceItemUseCase = {
+      execute: jest.fn().mockResolvedValue(firstInvoiceItem),
     };
     cancelTenantInvitationUseCase = {
       execute: jest.fn().mockResolvedValue(undefined),
@@ -596,10 +760,26 @@ describe('API', () => {
       .useValue(getUserByIdUseCase)
       .overrideProvider(GetProductByKeyUseCase)
       .useValue(getProductByKeyUseCase)
+      .overrideProvider(GetTenantCustomerByIdUseCase)
+      .useValue(getTenantCustomerByIdUseCase)
+      .overrideProvider(GetTenantInvoiceDetailUseCase)
+      .useValue(getTenantInvoiceDetailUseCase)
+      .overrideProvider(GetTenantInvoiceByIdUseCase)
+      .useValue(getTenantInvoiceByIdUseCase)
+      .overrideProvider(GetTenantInvoiceItemByIdUseCase)
+      .useValue(getTenantInvoiceItemByIdUseCase)
       .overrideProvider(GetTenantSubscriptionUseCase)
       .useValue(getTenantSubscriptionUseCase)
       .overrideProvider(ListTenantEnabledProductsUseCase)
       .useValue(listTenantEnabledProductsUseCase)
+      .overrideProvider(ListTenantCustomersUseCase)
+      .useValue(listTenantCustomersUseCase)
+      .overrideProvider(ListTenantInvoiceItemsUseCase)
+      .useValue(listTenantInvoiceItemsUseCase)
+      .overrideProvider(ListTenantInvoiceSummariesUseCase)
+      .useValue(listTenantInvoiceSummariesUseCase)
+      .overrideProvider(ListTenantInvoicesUseCase)
+      .useValue(listTenantInvoicesUseCase)
       .overrideProvider(ListTenantFeatureFlagsUseCase)
       .useValue(listTenantFeatureFlagsUseCase)
       .overrideProvider(ListPlanEntitlementsUseCase)
@@ -634,6 +814,12 @@ describe('API', () => {
       .useValue(resendTenantInvitationUseCase)
       .overrideProvider(SetTenantFeatureFlagUseCase)
       .useValue(setTenantFeatureFlagUseCase)
+      .overrideProvider(CreateTenantCustomerUseCase)
+      .useValue(createTenantCustomerUseCase)
+      .overrideProvider(CreateTenantInvoiceUseCase)
+      .useValue(createTenantInvoiceUseCase)
+      .overrideProvider(CreateTenantInvoiceItemUseCase)
+      .useValue(createTenantInvoiceItemUseCase)
       .overrideProvider(AcceptTenantInvitationUseCase)
       .useValue(acceptTenantInvitationUseCase)
       .overrideProvider(AcceptAuthenticatedUserInvitationUseCase)
@@ -1011,6 +1197,356 @@ describe('API', () => {
         message: 'Product with key "unknown" was not found.',
         error: 'Not Found',
       });
+  });
+
+  it('GET /api/invoicing/tenants/:slug/customers should return tenant-scoped customers', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/customers')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'customer_acme',
+          tenantId: 'tenant_123',
+          name: 'Acme Corp',
+          email: 'billing@acme.dev',
+          taxId: 'RUC-001',
+          createdAt: '2026-04-27T15:00:00.000Z',
+          updatedAt: '2026-04-27T15:00:00.000Z',
+        },
+        {
+          id: 'customer_globex',
+          tenantId: 'tenant_123',
+          name: 'Globex LLC',
+          email: null,
+          taxId: null,
+          createdAt: '2026-04-27T15:10:00.000Z',
+          updatedAt: '2026-04-27T15:10:00.000Z',
+        },
+      ]);
+
+    expect(getTenantEnabledProductByKeyUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoicing',
+    );
+    expect(listTenantCustomersUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/invoicing/tenants/:slug/customers/:customerId should return one tenant customer', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/customers/customer_acme')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'customer_acme',
+        tenantId: 'tenant_123',
+        name: 'Acme Corp',
+        email: 'billing@acme.dev',
+        taxId: 'RUC-001',
+        createdAt: '2026-04-27T15:00:00.000Z',
+        updatedAt: '2026-04-27T15:00:00.000Z',
+      });
+
+    expect(getTenantCustomerByIdUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'customer_acme',
+    );
+  });
+
+  it('POST /api/invoicing/tenants/:slug/customers should create a tenant customer', async () => {
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/customers')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        name: 'Acme Corp',
+        email: 'Billing@Acme.dev',
+        taxId: 'RUC-001',
+      })
+      .expect(201)
+      .expect({
+        id: 'customer_acme',
+        tenantId: 'tenant_123',
+        name: 'Acme Corp',
+        email: 'billing@acme.dev',
+        taxId: 'RUC-001',
+        createdAt: '2026-04-27T15:00:00.000Z',
+        updatedAt: '2026-04-27T15:00:00.000Z',
+      });
+
+    expect(createTenantCustomerUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      name: 'Acme Corp',
+      email: 'Billing@Acme.dev',
+      taxId: 'RUC-001',
+    });
+  });
+
+  it('GET /api/invoicing/tenants/:slug/customers should return 403 when invoicing is not enabled for the tenant', async () => {
+    getTenantEnabledProductByKeyUseCase.execute.mockRejectedValueOnce(
+      new TenantProductAccessDeniedError('saas-platform', 'invoicing'),
+    );
+
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/customers')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(403)
+      .expect({
+        statusCode: 403,
+        message: 'Product "invoicing" is not enabled for tenant "saas-platform".',
+        error: 'Forbidden',
+      });
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices should return tenant-scoped invoices', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/invoices')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'invoice_001',
+          tenantId: 'tenant_123',
+          customerId: 'customer_acme',
+          number: 'INV-001',
+          status: 'draft',
+          currency: 'USD',
+          issuedAt: '2026-04-27T16:00:00.000Z',
+          dueAt: '2026-05-11T16:00:00.000Z',
+          notes: 'Primer borrador para onboarding de invoicing.',
+          createdAt: '2026-04-27T16:00:00.000Z',
+          updatedAt: '2026-04-27T16:00:00.000Z',
+          itemCount: 2,
+          totals: {
+            subtotalInCents: 12500,
+            taxInCents: 0,
+            totalInCents: 12500,
+          },
+        },
+        {
+          id: 'invoice_002',
+          tenantId: 'tenant_123',
+          customerId: 'customer_globex',
+          number: 'INV-002',
+          status: 'issued',
+          currency: 'USD',
+          issuedAt: '2026-04-27T17:00:00.000Z',
+          dueAt: null,
+          notes: null,
+          createdAt: '2026-04-27T17:00:00.000Z',
+          updatedAt: '2026-04-27T17:00:00.000Z',
+          itemCount: 0,
+          totals: {
+            subtotalInCents: 0,
+            taxInCents: 0,
+            totalInCents: 0,
+          },
+        },
+      ]);
+
+    expect(listTenantInvoiceSummariesUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId should return one invoice', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/invoices/invoice_001')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'invoice_001',
+        tenantId: 'tenant_123',
+        customerId: 'customer_acme',
+        number: 'INV-001',
+        status: 'draft',
+        currency: 'USD',
+        issuedAt: '2026-04-27T16:00:00.000Z',
+        dueAt: '2026-05-11T16:00:00.000Z',
+        notes: 'Primer borrador para onboarding de invoicing.',
+        createdAt: '2026-04-27T16:00:00.000Z',
+        updatedAt: '2026-04-27T16:00:00.000Z',
+        items: [
+          {
+            id: 'invoice_item_001',
+            tenantId: 'tenant_123',
+            invoiceId: 'invoice_001',
+            position: 1,
+            description: 'Suscripcion mensual Growth',
+            quantity: 2,
+            unitPriceInCents: 5000,
+            lineTotalInCents: 10000,
+            createdAt: '2026-04-27T16:05:00.000Z',
+            updatedAt: '2026-04-27T16:05:00.000Z',
+          },
+          {
+            id: 'invoice_item_002',
+            tenantId: 'tenant_123',
+            invoiceId: 'invoice_001',
+            position: 2,
+            description: 'Setup inicial',
+            quantity: 1,
+            unitPriceInCents: 2500,
+            lineTotalInCents: 2500,
+            createdAt: '2026-04-27T16:06:00.000Z',
+            updatedAt: '2026-04-27T16:06:00.000Z',
+          },
+        ],
+        totals: {
+          subtotalInCents: 12500,
+          taxInCents: 0,
+          totalInCents: 12500,
+        },
+      });
+
+    expect(getTenantInvoiceDetailUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice_001',
+    );
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices should create a tenant invoice tied to a customer', async () => {
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/invoices')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        customerId: 'customer_acme',
+        number: 'inv-001',
+        currency: 'usd',
+        status: 'draft',
+        issuedAt: '2026-04-27T16:00:00.000Z',
+        dueAt: '2026-05-11T16:00:00.000Z',
+        notes: 'Primer borrador para onboarding de invoicing.',
+      })
+      .expect(201)
+      .expect({
+        id: 'invoice_001',
+        tenantId: 'tenant_123',
+        customerId: 'customer_acme',
+        number: 'INV-001',
+        status: 'draft',
+        currency: 'USD',
+        issuedAt: '2026-04-27T16:00:00.000Z',
+        dueAt: '2026-05-11T16:00:00.000Z',
+        notes: 'Primer borrador para onboarding de invoicing.',
+        createdAt: '2026-04-27T16:00:00.000Z',
+        updatedAt: '2026-04-27T16:00:00.000Z',
+        items: [],
+        totals: {
+          subtotalInCents: 0,
+          taxInCents: 0,
+          totalInCents: 0,
+        },
+      });
+
+    expect(createTenantInvoiceUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      customerId: 'customer_acme',
+      number: 'inv-001',
+      currency: 'usd',
+      status: 'draft',
+      issuedAt: new Date('2026-04-27T16:00:00.000Z'),
+      dueAt: new Date('2026-05-11T16:00:00.000Z'),
+      notes: 'Primer borrador para onboarding de invoicing.',
+    });
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/items should return invoice items', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/invoices/invoice_001/items')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'invoice_item_001',
+          tenantId: 'tenant_123',
+          invoiceId: 'invoice_001',
+          position: 1,
+          description: 'Suscripcion mensual Growth',
+          quantity: 2,
+          unitPriceInCents: 5000,
+          lineTotalInCents: 10000,
+          createdAt: '2026-04-27T16:05:00.000Z',
+          updatedAt: '2026-04-27T16:05:00.000Z',
+        },
+        {
+          id: 'invoice_item_002',
+          tenantId: 'tenant_123',
+          invoiceId: 'invoice_001',
+          position: 2,
+          description: 'Setup inicial',
+          quantity: 1,
+          unitPriceInCents: 2500,
+          lineTotalInCents: 2500,
+          createdAt: '2026-04-27T16:06:00.000Z',
+          updatedAt: '2026-04-27T16:06:00.000Z',
+        },
+      ]);
+
+    expect(listTenantInvoiceItemsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice_001',
+    );
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/items/:itemId should return one invoice item', async () => {
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/invoice_001/items/invoice_item_001',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'invoice_item_001',
+        tenantId: 'tenant_123',
+        invoiceId: 'invoice_001',
+        position: 1,
+        description: 'Suscripcion mensual Growth',
+        quantity: 2,
+        unitPriceInCents: 5000,
+        lineTotalInCents: 10000,
+        createdAt: '2026-04-27T16:05:00.000Z',
+        updatedAt: '2026-04-27T16:05:00.000Z',
+      });
+
+    expect(getTenantInvoiceItemByIdUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice_001',
+      'invoice_item_001',
+    );
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/items should create an invoice item with calculated line totals', async () => {
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/invoices/invoice_001/items')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        description: 'Suscripcion mensual Growth',
+        quantity: 2,
+        unitPriceInCents: 5000,
+      })
+      .expect(201)
+      .expect({
+        id: 'invoice_item_001',
+        tenantId: 'tenant_123',
+        invoiceId: 'invoice_001',
+        position: 1,
+        description: 'Suscripcion mensual Growth',
+        quantity: 2,
+        unitPriceInCents: 5000,
+        lineTotalInCents: 10000,
+        createdAt: '2026-04-27T16:05:00.000Z',
+        updatedAt: '2026-04-27T16:05:00.000Z',
+      });
+
+    expect(createTenantInvoiceItemUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'invoice_001',
+      description: 'Suscripcion mensual Growth',
+      quantity: 2,
+      unitPriceInCents: 5000,
+    });
   });
 
   it('PUT /api/tenancy/tenants/:slug/subscription should change the tenant plan and return the new commercial snapshot', async () => {

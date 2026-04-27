@@ -137,3 +137,64 @@ export interface PlatformProduct {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface CustomerResponse {
+  id: string;
+  tenantId: string;
+  name: string;
+  email: string | null;
+  taxId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvoiceTotals {
+  subtotalInCents: number;
+  taxInCents: number;
+  totalInCents: number;
+}
+
+export interface InvoiceItemResponse {
+  id: string;
+  tenantId: string;
+  invoiceId: string;
+  position: number;
+  description: string;
+  quantity: number;
+  unitPriceInCents: number;
+  lineTotalInCents: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvoiceSummaryResponse {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  number: string;
+  status: string;
+  currency: string;
+  issuedAt: string;
+  dueAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  itemCount: number;
+  totals: InvoiceTotals;
+}
+
+export interface InvoiceDetailResponse {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  number: string;
+  status: string;
+  currency: string;
+  issuedAt: string;
+  dueAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  items: InvoiceItemResponse[];
+  totals: InvoiceTotals;
+}

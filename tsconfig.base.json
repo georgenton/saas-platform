@@ -38,6 +38,12 @@
       "@saas-platform/identity-domain": [
         "packages/core/identity/domain/src/index.ts"
       ],
+      "@saas-platform/invoicing-application": [
+        "packages/core/invoicing/application/src/index.ts"
+      ],
+      "@saas-platform/invoicing-domain": [
+        "packages/core/invoicing/domain/src/index.ts"
+      ],
       "@saas-platform/infra-prisma": [
         "packages/infra/prisma/src/index.ts"
       ],

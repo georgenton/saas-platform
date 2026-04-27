@@ -12,7 +12,10 @@ import {
   TenantProductAccessDeniedError,
 } from '@saas-platform/commercial-application';
 import { ProductNotFoundError } from '@saas-platform/catalog-application';
-import { TENANT_PRODUCT_ACCESS_PARAM_KEY } from './require-tenant-product-access.decorator';
+import {
+  RequireTenantProductAccessOptions,
+  TENANT_PRODUCT_ACCESS_PARAM_KEY,
+} from './require-tenant-product-access.decorator';
 
 @Injectable()
 export class TenantProductAccessGuard implements CanActivate {
@@ -22,18 +25,23 @@ export class TenantProductAccessGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const productParamName = this.reflector.getAllAndOverride<string>(
-      TENANT_PRODUCT_ACCESS_PARAM_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const accessOptions =
+      this.reflector.getAllAndOverride<RequireTenantProductAccessOptions>(
+        TENANT_PRODUCT_ACCESS_PARAM_KEY,
+        [context.getHandler(), context.getClass()],
+      );
 
-    if (!productParamName) {
+    if (!accessOptions) {
       return true;
     }
 
     const request = context.switchToHttp().getRequest();
     const tenantSlug = request.tenantAccess?.tenantSlug as string | undefined;
-    const productKey = request.params?.[productParamName] as string | undefined;
+    const productKey =
+      accessOptions.productKey ??
+      (request.params?.[accessOptions.productParamName ?? 'productKey'] as
+        | string
+        | undefined);
 
     if (!tenantSlug) {
       throw new UnauthorizedException(

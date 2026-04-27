@@ -163,7 +163,8 @@
 }
 
 .field textarea,
-.field input {
+.field input,
+.selectField {
   background: rgba(255, 255, 255, 0.84);
   border: 1px solid rgba(115, 92, 70, 0.18);
   border-radius: 18px;
@@ -179,7 +180,8 @@
 }
 
 .field textarea:focus,
-.field input:focus {
+.field input:focus,
+.selectField:focus {
   border-color: #8f5631;
   box-shadow: 0 0 0 3px rgba(143, 86, 49, 0.12);
   outline: none;
@@ -373,6 +375,12 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.invoiceKpiGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .commercialCard,
 .featureCard {
   background: rgba(255, 255, 255, 0.78);
@@ -408,8 +416,21 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.invoiceInlineGrid,
+.invoiceTotalsGrid,
+.invoiceDetailGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.invoiceTotalsGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .selectorCard,
-.invitationCard {
+.invitationCard,
+.invoiceCard {
   background: rgba(255, 255, 255, 0.74);
   border: 1px solid rgba(115, 92, 70, 0.1);
   border-radius: 20px;
@@ -421,20 +442,40 @@
 }
 
 .selectorCard span,
-.invitationCard span {
+.invitationCard span,
+.invoiceCard span {
   font-weight: 700;
 }
 
 .selectorCard small,
-.invitationCard small {
+.invitationCard small,
+.invoiceCard small,
+.invoiceItemCard small {
   color: #6f6358;
 }
 
 .selectorCardActive,
-.invitationCardActive {
+.invitationCardActive,
+.invoiceCardActive {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 233, 202, 0.82) 100%);
   border-color: rgba(143, 86, 49, 0.34);
   box-shadow: 0 16px 30px rgba(143, 86, 49, 0.14);
+}
+
+.invoiceCardHeader {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.invoiceItemCard {
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(115, 92, 70, 0.1);
+  border-radius: 20px;
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
 }
 
 .invitationSection {
@@ -477,9 +518,11 @@
 
   .commercialGrid,
   .featureGrid,
+  .invoiceKpiGrid,
   .identityBlock,
   .sessionStateGrid,
-  .detailGrid {
+  .detailGrid,
+  .invoiceTotalsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -493,10 +536,14 @@
   .inlineForm,
   .commercialGrid,
   .featureGrid,
+  .invoiceKpiGrid,
   .selectorGrid,
   .identityBlock,
   .sessionStateGrid,
-  .detailGrid {
+  .detailGrid,
+  .invoiceInlineGrid,
+  .invoiceTotalsGrid,
+  .invoiceDetailGrid {
     grid-template-columns: 1fr;
   }
 

@@ -36,8 +36,64 @@ model Tenant {
   subscriptions Subscription[]
   entitlements Entitlement[]
   featureFlags FeatureFlag[]
+  customers    Customer[]
+  invoices     Invoice[]
+  invoiceItems InvoiceItem[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+}
+
+model Customer {
+  id        String   @id
+  tenantId  String
+  name      String
+  email     String?
+  taxId     String?
+  invoices  Invoice[]
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, createdAt])
+}
+
+model Invoice {
+  id         String   @id
+  tenantId    String
+  customerId String
+  number     String
+  status     String
+  currency   String
+  issuedAt   DateTime
+  dueAt      DateTime?
+  notes      String?
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items      InvoiceItem[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([tenantId, number])
+  @@index([tenantId, createdAt])
+  @@index([customerId])
+}
+
+model InvoiceItem {
+  id               String   @id
+  tenantId         String
+  invoiceId        String
+  position         Int
+  description      String
+  quantity         Int
+  unitPriceInCents Int
+  lineTotalInCents Int
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice          Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([invoiceId, position])
+  @@index([tenantId, invoiceId, createdAt])
 }
 
 model Product {

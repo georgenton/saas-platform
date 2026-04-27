@@ -7,6 +7,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { CommercialModule } from './modules/commercial/commercial.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { InvoicingModule } from './modules/invoicing/invoicing.module';
 import { TenancyModule } from './modules/tenancy/tenancy.module';
 
 @Module({
@@ -17,6 +18,7 @@ import { TenancyModule } from './modules/tenancy/tenancy.module';
     CommercialModule,
     FeatureFlagsModule,
     IdentityModule,
+    InvoicingModule,
     TenancyModule,
   ],
   controllers: [AppController],

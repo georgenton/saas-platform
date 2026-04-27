@@ -3,12 +3,19 @@ import styles from './app.module.css';
 import {
   acceptInvitation,
   cancelInvitation,
+  createCustomer,
   createInvitation,
+  createInvoice,
+  createInvoiceItem,
   fetchInvitationForInvitee,
+  fetchInvoiceDetail,
   fetchSession,
   getTenantInvitation,
+  listCustomers,
+  listInvoices,
   listPlans,
   listProducts,
+  listTenantEnabledProducts,
   listTenantInvitations,
   resendInvitation,
   setCurrentTenancy,
@@ -16,7 +23,10 @@ import {
 import {
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
+  CustomerResponse,
+  InvoiceDetailResponse,
   InvitationResponse,
+  InvoiceSummaryResponse,
   PlatformPlan,
   PlatformProduct,
   SessionPendingInvitation,
@@ -75,6 +85,21 @@ function formatMoney(priceInCents: number, currency: string): string {
     currency,
     maximumFractionDigits: 2,
   }).format(priceInCents / 100);
+}
+
+function formatInvoiceStatus(status: string): string {
+  switch (status.toLowerCase()) {
+    case 'draft':
+      return 'Borrador';
+    case 'issued':
+      return 'Emitida';
+    case 'paid':
+      return 'Pagada';
+    case 'void':
+      return 'Anulada';
+    default:
+      return status;
+  }
 }
 
 function getEntitlementValue(
@@ -139,8 +164,36 @@ export function App() {
   const [sessionLoading, setSessionLoading] = useState(false);
   const [planCatalog, setPlanCatalog] = useState<PlatformPlan[]>([]);
   const [productCatalog, setProductCatalog] = useState<PlatformProduct[]>([]);
+  const [tenantEnabledProducts, setTenantEnabledProducts] = useState<
+    PlatformProduct[]
+  >([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+
+  const [customers, setCustomers] = useState<CustomerResponse[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceSummaryResponse[]>([]);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [selectedInvoiceDetail, setSelectedInvoiceDetail] =
+    useState<InvoiceDetailResponse | null>(null);
+  const [invoicingLoading, setInvoicingLoading] = useState(false);
+  const [invoiceDetailLoading, setInvoiceDetailLoading] = useState(false);
+  const [invoicingError, setInvoicingError] = useState<string | null>(null);
+  const [invoicingActionMessage, setInvoicingActionMessage] = useState<
+    string | null
+  >(null);
+
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [newCustomerEmail, setNewCustomerEmail] = useState('');
+  const [newCustomerTaxId, setNewCustomerTaxId] = useState('');
+  const [newInvoiceCustomerId, setNewInvoiceCustomerId] = useState('');
+  const [newInvoiceNumber, setNewInvoiceNumber] = useState('');
+  const [newInvoiceCurrency, setNewInvoiceCurrency] = useState('USD');
+  const [newInvoiceStatus, setNewInvoiceStatus] = useState('draft');
+  const [newInvoiceDueAt, setNewInvoiceDueAt] = useState('');
+  const [newInvoiceNotes, setNewInvoiceNotes] = useState('');
+  const [newItemDescription, setNewItemDescription] = useState('');
+  const [newItemQuantity, setNewItemQuantity] = useState('1');
+  const [newItemUnitPriceInCents, setNewItemUnitPriceInCents] = useState('');
 
   const [tenantInvitations, setTenantInvitations] = useState<InvitationResponse[]>(
     [],
@@ -203,14 +256,13 @@ export function App() {
   }, [currentSubscription, planCatalog]);
 
   const enabledProductKeys = useMemo(
-    () => new Set(getStringArrayEntitlement(currentEntitlements, 'products')),
-    [currentEntitlements],
+    () => new Set(tenantEnabledProducts.map((product) => product.key)),
+    [tenantEnabledProducts],
   );
 
   const enabledProducts = useMemo(
-    () =>
-      productCatalog.filter((product) => enabledProductKeys.has(product.key)),
-    [enabledProductKeys, productCatalog],
+    () => tenantEnabledProducts,
+    [tenantEnabledProducts],
   );
 
   const lockedProducts = useMemo(
@@ -219,6 +271,36 @@ export function App() {
         (product) => product.isActive && !enabledProductKeys.has(product.key),
       ),
     [enabledProductKeys, productCatalog],
+  );
+  const invoicingEnabled = enabledProductKeys.has('invoicing');
+  const selectedInvoiceSummary = useMemo(
+    () =>
+      invoices.find((invoice) => invoice.id === selectedInvoiceId) ?? null,
+    [invoices, selectedInvoiceId],
+  );
+  const customerNameById = useMemo(
+    () =>
+      new Map(customers.map((customer) => [customer.id, customer.name] as const)),
+    [customers],
+  );
+  const invoicePortfolioTotal = useMemo(
+    () =>
+      invoices.reduce(
+        (sum, invoice) => sum + invoice.totals.totalInCents,
+        0,
+      ),
+    [invoices],
+  );
+  const invoicePortfolioCurrency = invoices[0]?.currency ?? 'USD';
+  const issuedInvoiceCount = useMemo(
+    () =>
+      invoices.filter((invoice) => invoice.status.toLowerCase() === 'issued')
+        .length,
+    [invoices],
+  );
+  const nextInvoiceNumberSuggestion = useMemo(
+    () => `INV-${String(invoices.length + 1).padStart(4, '0')}`,
+    [invoices.length],
   );
 
   const aiEnabled = getBooleanEntitlement(currentEntitlements, 'ai_enabled');
@@ -342,6 +424,162 @@ export function App() {
   }, [token]);
 
   useEffect(() => {
+    if (!token || !currentTenancy) {
+      setTenantEnabledProducts([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadEnabledProducts() {
+      try {
+        const products = await listTenantEnabledProducts(
+          token,
+          currentTenancy.tenant.slug,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantEnabledProducts(products);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setCatalogError(
+          error instanceof Error
+            ? error.message
+            : 'No se pudo resolver el acceso efectivo del tenant.',
+        );
+        setTenantEnabledProducts([]);
+      }
+    }
+
+    void loadEnabledProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentTenancy, token]);
+
+  useEffect(() => {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      setCustomers([]);
+      setInvoices([]);
+      setSelectedInvoiceId(null);
+      setSelectedInvoiceDetail(null);
+      setInvoicingError(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadInvoicingWorkspace() {
+      setInvoicingLoading(true);
+      setInvoicingError(null);
+
+      try {
+        const [nextCustomers, nextInvoices] = await Promise.all([
+          listCustomers(token, currentTenancy.tenant.slug),
+          listInvoices(token, currentTenancy.tenant.slug),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setCustomers(nextCustomers);
+          setInvoices(nextInvoices);
+          setSelectedInvoiceId((currentSelection) =>
+            nextInvoices.some((invoice) => invoice.id === currentSelection)
+              ? currentSelection
+              : nextInvoices[0]?.id ?? null,
+          );
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setCustomers([]);
+        setInvoices([]);
+        setSelectedInvoiceId(null);
+        setSelectedInvoiceDetail(null);
+        setInvoicingError(
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el workspace de invoicing.',
+        );
+      } finally {
+        if (!cancelled) {
+          setInvoicingLoading(false);
+        }
+      }
+    }
+
+    void loadInvoicingWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentTenancy, invoicingEnabled, token]);
+
+  useEffect(() => {
+    if (!token || !currentTenancy || !selectedInvoiceId || !invoicingEnabled) {
+      setSelectedInvoiceDetail(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadSelectedInvoiceDetail() {
+      setInvoiceDetailLoading(true);
+
+      try {
+        const detail = await fetchInvoiceDetail(
+          token,
+          currentTenancy.tenant.slug,
+          selectedInvoiceId,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedInvoiceDetail(detail);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setSelectedInvoiceDetail(null);
+        setInvoicingError(
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el detalle de la factura.',
+        );
+      } finally {
+        if (!cancelled) {
+          setInvoiceDetailLoading(false);
+        }
+      }
+    }
+
+    void loadSelectedInvoiceDetail();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentTenancy, invoicingEnabled, selectedInvoiceId, token]);
+
+  useEffect(() => {
     if (!token || !selectedPendingInvitationId) {
       setPendingInvitationDetail(null);
       setPendingInvitationError(null);
@@ -391,6 +629,12 @@ export function App() {
       cancelled = true;
     };
   }, [selectedPendingInvitationId, token]);
+
+  useEffect(() => {
+    if (!customers.some((customer) => customer.id === newInvoiceCustomerId)) {
+      setNewInvoiceCustomerId(customers[0]?.id ?? '');
+    }
+  }, [customers, newInvoiceCustomerId]);
 
   useEffect(() => {
     if (!token || !currentTenancy || !canManageInvitations) {
@@ -489,6 +733,52 @@ export function App() {
       );
     } finally {
       setSessionLoading(false);
+    }
+  }
+
+  async function refreshInvoicingWorkspace(options?: {
+    selectInvoiceId?: string | null;
+  }) {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      return;
+    }
+
+    setInvoicingLoading(true);
+    setInvoicingError(null);
+
+    try {
+      const [nextCustomers, nextInvoices] = await Promise.all([
+        listCustomers(token, currentTenancy.tenant.slug),
+        listInvoices(token, currentTenancy.tenant.slug),
+      ]);
+
+      startTransition(() => {
+        setCustomers(nextCustomers);
+        setInvoices(nextInvoices);
+
+        const preferredInvoiceId = options?.selectInvoiceId;
+        if (
+          preferredInvoiceId &&
+          nextInvoices.some((invoice) => invoice.id === preferredInvoiceId)
+        ) {
+          setSelectedInvoiceId(preferredInvoiceId);
+          return;
+        }
+
+        setSelectedInvoiceId((currentSelection) =>
+          nextInvoices.some((invoice) => invoice.id === currentSelection)
+            ? currentSelection
+            : nextInvoices[0]?.id ?? null,
+        );
+      });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo refrescar el workspace de invoicing.',
+      );
+    } finally {
+      setInvoicingLoading(false);
     }
   }
 
@@ -676,6 +966,147 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo aceptar la invitacion.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleCreateCustomer(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!token || !currentTenancy || !invoicingEnabled || !newCustomerName.trim()) {
+      return;
+    }
+
+    setActionLoading('create-customer');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const customer = await createCustomer(token, currentTenancy.tenant.slug, {
+        name: newCustomerName.trim(),
+        email: newCustomerEmail.trim() || null,
+        taxId: newCustomerTaxId.trim() || null,
+      });
+
+      setNewCustomerName('');
+      setNewCustomerEmail('');
+      setNewCustomerTaxId('');
+      setNewInvoiceCustomerId((currentValue) => currentValue || customer.id);
+      setInvoicingActionMessage(`Customer creado: ${customer.name}.`);
+      await refreshInvoicingWorkspace();
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error ? error.message : 'No se pudo crear el customer.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleCreateInvoice(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (
+      !token ||
+      !currentTenancy ||
+      !invoicingEnabled ||
+      !newInvoiceCustomerId ||
+      !newInvoiceNumber.trim() ||
+      !newInvoiceCurrency.trim()
+    ) {
+      return;
+    }
+
+    setActionLoading('create-invoice');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const invoice = await createInvoice(token, currentTenancy.tenant.slug, {
+        customerId: newInvoiceCustomerId,
+        number: newInvoiceNumber.trim(),
+        currency: newInvoiceCurrency.trim().toUpperCase(),
+        status: newInvoiceStatus,
+        dueAt: newInvoiceDueAt.trim() || null,
+        notes: newInvoiceNotes.trim() || null,
+      });
+
+      setNewInvoiceNumber('');
+      setNewInvoiceDueAt('');
+      setNewInvoiceNotes('');
+      setNewInvoiceStatus('draft');
+      setSelectedInvoiceId(invoice.id);
+      setSelectedInvoiceDetail(invoice);
+      setInvoicingActionMessage(`Factura ${invoice.number} creada.`);
+      await refreshInvoicingWorkspace({ selectInvoiceId: invoice.id });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error ? error.message : 'No se pudo crear la factura.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleCreateInvoiceItem(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (
+      !token ||
+      !currentTenancy ||
+      !invoicingEnabled ||
+      !selectedInvoiceDetail ||
+      !newItemDescription.trim() ||
+      !newItemUnitPriceInCents.trim()
+    ) {
+      return;
+    }
+
+    const quantity = Number(newItemQuantity);
+    const unitPriceInCents = Number(newItemUnitPriceInCents);
+
+    if (
+      !Number.isInteger(quantity) ||
+      quantity < 1 ||
+      !Number.isInteger(unitPriceInCents) ||
+      unitPriceInCents < 0
+    ) {
+      setInvoicingError(
+        'La cantidad debe ser entera mayor a cero y el precio en centavos no puede ser negativo.',
+      );
+      return;
+    }
+
+    setActionLoading('create-invoice-item');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      await createInvoiceItem(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+        {
+          description: newItemDescription.trim(),
+          quantity,
+          unitPriceInCents,
+        },
+      );
+
+      setNewItemDescription('');
+      setNewItemQuantity('1');
+      setNewItemUnitPriceInCents('');
+      setInvoicingActionMessage(
+        `Linea agregada a la factura ${selectedInvoiceDetail.number}.`,
+      );
+      await refreshInvoicingWorkspace({ selectInvoiceId: selectedInvoiceDetail.id });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo crear la linea de factura.',
       );
     } finally {
       setActionLoading(null);
@@ -875,7 +1306,7 @@ export function App() {
                               {aiEnabled === null
                                 ? 'No definido'
                                 : aiEnabled
-                                  ? 'Yes'
+                                  ? 'Si'
                                   : 'No'}
                             </strong>
                           </div>
@@ -1240,6 +1671,484 @@ export function App() {
                     Selecciona una invitacion del tenant para revisar o disparar acciones.
                   </p>
                 )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className={styles.adminPanel}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.label}>Invoicing product domain</span>
+              <h2>Customers, invoices y detalle operacional</h2>
+            </div>
+            {session && currentTenancy && invoicingEnabled ? (
+              <button
+                className={styles.ghostButton}
+                disabled={invoicingLoading || invoiceDetailLoading}
+                onClick={() => void refreshInvoicingWorkspace()}
+                type="button"
+              >
+                {invoicingLoading ? 'Refrescando...' : 'Refrescar invoicing'}
+              </button>
+            ) : null}
+          </div>
+
+          {!session ? (
+            <div className={styles.emptyState}>
+              <p>Primero carguemos la sesion para abrir el workspace de invoicing.</p>
+            </div>
+          ) : !currentTenancy ? (
+            <div className={styles.emptyState}>
+              <p>Selecciona un tenant actual para consultar y operar el dominio de invoicing.</p>
+            </div>
+          ) : !invoicingEnabled ? (
+            <div className={styles.emptyState}>
+              <p>
+                El producto <strong>invoicing</strong> no esta habilitado para este
+                tenant segun su acceso efectivo actual.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.stack}>
+              {invoicingError ? <p className={styles.errorBanner}>{invoicingError}</p> : null}
+              {invoicingActionMessage ? (
+                <p className={styles.successBanner}>{invoicingActionMessage}</p>
+              ) : null}
+
+              <div className={styles.invoiceKpiGrid}>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Customers activos</span>
+                  <strong>{customers.length}</strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Facturas emitidas</span>
+                  <strong>{issuedInvoiceCount}</strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Valor total del portafolio</span>
+                  <strong>
+                    {formatMoney(invoicePortfolioTotal, invoicePortfolioCurrency)}
+                  </strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Siguiente numero sugerido</span>
+                  <strong>{nextInvoiceNumberSuggestion}</strong>
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.stack}>
+                  <div className={styles.detailCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Customers</span>
+                        <h3>{customers.length} registrados</h3>
+                      </div>
+                    </div>
+
+                    <form className={styles.stack} onSubmit={handleCreateCustomer}>
+                      <label className={styles.field}>
+                        <span>Nombre del customer</span>
+                        <input
+                          onChange={(event) => setNewCustomerName(event.target.value)}
+                          placeholder="Acme Corp"
+                          value={newCustomerName}
+                        />
+                      </label>
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Email</span>
+                          <input
+                            onChange={(event) => setNewCustomerEmail(event.target.value)}
+                            placeholder="billing@acme.com"
+                            type="email"
+                            value={newCustomerEmail}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Tax ID</span>
+                          <input
+                            onChange={(event) => setNewCustomerTaxId(event.target.value)}
+                            placeholder="0999999999"
+                            value={newCustomerTaxId}
+                          />
+                        </label>
+                      </div>
+                      <button
+                        className={styles.primaryButton}
+                        disabled={
+                          !newCustomerName.trim() ||
+                          actionLoading === 'create-customer'
+                        }
+                        type="submit"
+                      >
+                        {actionLoading === 'create-customer'
+                          ? 'Creando customer...'
+                          : 'Crear customer'}
+                      </button>
+                      <p className={styles.muted}>
+                        Cada customer queda aislado por tenant y despues podra reutilizarse en multiples facturas.
+                      </p>
+                    </form>
+
+                    {invoicingLoading ? (
+                      <p className={styles.muted}>Cargando customers...</p>
+                    ) : customers.length === 0 ? (
+                      <div className={styles.emptyState}>
+                        <p>Este tenant todavia no tiene customers registrados.</p>
+                      </div>
+                    ) : (
+                      <div className={styles.stack}>
+                        {customers.map((customer) => (
+                          <div className={styles.invoiceCard} key={customer.id}>
+                            <strong>{customer.name}</strong>
+                            <span>{customer.email ?? 'Sin email'}</span>
+                            <small>{customer.taxId ?? 'Sin tax id'}</small>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className={styles.detailCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Create invoice</span>
+                        <h3>Nueva factura</h3>
+                      </div>
+                    </div>
+
+                    <form className={styles.stack} onSubmit={handleCreateInvoice}>
+                      {customers.length === 0 ? (
+                        <div className={styles.emptyState}>
+                          <p>
+                            Primero necesitamos al menos un customer para poder emitir la primera factura.
+                          </p>
+                        </div>
+                      ) : null}
+
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Customer</span>
+                          <select
+                            className={styles.selectField}
+                            onChange={(event) => setNewInvoiceCustomerId(event.target.value)}
+                            value={newInvoiceCustomerId}
+                          >
+                            <option value="">Selecciona un customer</option>
+                            {customers.map((customer) => (
+                              <option key={customer.id} value={customer.id}>
+                                {customer.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className={styles.field}>
+                          <span>Numero</span>
+                          <input
+                            onChange={(event) => setNewInvoiceNumber(event.target.value)}
+                            placeholder={nextInvoiceNumberSuggestion}
+                            value={newInvoiceNumber}
+                          />
+                        </label>
+                      </div>
+
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Currency</span>
+                          <input
+                            maxLength={3}
+                            onChange={(event) => setNewInvoiceCurrency(event.target.value)}
+                            placeholder="USD"
+                            value={newInvoiceCurrency}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Status</span>
+                          <select
+                            className={styles.selectField}
+                            onChange={(event) => setNewInvoiceStatus(event.target.value)}
+                            value={newInvoiceStatus}
+                          >
+                            <option value="draft">draft</option>
+                            <option value="issued">issued</option>
+                            <option value="paid">paid</option>
+                            <option value="void">void</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      <label className={styles.field}>
+                        <span>Due at</span>
+                        <input
+                          onChange={(event) => setNewInvoiceDueAt(event.target.value)}
+                          type="date"
+                          value={newInvoiceDueAt}
+                        />
+                      </label>
+
+                      <label className={styles.field}>
+                        <span>Notes</span>
+                        <textarea
+                          onChange={(event) => setNewInvoiceNotes(event.target.value)}
+                          placeholder="Notas opcionales para la factura"
+                          value={newInvoiceNotes}
+                        />
+                      </label>
+
+                      <button
+                        className={styles.primaryButton}
+                        disabled={
+                          customers.length === 0 ||
+                          !newInvoiceCustomerId ||
+                          !newInvoiceNumber.trim() ||
+                          !newInvoiceCurrency.trim() ||
+                          actionLoading === 'create-invoice'
+                        }
+                        type="submit"
+                      >
+                        {actionLoading === 'create-invoice'
+                          ? 'Creando factura...'
+                          : 'Crear factura'}
+                      </button>
+                      <p className={styles.muted}>
+                        Tip: usa estado <strong>draft</strong> para ir agregando items antes de pasarla a emitida.
+                      </p>
+                    </form>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  <div className={styles.detailCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Invoices</span>
+                        <h3>{invoices.length} facturas</h3>
+                      </div>
+                    </div>
+
+                    {invoicingLoading ? (
+                      <p className={styles.muted}>Cargando invoices...</p>
+                    ) : invoices.length === 0 ? (
+                      <div className={styles.emptyState}>
+                        <p>Este tenant todavia no tiene facturas creadas.</p>
+                      </div>
+                    ) : (
+                      <div className={styles.stack}>
+                        {invoices.map((invoice) => (
+                          <button
+                            className={`${styles.invoiceCard} ${
+                              invoice.id === selectedInvoiceSummary?.id
+                                ? styles.invoiceCardActive
+                                : ''
+                            }`}
+                            key={invoice.id}
+                            onClick={() => setSelectedInvoiceId(invoice.id)}
+                            type="button"
+                          >
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{invoice.number}</strong>
+                              <span className={styles.statusPill}>
+                                {formatInvoiceStatus(invoice.status)}
+                              </span>
+                            </div>
+                            <span>
+                              {customerNameById.get(invoice.customerId) ?? invoice.customerId}
+                            </span>
+                            <small>
+                              {invoice.itemCount} items ·{' '}
+                              {formatMoney(
+                                invoice.totals.totalInCents,
+                                invoice.currency,
+                              )}
+                            </small>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className={styles.detailCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Invoice detail</span>
+                        <h3>
+                          {selectedInvoiceDetail?.number ??
+                            selectedInvoiceSummary?.number ??
+                            'Selecciona una factura'}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {invoiceDetailLoading ? (
+                      <p className={styles.muted}>Cargando detalle de factura...</p>
+                    ) : selectedInvoiceDetail ? (
+                      <>
+                        <div className={styles.invoiceDetailGrid}>
+                          <div>
+                            <span className={styles.muted}>Customer</span>
+                            <strong>
+                              {customerNameById.get(selectedInvoiceDetail.customerId) ??
+                                selectedInvoiceDetail.customerId}
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Issued</span>
+                            <strong>{formatDate(selectedInvoiceDetail.issuedAt)}</strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Due</span>
+                            <strong>{formatDate(selectedInvoiceDetail.dueAt)}</strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Currency</span>
+                            <strong>{selectedInvoiceDetail.currency}</strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Estado</span>
+                            <strong>
+                              {formatInvoiceStatus(selectedInvoiceDetail.status)}
+                            </strong>
+                          </div>
+                        </div>
+
+                        <div className={styles.invoiceTotalsGrid}>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Subtotal</span>
+                            <strong>
+                              {formatMoney(
+                                selectedInvoiceDetail.totals.subtotalInCents,
+                                selectedInvoiceDetail.currency,
+                              )}
+                            </strong>
+                          </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Tax</span>
+                            <strong>
+                              {formatMoney(
+                                selectedInvoiceDetail.totals.taxInCents,
+                                selectedInvoiceDetail.currency,
+                              )}
+                            </strong>
+                          </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Grand total</span>
+                            <strong>
+                              {formatMoney(
+                                selectedInvoiceDetail.totals.totalInCents,
+                                selectedInvoiceDetail.currency,
+                              )}
+                            </strong>
+                          </div>
+                        </div>
+
+                        <div className={styles.stack}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Invoice items</span>
+                              <h3>{selectedInvoiceDetail.items.length} lineas</h3>
+                            </div>
+                          </div>
+
+                          {selectedInvoiceDetail.items.length === 0 ? (
+                            <div className={styles.emptyState}>
+                              <p>Esta factura todavia no tiene items.</p>
+                            </div>
+                          ) : (
+                            <div className={styles.stack}>
+                              {selectedInvoiceDetail.items.map((item) => (
+                                <div className={styles.invoiceItemCard} key={item.id}>
+                                  <div className={styles.invoiceCardHeader}>
+                                    <strong>
+                                      #{item.position} · {item.description}
+                                    </strong>
+                                    <span className={styles.statusPill}>
+                                      {formatMoney(
+                                        item.lineTotalInCents,
+                                        selectedInvoiceDetail.currency,
+                                      )}
+                                    </span>
+                                  </div>
+                                  <small>
+                                    {item.quantity} x{' '}
+                                    {formatMoney(
+                                      item.unitPriceInCents,
+                                      selectedInvoiceDetail.currency,
+                                    )}
+                                  </small>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <form className={styles.stack} onSubmit={handleCreateInvoiceItem}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Add item</span>
+                              <h3>Nueva linea</h3>
+                            </div>
+                          </div>
+
+                          <label className={styles.field}>
+                            <span>Descripcion</span>
+                            <input
+                              onChange={(event) => setNewItemDescription(event.target.value)}
+                              placeholder="Servicio mensual"
+                              value={newItemDescription}
+                            />
+                          </label>
+
+                          <div className={styles.invoiceInlineGrid}>
+                            <label className={styles.field}>
+                              <span>Quantity</span>
+                              <input
+                                min="1"
+                                onChange={(event) => setNewItemQuantity(event.target.value)}
+                                type="number"
+                                value={newItemQuantity}
+                              />
+                            </label>
+                            <label className={styles.field}>
+                              <span>Unit price (cents)</span>
+                              <input
+                                min="0"
+                                onChange={(event) =>
+                                  setNewItemUnitPriceInCents(event.target.value)
+                                }
+                                placeholder="2500"
+                                type="number"
+                                value={newItemUnitPriceInCents}
+                              />
+                            </label>
+                          </div>
+
+                          <button
+                            className={styles.primaryButton}
+                            disabled={
+                              !newItemDescription.trim() ||
+                              !newItemUnitPriceInCents.trim() ||
+                              actionLoading === 'create-invoice-item'
+                            }
+                            type="submit"
+                          >
+                            {actionLoading === 'create-invoice-item'
+                              ? 'Agregando item...'
+                              : 'Agregar item'}
+                          </button>
+                          <p className={styles.muted}>
+                            El backend calcula `lineTotalInCents` y reordena la posicion automaticamente.
+                          </p>
+                        </form>
+                      </>
+                    ) : (
+                      <div className={styles.emptyState}>
+                        <p>Selecciona una factura para revisar sus items y totales.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}

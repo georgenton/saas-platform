@@ -4,6 +4,8 @@ import { InvoiceNotFoundError } from '../errors/invoice-not-found.error';
 import { InvoiceItemIdGenerator } from '../ports/invoice-item-id.generator';
 import { InvoiceItemRepository } from '../ports/invoice-item.repository';
 import { InvoiceRepository } from '../ports/invoice.repository';
+import { TaxRateNotFoundError } from '../errors/tax-rate-not-found.error';
+import { TaxRateRepository } from '../ports/tax-rate.repository';
 
 export interface CreateTenantInvoiceItemInput {
   tenantSlug: string;
@@ -11,6 +13,7 @@ export interface CreateTenantInvoiceItemInput {
   description: string;
   quantity: number;
   unitPriceInCents: number;
+  taxRateId?: string | null;
 }
 
 export class CreateTenantInvoiceItemUseCase {
@@ -19,6 +22,7 @@ export class CreateTenantInvoiceItemUseCase {
     private readonly invoiceRepository: InvoiceRepository,
     private readonly invoiceItemRepository: InvoiceItemRepository,
     private readonly invoiceItemIdGenerator: InvoiceItemIdGenerator,
+    private readonly taxRateRepository: TaxRateRepository,
   ) {}
 
   async execute(input: CreateTenantInvoiceItemInput): Promise<InvoiceItem> {
@@ -43,7 +47,25 @@ export class CreateTenantInvoiceItemUseCase {
         invoice.id,
       );
 
+    const taxRate =
+      input.taxRateId && input.taxRateId.trim().length > 0
+        ? await this.taxRateRepository.findByTenantIdAndId(
+            tenant.id,
+            input.taxRateId,
+          )
+        : null;
+
+    if (input.taxRateId && !taxRate) {
+      throw new TaxRateNotFoundError(input.tenantSlug, input.taxRateId);
+    }
+
     const now = new Date();
+    const lineTotalInCents = input.quantity * input.unitPriceInCents;
+    const taxRatePercentage = taxRate?.percentage ?? null;
+    const lineTaxInCents =
+      taxRatePercentage === null
+        ? 0
+        : Math.round((lineTotalInCents * taxRatePercentage) / 100);
     const item = InvoiceItem.create({
       id: this.invoiceItemIdGenerator.generate(),
       tenantId: tenant.id,
@@ -52,7 +74,11 @@ export class CreateTenantInvoiceItemUseCase {
       description: input.description.trim(),
       quantity: input.quantity,
       unitPriceInCents: input.unitPriceInCents,
-      lineTotalInCents: input.quantity * input.unitPriceInCents,
+      lineTotalInCents,
+      taxRateId: taxRate?.id ?? null,
+      taxRateName: taxRate?.name ?? null,
+      taxRatePercentage,
+      lineTaxInCents,
       createdAt: now,
       updatedAt: now,
     });

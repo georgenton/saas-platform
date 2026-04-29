@@ -1,10 +1,13 @@
 import {
   Body,
+  ConflictException,
   Controller,
   Get,
+  Header,
   NotFoundException,
   Param,
   Post,
+  BadRequestException,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -12,15 +15,29 @@ import {
   CustomerNotFoundError,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
+  CreateTenantInvoicePaymentUseCase,
+  CreateTenantTaxRateUseCase,
+  CustomerEmailMissingError,
   GetTenantCustomerByIdUseCase,
   GetTenantInvoiceDetailUseCase,
+  GetTenantInvoiceDocumentUseCase,
+  GetTenantInvoicingReportSummaryUseCase,
   GetTenantInvoiceItemByIdUseCase,
   INVOICING_PERMISSIONS,
   ListTenantCustomersUseCase,
   ListTenantInvoiceItemsUseCase,
+  ListTenantInvoicePaymentsUseCase,
   ListTenantInvoiceSummariesUseCase,
+  ListTenantTaxRatesUseCase,
   InvoiceNotFoundError,
   InvoiceItemNotFoundError,
+  InvalidInvoicePaymentStateError,
+  InvalidInvoiceStatusTransitionError,
+  InvoicePaymentExceedsBalanceError,
+  renderInvoiceDocumentHtml,
+  SendTenantInvoiceEmailUseCase,
+  TaxRateNotFoundError,
+  UpdateTenantInvoiceStatusUseCase,
 } from '@saas-platform/invoicing-application';
 import {
   TenantAccessContext,
@@ -36,6 +53,10 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
 import { CreateCustomerRequestDto } from './dto/create-customer.request';
 import { CreateInvoiceRequestDto } from './dto/create-invoice.request';
 import { CreateInvoiceItemRequestDto } from './dto/create-invoice-item.request';
+import { CreateTaxRateRequestDto } from './dto/create-tax-rate.request';
+import { CreateInvoicePaymentRequestDto } from './dto/create-invoice-payment.request';
+import { SendInvoiceEmailRequestDto } from './dto/send-invoice-email.request';
+import { UpdateInvoiceStatusRequestDto } from './dto/update-invoice-status.request';
 import {
   CustomerResponseDto,
   toCustomerResponseDto,
@@ -44,14 +65,27 @@ import {
   InvoiceItemResponseDto,
   toInvoiceItemResponseDto,
 } from './dto/invoice-item.response';
+import { PaymentResponseDto, toPaymentResponseDto } from './dto/payment.response';
 import {
   InvoiceDetailResponseDto,
   toInvoiceDetailResponseDto,
 } from './dto/invoice-detail.response';
 import {
+  InvoicingReportSummaryResponseDto,
+  toInvoicingReportSummaryResponseDto,
+} from './dto/invoicing-report.response';
+import {
+  InvoiceDocumentResponseDto,
+  toInvoiceDocumentResponseDto,
+} from './dto/invoice-document.response';
+import {
   InvoiceSummaryResponseDto,
   toInvoiceSummaryResponseDto,
 } from './dto/invoice-summary.response';
+import {
+  TaxRateResponseDto,
+  toTaxRateResponseDto,
+} from './dto/tax-rate.response';
 
 @Controller('invoicing/tenants')
 @UseGuards(
@@ -66,13 +100,67 @@ export class InvoicingController {
     private readonly createTenantCustomerUseCase: CreateTenantCustomerUseCase,
     private readonly createTenantInvoiceUseCase: CreateTenantInvoiceUseCase,
     private readonly createTenantInvoiceItemUseCase: CreateTenantInvoiceItemUseCase,
+    private readonly createTenantInvoicePaymentUseCase: CreateTenantInvoicePaymentUseCase,
+    private readonly createTenantTaxRateUseCase: CreateTenantTaxRateUseCase,
     private readonly getTenantCustomerByIdUseCase: GetTenantCustomerByIdUseCase,
     private readonly getTenantInvoiceDetailUseCase: GetTenantInvoiceDetailUseCase,
+    private readonly getTenantInvoiceDocumentUseCase: GetTenantInvoiceDocumentUseCase,
+    private readonly getTenantInvoicingReportSummaryUseCase: GetTenantInvoicingReportSummaryUseCase,
     private readonly getTenantInvoiceItemByIdUseCase: GetTenantInvoiceItemByIdUseCase,
     private readonly listTenantCustomersUseCase: ListTenantCustomersUseCase,
     private readonly listTenantInvoiceItemsUseCase: ListTenantInvoiceItemsUseCase,
+    private readonly listTenantInvoicePaymentsUseCase: ListTenantInvoicePaymentsUseCase,
     private readonly listTenantInvoiceSummariesUseCase: ListTenantInvoiceSummariesUseCase,
+    private readonly listTenantTaxRatesUseCase: ListTenantTaxRatesUseCase,
+    private readonly sendTenantInvoiceEmailUseCase: SendTenantInvoiceEmailUseCase,
+    private readonly updateTenantInvoiceStatusUseCase: UpdateTenantInvoiceStatusUseCase,
   ) {}
+
+  @Get(':slug/taxes')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async listTenantTaxRates(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<TaxRateResponseDto[]> {
+    try {
+      const taxRates = await this.listTenantTaxRatesUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+      );
+
+      return taxRates.map((taxRate) => toTaxRateResponseDto(taxRate));
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/taxes')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_MANAGE)
+  async createTenantTaxRate(
+    @Param('slug') slug: string,
+    @Body() body: CreateTaxRateRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<TaxRateResponseDto> {
+    try {
+      const taxRate = await this.createTenantTaxRateUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        name: body.name,
+        percentage: body.percentage,
+        isActive: body.isActive,
+      });
+
+      return toTaxRateResponseDto(taxRate);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
 
   @Get(':slug/customers')
   @RequireTenantPermission(INVOICING_PERMISSIONS.CUSTOMERS_READ)
@@ -146,6 +234,27 @@ export class InvoicingController {
     }
   }
 
+  @Get(':slug/reports/summary')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.REPORTS_READ)
+  async getTenantInvoicingReportSummary(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoicingReportSummaryResponseDto> {
+    try {
+      const report = await this.getTenantInvoicingReportSummaryUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+      );
+
+      return toInvoicingReportSummaryResponseDto(report);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Get(':slug/invoices')
   @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
   async listTenantInvoices(
@@ -193,6 +302,129 @@ export class InvoicingController {
     }
   }
 
+  @Get(':slug/invoices/:invoiceId/document')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantInvoiceDocument(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceDocumentResponseDto> {
+    try {
+      const document = await this.getTenantInvoiceDocumentUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+
+      return toInvoiceDocumentResponseDto(document);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/invoices/:invoiceId/document/html')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantInvoiceDocumentHtml(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<string> {
+    try {
+      const document = await this.getTenantInvoiceDocumentUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+
+      return renderInvoiceDocumentHtml(document);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/invoices/:invoiceId/send-email')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.NOTIFICATIONS_SEND)
+  async sendTenantInvoiceEmail(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @Body() body: SendInvoiceEmailRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<{ delivered: true }> {
+    try {
+      await this.sendTenantInvoiceEmailUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+        recipientEmail: body.recipientEmail ?? null,
+        message: body.message ?? null,
+      });
+
+      return { delivered: true };
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof CustomerEmailMissingError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/invoices/:invoiceId/status')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async updateTenantInvoiceStatus(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @Body() body: UpdateInvoiceStatusRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceDetailResponseDto> {
+    try {
+      await this.updateTenantInvoiceStatusUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+        status: body.status,
+      });
+
+      const invoice = await this.getTenantInvoiceDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+
+      return toInvoiceDetailResponseDto(invoice);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError || error instanceof InvoiceNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof InvalidInvoiceStatusTransitionError) {
+        throw new ConflictException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Post(':slug/invoices')
   @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
   async createTenantInvoice(
@@ -215,10 +447,16 @@ export class InvoicingController {
       return toInvoiceDetailResponseDto({
         invoice,
         items: [],
+        payments: [],
         totals: {
           subtotalInCents: 0,
           taxInCents: 0,
           totalInCents: 0,
+        },
+        settlement: {
+          paidInCents: 0,
+          balanceDueInCents: 0,
+          isFullyPaid: false,
         },
       });
     } catch (error) {
@@ -288,6 +526,71 @@ export class InvoicingController {
     }
   }
 
+  @Get(':slug/invoices/:invoiceId/payments')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.PAYMENTS_READ)
+  async listTenantInvoicePayments(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PaymentResponseDto[]> {
+    try {
+      const payments = await this.listTenantInvoicePaymentsUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+
+      return payments.map((payment) => toPaymentResponseDto(payment));
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/invoices/:invoiceId/payments')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.PAYMENTS_MANAGE)
+  async createTenantInvoicePayment(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @Body() body: CreateInvoicePaymentRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PaymentResponseDto> {
+    try {
+      const payment = await this.createTenantInvoicePaymentUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+        amountInCents: body.amountInCents,
+        method: body.method,
+        reference: body.reference ?? null,
+        paidAt: body.paidAt ? new Date(body.paidAt) : undefined,
+        notes: body.notes ?? null,
+      });
+
+      return toPaymentResponseDto(payment);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (
+        error instanceof InvalidInvoicePaymentStateError ||
+        error instanceof InvoicePaymentExceedsBalanceError
+      ) {
+        throw new ConflictException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Post(':slug/invoices/:invoiceId/items')
   @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
   async createTenantInvoiceItem(
@@ -303,13 +606,15 @@ export class InvoicingController {
         description: body.description,
         quantity: body.quantity,
         unitPriceInCents: body.unitPriceInCents,
+        taxRateId: body.taxRateId ?? null,
       });
 
       return toInvoiceItemResponseDto(item);
     } catch (error) {
       if (
         error instanceof TenantNotFoundError ||
-        error instanceof InvoiceNotFoundError
+        error instanceof InvoiceNotFoundError ||
+        error instanceof TaxRateNotFoundError
       ) {
         throw new NotFoundException(error.message);
       }

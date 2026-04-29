@@ -7,6 +7,10 @@ export interface InvoiceItemProps {
   quantity: number;
   unitPriceInCents: number;
   lineTotalInCents: number;
+  taxRateId?: string | null;
+  taxRateName?: string | null;
+  taxRatePercentage?: number | null;
+  lineTaxInCents: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +52,22 @@ export class InvoiceItem {
 
   get lineTotalInCents(): number {
     return this.props.lineTotalInCents;
+  }
+
+  get taxRateId(): string | null {
+    return this.props.taxRateId ?? null;
+  }
+
+  get taxRateName(): string | null {
+    return this.props.taxRateName ?? null;
+  }
+
+  get taxRatePercentage(): number | null {
+    return this.props.taxRatePercentage ?? null;
+  }
+
+  get lineTaxInCents(): number {
+    return this.props.lineTaxInCents;
   }
 
   get createdAt(): Date {

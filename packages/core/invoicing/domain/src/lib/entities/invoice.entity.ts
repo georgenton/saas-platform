@@ -65,6 +65,33 @@ export class Invoice {
     return this.props.updatedAt;
   }
 
+  canTransitionTo(nextStatus: InvoiceStatus): boolean {
+    if (this.status === nextStatus) {
+      return true;
+    }
+
+    switch (this.status) {
+      case 'draft':
+        return nextStatus === 'issued' || nextStatus === 'void';
+      case 'issued':
+        return nextStatus === 'paid' || nextStatus === 'void';
+      case 'paid':
+        return false;
+      case 'void':
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  transitionTo(nextStatus: InvoiceStatus, at: Date): Invoice {
+    return Invoice.create({
+      ...this.props,
+      status: nextStatus,
+      updatedAt: at,
+    });
+  }
+
   toPrimitives(): InvoiceProps {
     return { ...this.props };
   }

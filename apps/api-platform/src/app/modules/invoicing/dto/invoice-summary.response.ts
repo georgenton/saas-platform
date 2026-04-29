@@ -18,6 +18,11 @@ export interface InvoiceSummaryResponseDto {
     taxInCents: number;
     totalInCents: number;
   };
+  settlement: {
+    paidInCents: number;
+    balanceDueInCents: number;
+    isFullyPaid: boolean;
+  };
 }
 
 export const toInvoiceSummaryResponseDto = (
@@ -39,5 +44,6 @@ export const toInvoiceSummaryResponseDto = (
     updatedAt: data.updatedAt.toISOString(),
     itemCount: view.itemCount,
     totals: view.totals,
+    settlement: view.settlement,
   };
 };

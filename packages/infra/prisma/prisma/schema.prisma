@@ -37,8 +37,10 @@ model Tenant {
   entitlements Entitlement[]
   featureFlags FeatureFlag[]
   customers    Customer[]
+  taxRates     TaxRate[]
   invoices     Invoice[]
   invoiceItems InvoiceItem[]
+  payments     Payment[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -70,6 +72,7 @@ model Invoice {
   tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
   items      InvoiceItem[]
+  payments   Payment[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -87,6 +90,10 @@ model InvoiceItem {
   quantity         Int
   unitPriceInCents Int
   lineTotalInCents Int
+  taxRateId        String?
+  taxRateName      String?
+  taxRatePercentage Float?
+  lineTaxInCents   Int
   tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoice          Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   createdAt        DateTime @default(now())
@@ -94,6 +101,38 @@ model InvoiceItem {
 
   @@unique([invoiceId, position])
   @@index([tenantId, invoiceId, createdAt])
+  @@index([tenantId, taxRateId])
+}
+
+model TaxRate {
+  id         String   @id
+  tenantId   String
+  name       String
+  percentage Float
+  isActive   Boolean  @default(true)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([tenantId, createdAt])
+}
+
+model Payment {
+  id            String   @id
+  tenantId      String
+  invoiceId     String
+  amountInCents Int
+  currency      String
+  method        String
+  reference     String?
+  paidAt        DateTime
+  notes         String?
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId, invoiceId, paidAt])
 }
 
 model Product {

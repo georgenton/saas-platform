@@ -45,17 +45,31 @@ import {
   CreateTenantCustomerUseCase,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
+  CreateTenantInvoicePaymentUseCase,
+  CreateTenantTaxRateUseCase,
   GetTenantCustomerByIdUseCase,
   GetTenantInvoiceDetailUseCase,
+  GetTenantInvoiceDocumentUseCase,
+  GetTenantInvoicingReportSummaryUseCase,
   GetTenantInvoiceByIdUseCase,
   GetTenantInvoiceItemByIdUseCase,
   INVOICING_PERMISSIONS,
   ListTenantCustomersUseCase,
   ListTenantInvoiceItemsUseCase,
+  ListTenantInvoicePaymentsUseCase,
   ListTenantInvoiceSummariesUseCase,
   ListTenantInvoicesUseCase,
+  ListTenantTaxRatesUseCase,
+  SendTenantInvoiceEmailUseCase,
+  UpdateTenantInvoiceStatusUseCase,
 } from '@saas-platform/invoicing-application';
-import { Customer, Invoice, InvoiceItem } from '@saas-platform/invoicing-domain';
+import {
+  Customer,
+  Invoice,
+  InvoiceItem,
+  Payment,
+  TaxRate,
+} from '@saas-platform/invoicing-domain';
 import { PrismaService } from '@saas-platform/infra-prisma';
 import {
   AcceptTenantInvitationUseCase,
@@ -101,13 +115,17 @@ describe('API', () => {
   let getProductByKeyUseCase: { execute: jest.Mock };
   let getTenantCustomerByIdUseCase: { execute: jest.Mock };
   let getTenantInvoiceDetailUseCase: { execute: jest.Mock };
+  let getTenantInvoiceDocumentUseCase: { execute: jest.Mock };
+  let getTenantInvoicingReportSummaryUseCase: { execute: jest.Mock };
   let getTenantInvoiceByIdUseCase: { execute: jest.Mock };
   let getTenantInvoiceItemByIdUseCase: { execute: jest.Mock };
   let getTenantSubscriptionUseCase: { execute: jest.Mock };
   let listTenantCustomersUseCase: { execute: jest.Mock };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
+  let listTenantInvoicePaymentsUseCase: { execute: jest.Mock };
   let listTenantInvoiceSummariesUseCase: { execute: jest.Mock };
   let listTenantInvoicesUseCase: { execute: jest.Mock };
+  let listTenantTaxRatesUseCase: { execute: jest.Mock };
   let listTenantEnabledProductsUseCase: { execute: jest.Mock };
   let listTenantFeatureFlagsUseCase: { execute: jest.Mock };
   let listPlanEntitlementsUseCase: { execute: jest.Mock };
@@ -143,6 +161,10 @@ describe('API', () => {
   let createTenantCustomerUseCase: { execute: jest.Mock };
   let createTenantInvoiceUseCase: { execute: jest.Mock };
   let createTenantInvoiceItemUseCase: { execute: jest.Mock };
+  let createTenantInvoicePaymentUseCase: { execute: jest.Mock };
+  let createTenantTaxRateUseCase: { execute: jest.Mock };
+  let sendTenantInvoiceEmailUseCase: { execute: jest.Mock };
+  let updateTenantInvoiceStatusUseCase: { execute: jest.Mock };
   let createTenantUseCase: { execute: jest.Mock };
   let ownerToken: string;
   let inviteeToken: string;
@@ -169,6 +191,12 @@ describe('API', () => {
     INVOICING_PERMISSIONS.CUSTOMERS_MANAGE,
     INVOICING_PERMISSIONS.INVOICES_READ,
     INVOICING_PERMISSIONS.INVOICES_MANAGE,
+    INVOICING_PERMISSIONS.PAYMENTS_READ,
+    INVOICING_PERMISSIONS.PAYMENTS_MANAGE,
+    INVOICING_PERMISSIONS.TAXES_READ,
+    INVOICING_PERMISSIONS.TAXES_MANAGE,
+    INVOICING_PERMISSIONS.NOTIFICATIONS_SEND,
+    INVOICING_PERMISSIONS.REPORTS_READ,
   ];
   const user = User.create({
     id: 'user_123',
@@ -398,6 +426,15 @@ describe('API', () => {
     updatedAt: new Date('2026-04-27T17:00:00.000Z'),
   });
   const invoiceItemCreatedAt = new Date('2026-04-27T16:05:00.000Z');
+  const vatTaxRate = TaxRate.create({
+    id: 'tax_rate_vat_12',
+    tenantId: 'tenant_123',
+    name: 'VAT 12%',
+    percentage: 12,
+    isActive: true,
+    createdAt: new Date('2026-04-28T12:00:00.000Z'),
+    updatedAt: new Date('2026-04-28T12:00:00.000Z'),
+  });
   const firstInvoiceItem = InvoiceItem.create({
     id: 'invoice_item_001',
     tenantId: 'tenant_123',
@@ -407,6 +444,10 @@ describe('API', () => {
     quantity: 2,
     unitPriceInCents: 5000,
     lineTotalInCents: 10000,
+    taxRateId: 'tax_rate_vat_12',
+    taxRateName: 'VAT 12%',
+    taxRatePercentage: 12,
+    lineTaxInCents: 1200,
     createdAt: invoiceItemCreatedAt,
     updatedAt: invoiceItemCreatedAt,
   });
@@ -419,8 +460,25 @@ describe('API', () => {
     quantity: 1,
     unitPriceInCents: 2500,
     lineTotalInCents: 2500,
+    taxRateId: null,
+    taxRateName: null,
+    taxRatePercentage: null,
+    lineTaxInCents: 0,
     createdAt: new Date('2026-04-27T16:06:00.000Z'),
     updatedAt: new Date('2026-04-27T16:06:00.000Z'),
+  });
+  const receivedPayment = Payment.create({
+    id: 'payment_001',
+    tenantId: 'tenant_123',
+    invoiceId: 'invoice_002',
+    amountInCents: 5000,
+    currency: 'USD',
+    method: 'bank_transfer',
+    reference: 'PAY-001',
+    paidAt: new Date('2026-04-28T21:00:00.000Z'),
+    notes: 'Abono inicial de prueba.',
+    createdAt: new Date('2026-04-28T21:00:00.000Z'),
+    updatedAt: new Date('2026-04-28T21:00:00.000Z'),
   });
 
   const signJwt = (payload: Record<string, unknown>): string => {
@@ -517,11 +575,95 @@ describe('API', () => {
       execute: jest.fn().mockResolvedValue({
         invoice: draftInvoice,
         items: [firstInvoiceItem, secondInvoiceItem],
+        payments: [],
         totals: {
           subtotalInCents: 12500,
-          taxInCents: 0,
-          totalInCents: 12500,
+          taxInCents: 1200,
+          totalInCents: 13700,
         },
+        settlement: {
+          paidInCents: 0,
+          balanceDueInCents: 13700,
+          isFullyPaid: false,
+        },
+      }),
+    };
+    getTenantInvoiceDocumentUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        issuer: {
+          tenantId: 'tenant_123',
+          tenantName: 'SaaS Platform',
+          tenantSlug: 'saas-platform',
+        },
+        customer: {
+          name: 'Acme Corp',
+          email: 'billing@acme.dev',
+          taxId: 'RUC-001',
+        },
+        invoice: draftInvoice,
+        lines: [
+          {
+            id: 'invoice_item_001',
+            position: 1,
+            description: 'Suscripcion mensual Growth',
+            quantity: 2,
+            unitPriceInCents: 5000,
+            lineSubtotalInCents: 10000,
+            taxRateId: 'tax_rate_vat_12',
+            taxRateName: 'VAT 12%',
+            taxRatePercentage: 12,
+            lineTaxInCents: 1200,
+            lineTotalInCents: 11200,
+          },
+          {
+            id: 'invoice_item_002',
+            position: 2,
+            description: 'Setup inicial',
+            quantity: 1,
+            unitPriceInCents: 2500,
+            lineSubtotalInCents: 2500,
+            taxRateId: null,
+            taxRateName: null,
+            taxRatePercentage: null,
+            lineTaxInCents: 0,
+            lineTotalInCents: 2500,
+          },
+        ],
+        totals: {
+          subtotalInCents: 12500,
+          taxInCents: 1200,
+          totalInCents: 13700,
+        },
+      }),
+    };
+    getTenantInvoicingReportSummaryUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        generatedAt: '2026-04-28T22:30:00.000Z',
+        customerCount: 2,
+        invoiceCount: 2,
+        statusBreakdown: [
+          { status: 'draft', count: 1 },
+          { status: 'issued', count: 1 },
+        ],
+        totalsByCurrency: [
+          {
+            currency: 'USD',
+            subtotalInCents: 12500,
+            taxInCents: 1200,
+            totalInCents: 13700,
+            paidInCents: 0,
+            outstandingTotalInCents: 13700,
+          },
+        ],
+        monthlyTotals: [
+          {
+            month: '2026-04',
+            currency: 'USD',
+            invoiceCount: 2,
+            totalInCents: 13700,
+            taxInCents: 1200,
+          },
+        ],
       }),
     };
     getTenantInvoiceByIdUseCase = {
@@ -586,6 +728,9 @@ describe('API', () => {
         secondInvoiceItem,
       ]),
     };
+    listTenantInvoicePaymentsUseCase = {
+      execute: jest.fn().mockResolvedValue([receivedPayment]),
+    };
     listTenantInvoiceSummariesUseCase = {
       execute: jest.fn().mockResolvedValue([
         {
@@ -593,8 +738,13 @@ describe('API', () => {
           itemCount: 2,
           totals: {
             subtotalInCents: 12500,
-            taxInCents: 0,
-            totalInCents: 12500,
+            taxInCents: 1200,
+            totalInCents: 13700,
+          },
+          settlement: {
+            paidInCents: 0,
+            balanceDueInCents: 13700,
+            isFullyPaid: false,
           },
         },
         {
@@ -605,11 +755,19 @@ describe('API', () => {
             taxInCents: 0,
             totalInCents: 0,
           },
+          settlement: {
+            paidInCents: 0,
+            balanceDueInCents: 0,
+            isFullyPaid: true,
+          },
         },
       ]),
     };
     listTenantInvoicesUseCase = {
       execute: jest.fn().mockResolvedValue([draftInvoice, issuedInvoice]),
+    };
+    listTenantTaxRatesUseCase = {
+      execute: jest.fn().mockResolvedValue([vatTaxRate]),
     };
     listTenantFeatureFlagsUseCase = {
       execute: jest.fn().mockResolvedValue([psychologyProductDisabledFlag]),
@@ -625,6 +783,32 @@ describe('API', () => {
     };
     createTenantInvoiceItemUseCase = {
       execute: jest.fn().mockResolvedValue(firstInvoiceItem),
+    };
+    createTenantInvoicePaymentUseCase = {
+      execute: jest.fn().mockResolvedValue(receivedPayment),
+    };
+    createTenantTaxRateUseCase = {
+      execute: jest.fn().mockResolvedValue(vatTaxRate),
+    };
+    sendTenantInvoiceEmailUseCase = {
+      execute: jest.fn().mockResolvedValue(undefined),
+    };
+    updateTenantInvoiceStatusUseCase = {
+      execute: jest.fn().mockResolvedValue(
+        Invoice.create({
+          id: 'invoice_001',
+          tenantId: 'tenant_123',
+          customerId: 'customer_acme',
+          number: 'INV-001',
+          status: 'issued',
+          currency: 'USD',
+          issuedAt: invoiceCreatedAt,
+          dueAt: new Date('2026-05-11T16:00:00.000Z'),
+          notes: 'Primer borrador para onboarding de invoicing.',
+          createdAt: invoiceCreatedAt,
+          updatedAt: new Date('2026-04-28T23:00:00.000Z'),
+        }),
+      ),
     };
     cancelTenantInvitationUseCase = {
       execute: jest.fn().mockResolvedValue(undefined),
@@ -764,6 +948,10 @@ describe('API', () => {
       .useValue(getTenantCustomerByIdUseCase)
       .overrideProvider(GetTenantInvoiceDetailUseCase)
       .useValue(getTenantInvoiceDetailUseCase)
+      .overrideProvider(GetTenantInvoiceDocumentUseCase)
+      .useValue(getTenantInvoiceDocumentUseCase)
+      .overrideProvider(GetTenantInvoicingReportSummaryUseCase)
+      .useValue(getTenantInvoicingReportSummaryUseCase)
       .overrideProvider(GetTenantInvoiceByIdUseCase)
       .useValue(getTenantInvoiceByIdUseCase)
       .overrideProvider(GetTenantInvoiceItemByIdUseCase)
@@ -776,10 +964,14 @@ describe('API', () => {
       .useValue(listTenantCustomersUseCase)
       .overrideProvider(ListTenantInvoiceItemsUseCase)
       .useValue(listTenantInvoiceItemsUseCase)
+      .overrideProvider(ListTenantInvoicePaymentsUseCase)
+      .useValue(listTenantInvoicePaymentsUseCase)
       .overrideProvider(ListTenantInvoiceSummariesUseCase)
       .useValue(listTenantInvoiceSummariesUseCase)
       .overrideProvider(ListTenantInvoicesUseCase)
       .useValue(listTenantInvoicesUseCase)
+      .overrideProvider(ListTenantTaxRatesUseCase)
+      .useValue(listTenantTaxRatesUseCase)
       .overrideProvider(ListTenantFeatureFlagsUseCase)
       .useValue(listTenantFeatureFlagsUseCase)
       .overrideProvider(ListPlanEntitlementsUseCase)
@@ -820,6 +1012,14 @@ describe('API', () => {
       .useValue(createTenantInvoiceUseCase)
       .overrideProvider(CreateTenantInvoiceItemUseCase)
       .useValue(createTenantInvoiceItemUseCase)
+      .overrideProvider(CreateTenantInvoicePaymentUseCase)
+      .useValue(createTenantInvoicePaymentUseCase)
+      .overrideProvider(CreateTenantTaxRateUseCase)
+      .useValue(createTenantTaxRateUseCase)
+      .overrideProvider(SendTenantInvoiceEmailUseCase)
+      .useValue(sendTenantInvoiceEmailUseCase)
+      .overrideProvider(UpdateTenantInvoiceStatusUseCase)
+      .useValue(updateTenantInvoiceStatusUseCase)
       .overrideProvider(AcceptTenantInvitationUseCase)
       .useValue(acceptTenantInvitationUseCase)
       .overrideProvider(AcceptAuthenticatedUserInvitationUseCase)
@@ -1234,6 +1434,95 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/taxes should return tenant tax rates', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/taxes')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'tax_rate_vat_12',
+          tenantId: 'tenant_123',
+          name: 'VAT 12%',
+          percentage: 12,
+          isActive: true,
+          createdAt: '2026-04-28T12:00:00.000Z',
+          updatedAt: '2026-04-28T12:00:00.000Z',
+        },
+      ]);
+
+    expect(listTenantTaxRatesUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/invoicing/tenants/:slug/reports/summary should return the invoicing report summary', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/reports/summary')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        generatedAt: '2026-04-28T22:30:00.000Z',
+        customerCount: 2,
+        invoiceCount: 2,
+        statusBreakdown: [
+          { status: 'draft', count: 1 },
+          { status: 'issued', count: 1 },
+        ],
+        totalsByCurrency: [
+          {
+            currency: 'USD',
+            subtotalInCents: 12500,
+            taxInCents: 1200,
+            totalInCents: 13700,
+            paidInCents: 0,
+            outstandingTotalInCents: 13700,
+          },
+        ],
+        monthlyTotals: [
+          {
+            month: '2026-04',
+            currency: 'USD',
+            invoiceCount: 2,
+            totalInCents: 13700,
+            taxInCents: 1200,
+          },
+        ],
+      });
+
+    expect(getTenantInvoicingReportSummaryUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('POST /api/invoicing/tenants/:slug/taxes should create a tenant tax rate', async () => {
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/taxes')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        name: 'VAT 12%',
+        percentage: 12,
+        isActive: true,
+      })
+      .expect(201)
+      .expect({
+        id: 'tax_rate_vat_12',
+        tenantId: 'tenant_123',
+        name: 'VAT 12%',
+        percentage: 12,
+        isActive: true,
+        createdAt: '2026-04-28T12:00:00.000Z',
+        updatedAt: '2026-04-28T12:00:00.000Z',
+      });
+
+    expect(createTenantTaxRateUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      name: 'VAT 12%',
+      percentage: 12,
+      isActive: true,
+    });
+  });
+
   it('GET /api/invoicing/tenants/:slug/customers/:customerId should return one tenant customer', async () => {
     await request(httpServer)
       .get('/api/invoicing/tenants/saas-platform/customers/customer_acme')
@@ -1320,8 +1609,13 @@ describe('API', () => {
           itemCount: 2,
           totals: {
             subtotalInCents: 12500,
-            taxInCents: 0,
-            totalInCents: 12500,
+            taxInCents: 1200,
+            totalInCents: 13700,
+          },
+          settlement: {
+            paidInCents: 0,
+            balanceDueInCents: 13700,
+            isFullyPaid: false,
           },
         },
         {
@@ -1341,6 +1635,11 @@ describe('API', () => {
             subtotalInCents: 0,
             taxInCents: 0,
             totalInCents: 0,
+          },
+          settlement: {
+            paidInCents: 0,
+            balanceDueInCents: 0,
+            isFullyPaid: true,
           },
         },
       ]);
@@ -1377,6 +1676,10 @@ describe('API', () => {
             quantity: 2,
             unitPriceInCents: 5000,
             lineTotalInCents: 10000,
+            taxRateId: 'tax_rate_vat_12',
+            taxRateName: 'VAT 12%',
+            taxRatePercentage: 12,
+            lineTaxInCents: 1200,
             createdAt: '2026-04-27T16:05:00.000Z',
             updatedAt: '2026-04-27T16:05:00.000Z',
           },
@@ -1389,14 +1692,24 @@ describe('API', () => {
             quantity: 1,
             unitPriceInCents: 2500,
             lineTotalInCents: 2500,
+            taxRateId: null,
+            taxRateName: null,
+            taxRatePercentage: null,
+            lineTaxInCents: 0,
             createdAt: '2026-04-27T16:06:00.000Z',
             updatedAt: '2026-04-27T16:06:00.000Z',
           },
         ],
         totals: {
           subtotalInCents: 12500,
-          taxInCents: 0,
-          totalInCents: 12500,
+          taxInCents: 1200,
+          totalInCents: 13700,
+        },
+        payments: [],
+        settlement: {
+          paidInCents: 0,
+          balanceDueInCents: 13700,
+          isFullyPaid: false,
         },
       });
 
@@ -1404,6 +1717,163 @@ describe('API', () => {
       'saas-platform',
       'invoice_001',
     );
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/document should return the invoice document view', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/invoices/invoice_001/document')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        issuer: {
+          tenantId: 'tenant_123',
+          tenantName: 'SaaS Platform',
+          tenantSlug: 'saas-platform',
+        },
+        customer: {
+          name: 'Acme Corp',
+          email: 'billing@acme.dev',
+          taxId: 'RUC-001',
+        },
+        invoice: {
+          id: 'invoice_001',
+          tenantId: 'tenant_123',
+          customerId: 'customer_acme',
+          number: 'INV-001',
+          status: 'draft',
+          currency: 'USD',
+          issuedAt: '2026-04-27T16:00:00.000Z',
+          dueAt: '2026-05-11T16:00:00.000Z',
+          notes: 'Primer borrador para onboarding de invoicing.',
+          createdAt: '2026-04-27T16:00:00.000Z',
+          updatedAt: '2026-04-27T16:00:00.000Z',
+        },
+        lines: [
+          {
+            id: 'invoice_item_001',
+            position: 1,
+            description: 'Suscripcion mensual Growth',
+            quantity: 2,
+            unitPriceInCents: 5000,
+            lineSubtotalInCents: 10000,
+            taxRateId: 'tax_rate_vat_12',
+            taxRateName: 'VAT 12%',
+            taxRatePercentage: 12,
+            lineTaxInCents: 1200,
+            lineTotalInCents: 11200,
+          },
+          {
+            id: 'invoice_item_002',
+            position: 2,
+            description: 'Setup inicial',
+            quantity: 1,
+            unitPriceInCents: 2500,
+            lineSubtotalInCents: 2500,
+            taxRateId: null,
+            taxRateName: null,
+            taxRatePercentage: null,
+            lineTaxInCents: 0,
+            lineTotalInCents: 2500,
+          },
+        ],
+        totals: {
+          subtotalInCents: 12500,
+          taxInCents: 1200,
+          totalInCents: 13700,
+        },
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice_001',
+    );
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/document/html should return printable invoice html', async () => {
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/invoice_001/document/html',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /text\/html/)
+      .expect((response) => {
+        expect(response.text).toContain('<!doctype html>');
+        expect(response.text).toContain('Invoice INV-001');
+        expect(response.text).toContain('Acme Corp');
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice_001',
+    );
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/send-email should trigger invoice delivery', async () => {
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/invoices/invoice_001/send-email')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        recipientEmail: 'finance@acme.dev',
+        message: 'Adjuntamos la factura del periodo.',
+      })
+      .expect(201)
+      .expect({
+        delivered: true,
+      });
+
+    expect(sendTenantInvoiceEmailUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'invoice_001',
+      recipientEmail: 'finance@acme.dev',
+      message: 'Adjuntamos la factura del periodo.',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/status should update the invoice lifecycle status', async () => {
+    getTenantInvoiceDetailUseCase.execute.mockResolvedValueOnce({
+      invoice: Invoice.create({
+        id: 'invoice_001',
+        tenantId: 'tenant_123',
+        customerId: 'customer_acme',
+        number: 'INV-001',
+        status: 'issued',
+        currency: 'USD',
+        issuedAt: invoiceCreatedAt,
+        dueAt: new Date('2026-05-11T16:00:00.000Z'),
+        notes: 'Primer borrador para onboarding de invoicing.',
+        createdAt: invoiceCreatedAt,
+        updatedAt: new Date('2026-04-28T23:00:00.000Z'),
+      }),
+      items: [firstInvoiceItem, secondInvoiceItem],
+      payments: [],
+      totals: {
+        subtotalInCents: 12500,
+        taxInCents: 1200,
+        totalInCents: 13700,
+      },
+      settlement: {
+        paidInCents: 0,
+        balanceDueInCents: 13700,
+        isFullyPaid: false,
+      },
+    });
+
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/invoices/invoice_001/status')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ status: 'issued' })
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.status).toBe('issued');
+        expect(response.body.id).toBe('invoice_001');
+      });
+
+    expect(updateTenantInvoiceStatusUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'invoice_001',
+      status: 'issued',
+    });
   });
 
   it('POST /api/invoicing/tenants/:slug/invoices should create a tenant invoice tied to a customer', async () => {
@@ -1433,10 +1903,16 @@ describe('API', () => {
         createdAt: '2026-04-27T16:00:00.000Z',
         updatedAt: '2026-04-27T16:00:00.000Z',
         items: [],
+        payments: [],
         totals: {
           subtotalInCents: 0,
           taxInCents: 0,
           totalInCents: 0,
+        },
+        settlement: {
+          paidInCents: 0,
+          balanceDueInCents: 0,
+          isFullyPaid: false,
         },
       });
 
@@ -1467,6 +1943,10 @@ describe('API', () => {
           quantity: 2,
           unitPriceInCents: 5000,
           lineTotalInCents: 10000,
+          taxRateId: 'tax_rate_vat_12',
+          taxRateName: 'VAT 12%',
+          taxRatePercentage: 12,
+          lineTaxInCents: 1200,
           createdAt: '2026-04-27T16:05:00.000Z',
           updatedAt: '2026-04-27T16:05:00.000Z',
         },
@@ -1479,6 +1959,10 @@ describe('API', () => {
           quantity: 1,
           unitPriceInCents: 2500,
           lineTotalInCents: 2500,
+          taxRateId: null,
+          taxRateName: null,
+          taxRatePercentage: null,
+          lineTaxInCents: 0,
           createdAt: '2026-04-27T16:06:00.000Z',
           updatedAt: '2026-04-27T16:06:00.000Z',
         },
@@ -1506,6 +1990,10 @@ describe('API', () => {
         quantity: 2,
         unitPriceInCents: 5000,
         lineTotalInCents: 10000,
+        taxRateId: 'tax_rate_vat_12',
+        taxRateName: 'VAT 12%',
+        taxRatePercentage: 12,
+        lineTaxInCents: 1200,
         createdAt: '2026-04-27T16:05:00.000Z',
         updatedAt: '2026-04-27T16:05:00.000Z',
       });
@@ -1525,6 +2013,7 @@ describe('API', () => {
         description: 'Suscripcion mensual Growth',
         quantity: 2,
         unitPriceInCents: 5000,
+        taxRateId: 'tax_rate_vat_12',
       })
       .expect(201)
       .expect({
@@ -1536,6 +2025,10 @@ describe('API', () => {
         quantity: 2,
         unitPriceInCents: 5000,
         lineTotalInCents: 10000,
+        taxRateId: 'tax_rate_vat_12',
+        taxRateName: 'VAT 12%',
+        taxRatePercentage: 12,
+        lineTaxInCents: 1200,
         createdAt: '2026-04-27T16:05:00.000Z',
         updatedAt: '2026-04-27T16:05:00.000Z',
       });
@@ -1546,6 +2039,71 @@ describe('API', () => {
       description: 'Suscripcion mensual Growth',
       quantity: 2,
       unitPriceInCents: 5000,
+      taxRateId: 'tax_rate_vat_12',
+    });
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/payments should return invoice payments', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/invoices/invoice_002/payments')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'payment_001',
+          tenantId: 'tenant_123',
+          invoiceId: 'invoice_002',
+          amountInCents: 5000,
+          currency: 'USD',
+          method: 'bank_transfer',
+          reference: 'PAY-001',
+          paidAt: '2026-04-28T21:00:00.000Z',
+          notes: 'Abono inicial de prueba.',
+          createdAt: '2026-04-28T21:00:00.000Z',
+          updatedAt: '2026-04-28T21:00:00.000Z',
+        },
+      ]);
+
+    expect(listTenantInvoicePaymentsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice_002',
+    );
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/payments should register a payment', async () => {
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/invoices/invoice_002/payments')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        amountInCents: 5000,
+        method: 'bank_transfer',
+        reference: 'PAY-001',
+        paidAt: '2026-04-28T21:00:00.000Z',
+        notes: 'Abono inicial de prueba.',
+      })
+      .expect(201)
+      .expect({
+        id: 'payment_001',
+        tenantId: 'tenant_123',
+        invoiceId: 'invoice_002',
+        amountInCents: 5000,
+        currency: 'USD',
+        method: 'bank_transfer',
+        reference: 'PAY-001',
+        paidAt: '2026-04-28T21:00:00.000Z',
+        notes: 'Abono inicial de prueba.',
+        createdAt: '2026-04-28T21:00:00.000Z',
+        updatedAt: '2026-04-28T21:00:00.000Z',
+      });
+
+    expect(createTenantInvoicePaymentUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'invoice_002',
+      amountInCents: 5000,
+      method: 'bank_transfer',
+      reference: 'PAY-001',
+      paidAt: new Date('2026-04-28T21:00:00.000Z'),
+      notes: 'Abono inicial de prueba.',
     });
   });
 

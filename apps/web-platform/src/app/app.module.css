@@ -478,6 +478,24 @@
   padding: 16px 18px;
 }
 
+.documentPreview {
+  background: linear-gradient(180deg, rgba(251, 248, 243, 0.94) 0%, rgba(244, 237, 227, 0.88) 100%);
+  border: 1px solid rgba(143, 86, 49, 0.14);
+  border-radius: 24px;
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.documentLineCard {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(115, 92, 70, 0.1);
+  border-radius: 18px;
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+}
+
 .invitationSection {
   margin-top: 20px;
 }

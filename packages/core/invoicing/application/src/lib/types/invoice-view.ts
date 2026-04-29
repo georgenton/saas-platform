@@ -79,12 +79,14 @@ export function calculateInvoiceTotals(
 
 export function calculateInvoiceSettlement(
   totalInCents: number,
-  payments: Pick<Payment, 'amountInCents'>[],
+  payments: Pick<Payment, 'amountInCents' | 'status'>[],
 ): InvoiceSettlementView {
-  const paidInCents = payments.reduce(
-    (sum, payment) => sum + payment.amountInCents,
-    0,
-  );
+  const paidInCents = payments
+    .filter((payment) => payment.status === 'posted')
+    .reduce(
+      (sum, payment) => sum + payment.amountInCents,
+      0,
+    );
   const balanceDueInCents = Math.max(totalInCents - paidInCents, 0);
 
   return {

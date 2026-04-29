@@ -44,18 +44,18 @@ VALUES
   )
 ON CONFLICT ("id") DO NOTHING;
 
-INSERT INTO "RolePermission" ("id", "roleKey", "permissionKey", "createdAt")
+INSERT INTO "RolePermission" ("id", "roleId", "permissionId", "createdAt")
 VALUES
   (
     'role_permission_owner_invoicing_payments_read',
-    'tenant_owner',
-    'invoicing.payments.read',
+    'role_tenant_owner',
+    'permission_invoicing_payments_read',
     CURRENT_TIMESTAMP
   ),
   (
     'role_permission_owner_invoicing_payments_manage',
-    'tenant_owner',
-    'invoicing.payments.manage',
+    'role_tenant_owner',
+    'permission_invoicing_payments_manage',
     CURRENT_TIMESTAMP
   )
-ON CONFLICT ("id") DO NOTHING;
+ON CONFLICT ("roleId", "permissionId") DO NOTHING;

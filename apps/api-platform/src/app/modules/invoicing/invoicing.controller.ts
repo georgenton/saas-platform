@@ -31,9 +31,13 @@ import {
   ListTenantTaxRatesUseCase,
   InvoiceNotFoundError,
   InvoiceItemNotFoundError,
+  InvoiceNotFullySettledError,
   InvalidInvoicePaymentStateError,
+  InvalidPaymentReversalStateError,
   InvalidInvoiceStatusTransitionError,
   InvoicePaymentExceedsBalanceError,
+  PaymentNotFoundError,
+  ReverseTenantInvoicePaymentUseCase,
   renderInvoiceDocumentHtml,
   SendTenantInvoiceEmailUseCase,
   TaxRateNotFoundError,
@@ -55,6 +59,7 @@ import { CreateInvoiceRequestDto } from './dto/create-invoice.request';
 import { CreateInvoiceItemRequestDto } from './dto/create-invoice-item.request';
 import { CreateTaxRateRequestDto } from './dto/create-tax-rate.request';
 import { CreateInvoicePaymentRequestDto } from './dto/create-invoice-payment.request';
+import { ReverseInvoicePaymentRequestDto } from './dto/reverse-invoice-payment.request';
 import { SendInvoiceEmailRequestDto } from './dto/send-invoice-email.request';
 import { UpdateInvoiceStatusRequestDto } from './dto/update-invoice-status.request';
 import {
@@ -112,6 +117,7 @@ export class InvoicingController {
     private readonly listTenantInvoicePaymentsUseCase: ListTenantInvoicePaymentsUseCase,
     private readonly listTenantInvoiceSummariesUseCase: ListTenantInvoiceSummariesUseCase,
     private readonly listTenantTaxRatesUseCase: ListTenantTaxRatesUseCase,
+    private readonly reverseTenantInvoicePaymentUseCase: ReverseTenantInvoicePaymentUseCase,
     private readonly sendTenantInvoiceEmailUseCase: SendTenantInvoiceEmailUseCase,
     private readonly updateTenantInvoiceStatusUseCase: UpdateTenantInvoiceStatusUseCase,
   ) {}
@@ -421,6 +427,10 @@ export class InvoicingController {
         throw new ConflictException(error.message);
       }
 
+      if (error instanceof InvoiceNotFullySettledError) {
+        throw new ConflictException(error.message);
+      }
+
       throw error;
     }
   }
@@ -584,6 +594,41 @@ export class InvoicingController {
         error instanceof InvalidInvoicePaymentStateError ||
         error instanceof InvoicePaymentExceedsBalanceError
       ) {
+        throw new ConflictException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/invoices/:invoiceId/payments/:paymentId/reverse')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.PAYMENTS_MANAGE)
+  async reverseTenantInvoicePayment(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @Param('paymentId') paymentId: string,
+    @Body() body: ReverseInvoicePaymentRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PaymentResponseDto> {
+    try {
+      const payment = await this.reverseTenantInvoicePaymentUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+        paymentId,
+        reason: body.reason ?? null,
+      });
+
+      return toPaymentResponseDto(payment);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof PaymentNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof InvalidPaymentReversalStateError) {
         throw new ConflictException(error.message);
       }
 

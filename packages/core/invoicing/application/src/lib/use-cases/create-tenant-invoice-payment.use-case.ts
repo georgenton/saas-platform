@@ -81,10 +81,13 @@ export class CreateTenantInvoicePaymentUseCase {
       invoiceId: invoice.id,
       amountInCents: input.amountInCents,
       currency: invoice.currency,
+      status: 'posted',
       method: input.method.trim(),
       reference: this.normalizeOptionalValue(input.reference),
       paidAt: input.paidAt ?? now,
       notes: this.normalizeOptionalValue(input.notes),
+      reversedAt: null,
+      reversalReason: null,
       createdAt: now,
       updatedAt: now,
     });
@@ -94,6 +97,10 @@ export class CreateTenantInvoicePaymentUseCase {
     const updatedBalance = settlement.balanceDueInCents - payment.amountInCents;
     if (updatedBalance === 0 && invoice.status !== 'paid') {
       await this.invoiceRepository.save(invoice.transitionTo('paid', now));
+    } else if (updatedBalance > 0 && invoice.status === 'issued') {
+      await this.invoiceRepository.save(
+        invoice.transitionTo('partially_paid', now),
+      );
     }
 
     return payment;

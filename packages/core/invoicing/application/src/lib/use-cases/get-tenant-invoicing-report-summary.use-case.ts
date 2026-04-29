@@ -33,7 +33,10 @@ export class GetTenantInvoicingReportSummaryUseCase {
       string,
       { lineTotalInCents: number; lineTaxInCents: number }[]
     >();
-    const paymentsByInvoiceId = new Map<string, { amountInCents: number }[]>();
+    const paymentsByInvoiceId = new Map<
+      string,
+      { amountInCents: number; status: 'posted' | 'reversed' }[]
+    >();
 
     await Promise.all(
       invoices.map(async (invoice) => {
@@ -55,6 +58,7 @@ export class GetTenantInvoicingReportSummaryUseCase {
           invoice.id,
           payments.map((payment) => ({
             amountInCents: payment.amountInCents,
+            status: payment.status,
           })),
         );
       }),

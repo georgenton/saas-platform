@@ -1,13 +1,18 @@
+export type PaymentStatus = 'posted' | 'reversed';
+
 export interface PaymentProps {
   id: string;
   tenantId: string;
   invoiceId: string;
   amountInCents: number;
   currency: string;
+  status: PaymentStatus;
   method: string;
   reference: string | null;
   paidAt: Date;
   notes: string | null;
+  reversedAt: Date | null;
+  reversalReason: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +44,10 @@ export class Payment {
     return this.props.currency;
   }
 
+  get status(): PaymentStatus {
+    return this.props.status;
+  }
+
   get method(): string {
     return this.props.method;
   }
@@ -55,12 +64,34 @@ export class Payment {
     return this.props.notes;
   }
 
+  get reversedAt(): Date | null {
+    return this.props.reversedAt;
+  }
+
+  get reversalReason(): string | null {
+    return this.props.reversalReason;
+  }
+
   get createdAt(): Date {
     return this.props.createdAt;
   }
 
   get updatedAt(): Date {
     return this.props.updatedAt;
+  }
+
+  canReverse(): boolean {
+    return this.status === 'posted';
+  }
+
+  reverse(at: Date, reason: string | null): Payment {
+    return Payment.create({
+      ...this.props,
+      status: 'reversed',
+      reversedAt: at,
+      reversalReason: reason,
+      updatedAt: at,
+    });
   }
 
   toPrimitives(): PaymentProps {

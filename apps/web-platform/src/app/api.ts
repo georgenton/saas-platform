@@ -448,6 +448,29 @@ export async function createInvoicePayment(
   );
 }
 
+export async function reverseInvoicePayment(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+  paymentId: string,
+  body: {
+    reason?: string | null;
+  },
+): Promise<PaymentResponse> {
+  return request<PaymentResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/payments/${encodeURIComponent(
+      paymentId,
+    )}/reverse`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
 export async function createInvoiceItem(
   token: string,
   tenantSlug: string,

@@ -1,5 +1,6 @@
 import { InvoiceDetailView } from '@saas-platform/invoicing-application';
 import { toInvoiceItemResponseDto } from './invoice-item.response';
+import { toPaymentResponseDto } from './payment.response';
 
 export interface InvoiceDetailResponseDto {
   id: string;
@@ -14,10 +15,16 @@ export interface InvoiceDetailResponseDto {
   createdAt: string;
   updatedAt: string;
   items: ReturnType<typeof toInvoiceItemResponseDto>[];
+  payments: ReturnType<typeof toPaymentResponseDto>[];
   totals: {
     subtotalInCents: number;
     taxInCents: number;
     totalInCents: number;
+  };
+  settlement: {
+    paidInCents: number;
+    balanceDueInCents: number;
+    isFullyPaid: boolean;
   };
 }
 
@@ -39,6 +46,8 @@ export const toInvoiceDetailResponseDto = (
     createdAt: data.createdAt.toISOString(),
     updatedAt: data.updatedAt.toISOString(),
     items: view.items.map((item) => toInvoiceItemResponseDto(item)),
+    payments: view.payments.map((payment) => toPaymentResponseDto(payment)),
     totals: view.totals,
+    settlement: view.settlement,
   };
 };

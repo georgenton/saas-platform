@@ -9,6 +9,10 @@ export interface InvoiceItemResponseDto {
   quantity: number;
   unitPriceInCents: number;
   lineTotalInCents: number;
+  taxRateId: string | null;
+  taxRateName: string | null;
+  taxRatePercentage: number | null;
+  lineTaxInCents: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,6 +31,10 @@ export const toInvoiceItemResponseDto = (
     quantity: data.quantity,
     unitPriceInCents: data.unitPriceInCents,
     lineTotalInCents: data.lineTotalInCents,
+    taxRateId: data.taxRateId ?? null,
+    taxRateName: data.taxRateName ?? null,
+    taxRatePercentage: data.taxRatePercentage ?? null,
+    lineTaxInCents: data.lineTaxInCents,
     createdAt: data.createdAt.toISOString(),
     updatedAt: data.updatedAt.toISOString(),
   };

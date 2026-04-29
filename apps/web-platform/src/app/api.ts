@@ -3,11 +3,15 @@ import {
   AuthenticatedSessionResponse,
   CustomerResponse,
   InvoiceDetailResponse,
+  InvoiceDocumentResponse,
+  InvoicingReportSummaryResponse,
   InvitationResponse,
   InvoiceItemResponse,
   InvoiceSummaryResponse,
+  PaymentResponse,
   PlatformPlan,
   PlatformProduct,
+  TaxRateResponse,
 } from './types';
 
 const API_BASE_URL =
@@ -40,6 +44,27 @@ async function request<T>(
   }
 
   return (await response.json()) as T;
+}
+
+async function requestText(
+  path: string,
+  options: RequestInit & { token: string },
+): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      ...buildHeaders(options.token, options.body !== undefined),
+      ...options.headers,
+    },
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    throw new Error(text || `Request failed with status ${response.status}`);
+  }
+
+  return text;
 }
 
 export async function fetchSession(
@@ -228,6 +253,107 @@ export async function createCustomer(
   );
 }
 
+export async function listTaxRates(
+  token: string,
+  tenantSlug: string,
+): Promise<TaxRateResponse[]> {
+  return request<TaxRateResponse[]>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/taxes`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function createTaxRate(
+  token: string,
+  tenantSlug: string,
+  body: {
+    name: string;
+    percentage: number;
+    isActive?: boolean;
+  },
+): Promise<TaxRateResponse> {
+  return request<TaxRateResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/taxes`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchInvoiceDocument(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+): Promise<InvoiceDocumentResponse> {
+  return request<InvoiceDocumentResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/document`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchInvoiceDocumentHtml(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+): Promise<string> {
+  return requestText(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/document/html`,
+    {
+      method: 'GET',
+      token,
+      headers: {
+        Accept: 'text/html',
+      },
+    },
+  );
+}
+
+export async function sendInvoiceEmail(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+  body: {
+    recipientEmail?: string | null;
+    message?: string | null;
+  },
+): Promise<{ delivered: true }> {
+  return request<{ delivered: true }>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/send-email`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchInvoicingReportSummary(
+  token: string,
+  tenantSlug: string,
+): Promise<InvoicingReportSummaryResponse> {
+  return request<InvoicingReportSummaryResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/reports/summary`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function listInvoices(
   token: string,
   tenantSlug: string,
@@ -280,6 +406,48 @@ export async function createInvoice(
   );
 }
 
+export async function updateInvoiceStatus(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+  status: 'issued' | 'paid' | 'void',
+): Promise<InvoiceDetailResponse> {
+  return request<InvoiceDetailResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/status`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ status }),
+    },
+  );
+}
+
+export async function createInvoicePayment(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+  body: {
+    amountInCents: number;
+    method: string;
+    reference?: string | null;
+    paidAt?: string | null;
+    notes?: string | null;
+  },
+): Promise<PaymentResponse> {
+  return request<PaymentResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/payments`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
 export async function createInvoiceItem(
   token: string,
   tenantSlug: string,
@@ -288,6 +456,7 @@ export async function createInvoiceItem(
     description: string;
     quantity: number;
     unitPriceInCents: number;
+    taxRateId?: string | null;
   },
 ): Promise<InvoiceItemResponse> {
   return request<InvoiceItemResponse>(

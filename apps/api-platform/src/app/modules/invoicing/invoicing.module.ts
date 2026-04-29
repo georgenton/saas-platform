@@ -10,20 +10,33 @@ import {
   CreateTenantCustomerUseCase,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
+  CreateTenantInvoicePaymentUseCase,
+  CreateTenantTaxRateUseCase,
   CUSTOMER_ID_GENERATOR,
   CUSTOMER_REPOSITORY,
   GetTenantCustomerByIdUseCase,
   GetTenantInvoiceDetailUseCase,
+  GetTenantInvoiceDocumentUseCase,
+  GetTenantInvoicingReportSummaryUseCase,
   GetTenantInvoiceByIdUseCase,
   GetTenantInvoiceItemByIdUseCase,
   INVOICE_ID_GENERATOR,
   INVOICE_ITEM_ID_GENERATOR,
   INVOICE_ITEM_REPOSITORY,
+  INVOICE_NOTIFICATION_SENDER,
   INVOICE_REPOSITORY,
+  PAYMENT_ID_GENERATOR,
+  PAYMENT_REPOSITORY,
   ListTenantCustomersUseCase,
   ListTenantInvoiceItemsUseCase,
+  ListTenantInvoicePaymentsUseCase,
   ListTenantInvoiceSummariesUseCase,
   ListTenantInvoicesUseCase,
+  ListTenantTaxRatesUseCase,
+  SendTenantInvoiceEmailUseCase,
+  TAX_RATE_ID_GENERATOR,
+  TAX_RATE_REPOSITORY,
+  UpdateTenantInvoiceStatusUseCase,
 } from '@saas-platform/invoicing-application';
 import {
   CatalogPersistenceModule,
@@ -42,6 +55,7 @@ import { InvoicingController } from './invoicing.controller';
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
+import { SmtpInvoiceNotificationSender } from './smtp-invoice-notification-sender';
 
 @Module({
   imports: [
@@ -54,6 +68,20 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
   ],
   controllers: [InvoicingController],
   providers: [
+    {
+      provide: INVOICE_NOTIFICATION_SENDER,
+      useFactory: () =>
+        new SmtpInvoiceNotificationSender({
+          fromAddress:
+            process.env.INVOICING_EMAIL_FROM ??
+            process.env.INVITATION_EMAIL_FROM,
+          smtpHost: process.env.INVITATION_SMTP_HOST,
+          smtpPassword: process.env.INVITATION_SMTP_PASSWORD,
+          smtpPort: process.env.INVITATION_SMTP_PORT,
+          smtpSecure: process.env.INVITATION_SMTP_SECURE,
+          smtpUser: process.env.INVITATION_SMTP_USER,
+        }),
+    },
     {
       provide: CreateTenantCustomerUseCase,
       inject: [TENANT_REPOSITORY, CUSTOMER_REPOSITORY, CUSTOMER_ID_GENERATOR],
@@ -75,6 +103,16 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
       inject: [TENANT_REPOSITORY, CUSTOMER_REPOSITORY],
       useFactory: (tenantRepository, customerRepository) =>
         new ListTenantCustomersUseCase(tenantRepository, customerRepository),
+    },
+    {
+      provide: CreateTenantTaxRateUseCase,
+      inject: [TENANT_REPOSITORY, TAX_RATE_REPOSITORY, TAX_RATE_ID_GENERATOR],
+      useFactory: (tenantRepository, taxRateRepository, taxRateIdGenerator) =>
+        new CreateTenantTaxRateUseCase(
+          tenantRepository,
+          taxRateRepository,
+          taxRateIdGenerator,
+        ),
     },
     {
       provide: CreateTenantInvoiceUseCase,
@@ -104,18 +142,45 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
         INVOICE_REPOSITORY,
         INVOICE_ITEM_REPOSITORY,
         INVOICE_ITEM_ID_GENERATOR,
+        TAX_RATE_REPOSITORY,
       ],
       useFactory: (
         tenantRepository,
         invoiceRepository,
         invoiceItemRepository,
         invoiceItemIdGenerator,
+        taxRateRepository,
       ) =>
         new CreateTenantInvoiceItemUseCase(
           tenantRepository,
           invoiceRepository,
           invoiceItemRepository,
           invoiceItemIdGenerator,
+          taxRateRepository,
+        ),
+    },
+    {
+      provide: CreateTenantInvoicePaymentUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+        PAYMENT_REPOSITORY,
+        PAYMENT_ID_GENERATOR,
+      ],
+      useFactory: (
+        tenantRepository,
+        invoiceRepository,
+        invoiceItemRepository,
+        paymentRepository,
+        paymentIdGenerator,
+      ) =>
+        new CreateTenantInvoicePaymentUseCase(
+          tenantRepository,
+          invoiceRepository,
+          invoiceItemRepository,
+          paymentRepository,
+          paymentIdGenerator,
         ),
     },
     {
@@ -126,16 +191,68 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
     },
     {
       provide: GetTenantInvoiceDetailUseCase,
-      inject: [TENANT_REPOSITORY, INVOICE_REPOSITORY, INVOICE_ITEM_REPOSITORY],
+      inject: [
+        TENANT_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+        PAYMENT_REPOSITORY,
+      ],
       useFactory: (
         tenantRepository,
         invoiceRepository,
         invoiceItemRepository,
+        paymentRepository,
       ) =>
         new GetTenantInvoiceDetailUseCase(
           tenantRepository,
           invoiceRepository,
           invoiceItemRepository,
+          paymentRepository,
+        ),
+    },
+    {
+      provide: GetTenantInvoiceDocumentUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        CUSTOMER_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        customerRepository,
+        invoiceRepository,
+        invoiceItemRepository,
+      ) =>
+        new GetTenantInvoiceDocumentUseCase(
+          tenantRepository,
+          customerRepository,
+          invoiceRepository,
+          invoiceItemRepository,
+        ),
+    },
+    {
+      provide: GetTenantInvoicingReportSummaryUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        CUSTOMER_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+        PAYMENT_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        customerRepository,
+        invoiceRepository,
+        invoiceItemRepository,
+        paymentRepository,
+      ) =>
+        new GetTenantInvoicingReportSummaryUseCase(
+          tenantRepository,
+          customerRepository,
+          invoiceRepository,
+          invoiceItemRepository,
+          paymentRepository,
         ),
     },
     {
@@ -153,6 +270,45 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
         ),
     },
     {
+      provide: SendTenantInvoiceEmailUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        CUSTOMER_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+        INVOICE_NOTIFICATION_SENDER,
+      ],
+      useFactory: (
+        tenantRepository,
+        customerRepository,
+        invoiceRepository,
+        invoiceItemRepository,
+        invoiceNotificationSender,
+      ) =>
+        new SendTenantInvoiceEmailUseCase(
+          tenantRepository,
+          customerRepository,
+          invoiceRepository,
+          invoiceItemRepository,
+          invoiceNotificationSender,
+        ),
+    },
+    {
+      provide: UpdateTenantInvoiceStatusUseCase,
+      inject: [TENANT_REPOSITORY, INVOICE_REPOSITORY],
+      useFactory: (tenantRepository, invoiceRepository) =>
+        new UpdateTenantInvoiceStatusUseCase(
+          tenantRepository,
+          invoiceRepository,
+        ),
+    },
+    {
+      provide: ListTenantTaxRatesUseCase,
+      inject: [TENANT_REPOSITORY, TAX_RATE_REPOSITORY],
+      useFactory: (tenantRepository, taxRateRepository) =>
+        new ListTenantTaxRatesUseCase(tenantRepository, taxRateRepository),
+    },
+    {
       provide: ListTenantInvoicesUseCase,
       inject: [TENANT_REPOSITORY, INVOICE_REPOSITORY],
       useFactory: (tenantRepository, invoiceRepository) =>
@@ -160,16 +316,23 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
     },
     {
       provide: ListTenantInvoiceSummariesUseCase,
-      inject: [TENANT_REPOSITORY, INVOICE_REPOSITORY, INVOICE_ITEM_REPOSITORY],
+      inject: [
+        TENANT_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+        PAYMENT_REPOSITORY,
+      ],
       useFactory: (
         tenantRepository,
         invoiceRepository,
         invoiceItemRepository,
+        paymentRepository,
       ) =>
         new ListTenantInvoiceSummariesUseCase(
           tenantRepository,
           invoiceRepository,
           invoiceItemRepository,
+          paymentRepository,
         ),
     },
     {
@@ -184,6 +347,20 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
           tenantRepository,
           invoiceRepository,
           invoiceItemRepository,
+        ),
+    },
+    {
+      provide: ListTenantInvoicePaymentsUseCase,
+      inject: [TENANT_REPOSITORY, INVOICE_REPOSITORY, PAYMENT_REPOSITORY],
+      useFactory: (
+        tenantRepository,
+        invoiceRepository,
+        paymentRepository,
+      ) =>
+        new ListTenantInvoicePaymentsUseCase(
+          tenantRepository,
+          invoiceRepository,
+          paymentRepository,
         ),
     },
     {

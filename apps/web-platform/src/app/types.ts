@@ -148,10 +148,40 @@ export interface CustomerResponse {
   updatedAt: string;
 }
 
+export interface TaxRateResponse {
+  id: string;
+  tenantId: string;
+  name: string;
+  percentage: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface InvoiceTotals {
   subtotalInCents: number;
   taxInCents: number;
   totalInCents: number;
+}
+
+export interface InvoiceSettlement {
+  paidInCents: number;
+  balanceDueInCents: number;
+  isFullyPaid: boolean;
+}
+
+export interface PaymentResponse {
+  id: string;
+  tenantId: string;
+  invoiceId: string;
+  amountInCents: number;
+  currency: string;
+  method: string;
+  reference: string | null;
+  paidAt: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface InvoiceItemResponse {
@@ -163,6 +193,10 @@ export interface InvoiceItemResponse {
   quantity: number;
   unitPriceInCents: number;
   lineTotalInCents: number;
+  taxRateId: string | null;
+  taxRateName: string | null;
+  taxRatePercentage: number | null;
+  lineTaxInCents: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -181,6 +215,7 @@ export interface InvoiceSummaryResponse {
   updatedAt: string;
   itemCount: number;
   totals: InvoiceTotals;
+  settlement: InvoiceSettlement;
 }
 
 export interface InvoiceDetailResponse {
@@ -196,5 +231,72 @@ export interface InvoiceDetailResponse {
   createdAt: string;
   updatedAt: string;
   items: InvoiceItemResponse[];
+  payments: PaymentResponse[];
   totals: InvoiceTotals;
+  settlement: InvoiceSettlement;
+}
+
+export interface InvoiceDocumentResponse {
+  issuer: {
+    tenantId: string;
+    tenantName: string;
+    tenantSlug: string;
+  };
+  customer: {
+    name: string;
+    email: string | null;
+    taxId: string | null;
+  };
+  invoice: {
+    id: string;
+    tenantId: string;
+    customerId: string;
+    number: string;
+    status: string;
+    currency: string;
+    issuedAt: string;
+    dueAt: string | null;
+    notes: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+  lines: {
+    id: string;
+    position: number;
+    description: string;
+    quantity: number;
+    unitPriceInCents: number;
+    lineSubtotalInCents: number;
+    taxRateId: string | null;
+    taxRateName: string | null;
+    taxRatePercentage: number | null;
+    lineTaxInCents: number;
+    lineTotalInCents: number;
+  }[];
+  totals: InvoiceTotals;
+}
+
+export interface InvoicingReportSummaryResponse {
+  generatedAt: string;
+  customerCount: number;
+  invoiceCount: number;
+  statusBreakdown: {
+    status: string;
+    count: number;
+  }[];
+  totalsByCurrency: {
+    currency: string;
+    subtotalInCents: number;
+    taxInCents: number;
+    totalInCents: number;
+    paidInCents: number;
+    outstandingTotalInCents: number;
+  }[];
+  monthlyTotals: {
+    month: string;
+    currency: string;
+    invoiceCount: number;
+    totalInCents: number;
+    taxInCents: number;
+  }[];
 }

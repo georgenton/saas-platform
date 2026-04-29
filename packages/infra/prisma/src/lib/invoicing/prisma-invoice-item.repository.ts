@@ -18,6 +18,10 @@ export class PrismaInvoiceItemRepository implements InvoiceItemRepository {
         quantity: data.quantity,
         unitPriceInCents: data.unitPriceInCents,
         lineTotalInCents: data.lineTotalInCents,
+        taxRateId: data.taxRateId ?? null,
+        taxRateName: data.taxRateName ?? null,
+        taxRatePercentage: data.taxRatePercentage ?? null,
+        lineTaxInCents: data.lineTaxInCents,
         updatedAt: data.updatedAt,
       },
       create: {
@@ -29,6 +33,10 @@ export class PrismaInvoiceItemRepository implements InvoiceItemRepository {
         quantity: data.quantity,
         unitPriceInCents: data.unitPriceInCents,
         lineTotalInCents: data.lineTotalInCents,
+        taxRateId: data.taxRateId ?? null,
+        taxRateName: data.taxRateName ?? null,
+        taxRatePercentage: data.taxRatePercentage ?? null,
+        lineTaxInCents: data.lineTaxInCents,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
       },
@@ -75,6 +83,10 @@ export class PrismaInvoiceItemRepository implements InvoiceItemRepository {
     quantity: number;
     unitPriceInCents: number;
     lineTotalInCents: number;
+    taxRateId: string | null;
+    taxRateName: string | null;
+    taxRatePercentage: number | null;
+    lineTaxInCents: number;
     createdAt: Date;
     updatedAt: Date;
   }): InvoiceItem {
@@ -87,6 +99,10 @@ export class PrismaInvoiceItemRepository implements InvoiceItemRepository {
       quantity: record.quantity,
       unitPriceInCents: record.unitPriceInCents,
       lineTotalInCents: record.lineTotalInCents,
+      taxRateId: record.taxRateId,
+      taxRateName: record.taxRateName,
+      taxRatePercentage: record.taxRatePercentage,
+      lineTaxInCents: record.lineTaxInCents,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     });

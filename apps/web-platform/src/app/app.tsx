@@ -7,28 +7,39 @@ import {
   createInvitation,
   createInvoice,
   createInvoiceItem,
+  createInvoicePayment,
+  createTaxRate,
   fetchInvitationForInvitee,
   fetchInvoiceDetail,
+  fetchInvoiceDocument,
+  fetchInvoiceDocumentHtml,
+  fetchInvoicingReportSummary,
   fetchSession,
   getTenantInvitation,
   listCustomers,
   listInvoices,
   listPlans,
   listProducts,
+  listTaxRates,
   listTenantEnabledProducts,
   listTenantInvitations,
   resendInvitation,
+  sendInvoiceEmail,
   setCurrentTenancy,
+  updateInvoiceStatus,
 } from './api';
 import {
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CustomerResponse,
   InvoiceDetailResponse,
+  InvoiceDocumentResponse,
+  InvoicingReportSummaryResponse,
   InvitationResponse,
   InvoiceSummaryResponse,
   PlatformPlan,
   PlatformProduct,
+  TaxRateResponse,
   SessionPendingInvitation,
   SessionEntitlement,
   SessionTenancy,
@@ -102,6 +113,26 @@ function formatInvoiceStatus(status: string): string {
   }
 }
 
+function formatPercentage(value: number): string {
+  return new Intl.NumberFormat('es-EC', {
+    minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatReportMonth(value: string): string {
+  const [year, month] = value.split('-');
+
+  if (!year || !month) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat('es-EC', {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(Number(year), Number(month) - 1, 1));
+}
+
 function getEntitlementValue(
   entitlements: SessionEntitlement[],
   key: string,
@@ -171,10 +202,15 @@ export function App() {
   const [catalogError, setCatalogError] = useState<string | null>(null);
 
   const [customers, setCustomers] = useState<CustomerResponse[]>([]);
+  const [taxRates, setTaxRates] = useState<TaxRateResponse[]>([]);
   const [invoices, setInvoices] = useState<InvoiceSummaryResponse[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [selectedInvoiceDetail, setSelectedInvoiceDetail] =
     useState<InvoiceDetailResponse | null>(null);
+  const [selectedInvoiceDocument, setSelectedInvoiceDocument] =
+    useState<InvoiceDocumentResponse | null>(null);
+  const [invoicingReport, setInvoicingReport] =
+    useState<InvoicingReportSummaryResponse | null>(null);
   const [invoicingLoading, setInvoicingLoading] = useState(false);
   const [invoiceDetailLoading, setInvoiceDetailLoading] = useState(false);
   const [invoicingError, setInvoicingError] = useState<string | null>(null);
@@ -186,6 +222,8 @@ export function App() {
   const [newCustomerEmail, setNewCustomerEmail] = useState('');
   const [newCustomerTaxId, setNewCustomerTaxId] = useState('');
   const [newInvoiceCustomerId, setNewInvoiceCustomerId] = useState('');
+  const [newTaxRateName, setNewTaxRateName] = useState('');
+  const [newTaxRatePercentage, setNewTaxRatePercentage] = useState('');
   const [newInvoiceNumber, setNewInvoiceNumber] = useState('');
   const [newInvoiceCurrency, setNewInvoiceCurrency] = useState('USD');
   const [newInvoiceStatus, setNewInvoiceStatus] = useState('draft');
@@ -194,6 +232,14 @@ export function App() {
   const [newItemDescription, setNewItemDescription] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState('1');
   const [newItemUnitPriceInCents, setNewItemUnitPriceInCents] = useState('');
+  const [newItemTaxRateId, setNewItemTaxRateId] = useState('');
+  const [newPaymentAmountInCents, setNewPaymentAmountInCents] = useState('');
+  const [newPaymentMethod, setNewPaymentMethod] = useState('transfer');
+  const [newPaymentReference, setNewPaymentReference] = useState('');
+  const [newPaymentPaidAt, setNewPaymentPaidAt] = useState('');
+  const [newPaymentNotes, setNewPaymentNotes] = useState('');
+  const [invoiceEmailRecipient, setInvoiceEmailRecipient] = useState('');
+  const [invoiceEmailMessage, setInvoiceEmailMessage] = useState('');
 
   const [tenantInvitations, setTenantInvitations] = useState<InvitationResponse[]>(
     [],
@@ -223,6 +269,9 @@ export function App() {
   const currentSubscription = currentTenancy?.subscription ?? null;
   const canManageInvitations = Boolean(
     currentTenancy?.permissionKeys.includes('tenant.invitations.manage'),
+  );
+  const canSendInvoiceNotifications = Boolean(
+    currentTenancy?.permissionKeys.includes('invoicing.notifications.send'),
   );
   const selectedPendingInvitation = findPendingInvitation(
     session,
@@ -469,9 +518,12 @@ export function App() {
   useEffect(() => {
     if (!token || !currentTenancy || !invoicingEnabled) {
       setCustomers([]);
+      setTaxRates([]);
       setInvoices([]);
+      setInvoicingReport(null);
       setSelectedInvoiceId(null);
       setSelectedInvoiceDetail(null);
+      setSelectedInvoiceDocument(null);
       setInvoicingError(null);
       return;
     }
@@ -483,9 +535,12 @@ export function App() {
       setInvoicingError(null);
 
       try {
-        const [nextCustomers, nextInvoices] = await Promise.all([
+        const [nextCustomers, nextTaxRates, nextInvoices, nextReport] =
+          await Promise.all([
           listCustomers(token, currentTenancy.tenant.slug),
+          listTaxRates(token, currentTenancy.tenant.slug),
           listInvoices(token, currentTenancy.tenant.slug),
+          fetchInvoicingReportSummary(token, currentTenancy.tenant.slug),
         ]);
 
         if (cancelled) {
@@ -494,7 +549,9 @@ export function App() {
 
         startTransition(() => {
           setCustomers(nextCustomers);
+          setTaxRates(nextTaxRates);
           setInvoices(nextInvoices);
+          setInvoicingReport(nextReport);
           setSelectedInvoiceId((currentSelection) =>
             nextInvoices.some((invoice) => invoice.id === currentSelection)
               ? currentSelection
@@ -507,9 +564,11 @@ export function App() {
         }
 
         setCustomers([]);
+        setInvoicingReport(null);
         setInvoices([]);
         setSelectedInvoiceId(null);
         setSelectedInvoiceDetail(null);
+        setSelectedInvoiceDocument(null);
         setInvoicingError(
           error instanceof Error
             ? error.message
@@ -532,6 +591,7 @@ export function App() {
   useEffect(() => {
     if (!token || !currentTenancy || !selectedInvoiceId || !invoicingEnabled) {
       setSelectedInvoiceDetail(null);
+      setSelectedInvoiceDocument(null);
       return;
     }
 
@@ -541,11 +601,14 @@ export function App() {
       setInvoiceDetailLoading(true);
 
       try {
-        const detail = await fetchInvoiceDetail(
-          token,
-          currentTenancy.tenant.slug,
-          selectedInvoiceId,
-        );
+        const [detail, document] = await Promise.all([
+          fetchInvoiceDetail(token, currentTenancy.tenant.slug, selectedInvoiceId),
+          fetchInvoiceDocument(
+            token,
+            currentTenancy.tenant.slug,
+            selectedInvoiceId,
+          ),
+        ]);
 
         if (cancelled) {
           return;
@@ -553,6 +616,7 @@ export function App() {
 
         startTransition(() => {
           setSelectedInvoiceDetail(detail);
+          setSelectedInvoiceDocument(document);
         });
       } catch (error) {
         if (cancelled) {
@@ -560,6 +624,7 @@ export function App() {
         }
 
         setSelectedInvoiceDetail(null);
+        setSelectedInvoiceDocument(null);
         setInvoicingError(
           error instanceof Error
             ? error.message
@@ -635,6 +700,24 @@ export function App() {
       setNewInvoiceCustomerId(customers[0]?.id ?? '');
     }
   }, [customers, newInvoiceCustomerId]);
+
+  useEffect(() => {
+    if (!taxRates.some((taxRate) => taxRate.id === newItemTaxRateId)) {
+      setNewItemTaxRateId('');
+    }
+  }, [newItemTaxRateId, taxRates]);
+
+  useEffect(() => {
+    if (!selectedInvoiceDocument) {
+      setInvoiceEmailRecipient('');
+      setInvoiceEmailMessage('');
+      return;
+    }
+
+    setInvoiceEmailRecipient(
+      selectedInvoiceDocument.customer.email ?? '',
+    );
+  }, [selectedInvoiceDocument]);
 
   useEffect(() => {
     if (!token || !currentTenancy || !canManageInvitations) {
@@ -747,15 +830,19 @@ export function App() {
     setInvoicingError(null);
 
     try {
-      const [nextCustomers, nextInvoices] = await Promise.all([
+      const [nextTaxRates, nextCustomers, nextInvoices, nextReport] =
+        await Promise.all([
+        listTaxRates(token, currentTenancy.tenant.slug),
         listCustomers(token, currentTenancy.tenant.slug),
         listInvoices(token, currentTenancy.tenant.slug),
+        fetchInvoicingReportSummary(token, currentTenancy.tenant.slug),
       ]);
 
       startTransition(() => {
+        setTaxRates(nextTaxRates);
         setCustomers(nextCustomers);
         setInvoices(nextInvoices);
-
+        setInvoicingReport(nextReport);
         const preferredInvoiceId = options?.selectInvoiceId;
         if (
           preferredInvoiceId &&
@@ -1050,6 +1137,53 @@ export function App() {
     }
   }
 
+  async function handleCreateTaxRate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (
+      !token ||
+      !currentTenancy ||
+      !invoicingEnabled ||
+      !newTaxRateName.trim() ||
+      !newTaxRatePercentage.trim()
+    ) {
+      return;
+    }
+
+    const percentage = Number(newTaxRatePercentage);
+
+    if (!Number.isFinite(percentage) || percentage < 0 || percentage > 100) {
+      setInvoicingError('La tasa debe estar entre 0 y 100.');
+      return;
+    }
+
+    setActionLoading('create-tax-rate');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const taxRate = await createTaxRate(token, currentTenancy.tenant.slug, {
+        name: newTaxRateName.trim(),
+        percentage,
+        isActive: true,
+      });
+
+      setNewTaxRateName('');
+      setNewTaxRatePercentage('');
+      setNewItemTaxRateId(taxRate.id);
+      setInvoicingActionMessage(`Impuesto creado: ${taxRate.name}.`);
+      await refreshInvoicingWorkspace();
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo crear la tasa de impuesto.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   async function handleCreateInvoiceItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -1092,12 +1226,14 @@ export function App() {
           description: newItemDescription.trim(),
           quantity,
           unitPriceInCents,
+          taxRateId: newItemTaxRateId || null,
         },
       );
 
       setNewItemDescription('');
       setNewItemQuantity('1');
       setNewItemUnitPriceInCents('');
+      setNewItemTaxRateId('');
       setInvoicingActionMessage(
         `Linea agregada a la factura ${selectedInvoiceDetail.number}.`,
       );
@@ -1107,6 +1243,174 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo crear la linea de factura.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleOpenPrintableInvoice() {
+    if (!token || !currentTenancy || !selectedInvoiceDetail) {
+      return;
+    }
+
+    setActionLoading('open-invoice-document');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const html = await fetchInvoiceDocumentHtml(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+      );
+      const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+
+      if (!printWindow) {
+        throw new Error('El navegador bloqueo la ventana de impresion.');
+      }
+
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+
+      setInvoicingActionMessage(
+        `Documento imprimible listo para ${selectedInvoiceDetail.number}.`,
+      );
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo abrir la version imprimible de la factura.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleSendInvoiceEmail(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!token || !currentTenancy || !selectedInvoiceDetail) {
+      return;
+    }
+
+    setActionLoading('send-invoice-email');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      await sendInvoiceEmail(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+        {
+          recipientEmail: invoiceEmailRecipient.trim() || null,
+          message: invoiceEmailMessage.trim() || null,
+        },
+      );
+
+      setInvoicingActionMessage(
+        `Factura ${selectedInvoiceDetail.number} enviada por email.`,
+      );
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo enviar la factura por email.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleUpdateInvoiceStatus(
+    nextStatus: 'issued' | 'paid' | 'void',
+  ) {
+    if (!token || !currentTenancy || !selectedInvoiceDetail) {
+      return;
+    }
+
+    setActionLoading(`invoice-status:${nextStatus}`);
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const updatedDetail = await updateInvoiceStatus(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+        nextStatus,
+      );
+
+      startTransition(() => {
+        setSelectedInvoiceDetail(updatedDetail);
+        setSelectedInvoiceId(updatedDetail.id);
+      });
+
+      setInvoicingActionMessage(
+        `Factura ${updatedDetail.number} actualizada a ${formatInvoiceStatus(
+          updatedDetail.status,
+        )}.`,
+      );
+      await refreshInvoicingWorkspace({ selectInvoiceId: updatedDetail.id });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar el estado de la factura.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleCreateInvoicePayment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!token || !currentTenancy || !selectedInvoiceDetail) {
+      return;
+    }
+
+    const amountInCents = Number(newPaymentAmountInCents);
+    if (!Number.isFinite(amountInCents) || amountInCents <= 0) {
+      setInvoicingError('El monto del pago debe ser mayor a cero.');
+      return;
+    }
+
+    setActionLoading('create-invoice-payment');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      await createInvoicePayment(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+        {
+          amountInCents,
+          method: newPaymentMethod,
+          reference: newPaymentReference.trim() || null,
+          paidAt: newPaymentPaidAt || null,
+          notes: newPaymentNotes.trim() || null,
+        },
+      );
+
+      setNewPaymentAmountInCents('');
+      setNewPaymentMethod('transfer');
+      setNewPaymentReference('');
+      setNewPaymentPaidAt('');
+      setNewPaymentNotes('');
+      setInvoicingActionMessage(
+        `Pago registrado para la factura ${selectedInvoiceDetail.number}.`,
+      );
+      await refreshInvoicingWorkspace({ selectInvoiceId: selectedInvoiceDetail.id });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo registrar el pago.',
       );
     } finally {
       setActionLoading(null);
@@ -1737,6 +2041,134 @@ export function App() {
                 </div>
               </div>
 
+              {invoicingReport ? (
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Reports</span>
+                      <h3>Resumen operativo</h3>
+                    </div>
+                    <small className={styles.muted}>
+                      Generado {formatDate(invoicingReport.generatedAt)}
+                    </small>
+                  </div>
+
+                  <div className={styles.invoiceKpiGrid}>
+                    <div className={styles.commercialCard}>
+                      <span className={styles.muted}>Customers</span>
+                      <strong>{invoicingReport.customerCount}</strong>
+                    </div>
+                    <div className={styles.commercialCard}>
+                      <span className={styles.muted}>Invoices</span>
+                      <strong>{invoicingReport.invoiceCount}</strong>
+                    </div>
+                    <div className={styles.commercialCard}>
+                      <span className={styles.muted}>Estados</span>
+                      <strong>{invoicingReport.statusBreakdown.length}</strong>
+                    </div>
+                    <div className={styles.commercialCard}>
+                      <span className={styles.muted}>Currencies</span>
+                      <strong>{invoicingReport.totalsByCurrency.length}</strong>
+                    </div>
+                  </div>
+
+                  <div className={styles.twoColumn}>
+                    <div className={styles.stack}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Status mix</span>
+                          <h3>Facturas por estado</h3>
+                        </div>
+                      </div>
+
+                      {invoicingReport.statusBreakdown.map((entry) => (
+                        <div className={styles.invoiceItemCard} key={entry.status}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>{formatInvoiceStatus(entry.status)}</strong>
+                            <span className={styles.statusPill}>{entry.count}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className={styles.stack}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Currency totals</span>
+                          <h3>Totales por moneda</h3>
+                        </div>
+                      </div>
+
+                      {invoicingReport.totalsByCurrency.map((entry) => (
+                        <div className={styles.invoiceItemCard} key={entry.currency}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>{entry.currency}</strong>
+                            <span className={styles.statusPill}>
+                              {formatMoney(entry.totalInCents, entry.currency)}
+                            </span>
+                          </div>
+                          <small>
+                            Subtotal:{' '}
+                            {formatMoney(entry.subtotalInCents, entry.currency)}
+                          </small>
+                          <small>
+                            Tax: {formatMoney(entry.taxInCents, entry.currency)}
+                          </small>
+                          <small>
+                            Outstanding:{' '}
+                            {formatMoney(
+                              entry.outstandingTotalInCents,
+                              entry.currency,
+                            )}
+                          </small>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className={styles.stack}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Monthly trend</span>
+                        <h3>Totales mensuales</h3>
+                      </div>
+                    </div>
+
+                    {invoicingReport.monthlyTotals.length === 0 ? (
+                      <div className={styles.emptyState}>
+                        <p>
+                          Todavia no hay actividad suficiente para reportes mensuales.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className={styles.stack}>
+                        {invoicingReport.monthlyTotals.map((entry) => (
+                          <div
+                            className={styles.invoiceItemCard}
+                            key={`${entry.month}-${entry.currency}`}
+                          >
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>
+                                {formatReportMonth(entry.month)} · {entry.currency}
+                              </strong>
+                              <span className={styles.statusPill}>
+                                {entry.invoiceCount} facturas
+                              </span>
+                            </div>
+                            <small>
+                              Total: {formatMoney(entry.totalInCents, entry.currency)}
+                            </small>
+                            <small>
+                              Tax: {formatMoney(entry.taxInCents, entry.currency)}
+                            </small>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
               <div className={styles.twoColumn}>
                 <div className={styles.stack}>
                   <div className={styles.detailCard}>
@@ -1917,6 +2349,80 @@ export function App() {
                       </p>
                     </form>
                   </div>
+
+                  <div className={styles.detailCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Taxes</span>
+                        <h3>{taxRates.length} tasas configuradas</h3>
+                      </div>
+                    </div>
+
+                    <form className={styles.stack} onSubmit={handleCreateTaxRate}>
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Nombre</span>
+                          <input
+                            onChange={(event) => setNewTaxRateName(event.target.value)}
+                            placeholder="VAT 12%"
+                            value={newTaxRateName}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Porcentaje</span>
+                          <input
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            onChange={(event) =>
+                              setNewTaxRatePercentage(event.target.value)
+                            }
+                            placeholder="12"
+                            type="number"
+                            value={newTaxRatePercentage}
+                          />
+                        </label>
+                      </div>
+
+                      <button
+                        className={styles.primaryButton}
+                        disabled={
+                          !newTaxRateName.trim() ||
+                          !newTaxRatePercentage.trim() ||
+                          actionLoading === 'create-tax-rate'
+                        }
+                        type="submit"
+                      >
+                        {actionLoading === 'create-tax-rate'
+                          ? 'Creando impuesto...'
+                          : 'Crear impuesto'}
+                      </button>
+                    </form>
+
+                    {taxRates.length === 0 ? (
+                      <div className={styles.emptyState}>
+                        <p>
+                          Todavia no hay tasas configuradas. Puedes seguir sin impuestos o crear la primera ahora mismo.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className={styles.stack}>
+                        {taxRates.map((taxRate) => (
+                          <div className={styles.invoiceCard} key={taxRate.id}>
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{taxRate.name}</strong>
+                              <span className={styles.statusPill}>
+                                {formatPercentage(taxRate.percentage)}%
+                              </span>
+                            </div>
+                            <small>
+                              {taxRate.isActive ? 'Activa' : 'Inactiva'}
+                            </small>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className={styles.stack}>
@@ -2013,6 +2519,48 @@ export function App() {
                           </div>
                         </div>
 
+                        <div className={styles.actionRow}>
+                          {selectedInvoiceDetail.status === 'draft' ? (
+                            <button
+                              className={styles.secondaryButton}
+                              disabled={actionLoading === 'invoice-status:issued'}
+                              onClick={() => void handleUpdateInvoiceStatus('issued')}
+                              type="button"
+                            >
+                              {actionLoading === 'invoice-status:issued'
+                                ? 'Emitiendo...'
+                                : 'Marcar como emitida'}
+                            </button>
+                          ) : null}
+
+                          {selectedInvoiceDetail.status === 'issued' ? (
+                            <button
+                              className={styles.primaryButton}
+                              disabled={actionLoading === 'invoice-status:paid'}
+                              onClick={() => void handleUpdateInvoiceStatus('paid')}
+                              type="button"
+                            >
+                              {actionLoading === 'invoice-status:paid'
+                                ? 'Registrando...'
+                                : 'Marcar como pagada'}
+                            </button>
+                          ) : null}
+
+                          {(selectedInvoiceDetail.status === 'draft' ||
+                            selectedInvoiceDetail.status === 'issued') ? (
+                            <button
+                              className={styles.dangerButton}
+                              disabled={actionLoading === 'invoice-status:void'}
+                              onClick={() => void handleUpdateInvoiceStatus('void')}
+                              type="button"
+                            >
+                              {actionLoading === 'invoice-status:void'
+                                ? 'Anulando...'
+                                : 'Anular factura'}
+                            </button>
+                          ) : null}
+                        </div>
+
                         <div className={styles.invoiceTotalsGrid}>
                           <div className={styles.commercialCard}>
                             <span className={styles.muted}>Subtotal</span>
@@ -2041,7 +2589,277 @@ export function App() {
                               )}
                             </strong>
                           </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Paid</span>
+                            <strong>
+                              {formatMoney(
+                                selectedInvoiceDetail.settlement.paidInCents,
+                                selectedInvoiceDetail.currency,
+                              )}
+                            </strong>
+                          </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Balance due</span>
+                            <strong>
+                              {formatMoney(
+                                selectedInvoiceDetail.settlement.balanceDueInCents,
+                                selectedInvoiceDetail.currency,
+                              )}
+                            </strong>
+                          </div>
                         </div>
+
+                        {selectedInvoiceDocument ? (
+                          <div className={styles.documentPreview}>
+                            <div className={styles.sectionHeading}>
+                              <div>
+                                <span className={styles.label}>Document preview</span>
+                                <h3>Factura {selectedInvoiceDocument.invoice.number}</h3>
+                              </div>
+                              <button
+                                className={styles.secondaryButton}
+                                disabled={actionLoading === 'open-invoice-document'}
+                                onClick={() => void handleOpenPrintableInvoice()}
+                                type="button"
+                              >
+                                {actionLoading === 'open-invoice-document'
+                                  ? 'Abriendo...'
+                                  : 'Abrir version imprimible'}
+                              </button>
+                            </div>
+
+                            <div className={styles.invoiceDetailGrid}>
+                              <div className={styles.detailCard}>
+                                <span className={styles.muted}>Emisor</span>
+                                <strong>{selectedInvoiceDocument.issuer.tenantName}</strong>
+                                <small>{selectedInvoiceDocument.issuer.tenantSlug}</small>
+                              </div>
+                              <div className={styles.detailCard}>
+                                <span className={styles.muted}>Cliente</span>
+                                <strong>{selectedInvoiceDocument.customer.name}</strong>
+                                <small>
+                                  {selectedInvoiceDocument.customer.taxId ??
+                                    selectedInvoiceDocument.customer.email ??
+                                    'Sin identificacion fiscal'}
+                                </small>
+                              </div>
+                            </div>
+
+                            <div className={styles.stack}>
+                              {selectedInvoiceDocument.lines.map((line) => (
+                                <div className={styles.documentLineCard} key={line.id}>
+                                  <div className={styles.invoiceCardHeader}>
+                                    <strong>
+                                      #{line.position} · {line.description}
+                                    </strong>
+                                    <span className={styles.statusPill}>
+                                      {formatMoney(
+                                        line.lineTotalInCents,
+                                        selectedInvoiceDocument.invoice.currency,
+                                      )}
+                                    </span>
+                                  </div>
+                                  <small>
+                                    {line.quantity} x{' '}
+                                    {formatMoney(
+                                      line.unitPriceInCents,
+                                      selectedInvoiceDocument.invoice.currency,
+                                    )}{' '}
+                                    ={' '}
+                                    {formatMoney(
+                                      line.lineSubtotalInCents,
+                                      selectedInvoiceDocument.invoice.currency,
+                                    )}
+                                  </small>
+                                  <small>
+                                    Impuesto:{' '}
+                                    {line.taxRateName && line.taxRatePercentage !== null
+                                      ? `${line.taxRateName} (${formatPercentage(
+                                          line.taxRatePercentage,
+                                        )}%)`
+                                      : 'Sin impuesto'}
+                                  </small>
+                                  <small>
+                                    Tax line:{' '}
+                                    {formatMoney(
+                                      line.lineTaxInCents,
+                                      selectedInvoiceDocument.invoice.currency,
+                                    )}
+                                  </small>
+                                </div>
+                              ))}
+                            </div>
+
+                            {selectedInvoiceDocument.invoice.notes ? (
+                              <div className={styles.detailCard}>
+                                <span className={styles.muted}>Notas</span>
+                                <strong>{selectedInvoiceDocument.invoice.notes}</strong>
+                              </div>
+                            ) : null}
+
+                            {canSendInvoiceNotifications ? (
+                              <form
+                                className={styles.stack}
+                                onSubmit={handleSendInvoiceEmail}
+                              >
+                                <div className={styles.sectionHeading}>
+                                  <div>
+                                    <span className={styles.label}>Notifications</span>
+                                    <h3>Enviar factura por email</h3>
+                                  </div>
+                                </div>
+
+                                <label className={styles.field}>
+                                  <span>Destinatario</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setInvoiceEmailRecipient(event.target.value)
+                                    }
+                                    placeholder="billing@customer.dev"
+                                    type="email"
+                                    value={invoiceEmailRecipient}
+                                  />
+                                </label>
+
+                                <label className={styles.field}>
+                                  <span>Mensaje opcional</span>
+                                  <textarea
+                                    onChange={(event) =>
+                                      setInvoiceEmailMessage(event.target.value)
+                                    }
+                                    placeholder="Te compartimos la factura del periodo."
+                                    value={invoiceEmailMessage}
+                                  />
+                                </label>
+
+                                <button
+                                  className={styles.primaryButton}
+                                  disabled={actionLoading === 'send-invoice-email'}
+                                  type="submit"
+                                >
+                                  {actionLoading === 'send-invoice-email'
+                                    ? 'Enviando...'
+                                    : 'Enviar factura'}
+                                </button>
+                              </form>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        <div className={styles.stack}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Payments</span>
+                              <h3>{selectedInvoiceDetail.payments.length} pagos</h3>
+                            </div>
+                          </div>
+
+                          {selectedInvoiceDetail.payments.length === 0 ? (
+                            <div className={styles.emptyState}>
+                              <p>Esta factura todavia no tiene pagos registrados.</p>
+                            </div>
+                          ) : (
+                            <div className={styles.stack}>
+                              {selectedInvoiceDetail.payments.map((payment) => (
+                                <div className={styles.invoiceItemCard} key={payment.id}>
+                                  <div className={styles.invoiceCardHeader}>
+                                    <strong>{payment.method}</strong>
+                                    <span className={styles.statusPill}>
+                                      {formatMoney(
+                                        payment.amountInCents,
+                                        payment.currency,
+                                      )}
+                                    </span>
+                                  </div>
+                                  <small>Fecha: {formatDate(payment.paidAt)}</small>
+                                  <small>
+                                    Referencia: {payment.reference ?? 'Sin referencia'}
+                                  </small>
+                                  <small>{payment.notes ?? 'Sin notas'}</small>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <form className={styles.stack} onSubmit={handleCreateInvoicePayment}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Register payment</span>
+                              <h3>Nuevo pago</h3>
+                            </div>
+                          </div>
+
+                          <div className={styles.invoiceInlineGrid}>
+                            <label className={styles.field}>
+                              <span>Monto (cents)</span>
+                              <input
+                                min="1"
+                                onChange={(event) =>
+                                  setNewPaymentAmountInCents(event.target.value)
+                                }
+                                placeholder="6800"
+                                type="number"
+                                value={newPaymentAmountInCents}
+                              />
+                            </label>
+                            <label className={styles.field}>
+                              <span>Metodo</span>
+                              <input
+                                onChange={(event) =>
+                                  setNewPaymentMethod(event.target.value)
+                                }
+                                placeholder="transfer"
+                                value={newPaymentMethod}
+                              />
+                            </label>
+                          </div>
+
+                          <div className={styles.invoiceInlineGrid}>
+                            <label className={styles.field}>
+                              <span>Referencia</span>
+                              <input
+                                onChange={(event) =>
+                                  setNewPaymentReference(event.target.value)
+                                }
+                                placeholder="TRX-001"
+                                value={newPaymentReference}
+                              />
+                            </label>
+                            <label className={styles.field}>
+                              <span>Fecha de pago</span>
+                              <input
+                                onChange={(event) => setNewPaymentPaidAt(event.target.value)}
+                                type="datetime-local"
+                                value={newPaymentPaidAt}
+                              />
+                            </label>
+                          </div>
+
+                          <label className={styles.field}>
+                            <span>Notas</span>
+                            <textarea
+                              onChange={(event) => setNewPaymentNotes(event.target.value)}
+                              placeholder="Pago parcial del periodo."
+                              value={newPaymentNotes}
+                            />
+                          </label>
+
+                          <button
+                            className={styles.primaryButton}
+                            disabled={
+                              selectedInvoiceDetail.status === 'draft' ||
+                              selectedInvoiceDetail.status === 'void' ||
+                              selectedInvoiceDetail.settlement.balanceDueInCents === 0 ||
+                              actionLoading === 'create-invoice-payment'
+                            }
+                            type="submit"
+                          >
+                            {actionLoading === 'create-invoice-payment'
+                              ? 'Registrando pago...'
+                              : 'Registrar pago'}
+                          </button>
+                        </form>
 
                         <div className={styles.stack}>
                           <div className={styles.sectionHeading}>
@@ -2074,6 +2892,21 @@ export function App() {
                                     {item.quantity} x{' '}
                                     {formatMoney(
                                       item.unitPriceInCents,
+                                      selectedInvoiceDetail.currency,
+                                    )}
+                                  </small>
+                                  <small>
+                                    Impuesto:{' '}
+                                    {item.taxRateName && item.taxRatePercentage !== null
+                                      ? `${item.taxRateName} (${formatPercentage(
+                                          item.taxRatePercentage,
+                                        )}%)`
+                                      : 'Sin impuesto'}
+                                  </small>
+                                  <small>
+                                    Tax line:{' '}
+                                    {formatMoney(
+                                      item.lineTaxInCents,
                                       selectedInvoiceDetail.currency,
                                     )}
                                   </small>
@@ -2124,6 +2957,24 @@ export function App() {
                             </label>
                           </div>
 
+                          <label className={styles.field}>
+                            <span>Impuesto</span>
+                            <select
+                              className={styles.selectField}
+                              onChange={(event) => setNewItemTaxRateId(event.target.value)}
+                              value={newItemTaxRateId}
+                            >
+                              <option value="">Sin impuesto</option>
+                              {taxRates
+                                .filter((taxRate) => taxRate.isActive)
+                                .map((taxRate) => (
+                                  <option key={taxRate.id} value={taxRate.id}>
+                                    {taxRate.name} ({formatPercentage(taxRate.percentage)}%)
+                                  </option>
+                                ))}
+                            </select>
+                          </label>
+
                           <button
                             className={styles.primaryButton}
                             disabled={
@@ -2138,7 +2989,7 @@ export function App() {
                               : 'Agregar item'}
                           </button>
                           <p className={styles.muted}>
-                            El backend calcula `lineTotalInCents` y reordena la posicion automaticamente.
+                            El backend calcula `lineTotalInCents`, `lineTaxInCents` y reordena la posicion automaticamente.
                           </p>
                         </form>
                       </>

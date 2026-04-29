@@ -1,5 +1,17 @@
 # api-platform
 
+## 0.16.0
+
+### Minor Changes
+
+- 92b8100: Add invoicing tax rates, document previews, email delivery, reporting, lifecycle transitions, and invoice payments.
+
+  This change introduces `TaxRate` management endpoints for the `invoicing` product, lets invoice items reference an optional tenant tax rate, stores tax snapshots on each item, and updates invoice totals so `taxInCents` and `totalInCents` reflect real computed taxes instead of a fixed zero value. It also adds a tenant-scoped invoice document view, a printable HTML document endpoint, a first React document preview, an SMTP-backed invoice email delivery action that reuses the generated document as the notification body, and a reporting summary endpoint plus UI snapshot for invoice status mix, currency totals, paid totals, and monthly trends. Finally, it adds explicit invoice lifecycle transitions plus tenant-scoped payment registration and settlement tracking so invoices can move from `draft` to `issued`, receive payments, and expose `paidInCents`, `balanceDueInCents`, and `isFullyPaid` in API and web responses.
+
+- 41da065: Refine invoicing payment reconciliation with partial settlement and payment reversals.
+
+  This change introduces the `partially_paid` invoice lifecycle state, prevents manually marking invoices as `paid` until they are fully settled, and adds tenant-scoped payment reversal support with audit fields on each payment. It also updates invoice settlement and reporting so reversed payments no longer count toward `paidInCents`, and extends the web workspace with payment status visibility and a first reversal action for invoicing operators.
+
 ## 0.15.0
 
 ### Minor Changes

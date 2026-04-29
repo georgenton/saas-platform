@@ -15,10 +15,13 @@ export class PrismaPaymentRepository implements PaymentRepository {
       update: {
         amountInCents: data.amountInCents,
         currency: data.currency,
+        status: data.status,
         method: data.method,
         reference: data.reference,
         paidAt: data.paidAt,
         notes: data.notes,
+        reversedAt: data.reversedAt,
+        reversalReason: data.reversalReason,
         updatedAt: data.updatedAt,
       },
       create: {
@@ -27,14 +30,31 @@ export class PrismaPaymentRepository implements PaymentRepository {
         invoiceId: data.invoiceId,
         amountInCents: data.amountInCents,
         currency: data.currency,
+        status: data.status,
         method: data.method,
         reference: data.reference,
         paidAt: data.paidAt,
         notes: data.notes,
+        reversedAt: data.reversedAt,
+        reversalReason: data.reversalReason,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
       },
     });
+  }
+
+  async findByTenantIdAndId(
+    tenantId: string,
+    paymentId: string,
+  ): Promise<Payment | null> {
+    const payment = await this.prisma.payment.findFirst({
+      where: {
+        tenantId,
+        id: paymentId,
+      },
+    });
+
+    return payment ? this.toDomain(payment) : null;
   }
 
   async findByTenantIdAndInvoiceId(
@@ -58,10 +78,13 @@ export class PrismaPaymentRepository implements PaymentRepository {
     invoiceId: string;
     amountInCents: number;
     currency: string;
+    status: string;
     method: string;
     reference: string | null;
     paidAt: Date;
     notes: string | null;
+    reversedAt: Date | null;
+    reversalReason: string | null;
     createdAt: Date;
     updatedAt: Date;
   }): Payment {
@@ -71,12 +94,19 @@ export class PrismaPaymentRepository implements PaymentRepository {
       invoiceId: record.invoiceId,
       amountInCents: record.amountInCents,
       currency: record.currency,
+      status: this.normalizeStatus(record.status),
       method: record.method,
       reference: record.reference,
       paidAt: record.paidAt,
       notes: record.notes,
+      reversedAt: record.reversedAt,
+      reversalReason: record.reversalReason,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     });
+  }
+
+  private normalizeStatus(status: string): 'posted' | 'reversed' {
+    return status === 'reversed' ? 'reversed' : 'posted';
   }
 }

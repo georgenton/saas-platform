@@ -27,6 +27,7 @@ import {
   INVOICE_REPOSITORY,
   PAYMENT_ID_GENERATOR,
   PAYMENT_REPOSITORY,
+  ReverseTenantInvoicePaymentUseCase,
   ListTenantCustomersUseCase,
   ListTenantInvoiceItemsUseCase,
   ListTenantInvoicePaymentsUseCase,
@@ -184,6 +185,27 @@ import { SmtpInvoiceNotificationSender } from './smtp-invoice-notification-sende
         ),
     },
     {
+      provide: ReverseTenantInvoicePaymentUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+        PAYMENT_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        invoiceRepository,
+        invoiceItemRepository,
+        paymentRepository,
+      ) =>
+        new ReverseTenantInvoicePaymentUseCase(
+          tenantRepository,
+          invoiceRepository,
+          invoiceItemRepository,
+          paymentRepository,
+        ),
+    },
+    {
       provide: GetTenantInvoiceByIdUseCase,
       inject: [TENANT_REPOSITORY, INVOICE_REPOSITORY],
       useFactory: (tenantRepository, invoiceRepository) =>
@@ -295,11 +317,23 @@ import { SmtpInvoiceNotificationSender } from './smtp-invoice-notification-sende
     },
     {
       provide: UpdateTenantInvoiceStatusUseCase,
-      inject: [TENANT_REPOSITORY, INVOICE_REPOSITORY],
-      useFactory: (tenantRepository, invoiceRepository) =>
+      inject: [
+        TENANT_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+        PAYMENT_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        invoiceRepository,
+        invoiceItemRepository,
+        paymentRepository,
+      ) =>
         new UpdateTenantInvoiceStatusUseCase(
           tenantRepository,
           invoiceRepository,
+          invoiceItemRepository,
+          paymentRepository,
         ),
     },
     {

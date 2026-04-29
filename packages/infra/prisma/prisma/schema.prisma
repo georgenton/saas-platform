@@ -123,10 +123,13 @@ model Payment {
   invoiceId     String
   amountInCents Int
   currency      String
+  status        String
   method        String
   reference     String?
   paidAt        DateTime
   notes         String?
+  reversedAt    DateTime?
+  reversalReason String?
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())

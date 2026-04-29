@@ -60,6 +60,7 @@ import {
   ListTenantInvoiceSummariesUseCase,
   ListTenantInvoicesUseCase,
   ListTenantTaxRatesUseCase,
+  ReverseTenantInvoicePaymentUseCase,
   SendTenantInvoiceEmailUseCase,
   UpdateTenantInvoiceStatusUseCase,
 } from '@saas-platform/invoicing-application';
@@ -163,6 +164,7 @@ describe('API', () => {
   let createTenantInvoiceItemUseCase: { execute: jest.Mock };
   let createTenantInvoicePaymentUseCase: { execute: jest.Mock };
   let createTenantTaxRateUseCase: { execute: jest.Mock };
+  let reverseTenantInvoicePaymentUseCase: { execute: jest.Mock };
   let sendTenantInvoiceEmailUseCase: { execute: jest.Mock };
   let updateTenantInvoiceStatusUseCase: { execute: jest.Mock };
   let createTenantUseCase: { execute: jest.Mock };
@@ -417,7 +419,7 @@ describe('API', () => {
     tenantId: 'tenant_123',
     customerId: 'customer_globex',
     number: 'INV-002',
-    status: 'issued',
+    status: 'partially_paid',
     currency: 'USD',
     issuedAt: new Date('2026-04-27T17:00:00.000Z'),
     dueAt: null,
@@ -471,12 +473,15 @@ describe('API', () => {
     id: 'payment_001',
     tenantId: 'tenant_123',
     invoiceId: 'invoice_002',
-    amountInCents: 5000,
+    amountInCents: 2500,
     currency: 'USD',
+    status: 'posted',
     method: 'bank_transfer',
     reference: 'PAY-001',
     paidAt: new Date('2026-04-28T21:00:00.000Z'),
     notes: 'Abono inicial de prueba.',
+    reversedAt: null,
+    reversalReason: null,
     createdAt: new Date('2026-04-28T21:00:00.000Z'),
     updatedAt: new Date('2026-04-28T21:00:00.000Z'),
   });
@@ -643,16 +648,16 @@ describe('API', () => {
         invoiceCount: 2,
         statusBreakdown: [
           { status: 'draft', count: 1 },
-          { status: 'issued', count: 1 },
+          { status: 'partially_paid', count: 1 },
         ],
         totalsByCurrency: [
           {
             currency: 'USD',
-            subtotalInCents: 12500,
+            subtotalInCents: 17500,
             taxInCents: 1200,
-            totalInCents: 13700,
-            paidInCents: 0,
-            outstandingTotalInCents: 13700,
+            totalInCents: 18700,
+            paidInCents: 2500,
+            outstandingTotalInCents: 16200,
           },
         ],
         monthlyTotals: [
@@ -660,7 +665,7 @@ describe('API', () => {
             month: '2026-04',
             currency: 'USD',
             invoiceCount: 2,
-            totalInCents: 13700,
+            totalInCents: 18700,
             taxInCents: 1200,
           },
         ],
@@ -751,14 +756,14 @@ describe('API', () => {
           invoice: issuedInvoice,
           itemCount: 0,
           totals: {
-            subtotalInCents: 0,
+            subtotalInCents: 5000,
             taxInCents: 0,
-            totalInCents: 0,
+            totalInCents: 5000,
           },
           settlement: {
-            paidInCents: 0,
-            balanceDueInCents: 0,
-            isFullyPaid: true,
+            paidInCents: 2500,
+            balanceDueInCents: 2500,
+            isFullyPaid: false,
           },
         },
       ]),
@@ -789,6 +794,14 @@ describe('API', () => {
     };
     createTenantTaxRateUseCase = {
       execute: jest.fn().mockResolvedValue(vatTaxRate),
+    };
+    reverseTenantInvoicePaymentUseCase = {
+      execute: jest.fn().mockResolvedValue(
+        receivedPayment.reverse(
+          new Date('2026-04-28T22:00:00.000Z'),
+          'Pago duplicado.',
+        ),
+      ),
     };
     sendTenantInvoiceEmailUseCase = {
       execute: jest.fn().mockResolvedValue(undefined),
@@ -1016,6 +1029,8 @@ describe('API', () => {
       .useValue(createTenantInvoicePaymentUseCase)
       .overrideProvider(CreateTenantTaxRateUseCase)
       .useValue(createTenantTaxRateUseCase)
+      .overrideProvider(ReverseTenantInvoicePaymentUseCase)
+      .useValue(reverseTenantInvoicePaymentUseCase)
       .overrideProvider(SendTenantInvoiceEmailUseCase)
       .useValue(sendTenantInvoiceEmailUseCase)
       .overrideProvider(UpdateTenantInvoiceStatusUseCase)
@@ -1467,16 +1482,16 @@ describe('API', () => {
         invoiceCount: 2,
         statusBreakdown: [
           { status: 'draft', count: 1 },
-          { status: 'issued', count: 1 },
+          { status: 'partially_paid', count: 1 },
         ],
         totalsByCurrency: [
           {
             currency: 'USD',
-            subtotalInCents: 12500,
+            subtotalInCents: 17500,
             taxInCents: 1200,
-            totalInCents: 13700,
-            paidInCents: 0,
-            outstandingTotalInCents: 13700,
+            totalInCents: 18700,
+            paidInCents: 2500,
+            outstandingTotalInCents: 16200,
           },
         ],
         monthlyTotals: [
@@ -1484,7 +1499,7 @@ describe('API', () => {
             month: '2026-04',
             currency: 'USD',
             invoiceCount: 2,
-            totalInCents: 13700,
+            totalInCents: 18700,
             taxInCents: 1200,
           },
         ],
@@ -1623,7 +1638,7 @@ describe('API', () => {
           tenantId: 'tenant_123',
           customerId: 'customer_globex',
           number: 'INV-002',
-          status: 'issued',
+          status: 'partially_paid',
           currency: 'USD',
           issuedAt: '2026-04-27T17:00:00.000Z',
           dueAt: null,
@@ -1632,14 +1647,14 @@ describe('API', () => {
           updatedAt: '2026-04-27T17:00:00.000Z',
           itemCount: 0,
           totals: {
-            subtotalInCents: 0,
+            subtotalInCents: 5000,
             taxInCents: 0,
-            totalInCents: 0,
+            totalInCents: 5000,
           },
           settlement: {
-            paidInCents: 0,
-            balanceDueInCents: 0,
-            isFullyPaid: true,
+            paidInCents: 2500,
+            balanceDueInCents: 2500,
+            isFullyPaid: false,
           },
         },
       ]);
@@ -2053,12 +2068,15 @@ describe('API', () => {
           id: 'payment_001',
           tenantId: 'tenant_123',
           invoiceId: 'invoice_002',
-          amountInCents: 5000,
+          amountInCents: 2500,
           currency: 'USD',
+          status: 'posted',
           method: 'bank_transfer',
           reference: 'PAY-001',
           paidAt: '2026-04-28T21:00:00.000Z',
           notes: 'Abono inicial de prueba.',
+          reversedAt: null,
+          reversalReason: null,
           createdAt: '2026-04-28T21:00:00.000Z',
           updatedAt: '2026-04-28T21:00:00.000Z',
         },
@@ -2075,7 +2093,7 @@ describe('API', () => {
       .post('/api/invoicing/tenants/saas-platform/invoices/invoice_002/payments')
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        amountInCents: 5000,
+        amountInCents: 2500,
         method: 'bank_transfer',
         reference: 'PAY-001',
         paidAt: '2026-04-28T21:00:00.000Z',
@@ -2086,12 +2104,15 @@ describe('API', () => {
         id: 'payment_001',
         tenantId: 'tenant_123',
         invoiceId: 'invoice_002',
-        amountInCents: 5000,
+        amountInCents: 2500,
         currency: 'USD',
+        status: 'posted',
         method: 'bank_transfer',
         reference: 'PAY-001',
         paidAt: '2026-04-28T21:00:00.000Z',
         notes: 'Abono inicial de prueba.',
+        reversedAt: null,
+        reversalReason: null,
         createdAt: '2026-04-28T21:00:00.000Z',
         updatedAt: '2026-04-28T21:00:00.000Z',
       });
@@ -2099,11 +2120,46 @@ describe('API', () => {
     expect(createTenantInvoicePaymentUseCase.execute).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       invoiceId: 'invoice_002',
-      amountInCents: 5000,
+      amountInCents: 2500,
       method: 'bank_transfer',
       reference: 'PAY-001',
       paidAt: new Date('2026-04-28T21:00:00.000Z'),
       notes: 'Abono inicial de prueba.',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/payments/:paymentId/reverse should reverse a posted payment', async () => {
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/invoices/invoice_002/payments/payment_001/reverse',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        reason: 'Pago duplicado.',
+      })
+      .expect(201)
+      .expect({
+        id: 'payment_001',
+        tenantId: 'tenant_123',
+        invoiceId: 'invoice_002',
+        amountInCents: 2500,
+        currency: 'USD',
+        status: 'reversed',
+        method: 'bank_transfer',
+        reference: 'PAY-001',
+        paidAt: '2026-04-28T21:00:00.000Z',
+        notes: 'Abono inicial de prueba.',
+        reversedAt: '2026-04-28T22:00:00.000Z',
+        reversalReason: 'Pago duplicado.',
+        createdAt: '2026-04-28T21:00:00.000Z',
+        updatedAt: '2026-04-28T22:00:00.000Z',
+      });
+
+    expect(reverseTenantInvoicePaymentUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'invoice_002',
+      paymentId: 'payment_001',
+      reason: 'Pago duplicado.',
     });
   });
 

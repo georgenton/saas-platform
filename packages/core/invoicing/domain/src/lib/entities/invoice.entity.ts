@@ -1,4 +1,9 @@
-export type InvoiceStatus = 'draft' | 'issued' | 'paid' | 'void';
+export type InvoiceStatus =
+  | 'draft'
+  | 'issued'
+  | 'partially_paid'
+  | 'paid'
+  | 'void';
 
 export interface InvoiceProps {
   id: string;
@@ -74,6 +79,12 @@ export class Invoice {
       case 'draft':
         return nextStatus === 'issued' || nextStatus === 'void';
       case 'issued':
+        return (
+          nextStatus === 'partially_paid' ||
+          nextStatus === 'paid' ||
+          nextStatus === 'void'
+        );
+      case 'partially_paid':
         return nextStatus === 'paid' || nextStatus === 'void';
       case 'paid':
         return false;

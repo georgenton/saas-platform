@@ -23,6 +23,7 @@ import {
   listTaxRates,
   listTenantEnabledProducts,
   listTenantInvitations,
+  reverseInvoicePayment,
   resendInvitation,
   sendInvoiceEmail,
   setCurrentTenancy,
@@ -104,10 +105,23 @@ function formatInvoiceStatus(status: string): string {
       return 'Borrador';
     case 'issued':
       return 'Emitida';
+    case 'partially_paid':
+      return 'Parcialmente pagada';
     case 'paid':
       return 'Pagada';
     case 'void':
       return 'Anulada';
+    default:
+      return status;
+  }
+}
+
+function formatPaymentStatus(status: string): string {
+  switch (status.toLowerCase()) {
+    case 'posted':
+      return 'Aplicado';
+    case 'reversed':
+      return 'Revertido';
     default:
       return status;
   }
@@ -238,6 +252,7 @@ export function App() {
   const [newPaymentReference, setNewPaymentReference] = useState('');
   const [newPaymentPaidAt, setNewPaymentPaidAt] = useState('');
   const [newPaymentNotes, setNewPaymentNotes] = useState('');
+  const [paymentReversalReason, setPaymentReversalReason] = useState('');
   const [invoiceEmailRecipient, setInvoiceEmailRecipient] = useState('');
   const [invoiceEmailMessage, setInvoiceEmailMessage] = useState('');
 
@@ -1417,6 +1432,42 @@ export function App() {
     }
   }
 
+  async function handleReverseInvoicePayment(paymentId: string) {
+    if (!token || !currentTenancy || !selectedInvoiceDetail) {
+      return;
+    }
+
+    setActionLoading(`reverse-payment:${paymentId}`);
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      await reverseInvoicePayment(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+        paymentId,
+        {
+          reason: paymentReversalReason.trim() || null,
+        },
+      );
+
+      setPaymentReversalReason('');
+      setInvoicingActionMessage(
+        `Pago revertido para la factura ${selectedInvoiceDetail.number}.`,
+      );
+      await refreshInvoicingWorkspace({ selectInvoiceId: selectedInvoiceDetail.id });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo revertir el pago.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   return (
     <div className={styles.shell}>
       <div className={styles.backdrop} />
@@ -2533,7 +2584,8 @@ export function App() {
                             </button>
                           ) : null}
 
-                          {selectedInvoiceDetail.status === 'issued' ? (
+                          {(selectedInvoiceDetail.status === 'issued' ||
+                            selectedInvoiceDetail.status === 'partially_paid') ? (
                             <button
                               className={styles.primaryButton}
                               disabled={actionLoading === 'invoice-status:paid'}
@@ -2771,16 +2823,54 @@ export function App() {
                                       )}
                                     </span>
                                   </div>
+                                  <small>
+                                    Estado: {formatPaymentStatus(payment.status)}
+                                  </small>
                                   <small>Fecha: {formatDate(payment.paidAt)}</small>
                                   <small>
                                     Referencia: {payment.reference ?? 'Sin referencia'}
                                   </small>
                                   <small>{payment.notes ?? 'Sin notas'}</small>
+                                  {payment.reversedAt ? (
+                                    <small>
+                                      Revertido: {formatDate(payment.reversedAt)}
+                                      {payment.reversalReason
+                                        ? ` · ${payment.reversalReason}`
+                                        : ''}
+                                    </small>
+                                  ) : null}
+                                  {payment.status === 'posted' ? (
+                                    <button
+                                      className={styles.secondaryButton}
+                                      disabled={
+                                        actionLoading === `reverse-payment:${payment.id}`
+                                      }
+                                      onClick={() =>
+                                        void handleReverseInvoicePayment(payment.id)
+                                      }
+                                      type="button"
+                                    >
+                                      {actionLoading === `reverse-payment:${payment.id}`
+                                        ? 'Revirtiendo...'
+                                        : 'Revertir pago'}
+                                    </button>
+                                  ) : null}
                                 </div>
                               ))}
                             </div>
                           )}
                         </div>
+
+                        <label className={styles.field}>
+                          <span>Motivo de reversa</span>
+                          <input
+                            onChange={(event) =>
+                              setPaymentReversalReason(event.target.value)
+                            }
+                            placeholder="Pago duplicado, error de conciliacion, etc."
+                            value={paymentReversalReason}
+                          />
+                        </label>
 
                         <form className={styles.stack} onSubmit={handleCreateInvoicePayment}>
                           <div className={styles.sectionHeading}>

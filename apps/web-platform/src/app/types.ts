@@ -176,10 +176,13 @@ export interface PaymentResponse {
   invoiceId: string;
   amountInCents: number;
   currency: string;
+  status: string;
   method: string;
   reference: string | null;
   paidAt: string;
   notes: string | null;
+  reversedAt: string | null;
+  reversalReason: string | null;
   createdAt: string;
   updatedAt: string;
 }

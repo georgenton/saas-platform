@@ -36,7 +36,10 @@ export function buildInvoicingReportSummary(input: {
   customerCount: number;
   invoices: Invoice[];
   itemsByInvoiceId: Map<string, { lineTotalInCents: number; lineTaxInCents: number }[]>;
-  paymentsByInvoiceId: Map<string, { amountInCents: number }[]>;
+  paymentsByInvoiceId: Map<
+    string,
+    { amountInCents: number; status: 'posted' | 'reversed' }[]
+  >;
 }): InvoicingReportSummaryView {
   const statusCounts = new Map<string, number>();
   const totalsByCurrency = new Map<

@@ -12,6 +12,7 @@ import {
   createTaxRate,
   downloadInvoiceElectronicRideHtml,
   downloadInvoiceElectronicXmlPreview,
+  fetchElectronicSandboxReadiness,
   fetchElectronicSubmissionSettings,
   fetchElectronicSignatureSettings,
   fetchInvitationForInvitee,
@@ -39,6 +40,7 @@ import {
   sendInvoiceEmail,
   setCurrentTenancy,
   submitInvoiceElectronicDocument,
+  submitPresignedInvoiceElectronicDocument,
   upsertElectronicSubmissionSettings,
   upsertElectronicSignatureSettings,
   upsertInvoiceNumberingSettings,
@@ -50,6 +52,7 @@ import {
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CustomerResponse,
+  ElectronicSandboxReadinessResponse,
   ElectronicSubmissionSettingsResponse,
   ElectronicSignatureSettingsResponse,
   InvoiceElectronicArtifactsResponse,
@@ -269,18 +272,21 @@ function findPendingInvitation(
 }
 
 async function loadOptionalInvoicingSettings(token: string, tenantSlug: string): Promise<{
+  electronicSandboxReadiness: ElectronicSandboxReadinessResponse | null;
   electronicSubmissionSettings: ElectronicSubmissionSettingsResponse | null;
   electronicSignatureSettings: ElectronicSignatureSettingsResponse | null;
   issuerProfile: IssuerProfileResponse | null;
   invoiceNumberingSettings: InvoiceNumberingSettingsResponse | null;
 }> {
   const [
+    electronicSandboxReadiness,
     electronicSubmissionSettings,
     electronicSignatureSettings,
     issuerProfile,
     invoiceNumberingSettings,
   ] =
     await Promise.all([
+      fetchElectronicSandboxReadiness(token, tenantSlug).catch(() => null),
       fetchElectronicSubmissionSettings(token, tenantSlug).catch(() => null),
       fetchElectronicSignatureSettings(token, tenantSlug).catch(() => null),
       fetchIssuerProfile(token, tenantSlug).catch(() => null),
@@ -288,6 +294,7 @@ async function loadOptionalInvoicingSettings(token: string, tenantSlug: string):
     ]);
 
   return {
+    electronicSandboxReadiness,
     electronicSubmissionSettings,
     electronicSignatureSettings,
     issuerProfile,
@@ -319,6 +326,8 @@ export function App() {
   const [invoices, setInvoices] = useState<InvoiceSummaryResponse[]>([]);
   const [electronicSubmissionSettings, setElectronicSubmissionSettings] =
     useState<ElectronicSubmissionSettingsResponse | null>(null);
+  const [electronicSandboxReadiness, setElectronicSandboxReadiness] =
+    useState<ElectronicSandboxReadinessResponse | null>(null);
   const [electronicSignatureSettings, setElectronicSignatureSettings] =
     useState<ElectronicSignatureSettingsResponse | null>(null);
   const [issuerProfile, setIssuerProfile] = useState<IssuerProfileResponse | null>(
@@ -429,6 +438,9 @@ export function App() {
   const [paymentReversalReason, setPaymentReversalReason] = useState('');
   const [invoiceEmailRecipient, setInvoiceEmailRecipient] = useState('');
   const [invoiceEmailMessage, setInvoiceEmailMessage] = useState('');
+  const [presignedInvoiceXml, setPresignedInvoiceXml] = useState('');
+  const [presignedInvoiceSignerName, setPresignedInvoiceSignerName] =
+    useState('');
 
   const [tenantInvitations, setTenantInvitations] = useState<InvitationResponse[]>(
     [],
@@ -713,6 +725,7 @@ export function App() {
       setCustomers([]);
       setTaxRates([]);
       setInvoices([]);
+      setElectronicSandboxReadiness(null);
       setElectronicSubmissionSettings(null);
       setElectronicSignatureSettings(null);
       setIssuerProfile(null);
@@ -759,6 +772,9 @@ export function App() {
           setCustomers(nextCustomers);
           setTaxRates(nextTaxRates);
           setInvoices(nextInvoices);
+          setElectronicSandboxReadiness(
+            nextSettings.electronicSandboxReadiness,
+          );
           setElectronicSubmissionSettings(
             nextSettings.electronicSubmissionSettings,
           );
@@ -778,6 +794,7 @@ export function App() {
         }
 
         setCustomers([]);
+        setElectronicSandboxReadiness(null);
         setElectronicSignatureSettings(null);
         setIssuerProfile(null);
         setInvoiceNumberingSettings(null);
@@ -1238,6 +1255,7 @@ export function App() {
         setTaxRates(nextTaxRates);
         setCustomers(nextCustomers);
         setInvoices(nextInvoices);
+        setElectronicSandboxReadiness(nextSettings.electronicSandboxReadiness);
         setElectronicSubmissionSettings(nextSettings.electronicSubmissionSettings);
         setElectronicSignatureSettings(nextSettings.electronicSignatureSettings);
         setIssuerProfile(nextSettings.issuerProfile);
@@ -2189,6 +2207,45 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo firmar y enviar el comprobante.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleSubmitPresignedInvoiceElectronicDocument() {
+    if (!token || !currentTenancy || !selectedInvoiceDetail) {
+      return;
+    }
+
+    setActionLoading('submit-presigned-invoice-electronic-document');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const result = await submitPresignedInvoiceElectronicDocument(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+        {
+          signedXml: presignedInvoiceXml,
+          signerName: presignedInvoiceSignerName || null,
+        },
+      );
+
+      setInvoicingActionMessage(
+        `XML prefirmado enviado. Referencia: ${
+          result.submissionReference ?? 'sin referencia'
+        }.`,
+      );
+      setPresignedInvoiceXml('');
+      setPresignedInvoiceSignerName('');
+      await refreshInvoicingWorkspace({ selectInvoiceId: selectedInvoiceDetail.id });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo enviar el XML firmado externamente.',
       );
     } finally {
       setActionLoading(null);
@@ -3608,6 +3665,66 @@ export function App() {
                         `sri_offline_ws` ya empezamos a modelar URLs y secretos
                         por tenant sin cambiar el contrato del gateway.
                       </p>
+
+                      {electronicSandboxReadiness ? (
+                        <div className={styles.detailCard}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>
+                                Sandbox readiness
+                              </span>
+                              <h3>
+                                {electronicSandboxReadiness.isReadyForRemoteSandboxSubmission
+                                  ? 'Listo para una prueba controlada'
+                                  : 'Todavia bloqueado para sandbox real'}
+                              </h3>
+                            </div>
+                          </div>
+
+                          <div className={styles.invoiceDetailGrid}>
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>Signature provider</span>
+                              <strong>
+                                {electronicSandboxReadiness.signatureProvider ??
+                                  'No configurado'}
+                              </strong>
+                            </div>
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>Submission path</span>
+                              <strong>
+                                {electronicSandboxReadiness.submissionProvider ??
+                                  'No configurado'}
+                              </strong>
+                              <small>
+                                {electronicSandboxReadiness.transmissionMode ??
+                                  'Sin transmission mode'}
+                              </small>
+                            </div>
+                          </div>
+
+                          {electronicSandboxReadiness.blockers.length > 0 ? (
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>Blockers</span>
+                              {electronicSandboxReadiness.blockers.map((item) => (
+                                <p key={item}>{item}</p>
+                              ))}
+                            </div>
+                          ) : null}
+
+                          {electronicSandboxReadiness.warnings.length > 0 ? (
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>Warnings</span>
+                              {electronicSandboxReadiness.warnings.map((item) => (
+                                <p key={item}>{item}</p>
+                              ))}
+                            </div>
+                          ) : null}
+
+                          <p className={styles.muted}>
+                            {electronicSandboxReadiness.recommendedNextStep}
+                          </p>
+                        </div>
+                      ) : null}
                     </form>
                   </div>
 
@@ -4262,6 +4379,67 @@ export function App() {
                             </button>
                             <p className={styles.muted}>
                               Puedes dejar vacia la clave de acceso para que el backend la genere desde el perfil fiscal y la numeracion Ecuador.
+                            </p>
+                          </form>
+
+                          <form
+                            className={styles.stack}
+                            onSubmit={(event) => {
+                              event.preventDefault();
+                              void handleSubmitPresignedInvoiceElectronicDocument();
+                            }}
+                          >
+                            <div className={styles.sectionHeading}>
+                              <div>
+                                <span className={styles.label}>
+                                  External signed XML
+                                </span>
+                                <h3>Puente para sandbox real</h3>
+                              </div>
+                            </div>
+
+                            <label className={styles.field}>
+                              <span>Signer name</span>
+                              <input
+                                onChange={(event) =>
+                                  setPresignedInvoiceSignerName(event.target.value)
+                                }
+                                placeholder="sandbox-signer o nombre del firmador externo"
+                                value={presignedInvoiceSignerName}
+                              />
+                            </label>
+
+                            <label className={styles.field}>
+                              <span>Signed XML</span>
+                              <textarea
+                                onChange={(event) =>
+                                  setPresignedInvoiceXml(event.target.value)
+                                }
+                                placeholder="<factura ...><ds:Signature>...</ds:Signature></factura>"
+                                value={presignedInvoiceXml}
+                              />
+                            </label>
+
+                            <button
+                              className={styles.primaryButton}
+                              disabled={
+                                actionLoading ===
+                                  'submit-presigned-invoice-electronic-document' ||
+                                selectedInvoiceDetail.status === 'draft' ||
+                                !presignedInvoiceXml.trim()
+                              }
+                              type="submit"
+                            >
+                              {actionLoading ===
+                              'submit-presigned-invoice-electronic-document'
+                                ? 'Enviando XML firmado...'
+                                : 'Enviar XML prefirmado'}
+                            </button>
+
+                            <p className={styles.muted}>
+                              Este camino sirve para probar SRI sandbox con una
+                              firma real generada fuera del sistema, mientras la
+                              firma XAdES nativa del repo sigue pendiente.
                             </p>
                           </form>
                         </div>

@@ -19,6 +19,7 @@ import {
   CreateTenantInvoiceItemUseCase,
   CreateTenantInvoicePaymentUseCase,
   CreateTenantTaxRateUseCase,
+  GetTenantElectronicSandboxReadinessUseCase,
   CustomerEmailMissingError,
   ElectronicSubmissionSettingsNotFoundError,
   ElectronicSignatureSettingsNotFoundError,
@@ -48,6 +49,7 @@ import {
   InvoiceElectronicSubmissionGatewayIncompleteError,
   InvoiceElectronicSubmissionNotConfiguredError,
   InvoiceElectronicSecretResolutionError,
+  InvoiceElectronicRemoteSubmissionReadinessError,
   InvoiceElectronicSignatureMaterialIncompleteError,
   InvoiceElectronicXmlValidationError,
   InvalidInvoicePaymentStateError,
@@ -67,6 +69,7 @@ import {
   renderInvoiceRideHtml,
   SendTenantInvoiceEmailUseCase,
   SubmitTenantInvoiceElectronicDocumentUseCase,
+  SubmitTenantPresignedInvoiceElectronicDocumentUseCase,
   TaxRateNotFoundError,
   UpdateTenantInvoiceStatusUseCase,
   UpdateTenantInvoiceElectronicStatusUseCase,
@@ -93,6 +96,7 @@ import { CreateTaxRateRequestDto } from './dto/create-tax-rate.request';
 import { CreateInvoicePaymentRequestDto } from './dto/create-invoice-payment.request';
 import { ReverseInvoicePaymentRequestDto } from './dto/reverse-invoice-payment.request';
 import { SendInvoiceEmailRequestDto } from './dto/send-invoice-email.request';
+import { SubmitPresignedInvoiceElectronicDocumentRequestDto } from './dto/submit-presigned-invoice-electronic-document.request';
 import { UpdateInvoiceStatusRequestDto } from './dto/update-invoice-status.request';
 import { UpdateInvoiceElectronicStatusRequestDto } from './dto/update-invoice-electronic-status.request';
 import { UpsertElectronicSubmissionSettingsRequestDto } from './dto/upsert-electronic-submission-settings.request';
@@ -103,6 +107,10 @@ import {
   ElectronicSubmissionSettingsResponseDto,
   toElectronicSubmissionSettingsResponseDto,
 } from './dto/electronic-submission-settings.response';
+import {
+  ElectronicSandboxReadinessResponseDto,
+  toElectronicSandboxReadinessResponseDto,
+} from './dto/electronic-sandbox-readiness.response';
 import {
   ElectronicSignatureSettingsResponseDto,
   toElectronicSignatureSettingsResponseDto,
@@ -176,6 +184,7 @@ export class InvoicingController {
     private readonly createTenantInvoiceItemUseCase: CreateTenantInvoiceItemUseCase,
     private readonly createTenantInvoicePaymentUseCase: CreateTenantInvoicePaymentUseCase,
     private readonly createTenantTaxRateUseCase: CreateTenantTaxRateUseCase,
+    private readonly getTenantElectronicSandboxReadinessUseCase: GetTenantElectronicSandboxReadinessUseCase,
     private readonly getTenantCustomerByIdUseCase: GetTenantCustomerByIdUseCase,
     private readonly getTenantElectronicSubmissionSettingsUseCase: GetTenantElectronicSubmissionSettingsUseCase,
     private readonly getTenantElectronicSignatureSettingsUseCase: GetTenantElectronicSignatureSettingsUseCase,
@@ -195,6 +204,7 @@ export class InvoicingController {
     private readonly sendTenantInvoiceEmailUseCase: SendTenantInvoiceEmailUseCase,
     private readonly checkTenantInvoiceElectronicAuthorizationUseCase: CheckTenantInvoiceElectronicAuthorizationUseCase,
     private readonly submitTenantInvoiceElectronicDocumentUseCase: SubmitTenantInvoiceElectronicDocumentUseCase,
+    private readonly submitTenantPresignedInvoiceElectronicDocumentUseCase: SubmitTenantPresignedInvoiceElectronicDocumentUseCase,
     private readonly updateTenantInvoiceStatusUseCase: UpdateTenantInvoiceStatusUseCase,
     private readonly updateTenantInvoiceElectronicStatusUseCase: UpdateTenantInvoiceElectronicStatusUseCase,
     private readonly upsertTenantElectronicSubmissionSettingsUseCase: UpsertTenantElectronicSubmissionSettingsUseCase,
@@ -278,6 +288,28 @@ export class InvoicingController {
         error instanceof TenantNotFoundError ||
         error instanceof ElectronicSubmissionSettingsNotFoundError
       ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/electronic-document/readiness')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantElectronicSandboxReadiness(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<ElectronicSandboxReadinessResponseDto> {
+    try {
+      const readiness =
+        await this.getTenantElectronicSandboxReadinessUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toElectronicSandboxReadinessResponseDto(readiness);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
       }
 
@@ -926,8 +958,55 @@ export class InvoicingController {
         error instanceof InvoiceElectronicMetadataIncompleteError ||
         error instanceof InvoiceElectronicSubmissionGatewayIncompleteError ||
         error instanceof InvoiceElectronicSubmissionNotConfiguredError ||
+        error instanceof InvoiceElectronicRemoteSubmissionReadinessError ||
         error instanceof InvoiceElectronicSignatureMaterialIncompleteError ||
         error instanceof InvoiceElectronicSignatureNotConfiguredError ||
+        error instanceof InvoiceElectronicSecretResolutionError ||
+        error instanceof InvoiceElectronicXmlValidationError
+      ) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/invoices/:invoiceId/electronic-document/submit-presigned')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async submitTenantPresignedInvoiceElectronicDocument(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @Body() body: SubmitPresignedInvoiceElectronicDocumentRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<SubmitInvoiceElectronicDocumentResponseDto> {
+    try {
+      const invoice =
+        await this.submitTenantPresignedInvoiceElectronicDocumentUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          invoiceId,
+          signedXml: body.signedXml,
+          signerName: body.signerName ?? null,
+        });
+
+      return toSubmitInvoiceElectronicDocumentResponseDto({
+        electronicStatus: invoice.electronicStatus,
+        accessKey: invoice.accessKey,
+        submittedAt: invoice.submittedAt,
+        submissionReference: invoice.submissionReference,
+      });
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (
+        error instanceof InvalidInvoiceElectronicSubmissionStateError ||
+        error instanceof InvoiceElectronicMetadataIncompleteError ||
+        error instanceof InvoiceElectronicSubmissionGatewayIncompleteError ||
+        error instanceof InvoiceElectronicSubmissionNotConfiguredError ||
         error instanceof InvoiceElectronicSecretResolutionError ||
         error instanceof InvoiceElectronicXmlValidationError
       ) {

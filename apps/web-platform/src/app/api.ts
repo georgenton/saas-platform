@@ -2,6 +2,7 @@ import {
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CustomerResponse,
+  ElectronicSandboxReadinessResponse,
   ElectronicSubmissionSettingsResponse,
   ElectronicSignatureSettingsResponse,
   InvoiceElectronicArtifactsResponse,
@@ -334,6 +335,21 @@ export async function fetchElectronicSubmissionSettings(
 ): Promise<ElectronicSubmissionSettingsResponse> {
   return request<ElectronicSubmissionSettingsResponse>(
     `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/electronic-submission`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchElectronicSandboxReadiness(
+  token: string,
+  tenantSlug: string,
+): Promise<ElectronicSandboxReadinessResponse> {
+  return request<ElectronicSandboxReadinessResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/electronic-document/readiness`,
     {
       method: 'GET',
       token,
@@ -762,6 +778,35 @@ export async function submitInvoiceElectronicDocument(
     {
       method: 'POST',
       token,
+    },
+  );
+}
+
+export async function submitPresignedInvoiceElectronicDocument(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+  body: {
+    signedXml: string;
+    signerName?: string | null;
+  },
+): Promise<{
+  submitted: true;
+  electronicStatus: string | null;
+  accessKey: string | null;
+  submittedAt: string | null;
+  submissionReference: string | null;
+}> {
+  return request(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(
+      invoiceId,
+    )}/electronic-document/submit-presigned`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
     },
   );
 }

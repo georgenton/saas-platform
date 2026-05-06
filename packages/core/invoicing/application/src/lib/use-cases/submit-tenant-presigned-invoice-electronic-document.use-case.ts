@@ -1,54 +1,48 @@
-import { TenantNotFoundError, TenantRepository } from '@saas-platform/tenancy-application';
-import { InvoiceStatus } from '@saas-platform/invoicing-domain';
+import {
+  TenantNotFoundError,
+  TenantRepository,
+} from '@saas-platform/tenancy-application';
+import { InvoiceElectronicEvent, InvoiceStatus } from '@saas-platform/invoicing-domain';
 import { InvoiceElectronicEventIdGenerator } from '../ports/invoice-electronic-event-id.generator';
 import { InvoiceElectronicEventRepository } from '../ports/invoice-electronic-event.repository';
 import { ElectronicSubmissionSettingsRepository } from '../ports/electronic-submission-settings.repository';
 import { InvalidInvoiceElectronicSubmissionStateError } from '../errors/invalid-invoice-electronic-submission-state.error';
 import { InvoiceElectronicSubmissionGatewayIncompleteError } from '../errors/invoice-electronic-submission-gateway-incomplete.error';
 import { InvoiceElectronicSubmissionNotConfiguredError } from '../errors/invoice-electronic-submission-not-configured.error';
-import { InvoiceElectronicSignatureNotConfiguredError } from '../errors/invoice-electronic-signature-not-configured.error';
-import { InvoiceElectronicSignatureMaterialIncompleteError } from '../errors/invoice-electronic-signature-material-incomplete.error';
-import { ElectronicSignatureSettingsRepository } from '../ports/electronic-signature-settings.repository';
 import { InvoiceElectronicMetadataIncompleteError } from '../errors/invoice-electronic-metadata-incomplete.error';
-import { InvoiceElectronicRemoteSubmissionReadinessError } from '../errors/invoice-electronic-remote-submission-readiness.error';
 import { InvoiceElectronicXmlValidationError } from '../errors/invoice-electronic-xml-validation.error';
 import { InvoiceNotFoundError } from '../errors/invoice-not-found.error';
-import { ElectronicInvoiceSigner } from '../ports/electronic-invoice-signer';
 import { ElectronicInvoiceXmlSchemaValidator } from '../ports/electronic-invoice-xml-schema-validator';
 import { ElectronicInvoiceSubmissionGateway } from '../ports/electronic-invoice-submission.gateway';
 import { IssuerProfileRepository } from '../ports/issuer-profile.repository';
 import { InvoiceRepository } from '../ports/invoice.repository';
-import { InvoiceElectronicEvent } from '@saas-platform/invoicing-domain';
 import {
   buildSriAccessKey,
-  buildSriInvoiceXmlPreview,
   canBuildSriAccessKey,
   validateSriInvoiceXml,
 } from '../types/electronic-invoice';
-import { GetTenantInvoiceDocumentUseCase } from './get-tenant-invoice-document.use-case';
 
-export interface SubmitTenantInvoiceElectronicDocumentInput {
+export interface SubmitTenantPresignedInvoiceElectronicDocumentInput {
   tenantSlug: string;
   invoiceId: string;
+  signedXml: string;
+  signerName?: string | null;
 }
 
-export class SubmitTenantInvoiceElectronicDocumentUseCase {
+export class SubmitTenantPresignedInvoiceElectronicDocumentUseCase {
   constructor(
     private readonly tenantRepository: TenantRepository,
     private readonly invoiceRepository: InvoiceRepository,
     private readonly invoiceElectronicEventRepository: InvoiceElectronicEventRepository,
     private readonly invoiceElectronicEventIdGenerator: InvoiceElectronicEventIdGenerator,
     private readonly electronicSubmissionSettingsRepository: ElectronicSubmissionSettingsRepository,
-    private readonly electronicSignatureSettingsRepository: ElectronicSignatureSettingsRepository,
     private readonly issuerProfileRepository: IssuerProfileRepository,
-    private readonly getTenantInvoiceDocumentUseCase: GetTenantInvoiceDocumentUseCase,
     private readonly electronicInvoiceXmlSchemaValidator: ElectronicInvoiceXmlSchemaValidator,
-    private readonly electronicInvoiceSigner: ElectronicInvoiceSigner,
     private readonly electronicInvoiceSubmissionGateway: ElectronicInvoiceSubmissionGateway,
   ) {}
 
   async execute(
-    input: SubmitTenantInvoiceElectronicDocumentInput,
+    input: SubmitTenantPresignedInvoiceElectronicDocumentInput,
   ) {
     const tenant = await this.tenantRepository.findBySlug(input.tenantSlug);
 
@@ -79,8 +73,6 @@ export class SubmitTenantInvoiceElectronicDocumentUseCase {
       await this.electronicSubmissionSettingsRepository.findByTenantId(
         tenant.id,
       );
-    const signatureSettings =
-      await this.electronicSignatureSettingsRepository.findByTenantId(tenant.id);
 
     if (!canBuildSriAccessKey(invoice, issuerProfile)) {
       throw new InvoiceElectronicMetadataIncompleteError(
@@ -103,38 +95,23 @@ export class SubmitTenantInvoiceElectronicDocumentUseCase {
       );
     }
 
-    if (!signatureSettings?.isActive) {
-      throw new InvoiceElectronicSignatureNotConfiguredError(
-        input.tenantSlug,
-        input.invoiceId,
-      );
-    }
-
-    if (!signatureSettings.hasSigningMaterialConfigured()) {
-      throw new InvoiceElectronicSignatureMaterialIncompleteError(
-        input.tenantSlug,
-        input.invoiceId,
-      );
-    }
-
     const accessKey = invoice.accessKey
       ? invoice.accessKey
       : buildSriAccessKey({
           invoice,
           issuerProfile,
         });
-    const document = await this.getTenantInvoiceDocumentUseCase.execute(
-      input.tenantSlug,
-      input.invoiceId,
-    );
-    const xml = buildSriInvoiceXmlPreview({
-      document,
-      accessKey,
-    });
+
     const xmlIssues = validateSriInvoiceXml({
-      xml,
+      xml: input.signedXml,
       accessKey,
     });
+
+    if (!hasXmlDigitalSignature(input.signedXml)) {
+      xmlIssues.push(
+        'El XML prefirmado no contiene un bloque ds:Signature reconocible.',
+      );
+    }
 
     if (xmlIssues.length > 0) {
       throw new InvoiceElectronicXmlValidationError(xmlIssues);
@@ -142,43 +119,30 @@ export class SubmitTenantInvoiceElectronicDocumentUseCase {
 
     const schemaIssues =
       await this.electronicInvoiceXmlSchemaValidator.validate({
-        xml,
+        xml: input.signedXml,
       });
 
     if (schemaIssues.length > 0) {
       throw new InvoiceElectronicXmlValidationError(schemaIssues);
     }
 
-    const signerCapability = this.electronicInvoiceSigner.describeCapability({
-      signatureSettings,
-    });
-
-    if (
-      submissionSettings.transmissionMode === 'offline' &&
-      !signerCapability.supportsSriOfflineSubmission
-    ) {
-      throw new InvoiceElectronicRemoteSubmissionReadinessError(
-        input.tenantSlug,
-        input.invoiceId,
-        signerCapability.detail,
-      );
-    }
-
-    const signedDocument = await this.electronicInvoiceSigner.sign({
-      tenantSlug: input.tenantSlug,
-      invoiceId: input.invoiceId,
-      accessKey,
-      xml,
-      issuerProfile,
-      signatureSettings,
-    });
+    const signedAt = new Date();
     const submissionResult = await this.electronicInvoiceSubmissionGateway.submit({
       tenantSlug: input.tenantSlug,
       invoiceId: input.invoiceId,
       accessKey,
-      signedXml: signedDocument.signedXml,
+      signedXml: input.signedXml,
       submissionSettings,
     });
+
+    const externalSignerName =
+      input.signerName?.trim() || 'external_signed_xml';
+    const statusMessage = [
+      `XML firmado externamente por ${externalSignerName}.`,
+      submissionResult.statusMessage,
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     const updatedInvoice = invoice.updateElectronicStatus(
       {
@@ -186,8 +150,8 @@ export class SubmitTenantInvoiceElectronicDocumentUseCase {
         accessKey,
         authorizationNumber: invoice.authorizationNumber,
         authorizedAt: invoice.authorizedAt,
-        electronicStatusMessage: submissionResult.statusMessage,
-        signedAt: signedDocument.signedAt,
+        electronicStatusMessage: statusMessage,
+        signedAt,
         submittedAt: submissionResult.submittedAt,
         submissionReference: submissionResult.submissionReference,
       },
@@ -201,13 +165,13 @@ export class SubmitTenantInvoiceElectronicDocumentUseCase {
         tenantId: tenant.id,
         invoiceId: invoice.id,
         eventType: 'submission',
-        provider: submissionSettings.provider,
+        provider: `${submissionSettings.provider}:external_signed_xml`,
         providerStatus:
           submissionResult.technicalTrace?.providerStatus ??
           submissionResult.electronicStatus,
         endpoint: submissionResult.technicalTrace?.endpoint ?? null,
         soapAction: submissionResult.technicalTrace?.soapAction ?? null,
-        message: submissionResult.statusMessage,
+        message: statusMessage,
         requestPayload: submissionResult.technicalTrace?.requestPayload ?? null,
         responsePayload: submissionResult.technicalTrace?.responsePayload ?? null,
         submissionReference: submissionResult.submissionReference,
@@ -222,4 +186,8 @@ export class SubmitTenantInvoiceElectronicDocumentUseCase {
   private canSubmitElectronicDocument(status: InvoiceStatus): boolean {
     return status === 'issued' || status === 'partially_paid' || status === 'paid';
   }
+}
+
+function hasXmlDigitalSignature(xml: string): boolean {
+  return /<ds:Signature\b/i.test(xml) || /<Signature\b/i.test(xml);
 }

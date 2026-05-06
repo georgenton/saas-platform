@@ -107,6 +107,16 @@ export interface InvoiceRideView {
   };
 }
 
+export interface InvoiceElectronicDocumentArtifactsView {
+  fileBaseName: string;
+  rideHtmlFileName: string;
+  xmlFileName: string;
+  accessKey: string | null;
+  electronicStatus: string | null;
+  canDownloadRide: boolean;
+  canDownloadXml: boolean;
+}
+
 export function calculateInvoiceTotals(
   items: InvoiceItem[],
 ): InvoiceTotalsView {
@@ -236,12 +246,55 @@ export function buildInvoiceRideView(
   };
 }
 
+export function buildInvoiceElectronicDocumentArtifactsView(
+  document: InvoiceDocumentView,
+): InvoiceElectronicDocumentArtifactsView {
+  const invoice = document.invoice.toPrimitives();
+  const sequenceDisplay =
+    invoice.sequenceNumber !== null
+      ? String(invoice.sequenceNumber).padStart(9, '0')
+      : sanitizeElectronicFileNameSegment(invoice.number);
+  const fileBaseName = [
+    sanitizeElectronicFileNameSegment(
+      document.issuer.taxId ?? document.issuer.tenantSlug,
+    ),
+    sanitizeElectronicFileNameSegment(invoice.documentCode ?? 'invoice'),
+    sanitizeElectronicFileNameSegment(invoice.establishmentCode ?? '000'),
+    sanitizeElectronicFileNameSegment(invoice.emissionPointCode ?? '000'),
+    sanitizeElectronicFileNameSegment(sequenceDisplay),
+  ]
+    .filter((segment) => segment.length > 0)
+    .join('-');
+
+  return {
+    fileBaseName,
+    rideHtmlFileName: `${fileBaseName}-ride.html`,
+    xmlFileName: `${fileBaseName}.xml`,
+    accessKey: invoice.accessKey ?? null,
+    electronicStatus: invoice.electronicStatus ?? null,
+    canDownloadRide: true,
+    canDownloadXml:
+      Boolean(invoice.documentCode) &&
+      Boolean(invoice.establishmentCode) &&
+      Boolean(invoice.emissionPointCode),
+  };
+}
+
 function splitAccessKeyForRide(value: string | null): string[] {
   if (!value) {
     return [];
   }
 
   return value.match(/.{1,7}/g) ?? [value];
+}
+
+function sanitizeElectronicFileNameSegment(value: string): string {
+  return value
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
 }
 
 function buildRideAdditionalInfoFields(

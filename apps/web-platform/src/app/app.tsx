@@ -10,11 +10,14 @@ import {
   createInvoiceItem,
   createInvoicePayment,
   createTaxRate,
+  downloadInvoiceElectronicRideHtml,
+  downloadInvoiceElectronicXmlPreview,
   fetchElectronicSubmissionSettings,
   fetchElectronicSignatureSettings,
   fetchInvitationForInvitee,
   fetchInvoiceDetail,
   fetchInvoiceDocument,
+  fetchInvoiceElectronicArtifacts,
   fetchInvoiceDocumentHtml,
   fetchInvoiceElectronicRide,
   fetchInvoiceElectronicRideHtml,
@@ -49,6 +52,7 @@ import {
   CustomerResponse,
   ElectronicSubmissionSettingsResponse,
   ElectronicSignatureSettingsResponse,
+  InvoiceElectronicArtifactsResponse,
   InvoiceNumberingSettingsResponse,
   InvoiceDetailResponse,
   InvoiceDocumentResponse,
@@ -116,6 +120,23 @@ function formatMoney(priceInCents: number, currency: string): string {
     currency,
     maximumFractionDigits: 2,
   }).format(priceInCents / 100);
+}
+
+function downloadTextArtifact(
+  content: string,
+  fileName: string,
+  contentType: string,
+): void {
+  const blob = new Blob([content], { type: contentType });
+  const url = window.URL.createObjectURL(blob);
+  const anchor = window.document.createElement('a');
+
+  anchor.href = url;
+  anchor.download = fileName;
+  window.document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(url);
 }
 
 function formatInvoiceStatus(status: string): string {
@@ -310,6 +331,8 @@ export function App() {
     useState<InvoiceDetailResponse | null>(null);
   const [selectedInvoiceDocument, setSelectedInvoiceDocument] =
     useState<InvoiceDocumentResponse | null>(null);
+  const [selectedInvoiceArtifacts, setSelectedInvoiceArtifacts] =
+    useState<InvoiceElectronicArtifactsResponse | null>(null);
   const [selectedInvoiceRide, setSelectedInvoiceRide] =
     useState<InvoiceRideResponse | null>(null);
   const [selectedInvoiceXmlPreview, setSelectedInvoiceXmlPreview] = useState<
@@ -698,6 +721,7 @@ export function App() {
       setSelectedInvoiceId(null);
       setSelectedInvoiceDetail(null);
       setSelectedInvoiceDocument(null);
+      setSelectedInvoiceArtifacts(null);
       setSelectedInvoiceRide(null);
       setInvoicingError(null);
       return;
@@ -762,6 +786,7 @@ export function App() {
         setSelectedInvoiceId(null);
         setSelectedInvoiceDetail(null);
         setSelectedInvoiceDocument(null);
+        setSelectedInvoiceArtifacts(null);
         setSelectedInvoiceRide(null);
         setInvoicingError(
           error instanceof Error
@@ -786,6 +811,7 @@ export function App() {
     if (!token || !currentTenancy || !selectedInvoiceId || !invoicingEnabled) {
       setSelectedInvoiceDetail(null);
       setSelectedInvoiceDocument(null);
+      setSelectedInvoiceArtifacts(null);
       setSelectedInvoiceRide(null);
       return;
     }
@@ -798,13 +824,14 @@ export function App() {
       setInvoiceDetailLoading(true);
 
       try {
-        const [detail, document, ride] = await Promise.all([
+        const [detail, document, artifacts, ride] = await Promise.all([
           fetchInvoiceDetail(token, tenantSlug, invoiceId),
           fetchInvoiceDocument(
             token,
             tenantSlug,
             invoiceId,
           ),
+          fetchInvoiceElectronicArtifacts(token, tenantSlug, invoiceId),
           fetchInvoiceElectronicRide(token, tenantSlug, invoiceId),
         ]);
 
@@ -815,6 +842,7 @@ export function App() {
         startTransition(() => {
           setSelectedInvoiceDetail(detail);
           setSelectedInvoiceDocument(document);
+          setSelectedInvoiceArtifacts(artifacts);
           setSelectedInvoiceRide(ride);
         });
       } catch (error) {
@@ -824,6 +852,7 @@ export function App() {
 
         setSelectedInvoiceDetail(null);
         setSelectedInvoiceDocument(null);
+        setSelectedInvoiceArtifacts(null);
         setSelectedInvoiceRide(null);
         setInvoicingError(
           error instanceof Error
@@ -1889,6 +1918,82 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo abrir la version RIDE de la factura.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleDownloadElectronicRide() {
+    if (!token || !currentTenancy || !selectedInvoiceDetail) {
+      return;
+    }
+
+    setActionLoading('download-invoice-ride');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const result = await downloadInvoiceElectronicRideHtml(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+      );
+
+      downloadTextArtifact(
+        result.content,
+        result.fileName ??
+          selectedInvoiceArtifacts?.rideHtmlFileName ??
+          `${selectedInvoiceDetail.number}-ride.html`,
+        result.contentType ?? 'text/html; charset=utf-8',
+      );
+
+      setInvoicingActionMessage(
+        `RIDE descargado para ${selectedInvoiceDetail.number}.`,
+      );
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo descargar el RIDE electronico.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleDownloadElectronicXml() {
+    if (!token || !currentTenancy || !selectedInvoiceDetail) {
+      return;
+    }
+
+    setActionLoading('download-invoice-xml');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const result = await downloadInvoiceElectronicXmlPreview(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+      );
+
+      downloadTextArtifact(
+        result.content,
+        result.fileName ??
+          selectedInvoiceArtifacts?.xmlFileName ??
+          `${selectedInvoiceDetail.number}.xml`,
+        result.contentType ?? 'application/xml; charset=utf-8',
+      );
+
+      setInvoicingActionMessage(
+        `XML descargado para ${selectedInvoiceDetail.number}.`,
+      );
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo descargar el XML del comprobante.',
       );
     } finally {
       setActionLoading(null);
@@ -4480,6 +4585,31 @@ export function App() {
                                 <span className={styles.label}>Electronic RIDE</span>
                                 <h3>{selectedInvoiceRide.ride.documentLabel}</h3>
                               </div>
+                              <div className={styles.actionRow}>
+                                <button
+                                  className={styles.ghostButton}
+                                  disabled={actionLoading === 'download-invoice-ride'}
+                                  onClick={() => void handleDownloadElectronicRide()}
+                                  type="button"
+                                >
+                                  {actionLoading === 'download-invoice-ride'
+                                    ? 'Descargando RIDE...'
+                                    : 'Descargar RIDE'}
+                                </button>
+                                <button
+                                  className={styles.ghostButton}
+                                  disabled={
+                                    actionLoading === 'download-invoice-xml' ||
+                                    !selectedInvoiceArtifacts?.canDownloadXml
+                                  }
+                                  onClick={() => void handleDownloadElectronicXml()}
+                                  type="button"
+                                >
+                                  {actionLoading === 'download-invoice-xml'
+                                    ? 'Descargando XML...'
+                                    : 'Descargar XML'}
+                                </button>
+                              </div>
                             </div>
 
                             <div className={styles.invoiceDetailGrid}>
@@ -4513,6 +4643,23 @@ export function App() {
                                   : 'No generada'}
                               </pre>
                             </div>
+
+                            {selectedInvoiceArtifacts ? (
+                              <div className={styles.invoiceDetailGrid}>
+                                <div className={styles.detailCard}>
+                                  <span className={styles.muted}>Archivo RIDE</span>
+                                  <strong>
+                                    {selectedInvoiceArtifacts.rideHtmlFileName}
+                                  </strong>
+                                </div>
+                                <div className={styles.detailCard}>
+                                  <span className={styles.muted}>Archivo XML</span>
+                                  <strong>
+                                    {selectedInvoiceArtifacts.xmlFileName}
+                                  </strong>
+                                </div>
+                              </div>
+                            ) : null}
 
                             {selectedInvoiceRide.ride.additionalInfoFields.length >
                             0 ? (

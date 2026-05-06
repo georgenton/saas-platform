@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   BadRequestException,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -60,6 +61,7 @@ import {
   IssuerProfileNotFoundError,
   PaymentNotFoundError,
   buildInvoiceRideView,
+  buildInvoiceElectronicDocumentArtifactsView,
   ReverseTenantInvoicePaymentUseCase,
   renderInvoiceDocumentHtml,
   renderInvoiceRideHtml,
@@ -143,6 +145,10 @@ import {
   toInvoiceRideResponseDto,
 } from './dto/invoice-ride.response';
 import {
+  InvoiceElectronicArtifactsResponseDto,
+  toInvoiceElectronicArtifactsResponseDto,
+} from './dto/invoice-electronic-artifacts.response';
+import {
   InvoiceSummaryResponseDto,
   toInvoiceSummaryResponseDto,
 } from './dto/invoice-summary.response';
@@ -150,6 +156,10 @@ import {
   TaxRateResponseDto,
   toTaxRateResponseDto,
 } from './dto/tax-rate.response';
+
+type HeaderWritableResponse = {
+  setHeader(name: string, value: string): void;
+};
 
 @Controller('invoicing/tenants')
 @UseGuards(
@@ -712,6 +722,69 @@ export class InvoicingController {
     }
   }
 
+  @Get(':slug/invoices/:invoiceId/electronic-document/artifacts')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantInvoiceElectronicArtifacts(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceElectronicArtifactsResponseDto> {
+    try {
+      const document = await this.getTenantInvoiceDocumentUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+
+      return toInvoiceElectronicArtifactsResponseDto(
+        buildInvoiceElectronicDocumentArtifactsView(document),
+      );
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/invoices/:invoiceId/electronic-document/ride/download')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async downloadTenantInvoiceElectronicRideHtml(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+    @Res({ passthrough: true }) response?: HeaderWritableResponse,
+  ): Promise<string> {
+    try {
+      const document = await this.getTenantInvoiceDocumentUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+      const artifacts = buildInvoiceElectronicDocumentArtifactsView(document);
+      response?.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${artifacts.rideHtmlFileName}"`,
+      );
+
+      return renderInvoiceRideHtml(buildInvoiceRideView(document));
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Get(':slug/invoices/:invoiceId/electronic-document/xml')
   @Header('Content-Type', 'application/xml; charset=utf-8')
   @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
@@ -725,6 +798,50 @@ export class InvoicingController {
         tenantAccess?.tenantSlug ?? slug,
         invoiceId,
       );
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof InvoiceElectronicMetadataIncompleteError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/invoices/:invoiceId/electronic-document/xml/download')
+  @Header('Content-Type', 'application/xml; charset=utf-8')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async downloadTenantInvoiceElectronicXmlPreview(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+    @Res({ passthrough: true }) response?: HeaderWritableResponse,
+  ): Promise<string> {
+    try {
+      const [document, xml] = await Promise.all([
+        this.getTenantInvoiceDocumentUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+          invoiceId,
+        ),
+        this.getTenantInvoiceElectronicXmlPreviewUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+          invoiceId,
+        ),
+      ]);
+      const artifacts = buildInvoiceElectronicDocumentArtifactsView(document);
+      response?.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${artifacts.xmlFileName}"`,
+      );
+
+      return xml;
     } catch (error) {
       if (
         error instanceof TenantNotFoundError ||

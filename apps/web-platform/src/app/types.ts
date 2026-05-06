@@ -445,6 +445,16 @@ export interface InvoiceRideResponse {
   };
 }
 
+export interface InvoiceElectronicArtifactsResponse {
+  fileBaseName: string;
+  rideHtmlFileName: string;
+  xmlFileName: string;
+  accessKey: string | null;
+  electronicStatus: string | null;
+  canDownloadRide: boolean;
+  canDownloadXml: boolean;
+}
+
 export interface InvoicingReportSummaryResponse {
   generatedAt: string;
   customerCount: number;

@@ -1,5 +1,17 @@
 # api-platform
 
+## 0.17.0
+
+### Minor Changes
+
+- 02f0d70: Add the first Ecuador-oriented electronic invoicing settings, buyer semantics, and authorization state model on top of the current invoicing product.
+
+  This change introduces tenant-scoped issuer profile management and invoice numbering settings for Ecuador-style invoice series. It also teaches invoice creation to auto-generate numbers such as `001-002-000000031` when numbering settings exist, persists document metadata on invoices, and exposes the new issuer and numbering data in API and web document views so the current invoicing foundation can evolve toward `Electronic Invoicing EC`.
+
+  On top of that, it adds the first Ecuador buyer semantics by letting customers store identification type, identification number, and billing address, and by snapshotting those values into invoices when they are created. This gives invoice detail and document responses enough structure to model `tipoIdentificacionComprador`, `identificacionComprador`, `razonSocialComprador`, and `direccionComprador`.
+
+  Finally, it introduces a first electronic authorization state model on invoices with `pending_submission`, `submitted`, `authorized`, and `rejected`, plus support for access key, authorization number, authorization timestamp, signed timestamp, submitted timestamp, submission reference, and SRI status message in API and web flows. The backend can now derive `claveAcceso` from issuer profile plus Ecuador numbering metadata, expose a first XML preview endpoint, validate the generated XML before signing with stricter Ecuador-oriented checks for key length/check digit, document codes, buyer identification semantics, totals consistency, XSD-like structural rules across `infoTributaria`, `infoFactura`, `pagos`, `totalConImpuestos`, and each `detalle/impuesto`, and a real `xmllint` pass against the official SRI `Factura 2.1.0` XSD, require tenant-scoped electronic signature settings before signing, resolve signature and submission secret references through an environment-backed secret boundary, split certificate metadata from secret references, configure tenant-scoped electronic submission settings for `stub_sri` or `sri_offline_ws`, persist a technical history of submission and authorization events per invoice, route signers and gateways by provider, move the offline gateway closer to the SRI flow by building reception and authorization SOAP-style envelopes with `RECIBIDA`/`DEVUELTA` and `AUTORIZADO`/`NO AUTORIZADO` mappings through a dedicated SRI offline client boundary that can switch between stub transport and a real HTTP/SOAP adapter according to the configured transmission mode, and wire the official XSD validation bundle plus `xmllint` into CI, delivery, and the runtime container, all without conflating commercial invoice lifecycle with electronic authorization lifecycle.
+
 ## 0.16.0
 
 ### Minor Changes

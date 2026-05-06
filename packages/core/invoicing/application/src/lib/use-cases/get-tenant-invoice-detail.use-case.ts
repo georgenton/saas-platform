@@ -1,5 +1,6 @@
 import { TenantNotFoundError, TenantRepository } from '@saas-platform/tenancy-application';
 import { InvoiceNotFoundError } from '../errors/invoice-not-found.error';
+import { InvoiceElectronicEventRepository } from '../ports/invoice-electronic-event.repository';
 import { InvoiceItemRepository } from '../ports/invoice-item.repository';
 import { InvoiceRepository } from '../ports/invoice.repository';
 import { PaymentRepository } from '../ports/payment.repository';
@@ -15,6 +16,7 @@ export class GetTenantInvoiceDetailUseCase {
     private readonly invoiceRepository: InvoiceRepository,
     private readonly invoiceItemRepository: InvoiceItemRepository,
     private readonly paymentRepository: PaymentRepository,
+    private readonly invoiceElectronicEventRepository: InvoiceElectronicEventRepository,
   ) {}
 
   async execute(tenantSlug: string, invoiceId: string): Promise<InvoiceDetailView> {
@@ -41,12 +43,18 @@ export class GetTenantInvoiceDetailUseCase {
       tenant.id,
       invoice.id,
     );
+    const electronicEvents =
+      await this.invoiceElectronicEventRepository.findByTenantIdAndInvoiceId(
+        tenant.id,
+        invoice.id,
+      );
     const totals = calculateInvoiceTotals(items);
 
     return {
       invoice,
       items,
       payments,
+      electronicEvents,
       totals,
       settlement: calculateInvoiceSettlement(totals.totalInCents, payments),
     };

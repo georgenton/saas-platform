@@ -1,4 +1,11 @@
-import { Customer, Invoice, InvoiceItem, Payment } from '@saas-platform/invoicing-domain';
+import {
+  Customer,
+  Invoice,
+  InvoiceElectronicEvent,
+  InvoiceItem,
+  IssuerProfile,
+  Payment,
+} from '@saas-platform/invoicing-domain';
 
 export interface InvoiceTotalsView {
   subtotalInCents: number;
@@ -17,6 +24,7 @@ export interface InvoiceDetailView {
   invoice: Invoice;
   items: InvoiceItem[];
   payments: Payment[];
+  electronicEvents: InvoiceElectronicEvent[];
   totals: InvoiceTotalsView;
   settlement: InvoiceSettlementView;
 }
@@ -31,12 +39,25 @@ export interface InvoiceDocumentPartyView {
   name: string;
   email: string | null;
   taxId: string | null;
+  identificationType: string | null;
+  identification: string | null;
+  billingAddress: string | null;
 }
 
 export interface InvoiceDocumentIssuerView {
   tenantId: string;
   tenantName: string;
   tenantSlug: string;
+  legalName: string;
+  commercialName: string | null;
+  taxId: string | null;
+  environment: string | null;
+  emissionType: string | null;
+  accountingObligated: boolean | null;
+  specialTaxpayerCode: string | null;
+  rimpeTaxpayerType: string | null;
+  matrixAddress: string | null;
+  establishmentAddress: string | null;
 }
 
 export interface InvoiceDocumentLineView {
@@ -120,6 +141,7 @@ export function buildInvoiceDocumentView(input: {
     name: string;
     slug: string;
   };
+  issuerProfile?: IssuerProfile | null;
   customer: Customer;
   invoice: Invoice;
   items: InvoiceItem[];
@@ -129,11 +151,26 @@ export function buildInvoiceDocumentView(input: {
       tenantId: input.tenant.id,
       tenantName: input.tenant.name,
       tenantSlug: input.tenant.slug,
+      legalName: input.issuerProfile?.legalName ?? input.tenant.name,
+      commercialName: input.issuerProfile?.commercialName ?? null,
+      taxId: input.issuerProfile?.taxId ?? null,
+      environment: input.issuerProfile?.environment ?? null,
+      emissionType: input.issuerProfile?.emissionType ?? null,
+      accountingObligated: input.issuerProfile?.accountingObligated ?? null,
+      specialTaxpayerCode: input.issuerProfile?.specialTaxpayerCode ?? null,
+      rimpeTaxpayerType: input.issuerProfile?.rimpeTaxpayerType ?? null,
+      matrixAddress: input.issuerProfile?.matrixAddress ?? null,
+      establishmentAddress: input.issuerProfile?.establishmentAddress ?? null,
     },
     customer: {
-      name: input.customer.name,
+      name: input.invoice.buyerName ?? input.customer.name,
       email: input.customer.email,
-      taxId: input.customer.taxId,
+      taxId: input.invoice.buyerIdentification ?? input.customer.taxId,
+      identificationType:
+        input.invoice.buyerIdentificationType ?? input.customer.identificationType,
+      identification:
+        input.invoice.buyerIdentification ?? input.customer.identification,
+      billingAddress: input.invoice.buyerAddress ?? input.customer.billingAddress,
     },
     invoice: input.invoice,
     lines: toInvoiceDocumentLines(input.items),
@@ -209,22 +246,46 @@ export function renderInvoiceDocumentHtml(view: InvoiceDocumentView): string {
       </div>
       <div class="card">
         <div class="muted">Issuer</div>
-        <h3>${escapeHtml(view.issuer.tenantName)}</h3>
-        <p>${escapeHtml(view.issuer.tenantSlug)}</p>
+        <h3>${escapeHtml(view.issuer.legalName)}</h3>
+        <p>${escapeHtml(view.issuer.commercialName ?? view.issuer.tenantSlug)}</p>
+        <p>${view.issuer.taxId ? `RUC: ${escapeHtml(view.issuer.taxId)}` : 'No tax profile configured'}</p>
       </div>
     </div>
     <div class="grid">
       <div class="card">
+        <div class="muted">Issuer fiscal data</div>
+        <p>Environment: ${escapeHtml(view.issuer.environment ?? 'not set')}</p>
+        <p>Emission type: ${escapeHtml(view.issuer.emissionType ?? 'not set')}</p>
+        <p>Matrix address: ${escapeHtml(view.issuer.matrixAddress ?? 'Not set')}</p>
+        <p>Establishment address: ${escapeHtml(view.issuer.establishmentAddress ?? 'Not set')}</p>
+      </div>
+      <div class="card">
         <div class="muted">Customer</div>
         <h3>${escapeHtml(view.customer.name)}</h3>
         <p>${view.customer.email ? escapeHtml(view.customer.email) : 'No email configured'}</p>
-        <p>${view.customer.taxId ? escapeHtml(view.customer.taxId) : 'No tax ID configured'}</p>
+        <p>${view.customer.identificationType ? `Tipo ID: ${escapeHtml(view.customer.identificationType)}` : 'Tipo ID no configurado'}</p>
+        <p>${view.customer.identification ? escapeHtml(view.customer.identification) : 'No tax ID configured'}</p>
+        <p>${view.customer.billingAddress ? escapeHtml(view.customer.billingAddress) : 'Direccion no configurada'}</p>
       </div>
       <div class="card">
         <div class="muted">Dates</div>
         <p>Issued: ${formatDate(invoice.issuedAt)}</p>
         <p>Due: ${formatDate(invoice.dueAt)}</p>
         <p>Currency: ${escapeHtml(invoice.currency)}</p>
+        <p>Document code: ${escapeHtml(invoice.documentCode ?? 'Not set')}</p>
+        <p>Establishment: ${escapeHtml(invoice.establishmentCode ?? 'Not set')}</p>
+        <p>Emission point: ${escapeHtml(invoice.emissionPointCode ?? 'Not set')}</p>
+        <p>Sequence: ${invoice.sequenceNumber !== null ? escapeHtml(String(invoice.sequenceNumber)) : 'Not set'}</p>
+      </div>
+      <div class="card">
+        <div class="muted">Electronic authorization</div>
+        <p>Status: ${escapeHtml(invoice.electronicStatus ?? 'not set')}</p>
+        <p>Access key: ${escapeHtml(invoice.accessKey ?? 'Not set')}</p>
+        <p>Authorization: ${escapeHtml(invoice.authorizationNumber ?? 'Not set')}</p>
+        <p>Authorized at: ${formatDate(invoice.authorizedAt ?? null)}</p>
+        <p>Signed at: ${formatDate(invoice.signedAt ?? null)}</p>
+        <p>Submitted at: ${formatDate(invoice.submittedAt ?? null)}</p>
+        <p>Submission ref: ${escapeHtml(invoice.submissionReference ?? 'Not set')}</p>
       </div>
     </div>
     <table>

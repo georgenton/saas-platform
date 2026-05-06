@@ -1,9 +1,14 @@
+export type BuyerIdentificationType = '04' | '05' | '06' | '07' | '08';
+
 export interface CustomerProps {
   id: string;
   tenantId: string;
   name: string;
   email: string | null;
   taxId: string | null;
+  identificationType?: BuyerIdentificationType | null;
+  identification?: string | null;
+  billingAddress?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,6 +38,18 @@ export class Customer {
 
   get taxId(): string | null {
     return this.props.taxId;
+  }
+
+  get identificationType(): BuyerIdentificationType | null {
+    return this.props.identificationType ?? null;
+  }
+
+  get identification(): string | null {
+    return this.props.identification ?? null;
+  }
+
+  get billingAddress(): string | null {
+    return this.props.billingAddress ?? null;
   }
 
   get createdAt(): Date {

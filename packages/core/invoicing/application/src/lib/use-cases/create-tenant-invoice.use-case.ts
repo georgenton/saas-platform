@@ -1,14 +1,17 @@
 import { TenantNotFoundError, TenantRepository } from '@saas-platform/tenancy-application';
 import { Invoice, InvoiceStatus } from '@saas-platform/invoicing-domain';
 import { CustomerNotFoundError } from '../errors/customer-not-found.error';
+import { InvoiceNumberRequiredError } from '../errors/invoice-number-required.error';
 import { CustomerRepository } from '../ports/customer.repository';
 import { InvoiceIdGenerator } from '../ports/invoice-id.generator';
+import { InvoiceNumberingSettingsRepository } from '../ports/invoice-numbering-settings.repository';
 import { InvoiceRepository } from '../ports/invoice.repository';
+import { formatEcuadorInvoiceNumber } from '../types/electronic-invoice';
 
 export interface CreateTenantInvoiceInput {
   tenantSlug: string;
   customerId: string;
-  number: string;
+  number?: string;
   currency: string;
   status?: InvoiceStatus;
   issuedAt?: Date;
@@ -22,6 +25,7 @@ export class CreateTenantInvoiceUseCase {
     private readonly customerRepository: CustomerRepository,
     private readonly invoiceRepository: InvoiceRepository,
     private readonly invoiceIdGenerator: InvoiceIdGenerator,
+    private readonly invoiceNumberingSettingsRepository: InvoiceNumberingSettingsRepository,
   ) {}
 
   async execute(input: CreateTenantInvoiceInput): Promise<Invoice> {
@@ -41,11 +45,44 @@ export class CreateTenantInvoiceUseCase {
     }
 
     const now = new Date();
+    const numberingSettings =
+      await this.invoiceNumberingSettingsRepository.findByTenantId(tenant.id);
+    const numberingReservation =
+      !input.number && numberingSettings
+        ? numberingSettings.reserveNextSequence(now)
+        : null;
+
+    const resolvedNumber =
+      input.number?.trim() ||
+      (numberingReservation
+        ? formatEcuadorInvoiceNumber({
+            establishmentCode: numberingSettings.establishmentCode,
+            emissionPointCode: numberingSettings.emissionPointCode,
+            sequenceNumber: numberingReservation.sequenceNumber,
+          })
+        : null);
+
+    if (!resolvedNumber) {
+      throw new InvoiceNumberRequiredError(input.tenantSlug);
+    }
+
     const invoice = Invoice.create({
       id: this.invoiceIdGenerator.generate(),
       tenantId: tenant.id,
       customerId: customer.id,
-      number: input.number.trim().toUpperCase(),
+      number: resolvedNumber.toUpperCase(),
+      documentCode: numberingSettings?.documentCode ?? null,
+      establishmentCode: numberingReservation
+        ? numberingSettings.establishmentCode
+        : null,
+      emissionPointCode: numberingReservation
+        ? numberingSettings.emissionPointCode
+        : null,
+      sequenceNumber: numberingReservation?.sequenceNumber ?? null,
+      buyerIdentificationType: customer.identificationType,
+      buyerIdentification: customer.identification ?? customer.taxId,
+      buyerName: customer.name,
+      buyerAddress: customer.billingAddress,
       status: input.status ?? 'draft',
       currency: input.currency.trim().toUpperCase(),
       issuedAt: input.issuedAt ?? now,
@@ -54,6 +91,12 @@ export class CreateTenantInvoiceUseCase {
       createdAt: now,
       updatedAt: now,
     });
+
+    if (numberingReservation) {
+      await this.invoiceNumberingSettingsRepository.save(
+        numberingReservation.nextSettings,
+      );
+    }
 
     await this.invoiceRepository.save(invoice);
 

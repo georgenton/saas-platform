@@ -17,6 +17,7 @@
     "test": "pnpm nx test api-platform-e2e",
     "check": "pnpm prisma:validate && pnpm build",
     "ci:verify": "pnpm prisma:generate && pnpm prisma:validate && pnpm build && pnpm test",
+    "validate:sri:xsd": "xmllint --noout --schema \"vendor/sri/factura-2.1.0/XML y XSD Factura/factura_V2.1.0.xsd\" \"vendor/sri/factura-2.1.0/XML y XSD Factura/factura_V2.1.0.xml\"",
     "changeset": "changeset",
     "release:status": "changeset status --verbose",
     "release:version": "changeset version && pnpm install --no-frozen-lockfile",

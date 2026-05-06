@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { CustomerRepository } from '@saas-platform/invoicing-application';
-import { Customer } from '@saas-platform/invoicing-domain';
+import {
+  BuyerIdentificationType,
+  Customer,
+} from '@saas-platform/invoicing-domain';
 import { PrismaService } from '../prisma.service';
 
 @Injectable()
@@ -16,6 +19,9 @@ export class PrismaCustomerRepository implements CustomerRepository {
         name: data.name,
         email: data.email,
         taxId: data.taxId,
+        identificationType: data.identificationType ?? null,
+        identification: data.identification ?? null,
+        billingAddress: data.billingAddress ?? null,
         updatedAt: data.updatedAt,
       },
       create: {
@@ -24,6 +30,9 @@ export class PrismaCustomerRepository implements CustomerRepository {
         name: data.name,
         email: data.email,
         taxId: data.taxId,
+        identificationType: data.identificationType ?? null,
+        identification: data.identification ?? null,
+        billingAddress: data.billingAddress ?? null,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
       },
@@ -59,6 +68,9 @@ export class PrismaCustomerRepository implements CustomerRepository {
     name: string;
     email: string | null;
     taxId: string | null;
+    identificationType: string | null;
+    identification: string | null;
+    billingAddress: string | null;
     createdAt: Date;
     updatedAt: Date;
   }): Customer {
@@ -68,6 +80,9 @@ export class PrismaCustomerRepository implements CustomerRepository {
       name: record.name,
       email: record.email,
       taxId: record.taxId,
+      identificationType: record.identificationType as BuyerIdentificationType | null,
+      identification: record.identification,
+      billingAddress: record.billingAddress,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     });

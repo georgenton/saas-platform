@@ -11,6 +11,10 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.base.json 
 COPY .changeset ./.changeset
 COPY apps ./apps
 COPY packages ./packages
+COPY vendor ./vendor
+
+RUN apt-get update && apt-get install -y --no-install-recommends libxml2-utils \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN pnpm install --frozen-lockfile
 RUN pnpm prisma:generate
@@ -28,12 +32,16 @@ RUN corepack enable
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends libxml2-utils \
+  && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /workspace/dist/apps/api-platform/package.json ./package.json
 COPY --from=build /workspace/dist/apps/api-platform/pnpm-lock.yaml ./pnpm-lock.yaml
 
 RUN pnpm install --prod --frozen-lockfile
 
 COPY --from=build /workspace/dist/apps/api-platform ./
+COPY --from=build /workspace/vendor ./vendor
 
 EXPOSE 3000
 

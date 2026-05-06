@@ -2,8 +2,12 @@ import {
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CustomerResponse,
+  ElectronicSubmissionSettingsResponse,
+  ElectronicSignatureSettingsResponse,
+  InvoiceNumberingSettingsResponse,
   InvoiceDetailResponse,
   InvoiceDocumentResponse,
+  IssuerProfileResponse,
   InvoicingReportSummaryResponse,
   InvitationResponse,
   InvoiceItemResponse,
@@ -234,6 +238,152 @@ export async function listCustomers(
   );
 }
 
+export async function fetchIssuerProfile(
+  token: string,
+  tenantSlug: string,
+): Promise<IssuerProfileResponse> {
+  return request<IssuerProfileResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/electronic-profile`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function upsertIssuerProfile(
+  token: string,
+  tenantSlug: string,
+  body: {
+    legalName: string;
+    commercialName?: string | null;
+    taxId: string;
+    environment: 'test' | 'production';
+    emissionType?: 'normal';
+    accountingObligated: boolean;
+    specialTaxpayerCode?: string | null;
+    rimpeTaxpayerType?: string | null;
+    matrixAddress: string;
+    establishmentAddress: string;
+  },
+): Promise<IssuerProfileResponse> {
+  return request<IssuerProfileResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/electronic-profile`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchElectronicSignatureSettings(
+  token: string,
+  tenantSlug: string,
+): Promise<ElectronicSignatureSettingsResponse> {
+  return request<ElectronicSignatureSettingsResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/electronic-signature`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchElectronicSubmissionSettings(
+  token: string,
+  tenantSlug: string,
+): Promise<ElectronicSubmissionSettingsResponse> {
+  return request<ElectronicSubmissionSettingsResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/electronic-submission`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function upsertElectronicSignatureSettings(
+  token: string,
+  tenantSlug: string,
+  body: {
+    provider?: 'stub_local' | 'xades_pkcs12';
+    certificateLabel: string;
+    storageMode?: 'stub_inline' | 'secret_ref';
+    certificateFingerprint?: string | null;
+    pkcs12SecretRef?: string | null;
+    privateKeyPasswordSecretRef?: string | null;
+    subjectName?: string | null;
+    isActive: boolean;
+  },
+): Promise<ElectronicSignatureSettingsResponse> {
+  return request<ElectronicSignatureSettingsResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/electronic-signature`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function upsertElectronicSubmissionSettings(
+  token: string,
+  tenantSlug: string,
+  body: {
+    provider?: 'stub_sri' | 'sri_offline_ws';
+    environment?: 'test' | 'production';
+    transmissionMode?: 'sync_stub' | 'offline';
+    receptionUrl?: string | null;
+    authorizationUrl?: string | null;
+    credentialsSecretRef?: string | null;
+    timeoutMs: number;
+    isActive: boolean;
+  },
+): Promise<ElectronicSubmissionSettingsResponse> {
+  return request<ElectronicSubmissionSettingsResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/electronic-submission`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchInvoiceNumberingSettings(
+  token: string,
+  tenantSlug: string,
+): Promise<InvoiceNumberingSettingsResponse> {
+  return request<InvoiceNumberingSettingsResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/numbering/invoice`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function upsertInvoiceNumberingSettings(
+  token: string,
+  tenantSlug: string,
+  body: {
+    documentCode?: string;
+    establishmentCode: string;
+    emissionPointCode: string;
+    nextSequenceNumber: number;
+  },
+): Promise<InvoiceNumberingSettingsResponse> {
+  return request<InvoiceNumberingSettingsResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/numbering/invoice`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
 export async function createCustomer(
   token: string,
   tenantSlug: string,
@@ -241,6 +391,9 @@ export async function createCustomer(
     name: string;
     email?: string | null;
     taxId?: string | null;
+    identificationType?: '04' | '05' | '06' | '07' | '08' | null;
+    identification?: string | null;
+    billingAddress?: string | null;
   },
 ): Promise<CustomerResponse> {
   return request<CustomerResponse>(
@@ -320,6 +473,22 @@ export async function fetchInvoiceDocumentHtml(
   );
 }
 
+export async function fetchInvoiceElectronicXmlPreview(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+): Promise<string> {
+  return requestText(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/electronic-document/xml`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function sendInvoiceEmail(
   token: string,
   tenantSlug: string,
@@ -388,7 +557,7 @@ export async function createInvoice(
   tenantSlug: string,
   body: {
     customerId: string;
-    number: string;
+    number?: string;
     currency: string;
     status?: string;
     issuedAt?: string;
@@ -420,6 +589,70 @@ export async function updateInvoiceStatus(
       method: 'POST',
       token,
       body: JSON.stringify({ status }),
+    },
+  );
+}
+
+export async function updateInvoiceElectronicStatus(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+  body: {
+    electronicStatus?: 'pending_submission' | 'submitted' | 'authorized' | 'rejected' | null;
+    accessKey?: string | null;
+    authorizationNumber?: string | null;
+    authorizedAt?: string | null;
+    electronicStatusMessage?: string | null;
+  },
+): Promise<InvoiceDetailResponse> {
+  return request<InvoiceDetailResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/electronic-status`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function submitInvoiceElectronicDocument(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+): Promise<{
+  submitted: true;
+  electronicStatus: string | null;
+  accessKey: string | null;
+  submittedAt: string | null;
+  submissionReference: string | null;
+}> {
+  return request(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/electronic-document/submit`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function checkInvoiceElectronicAuthorization(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+): Promise<InvoiceDetailResponse> {
+  return request<InvoiceDetailResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(
+      invoiceId,
+    )}/electronic-document/check-authorization`,
+    {
+      method: 'POST',
+      token,
     },
   );
 }

@@ -1,5 +1,9 @@
 # Core Architecture
 
+For the broader platform direction, product map, transversal AI and marketing layers, and staged roadmap, see:
+
+- `docs/saas-conceptual-model.md`
+
 ## Initial backend slices
 
 The monorepo now starts separating core business logic into:

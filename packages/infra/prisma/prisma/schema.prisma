@@ -39,8 +39,13 @@ model Tenant {
   customers    Customer[]
   taxRates     TaxRate[]
   invoices     Invoice[]
+  invoiceElectronicEvents InvoiceElectronicEvent[]
   invoiceItems InvoiceItem[]
   payments     Payment[]
+  electronicSubmissionSettings ElectronicSubmissionSettings?
+  issuerProfile IssuerProfile?
+  electronicSignatureSettings ElectronicSignatureSettings?
+  invoiceNumberingSettings InvoiceNumberingSettings?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -51,6 +56,9 @@ model Customer {
   name      String
   email     String?
   taxId     String?
+  identificationType String?
+  identification String?
+  billingAddress String?
   invoices  Invoice[]
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -64,6 +72,22 @@ model Invoice {
   tenantId    String
   customerId String
   number     String
+  documentCode String?
+  establishmentCode String?
+  emissionPointCode String?
+  sequenceNumber Int?
+  buyerIdentificationType String?
+  buyerIdentification String?
+  buyerName String?
+  buyerAddress String?
+  electronicStatus String?
+  accessKey String?
+  authorizationNumber String?
+  authorizedAt DateTime?
+  electronicStatusMessage String?
+  signedAt DateTime?
+  submittedAt DateTime?
+  submissionReference String?
   status     String
   currency   String
   issuedAt   DateTime
@@ -71,6 +95,7 @@ model Invoice {
   notes      String?
   tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  electronicEvents InvoiceElectronicEvent[]
   items      InvoiceItem[]
   payments   Payment[]
   createdAt  DateTime @default(now())
@@ -79,6 +104,90 @@ model Invoice {
   @@unique([tenantId, number])
   @@index([tenantId, createdAt])
   @@index([customerId])
+}
+
+model InvoiceElectronicEvent {
+  id                  String   @id
+  tenantId            String
+  invoiceId           String
+  eventType           String
+  provider            String
+  providerStatus      String
+  endpoint            String?
+  soapAction          String?
+  message             String
+  requestPayload      String?
+  responsePayload     String?
+  submissionReference String?
+  authorizationNumber String?
+  occurredAt          DateTime
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice             Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, invoiceId, occurredAt])
+  @@index([invoiceId, eventType, occurredAt])
+}
+
+model IssuerProfile {
+  id                    String   @id
+  tenantId              String   @unique
+  legalName             String
+  commercialName        String?
+  taxId                 String
+  environment           String
+  emissionType          String
+  accountingObligated   Boolean
+  specialTaxpayerCode   String?
+  rimpeTaxpayerType     String?
+  matrixAddress         String
+  establishmentAddress  String
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model ElectronicSignatureSettings {
+  id                    String   @id
+  tenantId              String   @unique
+  provider              String
+  certificateLabel      String
+  storageMode           String
+  certificateFingerprint String?
+  pkcs12SecretRef       String?
+  privateKeyPasswordSecretRef String?
+  subjectName           String?
+  isActive              Boolean  @default(true)
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model ElectronicSubmissionSettings {
+  id                   String   @id
+  tenantId             String   @unique
+  provider             String
+  environment          String
+  transmissionMode     String
+  receptionUrl         String?
+  authorizationUrl     String?
+  credentialsSecretRef String?
+  timeoutMs            Int
+  isActive             Boolean  @default(true)
+  tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model InvoiceNumberingSettings {
+  id                 String   @id
+  tenantId           String   @unique
+  documentCode       String
+  establishmentCode  String
+  emissionPointCode  String
+  nextSequenceNumber Int
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model InvoiceItem {

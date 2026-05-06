@@ -42,17 +42,24 @@ import {
 } from '@saas-platform/feature-flags-application';
 import { FeatureFlag } from '@saas-platform/feature-flags-domain';
 import {
+  CheckTenantInvoiceElectronicAuthorizationUseCase,
   CreateTenantCustomerUseCase,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
   CreateTenantInvoicePaymentUseCase,
   CreateTenantTaxRateUseCase,
+  InvoiceElectronicXmlValidationError,
+  GetTenantElectronicSubmissionSettingsUseCase,
+  GetTenantElectronicSignatureSettingsUseCase,
+  GetTenantInvoiceNumberingSettingsUseCase,
   GetTenantCustomerByIdUseCase,
   GetTenantInvoiceDetailUseCase,
   GetTenantInvoiceDocumentUseCase,
+  GetTenantInvoiceElectronicXmlPreviewUseCase,
   GetTenantInvoicingReportSummaryUseCase,
   GetTenantInvoiceByIdUseCase,
   GetTenantInvoiceItemByIdUseCase,
+  GetTenantIssuerProfileUseCase,
   INVOICING_PERMISSIONS,
   ListTenantCustomersUseCase,
   ListTenantInvoiceItemsUseCase,
@@ -62,12 +69,23 @@ import {
   ListTenantTaxRatesUseCase,
   ReverseTenantInvoicePaymentUseCase,
   SendTenantInvoiceEmailUseCase,
+  SubmitTenantInvoiceElectronicDocumentUseCase,
   UpdateTenantInvoiceStatusUseCase,
+  UpdateTenantInvoiceElectronicStatusUseCase,
+  UpsertTenantElectronicSubmissionSettingsUseCase,
+  UpsertTenantElectronicSignatureSettingsUseCase,
+  UpsertTenantInvoiceNumberingSettingsUseCase,
+  UpsertTenantIssuerProfileUseCase,
 } from '@saas-platform/invoicing-application';
 import {
   Customer,
+  ElectronicSubmissionSettings,
+  ElectronicSignatureSettings,
   Invoice,
+  InvoiceElectronicEvent,
+  InvoiceNumberingSettings,
   InvoiceItem,
+  IssuerProfile,
   Payment,
   TaxRate,
 } from '@saas-platform/invoicing-domain';
@@ -115,11 +133,16 @@ describe('API', () => {
   let getUserByIdUseCase: { execute: jest.Mock };
   let getProductByKeyUseCase: { execute: jest.Mock };
   let getTenantCustomerByIdUseCase: { execute: jest.Mock };
+  let getTenantElectronicSubmissionSettingsUseCase: { execute: jest.Mock };
+  let getTenantElectronicSignatureSettingsUseCase: { execute: jest.Mock };
   let getTenantInvoiceDetailUseCase: { execute: jest.Mock };
   let getTenantInvoiceDocumentUseCase: { execute: jest.Mock };
+  let getTenantInvoiceElectronicXmlPreviewUseCase: { execute: jest.Mock };
+  let getTenantInvoiceNumberingSettingsUseCase: { execute: jest.Mock };
   let getTenantInvoicingReportSummaryUseCase: { execute: jest.Mock };
   let getTenantInvoiceByIdUseCase: { execute: jest.Mock };
   let getTenantInvoiceItemByIdUseCase: { execute: jest.Mock };
+  let getTenantIssuerProfileUseCase: { execute: jest.Mock };
   let getTenantSubscriptionUseCase: { execute: jest.Mock };
   let listTenantCustomersUseCase: { execute: jest.Mock };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
@@ -164,9 +187,16 @@ describe('API', () => {
   let createTenantInvoiceItemUseCase: { execute: jest.Mock };
   let createTenantInvoicePaymentUseCase: { execute: jest.Mock };
   let createTenantTaxRateUseCase: { execute: jest.Mock };
+  let checkTenantInvoiceElectronicAuthorizationUseCase: { execute: jest.Mock };
   let reverseTenantInvoicePaymentUseCase: { execute: jest.Mock };
   let sendTenantInvoiceEmailUseCase: { execute: jest.Mock };
+  let submitTenantInvoiceElectronicDocumentUseCase: { execute: jest.Mock };
   let updateTenantInvoiceStatusUseCase: { execute: jest.Mock };
+  let updateTenantInvoiceElectronicStatusUseCase: { execute: jest.Mock };
+  let upsertTenantElectronicSubmissionSettingsUseCase: { execute: jest.Mock };
+  let upsertTenantElectronicSignatureSettingsUseCase: { execute: jest.Mock };
+  let upsertTenantInvoiceNumberingSettingsUseCase: { execute: jest.Mock };
+  let upsertTenantIssuerProfileUseCase: { execute: jest.Mock };
   let createTenantUseCase: { execute: jest.Mock };
   let ownerToken: string;
   let inviteeToken: string;
@@ -387,7 +417,10 @@ describe('API', () => {
     tenantId: 'tenant_123',
     name: 'Acme Corp',
     email: 'billing@acme.dev',
-    taxId: 'RUC-001',
+    taxId: '1790012345001',
+    identificationType: '04',
+    identification: '1790012345001',
+    billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
     createdAt: customerCreatedAt,
     updatedAt: customerCreatedAt,
   });
@@ -397,6 +430,9 @@ describe('API', () => {
     name: 'Globex LLC',
     email: null,
     taxId: null,
+    identificationType: null,
+    identification: null,
+    billingAddress: null,
     createdAt: new Date('2026-04-27T15:10:00.000Z'),
     updatedAt: new Date('2026-04-27T15:10:00.000Z'),
   });
@@ -406,6 +442,10 @@ describe('API', () => {
     tenantId: 'tenant_123',
     customerId: 'customer_acme',
     number: 'INV-001',
+    buyerIdentificationType: '04',
+    buyerIdentification: '1790012345001',
+    buyerName: 'Acme Corp',
+    buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
     status: 'draft',
     currency: 'USD',
     issuedAt: invoiceCreatedAt,
@@ -419,6 +459,10 @@ describe('API', () => {
     tenantId: 'tenant_123',
     customerId: 'customer_globex',
     number: 'INV-002',
+    buyerIdentificationType: null,
+    buyerIdentification: null,
+    buyerName: 'Globex LLC',
+    buyerAddress: null,
     status: 'partially_paid',
     currency: 'USD',
     issuedAt: new Date('2026-04-27T17:00:00.000Z'),
@@ -484,6 +528,97 @@ describe('API', () => {
     reversalReason: null,
     createdAt: new Date('2026-04-28T21:00:00.000Z'),
     updatedAt: new Date('2026-04-28T21:00:00.000Z'),
+  });
+  const issuerProfile = IssuerProfile.create({
+    id: 'issuer_profile_001',
+    tenantId: 'tenant_123',
+    legalName: 'SaaS Platform S.A.',
+    commercialName: 'SaaS Platform',
+    taxId: '1790012345001',
+    environment: 'test',
+    emissionType: 'normal',
+    accountingObligated: true,
+    specialTaxpayerCode: null,
+    rimpeTaxpayerType: null,
+    matrixAddress: 'Av. Principal y Calle Secundaria',
+    establishmentAddress: 'Sucursal Matriz',
+    createdAt: new Date('2026-04-29T16:00:00.000Z'),
+    updatedAt: new Date('2026-04-29T16:00:00.000Z'),
+  });
+  const electronicSignatureSettings = ElectronicSignatureSettings.create({
+    id: 'signature_settings_001',
+    tenantId: 'tenant_123',
+    provider: 'stub_local',
+    certificateLabel: 'Firma pruebas SaaS Platform',
+    storageMode: 'stub_inline',
+    certificateFingerprint: 'AA:BB:CC:DD',
+    pkcs12SecretRef: null,
+    privateKeyPasswordSecretRef: null,
+    subjectName: null,
+    isActive: true,
+    createdAt: new Date('2026-05-01T16:50:00.000Z'),
+    updatedAt: new Date('2026-05-01T16:50:00.000Z'),
+  });
+  const electronicSubmissionSettings = ElectronicSubmissionSettings.create({
+    id: 'submission_settings_001',
+    tenantId: 'tenant_123',
+    provider: 'stub_sri',
+    environment: 'test',
+    transmissionMode: 'sync_stub',
+    receptionUrl: null,
+    authorizationUrl: null,
+    credentialsSecretRef: null,
+    timeoutMs: 10000,
+    isActive: true,
+    createdAt: new Date('2026-05-01T17:20:00.000Z'),
+    updatedAt: new Date('2026-05-01T17:20:00.000Z'),
+  });
+  const invoiceElectronicEvent = InvoiceElectronicEvent.create({
+    id: 'invoice_event_001',
+    tenantId: 'tenant_123',
+    invoiceId: 'invoice_001',
+    eventType: 'submission',
+    provider: 'stub_sri',
+    providerStatus: 'submitted',
+    endpoint: null,
+    soapAction: null,
+    message: 'Documento enviado al gateway stub del SRI.',
+    requestPayload: '{"gateway":"stub_sri"}',
+    responsePayload: '{"state":"submitted"}',
+    submissionReference: 'stub-sri-invoice_001-123456789',
+    authorizationNumber: null,
+    occurredAt: new Date('2026-05-01T18:00:00.000Z'),
+  });
+  const invoiceNumberingSettings = InvoiceNumberingSettings.create({
+    id: 'invoice_numbering_001',
+    tenantId: 'tenant_123',
+    documentCode: '01',
+    establishmentCode: '001',
+    emissionPointCode: '002',
+    nextSequenceNumber: 31,
+    createdAt: new Date('2026-04-29T16:05:00.000Z'),
+    updatedAt: new Date('2026-04-29T16:05:00.000Z'),
+  });
+  const electronicDraftInvoice = Invoice.create({
+    id: 'invoice_003',
+    tenantId: 'tenant_123',
+    customerId: 'customer_acme',
+    number: '001-002-000000031',
+    buyerIdentificationType: '04',
+    buyerIdentification: '1790012345001',
+    buyerName: 'Acme Corp',
+    buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+    status: 'draft',
+    currency: 'USD',
+    issuedAt: new Date('2026-04-29T16:30:00.000Z'),
+    dueAt: null,
+    notes: 'Factura con numeracion Ecuador.',
+    documentCode: '01',
+    establishmentCode: '001',
+    emissionPointCode: '002',
+    sequenceNumber: 31,
+    createdAt: new Date('2026-04-29T16:30:00.000Z'),
+    updatedAt: new Date('2026-04-29T16:30:00.000Z'),
   });
 
   const signJwt = (payload: Record<string, unknown>): string => {
@@ -576,11 +711,18 @@ describe('API', () => {
     getTenantCustomerByIdUseCase = {
       execute: jest.fn().mockResolvedValue(acmeCustomer),
     };
+    getTenantElectronicSubmissionSettingsUseCase = {
+      execute: jest.fn().mockResolvedValue(electronicSubmissionSettings),
+    };
+    getTenantElectronicSignatureSettingsUseCase = {
+      execute: jest.fn().mockResolvedValue(electronicSignatureSettings),
+    };
     getTenantInvoiceDetailUseCase = {
       execute: jest.fn().mockResolvedValue({
         invoice: draftInvoice,
         items: [firstInvoiceItem, secondInvoiceItem],
         payments: [],
+        electronicEvents: [invoiceElectronicEvent],
         totals: {
           subtotalInCents: 12500,
           taxInCents: 1200,
@@ -593,17 +735,36 @@ describe('API', () => {
         },
       }),
     };
+    getTenantIssuerProfileUseCase = {
+      execute: jest.fn().mockResolvedValue(issuerProfile),
+    };
+    getTenantInvoiceNumberingSettingsUseCase = {
+      execute: jest.fn().mockResolvedValue(invoiceNumberingSettings),
+    };
     getTenantInvoiceDocumentUseCase = {
       execute: jest.fn().mockResolvedValue({
         issuer: {
           tenantId: 'tenant_123',
           tenantName: 'SaaS Platform',
           tenantSlug: 'saas-platform',
+          legalName: 'SaaS Platform S.A.',
+          commercialName: 'SaaS Platform',
+          taxId: '1790012345001',
+          environment: 'test',
+          emissionType: 'normal',
+          accountingObligated: true,
+          specialTaxpayerCode: null,
+          rimpeTaxpayerType: null,
+          matrixAddress: 'Av. Principal y Calle Secundaria',
+          establishmentAddress: 'Sucursal Matriz',
         },
         customer: {
           name: 'Acme Corp',
           email: 'billing@acme.dev',
-          taxId: 'RUC-001',
+          taxId: '1790012345001',
+          identificationType: '04',
+          identification: '1790012345001',
+          billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
         },
         invoice: draftInvoice,
         lines: [
@@ -640,6 +801,14 @@ describe('API', () => {
           totalInCents: 13700,
         },
       }),
+    };
+    getTenantInvoiceElectronicXmlPreviewUseCase = {
+      execute: jest.fn().mockResolvedValue(`<?xml version="1.0" encoding="UTF-8"?>
+<factura id="comprobante" version="2.1.0">
+  <infoTributaria>
+    <claveAcceso>2904202601179001234500110010020000000311234567815</claveAcceso>
+  </infoTributaria>
+</factura>`),
     };
     getTenantInvoicingReportSummaryUseCase = {
       execute: jest.fn().mockResolvedValue({
@@ -795,6 +964,26 @@ describe('API', () => {
     createTenantTaxRateUseCase = {
       execute: jest.fn().mockResolvedValue(vatTaxRate),
     };
+    checkTenantInvoiceElectronicAuthorizationUseCase = {
+      execute: jest.fn().mockResolvedValue(
+        draftInvoice.updateElectronicStatus(
+          {
+            electronicStatus: 'authorized',
+            accessKey:
+              '2904202601179001234500110010020000000311234567815',
+            authorizationNumber:
+              '2904202601179001234500110010020000000311234567815',
+            authorizedAt: new Date('2026-05-01T15:25:00.000Z'),
+            electronicStatusMessage:
+              'Documento autorizado por el stub del SRI. Listo para reemplazar por polling real.',
+            signedAt: new Date('2026-05-01T15:20:00.000Z'),
+            submittedAt: new Date('2026-05-01T15:20:05.000Z'),
+            submissionReference: 'stub-sri-invoice_001-1746112805000',
+          },
+          new Date('2026-05-01T15:25:00.000Z'),
+        ),
+      ),
+    };
     reverseTenantInvoicePaymentUseCase = {
       execute: jest.fn().mockResolvedValue(
         receivedPayment.reverse(
@@ -805,6 +994,25 @@ describe('API', () => {
     };
     sendTenantInvoiceEmailUseCase = {
       execute: jest.fn().mockResolvedValue(undefined),
+    };
+    submitTenantInvoiceElectronicDocumentUseCase = {
+      execute: jest.fn().mockResolvedValue(
+        draftInvoice.updateElectronicStatus(
+          {
+            electronicStatus: 'submitted',
+            accessKey:
+              '2904202601179001234500110010020000000311234567815',
+            authorizationNumber: null,
+            authorizedAt: null,
+            electronicStatusMessage:
+              'Documento firmado y enviado al gateway stub del SRI. Pendiente de autorizacion real.',
+            signedAt: new Date('2026-05-01T15:20:00.000Z'),
+            submittedAt: new Date('2026-05-01T15:20:05.000Z'),
+            submissionReference: 'stub-sri-invoice_001-1746112805000',
+          },
+          new Date('2026-05-01T15:20:05.000Z'),
+        ),
+      ),
     };
     updateTenantInvoiceStatusUseCase = {
       execute: jest.fn().mockResolvedValue(
@@ -822,6 +1030,36 @@ describe('API', () => {
           updatedAt: new Date('2026-04-28T23:00:00.000Z'),
         }),
       ),
+    };
+    updateTenantInvoiceElectronicStatusUseCase = {
+      execute: jest.fn().mockResolvedValue(
+        draftInvoice.updateElectronicStatus(
+          {
+            electronicStatus: 'authorized',
+            accessKey:
+              '2904202601179001234500110010020000000311234567815',
+            authorizationNumber: '2904202601179001234500110010020000000311234567815',
+            authorizedAt: new Date('2026-04-29T17:00:00.000Z'),
+            electronicStatusMessage: 'AUTORIZADO',
+            signedAt: null,
+            submittedAt: null,
+            submissionReference: null,
+          },
+          new Date('2026-04-29T17:00:00.000Z'),
+        ),
+      ),
+    };
+    upsertTenantElectronicSubmissionSettingsUseCase = {
+      execute: jest.fn().mockResolvedValue(electronicSubmissionSettings),
+    };
+    upsertTenantElectronicSignatureSettingsUseCase = {
+      execute: jest.fn().mockResolvedValue(electronicSignatureSettings),
+    };
+    upsertTenantIssuerProfileUseCase = {
+      execute: jest.fn().mockResolvedValue(issuerProfile),
+    };
+    upsertTenantInvoiceNumberingSettingsUseCase = {
+      execute: jest.fn().mockResolvedValue(invoiceNumberingSettings),
     };
     cancelTenantInvitationUseCase = {
       execute: jest.fn().mockResolvedValue(undefined),
@@ -959,10 +1197,20 @@ describe('API', () => {
       .useValue(getProductByKeyUseCase)
       .overrideProvider(GetTenantCustomerByIdUseCase)
       .useValue(getTenantCustomerByIdUseCase)
+      .overrideProvider(GetTenantElectronicSubmissionSettingsUseCase)
+      .useValue(getTenantElectronicSubmissionSettingsUseCase)
+      .overrideProvider(GetTenantElectronicSignatureSettingsUseCase)
+      .useValue(getTenantElectronicSignatureSettingsUseCase)
+      .overrideProvider(GetTenantIssuerProfileUseCase)
+      .useValue(getTenantIssuerProfileUseCase)
+      .overrideProvider(GetTenantInvoiceNumberingSettingsUseCase)
+      .useValue(getTenantInvoiceNumberingSettingsUseCase)
       .overrideProvider(GetTenantInvoiceDetailUseCase)
       .useValue(getTenantInvoiceDetailUseCase)
       .overrideProvider(GetTenantInvoiceDocumentUseCase)
       .useValue(getTenantInvoiceDocumentUseCase)
+      .overrideProvider(GetTenantInvoiceElectronicXmlPreviewUseCase)
+      .useValue(getTenantInvoiceElectronicXmlPreviewUseCase)
       .overrideProvider(GetTenantInvoicingReportSummaryUseCase)
       .useValue(getTenantInvoicingReportSummaryUseCase)
       .overrideProvider(GetTenantInvoiceByIdUseCase)
@@ -1029,12 +1277,26 @@ describe('API', () => {
       .useValue(createTenantInvoicePaymentUseCase)
       .overrideProvider(CreateTenantTaxRateUseCase)
       .useValue(createTenantTaxRateUseCase)
+      .overrideProvider(CheckTenantInvoiceElectronicAuthorizationUseCase)
+      .useValue(checkTenantInvoiceElectronicAuthorizationUseCase)
       .overrideProvider(ReverseTenantInvoicePaymentUseCase)
       .useValue(reverseTenantInvoicePaymentUseCase)
       .overrideProvider(SendTenantInvoiceEmailUseCase)
       .useValue(sendTenantInvoiceEmailUseCase)
+      .overrideProvider(SubmitTenantInvoiceElectronicDocumentUseCase)
+      .useValue(submitTenantInvoiceElectronicDocumentUseCase)
       .overrideProvider(UpdateTenantInvoiceStatusUseCase)
       .useValue(updateTenantInvoiceStatusUseCase)
+      .overrideProvider(UpdateTenantInvoiceElectronicStatusUseCase)
+      .useValue(updateTenantInvoiceElectronicStatusUseCase)
+      .overrideProvider(UpsertTenantElectronicSubmissionSettingsUseCase)
+      .useValue(upsertTenantElectronicSubmissionSettingsUseCase)
+      .overrideProvider(UpsertTenantElectronicSignatureSettingsUseCase)
+      .useValue(upsertTenantElectronicSignatureSettingsUseCase)
+      .overrideProvider(UpsertTenantIssuerProfileUseCase)
+      .useValue(upsertTenantIssuerProfileUseCase)
+      .overrideProvider(UpsertTenantInvoiceNumberingSettingsUseCase)
+      .useValue(upsertTenantInvoiceNumberingSettingsUseCase)
       .overrideProvider(AcceptTenantInvitationUseCase)
       .useValue(acceptTenantInvitationUseCase)
       .overrideProvider(AcceptAuthenticatedUserInvitationUseCase)
@@ -1425,7 +1687,10 @@ describe('API', () => {
           tenantId: 'tenant_123',
           name: 'Acme Corp',
           email: 'billing@acme.dev',
-          taxId: 'RUC-001',
+          taxId: '1790012345001',
+          identificationType: '04',
+          identification: '1790012345001',
+          billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
           createdAt: '2026-04-27T15:00:00.000Z',
           updatedAt: '2026-04-27T15:00:00.000Z',
         },
@@ -1435,6 +1700,9 @@ describe('API', () => {
           name: 'Globex LLC',
           email: null,
           taxId: null,
+          identificationType: null,
+          identification: null,
+          billingAddress: null,
           createdAt: '2026-04-27T15:10:00.000Z',
           updatedAt: '2026-04-27T15:10:00.000Z',
         },
@@ -1469,6 +1737,279 @@ describe('API', () => {
     expect(listTenantTaxRatesUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
     );
+  });
+
+  it('GET /api/invoicing/tenants/:slug/electronic-profile should return the tenant issuer profile', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/electronic-profile')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'issuer_profile_001',
+        tenantId: 'tenant_123',
+        legalName: 'SaaS Platform S.A.',
+        commercialName: 'SaaS Platform',
+        taxId: '1790012345001',
+        environment: 'test',
+        emissionType: 'normal',
+        accountingObligated: true,
+        specialTaxpayerCode: null,
+        rimpeTaxpayerType: null,
+        matrixAddress: 'Av. Principal y Calle Secundaria',
+        establishmentAddress: 'Sucursal Matriz',
+        createdAt: '2026-04-29T16:00:00.000Z',
+        updatedAt: '2026-04-29T16:00:00.000Z',
+      });
+
+    expect(getTenantIssuerProfileUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('POST /api/invoicing/tenants/:slug/electronic-profile should upsert the tenant issuer profile', async () => {
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/electronic-profile')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        legalName: 'SaaS Platform S.A.',
+        commercialName: 'SaaS Platform',
+        taxId: '1790012345001',
+        environment: 'test',
+        emissionType: 'normal',
+        accountingObligated: true,
+        specialTaxpayerCode: null,
+        rimpeTaxpayerType: null,
+        matrixAddress: 'Av. Principal y Calle Secundaria',
+        establishmentAddress: 'Sucursal Matriz',
+      })
+      .expect(201)
+      .expect({
+        id: 'issuer_profile_001',
+        tenantId: 'tenant_123',
+        legalName: 'SaaS Platform S.A.',
+        commercialName: 'SaaS Platform',
+        taxId: '1790012345001',
+        environment: 'test',
+        emissionType: 'normal',
+        accountingObligated: true,
+        specialTaxpayerCode: null,
+        rimpeTaxpayerType: null,
+        matrixAddress: 'Av. Principal y Calle Secundaria',
+        establishmentAddress: 'Sucursal Matriz',
+        createdAt: '2026-04-29T16:00:00.000Z',
+        updatedAt: '2026-04-29T16:00:00.000Z',
+      });
+
+    expect(upsertTenantIssuerProfileUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      legalName: 'SaaS Platform S.A.',
+      commercialName: 'SaaS Platform',
+      taxId: '1790012345001',
+      environment: 'test',
+      emissionType: 'normal',
+      accountingObligated: true,
+      specialTaxpayerCode: null,
+      rimpeTaxpayerType: null,
+      matrixAddress: 'Av. Principal y Calle Secundaria',
+      establishmentAddress: 'Sucursal Matriz',
+    });
+  });
+
+  it('GET /api/invoicing/tenants/:slug/electronic-signature should return electronic signature settings', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/electronic-signature')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'signature_settings_001',
+        tenantId: 'tenant_123',
+        provider: 'stub_local',
+        certificateLabel: 'Firma pruebas SaaS Platform',
+        storageMode: 'stub_inline',
+        certificateFingerprint: 'AA:BB:CC:DD',
+        pkcs12SecretRef: null,
+        privateKeyPasswordSecretRef: null,
+        subjectName: null,
+        materialConfigured: true,
+        isActive: true,
+        createdAt: '2026-05-01T16:50:00.000Z',
+        updatedAt: '2026-05-01T16:50:00.000Z',
+      });
+
+    expect(
+      getTenantElectronicSignatureSettingsUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform');
+  });
+
+  it('POST /api/invoicing/tenants/:slug/electronic-signature should upsert electronic signature settings', async () => {
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/electronic-signature')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        provider: 'stub_local',
+        certificateLabel: 'Firma pruebas SaaS Platform',
+        storageMode: 'stub_inline',
+        certificateFingerprint: 'AA:BB:CC:DD',
+        isActive: true,
+      })
+      .expect(201)
+      .expect({
+        id: 'signature_settings_001',
+        tenantId: 'tenant_123',
+        provider: 'stub_local',
+        certificateLabel: 'Firma pruebas SaaS Platform',
+        storageMode: 'stub_inline',
+        certificateFingerprint: 'AA:BB:CC:DD',
+        pkcs12SecretRef: null,
+        privateKeyPasswordSecretRef: null,
+        subjectName: null,
+        materialConfigured: true,
+        isActive: true,
+        createdAt: '2026-05-01T16:50:00.000Z',
+        updatedAt: '2026-05-01T16:50:00.000Z',
+      });
+
+    expect(
+      upsertTenantElectronicSignatureSettingsUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      provider: 'stub_local',
+      certificateLabel: 'Firma pruebas SaaS Platform',
+      storageMode: 'stub_inline',
+      certificateFingerprint: 'AA:BB:CC:DD',
+      pkcs12SecretRef: null,
+      privateKeyPasswordSecretRef: null,
+      subjectName: null,
+      isActive: true,
+    });
+  });
+
+  it('GET /api/invoicing/tenants/:slug/electronic-submission should return electronic submission settings', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/electronic-submission')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'submission_settings_001',
+        tenantId: 'tenant_123',
+        provider: 'stub_sri',
+        environment: 'test',
+        transmissionMode: 'sync_stub',
+        receptionUrl: null,
+        authorizationUrl: null,
+        credentialsSecretRef: null,
+        timeoutMs: 10000,
+        gatewayConfigured: true,
+        isActive: true,
+        createdAt: '2026-05-01T17:20:00.000Z',
+        updatedAt: '2026-05-01T17:20:00.000Z',
+      });
+
+    expect(
+      getTenantElectronicSubmissionSettingsUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform');
+  });
+
+  it('POST /api/invoicing/tenants/:slug/electronic-submission should upsert electronic submission settings', async () => {
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/electronic-submission')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        provider: 'stub_sri',
+        environment: 'test',
+        transmissionMode: 'sync_stub',
+        receptionUrl: null,
+        authorizationUrl: null,
+        credentialsSecretRef: null,
+        timeoutMs: 10000,
+        isActive: true,
+      })
+      .expect(201)
+      .expect({
+        id: 'submission_settings_001',
+        tenantId: 'tenant_123',
+        provider: 'stub_sri',
+        environment: 'test',
+        transmissionMode: 'sync_stub',
+        receptionUrl: null,
+        authorizationUrl: null,
+        credentialsSecretRef: null,
+        timeoutMs: 10000,
+        gatewayConfigured: true,
+        isActive: true,
+        createdAt: '2026-05-01T17:20:00.000Z',
+        updatedAt: '2026-05-01T17:20:00.000Z',
+      });
+
+    expect(
+      upsertTenantElectronicSubmissionSettingsUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      provider: 'stub_sri',
+      environment: 'test',
+      transmissionMode: 'sync_stub',
+      receptionUrl: null,
+      authorizationUrl: null,
+      credentialsSecretRef: null,
+      timeoutMs: 10000,
+      isActive: true,
+    });
+  });
+
+  it('GET /api/invoicing/tenants/:slug/numbering/invoice should return invoice numbering settings', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/numbering/invoice')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'invoice_numbering_001',
+        tenantId: 'tenant_123',
+        documentCode: '01',
+        establishmentCode: '001',
+        emissionPointCode: '002',
+        nextSequenceNumber: 31,
+        previewNumber: '001-002-000000031',
+        createdAt: '2026-04-29T16:05:00.000Z',
+        updatedAt: '2026-04-29T16:05:00.000Z',
+      });
+
+    expect(getTenantInvoiceNumberingSettingsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('POST /api/invoicing/tenants/:slug/numbering/invoice should upsert invoice numbering settings', async () => {
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/numbering/invoice')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        documentCode: '01',
+        establishmentCode: '001',
+        emissionPointCode: '002',
+        nextSequenceNumber: 31,
+      })
+      .expect(201)
+      .expect({
+        id: 'invoice_numbering_001',
+        tenantId: 'tenant_123',
+        documentCode: '01',
+        establishmentCode: '001',
+        emissionPointCode: '002',
+        nextSequenceNumber: 31,
+        previewNumber: '001-002-000000031',
+        createdAt: '2026-04-29T16:05:00.000Z',
+        updatedAt: '2026-04-29T16:05:00.000Z',
+      });
+
+    expect(
+      upsertTenantInvoiceNumberingSettingsUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      documentCode: '01',
+      establishmentCode: '001',
+      emissionPointCode: '002',
+      nextSequenceNumber: 31,
+    });
   });
 
   it('GET /api/invoicing/tenants/:slug/reports/summary should return the invoicing report summary', async () => {
@@ -1548,7 +2089,10 @@ describe('API', () => {
         tenantId: 'tenant_123',
         name: 'Acme Corp',
         email: 'billing@acme.dev',
-        taxId: 'RUC-001',
+        taxId: '1790012345001',
+        identificationType: '04',
+        identification: '1790012345001',
+        billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
         createdAt: '2026-04-27T15:00:00.000Z',
         updatedAt: '2026-04-27T15:00:00.000Z',
       });
@@ -1566,7 +2110,10 @@ describe('API', () => {
       .send({
         name: 'Acme Corp',
         email: 'Billing@Acme.dev',
-        taxId: 'RUC-001',
+        taxId: '1790012345001',
+        identificationType: '04',
+        identification: '1790012345001',
+        billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
       })
       .expect(201)
       .expect({
@@ -1574,7 +2121,10 @@ describe('API', () => {
         tenantId: 'tenant_123',
         name: 'Acme Corp',
         email: 'billing@acme.dev',
-        taxId: 'RUC-001',
+        taxId: '1790012345001',
+        identificationType: '04',
+        identification: '1790012345001',
+        billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
         createdAt: '2026-04-27T15:00:00.000Z',
         updatedAt: '2026-04-27T15:00:00.000Z',
       });
@@ -1583,7 +2133,10 @@ describe('API', () => {
       tenantSlug: 'saas-platform',
       name: 'Acme Corp',
       email: 'Billing@Acme.dev',
-      taxId: 'RUC-001',
+      taxId: '1790012345001',
+      identificationType: '04',
+      identification: '1790012345001',
+      billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
     });
   });
 
@@ -1614,6 +2167,22 @@ describe('API', () => {
           tenantId: 'tenant_123',
           customerId: 'customer_acme',
           number: 'INV-001',
+          documentCode: null,
+          establishmentCode: null,
+          emissionPointCode: null,
+          sequenceNumber: null,
+          buyerIdentificationType: '04',
+          buyerIdentification: '1790012345001',
+          buyerName: 'Acme Corp',
+          buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+          electronicStatus: null,
+          accessKey: null,
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage: null,
+          signedAt: null,
+          submittedAt: null,
+          submissionReference: null,
           status: 'draft',
           currency: 'USD',
           issuedAt: '2026-04-27T16:00:00.000Z',
@@ -1638,6 +2207,22 @@ describe('API', () => {
           tenantId: 'tenant_123',
           customerId: 'customer_globex',
           number: 'INV-002',
+          documentCode: null,
+          establishmentCode: null,
+          emissionPointCode: null,
+          sequenceNumber: null,
+          buyerIdentificationType: null,
+          buyerIdentification: null,
+          buyerName: 'Globex LLC',
+          buyerAddress: null,
+          electronicStatus: null,
+          accessKey: null,
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage: null,
+          signedAt: null,
+          submittedAt: null,
+          submissionReference: null,
           status: 'partially_paid',
           currency: 'USD',
           issuedAt: '2026-04-27T17:00:00.000Z',
@@ -1674,6 +2259,22 @@ describe('API', () => {
         tenantId: 'tenant_123',
         customerId: 'customer_acme',
         number: 'INV-001',
+        documentCode: null,
+        establishmentCode: null,
+        emissionPointCode: null,
+        sequenceNumber: null,
+        buyerIdentificationType: '04',
+        buyerIdentification: '1790012345001',
+        buyerName: 'Acme Corp',
+        buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+        electronicStatus: null,
+        accessKey: null,
+        authorizationNumber: null,
+        authorizedAt: null,
+        electronicStatusMessage: null,
+        signedAt: null,
+        submittedAt: null,
+        submissionReference: null,
         status: 'draft',
         currency: 'USD',
         issuedAt: '2026-04-27T16:00:00.000Z',
@@ -1721,6 +2322,24 @@ describe('API', () => {
           totalInCents: 13700,
         },
         payments: [],
+        electronicEvents: [
+          {
+            id: 'invoice_event_001',
+            tenantId: 'tenant_123',
+            invoiceId: 'invoice_001',
+            eventType: 'submission',
+            provider: 'stub_sri',
+            providerStatus: 'submitted',
+            endpoint: null,
+            soapAction: null,
+            message: 'Documento enviado al gateway stub del SRI.',
+            requestPayload: '{"gateway":"stub_sri"}',
+            responsePayload: '{"state":"submitted"}',
+            submissionReference: 'stub-sri-invoice_001-123456789',
+            authorizationNumber: null,
+            occurredAt: '2026-05-01T18:00:00.000Z',
+          },
+        ],
         settlement: {
           paidInCents: 0,
           balanceDueInCents: 13700,
@@ -1744,17 +2363,46 @@ describe('API', () => {
           tenantId: 'tenant_123',
           tenantName: 'SaaS Platform',
           tenantSlug: 'saas-platform',
+          legalName: 'SaaS Platform S.A.',
+          commercialName: 'SaaS Platform',
+          taxId: '1790012345001',
+          environment: 'test',
+          emissionType: 'normal',
+          accountingObligated: true,
+          specialTaxpayerCode: null,
+          rimpeTaxpayerType: null,
+          matrixAddress: 'Av. Principal y Calle Secundaria',
+          establishmentAddress: 'Sucursal Matriz',
         },
         customer: {
           name: 'Acme Corp',
           email: 'billing@acme.dev',
-          taxId: 'RUC-001',
+          taxId: '1790012345001',
+          identificationType: '04',
+          identification: '1790012345001',
+          billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
         },
         invoice: {
           id: 'invoice_001',
           tenantId: 'tenant_123',
           customerId: 'customer_acme',
           number: 'INV-001',
+          documentCode: null,
+          establishmentCode: null,
+          emissionPointCode: null,
+          sequenceNumber: null,
+          buyerIdentificationType: '04',
+          buyerIdentification: '1790012345001',
+          buyerName: 'Acme Corp',
+          buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+          electronicStatus: null,
+          accessKey: null,
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage: null,
+          signedAt: null,
+          submittedAt: null,
+          submissionReference: null,
           status: 'draft',
           currency: 'USD',
           issuedAt: '2026-04-27T16:00:00.000Z',
@@ -1824,6 +2472,26 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/xml should return the Ecuador XML preview', async () => {
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/invoice_001/electronic-document/xml',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /application\/xml/)
+      .expect((response) => {
+        expect(response.text).toContain('<factura id="comprobante" version="2.1.0">');
+        expect(response.text).toContain(
+          '<claveAcceso>2904202601179001234500110010020000000311234567815</claveAcceso>',
+        );
+      });
+
+    expect(
+      getTenantInvoiceElectronicXmlPreviewUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'invoice_001');
+  });
+
   it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/send-email should trigger invoice delivery', async () => {
     await request(httpServer)
       .post('/api/invoicing/tenants/saas-platform/invoices/invoice_001/send-email')
@@ -1845,6 +2513,114 @@ describe('API', () => {
     });
   });
 
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/submit should sign and submit the electronic invoice through the stub pipeline', async () => {
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/invoices/invoice_001/electronic-document/submit',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect({
+        submitted: true,
+        electronicStatus: 'submitted',
+        accessKey: '2904202601179001234500110010020000000311234567815',
+        submittedAt: '2026-05-01T15:20:05.000Z',
+        submissionReference: 'stub-sri-invoice_001-1746112805000',
+      });
+
+    expect(
+      submitTenantInvoiceElectronicDocumentUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'invoice_001',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/submit should return 400 when the generated Ecuador XML fails validation', async () => {
+    submitTenantInvoiceElectronicDocumentUseCase.execute.mockRejectedValueOnce(
+      new InvoiceElectronicXmlValidationError([
+        'invoice.xml:12: element ptoEmi: [facet \'pattern\'] The value \'02\' is not accepted by the pattern',
+      ]),
+    );
+
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/invoices/invoice_001/electronic-document/submit',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(400)
+      .expect((response) => {
+        expect(response.body.message).toContain(
+          'El XML del comprobante electronico no paso la validacion previa',
+        );
+        expect(response.body.message).toContain('invoice.xml:12: element ptoEmi');
+      });
+
+    expect(
+      submitTenantInvoiceElectronicDocumentUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'invoice_001',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/check-authorization should resolve the stub authorization state', async () => {
+    getTenantInvoiceDetailUseCase.execute.mockResolvedValueOnce({
+      invoice: draftInvoice.updateElectronicStatus(
+        {
+          electronicStatus: 'authorized',
+          accessKey:
+            '2904202601179001234500110010020000000311234567815',
+          authorizationNumber:
+            '2904202601179001234500110010020000000311234567815',
+          authorizedAt: new Date('2026-05-01T15:25:00.000Z'),
+          electronicStatusMessage:
+            'Documento autorizado por el stub del SRI. Listo para reemplazar por polling real.',
+          signedAt: new Date('2026-05-01T15:20:00.000Z'),
+          submittedAt: new Date('2026-05-01T15:20:05.000Z'),
+          submissionReference: 'stub-sri-invoice_001-1746112805000',
+        },
+        new Date('2026-05-01T15:25:00.000Z'),
+      ),
+      items: [firstInvoiceItem, secondInvoiceItem],
+      payments: [],
+      electronicEvents: [invoiceElectronicEvent],
+      totals: {
+        subtotalInCents: 12500,
+        taxInCents: 1200,
+        totalInCents: 13700,
+      },
+      settlement: {
+        paidInCents: 0,
+        balanceDueInCents: 13700,
+        isFullyPaid: false,
+      },
+    });
+
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/invoices/invoice_001/electronic-document/check-authorization',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.electronicStatus).toBe('authorized');
+        expect(response.body.authorizationNumber).toBe(
+          '2904202601179001234500110010020000000311234567815',
+        );
+        expect(response.body.submissionReference).toBe(
+          'stub-sri-invoice_001-1746112805000',
+        );
+      });
+
+    expect(
+      checkTenantInvoiceElectronicAuthorizationUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'invoice_001',
+    });
+  });
+
   it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/status should update the invoice lifecycle status', async () => {
     getTenantInvoiceDetailUseCase.execute.mockResolvedValueOnce({
       invoice: Invoice.create({
@@ -1862,6 +2638,7 @@ describe('API', () => {
       }),
       items: [firstInvoiceItem, secondInvoiceItem],
       payments: [],
+      electronicEvents: [],
       totals: {
         subtotalInCents: 12500,
         taxInCents: 1200,
@@ -1891,6 +2668,72 @@ describe('API', () => {
     });
   });
 
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-status should update the SRI authorization state', async () => {
+    getTenantInvoiceDetailUseCase.execute.mockResolvedValueOnce({
+      invoice: draftInvoice.updateElectronicStatus(
+        {
+          electronicStatus: 'authorized',
+          accessKey:
+            '2904202601179001234500110010020000000311234567815',
+          authorizationNumber:
+            '2904202601179001234500110010020000000311234567815',
+          authorizedAt: new Date('2026-04-29T17:00:00.000Z'),
+          electronicStatusMessage: 'AUTORIZADO',
+          signedAt: null,
+          submittedAt: null,
+          submissionReference: null,
+        },
+        new Date('2026-04-29T17:00:00.000Z'),
+      ),
+      items: [firstInvoiceItem, secondInvoiceItem],
+      payments: [],
+      electronicEvents: [],
+      totals: {
+        subtotalInCents: 12500,
+        taxInCents: 1200,
+        totalInCents: 13700,
+      },
+      settlement: {
+        paidInCents: 0,
+        balanceDueInCents: 13700,
+        isFullyPaid: false,
+      },
+    });
+
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/invoices/invoice_001/electronic-status',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        electronicStatus: 'authorized',
+        authorizedAt: '2026-04-29T17:00:00.000Z',
+        electronicStatusMessage: 'AUTORIZADO',
+      })
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.electronicStatus).toBe('authorized');
+        expect(response.body.accessKey).toBe(
+          '2904202601179001234500110010020000000311234567815',
+        );
+        expect(response.body.authorizationNumber).toBe(
+          '2904202601179001234500110010020000000311234567815',
+        );
+      });
+
+    expect(
+      updateTenantInvoiceElectronicStatusUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'invoice_001',
+      electronicStatus: 'authorized',
+      accessKey: null,
+      authorizationNumber: null,
+      authorizedAt: new Date('2026-04-29T17:00:00.000Z'),
+      electronicStatusMessage: 'AUTORIZADO',
+    });
+  });
+
   it('POST /api/invoicing/tenants/:slug/invoices should create a tenant invoice tied to a customer', async () => {
     await request(httpServer)
       .post('/api/invoicing/tenants/saas-platform/invoices')
@@ -1910,6 +2753,22 @@ describe('API', () => {
         tenantId: 'tenant_123',
         customerId: 'customer_acme',
         number: 'INV-001',
+        documentCode: null,
+        establishmentCode: null,
+        emissionPointCode: null,
+        sequenceNumber: null,
+        buyerIdentificationType: '04',
+        buyerIdentification: '1790012345001',
+        buyerName: 'Acme Corp',
+        buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+        electronicStatus: null,
+        accessKey: null,
+        authorizationNumber: null,
+        authorizedAt: null,
+        electronicStatusMessage: null,
+        signedAt: null,
+        submittedAt: null,
+        submissionReference: null,
         status: 'draft',
         currency: 'USD',
         issuedAt: '2026-04-27T16:00:00.000Z',
@@ -1919,6 +2778,7 @@ describe('API', () => {
         updatedAt: '2026-04-27T16:00:00.000Z',
         items: [],
         payments: [],
+        electronicEvents: [],
         totals: {
           subtotalInCents: 0,
           taxInCents: 0,
@@ -1940,6 +2800,76 @@ describe('API', () => {
       issuedAt: new Date('2026-04-27T16:00:00.000Z'),
       dueAt: new Date('2026-05-11T16:00:00.000Z'),
       notes: 'Primer borrador para onboarding de invoicing.',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices should support Ecuador auto-numbering when number is omitted', async () => {
+    createTenantInvoiceUseCase.execute.mockResolvedValueOnce(electronicDraftInvoice);
+
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/invoices')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        customerId: 'customer_acme',
+        currency: 'usd',
+        status: 'draft',
+        issuedAt: '2026-04-29T16:30:00.000Z',
+        dueAt: null,
+        notes: 'Factura con numeracion Ecuador.',
+      })
+      .expect(201)
+      .expect({
+        id: 'invoice_003',
+        tenantId: 'tenant_123',
+        customerId: 'customer_acme',
+        number: '001-002-000000031',
+        documentCode: '01',
+        establishmentCode: '001',
+        emissionPointCode: '002',
+        sequenceNumber: 31,
+        buyerIdentificationType: '04',
+        buyerIdentification: '1790012345001',
+        buyerName: 'Acme Corp',
+        buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+        electronicStatus: null,
+        accessKey: null,
+        authorizationNumber: null,
+        authorizedAt: null,
+        electronicStatusMessage: null,
+        signedAt: null,
+        submittedAt: null,
+        submissionReference: null,
+        status: 'draft',
+        currency: 'USD',
+        issuedAt: '2026-04-29T16:30:00.000Z',
+        dueAt: null,
+        notes: 'Factura con numeracion Ecuador.',
+        createdAt: '2026-04-29T16:30:00.000Z',
+        updatedAt: '2026-04-29T16:30:00.000Z',
+        items: [],
+        payments: [],
+        electronicEvents: [],
+        totals: {
+          subtotalInCents: 0,
+          taxInCents: 0,
+          totalInCents: 0,
+        },
+        settlement: {
+          paidInCents: 0,
+          balanceDueInCents: 0,
+          isFullyPaid: false,
+        },
+      });
+
+    expect(createTenantInvoiceUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      customerId: 'customer_acme',
+      number: undefined,
+      currency: 'usd',
+      status: 'draft',
+      issuedAt: new Date('2026-04-29T16:30:00.000Z'),
+      dueAt: null,
+      notes: 'Factura con numeracion Ecuador.',
     });
   });
 

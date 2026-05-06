@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InvoiceRepository } from '@saas-platform/invoicing-application';
-import { Invoice, InvoiceStatus } from '@saas-platform/invoicing-domain';
+import {
+  BuyerIdentificationType,
+  InvoiceElectronicStatus,
+  Invoice,
+  InvoiceStatus,
+} from '@saas-platform/invoicing-domain';
 import { PrismaService } from '../prisma.service';
 
 @Injectable()
@@ -9,32 +14,66 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
 
   async save(invoice: Invoice): Promise<void> {
     const data = invoice.toPrimitives();
+    const updateData: any = {
+      customerId: data.customerId,
+      number: data.number,
+      documentCode: data.documentCode,
+      establishmentCode: data.establishmentCode,
+      emissionPointCode: data.emissionPointCode,
+      sequenceNumber: data.sequenceNumber,
+      buyerIdentificationType: data.buyerIdentificationType ?? null,
+      buyerIdentification: data.buyerIdentification ?? null,
+      buyerName: data.buyerName ?? null,
+      buyerAddress: data.buyerAddress ?? null,
+      electronicStatus: data.electronicStatus ?? null,
+      accessKey: data.accessKey ?? null,
+      authorizationNumber: data.authorizationNumber ?? null,
+      authorizedAt: data.authorizedAt ?? null,
+      electronicStatusMessage: data.electronicStatusMessage ?? null,
+      signedAt: data.signedAt ?? null,
+      submittedAt: data.submittedAt ?? null,
+      submissionReference: data.submissionReference ?? null,
+      status: data.status,
+      currency: data.currency,
+      issuedAt: data.issuedAt,
+      dueAt: data.dueAt,
+      notes: data.notes,
+      updatedAt: data.updatedAt,
+    };
+    const createData: any = {
+      id: data.id,
+      tenantId: data.tenantId,
+      customerId: data.customerId,
+      number: data.number,
+      documentCode: data.documentCode,
+      establishmentCode: data.establishmentCode,
+      emissionPointCode: data.emissionPointCode,
+      sequenceNumber: data.sequenceNumber,
+      buyerIdentificationType: data.buyerIdentificationType ?? null,
+      buyerIdentification: data.buyerIdentification ?? null,
+      buyerName: data.buyerName ?? null,
+      buyerAddress: data.buyerAddress ?? null,
+      electronicStatus: data.electronicStatus ?? null,
+      accessKey: data.accessKey ?? null,
+      authorizationNumber: data.authorizationNumber ?? null,
+      authorizedAt: data.authorizedAt ?? null,
+      electronicStatusMessage: data.electronicStatusMessage ?? null,
+      signedAt: data.signedAt ?? null,
+      submittedAt: data.submittedAt ?? null,
+      submissionReference: data.submissionReference ?? null,
+      status: data.status,
+      currency: data.currency,
+      issuedAt: data.issuedAt,
+      dueAt: data.dueAt,
+      notes: data.notes,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    };
 
     await this.prisma.invoice.upsert({
       where: { id: data.id },
-      update: {
-        customerId: data.customerId,
-        number: data.number,
-        status: data.status,
-        currency: data.currency,
-        issuedAt: data.issuedAt,
-        dueAt: data.dueAt,
-        notes: data.notes,
-        updatedAt: data.updatedAt,
-      },
-      create: {
-        id: data.id,
-        tenantId: data.tenantId,
-        customerId: data.customerId,
-        number: data.number,
-        status: data.status,
-        currency: data.currency,
-        issuedAt: data.issuedAt,
-        dueAt: data.dueAt,
-        notes: data.notes,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
-      },
+      update: updateData,
+      create: createData,
     });
   }
 
@@ -44,7 +83,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       orderBy: [{ createdAt: 'desc' }, { number: 'desc' }],
     });
 
-    return invoices.map((invoice) => this.toDomain(invoice));
+    return (invoices as any[]).map((invoice) => this.toDomain(invoice));
   }
 
   async findByTenantIdAndId(
@@ -58,7 +97,7 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       },
     });
 
-    return invoice ? this.toDomain(invoice) : null;
+    return invoice ? this.toDomain(invoice as any) : null;
   }
 
   private toDomain(record: {
@@ -66,6 +105,22 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     tenantId: string;
     customerId: string;
     number: string;
+    documentCode: string | null;
+    establishmentCode: string | null;
+    emissionPointCode: string | null;
+    sequenceNumber: number | null;
+    buyerIdentificationType: string | null;
+    buyerIdentification: string | null;
+    buyerName: string | null;
+    buyerAddress: string | null;
+    electronicStatus: string | null;
+    accessKey: string | null;
+    authorizationNumber: string | null;
+    authorizedAt: Date | null;
+    electronicStatusMessage: string | null;
+    signedAt: Date | null;
+    submittedAt: Date | null;
+    submissionReference: string | null;
     status: string;
     currency: string;
     issuedAt: Date;
@@ -79,6 +134,22 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       tenantId: record.tenantId,
       customerId: record.customerId,
       number: record.number,
+      documentCode: record.documentCode,
+      establishmentCode: record.establishmentCode,
+      emissionPointCode: record.emissionPointCode,
+      sequenceNumber: record.sequenceNumber,
+      buyerIdentificationType: record.buyerIdentificationType as BuyerIdentificationType | null,
+      buyerIdentification: record.buyerIdentification,
+      buyerName: record.buyerName,
+      buyerAddress: record.buyerAddress,
+      electronicStatus: record.electronicStatus as InvoiceElectronicStatus | null,
+      accessKey: record.accessKey,
+      authorizationNumber: record.authorizationNumber,
+      authorizedAt: record.authorizedAt,
+      electronicStatusMessage: record.electronicStatusMessage,
+      signedAt: record.signedAt,
+      submittedAt: record.submittedAt,
+      submissionReference: record.submissionReference,
       status: record.status as InvoiceStatus,
       currency: record.currency,
       issuedAt: record.issuedAt,

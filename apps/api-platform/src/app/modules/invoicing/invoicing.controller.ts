@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  CheckTenantInvoiceElectronicAuthorizationUseCase,
   CreateTenantCustomerUseCase,
   CustomerNotFoundError,
   CreateTenantInvoiceUseCase,
@@ -18,11 +19,18 @@ import {
   CreateTenantInvoicePaymentUseCase,
   CreateTenantTaxRateUseCase,
   CustomerEmailMissingError,
+  ElectronicSubmissionSettingsNotFoundError,
+  ElectronicSignatureSettingsNotFoundError,
   GetTenantCustomerByIdUseCase,
+  GetTenantElectronicSubmissionSettingsUseCase,
+  GetTenantElectronicSignatureSettingsUseCase,
+  GetTenantInvoiceNumberingSettingsUseCase,
   GetTenantInvoiceDetailUseCase,
   GetTenantInvoiceDocumentUseCase,
+  GetTenantInvoiceElectronicXmlPreviewUseCase,
   GetTenantInvoicingReportSummaryUseCase,
   GetTenantInvoiceItemByIdUseCase,
+  GetTenantIssuerProfileUseCase,
   INVOICING_PERMISSIONS,
   ListTenantCustomersUseCase,
   ListTenantInvoiceItemsUseCase,
@@ -31,17 +39,37 @@ import {
   ListTenantTaxRatesUseCase,
   InvoiceNotFoundError,
   InvoiceItemNotFoundError,
+  InvoiceNumberRequiredError,
+  InvoiceNumberingSettingsNotFoundError,
   InvoiceNotFullySettledError,
+  InvalidInvoiceElectronicAuthorizationStateError,
+  InvalidInvoiceElectronicSubmissionStateError,
+  InvoiceElectronicSubmissionGatewayIncompleteError,
+  InvoiceElectronicSubmissionNotConfiguredError,
+  InvoiceElectronicSecretResolutionError,
+  InvoiceElectronicSignatureMaterialIncompleteError,
+  InvoiceElectronicXmlValidationError,
   InvalidInvoicePaymentStateError,
+  InvalidInvoiceElectronicStatusError,
+  InvoiceElectronicSignatureNotConfiguredError,
   InvalidPaymentReversalStateError,
   InvalidInvoiceStatusTransitionError,
+  InvoiceAuthorizationDataRequiredError,
+  InvoiceElectronicMetadataIncompleteError,
   InvoicePaymentExceedsBalanceError,
+  IssuerProfileNotFoundError,
   PaymentNotFoundError,
   ReverseTenantInvoicePaymentUseCase,
   renderInvoiceDocumentHtml,
   SendTenantInvoiceEmailUseCase,
+  SubmitTenantInvoiceElectronicDocumentUseCase,
   TaxRateNotFoundError,
   UpdateTenantInvoiceStatusUseCase,
+  UpdateTenantInvoiceElectronicStatusUseCase,
+  UpsertTenantElectronicSubmissionSettingsUseCase,
+  UpsertTenantElectronicSignatureSettingsUseCase,
+  UpsertTenantInvoiceNumberingSettingsUseCase,
+  UpsertTenantIssuerProfileUseCase,
 } from '@saas-platform/invoicing-application';
 import {
   TenantAccessContext,
@@ -62,10 +90,35 @@ import { CreateInvoicePaymentRequestDto } from './dto/create-invoice-payment.req
 import { ReverseInvoicePaymentRequestDto } from './dto/reverse-invoice-payment.request';
 import { SendInvoiceEmailRequestDto } from './dto/send-invoice-email.request';
 import { UpdateInvoiceStatusRequestDto } from './dto/update-invoice-status.request';
+import { UpdateInvoiceElectronicStatusRequestDto } from './dto/update-invoice-electronic-status.request';
+import { UpsertElectronicSubmissionSettingsRequestDto } from './dto/upsert-electronic-submission-settings.request';
+import { UpsertElectronicSignatureSettingsRequestDto } from './dto/upsert-electronic-signature-settings.request';
+import { UpsertIssuerProfileRequestDto } from './dto/upsert-issuer-profile.request';
+import { UpsertInvoiceNumberingSettingsRequestDto } from './dto/upsert-invoice-numbering-settings.request';
+import {
+  ElectronicSubmissionSettingsResponseDto,
+  toElectronicSubmissionSettingsResponseDto,
+} from './dto/electronic-submission-settings.response';
+import {
+  ElectronicSignatureSettingsResponseDto,
+  toElectronicSignatureSettingsResponseDto,
+} from './dto/electronic-signature-settings.response';
+import {
+  SubmitInvoiceElectronicDocumentResponseDto,
+  toSubmitInvoiceElectronicDocumentResponseDto,
+} from './dto/submit-invoice-electronic-document.response';
 import {
   CustomerResponseDto,
   toCustomerResponseDto,
 } from './dto/customer.response';
+import {
+  InvoiceNumberingSettingsResponseDto,
+  toInvoiceNumberingSettingsResponseDto,
+} from './dto/invoice-numbering-settings.response';
+import {
+  IssuerProfileResponseDto,
+  toIssuerProfileResponseDto,
+} from './dto/issuer-profile.response';
 import {
   InvoiceItemResponseDto,
   toInvoiceItemResponseDto,
@@ -108,10 +161,15 @@ export class InvoicingController {
     private readonly createTenantInvoicePaymentUseCase: CreateTenantInvoicePaymentUseCase,
     private readonly createTenantTaxRateUseCase: CreateTenantTaxRateUseCase,
     private readonly getTenantCustomerByIdUseCase: GetTenantCustomerByIdUseCase,
+    private readonly getTenantElectronicSubmissionSettingsUseCase: GetTenantElectronicSubmissionSettingsUseCase,
+    private readonly getTenantElectronicSignatureSettingsUseCase: GetTenantElectronicSignatureSettingsUseCase,
+    private readonly getTenantInvoiceNumberingSettingsUseCase: GetTenantInvoiceNumberingSettingsUseCase,
     private readonly getTenantInvoiceDetailUseCase: GetTenantInvoiceDetailUseCase,
     private readonly getTenantInvoiceDocumentUseCase: GetTenantInvoiceDocumentUseCase,
+    private readonly getTenantInvoiceElectronicXmlPreviewUseCase: GetTenantInvoiceElectronicXmlPreviewUseCase,
     private readonly getTenantInvoicingReportSummaryUseCase: GetTenantInvoicingReportSummaryUseCase,
     private readonly getTenantInvoiceItemByIdUseCase: GetTenantInvoiceItemByIdUseCase,
+    private readonly getTenantIssuerProfileUseCase: GetTenantIssuerProfileUseCase,
     private readonly listTenantCustomersUseCase: ListTenantCustomersUseCase,
     private readonly listTenantInvoiceItemsUseCase: ListTenantInvoiceItemsUseCase,
     private readonly listTenantInvoicePaymentsUseCase: ListTenantInvoicePaymentsUseCase,
@@ -119,8 +177,235 @@ export class InvoicingController {
     private readonly listTenantTaxRatesUseCase: ListTenantTaxRatesUseCase,
     private readonly reverseTenantInvoicePaymentUseCase: ReverseTenantInvoicePaymentUseCase,
     private readonly sendTenantInvoiceEmailUseCase: SendTenantInvoiceEmailUseCase,
+    private readonly checkTenantInvoiceElectronicAuthorizationUseCase: CheckTenantInvoiceElectronicAuthorizationUseCase,
+    private readonly submitTenantInvoiceElectronicDocumentUseCase: SubmitTenantInvoiceElectronicDocumentUseCase,
     private readonly updateTenantInvoiceStatusUseCase: UpdateTenantInvoiceStatusUseCase,
+    private readonly updateTenantInvoiceElectronicStatusUseCase: UpdateTenantInvoiceElectronicStatusUseCase,
+    private readonly upsertTenantElectronicSubmissionSettingsUseCase: UpsertTenantElectronicSubmissionSettingsUseCase,
+    private readonly upsertTenantElectronicSignatureSettingsUseCase: UpsertTenantElectronicSignatureSettingsUseCase,
+    private readonly upsertTenantInvoiceNumberingSettingsUseCase: UpsertTenantInvoiceNumberingSettingsUseCase,
+    private readonly upsertTenantIssuerProfileUseCase: UpsertTenantIssuerProfileUseCase,
   ) {}
+
+  @Get(':slug/electronic-signature')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantElectronicSignatureSettings(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<ElectronicSignatureSettingsResponseDto> {
+    try {
+      const settings =
+        await this.getTenantElectronicSignatureSettingsUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toElectronicSignatureSettingsResponseDto(settings);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof ElectronicSignatureSettingsNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/electronic-signature')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async upsertTenantElectronicSignatureSettings(
+    @Param('slug') slug: string,
+    @Body() body: UpsertElectronicSignatureSettingsRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<ElectronicSignatureSettingsResponseDto> {
+    try {
+      const settings =
+        await this.upsertTenantElectronicSignatureSettingsUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          provider: body.provider,
+          certificateLabel: body.certificateLabel,
+          storageMode: body.storageMode,
+          certificateFingerprint: body.certificateFingerprint ?? null,
+          pkcs12SecretRef: body.pkcs12SecretRef ?? null,
+          privateKeyPasswordSecretRef:
+            body.privateKeyPasswordSecretRef ?? null,
+          subjectName: body.subjectName ?? null,
+          isActive: body.isActive,
+        });
+
+      return toElectronicSignatureSettingsResponseDto(settings);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/electronic-submission')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantElectronicSubmissionSettings(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<ElectronicSubmissionSettingsResponseDto> {
+    try {
+      const settings =
+        await this.getTenantElectronicSubmissionSettingsUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toElectronicSubmissionSettingsResponseDto(settings);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof ElectronicSubmissionSettingsNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/electronic-submission')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async upsertTenantElectronicSubmissionSettings(
+    @Param('slug') slug: string,
+    @Body() body: UpsertElectronicSubmissionSettingsRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<ElectronicSubmissionSettingsResponseDto> {
+    try {
+      const settings =
+        await this.upsertTenantElectronicSubmissionSettingsUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          provider: body.provider,
+          environment: body.environment,
+          transmissionMode: body.transmissionMode,
+          receptionUrl: body.receptionUrl ?? null,
+          authorizationUrl: body.authorizationUrl ?? null,
+          credentialsSecretRef: body.credentialsSecretRef ?? null,
+          timeoutMs: body.timeoutMs,
+          isActive: body.isActive,
+        });
+
+      return toElectronicSubmissionSettingsResponseDto(settings);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/electronic-profile')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantIssuerProfile(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<IssuerProfileResponseDto> {
+    try {
+      const profile = await this.getTenantIssuerProfileUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+      );
+
+      return toIssuerProfileResponseDto(profile);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof IssuerProfileNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/electronic-profile')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async upsertTenantIssuerProfile(
+    @Param('slug') slug: string,
+    @Body() body: UpsertIssuerProfileRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<IssuerProfileResponseDto> {
+    try {
+      const profile = await this.upsertTenantIssuerProfileUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        legalName: body.legalName,
+        commercialName: body.commercialName ?? null,
+        taxId: body.taxId,
+        environment: body.environment,
+        emissionType: body.emissionType,
+        accountingObligated: body.accountingObligated,
+        specialTaxpayerCode: body.specialTaxpayerCode ?? null,
+        rimpeTaxpayerType: body.rimpeTaxpayerType ?? null,
+        matrixAddress: body.matrixAddress,
+        establishmentAddress: body.establishmentAddress,
+      });
+
+      return toIssuerProfileResponseDto(profile);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/numbering/invoice')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantInvoiceNumberingSettings(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceNumberingSettingsResponseDto> {
+    try {
+      const settings = await this.getTenantInvoiceNumberingSettingsUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+      );
+
+      return toInvoiceNumberingSettingsResponseDto(settings);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNumberingSettingsNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/numbering/invoice')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async upsertTenantInvoiceNumberingSettings(
+    @Param('slug') slug: string,
+    @Body() body: UpsertInvoiceNumberingSettingsRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceNumberingSettingsResponseDto> {
+    try {
+      const settings =
+        await this.upsertTenantInvoiceNumberingSettingsUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          documentCode: body.documentCode,
+          establishmentCode: body.establishmentCode,
+          emissionPointCode: body.emissionPointCode,
+          nextSequenceNumber: body.nextSequenceNumber,
+        });
+
+      return toInvoiceNumberingSettingsResponseDto(settings);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
 
   @Get(':slug/taxes')
   @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
@@ -228,6 +513,9 @@ export class InvoicingController {
         name: body.name,
         email: body.email ?? null,
         taxId: body.taxId ?? null,
+        identificationType: body.identificationType ?? null,
+        identification: body.identification ?? null,
+        billingAddress: body.billingAddress ?? null,
       });
 
       return toCustomerResponseDto(customer);
@@ -363,6 +651,36 @@ export class InvoicingController {
     }
   }
 
+  @Get(':slug/invoices/:invoiceId/electronic-document/xml')
+  @Header('Content-Type', 'application/xml; charset=utf-8')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantInvoiceElectronicXmlPreview(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<string> {
+    try {
+      return await this.getTenantInvoiceElectronicXmlPreviewUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof InvoiceElectronicMetadataIncompleteError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Post(':slug/invoices/:invoiceId/send-email')
   @RequireTenantPermission(INVOICING_PERMISSIONS.NOTIFICATIONS_SEND)
   async sendTenantInvoiceEmail(
@@ -390,6 +708,94 @@ export class InvoicingController {
       }
 
       if (error instanceof CustomerEmailMissingError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/invoices/:invoiceId/electronic-document/submit')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async submitTenantInvoiceElectronicDocument(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<SubmitInvoiceElectronicDocumentResponseDto> {
+    try {
+      const invoice =
+        await this.submitTenantInvoiceElectronicDocumentUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          invoiceId,
+        });
+
+      return toSubmitInvoiceElectronicDocumentResponseDto({
+        electronicStatus: invoice.electronicStatus,
+        accessKey: invoice.accessKey,
+        submittedAt: invoice.submittedAt,
+        submissionReference: invoice.submissionReference,
+      });
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (
+        error instanceof InvalidInvoiceElectronicSubmissionStateError ||
+        error instanceof InvoiceElectronicMetadataIncompleteError ||
+        error instanceof InvoiceElectronicSubmissionGatewayIncompleteError ||
+        error instanceof InvoiceElectronicSubmissionNotConfiguredError ||
+        error instanceof InvoiceElectronicSignatureMaterialIncompleteError ||
+        error instanceof InvoiceElectronicSignatureNotConfiguredError ||
+        error instanceof InvoiceElectronicSecretResolutionError ||
+        error instanceof InvoiceElectronicXmlValidationError
+      ) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/invoices/:invoiceId/electronic-document/check-authorization')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async checkTenantInvoiceElectronicAuthorization(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceDetailResponseDto> {
+    try {
+      await this.checkTenantInvoiceElectronicAuthorizationUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      });
+
+      const detail = await this.getTenantInvoiceDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+
+      return toInvoiceDetailResponseDto(detail);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof InvalidInvoiceElectronicAuthorizationStateError) {
+        throw new BadRequestException(error.message);
+      }
+
+      if (
+        error instanceof InvoiceElectronicSubmissionGatewayIncompleteError ||
+        error instanceof InvoiceElectronicSubmissionNotConfiguredError ||
+        error instanceof InvoiceElectronicSecretResolutionError
+      ) {
         throw new BadRequestException(error.message);
       }
 
@@ -435,6 +841,51 @@ export class InvoicingController {
     }
   }
 
+  @Post(':slug/invoices/:invoiceId/electronic-status')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async updateTenantInvoiceElectronicStatus(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @Body() body: UpdateInvoiceElectronicStatusRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceDetailResponseDto> {
+    try {
+      await this.updateTenantInvoiceElectronicStatusUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+        electronicStatus: body.electronicStatus ?? null,
+        accessKey: body.accessKey ?? null,
+        authorizationNumber: body.authorizationNumber ?? null,
+        authorizedAt: body.authorizedAt ? new Date(body.authorizedAt) : null,
+        electronicStatusMessage: body.electronicStatusMessage ?? null,
+      });
+
+      const detail = await this.getTenantInvoiceDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+
+      return toInvoiceDetailResponseDto(detail);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (
+        error instanceof InvalidInvoiceElectronicStatusError ||
+        error instanceof InvoiceAuthorizationDataRequiredError ||
+        error instanceof InvoiceElectronicMetadataIncompleteError
+      ) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Post(':slug/invoices')
   @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
   async createTenantInvoice(
@@ -446,7 +897,7 @@ export class InvoicingController {
       const invoice = await this.createTenantInvoiceUseCase.execute({
         tenantSlug: tenantAccess?.tenantSlug ?? slug,
         customerId: body.customerId,
-        number: body.number,
+        number: body.number?.trim() || undefined,
         currency: body.currency,
         status: body.status,
         issuedAt: body.issuedAt ? new Date(body.issuedAt) : undefined,
@@ -458,6 +909,7 @@ export class InvoicingController {
         invoice,
         items: [],
         payments: [],
+        electronicEvents: [],
         totals: {
           subtotalInCents: 0,
           taxInCents: 0,
@@ -475,6 +927,10 @@ export class InvoicingController {
         error instanceof CustomerNotFoundError
       ) {
         throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof InvoiceNumberRequiredError) {
+        throw new BadRequestException(error.message);
       }
 
       throw error;

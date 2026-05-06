@@ -2322,6 +2322,7 @@ describe('API', () => {
           totalInCents: 13700,
         },
         payments: [],
+        electronicEvents: [invoiceElectronicEvent],
         settlement: {
           paidInCents: 0,
           balanceDueInCents: 13700,
@@ -2566,6 +2567,7 @@ describe('API', () => {
       ),
       items: [firstInvoiceItem, secondInvoiceItem],
       payments: [],
+      electronicEvents: [invoiceElectronicEvent],
       totals: {
         subtotalInCents: 12500,
         taxInCents: 1200,
@@ -2619,6 +2621,7 @@ describe('API', () => {
       }),
       items: [firstInvoiceItem, secondInvoiceItem],
       payments: [],
+      electronicEvents: [],
       totals: {
         subtotalInCents: 12500,
         taxInCents: 1200,
@@ -2667,6 +2670,7 @@ describe('API', () => {
       ),
       items: [firstInvoiceItem, secondInvoiceItem],
       payments: [],
+      electronicEvents: [],
       totals: {
         subtotalInCents: 12500,
         taxInCents: 1200,
@@ -2757,6 +2761,7 @@ describe('API', () => {
         updatedAt: '2026-04-27T16:00:00.000Z',
         items: [],
         payments: [],
+        electronicEvents: [],
         totals: {
           subtotalInCents: 0,
           taxInCents: 0,
@@ -2826,6 +2831,7 @@ describe('API', () => {
         updatedAt: '2026-04-29T16:30:00.000Z',
         items: [],
         payments: [],
+        electronicEvents: [],
         totals: {
           subtotalInCents: 0,
           taxInCents: 0,

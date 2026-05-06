@@ -79,9 +79,14 @@ export interface InvoiceRideResponseDto {
     electronicStatusLabel: string;
     canBePrintedAsAuthorized: boolean;
     accessKey: string | null;
+    accessKeyChunks: string[];
     authorizationNumber: string | null;
     authorizedAt: string | null;
     authorizationMessage: string | null;
+    additionalInfoFields: Array<{
+      label: string;
+      value: string;
+    }>;
   };
 }
 
@@ -132,9 +137,11 @@ export const toInvoiceRideResponseDto = (
       electronicStatusLabel: view.ride.electronicStatusLabel,
       canBePrintedAsAuthorized: view.ride.canBePrintedAsAuthorized,
       accessKey: view.ride.accessKey,
+      accessKeyChunks: view.ride.accessKeyChunks,
       authorizationNumber: view.ride.authorizationNumber,
       authorizedAt: view.ride.authorizedAt?.toISOString() ?? null,
       authorizationMessage: view.ride.authorizationMessage,
+      additionalInfoFields: view.ride.additionalInfoFields,
     },
   };
 };

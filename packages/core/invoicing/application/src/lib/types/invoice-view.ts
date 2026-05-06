@@ -96,9 +96,14 @@ export interface InvoiceRideView {
     electronicStatusLabel: string;
     canBePrintedAsAuthorized: boolean;
     accessKey: string | null;
+    accessKeyChunks: string[];
     authorizationNumber: string | null;
     authorizedAt: Date | null;
     authorizationMessage: string | null;
+    additionalInfoFields: Array<{
+      label: string;
+      value: string;
+    }>;
   };
 }
 
@@ -222,11 +227,67 @@ export function buildInvoiceRideView(
       ),
       canBePrintedAsAuthorized: primitives.electronicStatus === 'authorized',
       accessKey: primitives.accessKey ?? null,
+      accessKeyChunks: splitAccessKeyForRide(primitives.accessKey ?? null),
       authorizationNumber: primitives.authorizationNumber ?? null,
       authorizedAt: primitives.authorizedAt ?? null,
       authorizationMessage: primitives.electronicStatusMessage ?? null,
+      additionalInfoFields: buildRideAdditionalInfoFields(document),
     },
   };
+}
+
+function splitAccessKeyForRide(value: string | null): string[] {
+  if (!value) {
+    return [];
+  }
+
+  return value.match(/.{1,7}/g) ?? [value];
+}
+
+function buildRideAdditionalInfoFields(
+  document: InvoiceDocumentView,
+): Array<{ label: string; value: string }> {
+  const invoice = document.invoice.toPrimitives();
+  const fields: Array<{ label: string; value: string | null | undefined }> = [
+    {
+      label: 'Email comprador',
+      value: document.customer.email,
+    },
+    {
+      label: 'Direccion comprador',
+      value: document.customer.billingAddress,
+    },
+    {
+      label: 'Direccion matriz',
+      value: document.issuer.matrixAddress,
+    },
+    {
+      label: 'Direccion establecimiento',
+      value: document.issuer.establishmentAddress,
+    },
+    {
+      label: 'Referencia envio',
+      value: invoice.submissionReference,
+    },
+    {
+      label: 'Mensaje autorizacion',
+      value: invoice.electronicStatusMessage,
+    },
+  ];
+
+  if (invoice.notes) {
+    fields.push({
+      label: 'Notas',
+      value: invoice.notes,
+    });
+  }
+
+  return fields
+    .filter((field) => field.value && field.value.trim().length > 0)
+    .map((field) => ({
+      label: field.label,
+      value: field.value!.trim(),
+    }));
 }
 
 function createDocumentCurrencyFormatter(currency: string): (valueInCents: number) => string {
@@ -475,7 +536,11 @@ export function renderInvoiceRideHtml(view: InvoiceRideView): string {
         <div class="stack">
           <div class="card">
             <div class="muted">Clave de acceso</div>
-            <div class="code-box">${escapeHtml(view.ride.accessKey ?? 'No generada')}</div>
+            <div class="code-box">${
+              view.ride.accessKeyChunks.length > 0
+                ? view.ride.accessKeyChunks.map((chunk) => escapeHtml(chunk)).join(' · ')
+                : 'No generada'
+            }</div>
           </div>
           <div class="card">
             <div class="muted">Autorizacion SRI</div>
@@ -542,6 +607,23 @@ export function renderInvoiceRideHtml(view: InvoiceRideView): string {
         <div class="totals-row"><span>Impuestos</span><strong>${formatMoney(view.totals.taxInCents)}</strong></div>
         <div class="totals-row grand-total"><span>Total</span><span>${formatMoney(view.totals.totalInCents)}</span></div>
       </div>
+
+      ${
+        view.ride.additionalInfoFields.length > 0
+          ? `
+      <div class="grid" style="padding-top:0;">
+        <div class="card" style="grid-column: 1 / -1;">
+          <div class="muted">Informacion adicional</div>
+          ${view.ride.additionalInfoFields
+            .map(
+              (field) =>
+                `<p><strong>${escapeHtml(field.label)}:</strong> ${escapeHtml(field.value)}</p>`,
+            )
+            .join('')}
+        </div>
+      </div>`
+          : ''
+      }
 
       <div class="footer">
         <p>RIDE generado desde la base de Electronic Invoicing EC del tenant ${escapeHtml(view.issuer.tenantSlug)}.</p>

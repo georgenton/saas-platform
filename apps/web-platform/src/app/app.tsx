@@ -16,6 +16,7 @@ import {
   fetchInvoiceDetail,
   fetchInvoiceDocument,
   fetchInvoiceDocumentHtml,
+  fetchInvoiceElectronicRide,
   fetchInvoiceElectronicRideHtml,
   fetchInvoiceElectronicXmlPreview,
   fetchInvoiceNumberingSettings,
@@ -51,6 +52,7 @@ import {
   InvoiceNumberingSettingsResponse,
   InvoiceDetailResponse,
   InvoiceDocumentResponse,
+  InvoiceRideResponse,
   InvoicingReportSummaryResponse,
   InvitationResponse,
   IssuerProfileResponse,
@@ -308,6 +310,8 @@ export function App() {
     useState<InvoiceDetailResponse | null>(null);
   const [selectedInvoiceDocument, setSelectedInvoiceDocument] =
     useState<InvoiceDocumentResponse | null>(null);
+  const [selectedInvoiceRide, setSelectedInvoiceRide] =
+    useState<InvoiceRideResponse | null>(null);
   const [selectedInvoiceXmlPreview, setSelectedInvoiceXmlPreview] = useState<
     string | null
   >(null);
@@ -694,6 +698,7 @@ export function App() {
       setSelectedInvoiceId(null);
       setSelectedInvoiceDetail(null);
       setSelectedInvoiceDocument(null);
+      setSelectedInvoiceRide(null);
       setInvoicingError(null);
       return;
     }
@@ -757,6 +762,7 @@ export function App() {
         setSelectedInvoiceId(null);
         setSelectedInvoiceDetail(null);
         setSelectedInvoiceDocument(null);
+        setSelectedInvoiceRide(null);
         setInvoicingError(
           error instanceof Error
             ? error.message
@@ -780,6 +786,7 @@ export function App() {
     if (!token || !currentTenancy || !selectedInvoiceId || !invoicingEnabled) {
       setSelectedInvoiceDetail(null);
       setSelectedInvoiceDocument(null);
+      setSelectedInvoiceRide(null);
       return;
     }
 
@@ -791,13 +798,14 @@ export function App() {
       setInvoiceDetailLoading(true);
 
       try {
-        const [detail, document] = await Promise.all([
+        const [detail, document, ride] = await Promise.all([
           fetchInvoiceDetail(token, tenantSlug, invoiceId),
           fetchInvoiceDocument(
             token,
             tenantSlug,
             invoiceId,
           ),
+          fetchInvoiceElectronicRide(token, tenantSlug, invoiceId),
         ]);
 
         if (cancelled) {
@@ -807,6 +815,7 @@ export function App() {
         startTransition(() => {
           setSelectedInvoiceDetail(detail);
           setSelectedInvoiceDocument(document);
+          setSelectedInvoiceRide(ride);
         });
       } catch (error) {
         if (cancelled) {
@@ -815,6 +824,7 @@ export function App() {
 
         setSelectedInvoiceDetail(null);
         setSelectedInvoiceDocument(null);
+        setSelectedInvoiceRide(null);
         setInvoicingError(
           error instanceof Error
             ? error.message
@@ -4460,6 +4470,65 @@ export function App() {
                             <p className={styles.muted}>
                               Este XML es un preview estructural para validar el modelo Ecuador antes de firma y envio real al SRI.
                             </p>
+                          </div>
+                        ) : null}
+
+                        {selectedInvoiceRide ? (
+                          <div className={styles.documentPreview}>
+                            <div className={styles.sectionHeading}>
+                              <div>
+                                <span className={styles.label}>Electronic RIDE</span>
+                                <h3>{selectedInvoiceRide.ride.documentLabel}</h3>
+                              </div>
+                            </div>
+
+                            <div className={styles.invoiceDetailGrid}>
+                              <div className={styles.detailCard}>
+                                <span className={styles.muted}>Ambiente</span>
+                                <strong>{selectedInvoiceRide.ride.environmentLabel}</strong>
+                                <small>
+                                  Emision {selectedInvoiceRide.ride.emissionTypeLabel}
+                                </small>
+                              </div>
+                              <div className={styles.detailCard}>
+                                <span className={styles.muted}>Estado RIDE</span>
+                                <strong>
+                                  {selectedInvoiceRide.ride.electronicStatusLabel}
+                                </strong>
+                                <small>
+                                  {selectedInvoiceRide.ride.canBePrintedAsAuthorized
+                                    ? 'Listo como comprobante autorizado'
+                                    : 'Aun referencial o pendiente'}
+                                </small>
+                              </div>
+                            </div>
+
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>Clave de acceso</span>
+                              <pre className={styles.codeBlock}>
+                                {selectedInvoiceRide.ride.accessKeyChunks.length > 0
+                                  ? selectedInvoiceRide.ride.accessKeyChunks.join(
+                                      ' · ',
+                                    )
+                                  : 'No generada'}
+                              </pre>
+                            </div>
+
+                            {selectedInvoiceRide.ride.additionalInfoFields.length >
+                            0 ? (
+                              <div className={styles.stack}>
+                                {selectedInvoiceRide.ride.additionalInfoFields.map(
+                                  (field) => (
+                                    <div className={styles.detailCard} key={field.label}>
+                                      <span className={styles.muted}>
+                                        {field.label}
+                                      </span>
+                                      <strong>{field.value}</strong>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
+                            ) : null}
                           </div>
                         ) : null}
 

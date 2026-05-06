@@ -434,9 +434,14 @@ export interface InvoiceRideResponse {
     electronicStatusLabel: string;
     canBePrintedAsAuthorized: boolean;
     accessKey: string | null;
+    accessKeyChunks: string[];
     authorizationNumber: string | null;
     authorizedAt: string | null;
     authorizationMessage: string | null;
+    additionalInfoFields: Array<{
+      label: string;
+      value: string;
+    }>;
   };
 }
 

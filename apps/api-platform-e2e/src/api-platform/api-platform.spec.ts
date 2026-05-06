@@ -2573,9 +2573,32 @@ describe('API', () => {
           electronicStatusLabel: 'Sin estado electronico',
           canBePrintedAsAuthorized: false,
           accessKey: null,
+          accessKeyChunks: [],
           authorizationNumber: null,
           authorizedAt: null,
           authorizationMessage: null,
+          additionalInfoFields: [
+            {
+              label: 'Email comprador',
+              value: 'billing@acme.dev',
+            },
+            {
+              label: 'Direccion comprador',
+              value: 'Av. Amazonas N34-451 y Av. Atahualpa',
+            },
+            {
+              label: 'Direccion matriz',
+              value: 'Av. Principal y Calle Secundaria',
+            },
+            {
+              label: 'Direccion establecimiento',
+              value: 'Sucursal Matriz',
+            },
+            {
+              label: 'Notas',
+              value: 'Primer borrador para onboarding de invoicing.',
+            },
+          ],
         },
       });
 

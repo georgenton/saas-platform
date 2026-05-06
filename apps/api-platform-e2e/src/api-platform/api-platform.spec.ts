@@ -2472,6 +2472,140 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride should return the electronic RIDE view', async () => {
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/invoice_001/electronic-document/ride',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        issuer: {
+          tenantId: 'tenant_123',
+          tenantName: 'SaaS Platform',
+          tenantSlug: 'saas-platform',
+          legalName: 'SaaS Platform S.A.',
+          commercialName: 'SaaS Platform',
+          taxId: '1790012345001',
+          environment: 'test',
+          emissionType: 'normal',
+          accountingObligated: true,
+          specialTaxpayerCode: null,
+          rimpeTaxpayerType: null,
+          matrixAddress: 'Av. Principal y Calle Secundaria',
+          establishmentAddress: 'Sucursal Matriz',
+        },
+        customer: {
+          name: 'Acme Corp',
+          email: 'billing@acme.dev',
+          taxId: '1790012345001',
+          identificationType: '04',
+          identification: '1790012345001',
+          billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+        },
+        invoice: {
+          id: 'invoice_001',
+          tenantId: 'tenant_123',
+          customerId: 'customer_acme',
+          number: 'INV-001',
+          documentCode: null,
+          establishmentCode: null,
+          emissionPointCode: null,
+          sequenceNumber: null,
+          buyerIdentificationType: '04',
+          buyerIdentification: '1790012345001',
+          buyerName: 'Acme Corp',
+          buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+          electronicStatus: null,
+          accessKey: null,
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage: null,
+          signedAt: null,
+          submittedAt: null,
+          submissionReference: null,
+          status: 'draft',
+          currency: 'USD',
+          issuedAt: '2026-04-27T16:00:00.000Z',
+          dueAt: '2026-05-11T16:00:00.000Z',
+          notes: 'Primer borrador para onboarding de invoicing.',
+          createdAt: '2026-04-27T16:00:00.000Z',
+          updatedAt: '2026-04-27T16:00:00.000Z',
+        },
+        lines: [
+          {
+            id: 'invoice_item_001',
+            position: 1,
+            description: 'Suscripcion mensual Growth',
+            quantity: 2,
+            unitPriceInCents: 5000,
+            lineSubtotalInCents: 10000,
+            taxRateId: 'tax_rate_vat_12',
+            taxRateName: 'VAT 12%',
+            taxRatePercentage: 12,
+            lineTaxInCents: 1200,
+            lineTotalInCents: 11200,
+          },
+          {
+            id: 'invoice_item_002',
+            position: 2,
+            description: 'Setup inicial',
+            quantity: 1,
+            unitPriceInCents: 2500,
+            lineSubtotalInCents: 2500,
+            taxRateId: null,
+            taxRateName: null,
+            taxRatePercentage: null,
+            lineTaxInCents: 0,
+            lineTotalInCents: 2500,
+          },
+        ],
+        totals: {
+          subtotalInCents: 12500,
+          taxInCents: 1200,
+          totalInCents: 13700,
+        },
+        ride: {
+          documentLabel: 'RIDE',
+          environmentLabel: 'PRUEBAS',
+          emissionTypeLabel: 'NORMAL',
+          sequenceDisplay: null,
+          electronicStatusLabel: 'Sin estado electronico',
+          canBePrintedAsAuthorized: false,
+          accessKey: null,
+          authorizationNumber: null,
+          authorizedAt: null,
+          authorizationMessage: null,
+        },
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice_001',
+    );
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride/html should return printable RIDE html', async () => {
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/invoice_001/electronic-document/ride/html',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /text\/html/)
+      .expect((response) => {
+        expect(response.text).toContain('<!doctype html>');
+        expect(response.text).toContain('RIDE');
+        expect(response.text).toContain('Clave de acceso');
+        expect(response.text).toContain('Acme Corp');
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice_001',
+    );
+  });
+
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/xml should return the Ecuador XML preview', async () => {
     await request(httpServer)
       .get(

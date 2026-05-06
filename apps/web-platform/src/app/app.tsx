@@ -16,6 +16,7 @@ import {
   fetchInvoiceDetail,
   fetchInvoiceDocument,
   fetchInvoiceDocumentHtml,
+  fetchInvoiceElectronicRideHtml,
   fetchInvoiceElectronicXmlPreview,
   fetchInvoiceNumberingSettings,
   fetchInvoicingReportSummary,
@@ -1838,6 +1839,46 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo abrir la version imprimible de la factura.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleOpenElectronicRide() {
+    if (!token || !currentTenancy || !selectedInvoiceDetail) {
+      return;
+    }
+
+    setActionLoading('open-invoice-ride');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const html = await fetchInvoiceElectronicRideHtml(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+      );
+      const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+
+      if (!printWindow) {
+        throw new Error('El navegador bloqueo la ventana del RIDE.');
+      }
+
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+
+      setInvoicingActionMessage(
+        `RIDE electronico listo para ${selectedInvoiceDetail.number}.`,
+      );
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo abrir la version RIDE de la factura.',
       );
     } finally {
       setActionLoading(null);
@@ -4209,6 +4250,16 @@ export function App() {
                                 {actionLoading === 'open-invoice-document'
                                   ? 'Abriendo...'
                                   : 'Abrir version imprimible'}
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={actionLoading === 'open-invoice-ride'}
+                                onClick={() => void handleOpenElectronicRide()}
+                                type="button"
+                              >
+                                {actionLoading === 'open-invoice-ride'
+                                  ? 'Abriendo RIDE...'
+                                  : 'Abrir RIDE electronico'}
                               </button>
                             </div>
 

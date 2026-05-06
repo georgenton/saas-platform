@@ -7,6 +7,7 @@ import {
   InvoiceNumberingSettingsResponse,
   InvoiceDetailResponse,
   InvoiceDocumentResponse,
+  InvoiceRideResponse,
   IssuerProfileResponse,
   InvoicingReportSummaryResponse,
   InvitationResponse,
@@ -463,6 +464,41 @@ export async function fetchInvoiceDocumentHtml(
     `/invoicing/tenants/${encodeURIComponent(
       tenantSlug,
     )}/invoices/${encodeURIComponent(invoiceId)}/document/html`,
+    {
+      method: 'GET',
+      token,
+      headers: {
+        Accept: 'text/html',
+      },
+    },
+  );
+}
+
+export async function fetchInvoiceElectronicRide(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+): Promise<InvoiceRideResponse> {
+  return request<InvoiceRideResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/electronic-document/ride`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchInvoiceElectronicRideHtml(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+): Promise<string> {
+  return requestText(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/electronic-document/ride/html`,
     {
       method: 'GET',
       token,

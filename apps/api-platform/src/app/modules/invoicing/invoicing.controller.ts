@@ -59,8 +59,10 @@ import {
   InvoicePaymentExceedsBalanceError,
   IssuerProfileNotFoundError,
   PaymentNotFoundError,
+  buildInvoiceRideView,
   ReverseTenantInvoicePaymentUseCase,
   renderInvoiceDocumentHtml,
+  renderInvoiceRideHtml,
   SendTenantInvoiceEmailUseCase,
   SubmitTenantInvoiceElectronicDocumentUseCase,
   TaxRateNotFoundError,
@@ -136,6 +138,10 @@ import {
   InvoiceDocumentResponseDto,
   toInvoiceDocumentResponseDto,
 } from './dto/invoice-document.response';
+import {
+  InvoiceRideResponseDto,
+  toInvoiceRideResponseDto,
+} from './dto/invoice-ride.response';
 import {
   InvoiceSummaryResponseDto,
   toInvoiceSummaryResponseDto,
@@ -638,6 +644,61 @@ export class InvoicingController {
       );
 
       return renderInvoiceDocumentHtml(document);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/invoices/:invoiceId/electronic-document/ride')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantInvoiceElectronicRide(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceRideResponseDto> {
+    try {
+      const document = await this.getTenantInvoiceDocumentUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+
+      return toInvoiceRideResponseDto(buildInvoiceRideView(document));
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/invoices/:invoiceId/electronic-document/ride/html')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantInvoiceElectronicRideHtml(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<string> {
+    try {
+      const document = await this.getTenantInvoiceDocumentUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+
+      return renderInvoiceRideHtml(buildInvoiceRideView(document));
     } catch (error) {
       if (
         error instanceof TenantNotFoundError ||

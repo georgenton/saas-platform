@@ -420,6 +420,26 @@ export interface InvoiceDocumentResponse {
   totals: InvoiceTotals;
 }
 
+export interface InvoiceRideResponse {
+  issuer: InvoiceDocumentResponse['issuer'];
+  customer: InvoiceDocumentResponse['customer'];
+  invoice: InvoiceDocumentResponse['invoice'];
+  lines: InvoiceDocumentResponse['lines'];
+  totals: InvoiceTotals;
+  ride: {
+    documentLabel: string;
+    environmentLabel: string;
+    emissionTypeLabel: string;
+    sequenceDisplay: string | null;
+    electronicStatusLabel: string;
+    canBePrintedAsAuthorized: boolean;
+    accessKey: string | null;
+    authorizationNumber: string | null;
+    authorizedAt: string | null;
+    authorizationMessage: string | null;
+  };
+}
+
 export interface InvoicingReportSummaryResponse {
   generatedAt: string;
   customerCount: number;

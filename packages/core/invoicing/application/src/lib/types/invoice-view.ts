@@ -82,6 +82,26 @@ export interface InvoiceDocumentView {
   totals: InvoiceTotalsView;
 }
 
+export interface InvoiceRideView {
+  issuer: InvoiceDocumentIssuerView;
+  customer: InvoiceDocumentPartyView;
+  invoice: Invoice;
+  lines: InvoiceDocumentLineView[];
+  totals: InvoiceTotalsView;
+  ride: {
+    documentLabel: string;
+    environmentLabel: string;
+    emissionTypeLabel: string;
+    sequenceDisplay: string | null;
+    electronicStatusLabel: string;
+    canBePrintedAsAuthorized: boolean;
+    accessKey: string | null;
+    authorizationNumber: string | null;
+    authorizedAt: Date | null;
+    authorizationMessage: string | null;
+  };
+}
+
 export function calculateInvoiceTotals(
   items: InvoiceItem[],
 ): InvoiceTotalsView {
@@ -178,24 +198,94 @@ export function buildInvoiceDocumentView(input: {
   };
 }
 
-export function renderInvoiceDocumentHtml(view: InvoiceDocumentView): string {
-  const invoice = view.invoice.toPrimitives();
+export function buildInvoiceRideView(
+  document: InvoiceDocumentView,
+): InvoiceRideView {
+  const primitives = document.invoice.toPrimitives();
+
+  return {
+    issuer: document.issuer,
+    customer: document.customer,
+    invoice: document.invoice,
+    lines: document.lines,
+    totals: document.totals,
+    ride: {
+      documentLabel: primitives.documentCode === '01' ? 'RIDE Factura' : 'RIDE',
+      environmentLabel: formatRideEnvironmentLabel(document.issuer.environment),
+      emissionTypeLabel: formatRideEmissionTypeLabel(document.issuer.emissionType),
+      sequenceDisplay:
+        primitives.sequenceNumber !== null
+          ? String(primitives.sequenceNumber).padStart(9, '0')
+          : null,
+      electronicStatusLabel: formatRideElectronicStatusLabel(
+        primitives.electronicStatus,
+      ),
+      canBePrintedAsAuthorized: primitives.electronicStatus === 'authorized',
+      accessKey: primitives.accessKey ?? null,
+      authorizationNumber: primitives.authorizationNumber ?? null,
+      authorizedAt: primitives.authorizedAt ?? null,
+      authorizationMessage: primitives.electronicStatusMessage ?? null,
+    },
+  };
+}
+
+function createDocumentCurrencyFormatter(currency: string): (valueInCents: number) => string {
   const currencyFormatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: invoice.currency,
+    currency,
     maximumFractionDigits: 2,
   });
-  const formatMoney = (valueInCents: number): string =>
-    currencyFormatter.format(valueInCents / 100);
-  const formatDate = (value: Date | null): string =>
-    value ? value.toISOString() : 'Not set';
-  const escapeHtml = (value: string): string =>
-    value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+
+  return (valueInCents: number): string => currencyFormatter.format(valueInCents / 100);
+}
+
+function formatDocumentDate(value: Date | null): string {
+  return value ? value.toISOString() : 'Not set';
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatRideEnvironmentLabel(value: string | null): string {
+  if (!value) {
+    return 'No configurado';
+  }
+
+  return value === 'production' ? 'PRODUCCION' : 'PRUEBAS';
+}
+
+function formatRideEmissionTypeLabel(value: string | null): string {
+  if (!value) {
+    return 'No configurado';
+  }
+
+  return value === 'normal' ? 'NORMAL' : value.toUpperCase();
+}
+
+function formatRideElectronicStatusLabel(value: string | null): string {
+  switch (value) {
+    case 'pending_submission':
+      return 'Pendiente de envio';
+    case 'submitted':
+      return 'Enviado al SRI';
+    case 'authorized':
+      return 'Autorizado';
+    case 'rejected':
+      return 'No autorizado';
+    default:
+      return 'Sin estado electronico';
+  }
+}
+
+export function renderInvoiceDocumentHtml(view: InvoiceDocumentView): string {
+  const invoice = view.invoice.toPrimitives();
+  const formatMoney = createDocumentCurrencyFormatter(invoice.currency);
 
   const lineRows = view.lines
     .map(
@@ -269,8 +359,8 @@ export function renderInvoiceDocumentHtml(view: InvoiceDocumentView): string {
       </div>
       <div class="card">
         <div class="muted">Dates</div>
-        <p>Issued: ${formatDate(invoice.issuedAt)}</p>
-        <p>Due: ${formatDate(invoice.dueAt)}</p>
+        <p>Issued: ${formatDocumentDate(invoice.issuedAt)}</p>
+        <p>Due: ${formatDocumentDate(invoice.dueAt)}</p>
         <p>Currency: ${escapeHtml(invoice.currency)}</p>
         <p>Document code: ${escapeHtml(invoice.documentCode ?? 'Not set')}</p>
         <p>Establishment: ${escapeHtml(invoice.establishmentCode ?? 'Not set')}</p>
@@ -282,9 +372,9 @@ export function renderInvoiceDocumentHtml(view: InvoiceDocumentView): string {
         <p>Status: ${escapeHtml(invoice.electronicStatus ?? 'not set')}</p>
         <p>Access key: ${escapeHtml(invoice.accessKey ?? 'Not set')}</p>
         <p>Authorization: ${escapeHtml(invoice.authorizationNumber ?? 'Not set')}</p>
-        <p>Authorized at: ${formatDate(invoice.authorizedAt ?? null)}</p>
-        <p>Signed at: ${formatDate(invoice.signedAt ?? null)}</p>
-        <p>Submitted at: ${formatDate(invoice.submittedAt ?? null)}</p>
+        <p>Authorized at: ${formatDocumentDate(invoice.authorizedAt ?? null)}</p>
+        <p>Signed at: ${formatDocumentDate(invoice.signedAt ?? null)}</p>
+        <p>Submitted at: ${formatDocumentDate(invoice.submittedAt ?? null)}</p>
         <p>Submission ref: ${escapeHtml(invoice.submissionReference ?? 'Not set')}</p>
       </div>
     </div>
@@ -314,6 +404,150 @@ export function renderInvoiceDocumentHtml(view: InvoiceDocumentView): string {
         ? `<div class="card" style="margin-top:24px;"><div class="muted">Notes</div><p>${escapeHtml(invoice.notes)}</p></div>`
         : ''
     }
+  </body>
+</html>
+  `.trim();
+}
+
+export function renderInvoiceRideHtml(view: InvoiceRideView): string {
+  const invoice = view.invoice.toPrimitives();
+  const formatMoney = createDocumentCurrencyFormatter(invoice.currency);
+  const lineRows = view.lines
+    .map(
+      (line) => `
+        <tr>
+          <td>${line.position}</td>
+          <td>${escapeHtml(line.description)}</td>
+          <td>${line.quantity}</td>
+          <td>${formatMoney(line.lineSubtotalInCents)}</td>
+          <td>${formatMoney(line.lineTaxInCents)}</td>
+          <td>${formatMoney(line.lineTotalInCents)}</td>
+        </tr>
+      `,
+    )
+    .join('');
+
+  return `
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(view.ride.documentLabel)} ${escapeHtml(invoice.number)}</title>
+    <style>
+      body { font-family: Arial, sans-serif; color: #241d18; margin: 24px; background: #f8f3eb; }
+      .ride-shell { max-width: 980px; margin: 0 auto; background: #ffffff; border: 1px solid #d7c7b6; border-radius: 20px; overflow: hidden; }
+      .hero { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; padding: 24px; background: linear-gradient(135deg, #fff7ed, #f3e7d6); border-bottom: 1px solid #d7c7b6; }
+      .stack { display: grid; gap: 12px; }
+      .code-box { font-family: "Courier New", monospace; font-size: 12px; line-height: 1.5; padding: 12px; border-radius: 12px; background: #2a211a; color: #fff4e8; word-break: break-all; }
+      .badge { display: inline-flex; padding: 6px 10px; border-radius: 999px; background: #2d6a4f; color: white; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+      .badge.pending { background: #9a6700; }
+      .badge.rejected { background: #a61b29; }
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 24px; }
+      .card { border: 1px solid #eadbc9; border-radius: 16px; padding: 16px; background: #fffdf9; }
+      .muted { color: #6f6358; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+      h1, h2, h3, p { margin: 0; }
+      h1 { font-size: 30px; margin-bottom: 8px; }
+      h2 { font-size: 18px; margin-bottom: 12px; }
+      table { width: calc(100% - 48px); margin: 0 24px 24px; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid #e4d7c9; padding: 12px 8px; text-align: left; vertical-align: top; }
+      th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #6f6358; }
+      .totals { width: 320px; margin: 0 24px 24px auto; display: grid; gap: 8px; }
+      .totals-row { display: flex; justify-content: space-between; gap: 16px; }
+      .grand-total { font-weight: 700; font-size: 18px; }
+      .footer { padding: 0 24px 24px; color: #6f6358; font-size: 13px; line-height: 1.5; }
+      @media print { body { margin: 0; background: white; } .ride-shell { border: none; border-radius: 0; } }
+    </style>
+  </head>
+  <body>
+    <div class="ride-shell">
+      <div class="hero">
+        <div class="stack">
+          <div class="muted">Representacion impresa del documento electronico</div>
+          <h1>${escapeHtml(view.ride.documentLabel)}</h1>
+          <p>${escapeHtml(view.issuer.legalName)}</p>
+          <p>${view.issuer.taxId ? `RUC ${escapeHtml(view.issuer.taxId)}` : 'RUC no configurado'}</p>
+          <p>${escapeHtml(invoice.number)}</p>
+          <div>
+            <span class="badge ${invoice.electronicStatus === 'authorized' ? '' : invoice.electronicStatus === 'rejected' ? 'rejected' : 'pending'}">${escapeHtml(view.ride.electronicStatusLabel)}</span>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card">
+            <div class="muted">Clave de acceso</div>
+            <div class="code-box">${escapeHtml(view.ride.accessKey ?? 'No generada')}</div>
+          </div>
+          <div class="card">
+            <div class="muted">Autorizacion SRI</div>
+            <p>${escapeHtml(view.ride.authorizationNumber ?? 'Pendiente de autorizacion')}</p>
+            <p>${escapeHtml(
+              view.ride.authorizedAt
+                ? formatDocumentDate(view.ride.authorizedAt)
+                : 'Sin fecha de autorizacion',
+            )}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="muted">Emisor</div>
+          <h2>${escapeHtml(view.issuer.commercialName ?? view.issuer.legalName)}</h2>
+          <p>Ambiente: ${escapeHtml(view.ride.environmentLabel)}</p>
+          <p>Emision: ${escapeHtml(view.ride.emissionTypeLabel)}</p>
+          <p>Direccion matriz: ${escapeHtml(view.issuer.matrixAddress ?? 'No configurada')}</p>
+          <p>Direccion establecimiento: ${escapeHtml(view.issuer.establishmentAddress ?? 'No configurada')}</p>
+        </div>
+        <div class="card">
+          <div class="muted">Comprador</div>
+          <h2>${escapeHtml(view.customer.name)}</h2>
+          <p>${view.customer.identificationType ? `Tipo ID: ${escapeHtml(view.customer.identificationType)}` : 'Tipo ID no configurado'}</p>
+          <p>${escapeHtml(view.customer.identification ?? view.customer.taxId ?? 'Sin identificacion')}</p>
+          <p>${escapeHtml(view.customer.billingAddress ?? 'Sin direccion del comprador')}</p>
+        </div>
+        <div class="card">
+          <div class="muted">Datos del comprobante</div>
+          <p>Fecha de emision: ${escapeHtml(formatDocumentDate(invoice.issuedAt))}</p>
+          <p>CodDoc: ${escapeHtml(invoice.documentCode ?? 'No configurado')}</p>
+          <p>Establecimiento: ${escapeHtml(invoice.establishmentCode ?? '---')}</p>
+          <p>Punto de emision: ${escapeHtml(invoice.emissionPointCode ?? '---')}</p>
+          <p>Secuencial: ${escapeHtml(view.ride.sequenceDisplay ?? 'Manual')}</p>
+        </div>
+        <div class="card">
+          <div class="muted">Estado electronico</div>
+          <p>${escapeHtml(view.ride.electronicStatusLabel)}</p>
+          <p>${escapeHtml(view.ride.authorizationMessage ?? 'Sin mensaje tecnico adicional')}</p>
+          <p>${view.ride.canBePrintedAsAuthorized ? 'Este RIDE refleja un comprobante autorizado.' : 'Este RIDE es referencial mientras no exista autorizacion definitiva.'}</p>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Descripcion</th>
+            <th>Cantidad</th>
+            <th>Subtotal</th>
+            <th>Impuesto</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${lineRows}
+        </tbody>
+      </table>
+
+      <div class="totals">
+        <div class="totals-row"><span>Subtotal</span><strong>${formatMoney(view.totals.subtotalInCents)}</strong></div>
+        <div class="totals-row"><span>Impuestos</span><strong>${formatMoney(view.totals.taxInCents)}</strong></div>
+        <div class="totals-row grand-total"><span>Total</span><span>${formatMoney(view.totals.totalInCents)}</span></div>
+      </div>
+
+      <div class="footer">
+        <p>RIDE generado desde la base de Electronic Invoicing EC del tenant ${escapeHtml(view.issuer.tenantSlug)}.</p>
+        <p>Este documento resume los datos visibles del comprobante electronico y su estado de autorizacion al momento de la consulta.</p>
+      </div>
+    </div>
   </body>
 </html>
   `.trim();

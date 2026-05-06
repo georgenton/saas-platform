@@ -162,6 +162,18 @@
   font-weight: 700;
 }
 
+.checkboxField {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.checkboxField input {
+  accent-color: #8f5631;
+  height: 18px;
+  width: 18px;
+}
+
 .field textarea,
 .field input,
 .selectField {
@@ -503,6 +515,21 @@
 .stack {
   display: grid;
   gap: 12px;
+}
+
+.codeBlock {
+  background: rgba(30, 26, 22, 0.92);
+  border-radius: 22px;
+  color: #f8f2ea;
+  font-family: 'SFMono-Regular', 'Menlo', monospace;
+  font-size: 0.84rem;
+  line-height: 1.65;
+  margin: 0;
+  max-height: 420px;
+  overflow: auto;
+  padding: 20px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .detailCard {

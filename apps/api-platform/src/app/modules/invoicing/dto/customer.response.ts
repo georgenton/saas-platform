@@ -6,6 +6,9 @@ export interface CustomerResponseDto {
   name: string;
   email: string | null;
   taxId: string | null;
+  identificationType: string | null;
+  identification: string | null;
+  billingAddress: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -21,6 +24,9 @@ export const toCustomerResponseDto = (
     name: data.name,
     email: data.email ?? null,
     taxId: data.taxId ?? null,
+    identificationType: data.identificationType ?? null,
+    identification: data.identification ?? null,
+    billingAddress: data.billingAddress ?? null,
     createdAt: data.createdAt.toISOString(),
     updatedAt: data.updatedAt.toISOString(),
   };

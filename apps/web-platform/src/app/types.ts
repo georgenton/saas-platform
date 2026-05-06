@@ -144,6 +144,9 @@ export interface CustomerResponse {
   name: string;
   email: string | null;
   taxId: string | null;
+  identificationType: string | null;
+  identification: string | null;
+  billingAddress: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -153,6 +156,67 @@ export interface TaxRateResponse {
   tenantId: string;
   name: string;
   percentage: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IssuerProfileResponse {
+  id: string;
+  tenantId: string;
+  legalName: string;
+  commercialName: string | null;
+  taxId: string;
+  environment: string;
+  emissionType: string;
+  accountingObligated: boolean;
+  specialTaxpayerCode: string | null;
+  rimpeTaxpayerType: string | null;
+  matrixAddress: string;
+  establishmentAddress: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvoiceNumberingSettingsResponse {
+  id: string;
+  tenantId: string;
+  documentCode: string;
+  establishmentCode: string;
+  emissionPointCode: string;
+  nextSequenceNumber: number;
+  previewNumber: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ElectronicSignatureSettingsResponse {
+  id: string;
+  tenantId: string;
+  provider: string;
+  certificateLabel: string;
+  storageMode: string;
+  certificateFingerprint: string | null;
+  pkcs12SecretRef: string | null;
+  privateKeyPasswordSecretRef: string | null;
+  subjectName: string | null;
+  materialConfigured: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ElectronicSubmissionSettingsResponse {
+  id: string;
+  tenantId: string;
+  provider: string;
+  environment: string;
+  transmissionMode: string;
+  receptionUrl: string | null;
+  authorizationUrl: string | null;
+  credentialsSecretRef: string | null;
+  timeoutMs: number;
+  gatewayConfigured: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -209,6 +273,22 @@ export interface InvoiceSummaryResponse {
   tenantId: string;
   customerId: string;
   number: string;
+  documentCode: string | null;
+  establishmentCode: string | null;
+  emissionPointCode: string | null;
+  sequenceNumber: number | null;
+  buyerIdentificationType: string | null;
+  buyerIdentification: string | null;
+  buyerName: string | null;
+  buyerAddress: string | null;
+  electronicStatus: string | null;
+  accessKey: string | null;
+  authorizationNumber: string | null;
+  authorizedAt: string | null;
+  electronicStatusMessage: string | null;
+  signedAt: string | null;
+  submittedAt: string | null;
+  submissionReference: string | null;
   status: string;
   currency: string;
   issuedAt: string;
@@ -226,6 +306,22 @@ export interface InvoiceDetailResponse {
   tenantId: string;
   customerId: string;
   number: string;
+  documentCode: string | null;
+  establishmentCode: string | null;
+  emissionPointCode: string | null;
+  sequenceNumber: number | null;
+  buyerIdentificationType: string | null;
+  buyerIdentification: string | null;
+  buyerName: string | null;
+  buyerAddress: string | null;
+  electronicStatus: string | null;
+  accessKey: string | null;
+  authorizationNumber: string | null;
+  authorizedAt: string | null;
+  electronicStatusMessage: string | null;
+  signedAt: string | null;
+  submittedAt: string | null;
+  submissionReference: string | null;
   status: string;
   currency: string;
   issuedAt: string;
@@ -235,6 +331,22 @@ export interface InvoiceDetailResponse {
   updatedAt: string;
   items: InvoiceItemResponse[];
   payments: PaymentResponse[];
+  electronicEvents: {
+    id: string;
+    tenantId: string;
+    invoiceId: string;
+    eventType: string;
+    provider: string;
+    providerStatus: string;
+    endpoint: string | null;
+    soapAction: string | null;
+    message: string;
+    requestPayload: string | null;
+    responsePayload: string | null;
+    submissionReference: string | null;
+    authorizationNumber: string | null;
+    occurredAt: string;
+  }[];
   totals: InvoiceTotals;
   settlement: InvoiceSettlement;
 }
@@ -244,17 +356,46 @@ export interface InvoiceDocumentResponse {
     tenantId: string;
     tenantName: string;
     tenantSlug: string;
+    legalName: string;
+    commercialName: string | null;
+    taxId: string | null;
+    environment: string | null;
+    emissionType: string | null;
+    accountingObligated: boolean | null;
+    specialTaxpayerCode: string | null;
+    rimpeTaxpayerType: string | null;
+    matrixAddress: string | null;
+    establishmentAddress: string | null;
   };
   customer: {
     name: string;
     email: string | null;
     taxId: string | null;
+    identificationType: string | null;
+    identification: string | null;
+    billingAddress: string | null;
   };
   invoice: {
     id: string;
     tenantId: string;
     customerId: string;
     number: string;
+    documentCode: string | null;
+    establishmentCode: string | null;
+    emissionPointCode: string | null;
+    sequenceNumber: number | null;
+    buyerIdentificationType: string | null;
+    buyerIdentification: string | null;
+    buyerName: string | null;
+    buyerAddress: string | null;
+    electronicStatus: string | null;
+    accessKey: string | null;
+    authorizationNumber: string | null;
+    authorizedAt: string | null;
+    electronicStatusMessage: string | null;
+    signedAt: string | null;
+    submittedAt: string | null;
+    submissionReference: string | null;
     status: string;
     currency: string;
     issuedAt: string;

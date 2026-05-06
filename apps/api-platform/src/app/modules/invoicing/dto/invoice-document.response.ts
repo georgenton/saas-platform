@@ -5,17 +5,46 @@ export interface InvoiceDocumentResponseDto {
     tenantId: string;
     tenantName: string;
     tenantSlug: string;
+    legalName: string;
+    commercialName: string | null;
+    taxId: string | null;
+    environment: string | null;
+    emissionType: string | null;
+    accountingObligated: boolean | null;
+    specialTaxpayerCode: string | null;
+    rimpeTaxpayerType: string | null;
+    matrixAddress: string | null;
+    establishmentAddress: string | null;
   };
   customer: {
     name: string;
     email: string | null;
     taxId: string | null;
+    identificationType: string | null;
+    identification: string | null;
+    billingAddress: string | null;
   };
   invoice: {
     id: string;
     tenantId: string;
     customerId: string;
     number: string;
+    documentCode: string | null;
+    establishmentCode: string | null;
+    emissionPointCode: string | null;
+    sequenceNumber: number | null;
+    buyerIdentificationType: string | null;
+    buyerIdentification: string | null;
+    buyerName: string | null;
+    buyerAddress: string | null;
+    electronicStatus: string | null;
+    accessKey: string | null;
+    authorizationNumber: string | null;
+    authorizedAt: string | null;
+    electronicStatusMessage: string | null;
+    signedAt: string | null;
+    submittedAt: string | null;
+    submissionReference: string | null;
     status: string;
     currency: string;
     issuedAt: string;
@@ -57,6 +86,22 @@ export const toInvoiceDocumentResponseDto = (
       tenantId: invoice.tenantId,
       customerId: invoice.customerId,
       number: invoice.number,
+      documentCode: invoice.documentCode ?? null,
+      establishmentCode: invoice.establishmentCode ?? null,
+      emissionPointCode: invoice.emissionPointCode ?? null,
+      sequenceNumber: invoice.sequenceNumber ?? null,
+      buyerIdentificationType: invoice.buyerIdentificationType ?? null,
+      buyerIdentification: invoice.buyerIdentification ?? null,
+      buyerName: invoice.buyerName ?? null,
+      buyerAddress: invoice.buyerAddress ?? null,
+      electronicStatus: invoice.electronicStatus ?? null,
+      accessKey: invoice.accessKey ?? null,
+      authorizationNumber: invoice.authorizationNumber ?? null,
+      authorizedAt: invoice.authorizedAt?.toISOString() ?? null,
+      electronicStatusMessage: invoice.electronicStatusMessage ?? null,
+      signedAt: invoice.signedAt?.toISOString() ?? null,
+      submittedAt: invoice.submittedAt?.toISOString() ?? null,
+      submissionReference: invoice.submissionReference ?? null,
       status: invoice.status,
       currency: invoice.currency,
       issuedAt: invoice.issuedAt.toISOString(),

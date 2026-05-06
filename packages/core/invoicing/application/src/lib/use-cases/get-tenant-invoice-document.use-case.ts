@@ -3,6 +3,7 @@ import { CustomerNotFoundError } from '../errors/customer-not-found.error';
 import { InvoiceNotFoundError } from '../errors/invoice-not-found.error';
 import { CustomerRepository } from '../ports/customer.repository';
 import { InvoiceItemRepository } from '../ports/invoice-item.repository';
+import { IssuerProfileRepository } from '../ports/issuer-profile.repository';
 import { InvoiceRepository } from '../ports/invoice.repository';
 import {
   buildInvoiceDocumentView,
@@ -15,6 +16,7 @@ export class GetTenantInvoiceDocumentUseCase {
     private readonly customerRepository: CustomerRepository,
     private readonly invoiceRepository: InvoiceRepository,
     private readonly invoiceItemRepository: InvoiceItemRepository,
+    private readonly issuerProfileRepository: IssuerProfileRepository,
   ) {}
 
   async execute(
@@ -49,6 +51,9 @@ export class GetTenantInvoiceDocumentUseCase {
       tenant.id,
       invoice.id,
     );
+    const issuerProfile = await this.issuerProfileRepository.findByTenantId(
+      tenant.id,
+    );
 
     return buildInvoiceDocumentView({
       tenant: {
@@ -56,6 +61,7 @@ export class GetTenantInvoiceDocumentUseCase {
         name: tenant.name,
         slug: tenant.slug,
       },
+      issuerProfile,
       customer,
       invoice,
       items,

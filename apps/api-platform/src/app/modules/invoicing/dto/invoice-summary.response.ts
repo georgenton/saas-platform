@@ -5,6 +5,22 @@ export interface InvoiceSummaryResponseDto {
   tenantId: string;
   customerId: string;
   number: string;
+  documentCode: string | null;
+  establishmentCode: string | null;
+  emissionPointCode: string | null;
+  sequenceNumber: number | null;
+  buyerIdentificationType: string | null;
+  buyerIdentification: string | null;
+  buyerName: string | null;
+  buyerAddress: string | null;
+  electronicStatus: string | null;
+  accessKey: string | null;
+  authorizationNumber: string | null;
+  authorizedAt: string | null;
+  electronicStatusMessage: string | null;
+  signedAt: string | null;
+  submittedAt: string | null;
+  submissionReference: string | null;
   status: string;
   currency: string;
   issuedAt: string;
@@ -35,6 +51,22 @@ export const toInvoiceSummaryResponseDto = (
     tenantId: data.tenantId,
     customerId: data.customerId,
     number: data.number,
+    documentCode: data.documentCode ?? null,
+    establishmentCode: data.establishmentCode ?? null,
+    emissionPointCode: data.emissionPointCode ?? null,
+    sequenceNumber: data.sequenceNumber ?? null,
+    buyerIdentificationType: data.buyerIdentificationType ?? null,
+    buyerIdentification: data.buyerIdentification ?? null,
+    buyerName: data.buyerName ?? null,
+    buyerAddress: data.buyerAddress ?? null,
+    electronicStatus: data.electronicStatus ?? null,
+    accessKey: data.accessKey ?? null,
+    authorizationNumber: data.authorizationNumber ?? null,
+    authorizedAt: data.authorizedAt?.toISOString() ?? null,
+    electronicStatusMessage: data.electronicStatusMessage ?? null,
+    signedAt: data.signedAt?.toISOString() ?? null,
+    submittedAt: data.submittedAt?.toISOString() ?? null,
+    submissionReference: data.submissionReference ?? null,
     status: data.status,
     currency: data.currency,
     issuedAt: data.issuedAt.toISOString(),

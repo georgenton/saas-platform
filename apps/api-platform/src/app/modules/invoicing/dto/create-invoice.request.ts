@@ -15,9 +15,10 @@ export class CreateInvoiceRequestDto {
   @MinLength(1)
   customerId!: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  number!: string;
+  number?: string;
 
   @IsString()
   @Length(3, 3)

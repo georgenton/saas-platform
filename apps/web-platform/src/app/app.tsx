@@ -3,17 +3,23 @@ import styles from './app.module.css';
 import {
   acceptInvitation,
   cancelInvitation,
+  checkInvoiceElectronicAuthorization,
   createCustomer,
   createInvitation,
   createInvoice,
   createInvoiceItem,
   createInvoicePayment,
   createTaxRate,
+  fetchElectronicSubmissionSettings,
+  fetchElectronicSignatureSettings,
   fetchInvitationForInvitee,
   fetchInvoiceDetail,
   fetchInvoiceDocument,
   fetchInvoiceDocumentHtml,
+  fetchInvoiceElectronicXmlPreview,
+  fetchInvoiceNumberingSettings,
   fetchInvoicingReportSummary,
+  fetchIssuerProfile,
   fetchSession,
   getTenantInvitation,
   listCustomers,
@@ -27,16 +33,26 @@ import {
   resendInvitation,
   sendInvoiceEmail,
   setCurrentTenancy,
+  submitInvoiceElectronicDocument,
+  upsertElectronicSubmissionSettings,
+  upsertElectronicSignatureSettings,
+  upsertInvoiceNumberingSettings,
+  upsertIssuerProfile,
+  updateInvoiceElectronicStatus,
   updateInvoiceStatus,
 } from './api';
 import {
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CustomerResponse,
+  ElectronicSubmissionSettingsResponse,
+  ElectronicSignatureSettingsResponse,
+  InvoiceNumberingSettingsResponse,
   InvoiceDetailResponse,
   InvoiceDocumentResponse,
   InvoicingReportSummaryResponse,
   InvitationResponse,
+  IssuerProfileResponse,
   InvoiceSummaryResponse,
   PlatformPlan,
   PlatformProduct,
@@ -127,6 +143,38 @@ function formatPaymentStatus(status: string): string {
   }
 }
 
+function formatElectronicStatus(status: string | null): string {
+  switch (status) {
+    case 'pending_submission':
+      return 'Pendiente de envio';
+    case 'submitted':
+      return 'Enviado al SRI';
+    case 'authorized':
+      return 'Autorizada';
+    case 'rejected':
+      return 'Rechazada';
+    default:
+      return 'Sin estado electronico';
+  }
+}
+
+function formatBuyerIdentificationType(value: string | null): string {
+  switch (value) {
+    case '04':
+      return 'RUC';
+    case '05':
+      return 'Cedula';
+    case '06':
+      return 'Pasaporte';
+    case '07':
+      return 'Consumidor final';
+    case '08':
+      return 'Exterior';
+    default:
+      return value ?? 'No configurado';
+  }
+}
+
 function formatPercentage(value: number): string {
   return new Intl.NumberFormat('es-EC', {
     minimumFractionDigits: value % 1 === 0 ? 0 : 2,
@@ -196,6 +244,33 @@ function findPendingInvitation(
   );
 }
 
+async function loadOptionalInvoicingSettings(token: string, tenantSlug: string): Promise<{
+  electronicSubmissionSettings: ElectronicSubmissionSettingsResponse | null;
+  electronicSignatureSettings: ElectronicSignatureSettingsResponse | null;
+  issuerProfile: IssuerProfileResponse | null;
+  invoiceNumberingSettings: InvoiceNumberingSettingsResponse | null;
+}> {
+  const [
+    electronicSubmissionSettings,
+    electronicSignatureSettings,
+    issuerProfile,
+    invoiceNumberingSettings,
+  ] =
+    await Promise.all([
+      fetchElectronicSubmissionSettings(token, tenantSlug).catch(() => null),
+      fetchElectronicSignatureSettings(token, tenantSlug).catch(() => null),
+      fetchIssuerProfile(token, tenantSlug).catch(() => null),
+      fetchInvoiceNumberingSettings(token, tenantSlug).catch(() => null),
+    ]);
+
+  return {
+    electronicSubmissionSettings,
+    electronicSignatureSettings,
+    issuerProfile,
+    invoiceNumberingSettings,
+  };
+}
+
 export function App() {
   const [deepLinkedInvitationId, setDeepLinkedInvitationId] = useState<string | null>(
     null,
@@ -218,11 +293,23 @@ export function App() {
   const [customers, setCustomers] = useState<CustomerResponse[]>([]);
   const [taxRates, setTaxRates] = useState<TaxRateResponse[]>([]);
   const [invoices, setInvoices] = useState<InvoiceSummaryResponse[]>([]);
+  const [electronicSubmissionSettings, setElectronicSubmissionSettings] =
+    useState<ElectronicSubmissionSettingsResponse | null>(null);
+  const [electronicSignatureSettings, setElectronicSignatureSettings] =
+    useState<ElectronicSignatureSettingsResponse | null>(null);
+  const [issuerProfile, setIssuerProfile] = useState<IssuerProfileResponse | null>(
+    null,
+  );
+  const [invoiceNumberingSettings, setInvoiceNumberingSettings] =
+    useState<InvoiceNumberingSettingsResponse | null>(null);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [selectedInvoiceDetail, setSelectedInvoiceDetail] =
     useState<InvoiceDetailResponse | null>(null);
   const [selectedInvoiceDocument, setSelectedInvoiceDocument] =
     useState<InvoiceDocumentResponse | null>(null);
+  const [selectedInvoiceXmlPreview, setSelectedInvoiceXmlPreview] = useState<
+    string | null
+  >(null);
   const [invoicingReport, setInvoicingReport] =
     useState<InvoicingReportSummaryResponse | null>(null);
   const [invoicingLoading, setInvoicingLoading] = useState(false);
@@ -235,9 +322,60 @@ export function App() {
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newCustomerEmail, setNewCustomerEmail] = useState('');
   const [newCustomerTaxId, setNewCustomerTaxId] = useState('');
+  const [newCustomerIdentificationType, setNewCustomerIdentificationType] =
+    useState<'04' | '05' | '06' | '07' | '08'>('04');
+  const [newCustomerBillingAddress, setNewCustomerBillingAddress] = useState('');
   const [newInvoiceCustomerId, setNewInvoiceCustomerId] = useState('');
   const [newTaxRateName, setNewTaxRateName] = useState('');
   const [newTaxRatePercentage, setNewTaxRatePercentage] = useState('');
+  const [issuerLegalName, setIssuerLegalName] = useState('');
+  const [issuerCommercialName, setIssuerCommercialName] = useState('');
+  const [issuerTaxId, setIssuerTaxId] = useState('');
+  const [issuerEnvironment, setIssuerEnvironment] = useState<'test' | 'production'>(
+    'test',
+  );
+  const [issuerAccountingObligated, setIssuerAccountingObligated] = useState(false);
+  const [issuerSpecialTaxpayerCode, setIssuerSpecialTaxpayerCode] = useState('');
+  const [issuerRimpeTaxpayerType, setIssuerRimpeTaxpayerType] = useState('');
+  const [issuerMatrixAddress, setIssuerMatrixAddress] = useState('');
+  const [issuerEstablishmentAddress, setIssuerEstablishmentAddress] =
+    useState('');
+  const [signatureProvider, setSignatureProvider] = useState<
+    'stub_local' | 'xades_pkcs12'
+  >('stub_local');
+  const [signatureStorageMode, setSignatureStorageMode] = useState<
+    'stub_inline' | 'secret_ref'
+  >('stub_inline');
+  const [signatureCertificateLabel, setSignatureCertificateLabel] = useState('');
+  const [signatureCertificateFingerprint, setSignatureCertificateFingerprint] =
+    useState('');
+  const [signaturePkcs12SecretRef, setSignaturePkcs12SecretRef] = useState('');
+  const [signaturePasswordSecretRef, setSignaturePasswordSecretRef] =
+    useState('');
+  const [signatureSubjectName, setSignatureSubjectName] = useState('');
+  const [signatureIsActive, setSignatureIsActive] = useState(true);
+  const [submissionProvider, setSubmissionProvider] = useState<
+    'stub_sri' | 'sri_offline_ws'
+  >('stub_sri');
+  const [submissionEnvironment, setSubmissionEnvironment] = useState<
+    'test' | 'production'
+  >('test');
+  const [submissionMode, setSubmissionMode] = useState<
+    'sync_stub' | 'offline'
+  >('sync_stub');
+  const [submissionReceptionUrl, setSubmissionReceptionUrl] = useState('');
+  const [submissionAuthorizationUrl, setSubmissionAuthorizationUrl] =
+    useState('');
+  const [submissionCredentialsSecretRef, setSubmissionCredentialsSecretRef] =
+    useState('');
+  const [submissionTimeoutMs, setSubmissionTimeoutMs] = useState('10000');
+  const [submissionIsActive, setSubmissionIsActive] = useState(true);
+  const [numberingDocumentCode, setNumberingDocumentCode] = useState('01');
+  const [numberingEstablishmentCode, setNumberingEstablishmentCode] =
+    useState('');
+  const [numberingEmissionPointCode, setNumberingEmissionPointCode] =
+    useState('');
+  const [numberingNextSequence, setNumberingNextSequence] = useState('1');
   const [newInvoiceNumber, setNewInvoiceNumber] = useState('');
   const [newInvoiceCurrency, setNewInvoiceCurrency] = useState('USD');
   const [newInvoiceStatus, setNewInvoiceStatus] = useState('draft');
@@ -252,6 +390,14 @@ export function App() {
   const [newPaymentReference, setNewPaymentReference] = useState('');
   const [newPaymentPaidAt, setNewPaymentPaidAt] = useState('');
   const [newPaymentNotes, setNewPaymentNotes] = useState('');
+  const [invoiceElectronicStatus, setInvoiceElectronicStatus] = useState<
+    'pending_submission' | 'submitted' | 'authorized' | 'rejected'
+  >('pending_submission');
+  const [invoiceAccessKey, setInvoiceAccessKey] = useState('');
+  const [invoiceAuthorizationNumber, setInvoiceAuthorizationNumber] = useState('');
+  const [invoiceAuthorizedAt, setInvoiceAuthorizedAt] = useState('');
+  const [invoiceElectronicStatusMessage, setInvoiceElectronicStatusMessage] =
+    useState('');
   const [paymentReversalReason, setPaymentReversalReason] = useState('');
   const [invoiceEmailRecipient, setInvoiceEmailRecipient] = useState('');
   const [invoiceEmailMessage, setInvoiceEmailMessage] = useState('');
@@ -363,8 +509,10 @@ export function App() {
     [invoices],
   );
   const nextInvoiceNumberSuggestion = useMemo(
-    () => `INV-${String(invoices.length + 1).padStart(4, '0')}`,
-    [invoices.length],
+    () =>
+      invoiceNumberingSettings?.previewNumber ??
+      `INV-${String(invoices.length + 1).padStart(4, '0')}`,
+    [invoiceNumberingSettings, invoices.length],
   );
 
   const aiEnabled = getBooleanEntitlement(currentEntitlements, 'ai_enabled');
@@ -493,13 +641,15 @@ export function App() {
       return;
     }
 
+    const tenantSlug = currentTenancy.tenant.slug;
+    const invoiceId = selectedInvoiceId;
     let cancelled = false;
 
     async function loadEnabledProducts() {
       try {
         const products = await listTenantEnabledProducts(
           token,
-          currentTenancy.tenant.slug,
+          tenantSlug,
         );
 
         if (cancelled) {
@@ -535,6 +685,10 @@ export function App() {
       setCustomers([]);
       setTaxRates([]);
       setInvoices([]);
+      setElectronicSubmissionSettings(null);
+      setElectronicSignatureSettings(null);
+      setIssuerProfile(null);
+      setInvoiceNumberingSettings(null);
       setInvoicingReport(null);
       setSelectedInvoiceId(null);
       setSelectedInvoiceDetail(null);
@@ -543,6 +697,8 @@ export function App() {
       return;
     }
 
+    const tenantSlug = currentTenancy.tenant.slug;
+    const invoiceId = selectedInvoiceId;
     let cancelled = false;
 
     async function loadInvoicingWorkspace() {
@@ -550,12 +706,19 @@ export function App() {
       setInvoicingError(null);
 
       try {
-        const [nextCustomers, nextTaxRates, nextInvoices, nextReport] =
+        const [
+          nextCustomers,
+          nextTaxRates,
+          nextInvoices,
+          nextReport,
+          nextSettings,
+        ] =
           await Promise.all([
-          listCustomers(token, currentTenancy.tenant.slug),
-          listTaxRates(token, currentTenancy.tenant.slug),
-          listInvoices(token, currentTenancy.tenant.slug),
-          fetchInvoicingReportSummary(token, currentTenancy.tenant.slug),
+          listCustomers(token, tenantSlug),
+          listTaxRates(token, tenantSlug),
+          listInvoices(token, tenantSlug),
+          fetchInvoicingReportSummary(token, tenantSlug),
+          loadOptionalInvoicingSettings(token, tenantSlug),
         ]);
 
         if (cancelled) {
@@ -566,6 +729,12 @@ export function App() {
           setCustomers(nextCustomers);
           setTaxRates(nextTaxRates);
           setInvoices(nextInvoices);
+          setElectronicSubmissionSettings(
+            nextSettings.electronicSubmissionSettings,
+          );
+          setElectronicSignatureSettings(nextSettings.electronicSignatureSettings);
+          setIssuerProfile(nextSettings.issuerProfile);
+          setInvoiceNumberingSettings(nextSettings.invoiceNumberingSettings);
           setInvoicingReport(nextReport);
           setSelectedInvoiceId((currentSelection) =>
             nextInvoices.some((invoice) => invoice.id === currentSelection)
@@ -579,6 +748,9 @@ export function App() {
         }
 
         setCustomers([]);
+        setElectronicSignatureSettings(null);
+        setIssuerProfile(null);
+        setInvoiceNumberingSettings(null);
         setInvoicingReport(null);
         setInvoices([]);
         setSelectedInvoiceId(null);
@@ -610,6 +782,8 @@ export function App() {
       return;
     }
 
+    const tenantSlug = currentTenancy.tenant.slug;
+    const invoiceId = selectedInvoiceId;
     let cancelled = false;
 
     async function loadSelectedInvoiceDetail() {
@@ -617,11 +791,11 @@ export function App() {
 
       try {
         const [detail, document] = await Promise.all([
-          fetchInvoiceDetail(token, currentTenancy.tenant.slug, selectedInvoiceId),
+          fetchInvoiceDetail(token, tenantSlug, invoiceId),
           fetchInvoiceDocument(
             token,
-            currentTenancy.tenant.slug,
-            selectedInvoiceId,
+            tenantSlug,
+            invoiceId,
           ),
         ]);
 
@@ -666,6 +840,7 @@ export function App() {
       return;
     }
 
+    const invitationId = selectedPendingInvitationId;
     let cancelled = false;
 
     async function loadPendingInvitationDetail() {
@@ -675,7 +850,7 @@ export function App() {
       try {
         const detail = await fetchInvitationForInvitee(
           token,
-          selectedPendingInvitationId,
+          invitationId,
         );
 
         if (cancelled) {
@@ -735,6 +910,163 @@ export function App() {
   }, [selectedInvoiceDocument]);
 
   useEffect(() => {
+    if (!selectedInvoiceDetail) {
+      setInvoiceElectronicStatus('pending_submission');
+      setInvoiceAccessKey('');
+      setInvoiceAuthorizationNumber('');
+      setInvoiceAuthorizedAt('');
+      setInvoiceElectronicStatusMessage('');
+      setSelectedInvoiceXmlPreview(null);
+      return;
+    }
+
+    setSelectedInvoiceXmlPreview(null);
+
+    setInvoiceElectronicStatus(
+      (selectedInvoiceDetail.electronicStatus as
+        | 'pending_submission'
+        | 'submitted'
+        | 'authorized'
+        | 'rejected'
+        | null) ?? 'pending_submission',
+    );
+    setInvoiceAccessKey(selectedInvoiceDetail.accessKey ?? '');
+    setInvoiceAuthorizationNumber(
+      selectedInvoiceDetail.authorizationNumber ?? '',
+    );
+    setInvoiceAuthorizedAt(
+      selectedInvoiceDetail.authorizedAt
+        ? selectedInvoiceDetail.authorizedAt.slice(0, 16)
+        : '',
+    );
+    setInvoiceElectronicStatusMessage(
+      selectedInvoiceDetail.electronicStatusMessage ?? '',
+    );
+  }, [selectedInvoiceDetail]);
+
+  useEffect(() => {
+    if (!issuerProfile) {
+      setIssuerLegalName('');
+      setIssuerCommercialName('');
+      setIssuerTaxId('');
+      setIssuerEnvironment('test');
+      setIssuerAccountingObligated(false);
+      setIssuerSpecialTaxpayerCode('');
+      setIssuerRimpeTaxpayerType('');
+      setIssuerMatrixAddress('');
+      setIssuerEstablishmentAddress('');
+      return;
+    }
+
+    setIssuerLegalName(issuerProfile.legalName);
+    setIssuerCommercialName(issuerProfile.commercialName ?? '');
+    setIssuerTaxId(issuerProfile.taxId);
+    setIssuerEnvironment(
+      issuerProfile.environment === 'production' ? 'production' : 'test',
+    );
+    setIssuerAccountingObligated(issuerProfile.accountingObligated);
+    setIssuerSpecialTaxpayerCode(issuerProfile.specialTaxpayerCode ?? '');
+    setIssuerRimpeTaxpayerType(issuerProfile.rimpeTaxpayerType ?? '');
+    setIssuerMatrixAddress(issuerProfile.matrixAddress);
+    setIssuerEstablishmentAddress(issuerProfile.establishmentAddress);
+  }, [issuerProfile]);
+
+  useEffect(() => {
+    if (!electronicSubmissionSettings) {
+      setSubmissionProvider('stub_sri');
+      setSubmissionEnvironment('test');
+      setSubmissionMode('sync_stub');
+      setSubmissionReceptionUrl('');
+      setSubmissionAuthorizationUrl('');
+      setSubmissionCredentialsSecretRef('');
+      setSubmissionTimeoutMs('10000');
+      setSubmissionIsActive(true);
+      return;
+    }
+
+    setSubmissionProvider(
+      electronicSubmissionSettings.provider === 'sri_offline_ws'
+        ? 'sri_offline_ws'
+        : 'stub_sri',
+    );
+    setSubmissionEnvironment(
+      electronicSubmissionSettings.environment === 'production'
+        ? 'production'
+        : 'test',
+    );
+    setSubmissionMode(
+      electronicSubmissionSettings.transmissionMode === 'offline'
+        ? 'offline'
+        : 'sync_stub',
+    );
+    setSubmissionReceptionUrl(
+      electronicSubmissionSettings.receptionUrl ?? '',
+    );
+    setSubmissionAuthorizationUrl(
+      electronicSubmissionSettings.authorizationUrl ?? '',
+    );
+    setSubmissionCredentialsSecretRef(
+      electronicSubmissionSettings.credentialsSecretRef ?? '',
+    );
+    setSubmissionTimeoutMs(String(electronicSubmissionSettings.timeoutMs));
+    setSubmissionIsActive(electronicSubmissionSettings.isActive);
+  }, [electronicSubmissionSettings]);
+
+  useEffect(() => {
+    if (!electronicSignatureSettings) {
+      setSignatureProvider('stub_local');
+      setSignatureStorageMode('stub_inline');
+      setSignatureCertificateLabel('');
+      setSignatureCertificateFingerprint('');
+      setSignaturePkcs12SecretRef('');
+      setSignaturePasswordSecretRef('');
+      setSignatureSubjectName('');
+      setSignatureIsActive(true);
+      return;
+    }
+
+    setSignatureProvider(
+      electronicSignatureSettings.provider === 'xades_pkcs12'
+        ? 'xades_pkcs12'
+        : 'stub_local',
+    );
+    setSignatureStorageMode(
+      electronicSignatureSettings.storageMode === 'secret_ref'
+        ? 'secret_ref'
+        : 'stub_inline',
+    );
+    setSignatureCertificateLabel(
+      electronicSignatureSettings.certificateLabel,
+    );
+    setSignatureCertificateFingerprint(
+      electronicSignatureSettings.certificateFingerprint ?? '',
+    );
+    setSignaturePkcs12SecretRef(
+      electronicSignatureSettings.pkcs12SecretRef ?? '',
+    );
+    setSignaturePasswordSecretRef(
+      electronicSignatureSettings.privateKeyPasswordSecretRef ?? '',
+    );
+    setSignatureSubjectName(electronicSignatureSettings.subjectName ?? '');
+    setSignatureIsActive(electronicSignatureSettings.isActive);
+  }, [electronicSignatureSettings]);
+
+  useEffect(() => {
+    if (!invoiceNumberingSettings) {
+      setNumberingDocumentCode('01');
+      setNumberingEstablishmentCode('');
+      setNumberingEmissionPointCode('');
+      setNumberingNextSequence('1');
+      return;
+    }
+
+    setNumberingDocumentCode(invoiceNumberingSettings.documentCode);
+    setNumberingEstablishmentCode(invoiceNumberingSettings.establishmentCode);
+    setNumberingEmissionPointCode(invoiceNumberingSettings.emissionPointCode);
+    setNumberingNextSequence(String(invoiceNumberingSettings.nextSequenceNumber));
+  }, [invoiceNumberingSettings]);
+
+  useEffect(() => {
     if (!token || !currentTenancy || !canManageInvitations) {
       setTenantInvitations([]);
       setSelectedTenantInvitation(null);
@@ -742,6 +1074,7 @@ export function App() {
       return;
     }
 
+    const tenantSlug = currentTenancy.tenant.slug;
     let cancelled = false;
 
     async function loadTenantInvitations() {
@@ -751,7 +1084,7 @@ export function App() {
       try {
         const invitations = await listTenantInvitations(
           token,
-          currentTenancy.tenant.slug,
+          tenantSlug,
         );
 
         if (cancelled) {
@@ -841,22 +1174,34 @@ export function App() {
       return;
     }
 
+    const tenantSlug = currentTenancy.tenant.slug;
     setInvoicingLoading(true);
     setInvoicingError(null);
 
     try {
-      const [nextTaxRates, nextCustomers, nextInvoices, nextReport] =
+      const [
+        nextTaxRates,
+        nextCustomers,
+        nextInvoices,
+        nextReport,
+        nextSettings,
+      ] =
         await Promise.all([
-        listTaxRates(token, currentTenancy.tenant.slug),
-        listCustomers(token, currentTenancy.tenant.slug),
-        listInvoices(token, currentTenancy.tenant.slug),
-        fetchInvoicingReportSummary(token, currentTenancy.tenant.slug),
+        listTaxRates(token, tenantSlug),
+        listCustomers(token, tenantSlug),
+        listInvoices(token, tenantSlug),
+        fetchInvoicingReportSummary(token, tenantSlug),
+        loadOptionalInvoicingSettings(token, tenantSlug),
       ]);
 
       startTransition(() => {
         setTaxRates(nextTaxRates);
         setCustomers(nextCustomers);
         setInvoices(nextInvoices);
+        setElectronicSubmissionSettings(nextSettings.electronicSubmissionSettings);
+        setElectronicSignatureSettings(nextSettings.electronicSignatureSettings);
+        setIssuerProfile(nextSettings.issuerProfile);
+        setInvoiceNumberingSettings(nextSettings.invoiceNumberingSettings);
         setInvoicingReport(nextReport);
         const preferredInvoiceId = options?.selectInvoiceId;
         if (
@@ -1090,17 +1435,213 @@ export function App() {
         name: newCustomerName.trim(),
         email: newCustomerEmail.trim() || null,
         taxId: newCustomerTaxId.trim() || null,
+        identificationType: newCustomerIdentificationType,
+        identification: newCustomerTaxId.trim() || null,
+        billingAddress: newCustomerBillingAddress.trim() || null,
       });
 
       setNewCustomerName('');
       setNewCustomerEmail('');
       setNewCustomerTaxId('');
+      setNewCustomerIdentificationType('04');
+      setNewCustomerBillingAddress('');
       setNewInvoiceCustomerId((currentValue) => currentValue || customer.id);
       setInvoicingActionMessage(`Customer creado: ${customer.name}.`);
       await refreshInvoicingWorkspace();
     } catch (error) {
       setInvoicingError(
         error instanceof Error ? error.message : 'No se pudo crear el customer.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleUpsertIssuerProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (
+      !token ||
+      !currentTenancy ||
+      !invoicingEnabled ||
+      !issuerLegalName.trim() ||
+      !issuerTaxId.trim() ||
+      !issuerMatrixAddress.trim() ||
+      !issuerEstablishmentAddress.trim()
+    ) {
+      return;
+    }
+
+    setActionLoading('upsert-issuer-profile');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      await upsertIssuerProfile(token, currentTenancy.tenant.slug, {
+        legalName: issuerLegalName.trim(),
+        commercialName: issuerCommercialName.trim() || null,
+        taxId: issuerTaxId.trim(),
+        environment: issuerEnvironment,
+        emissionType: 'normal',
+        accountingObligated: issuerAccountingObligated,
+        specialTaxpayerCode: issuerSpecialTaxpayerCode.trim() || null,
+        rimpeTaxpayerType: issuerRimpeTaxpayerType.trim() || null,
+        matrixAddress: issuerMatrixAddress.trim(),
+        establishmentAddress: issuerEstablishmentAddress.trim(),
+      });
+
+      setInvoicingActionMessage('Perfil fiscal del emisor actualizado.');
+      await refreshInvoicingWorkspace();
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar el perfil fiscal del emisor.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleUpsertElectronicSignatureSettings(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (
+      !token ||
+      !currentTenancy ||
+      !invoicingEnabled ||
+      !signatureCertificateLabel.trim()
+    ) {
+      return;
+    }
+
+    setActionLoading('upsert-electronic-signature-settings');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      await upsertElectronicSignatureSettings(token, currentTenancy.tenant.slug, {
+        provider: signatureProvider,
+        certificateLabel: signatureCertificateLabel.trim(),
+        storageMode: signatureStorageMode,
+        certificateFingerprint: signatureCertificateFingerprint.trim() || null,
+        pkcs12SecretRef: signaturePkcs12SecretRef.trim() || null,
+        privateKeyPasswordSecretRef:
+          signaturePasswordSecretRef.trim() || null,
+        subjectName: signatureSubjectName.trim() || null,
+        isActive: signatureIsActive,
+      });
+
+      setInvoicingActionMessage(
+        'Configuracion de firma electronica actualizada.',
+      );
+      await refreshInvoicingWorkspace();
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar la configuracion de firma electronica.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleUpsertElectronicSubmissionSettings(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (!token || !currentTenancy || !invoicingEnabled || !submissionTimeoutMs.trim()) {
+      return;
+    }
+
+    const timeoutMs = Number(submissionTimeoutMs);
+
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1000) {
+      setInvoicingError('El timeout del gateway debe ser un entero mayor o igual a 1000 ms.');
+      return;
+    }
+
+    setActionLoading('upsert-electronic-submission-settings');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      await upsertElectronicSubmissionSettings(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          provider: submissionProvider,
+          environment: submissionEnvironment,
+          transmissionMode: submissionMode,
+          receptionUrl: submissionReceptionUrl.trim() || null,
+          authorizationUrl: submissionAuthorizationUrl.trim() || null,
+          credentialsSecretRef: submissionCredentialsSecretRef.trim() || null,
+          timeoutMs,
+          isActive: submissionIsActive,
+        },
+      );
+
+      setInvoicingActionMessage(
+        'Configuracion de envio electronico actualizada.',
+      );
+      await refreshInvoicingWorkspace();
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar la configuracion de envio electronico.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleUpsertInvoiceNumbering(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (
+      !token ||
+      !currentTenancy ||
+      !invoicingEnabled ||
+      !numberingDocumentCode.trim() ||
+      !numberingEstablishmentCode.trim() ||
+      !numberingEmissionPointCode.trim() ||
+      !numberingNextSequence.trim()
+    ) {
+      return;
+    }
+
+    const nextSequenceNumber = Number(numberingNextSequence);
+    if (!Number.isInteger(nextSequenceNumber) || nextSequenceNumber < 1) {
+      setInvoicingError('La siguiente secuencia debe ser un entero mayor a cero.');
+      return;
+    }
+
+    setActionLoading('upsert-invoice-numbering');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      await upsertInvoiceNumberingSettings(token, currentTenancy.tenant.slug, {
+        documentCode: numberingDocumentCode.trim(),
+        establishmentCode: numberingEstablishmentCode.trim(),
+        emissionPointCode: numberingEmissionPointCode.trim(),
+        nextSequenceNumber,
+      });
+
+      setInvoicingActionMessage('Numeracion Ecuador actualizada.');
+      await refreshInvoicingWorkspace();
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar la numeracion de facturas.',
       );
     } finally {
       setActionLoading(null);
@@ -1115,7 +1656,6 @@ export function App() {
       !currentTenancy ||
       !invoicingEnabled ||
       !newInvoiceCustomerId ||
-      !newInvoiceNumber.trim() ||
       !newInvoiceCurrency.trim()
     ) {
       return;
@@ -1128,7 +1668,7 @@ export function App() {
     try {
       const invoice = await createInvoice(token, currentTenancy.tenant.slug, {
         customerId: newInvoiceCustomerId,
-        number: newInvoiceNumber.trim(),
+        number: newInvoiceNumber.trim() || undefined,
         currency: newInvoiceCurrency.trim().toUpperCase(),
         status: newInvoiceStatus,
         dueAt: newInvoiceDueAt.trim() || null,
@@ -1340,6 +1880,40 @@ export function App() {
     }
   }
 
+  async function handleLoadInvoiceXmlPreview() {
+    if (!token || !currentTenancy || !selectedInvoiceDetail) {
+      return;
+    }
+
+    setActionLoading('load-invoice-xml-preview');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const xml = await fetchInvoiceElectronicXmlPreview(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+      );
+
+      startTransition(() => {
+        setSelectedInvoiceXmlPreview(xml);
+      });
+
+      setInvoicingActionMessage(
+        `XML preliminar listo para ${selectedInvoiceDetail.number}.`,
+      );
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el XML preliminar de la factura.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   async function handleUpdateInvoiceStatus(
     nextStatus: 'issued' | 'paid' | 'void',
   ) {
@@ -1375,6 +1949,128 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo actualizar el estado de la factura.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleUpdateInvoiceElectronicStatus(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (!token || !currentTenancy || !selectedInvoiceDetail) {
+      return;
+    }
+
+    setActionLoading('invoice-electronic-status');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const updatedDetail = await updateInvoiceElectronicStatus(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+        {
+          electronicStatus: invoiceElectronicStatus,
+          accessKey: invoiceAccessKey.trim() || null,
+          authorizationNumber: invoiceAuthorizationNumber.trim() || null,
+          authorizedAt: invoiceAuthorizedAt
+            ? new Date(invoiceAuthorizedAt).toISOString()
+            : null,
+          electronicStatusMessage: invoiceElectronicStatusMessage.trim() || null,
+        },
+      );
+
+      startTransition(() => {
+        setSelectedInvoiceDetail(updatedDetail);
+        setSelectedInvoiceId(updatedDetail.id);
+      });
+
+      setInvoicingActionMessage(
+        `Estado electronico actualizado: ${formatElectronicStatus(
+          updatedDetail.electronicStatus,
+        )}.`,
+      );
+      await refreshInvoicingWorkspace({ selectInvoiceId: updatedDetail.id });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar el estado electronico.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleSubmitInvoiceElectronicDocument() {
+    if (!token || !currentTenancy || !selectedInvoiceDetail) {
+      return;
+    }
+
+    setActionLoading('submit-invoice-electronic-document');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const result = await submitInvoiceElectronicDocument(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+      );
+
+      setInvoicingActionMessage(
+        `Documento firmado y enviado en stub. Referencia: ${
+          result.submissionReference ?? 'sin referencia'
+        }.`,
+      );
+      await refreshInvoicingWorkspace({ selectInvoiceId: selectedInvoiceDetail.id });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo firmar y enviar el comprobante.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleCheckInvoiceElectronicAuthorization() {
+    if (!token || !currentTenancy || !selectedInvoiceDetail) {
+      return;
+    }
+
+    setActionLoading('check-invoice-electronic-authorization');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const updatedDetail = await checkInvoiceElectronicAuthorization(
+        token,
+        currentTenancy.tenant.slug,
+        selectedInvoiceDetail.id,
+      );
+
+      startTransition(() => {
+        setSelectedInvoiceDetail(updatedDetail);
+        setSelectedInvoiceId(updatedDetail.id);
+      });
+
+      setInvoicingActionMessage(
+        `Autorizacion consultada: ${formatElectronicStatus(
+          updatedDetail.electronicStatus,
+        )}.`,
+      );
+      await refreshInvoicingWorkspace({ selectInvoiceId: updatedDetail.id });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo consultar la autorizacion del comprobante.',
       );
     } finally {
       setActionLoading(null);
@@ -2225,6 +2921,543 @@ export function App() {
                   <div className={styles.detailCard}>
                     <div className={styles.sectionHeading}>
                       <div>
+                        <span className={styles.label}>Electronic issuer</span>
+                        <h3>Perfil fiscal del emisor</h3>
+                      </div>
+                    </div>
+
+                    <form className={styles.stack} onSubmit={handleUpsertIssuerProfile}>
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Razon social</span>
+                          <input
+                            onChange={(event) => setIssuerLegalName(event.target.value)}
+                            placeholder="Mi Empresa S.A."
+                            value={issuerLegalName}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Nombre comercial</span>
+                          <input
+                            onChange={(event) =>
+                              setIssuerCommercialName(event.target.value)
+                            }
+                            placeholder="Mi Empresa"
+                            value={issuerCommercialName}
+                          />
+                        </label>
+                      </div>
+
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>RUC</span>
+                          <input
+                            maxLength={13}
+                            onChange={(event) => setIssuerTaxId(event.target.value)}
+                            placeholder="1790012345001"
+                            value={issuerTaxId}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Ambiente</span>
+                          <select
+                            className={styles.selectField}
+                            onChange={(event) =>
+                              setIssuerEnvironment(
+                                event.target.value === 'production'
+                                  ? 'production'
+                                  : 'test',
+                              )
+                            }
+                            value={issuerEnvironment}
+                          >
+                            <option value="test">Pruebas</option>
+                            <option value="production">Produccion</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Contribuyente especial</span>
+                          <input
+                            onChange={(event) =>
+                              setIssuerSpecialTaxpayerCode(event.target.value)
+                            }
+                            placeholder="5368"
+                            value={issuerSpecialTaxpayerCode}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>RIMPE</span>
+                          <input
+                            onChange={(event) =>
+                              setIssuerRimpeTaxpayerType(event.target.value)
+                            }
+                            placeholder="Negocio popular / Emprendedor"
+                            value={issuerRimpeTaxpayerType}
+                          />
+                        </label>
+                      </div>
+
+                      <label className={styles.checkboxField}>
+                        <input
+                          checked={issuerAccountingObligated}
+                          onChange={(event) =>
+                            setIssuerAccountingObligated(event.target.checked)
+                          }
+                          type="checkbox"
+                        />
+                        <span>Obligado a llevar contabilidad</span>
+                      </label>
+
+                      <label className={styles.field}>
+                        <span>Direccion matriz</span>
+                        <input
+                          onChange={(event) =>
+                            setIssuerMatrixAddress(event.target.value)
+                          }
+                          placeholder="Av. Principal y Calle Secundaria"
+                          value={issuerMatrixAddress}
+                        />
+                      </label>
+
+                      <label className={styles.field}>
+                        <span>Direccion establecimiento</span>
+                        <input
+                          onChange={(event) =>
+                            setIssuerEstablishmentAddress(event.target.value)
+                          }
+                          placeholder="Sucursal matriz o punto de emision"
+                          value={issuerEstablishmentAddress}
+                        />
+                      </label>
+
+                      <button
+                        className={styles.primaryButton}
+                        disabled={
+                          !issuerLegalName.trim() ||
+                          !issuerTaxId.trim() ||
+                          !issuerMatrixAddress.trim() ||
+                          !issuerEstablishmentAddress.trim() ||
+                          actionLoading === 'upsert-issuer-profile'
+                        }
+                        type="submit"
+                      >
+                        {actionLoading === 'upsert-issuer-profile'
+                          ? 'Guardando perfil...'
+                          : 'Guardar perfil fiscal'}
+                      </button>
+                    </form>
+                  </div>
+
+                  <div className={styles.detailCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Ecuador numbering</span>
+                        <h3>Serie y secuencial</h3>
+                      </div>
+                    </div>
+
+                    <form
+                      className={styles.stack}
+                      onSubmit={handleUpsertInvoiceNumbering}
+                    >
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>CodDoc</span>
+                          <input
+                            maxLength={2}
+                            onChange={(event) =>
+                              setNumberingDocumentCode(event.target.value)
+                            }
+                            placeholder="01"
+                            value={numberingDocumentCode}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Estab</span>
+                          <input
+                            maxLength={3}
+                            onChange={(event) =>
+                              setNumberingEstablishmentCode(event.target.value)
+                            }
+                            placeholder="001"
+                            value={numberingEstablishmentCode}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>PtoEmi</span>
+                          <input
+                            maxLength={3}
+                            onChange={(event) =>
+                              setNumberingEmissionPointCode(event.target.value)
+                            }
+                            placeholder="002"
+                            value={numberingEmissionPointCode}
+                          />
+                        </label>
+                      </div>
+
+                      <label className={styles.field}>
+                        <span>Siguiente secuencial</span>
+                        <input
+                          min="1"
+                          onChange={(event) =>
+                            setNumberingNextSequence(event.target.value)
+                          }
+                          placeholder="31"
+                          type="number"
+                          value={numberingNextSequence}
+                        />
+                      </label>
+
+                      <button
+                        className={styles.primaryButton}
+                        disabled={
+                          !numberingDocumentCode.trim() ||
+                          !numberingEstablishmentCode.trim() ||
+                          !numberingEmissionPointCode.trim() ||
+                          !numberingNextSequence.trim() ||
+                          actionLoading === 'upsert-invoice-numbering'
+                        }
+                        type="submit"
+                      >
+                        {actionLoading === 'upsert-invoice-numbering'
+                          ? 'Guardando numeracion...'
+                          : 'Guardar numeracion'}
+                      </button>
+
+                      <p className={styles.muted}>
+                        {invoiceNumberingSettings
+                          ? `Proxima factura sugerida: ${invoiceNumberingSettings.previewNumber}`
+                          : 'Si dejas el numero vacio al crear la factura, se usara esta configuracion automaticamente.'}
+                      </p>
+                    </form>
+                  </div>
+
+                  <div className={styles.detailCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Electronic signature</span>
+                        <h3>Configuracion de firma</h3>
+                      </div>
+                    </div>
+
+                    <form
+                      className={styles.stack}
+                      onSubmit={handleUpsertElectronicSignatureSettings}
+                    >
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Provider</span>
+                          <select
+                            className={styles.selectField}
+                            onChange={(event) =>
+                              setSignatureProvider(
+                                event.target.value === 'xades_pkcs12'
+                                  ? 'xades_pkcs12'
+                                  : 'stub_local',
+                              )
+                            }
+                            value={signatureProvider}
+                          >
+                            <option value="stub_local">stub_local</option>
+                            <option value="xades_pkcs12">xades_pkcs12</option>
+                          </select>
+                        </label>
+                        <label className={styles.field}>
+                          <span>Storage mode</span>
+                          <select
+                            className={styles.selectField}
+                            onChange={(event) =>
+                              setSignatureStorageMode(
+                                event.target.value === 'secret_ref'
+                                  ? 'secret_ref'
+                                  : 'stub_inline',
+                              )
+                            }
+                            value={signatureStorageMode}
+                          >
+                            <option value="stub_inline">stub_inline</option>
+                            <option value="secret_ref">secret_ref</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Nombre del certificado</span>
+                          <input
+                            onChange={(event) =>
+                              setSignatureCertificateLabel(event.target.value)
+                            }
+                            placeholder="TOKEN BCE pruebas / Firma Legal"
+                            value={signatureCertificateLabel}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Subject name</span>
+                          <input
+                            onChange={(event) =>
+                              setSignatureSubjectName(event.target.value)
+                            }
+                            placeholder="CN=Empresa S.A., O=Empresa"
+                            value={signatureSubjectName}
+                          />
+                        </label>
+                      </div>
+
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Fingerprint</span>
+                          <input
+                            onChange={(event) =>
+                              setSignatureCertificateFingerprint(event.target.value)
+                            }
+                            placeholder="AA:BB:CC:DD..."
+                            value={signatureCertificateFingerprint}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Estado del material</span>
+                          <input
+                            disabled
+                            value={
+                              electronicSignatureSettings?.materialConfigured
+                                ? 'Configurado'
+                                : 'Incompleto'
+                            }
+                          />
+                        </label>
+                      </div>
+
+                      {signatureProvider === 'xades_pkcs12' ? (
+                        <div className={styles.invoiceInlineGrid}>
+                          <label className={styles.field}>
+                            <span>PKCS#12 secret ref</span>
+                            <input
+                              onChange={(event) =>
+                                setSignaturePkcs12SecretRef(event.target.value)
+                              }
+                              placeholder="vault://ec/signatures/tenant-123/pkcs12"
+                              value={signaturePkcs12SecretRef}
+                            />
+                          </label>
+                          <label className={styles.field}>
+                            <span>Password secret ref</span>
+                            <input
+                              onChange={(event) =>
+                                setSignaturePasswordSecretRef(event.target.value)
+                              }
+                              placeholder="vault://ec/signatures/tenant-123/password"
+                              value={signaturePasswordSecretRef}
+                            />
+                          </label>
+                        </div>
+                      ) : null}
+
+                      <label className={styles.checkboxField}>
+                        <input
+                          checked={signatureIsActive}
+                          onChange={(event) =>
+                            setSignatureIsActive(event.target.checked)
+                          }
+                          type="checkbox"
+                        />
+                        <span>Firma habilitada para el tenant</span>
+                      </label>
+
+                      <button
+                        className={styles.primaryButton}
+                        disabled={
+                          !signatureCertificateLabel.trim() ||
+                          actionLoading ===
+                            'upsert-electronic-signature-settings'
+                        }
+                        type="submit"
+                      >
+                        {actionLoading === 'upsert-electronic-signature-settings'
+                          ? 'Guardando firma...'
+                          : 'Guardar firma electronica'}
+                      </button>
+
+                      <p className={styles.muted}>
+                        Esta configuracion separa metadatos visibles del
+                        material sensible. Para `xades_pkcs12`, el sistema ya
+                        exige referencias al PKCS#12 y su password antes de
+                        firmar, aunque el signer siga siendo stub en este
+                        branch.
+                      </p>
+                    </form>
+                  </div>
+
+                  <div className={styles.detailCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Electronic submission</span>
+                        <h3>Gateway SRI</h3>
+                      </div>
+                    </div>
+
+                    <form
+                      className={styles.stack}
+                      onSubmit={handleUpsertElectronicSubmissionSettings}
+                    >
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Provider</span>
+                          <select
+                            className={styles.selectField}
+                            onChange={(event) =>
+                              setSubmissionProvider(
+                                event.target.value === 'sri_offline_ws'
+                                  ? 'sri_offline_ws'
+                                  : 'stub_sri',
+                              )
+                            }
+                            value={submissionProvider}
+                          >
+                            <option value="stub_sri">stub_sri</option>
+                            <option value="sri_offline_ws">sri_offline_ws</option>
+                          </select>
+                        </label>
+                        <label className={styles.field}>
+                          <span>Ambiente</span>
+                          <select
+                            className={styles.selectField}
+                            onChange={(event) =>
+                              setSubmissionEnvironment(
+                                event.target.value === 'production'
+                                  ? 'production'
+                                  : 'test',
+                              )
+                            }
+                            value={submissionEnvironment}
+                          >
+                            <option value="test">Pruebas</option>
+                            <option value="production">Produccion</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Modo de transmision</span>
+                          <select
+                            className={styles.selectField}
+                            onChange={(event) =>
+                              setSubmissionMode(
+                                event.target.value === 'offline'
+                                  ? 'offline'
+                                  : 'sync_stub',
+                              )
+                            }
+                            value={submissionMode}
+                          >
+                            <option value="sync_stub">sync_stub</option>
+                            <option value="offline">offline</option>
+                          </select>
+                        </label>
+                        <label className={styles.field}>
+                          <span>Timeout (ms)</span>
+                          <input
+                            min="1000"
+                            onChange={(event) =>
+                              setSubmissionTimeoutMs(event.target.value)
+                            }
+                            type="number"
+                            value={submissionTimeoutMs}
+                          />
+                        </label>
+                      </div>
+
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Reception URL</span>
+                          <input
+                            onChange={(event) =>
+                              setSubmissionReceptionUrl(event.target.value)
+                            }
+                            placeholder="https://celcer.sri.gob.ec/..."
+                            value={submissionReceptionUrl}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Authorization URL</span>
+                          <input
+                            onChange={(event) =>
+                              setSubmissionAuthorizationUrl(event.target.value)
+                            }
+                            placeholder="https://celcer.sri.gob.ec/..."
+                            value={submissionAuthorizationUrl}
+                          />
+                        </label>
+                      </div>
+
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Credentials secret ref</span>
+                          <input
+                            onChange={(event) =>
+                              setSubmissionCredentialsSecretRef(
+                                event.target.value,
+                              )
+                            }
+                            placeholder="vault://ec/sri/tenant-123"
+                            value={submissionCredentialsSecretRef}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Gateway readiness</span>
+                          <input
+                            disabled
+                            value={
+                              electronicSubmissionSettings?.gatewayConfigured
+                                ? 'Configurado'
+                                : 'Incompleto'
+                            }
+                          />
+                        </label>
+                      </div>
+
+                      <label className={styles.checkboxField}>
+                        <input
+                          checked={submissionIsActive}
+                          onChange={(event) =>
+                            setSubmissionIsActive(event.target.checked)
+                          }
+                          type="checkbox"
+                        />
+                        <span>Envio electronico habilitado para el tenant</span>
+                      </label>
+
+                      <button
+                        className={styles.primaryButton}
+                        disabled={
+                          !submissionTimeoutMs.trim() ||
+                          actionLoading ===
+                            'upsert-electronic-submission-settings'
+                        }
+                        type="submit"
+                      >
+                        {actionLoading === 'upsert-electronic-submission-settings'
+                          ? 'Guardando gateway...'
+                          : 'Guardar gateway SRI'}
+                      </button>
+
+                      <p className={styles.muted}>
+                        Este setting prepara la frontera real de recepcion y
+                        autorizacion. En `stub_sri` todo queda local; en
+                        `sri_offline_ws` ya empezamos a modelar URLs y secretos
+                        por tenant sin cambiar el contrato del gateway.
+                      </p>
+                    </form>
+                  </div>
+
+                  <div className={styles.detailCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
                         <span className={styles.label}>Customers</span>
                         <h3>{customers.length} registrados</h3>
                       </div>
@@ -2250,11 +3483,45 @@ export function App() {
                           />
                         </label>
                         <label className={styles.field}>
-                          <span>Tax ID</span>
+                          <span>Tipo identificacion</span>
+                          <select
+                            className={styles.selectField}
+                            onChange={(event) =>
+                              setNewCustomerIdentificationType(
+                                event.target.value as '04' | '05' | '06' | '07' | '08',
+                              )
+                            }
+                            value={newCustomerIdentificationType}
+                          >
+                            <option value="04">04 · RUC</option>
+                            <option value="05">05 · Cedula</option>
+                            <option value="06">06 · Pasaporte</option>
+                            <option value="07">07 · Consumidor final</option>
+                            <option value="08">08 · Exterior</option>
+                          </select>
+                        </label>
+                      </div>
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Identificacion</span>
                           <input
                             onChange={(event) => setNewCustomerTaxId(event.target.value)}
-                            placeholder="0999999999"
+                            placeholder={
+                              newCustomerIdentificationType === '07'
+                                ? '9999999999999'
+                                : '0999999999'
+                            }
                             value={newCustomerTaxId}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Direccion</span>
+                          <input
+                            onChange={(event) =>
+                              setNewCustomerBillingAddress(event.target.value)
+                            }
+                            placeholder="Direccion del comprador"
+                            value={newCustomerBillingAddress}
                           />
                         </label>
                       </div>
@@ -2271,7 +3538,7 @@ export function App() {
                           : 'Crear customer'}
                       </button>
                       <p className={styles.muted}>
-                        Cada customer queda aislado por tenant y despues podra reutilizarse en multiples facturas.
+                        Cada customer queda aislado por tenant y ahora tambien puede guardar la semantica Ecuador del comprador para reutilizarla en multiples facturas.
                       </p>
                     </form>
 
@@ -2287,7 +3554,14 @@ export function App() {
                           <div className={styles.invoiceCard} key={customer.id}>
                             <strong>{customer.name}</strong>
                             <span>{customer.email ?? 'Sin email'}</span>
-                            <small>{customer.taxId ?? 'Sin tax id'}</small>
+                            <small>
+                              {customer.identificationType
+                                ? `${formatBuyerIdentificationType(
+                                    customer.identificationType,
+                                  )}: ${customer.identification ?? 'Sin identificacion'}`
+                                : customer.taxId ?? 'Sin tax id'}
+                            </small>
+                            <small>{customer.billingAddress ?? 'Sin direccion'}</small>
                           </div>
                         ))}
                       </div>
@@ -2385,7 +3659,6 @@ export function App() {
                         disabled={
                           customers.length === 0 ||
                           !newInvoiceCustomerId ||
-                          !newInvoiceNumber.trim() ||
                           !newInvoiceCurrency.trim() ||
                           actionLoading === 'create-invoice'
                         }
@@ -2396,7 +3669,7 @@ export function App() {
                           : 'Crear factura'}
                       </button>
                       <p className={styles.muted}>
-                        Tip: usa estado <strong>draft</strong> para ir agregando items antes de pasarla a emitida.
+                        Tip: usa estado <strong>draft</strong> para ir agregando items antes de pasarla a emitida. Si dejas el numero vacio y ya configuraste la numeracion Ecuador, se autogenerara.
                       </p>
                     </form>
                   </div>
@@ -2511,7 +3784,9 @@ export function App() {
                               </span>
                             </div>
                             <span>
-                              {customerNameById.get(invoice.customerId) ?? invoice.customerId}
+                              {invoice.buyerName ??
+                                customerNameById.get(invoice.customerId) ??
+                                invoice.customerId}
                             </span>
                             <small>
                               {invoice.itemCount} items ·{' '}
@@ -2546,9 +3821,17 @@ export function App() {
                           <div>
                             <span className={styles.muted}>Customer</span>
                             <strong>
-                              {customerNameById.get(selectedInvoiceDetail.customerId) ??
+                              {selectedInvoiceDetail.buyerName ??
+                                customerNameById.get(selectedInvoiceDetail.customerId) ??
                                 selectedInvoiceDetail.customerId}
                             </strong>
+                            <small>
+                              {selectedInvoiceDetail.buyerIdentificationType
+                                ? `${formatBuyerIdentificationType(
+                                    selectedInvoiceDetail.buyerIdentificationType,
+                                  )}: ${selectedInvoiceDetail.buyerIdentification ?? 'Sin identificacion'}`
+                                : 'Sin identificacion Ecuador'}
+                            </small>
                           </div>
                           <div>
                             <span className={styles.muted}>Issued</span>
@@ -2566,6 +3849,26 @@ export function App() {
                             <span className={styles.muted}>Estado</span>
                             <strong>
                               {formatInvoiceStatus(selectedInvoiceDetail.status)}
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Serie Ecuador</span>
+                            <strong>
+                              {selectedInvoiceDetail.establishmentCode &&
+                              selectedInvoiceDetail.emissionPointCode
+                                ? `${selectedInvoiceDetail.establishmentCode}-${selectedInvoiceDetail.emissionPointCode}`
+                                : 'No configurada'}
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Secuencial</span>
+                            <strong>
+                              {selectedInvoiceDetail.sequenceNumber !== null
+                                ? String(selectedInvoiceDetail.sequenceNumber).padStart(
+                                    9,
+                                    '0',
+                                  )
+                                : 'Manual'}
                             </strong>
                           </div>
                         </div>
@@ -2615,6 +3918,14 @@ export function App() {
 
                         <div className={styles.invoiceTotalsGrid}>
                           <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Estado electronico</span>
+                            <strong>
+                              {formatElectronicStatus(
+                                selectedInvoiceDetail.electronicStatus,
+                              )}
+                            </strong>
+                          </div>
+                          <div className={styles.commercialCard}>
                             <span className={styles.muted}>Subtotal</span>
                             <strong>
                               {formatMoney(
@@ -2661,6 +3972,227 @@ export function App() {
                           </div>
                         </div>
 
+                        <div className={styles.detailCard}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Electronic status</span>
+                              <h3>Autorizacion SRI</h3>
+                            </div>
+                          </div>
+
+                          <form className={styles.stack} onSubmit={handleUpdateInvoiceElectronicStatus}>
+                            <div className={styles.invoiceInlineGrid}>
+                              <label className={styles.field}>
+                                <span>Estado</span>
+                                <select
+                                  className={styles.selectField}
+                                  onChange={(event) =>
+                                    setInvoiceElectronicStatus(
+                                      event.target.value as
+                                        | 'pending_submission'
+                                        | 'submitted'
+                                        | 'authorized'
+                                        | 'rejected',
+                                    )
+                                  }
+                                  value={invoiceElectronicStatus}
+                                >
+                                  <option value="pending_submission">Pendiente de envio</option>
+                                  <option value="submitted">Enviado al SRI</option>
+                                  <option value="authorized">Autorizada</option>
+                                  <option value="rejected">Rechazada</option>
+                                </select>
+                              </label>
+                              <label className={styles.field}>
+                                <span>Fecha autorizacion</span>
+                                <input
+                                  onChange={(event) =>
+                                    setInvoiceAuthorizedAt(event.target.value)
+                                  }
+                                  type="datetime-local"
+                                  value={invoiceAuthorizedAt}
+                                />
+                              </label>
+                            </div>
+
+                            <div className={styles.invoiceInlineGrid}>
+                              <label className={styles.field}>
+                                <span>Clave de acceso</span>
+                                <input
+                                  onChange={(event) => setInvoiceAccessKey(event.target.value)}
+                                  placeholder="49 digitos"
+                                  value={invoiceAccessKey}
+                                />
+                              </label>
+                              <label className={styles.field}>
+                                <span>No. autorizacion</span>
+                                <input
+                                  onChange={(event) =>
+                                    setInvoiceAuthorizationNumber(event.target.value)
+                                  }
+                                  placeholder="Numero de autorizacion SRI"
+                                  value={invoiceAuthorizationNumber}
+                                />
+                              </label>
+                            </div>
+
+                            <label className={styles.field}>
+                              <span>Mensaje SRI</span>
+                              <textarea
+                                onChange={(event) =>
+                                  setInvoiceElectronicStatusMessage(
+                                    event.target.value,
+                                  )
+                                }
+                                placeholder="Detalle tecnico o comercial del estado electronico"
+                                value={invoiceElectronicStatusMessage}
+                              />
+                            </label>
+
+                            <button
+                              className={styles.secondaryButton}
+                              disabled={
+                                actionLoading === 'invoice-electronic-status' ||
+                                selectedInvoiceDetail.status === 'draft'
+                              }
+                              type="submit"
+                            >
+                              {actionLoading === 'invoice-electronic-status'
+                                ? 'Actualizando...'
+                                : 'Actualizar estado electronico'}
+                            </button>
+                            <button
+                              className={styles.ghostButton}
+                              disabled={actionLoading === 'load-invoice-xml-preview'}
+                              onClick={() => void handleLoadInvoiceXmlPreview()}
+                              type="button"
+                            >
+                              {actionLoading === 'load-invoice-xml-preview'
+                                ? 'Cargando XML...'
+                                : 'Ver XML preliminar'}
+                            </button>
+                            <button
+                              className={styles.primaryButton}
+                              disabled={
+                                actionLoading === 'submit-invoice-electronic-document' ||
+                                selectedInvoiceDetail.status === 'draft'
+                              }
+                              onClick={() =>
+                                void handleSubmitInvoiceElectronicDocument()
+                              }
+                              type="button"
+                            >
+                              {actionLoading === 'submit-invoice-electronic-document'
+                                ? 'Firmando y enviando...'
+                                : 'Firmar y enviar (stub)'}
+                            </button>
+                            <button
+                              className={styles.secondaryButton}
+                              disabled={
+                                actionLoading ===
+                                  'check-invoice-electronic-authorization' ||
+                                selectedInvoiceDetail.electronicStatus !==
+                                  'submitted'
+                              }
+                              onClick={() =>
+                                void handleCheckInvoiceElectronicAuthorization()
+                              }
+                              type="button"
+                            >
+                              {actionLoading ===
+                              'check-invoice-electronic-authorization'
+                                ? 'Consultando autorizacion...'
+                                : 'Consultar autorizacion (stub)'}
+                            </button>
+                            <p className={styles.muted}>
+                              Puedes dejar vacia la clave de acceso para que el backend la genere desde el perfil fiscal y la numeracion Ecuador.
+                            </p>
+                          </form>
+                        </div>
+
+                        <div className={styles.invoiceDetailGrid}>
+                          <div className={styles.detailCard}>
+                            <span className={styles.muted}>Firma</span>
+                            <strong>
+                              {selectedInvoiceDetail.signedAt
+                                ? formatDate(selectedInvoiceDetail.signedAt)
+                                : 'Sin firma tecnica'}
+                            </strong>
+                          </div>
+                          <div className={styles.detailCard}>
+                            <span className={styles.muted}>Envio SRI</span>
+                            <strong>
+                              {selectedInvoiceDetail.submittedAt
+                                ? formatDate(selectedInvoiceDetail.submittedAt)
+                                : 'Sin envio registrado'}
+                            </strong>
+                            <small>
+                              {selectedInvoiceDetail.submissionReference ??
+                                'Sin referencia de envio'}
+                            </small>
+                          </div>
+                        </div>
+
+                        {selectedInvoiceDetail.electronicEvents.length > 0 ? (
+                          <div className={styles.detailCard}>
+                            <div className={styles.sectionHeading}>
+                              <div>
+                                <span className={styles.label}>Technical trace</span>
+                                <h3>Historial tecnico SRI</h3>
+                              </div>
+                            </div>
+
+                            <div className={styles.stack}>
+                              {selectedInvoiceDetail.electronicEvents.map((event) => (
+                                <div className={styles.detailCard} key={event.id}>
+                                  <span className={styles.muted}>
+                                    {event.eventType === 'submission'
+                                      ? 'Envio'
+                                      : 'Consulta de autorizacion'}
+                                  </span>
+                                  <strong>
+                                    {event.provider} / {event.providerStatus}
+                                  </strong>
+                                  <small>{formatDate(event.occurredAt)}</small>
+                                  <small>{event.message}</small>
+                                  <small>
+                                    {event.soapAction
+                                      ? `SOAP ${event.soapAction}`
+                                      : 'Sin SOAP action'}
+                                    {event.endpoint ? ` · ${event.endpoint}` : ''}
+                                  </small>
+                                  {event.submissionReference ? (
+                                    <small>
+                                      Ref: {event.submissionReference}
+                                    </small>
+                                  ) : null}
+                                  {event.authorizationNumber ? (
+                                    <small>
+                                      Autorizacion: {event.authorizationNumber}
+                                    </small>
+                                  ) : null}
+                                  {event.requestPayload ? (
+                                    <details>
+                                      <summary>Request payload</summary>
+                                      <pre className={styles.codeBlock}>
+                                        {event.requestPayload}
+                                      </pre>
+                                    </details>
+                                  ) : null}
+                                  {event.responsePayload ? (
+                                    <details>
+                                      <summary>Response payload</summary>
+                                      <pre className={styles.codeBlock}>
+                                        {event.responsePayload}
+                                      </pre>
+                                    </details>
+                                  ) : null}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
                         {selectedInvoiceDocument ? (
                           <div className={styles.documentPreview}>
                             <div className={styles.sectionHeading}>
@@ -2683,16 +4215,81 @@ export function App() {
                             <div className={styles.invoiceDetailGrid}>
                               <div className={styles.detailCard}>
                                 <span className={styles.muted}>Emisor</span>
-                                <strong>{selectedInvoiceDocument.issuer.tenantName}</strong>
-                                <small>{selectedInvoiceDocument.issuer.tenantSlug}</small>
+                                <strong>{selectedInvoiceDocument.issuer.legalName}</strong>
+                                <small>
+                                  {selectedInvoiceDocument.issuer.taxId
+                                    ? `RUC ${selectedInvoiceDocument.issuer.taxId}`
+                                    : selectedInvoiceDocument.issuer.tenantSlug}
+                                </small>
                               </div>
                               <div className={styles.detailCard}>
                                 <span className={styles.muted}>Cliente</span>
                                 <strong>{selectedInvoiceDocument.customer.name}</strong>
                                 <small>
-                                  {selectedInvoiceDocument.customer.taxId ??
-                                    selectedInvoiceDocument.customer.email ??
-                                    'Sin identificacion fiscal'}
+                                  {selectedInvoiceDocument.customer.identificationType
+                                    ? `${formatBuyerIdentificationType(
+                                        selectedInvoiceDocument.customer.identificationType,
+                                      )}: ${
+                                        selectedInvoiceDocument.customer.identification ??
+                                        'Sin identificacion'
+                                      }`
+                                    : selectedInvoiceDocument.customer.taxId ??
+                                      selectedInvoiceDocument.customer.email ??
+                                      'Sin identificacion fiscal'}
+                                </small>
+                                <small>
+                                  {selectedInvoiceDocument.customer.billingAddress ??
+                                    'Sin direccion del comprador'}
+                                </small>
+                              </div>
+                            </div>
+
+                            <div className={styles.invoiceDetailGrid}>
+                              <div className={styles.detailCard}>
+                                <span className={styles.muted}>Ambiente</span>
+                                <strong>
+                                  {selectedInvoiceDocument.issuer.environment ??
+                                    'No configurado'}
+                                </strong>
+                                <small>
+                                  Emision:{' '}
+                                  {selectedInvoiceDocument.issuer.emissionType ??
+                                    'No configurada'}
+                                </small>
+                              </div>
+                              <div className={styles.detailCard}>
+                                <span className={styles.muted}>Estado electronico</span>
+                                <strong>
+                                  {formatElectronicStatus(
+                                    selectedInvoiceDocument.invoice.electronicStatus,
+                                  )}
+                                </strong>
+                                <small>
+                                  {selectedInvoiceDocument.invoice.authorizationNumber ??
+                                    selectedInvoiceDocument.invoice.accessKey ??
+                                    'Sin autorizacion registrada'}
+                                </small>
+                              </div>
+                              <div className={styles.detailCard}>
+                                <span className={styles.muted}>Numeracion</span>
+                                <strong>
+                                  {selectedInvoiceDocument.invoice.documentCode ??
+                                    'Sin codDoc'}{' '}
+                                  ·{' '}
+                                  {selectedInvoiceDocument.invoice.establishmentCode ??
+                                    '---'}
+                                  -
+                                  {selectedInvoiceDocument.invoice.emissionPointCode ??
+                                    '---'}
+                                </strong>
+                                <small>
+                                  Secuencial:{' '}
+                                  {selectedInvoiceDocument.invoice.sequenceNumber !==
+                                  null
+                                    ? String(
+                                        selectedInvoiceDocument.invoice.sequenceNumber,
+                                      ).padStart(9, '0')
+                                    : 'Manual'}
                                 </small>
                               </div>
                             </div>
@@ -2795,6 +4392,23 @@ export function App() {
                                 </button>
                               </form>
                             ) : null}
+                          </div>
+                        ) : null}
+
+                        {selectedInvoiceXmlPreview ? (
+                          <div className={styles.detailCard}>
+                            <div className={styles.sectionHeading}>
+                              <div>
+                                <span className={styles.label}>Electronic XML</span>
+                                <h3>Vista previa del comprobante</h3>
+                              </div>
+                            </div>
+                            <pre className={styles.codeBlock}>
+                              {selectedInvoiceXmlPreview}
+                            </pre>
+                            <p className={styles.muted}>
+                              Este XML es un preview estructural para validar el modelo Ecuador antes de firma y envio real al SRI.
+                            </p>
                           </div>
                         ) : null}
 

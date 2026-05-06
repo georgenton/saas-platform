@@ -1,5 +1,5 @@
 import { TenantNotFoundError, TenantRepository } from '@saas-platform/tenancy-application';
-import { Customer } from '@saas-platform/invoicing-domain';
+import { BuyerIdentificationType, Customer } from '@saas-platform/invoicing-domain';
 import { CustomerIdGenerator } from '../ports/customer-id.generator';
 import { CustomerRepository } from '../ports/customer.repository';
 
@@ -8,6 +8,9 @@ export interface CreateTenantCustomerInput {
   name: string;
   email?: string | null;
   taxId?: string | null;
+  identificationType?: BuyerIdentificationType | null;
+  identification?: string | null;
+  billingAddress?: string | null;
 }
 
 export class CreateTenantCustomerUseCase {
@@ -25,12 +28,22 @@ export class CreateTenantCustomerUseCase {
     }
 
     const now = new Date();
+    const identificationType = this.normalizeOptionalValue(
+      input.identificationType,
+    ) as BuyerIdentificationType | null;
+    const normalizedIdentification = this.resolveIdentification(
+      identificationType,
+      input.identification ?? input.taxId,
+    );
     const customer = Customer.create({
       id: this.customerIdGenerator.generate(),
       tenantId: tenant.id,
       name: input.name.trim(),
       email: this.normalizeOptionalEmail(input.email),
-      taxId: this.normalizeOptionalValue(input.taxId),
+      taxId: normalizedIdentification,
+      identificationType,
+      identification: normalizedIdentification,
+      billingAddress: this.normalizeOptionalValue(input.billingAddress),
       createdAt: now,
       updatedAt: now,
     });
@@ -50,5 +63,16 @@ export class CreateTenantCustomerUseCase {
     const normalizedValue = value?.trim();
 
     return normalizedValue ? normalizedValue : null;
+  }
+
+  private resolveIdentification(
+    identificationType: BuyerIdentificationType | null,
+    value?: string | null,
+  ): string | null {
+    if (identificationType === '07') {
+      return '9999999999999';
+    }
+
+    return this.normalizeOptionalValue(value);
   }
 }

@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  DescribeElectronicInvoiceSignerCapabilityInput,
   ElectronicInvoiceSigner,
+  ElectronicInvoiceSignerCapability,
   SECRET_REFERENCE_RESOLVER,
   SecretReferenceResolver,
   SignElectronicInvoiceInput,
@@ -15,6 +17,17 @@ export class StubXadesPkcs12ElectronicInvoiceSigner
     @Inject(SECRET_REFERENCE_RESOLVER)
     private readonly secretReferenceResolver: SecretReferenceResolver,
   ) {}
+
+  describeCapability(
+    _input: DescribeElectronicInvoiceSignerCapabilityInput,
+  ): ElectronicInvoiceSignerCapability {
+    return {
+      signatureMode: 'xades_pkcs12_stub',
+      supportsSriOfflineSubmission: false,
+      detail:
+        'El provider xades_pkcs12 aun usa una firma simulada. La frontera de PKCS#12 ya existe, pero todavia no produce una firma criptografica valida para SRI sandbox.',
+    };
+  }
 
   async sign(
     input: SignElectronicInvoiceInput,
@@ -57,6 +70,9 @@ export class StubXadesPkcs12ElectronicInvoiceSigner
       signedXml: input.xml.replace('</factura>', `${signatureBlock}\n</factura>`),
       signedAt,
       signerName: `xades_pkcs12:${subjectName}`,
+      capability: this.describeCapability({
+        signatureSettings: input.signatureSettings,
+      }),
     };
   }
 }

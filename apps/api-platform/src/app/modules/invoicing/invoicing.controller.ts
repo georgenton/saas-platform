@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   BadRequestException,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -18,6 +19,7 @@ import {
   CreateTenantInvoiceItemUseCase,
   CreateTenantInvoicePaymentUseCase,
   CreateTenantTaxRateUseCase,
+  GetTenantElectronicSandboxReadinessUseCase,
   CustomerEmailMissingError,
   ElectronicSubmissionSettingsNotFoundError,
   ElectronicSignatureSettingsNotFoundError,
@@ -47,6 +49,7 @@ import {
   InvoiceElectronicSubmissionGatewayIncompleteError,
   InvoiceElectronicSubmissionNotConfiguredError,
   InvoiceElectronicSecretResolutionError,
+  InvoiceElectronicRemoteSubmissionReadinessError,
   InvoiceElectronicSignatureMaterialIncompleteError,
   InvoiceElectronicXmlValidationError,
   InvalidInvoicePaymentStateError,
@@ -59,10 +62,14 @@ import {
   InvoicePaymentExceedsBalanceError,
   IssuerProfileNotFoundError,
   PaymentNotFoundError,
+  buildInvoiceRideView,
+  buildInvoiceElectronicDocumentArtifactsView,
   ReverseTenantInvoicePaymentUseCase,
   renderInvoiceDocumentHtml,
+  renderInvoiceRideHtml,
   SendTenantInvoiceEmailUseCase,
   SubmitTenantInvoiceElectronicDocumentUseCase,
+  SubmitTenantPresignedInvoiceElectronicDocumentUseCase,
   TaxRateNotFoundError,
   UpdateTenantInvoiceStatusUseCase,
   UpdateTenantInvoiceElectronicStatusUseCase,
@@ -89,6 +96,7 @@ import { CreateTaxRateRequestDto } from './dto/create-tax-rate.request';
 import { CreateInvoicePaymentRequestDto } from './dto/create-invoice-payment.request';
 import { ReverseInvoicePaymentRequestDto } from './dto/reverse-invoice-payment.request';
 import { SendInvoiceEmailRequestDto } from './dto/send-invoice-email.request';
+import { SubmitPresignedInvoiceElectronicDocumentRequestDto } from './dto/submit-presigned-invoice-electronic-document.request';
 import { UpdateInvoiceStatusRequestDto } from './dto/update-invoice-status.request';
 import { UpdateInvoiceElectronicStatusRequestDto } from './dto/update-invoice-electronic-status.request';
 import { UpsertElectronicSubmissionSettingsRequestDto } from './dto/upsert-electronic-submission-settings.request';
@@ -99,6 +107,10 @@ import {
   ElectronicSubmissionSettingsResponseDto,
   toElectronicSubmissionSettingsResponseDto,
 } from './dto/electronic-submission-settings.response';
+import {
+  ElectronicSandboxReadinessResponseDto,
+  toElectronicSandboxReadinessResponseDto,
+} from './dto/electronic-sandbox-readiness.response';
 import {
   ElectronicSignatureSettingsResponseDto,
   toElectronicSignatureSettingsResponseDto,
@@ -137,6 +149,14 @@ import {
   toInvoiceDocumentResponseDto,
 } from './dto/invoice-document.response';
 import {
+  InvoiceRideResponseDto,
+  toInvoiceRideResponseDto,
+} from './dto/invoice-ride.response';
+import {
+  InvoiceElectronicArtifactsResponseDto,
+  toInvoiceElectronicArtifactsResponseDto,
+} from './dto/invoice-electronic-artifacts.response';
+import {
   InvoiceSummaryResponseDto,
   toInvoiceSummaryResponseDto,
 } from './dto/invoice-summary.response';
@@ -144,6 +164,10 @@ import {
   TaxRateResponseDto,
   toTaxRateResponseDto,
 } from './dto/tax-rate.response';
+
+type HeaderWritableResponse = {
+  setHeader(name: string, value: string): void;
+};
 
 @Controller('invoicing/tenants')
 @UseGuards(
@@ -160,6 +184,7 @@ export class InvoicingController {
     private readonly createTenantInvoiceItemUseCase: CreateTenantInvoiceItemUseCase,
     private readonly createTenantInvoicePaymentUseCase: CreateTenantInvoicePaymentUseCase,
     private readonly createTenantTaxRateUseCase: CreateTenantTaxRateUseCase,
+    private readonly getTenantElectronicSandboxReadinessUseCase: GetTenantElectronicSandboxReadinessUseCase,
     private readonly getTenantCustomerByIdUseCase: GetTenantCustomerByIdUseCase,
     private readonly getTenantElectronicSubmissionSettingsUseCase: GetTenantElectronicSubmissionSettingsUseCase,
     private readonly getTenantElectronicSignatureSettingsUseCase: GetTenantElectronicSignatureSettingsUseCase,
@@ -179,6 +204,7 @@ export class InvoicingController {
     private readonly sendTenantInvoiceEmailUseCase: SendTenantInvoiceEmailUseCase,
     private readonly checkTenantInvoiceElectronicAuthorizationUseCase: CheckTenantInvoiceElectronicAuthorizationUseCase,
     private readonly submitTenantInvoiceElectronicDocumentUseCase: SubmitTenantInvoiceElectronicDocumentUseCase,
+    private readonly submitTenantPresignedInvoiceElectronicDocumentUseCase: SubmitTenantPresignedInvoiceElectronicDocumentUseCase,
     private readonly updateTenantInvoiceStatusUseCase: UpdateTenantInvoiceStatusUseCase,
     private readonly updateTenantInvoiceElectronicStatusUseCase: UpdateTenantInvoiceElectronicStatusUseCase,
     private readonly upsertTenantElectronicSubmissionSettingsUseCase: UpsertTenantElectronicSubmissionSettingsUseCase,
@@ -262,6 +288,28 @@ export class InvoicingController {
         error instanceof TenantNotFoundError ||
         error instanceof ElectronicSubmissionSettingsNotFoundError
       ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/electronic-document/readiness')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantElectronicSandboxReadiness(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<ElectronicSandboxReadinessResponseDto> {
+    try {
+      const readiness =
+        await this.getTenantElectronicSandboxReadinessUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toElectronicSandboxReadinessResponseDto(readiness);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
       }
 
@@ -651,6 +699,124 @@ export class InvoicingController {
     }
   }
 
+  @Get(':slug/invoices/:invoiceId/electronic-document/ride')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantInvoiceElectronicRide(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceRideResponseDto> {
+    try {
+      const document = await this.getTenantInvoiceDocumentUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+
+      return toInvoiceRideResponseDto(buildInvoiceRideView(document));
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/invoices/:invoiceId/electronic-document/ride/html')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantInvoiceElectronicRideHtml(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<string> {
+    try {
+      const document = await this.getTenantInvoiceDocumentUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+
+      return renderInvoiceRideHtml(buildInvoiceRideView(document));
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/invoices/:invoiceId/electronic-document/artifacts')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantInvoiceElectronicArtifacts(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceElectronicArtifactsResponseDto> {
+    try {
+      const document = await this.getTenantInvoiceDocumentUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+
+      return toInvoiceElectronicArtifactsResponseDto(
+        buildInvoiceElectronicDocumentArtifactsView(document),
+      );
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/invoices/:invoiceId/electronic-document/ride/download')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async downloadTenantInvoiceElectronicRideHtml(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+    @Res({ passthrough: true }) response?: HeaderWritableResponse,
+  ): Promise<string> {
+    try {
+      const document = await this.getTenantInvoiceDocumentUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        invoiceId,
+      );
+      const artifacts = buildInvoiceElectronicDocumentArtifactsView(document);
+      response?.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${artifacts.rideHtmlFileName}"`,
+      );
+
+      return renderInvoiceRideHtml(buildInvoiceRideView(document));
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Get(':slug/invoices/:invoiceId/electronic-document/xml')
   @Header('Content-Type', 'application/xml; charset=utf-8')
   @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
@@ -664,6 +830,50 @@ export class InvoicingController {
         tenantAccess?.tenantSlug ?? slug,
         invoiceId,
       );
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof CustomerNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof InvoiceElectronicMetadataIncompleteError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/invoices/:invoiceId/electronic-document/xml/download')
+  @Header('Content-Type', 'application/xml; charset=utf-8')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async downloadTenantInvoiceElectronicXmlPreview(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+    @Res({ passthrough: true }) response?: HeaderWritableResponse,
+  ): Promise<string> {
+    try {
+      const [document, xml] = await Promise.all([
+        this.getTenantInvoiceDocumentUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+          invoiceId,
+        ),
+        this.getTenantInvoiceElectronicXmlPreviewUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+          invoiceId,
+        ),
+      ]);
+      const artifacts = buildInvoiceElectronicDocumentArtifactsView(document);
+      response?.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${artifacts.xmlFileName}"`,
+      );
+
+      return xml;
     } catch (error) {
       if (
         error instanceof TenantNotFoundError ||
@@ -748,8 +958,55 @@ export class InvoicingController {
         error instanceof InvoiceElectronicMetadataIncompleteError ||
         error instanceof InvoiceElectronicSubmissionGatewayIncompleteError ||
         error instanceof InvoiceElectronicSubmissionNotConfiguredError ||
+        error instanceof InvoiceElectronicRemoteSubmissionReadinessError ||
         error instanceof InvoiceElectronicSignatureMaterialIncompleteError ||
         error instanceof InvoiceElectronicSignatureNotConfiguredError ||
+        error instanceof InvoiceElectronicSecretResolutionError ||
+        error instanceof InvoiceElectronicXmlValidationError
+      ) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/invoices/:invoiceId/electronic-document/submit-presigned')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async submitTenantPresignedInvoiceElectronicDocument(
+    @Param('slug') slug: string,
+    @Param('invoiceId') invoiceId: string,
+    @Body() body: SubmitPresignedInvoiceElectronicDocumentRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<SubmitInvoiceElectronicDocumentResponseDto> {
+    try {
+      const invoice =
+        await this.submitTenantPresignedInvoiceElectronicDocumentUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          invoiceId,
+          signedXml: body.signedXml,
+          signerName: body.signerName ?? null,
+        });
+
+      return toSubmitInvoiceElectronicDocumentResponseDto({
+        electronicStatus: invoice.electronicStatus,
+        accessKey: invoice.accessKey,
+        submittedAt: invoice.submittedAt,
+        submissionReference: invoice.submissionReference,
+      });
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (
+        error instanceof InvalidInvoiceElectronicSubmissionStateError ||
+        error instanceof InvoiceElectronicMetadataIncompleteError ||
+        error instanceof InvoiceElectronicSubmissionGatewayIncompleteError ||
+        error instanceof InvoiceElectronicSubmissionNotConfiguredError ||
         error instanceof InvoiceElectronicSecretResolutionError ||
         error instanceof InvoiceElectronicXmlValidationError
       ) {

@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import {
+  DescribeElectronicInvoiceSignerCapabilityInput,
   ElectronicInvoiceSigner,
+  ElectronicInvoiceSignerCapability,
   SignElectronicInvoiceInput,
   SignedElectronicInvoice,
 } from '@saas-platform/invoicing-application';
@@ -15,6 +17,20 @@ export class RoutingElectronicInvoiceSigner
     private readonly stubLocalElectronicInvoiceSigner: StubLocalElectronicInvoiceSigner,
     private readonly stubXadesPkcs12ElectronicInvoiceSigner: StubXadesPkcs12ElectronicInvoiceSigner,
   ) {}
+
+  describeCapability(
+    input: DescribeElectronicInvoiceSignerCapabilityInput,
+  ): ElectronicInvoiceSignerCapability {
+    switch (input.signatureSettings.provider) {
+      case 'xades_pkcs12':
+        return this.stubXadesPkcs12ElectronicInvoiceSigner.describeCapability(
+          input,
+        );
+      case 'stub_local':
+      default:
+        return this.stubLocalElectronicInvoiceSigner.describeCapability(input);
+    }
+  }
 
   async sign(
     input: SignElectronicInvoiceInput,

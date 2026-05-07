@@ -222,6 +222,25 @@ export interface ElectronicSubmissionSettingsResponse {
   updatedAt: string;
 }
 
+export interface ElectronicSandboxReadinessResponse {
+  tenantSlug: string;
+  stage: 'electronic_invoicing_ec_mvp';
+  environment: 'test' | 'production' | null;
+  signatureProvider: string | null;
+  submissionProvider: string | null;
+  transmissionMode: string | null;
+  isReadyForRemoteSandboxSubmission: boolean;
+  blockers: string[];
+  warnings: string[];
+  checks: Array<{
+    key: string;
+    label: string;
+    status: 'ready' | 'warning' | 'blocked';
+    detail: string;
+  }>;
+  recommendedNextStep: string;
+}
+
 export interface InvoiceTotals {
   subtotalInCents: number;
   taxInCents: number;
@@ -418,6 +437,41 @@ export interface InvoiceDocumentResponse {
     lineTotalInCents: number;
   }[];
   totals: InvoiceTotals;
+}
+
+export interface InvoiceRideResponse {
+  issuer: InvoiceDocumentResponse['issuer'];
+  customer: InvoiceDocumentResponse['customer'];
+  invoice: InvoiceDocumentResponse['invoice'];
+  lines: InvoiceDocumentResponse['lines'];
+  totals: InvoiceTotals;
+  ride: {
+    documentLabel: string;
+    environmentLabel: string;
+    emissionTypeLabel: string;
+    sequenceDisplay: string | null;
+    electronicStatusLabel: string;
+    canBePrintedAsAuthorized: boolean;
+    accessKey: string | null;
+    accessKeyChunks: string[];
+    authorizationNumber: string | null;
+    authorizedAt: string | null;
+    authorizationMessage: string | null;
+    additionalInfoFields: Array<{
+      label: string;
+      value: string;
+    }>;
+  };
+}
+
+export interface InvoiceElectronicArtifactsResponse {
+  fileBaseName: string;
+  rideHtmlFileName: string;
+  xmlFileName: string;
+  accessKey: string | null;
+  electronicStatus: string | null;
+  canDownloadRide: boolean;
+  canDownloadXml: boolean;
 }
 
 export interface InvoicingReportSummaryResponse {

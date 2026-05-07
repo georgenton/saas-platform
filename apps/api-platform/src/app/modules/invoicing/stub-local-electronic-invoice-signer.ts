@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import {
+  DescribeElectronicInvoiceSignerCapabilityInput,
   ElectronicInvoiceSigner,
+  ElectronicInvoiceSignerCapability,
   SignElectronicInvoiceInput,
   SignedElectronicInvoice,
 } from '@saas-platform/invoicing-application';
@@ -9,6 +11,17 @@ import {
 export class StubLocalElectronicInvoiceSigner
   implements ElectronicInvoiceSigner
 {
+  describeCapability(
+    _input: DescribeElectronicInvoiceSignerCapabilityInput,
+  ): ElectronicInvoiceSignerCapability {
+    return {
+      signatureMode: 'stub_local',
+      supportsSriOfflineSubmission: false,
+      detail:
+        'La firma stub_local sirve para demos y previews, pero no genera una firma valida para el esquema offline del SRI.',
+    };
+  }
+
   async sign(
     input: SignElectronicInvoiceInput,
   ): Promise<SignedElectronicInvoice> {
@@ -25,6 +38,9 @@ export class StubLocalElectronicInvoiceSigner
       signedXml: input.xml.replace('</factura>', `${signatureBlock}\n</factura>`),
       signedAt,
       signerName: `stub_local:${input.signatureSettings.certificateLabel}`,
+      capability: this.describeCapability({
+        signatureSettings: input.signatureSettings,
+      }),
     };
   }
 }

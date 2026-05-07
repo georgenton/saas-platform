@@ -1,9 +1,9 @@
 {
   "info": {
     "_postman_id": "b0a90256-0d77-4a79-a4bc-71b3416cc184",
-    "name": "SaaS Platform Local",
+    "name": "SaaS Platform Local - Invoicing EC",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Coleccion local para probar identidad, tenancy, auth session e invitaciones."
+    "description": "Coleccion local para probar onboarding, tenancy y el flujo completo de Electronic Invoicing EC. Incluye captura automatica de IDs y referencias para que el recorrido en Postman Runner sea mas fluido."
   },
   "variable": [
     {
@@ -13,10 +13,21 @@
   ],
   "item": [
     {
-      "name": "Health",
+      "name": "01. Health",
       "item": [
         {
           "name": "API / Hello",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}"
@@ -25,7 +36,7 @@
       ]
     },
     {
-      "name": "Identity",
+      "name": "02. Identity & Auth",
       "item": [
         {
           "name": "Register Owner",
@@ -35,11 +46,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.response.code === 200) {",
-                  "  const data = pm.response.json();",
-                  "  pm.environment.set('ownerUserId', data.id);",
-                  "  pm.environment.set('ownerEmail', data.email);",
-                  "}"
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('ownerUserId', data.id);",
+                  "if (data.email) pm.environment.set('ownerEmail', data.email);"
                 ]
               }
             }
@@ -67,11 +77,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.response.code === 200) {",
-                  "  const data = pm.response.json();",
-                  "  pm.environment.set('inviteeUserId', data.id);",
-                  "  pm.environment.set('inviteeEmail', data.email);",
-                  "}"
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('inviteeUserId', data.id);",
+                  "if (data.email) pm.environment.set('inviteeEmail', data.email);"
                 ]
               }
             }
@@ -93,94 +102,37 @@
         },
         {
           "name": "Get Owner By Id",
-          "request": {
-            "method": "GET",
-            "url": "{{baseUrl}}/identity/users/{{ownerUserId}}"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Tenancy",
-      "item": [
-        {
-          "name": "Create Tenant",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.response.code === 201) {",
-                  "  const data = pm.response.json();",
-                  "  pm.environment.set('tenantSlug', data.slug);",
-                  "  pm.environment.set('tenantId', data.id);",
-                  "}"
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
                 ]
               }
             }
           ],
           "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"SaaS Platform Local\",\n  \"slug\": \"{{tenantSlug}}\",\n  \"ownerUserId\": \"{{ownerUserId}}\"\n}"
-            },
-            "url": "{{baseUrl}}/tenancy/tenants"
+            "method": "GET",
+            "url": "{{baseUrl}}/identity/users/{{ownerUserId}}"
           }
         },
         {
-          "name": "Get Tenant",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{ownerToken}}"
+          "name": "Get Session (Owner)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.currentTenancy && data.currentTenancy.tenant && data.currentTenancy.tenant.slug) pm.environment.set('tenantSlug', data.currentTenancy.tenant.slug);"
+                ]
               }
-            ],
-            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}"
-          }
-        },
-        {
-          "name": "List Memberships",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{ownerToken}}"
-              }
-            ],
-            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/memberships"
-          }
-        },
-        {
-          "name": "Get Member Access",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{ownerToken}}"
-              }
-            ],
-            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/memberships/{{inviteeUserId}}/access"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "Get Session",
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -193,7 +145,18 @@
           }
         },
         {
-          "name": "Set Current Tenancy",
+          "name": "Set Current Tenancy (Owner)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "PUT",
             "header": [
@@ -215,6 +178,17 @@
         },
         {
           "name": "Get Invitation For Invitee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -228,6 +202,17 @@
         },
         {
           "name": "Accept Invitation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -242,8 +227,174 @@
       ]
     },
     {
-      "name": "Invitations",
+      "name": "03. Tenancy & Invitations",
       "item": [
+        {
+          "name": "Create Tenant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.slug) pm.environment.set('tenantSlug', data.slug);",
+                  "if (data.id) pm.environment.set('tenantId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"SaaS Platform Local\",\n  \"slug\": \"{{tenantSlug}}\",\n  \"ownerUserId\": \"{{ownerUserId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/tenancy/tenants"
+          }
+        },
+        {
+          "name": "Set Tenant Subscription (Growth)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planKey\": \"{{subscriptionPlanKey}}\",\n  \"status\": \"{{subscriptionStatus}}\"\n}"
+            },
+            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/subscription"
+          }
+        },
+        {
+          "name": "Get Tenant Enabled Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "const keys = Array.isArray(data) ? data.map((item) => item.key).filter(Boolean) : [];",
+                  "pm.environment.set('enabledProductKeys', JSON.stringify(keys));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/products"
+          }
+        },
+        {
+          "name": "Get Tenant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}"
+          }
+        },
+        {
+          "name": "List Memberships",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/memberships"
+          }
+        },
+        {
+          "name": "Get Member Access",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/memberships/{{inviteeUserId}}/access"
+          }
+        },
         {
           "name": "Create Invitation",
           "event": [
@@ -252,10 +403,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "if (pm.response.code === 201) {",
-                  "  const data = pm.response.json();",
-                  "  pm.environment.set('invitationId', data.id);",
-                  "}"
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('invitationId', data.id);"
                 ]
               }
             }
@@ -281,6 +431,17 @@
         },
         {
           "name": "List Tenant Invitations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -294,6 +455,17 @@
         },
         {
           "name": "Get Tenant Invitation Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -307,6 +479,17 @@
         },
         {
           "name": "Resend Invitation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -320,6 +503,17 @@
         },
         {
           "name": "Cancel Invitation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "DELETE",
             "header": [
@@ -330,6 +524,1190 @@
             ],
             "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/invitations/{{invitationId}}"
           }
+        }
+      ]
+    },
+    {
+      "name": "04. Invoicing Setup",
+      "item": [
+        {
+          "name": "Get Electronic Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-profile"
+          }
+        },
+        {
+          "name": "Upsert Electronic Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.taxId) pm.environment.set('issuerTaxId', data.taxId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"legalName\": \"{{issuerLegalName}}\",\n  \"commercialName\": \"{{issuerCommercialName}}\",\n  \"taxId\": \"{{issuerTaxId}}\",\n  \"environment\": \"{{issuerEnvironment}}\",\n  \"emissionType\": \"normal\",\n  \"accountingObligated\": true,\n  \"specialTaxpayerCode\": null,\n  \"rimpeTaxpayerType\": null,\n  \"matrixAddress\": \"{{issuerMatrixAddress}}\",\n  \"establishmentAddress\": \"{{issuerEstablishmentAddress}}\"\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-profile"
+          }
+        },
+        {
+          "name": "Get Electronic Signature",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-signature"
+          }
+        },
+        {
+          "name": "Upsert Electronic Signature",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"{{signatureProvider}}\",\n  \"certificateLabel\": \"{{signatureCertificateLabel}}\",\n  \"storageMode\": \"{{signatureStorageMode}}\",\n  \"certificateFingerprint\": \"{{signatureCertificateFingerprint}}\",\n  \"pkcs12SecretRef\": {{signaturePkcs12SecretRefJson}},\n  \"privateKeyPasswordSecretRef\": {{signaturePasswordSecretRefJson}},\n  \"subjectName\": {{signatureSubjectNameJson}},\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-signature"
+          }
+        },
+        {
+          "name": "Get Electronic Submission",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-submission"
+          }
+        },
+        {
+          "name": "Get Electronic Sandbox Readiness",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.environment.set('sandboxReady', String(Boolean(data.isReadyForRemoteSandboxSubmission)));",
+                  "pm.environment.set('sandboxRecommendedNextStep', data.recommendedNextStep || '');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-document/readiness"
+          }
+        },
+        {
+          "name": "Upsert Electronic Submission",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"{{submissionProvider}}\",\n  \"environment\": \"{{submissionEnvironment}}\",\n  \"transmissionMode\": \"{{submissionMode}}\",\n  \"receptionUrl\": {{submissionReceptionUrlJson}},\n  \"authorizationUrl\": {{submissionAuthorizationUrlJson}},\n  \"credentialsSecretRef\": {{submissionCredentialsSecretRefJson}},\n  \"timeoutMs\": {{submissionTimeoutMs}},\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-submission"
+          }
+        },
+        {
+          "name": "Get Invoice Numbering",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/invoice"
+          }
+        },
+        {
+          "name": "Upsert Invoice Numbering",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentCode\": \"{{documentCode}}\",\n  \"establishmentCode\": \"{{establishmentCode}}\",\n  \"emissionPointCode\": \"{{emissionPointCode}}\",\n  \"nextSequenceNumber\": {{nextSequenceNumber}}\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/invoice"
+          }
+        },
+        {
+          "name": "Get Report Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/reports/summary"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Invoicing Master Data",
+      "item": [
+        {
+          "name": "List Customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/customers"
+          }
+        },
+        {
+          "name": "Create Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('customerId', data.id);",
+                  "if (data.name) pm.environment.set('customerName', data.name);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{customerName}}\",\n  \"email\": \"{{customerEmail}}\",\n  \"taxId\": \"{{customerTaxId}}\",\n  \"identificationType\": \"{{customerIdentificationType}}\",\n  \"identification\": \"{{customerIdentification}}\",\n  \"billingAddress\": \"{{customerBillingAddress}}\"\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/customers"
+          }
+        },
+        {
+          "name": "Get Customer By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/customers/{{customerId}}"
+          }
+        },
+        {
+          "name": "List Taxes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/taxes"
+          }
+        },
+        {
+          "name": "Create Tax Rate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('taxRateId', data.id);",
+                  "if (data.name) pm.environment.set('taxRateName', data.name);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{taxRateName}}\",\n  \"percentage\": {{taxRatePercentage}},\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/taxes"
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Invoicing Invoices",
+      "item": [
+        {
+          "name": "List Invoices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices"
+          }
+        },
+        {
+          "name": "Create Invoice (auto numbering)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('invoiceId', data.id);",
+                  "if (data.number) pm.environment.set('invoiceNumber', data.number);",
+                  "if (data.accessKey) pm.environment.set('accessKey', data.accessKey);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"currency\": \"{{invoiceCurrency}}\",\n  \"status\": \"{{invoiceStatus}}\",\n  \"issuedAt\": \"{{invoiceIssuedAt}}\",\n  \"dueAt\": \"{{invoiceDueAt}}\",\n  \"notes\": \"{{invoiceNotes}}\"\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices"
+          }
+        },
+        {
+          "name": "Get Invoice Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('invoiceId', data.id);",
+                  "if (data.number) pm.environment.set('invoiceNumber', data.number);",
+                  "if (data.accessKey) pm.environment.set('accessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('submissionReference', data.submissionReference);",
+                  "if (data.authorizationNumber) pm.environment.set('authorizationNumber', data.authorizationNumber);",
+                  "if (Array.isArray(data.items) && data.items[0] && data.items[0].id) pm.environment.set('invoiceItemId', data.items[0].id);",
+                  "if (Array.isArray(data.payments) && data.payments[0] && data.payments[0].id) pm.environment.set('paymentId', data.payments[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}"
+          }
+        },
+        {
+          "name": "Get Invoice Document",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/document"
+          }
+        },
+        {
+          "name": "Get Invoice Document HTML",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/document/html"
+          }
+        },
+        {
+          "name": "Update Invoice Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"{{invoiceTransitionStatus}}\"\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/status"
+          }
+        },
+        {
+          "name": "Update Electronic Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"electronicStatus\": \"{{electronicStatus}}\",\n  \"accessKey\": {{accessKeyJson}},\n  \"authorizationNumber\": {{authorizationNumberJson}},\n  \"authorizedAt\": {{authorizedAtJson}},\n  \"electronicStatusMessage\": {{electronicStatusMessageJson}}\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-status"
+          }
+        },
+        {
+          "name": "Send Invoice Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientEmail\": \"{{invoiceEmailRecipient}}\",\n  \"message\": \"{{invoiceEmailMessage}}\"\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/send-email"
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Invoicing Items",
+      "item": [
+        {
+          "name": "List Invoice Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/items"
+          }
+        },
+        {
+          "name": "Create Invoice Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('invoiceItemId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"{{itemDescription}}\",\n  \"quantity\": {{itemQuantity}},\n  \"unitPriceInCents\": {{itemUnitPriceInCents}},\n  \"taxRateId\": \"{{taxRateId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/items"
+          }
+        },
+        {
+          "name": "Get Invoice Item By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/items/{{invoiceItemId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Invoicing Payments",
+      "item": [
+        {
+          "name": "List Invoice Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/payments"
+          }
+        },
+        {
+          "name": "Create Invoice Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('paymentId', data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountInCents\": {{paymentAmountInCents}},\n  \"method\": \"{{paymentMethod}}\",\n  \"reference\": \"{{paymentReference}}\",\n  \"paidAt\": \"{{paymentPaidAt}}\",\n  \"notes\": \"{{paymentNotes}}\"\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/payments"
+          }
+        },
+        {
+          "name": "Reverse Invoice Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"{{paymentReversalReason}}\"\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/payments/{{paymentId}}/reverse"
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Invoicing Electronic Document",
+      "item": [
+        {
+          "name": "Get RIDE",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/ride"
+          }
+        },
+        {
+          "name": "Get RIDE HTML",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/ride/html"
+          }
+        },
+        {
+          "name": "Get Artifacts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/artifacts"
+          }
+        },
+        {
+          "name": "Download RIDE",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/ride/download"
+          }
+        },
+        {
+          "name": "Get XML Preview",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.environment.set('xmlPreview', pm.response.text());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/xml"
+          }
+        },
+        {
+          "name": "Download XML",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/xml/download"
+          }
+        },
+        {
+          "name": "Submit Electronic Document (stub signer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.accessKey) pm.environment.set('accessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('submissionReference', data.submissionReference);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/submit"
+          }
+        },
+        {
+          "name": "Submit Presigned Electronic Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.accessKey) pm.environment.set('accessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('submissionReference', data.submissionReference);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signedXml\": {{presignedXmlJson}},\n  \"signerName\": {{externalSignerNameJson}}\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/submit-presigned"
+          }
+        },
+        {
+          "name": "Check Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.submissionReference) pm.environment.set('submissionReference', data.submissionReference);",
+                  "if (data.authorizationNumber) pm.environment.set('authorizationNumber', data.authorizationNumber);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/check-authorization"
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Runner Flows",
+      "item": [
+        {
+          "name": "EC Happy Path - Stub",
+          "item": [
+            {
+              "name": "Step 00 / Set Tenant Subscription (Growth)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"planKey\": \"{{subscriptionPlanKey}}\",\n  \"status\": \"{{subscriptionStatus}}\"\n}"
+                },
+                "url": "{{baseUrl}}/tenancy/tenants/{{tenantSlug}}/subscription"
+              }
+            },
+            {
+              "name": "Step 01 / Upsert Electronic Profile",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"legalName\": \"{{issuerLegalName}}\",\n  \"commercialName\": \"{{issuerCommercialName}}\",\n  \"taxId\": \"{{issuerTaxId}}\",\n  \"environment\": \"{{issuerEnvironment}}\",\n  \"emissionType\": \"normal\",\n  \"accountingObligated\": true,\n  \"specialTaxpayerCode\": null,\n  \"rimpeTaxpayerType\": null,\n  \"matrixAddress\": \"{{issuerMatrixAddress}}\",\n  \"establishmentAddress\": \"{{issuerEstablishmentAddress}}\"\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-profile"
+              }
+            },
+            {
+              "name": "Step 02 / Upsert Invoice Numbering",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"documentCode\": \"{{documentCode}}\",\n  \"establishmentCode\": \"{{establishmentCode}}\",\n  \"emissionPointCode\": \"{{emissionPointCode}}\",\n  \"nextSequenceNumber\": {{nextSequenceNumber}}\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/invoice"
+              }
+            },
+            {
+              "name": "Step 03 / Upsert Electronic Signature (Stub)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"provider\": \"stub_local\",\n  \"certificateLabel\": \"{{signatureCertificateLabel}}\",\n  \"storageMode\": \"stub_inline\",\n  \"certificateFingerprint\": \"{{signatureCertificateFingerprint}}\",\n  \"pkcs12SecretRef\": null,\n  \"privateKeyPasswordSecretRef\": null,\n  \"subjectName\": null,\n  \"isActive\": true\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-signature"
+              }
+            },
+            {
+              "name": "Step 04 / Upsert Electronic Submission (Stub)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"provider\": \"stub_sri\",\n  \"environment\": \"test\",\n  \"transmissionMode\": \"sync_stub\",\n  \"receptionUrl\": null,\n  \"authorizationUrl\": null,\n  \"credentialsSecretRef\": null,\n  \"timeoutMs\": 10000,\n  \"isActive\": true\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-submission"
+              }
+            },
+            {
+              "name": "Step 05 / Get Sandbox Readiness",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-document/readiness"
+              }
+            },
+            {
+              "name": "Step 06 / Create Customer",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) pm.environment.set('customerId', data.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"{{customerName}}\",\n  \"email\": \"{{customerEmail}}\",\n  \"taxId\": \"{{customerTaxId}}\",\n  \"identificationType\": \"{{customerIdentificationType}}\",\n  \"identification\": \"{{customerIdentification}}\",\n  \"billingAddress\": \"{{customerBillingAddress}}\"\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/customers"
+              }
+            },
+            {
+              "name": "Step 07 / Create Tax Rate",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) pm.environment.set('taxRateId', data.id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"{{taxRateName}}\",\n  \"percentage\": {{taxRatePercentage}},\n  \"isActive\": true\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/taxes"
+              }
+            },
+            {
+              "name": "Step 08 / Create Invoice",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) pm.environment.set('invoiceId', data.id);",
+                      "if (data.number) pm.environment.set('invoiceNumber', data.number);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"currency\": \"{{invoiceCurrency}}\",\n  \"status\": \"issued\",\n  \"issuedAt\": \"{{invoiceIssuedAt}}\",\n  \"dueAt\": \"{{invoiceDueAt}}\",\n  \"notes\": \"{{invoiceNotes}}\"\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices"
+              }
+            },
+            {
+              "name": "Step 09 / Create Invoice Item",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"description\": \"{{itemDescription}}\",\n  \"quantity\": {{itemQuantity}},\n  \"unitPriceInCents\": {{itemUnitPriceInCents}},\n  \"taxRateId\": \"{{taxRateId}}\"\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/items"
+              }
+            },
+            {
+              "name": "Step 10 / Get XML Preview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/xml"
+              }
+            },
+            {
+              "name": "Step 11 / Submit Stub",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/submit"
+              }
+            },
+            {
+              "name": "Step 12 / Check Authorization",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/check-authorization"
+              }
+            },
+            {
+              "name": "Step 13 / Get Invoice Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}"
+              }
+            },
+            {
+              "name": "Step 14 / Get RIDE",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/ride"
+              }
+            }
+          ]
+        },
+        {
+          "name": "EC Presigned Flow - Continue After External Signature",
+          "item": [
+            {
+              "name": "Step 01 / Get XML Preview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/xml"
+              }
+            },
+            {
+              "name": "Step 02 / Submit Presigned XML",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"signedXml\": {{presignedXmlJson}},\n  \"signerName\": {{externalSignerNameJson}}\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/submit-presigned"
+              }
+            },
+            {
+              "name": "Step 03 / Check Authorization",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/check-authorization"
+              }
+            },
+            {
+              "name": "Step 04 / Get Invoice Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}"
+              }
+            }
+          ]
         }
       ]
     }

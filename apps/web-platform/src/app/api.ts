@@ -2,11 +2,14 @@ import {
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CustomerResponse,
+  ElectronicSandboxReadinessResponse,
   ElectronicSubmissionSettingsResponse,
   ElectronicSignatureSettingsResponse,
+  InvoiceElectronicArtifactsResponse,
   InvoiceNumberingSettingsResponse,
   InvoiceDetailResponse,
   InvoiceDocumentResponse,
+  InvoiceRideResponse,
   IssuerProfileResponse,
   InvoicingReportSummaryResponse,
   InvitationResponse,
@@ -69,6 +72,42 @@ async function requestText(
   }
 
   return text;
+}
+
+function extractFileNameFromDisposition(value: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const match = value.match(/filename=\"?([^"]+)\"?/i);
+  return match ? match[1] : null;
+}
+
+async function requestDownload(
+  path: string,
+  options: RequestInit & { token: string },
+): Promise<{ content: string; fileName: string | null; contentType: string | null }> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      ...buildHeaders(options.token, options.body !== undefined),
+      ...options.headers,
+    },
+  });
+
+  const content = await response.text();
+
+  if (!response.ok) {
+    throw new Error(content || `Request failed with status ${response.status}`);
+  }
+
+  return {
+    content,
+    fileName: extractFileNameFromDisposition(
+      response.headers.get('content-disposition'),
+    ),
+    contentType: response.headers.get('content-type'),
+  };
 }
 
 export async function fetchSession(
@@ -303,6 +342,21 @@ export async function fetchElectronicSubmissionSettings(
   );
 }
 
+export async function fetchElectronicSandboxReadiness(
+  token: string,
+  tenantSlug: string,
+): Promise<ElectronicSandboxReadinessResponse> {
+  return request<ElectronicSandboxReadinessResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/electronic-document/readiness`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function upsertElectronicSignatureSettings(
   token: string,
   tenantSlug: string,
@@ -473,6 +527,76 @@ export async function fetchInvoiceDocumentHtml(
   );
 }
 
+export async function fetchInvoiceElectronicRide(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+): Promise<InvoiceRideResponse> {
+  return request<InvoiceRideResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/electronic-document/ride`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchInvoiceElectronicArtifacts(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+): Promise<InvoiceElectronicArtifactsResponse> {
+  return request<InvoiceElectronicArtifactsResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/electronic-document/artifacts`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchInvoiceElectronicRideHtml(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+): Promise<string> {
+  return requestText(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/electronic-document/ride/html`,
+    {
+      method: 'GET',
+      token,
+      headers: {
+        Accept: 'text/html',
+      },
+    },
+  );
+}
+
+export async function downloadInvoiceElectronicRideHtml(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+): Promise<{ content: string; fileName: string | null; contentType: string | null }> {
+  return requestDownload(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/electronic-document/ride/download`,
+    {
+      method: 'GET',
+      token,
+      headers: {
+        Accept: 'text/html',
+      },
+    },
+  );
+}
+
 export async function fetchInvoiceElectronicXmlPreview(
   token: string,
   tenantSlug: string,
@@ -485,6 +609,25 @@ export async function fetchInvoiceElectronicXmlPreview(
     {
       method: 'GET',
       token,
+    },
+  );
+}
+
+export async function downloadInvoiceElectronicXmlPreview(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+): Promise<{ content: string; fileName: string | null; contentType: string | null }> {
+  return requestDownload(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(invoiceId)}/electronic-document/xml/download`,
+    {
+      method: 'GET',
+      token,
+      headers: {
+        Accept: 'application/xml',
+      },
     },
   );
 }
@@ -635,6 +778,35 @@ export async function submitInvoiceElectronicDocument(
     {
       method: 'POST',
       token,
+    },
+  );
+}
+
+export async function submitPresignedInvoiceElectronicDocument(
+  token: string,
+  tenantSlug: string,
+  invoiceId: string,
+  body: {
+    signedXml: string;
+    signerName?: string | null;
+  },
+): Promise<{
+  submitted: true;
+  electronicStatus: string | null;
+  accessKey: string | null;
+  submittedAt: string | null;
+  submissionReference: string | null;
+}> {
+  return request(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/invoices/${encodeURIComponent(
+      invoiceId,
+    )}/electronic-document/submit-presigned`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
     },
   );
 }

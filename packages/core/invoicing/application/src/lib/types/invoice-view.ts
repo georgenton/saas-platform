@@ -217,6 +217,10 @@ export function buildInvoiceRideView(
   document: InvoiceDocumentView,
 ): InvoiceRideView {
   const primitives = document.invoice.toPrimitives();
+  const sequenceDisplay =
+    primitives.sequenceNumber != null
+      ? String(primitives.sequenceNumber).padStart(9, '0')
+      : null;
 
   return {
     issuer: document.issuer,
@@ -228,10 +232,7 @@ export function buildInvoiceRideView(
       documentLabel: primitives.documentCode === '01' ? 'RIDE Factura' : 'RIDE',
       environmentLabel: formatRideEnvironmentLabel(document.issuer.environment),
       emissionTypeLabel: formatRideEmissionTypeLabel(document.issuer.emissionType),
-      sequenceDisplay:
-        primitives.sequenceNumber !== null
-          ? String(primitives.sequenceNumber).padStart(9, '0')
-          : null,
+      sequenceDisplay,
       electronicStatusLabel: formatRideElectronicStatusLabel(
         primitives.electronicStatus,
       ),
@@ -251,9 +252,9 @@ export function buildInvoiceElectronicDocumentArtifactsView(
 ): InvoiceElectronicDocumentArtifactsView {
   const invoice = document.invoice.toPrimitives();
   const sequenceDisplay =
-    invoice.sequenceNumber !== null
+    invoice.sequenceNumber != null
       ? String(invoice.sequenceNumber).padStart(9, '0')
-      : sanitizeElectronicFileNameSegment(invoice.number);
+      : sanitizeElectronicFileNameSegment(invoice.number ?? '');
   const fileBaseName = [
     sanitizeElectronicFileNameSegment(
       document.issuer.taxId ?? document.issuer.tenantSlug,
@@ -288,7 +289,11 @@ function splitAccessKeyForRide(value: string | null): string[] {
   return value.match(/.{1,7}/g) ?? [value];
 }
 
-function sanitizeElectronicFileNameSegment(value: string): string {
+function sanitizeElectronicFileNameSegment(value: string | null | undefined): string {
+  if (!value) {
+    return '';
+  }
+
   return value
     .trim()
     .replace(/[^a-zA-Z0-9_-]+/g, '-')

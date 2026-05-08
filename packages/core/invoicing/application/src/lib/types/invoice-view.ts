@@ -430,6 +430,7 @@ function formatDocumentTitle(documentCode: string | null): string {
     case '04':
       return 'Credit Note';
     case '01':
+    case null:
       return 'Invoice';
     default:
       return 'Document';

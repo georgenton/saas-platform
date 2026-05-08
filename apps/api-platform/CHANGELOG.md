@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.19.0
+
+### Minor Changes
+
+- ae9d57b: Add multi-document Ecuador numbering support so tenants can manage independent numbering settings for invoices (`01`) and credit notes (`04`), and introduce a draft credit-note creation flow derived from a source invoice.
+
 ## 0.18.0
 
 ### Minor Changes

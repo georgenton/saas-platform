@@ -6,7 +6,7 @@ import { IssuerProfileRepository } from '../ports/issuer-profile.repository';
 import { GetTenantInvoiceDocumentUseCase } from './get-tenant-invoice-document.use-case';
 import {
   buildSriAccessKey,
-  buildSriInvoiceXmlPreview,
+  buildSriElectronicDocumentXmlPreview,
   canBuildSriAccessKey,
 } from '../types/electronic-invoice';
 
@@ -44,7 +44,7 @@ export class GetTenantInvoiceElectronicXmlPreviewUseCase {
           issuerProfile,
         });
 
-      return buildSriInvoiceXmlPreview({
+      return buildSriElectronicDocumentXmlPreview({
         document,
         accessKey,
       });

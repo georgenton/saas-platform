@@ -634,8 +634,14 @@
                 "exec": [
                   "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
                   "const data = pm.response.json();",
+                  "const invoiceSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '01') : null;",
+                  "const creditNoteSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '04') : null;",
                   "pm.environment.set('sandboxReady', String(Boolean(data.isReadyForRemoteSandboxSubmission)));",
-                  "pm.environment.set('sandboxRecommendedNextStep', data.recommendedNextStep || '');"
+                  "pm.environment.set('sandboxRecommendedNextStep', data.recommendedNextStep || '');",
+                  "pm.environment.set('invoice01SubmitSupported', String(Boolean(invoiceSupport && invoiceSupport.submitSupported)));",
+                  "pm.environment.set('invoice01SchemaValidationAvailable', String(Boolean(invoiceSupport && invoiceSupport.schemaValidationAvailable)));",
+                  "pm.environment.set('creditNote04SubmitSupported', String(Boolean(creditNoteSupport && creditNoteSupport.submitSupported)));",
+                  "pm.environment.set('creditNote04SchemaValidationAvailable', String(Boolean(creditNoteSupport && creditNoteSupport.schemaValidationAvailable)));"
                 ]
               }
             }
@@ -704,6 +710,40 @@
               "raw": "{\n  \"documentCode\": \"{{documentCode}}\",\n  \"establishmentCode\": \"{{establishmentCode}}\",\n  \"emissionPointCode\": \"{{emissionPointCode}}\",\n  \"nextSequenceNumber\": {{nextSequenceNumber}}\n}"
             },
             "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/invoice"
+          }
+        },
+        {
+          "name": "Get Credit Note Numbering",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/credit-note"
+          }
+        },
+        {
+          "name": "Upsert Credit Note Numbering",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"establishmentCode\": \"{{creditNoteEstablishmentCode}}\",\n  \"emissionPointCode\": \"{{creditNoteEmissionPointCode}}\",\n  \"nextSequenceNumber\": {{creditNoteNextSequenceNumber}}\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/credit-note"
           }
         },
         {
@@ -918,6 +958,122 @@
             ],
             "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}"
           }
+        },
+        {
+          "name": "Create Credit Note From Invoice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.invoice && data.invoice.id) pm.environment.set('creditNoteId', data.invoice.id);",
+                  "if (data.invoice && data.invoice.number) pm.environment.set('creditNoteNumber', data.invoice.number);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceInvoiceId\": \"{{invoiceId}}\",\n  \"reason\": \"{{creditNoteReason}}\",\n  \"issuedAt\": \"{{creditNoteIssuedAt}}\",\n  \"notes\": \"{{creditNoteNotes}}\"\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/credit-notes"
+          }
+        },
+        {
+          "name": "Get Credit Note Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('creditNoteId', data.id);",
+                  "if (data.number) pm.environment.set('creditNoteNumber', data.number);",
+                  "if (data.accessKey) pm.environment.set('creditNoteAccessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('creditNoteSubmissionReference', data.submissionReference);",
+                  "if (data.authorizationNumber) pm.environment.set('creditNoteAuthorizationNumber', data.authorizationNumber);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Credit Note XML Preview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/xml"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.environment.set('creditNoteXmlPreview', pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Credit Note RIDE",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/ride"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.ride && data.ride.sequenceDisplay) pm.environment.set('creditNoteSequenceDisplay', data.ride.sequenceDisplay);"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Get Invoice Document",
@@ -1329,6 +1485,160 @@
             ],
             "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/check-authorization"
           }
+        },
+        {
+          "name": "Get Credit Note RIDE HTML",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/ride/html"
+          }
+        },
+        {
+          "name": "Get Credit Note Artifacts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.fileBaseName) pm.environment.set('creditNoteArtifactsFileBaseName', data.fileBaseName);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/artifacts"
+          }
+        },
+        {
+          "name": "Download Credit Note RIDE",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/ride/download"
+          }
+        },
+        {
+          "name": "Download Credit Note XML",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/xml/download"
+          }
+        },
+        {
+          "name": "Submit Credit Note Electronic Document (stub signer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.accessKey) pm.environment.set('creditNoteAccessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('creditNoteSubmissionReference', data.submissionReference);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/submit"
+          }
+        },
+        {
+          "name": "Submit Credit Note Presigned Electronic Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.accessKey) pm.environment.set('creditNoteAccessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('creditNoteSubmissionReference', data.submissionReference);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signedXml\": {{creditNotePresignedXmlJson}},\n  \"signerName\": {{externalSignerNameJson}}\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/submit-presigned"
+          }
+        },
+        {
+          "name": "Check Credit Note Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.submissionReference) pm.environment.set('creditNoteSubmissionReference', data.submissionReference);",
+                  "if (data.authorizationNumber) pm.environment.set('creditNoteAuthorizationNumber', data.authorizationNumber);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/check-authorization"
+          }
         }
       ]
     },
@@ -1454,7 +1764,23 @@
                   }
                 ],
                 "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-document/readiness"
-              }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "const invoiceSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '01') : null;",
+                      "pm.environment.set('sandboxReady', String(Boolean(data.isReadyForRemoteSandboxSubmission)));",
+                      "pm.environment.set('sandboxRecommendedNextStep', data.recommendedNextStep || '');",
+                      "pm.environment.set('invoice01SubmitSupported', String(Boolean(invoiceSupport && invoiceSupport.submitSupported)));"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "name": "Step 06 / Create Customer",
@@ -1588,7 +1914,19 @@
                   }
                 ],
                 "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/xml"
-              }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "pm.environment.set('xmlPreview', pm.response.text());"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "name": "Step 11 / Submit Stub",
@@ -1601,7 +1939,21 @@
                   }
                 ],
                 "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/submit"
-              }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('accessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('submissionReference', data.submissionReference);"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "name": "Step 12 / Check Authorization",
@@ -1614,7 +1966,21 @@
                   }
                 ],
                 "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/check-authorization"
-              }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.submissionReference) pm.environment.set('submissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('authorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "name": "Step 13 / Get Invoice Detail",
@@ -1627,7 +1993,21 @@
                   }
                 ],
                 "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}"
-              }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('accessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('submissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('authorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "name": "Step 14 / Get RIDE",
@@ -1658,7 +2038,19 @@
                   }
                 ],
                 "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/xml"
-              }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "pm.environment.set('xmlPreview', pm.response.text());"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "name": "Step 02 / Submit Presigned XML",
@@ -1679,7 +2071,21 @@
                   "raw": "{\n  \"signedXml\": {{presignedXmlJson}},\n  \"signerName\": {{externalSignerNameJson}}\n}"
                 },
                 "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/submit-presigned"
-              }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('accessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('submissionReference', data.submissionReference);"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "name": "Step 03 / Check Authorization",
@@ -1692,7 +2098,21 @@
                   }
                 ],
                 "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}/electronic-document/check-authorization"
-              }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.submissionReference) pm.environment.set('submissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('authorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
             },
             {
               "name": "Step 04 / Get Invoice Detail",
@@ -1706,6 +2126,420 @@
                 ],
                 "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{invoiceId}}"
               }
+            }
+          ]
+        },
+        {
+          "name": "EC Credit Note Happy Path - Stub",
+          "item": [
+            {
+              "name": "Step 01 / Upsert Credit Note Numbering",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"establishmentCode\": \"{{creditNoteEstablishmentCode}}\",\n  \"emissionPointCode\": \"{{creditNoteEmissionPointCode}}\",\n  \"nextSequenceNumber\": {{creditNoteNextSequenceNumber}}\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/credit-note"
+              }
+            },
+            {
+              "name": "Step 02 / Get Sandbox Readiness",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-document/readiness"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "const creditNoteSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '04') : null;",
+                      "pm.environment.set('creditNote04SubmitSupported', String(Boolean(creditNoteSupport && creditNoteSupport.submitSupported)));",
+                      "pm.environment.set('creditNote04SchemaValidationAvailable', String(Boolean(creditNoteSupport && creditNoteSupport.schemaValidationAvailable)));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 03 / Create Credit Note From Invoice",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sourceInvoiceId\": \"{{invoiceId}}\",\n  \"reason\": \"{{creditNoteReason}}\",\n  \"issuedAt\": \"{{creditNoteIssuedAt}}\",\n  \"notes\": \"{{creditNoteNotes}}\"\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/credit-notes"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.invoice && data.invoice.id) pm.environment.set('creditNoteId', data.invoice.id);",
+                      "if (data.invoice && data.invoice.number) pm.environment.set('creditNoteNumber', data.invoice.number);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 04 / Get Credit Note Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) pm.environment.set('creditNoteId', data.id);",
+                      "if (data.number) pm.environment.set('creditNoteNumber', data.number);",
+                      "if (data.accessKey) pm.environment.set('creditNoteAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('creditNoteSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('creditNoteAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 05 / Get Credit Note XML Preview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/xml"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "pm.environment.set('creditNoteXmlPreview', pm.response.text());"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 06 / Submit Credit Note Stub",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/submit"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('creditNoteAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('creditNoteSubmissionReference', data.submissionReference);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 07 / Check Credit Note Authorization",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/check-authorization"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.submissionReference) pm.environment.set('creditNoteSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('creditNoteAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 08 / Get Credit Note Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('creditNoteAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('creditNoteSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('creditNoteAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 09 / Get Credit Note RIDE",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/ride"
+              }
+            },
+            {
+              "name": "Step 10 / Get Credit Note Artifacts",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/artifacts"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.fileBaseName) pm.environment.set('creditNoteArtifactsFileBaseName', data.fileBaseName);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "EC Credit Note Presigned Flow - Continue After External Signature",
+          "item": [
+            {
+              "name": "Step 01 / Create Credit Note From Invoice",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sourceInvoiceId\": \"{{invoiceId}}\",\n  \"reason\": \"{{creditNoteReason}}\",\n  \"issuedAt\": \"{{creditNoteIssuedAt}}\",\n  \"notes\": \"{{creditNoteNotes}}\"\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/credit-notes"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.invoice && data.invoice.id) pm.environment.set('creditNoteId', data.invoice.id);",
+                      "if (data.invoice && data.invoice.number) pm.environment.set('creditNoteNumber', data.invoice.number);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 02 / Get Credit Note XML Preview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/xml"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "pm.environment.set('creditNoteXmlPreview', pm.response.text());"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 03 / Submit Credit Note Presigned XML",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"signedXml\": {{creditNotePresignedXmlJson}},\n  \"signerName\": {{externalSignerNameJson}}\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/submit-presigned"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('creditNoteAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('creditNoteSubmissionReference', data.submissionReference);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 04 / Check Credit Note Authorization",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/check-authorization"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.submissionReference) pm.environment.set('creditNoteSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('creditNoteAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 05 / Get Credit Note Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('creditNoteAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('creditNoteSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('creditNoteAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }

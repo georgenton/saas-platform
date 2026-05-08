@@ -46,7 +46,10 @@ export class CreateTenantInvoiceUseCase {
 
     const now = new Date();
     const numberingSettings =
-      await this.invoiceNumberingSettingsRepository.findByTenantId(tenant.id);
+      await this.invoiceNumberingSettingsRepository.findByTenantIdAndDocumentCode(
+        tenant.id,
+        '01',
+      );
     const numberingReservation =
       !input.number && numberingSettings
         ? numberingSettings.reserveNextSequence(now)

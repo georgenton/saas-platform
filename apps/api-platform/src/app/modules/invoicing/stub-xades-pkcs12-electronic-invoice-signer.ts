@@ -67,7 +67,7 @@ export class StubXadesPkcs12ElectronicInvoiceSigner
   </ds:Signature>`;
 
     return {
-      signedXml: input.xml.replace('</factura>', `${signatureBlock}\n</factura>`),
+      signedXml: insertStubSignature(input.xml, signatureBlock),
       signedAt,
       signerName: `xades_pkcs12:${subjectName}`,
       capability: this.describeCapability({
@@ -75,4 +75,11 @@ export class StubXadesPkcs12ElectronicInvoiceSigner
       }),
     };
   }
+}
+
+function insertStubSignature(xml: string, signatureBlock: string): string {
+  return xml.replace(
+    /<\/(factura|notaCredito)>/i,
+    `${signatureBlock}\n</$1>`,
+  );
 }

@@ -7,7 +7,7 @@ import { InvoiceNumberingSettingsRepository } from '../ports/invoice-numbering-s
 
 export interface UpsertTenantInvoiceNumberingSettingsInput {
   tenantSlug: string;
-  documentCode?: string;
+  documentCode: string;
   establishmentCode: string;
   emissionPointCode: string;
   nextSequenceNumber: number;
@@ -29,13 +29,17 @@ export class UpsertTenantInvoiceNumberingSettingsUseCase {
     }
 
     const now = new Date();
+    const documentCode = input.documentCode.trim();
     const existingSettings =
-      await this.invoiceNumberingSettingsRepository.findByTenantId(tenant.id);
+      await this.invoiceNumberingSettingsRepository.findByTenantIdAndDocumentCode(
+        tenant.id,
+        documentCode,
+      );
 
     const settings = InvoiceNumberingSettings.create({
-      id: existingSettings?.id ?? `${tenant.id}:invoice-numbering`,
+      id: existingSettings?.id ?? `${tenant.id}:invoice-numbering:${documentCode}`,
       tenantId: tenant.id,
-      documentCode: (input.documentCode ?? '01').trim(),
+      documentCode,
       establishmentCode: input.establishmentCode.trim(),
       emissionPointCode: input.emissionPointCode.trim(),
       nextSequenceNumber: input.nextSequenceNumber,

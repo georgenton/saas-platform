@@ -12,19 +12,24 @@ export class GetTenantInvoiceNumberingSettingsUseCase {
     private readonly invoiceNumberingSettingsRepository: InvoiceNumberingSettingsRepository,
   ) {}
 
-  async execute(tenantSlug: string): Promise<InvoiceNumberingSettings> {
+  async execute(
+    tenantSlug: string,
+    documentCode = '01',
+  ): Promise<InvoiceNumberingSettings> {
     const tenant = await this.tenantRepository.findBySlug(tenantSlug);
 
     if (!tenant) {
       throw new TenantNotFoundError(tenantSlug);
     }
 
-    const settings = await this.invoiceNumberingSettingsRepository.findByTenantId(
-      tenant.id,
-    );
+    const settings =
+      await this.invoiceNumberingSettingsRepository.findByTenantIdAndDocumentCode(
+        tenant.id,
+        documentCode,
+      );
 
     if (!settings) {
-      throw new InvoiceNumberingSettingsNotFoundError(tenantSlug);
+      throw new InvoiceNumberingSettingsNotFoundError(tenantSlug, documentCode);
     }
 
     return settings;

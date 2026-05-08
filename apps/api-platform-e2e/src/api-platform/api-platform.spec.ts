@@ -44,6 +44,7 @@ import { FeatureFlag } from '@saas-platform/feature-flags-domain';
 import {
   CheckTenantInvoiceElectronicAuthorizationUseCase,
   CreateTenantCustomerUseCase,
+  CreateTenantCreditNoteUseCase,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
   CreateTenantInvoicePaymentUseCase,
@@ -187,6 +188,7 @@ describe('API', () => {
   let resolveTenantAccessUseCase: { execute: jest.Mock };
   let setTenantFeatureFlagUseCase: { execute: jest.Mock };
   let createTenantCustomerUseCase: { execute: jest.Mock };
+  let createTenantCreditNoteUseCase: { execute: jest.Mock };
   let createTenantInvoiceUseCase: { execute: jest.Mock };
   let createTenantInvoiceItemUseCase: { execute: jest.Mock };
   let createTenantInvoicePaymentUseCase: { execute: jest.Mock };
@@ -615,8 +617,32 @@ describe('API', () => {
           'El provider actual sigue siendo stub_sri; para sandbox real debe usarse sri_offline_ws.',
       },
     ],
+    documentSupport: [
+      {
+        documentCode: '01' as const,
+        label: 'Factura ECU (01)',
+        numberingConfigured: true,
+        previewAvailable: true,
+        rideAvailable: true,
+        schemaValidationAvailable: true,
+        submitSupported: true,
+        detail:
+          'La factura 01 ya tiene preview XML, RIDE, validacion XSD y el carril de submit electronico habilitado.',
+      },
+      {
+        documentCode: '04' as const,
+        label: 'Nota de credito ECU (04)',
+        numberingConfigured: true,
+        previewAvailable: true,
+        rideAvailable: true,
+        schemaValidationAvailable: true,
+        submitSupported: true,
+        detail:
+          'La nota de credito 04 ya tiene preview XML, RIDE y validacion XSD local. El carril de submit electronico ya puede probarse con la misma frontera tecnica del documento 01.',
+      },
+    ],
     recommendedNextStep:
-      'Primero resuelve los blockers y despues cambia a una prueba controlada en sandbox.',
+      'Primero resuelve los blockers del flujo 01 y despues cambia a una prueba controlada en sandbox.',
   };
   const invoiceElectronicEvent = InvoiceElectronicEvent.create({
     id: 'invoice_event_001',
@@ -644,6 +670,16 @@ describe('API', () => {
     createdAt: new Date('2026-04-29T16:05:00.000Z'),
     updatedAt: new Date('2026-04-29T16:05:00.000Z'),
   });
+  const creditNoteNumberingSettings = InvoiceNumberingSettings.create({
+    id: 'invoice_numbering_004',
+    tenantId: 'tenant_123',
+    documentCode: '04',
+    establishmentCode: '003',
+    emissionPointCode: '001',
+    nextSequenceNumber: 12,
+    createdAt: new Date('2026-04-29T16:10:00.000Z'),
+    updatedAt: new Date('2026-04-29T16:10:00.000Z'),
+  });
   const electronicDraftInvoice = Invoice.create({
     id: 'invoice_003',
     tenantId: 'tenant_123',
@@ -665,6 +701,134 @@ describe('API', () => {
     createdAt: new Date('2026-04-29T16:30:00.000Z'),
     updatedAt: new Date('2026-04-29T16:30:00.000Z'),
   });
+  const creditNoteDraftInvoice = Invoice.create({
+    id: 'credit_note_001',
+    tenantId: 'tenant_123',
+    customerId: 'customer_acme',
+    number: '003-001-000000012',
+    documentCode: '04',
+    establishmentCode: '003',
+    emissionPointCode: '001',
+    sequenceNumber: 12,
+    modifiedDocumentId: 'invoice_001',
+    modifiedDocumentNumber: 'INV-001',
+    modifiedDocumentIssuedAt: new Date('2026-04-27T16:00:00.000Z'),
+    modificationReason: 'Devolucion parcial de la factura origen.',
+    buyerIdentificationType: '04',
+    buyerIdentification: '1790012345001',
+    buyerName: 'Acme Corp',
+    buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+    status: 'draft',
+    currency: 'USD',
+    issuedAt: new Date('2026-05-07T16:00:00.000Z'),
+    dueAt: null,
+    notes: 'Nota de credito de prueba.',
+    createdAt: new Date('2026-05-07T16:00:00.000Z'),
+    updatedAt: new Date('2026-05-07T16:00:00.000Z'),
+  });
+  const creditNoteFirstItem = InvoiceItem.create({
+    id: 'credit_note_item_001',
+    tenantId: 'tenant_123',
+    invoiceId: 'credit_note_001',
+    position: 1,
+    description: 'Suscripcion mensual Growth',
+    quantity: 2,
+    unitPriceInCents: -5000,
+    lineTotalInCents: -10000,
+    taxRateId: 'tax_rate_vat_12',
+    taxRateName: 'VAT 12%',
+    taxRatePercentage: 12,
+    lineTaxInCents: -1200,
+    createdAt: new Date('2026-05-07T16:00:00.000Z'),
+    updatedAt: new Date('2026-05-07T16:00:00.000Z'),
+  });
+  const creditNoteSecondItem = InvoiceItem.create({
+    id: 'credit_note_item_002',
+    tenantId: 'tenant_123',
+    invoiceId: 'credit_note_001',
+    position: 2,
+    description: 'Setup inicial',
+    quantity: 1,
+    unitPriceInCents: -2500,
+    lineTotalInCents: -2500,
+    taxRateId: null,
+    taxRateName: null,
+    taxRatePercentage: null,
+    lineTaxInCents: 0,
+    createdAt: new Date('2026-05-07T16:00:00.000Z'),
+    updatedAt: new Date('2026-05-07T16:00:00.000Z'),
+  });
+  const creditNoteDocumentView = {
+    issuer: {
+      tenantId: 'tenant_123',
+      tenantName: 'SaaS Platform',
+      tenantSlug: 'saas-platform',
+      legalName: 'SaaS Platform S.A.',
+      commercialName: 'SaaS Platform',
+      taxId: '1790012345001',
+      environment: 'test',
+      emissionType: 'normal',
+      accountingObligated: true,
+      specialTaxpayerCode: null,
+      rimpeTaxpayerType: null,
+      matrixAddress: 'Av. Principal y Calle Secundaria',
+      establishmentAddress: 'Sucursal Matriz',
+    },
+    customer: {
+      name: 'Acme Corp',
+      email: 'billing@acme.dev',
+      taxId: '1790012345001',
+      identificationType: '04',
+      identification: '1790012345001',
+      billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+    },
+    invoice: creditNoteDraftInvoice,
+    lines: [
+      {
+        id: 'credit_note_item_001',
+        position: 1,
+        description: 'Suscripcion mensual Growth',
+        quantity: 2,
+        unitPriceInCents: -5000,
+        lineSubtotalInCents: -10000,
+        taxRateId: 'tax_rate_vat_12',
+        taxRateName: 'VAT 12%',
+        taxRatePercentage: 12,
+        lineTaxInCents: -1200,
+        lineTotalInCents: -11200,
+      },
+      {
+        id: 'credit_note_item_002',
+        position: 2,
+        description: 'Setup inicial',
+        quantity: 1,
+        unitPriceInCents: -2500,
+        lineSubtotalInCents: -2500,
+        taxRateId: null,
+        taxRateName: null,
+        taxRatePercentage: null,
+        lineTaxInCents: 0,
+        lineTotalInCents: -2500,
+      },
+    ],
+    totals: {
+      subtotalInCents: -12500,
+      taxInCents: -1200,
+      totalInCents: -13700,
+    },
+  };
+  const creditNoteXmlPreview = `<?xml version="1.0" encoding="UTF-8"?>
+<notaCredito id="comprobante" version="1.0.0">
+  <infoTributaria>
+    <claveAcceso>0705202604179001234500110030010000000121234567810</claveAcceso>
+    <codDoc>04</codDoc>
+  </infoTributaria>
+  <infoNotaCredito>
+    <codDocModificado>01</codDocModificado>
+    <numDocModificado>INV-001</numDocModificado>
+    <valorModificacion>137.00</valorModificacion>
+  </infoNotaCredito>
+</notaCredito>`;
 
   const signJwt = (payload: Record<string, unknown>): string => {
     const encode = (value: unknown): string =>
@@ -999,6 +1163,12 @@ describe('API', () => {
     };
     createTenantCustomerUseCase = {
       execute: jest.fn().mockResolvedValue(acmeCustomer),
+    };
+    createTenantCreditNoteUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        creditNote: creditNoteDraftInvoice,
+        sourceInvoice: draftInvoice,
+      }),
     };
     createTenantInvoiceUseCase = {
       execute: jest.fn().mockResolvedValue(draftInvoice),
@@ -1337,6 +1507,8 @@ describe('API', () => {
       .useValue(setTenantFeatureFlagUseCase)
       .overrideProvider(CreateTenantCustomerUseCase)
       .useValue(createTenantCustomerUseCase)
+      .overrideProvider(CreateTenantCreditNoteUseCase)
+      .useValue(createTenantCreditNoteUseCase)
       .overrideProvider(CreateTenantInvoiceUseCase)
       .useValue(createTenantInvoiceUseCase)
       .overrideProvider(CreateTenantInvoiceItemUseCase)
@@ -2057,6 +2229,7 @@ describe('API', () => {
 
     expect(getTenantInvoiceNumberingSettingsUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
+      '01',
     );
   });
 
@@ -2091,6 +2264,70 @@ describe('API', () => {
       establishmentCode: '001',
       emissionPointCode: '002',
       nextSequenceNumber: 31,
+    });
+  });
+
+  it('GET /api/invoicing/tenants/:slug/numbering/credit-note should return credit note numbering settings', async () => {
+    getTenantInvoiceNumberingSettingsUseCase.execute.mockResolvedValueOnce(
+      creditNoteNumberingSettings,
+    );
+
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/numbering/credit-note')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'invoice_numbering_004',
+        tenantId: 'tenant_123',
+        documentCode: '04',
+        establishmentCode: '003',
+        emissionPointCode: '001',
+        nextSequenceNumber: 12,
+        previewNumber: '003-001-000000012',
+        createdAt: '2026-04-29T16:10:00.000Z',
+        updatedAt: '2026-04-29T16:10:00.000Z',
+      });
+
+    expect(getTenantInvoiceNumberingSettingsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      '04',
+    );
+  });
+
+  it('POST /api/invoicing/tenants/:slug/numbering/credit-note should upsert credit note numbering settings', async () => {
+    upsertTenantInvoiceNumberingSettingsUseCase.execute.mockResolvedValueOnce(
+      creditNoteNumberingSettings,
+    );
+
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/numbering/credit-note')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        establishmentCode: '003',
+        emissionPointCode: '001',
+        nextSequenceNumber: 12,
+      })
+      .expect(201)
+      .expect({
+        id: 'invoice_numbering_004',
+        tenantId: 'tenant_123',
+        documentCode: '04',
+        establishmentCode: '003',
+        emissionPointCode: '001',
+        nextSequenceNumber: 12,
+        previewNumber: '003-001-000000012',
+        createdAt: '2026-04-29T16:10:00.000Z',
+        updatedAt: '2026-04-29T16:10:00.000Z',
+      });
+
+    expect(
+      upsertTenantInvoiceNumberingSettingsUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      documentCode: '04',
+      establishmentCode: '003',
+      emissionPointCode: '001',
+      nextSequenceNumber: 12,
     });
   });
 
@@ -2711,6 +2948,137 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride should return the electronic RIDE view for a credit note', async () => {
+    getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
+      creditNoteDocumentView,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/credit_note_001/electronic-document/ride',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        issuer: creditNoteDocumentView.issuer,
+        customer: creditNoteDocumentView.customer,
+        invoice: {
+          id: 'credit_note_001',
+          tenantId: 'tenant_123',
+          customerId: 'customer_acme',
+          number: '003-001-000000012',
+          documentCode: '04',
+          establishmentCode: '003',
+          emissionPointCode: '001',
+          sequenceNumber: 12,
+          buyerIdentificationType: '04',
+          buyerIdentification: '1790012345001',
+          buyerName: 'Acme Corp',
+          buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+          electronicStatus: null,
+          accessKey: null,
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage: null,
+          signedAt: null,
+          submittedAt: null,
+          submissionReference: null,
+          status: 'draft',
+          currency: 'USD',
+          issuedAt: '2026-05-07T16:00:00.000Z',
+          dueAt: null,
+          notes: 'Nota de credito de prueba.',
+          createdAt: '2026-05-07T16:00:00.000Z',
+          updatedAt: '2026-05-07T16:00:00.000Z',
+        },
+        lines: [
+          {
+            id: 'credit_note_item_001',
+            position: 1,
+            description: 'Suscripcion mensual Growth',
+            quantity: 2,
+            unitPriceInCents: 5000,
+            lineSubtotalInCents: 10000,
+            taxRateId: 'tax_rate_vat_12',
+            taxRateName: 'VAT 12%',
+            taxRatePercentage: 12,
+            lineTaxInCents: 1200,
+            lineTotalInCents: 11200,
+          },
+          {
+            id: 'credit_note_item_002',
+            position: 2,
+            description: 'Setup inicial',
+            quantity: 1,
+            unitPriceInCents: 2500,
+            lineSubtotalInCents: 2500,
+            taxRateId: null,
+            taxRateName: null,
+            taxRatePercentage: null,
+            lineTaxInCents: 0,
+            lineTotalInCents: 2500,
+          },
+        ],
+        totals: {
+          subtotalInCents: 12500,
+          taxInCents: 1200,
+          totalInCents: 13700,
+        },
+        ride: {
+          documentLabel: 'RIDE Nota de credito',
+          environmentLabel: 'PRUEBAS',
+          emissionTypeLabel: 'NORMAL',
+          sequenceDisplay: '000000012',
+          electronicStatusLabel: 'Sin estado electronico',
+          canBePrintedAsAuthorized: false,
+          accessKey: null,
+          accessKeyChunks: [],
+          authorizationNumber: null,
+          authorizedAt: null,
+          authorizationMessage: null,
+          additionalInfoFields: [
+            {
+              label: 'Email comprador',
+              value: 'billing@acme.dev',
+            },
+            {
+              label: 'Direccion comprador',
+              value: 'Av. Amazonas N34-451 y Av. Atahualpa',
+            },
+            {
+              label: 'Direccion matriz',
+              value: 'Av. Principal y Calle Secundaria',
+            },
+            {
+              label: 'Direccion establecimiento',
+              value: 'Sucursal Matriz',
+            },
+            {
+              label: 'Documento modificado',
+              value: 'INV-001',
+            },
+            {
+              label: 'Fecha documento sustento',
+              value: '2026-04-27T16:00:00.000Z',
+            },
+            {
+              label: 'Motivo',
+              value: 'Devolucion parcial de la factura origen.',
+            },
+            {
+              label: 'Notas',
+              value: 'Nota de credito de prueba.',
+            },
+          ],
+        },
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'credit_note_001',
+    );
+  });
+
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/artifacts should return formal electronic artifact metadata', async () => {
     await request(httpServer)
       .get(
@@ -2734,6 +3102,33 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/artifacts should return credit note electronic artifact metadata', async () => {
+    getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
+      creditNoteDocumentView,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/credit_note_001/electronic-document/artifacts',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        fileBaseName: '1790012345001-04-003-001-000000012',
+        rideHtmlFileName: '1790012345001-04-003-001-000000012-ride.html',
+        xmlFileName: '1790012345001-04-003-001-000000012.xml',
+        accessKey: null,
+        electronicStatus: null,
+        canDownloadRide: true,
+        canDownloadXml: true,
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'credit_note_001',
+    );
+  });
+
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/xml should return the Ecuador XML preview', async () => {
     await request(httpServer)
       .get(
@@ -2752,6 +3147,33 @@ describe('API', () => {
     expect(
       getTenantInvoiceElectronicXmlPreviewUseCase.execute,
     ).toHaveBeenCalledWith('saas-platform', 'invoice_001');
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/xml should return the Ecuador credit note XML preview', async () => {
+    getTenantInvoiceElectronicXmlPreviewUseCase.execute.mockResolvedValueOnce(
+      creditNoteXmlPreview,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/credit_note_001/electronic-document/xml',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /application\/xml/)
+      .expect((response) => {
+        expect(response.text).toContain(
+          '<notaCredito id="comprobante" version="1.0.0">',
+        );
+        expect(response.text).toContain('<codDoc>04</codDoc>');
+        expect(response.text).toContain(
+          '<numDocModificado>INV-001</numDocModificado>',
+        );
+      });
+
+    expect(
+      getTenantInvoiceElectronicXmlPreviewUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'credit_note_001');
   });
 
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride/download should return the RIDE as attachment', async () => {
@@ -2918,6 +3340,94 @@ describe('API', () => {
           'not ready for remote SRI offline submission',
         );
       });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/submit should also submit a credit note when its XSD support is available', async () => {
+    submitTenantInvoiceElectronicDocumentUseCase.execute.mockResolvedValueOnce(
+      creditNoteDraftInvoice.updateElectronicStatus(
+        {
+          electronicStatus: 'submitted',
+          accessKey: '020520260117900123450010030010000000121234567815',
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage:
+            'Nota de credito firmada y enviada al gateway stub del SRI. Pendiente de autorizacion real.',
+          signedAt: new Date('2026-05-03T10:10:00.000Z'),
+          submittedAt: new Date('2026-05-03T10:10:05.000Z'),
+          submissionReference: 'stub-sri-credit_note_001-1746267005000',
+        },
+        new Date('2026-05-03T10:10:05.000Z'),
+      ),
+    );
+
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/invoices/credit_note_001/electronic-document/submit',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect({
+        submitted: true,
+        electronicStatus: 'submitted',
+        accessKey: '020520260117900123450010030010000000121234567815',
+        submittedAt: '2026-05-03T10:10:05.000Z',
+        submissionReference: 'stub-sri-credit_note_001-1746267005000',
+      });
+
+    expect(
+      submitTenantInvoiceElectronicDocumentUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'credit_note_001',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/submit-presigned should also submit a credit note when its XSD support is available', async () => {
+    submitTenantPresignedInvoiceElectronicDocumentUseCase.execute.mockResolvedValueOnce(
+      creditNoteDraftInvoice.updateElectronicStatus(
+        {
+          electronicStatus: 'submitted',
+          accessKey: '020520260117900123450010030010000000121234567815',
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage:
+            'XML firmado externamente por sandbox-signer. Nota de credito enviada al gateway stub del SRI.',
+          signedAt: new Date('2026-05-03T10:11:00.000Z'),
+          submittedAt: new Date('2026-05-03T10:11:10.000Z'),
+          submissionReference: 'stub-sri-presigned-credit_note_001-123456789',
+        },
+        new Date('2026-05-03T10:11:10.000Z'),
+      ),
+    );
+
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/invoices/credit_note_001/electronic-document/submit-presigned',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        signedXml:
+          '<notaCredito id="comprobante" version="1.0.0"><infoTributaria><codDoc>04</codDoc><claveAcceso>020520260117900123450010030010000000121234567815</claveAcceso></infoTributaria><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"></ds:Signature></notaCredito>',
+        signerName: 'sandbox-signer',
+      })
+      .expect(201)
+      .expect({
+        submitted: true,
+        electronicStatus: 'submitted',
+        accessKey: '020520260117900123450010030010000000121234567815',
+        submittedAt: '2026-05-03T10:11:10.000Z',
+        submissionReference: 'stub-sri-presigned-credit_note_001-123456789',
+      });
+
+    expect(
+      submitTenantPresignedInvoiceElectronicDocumentUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'credit_note_001',
+      signedXml:
+        '<notaCredito id="comprobante" version="1.0.0"><infoTributaria><codDoc>04</codDoc><claveAcceso>020520260117900123450010030010000000121234567815</claveAcceso></infoTributaria><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"></ds:Signature></notaCredito>',
+      signerName: 'sandbox-signer',
+    });
   });
 
   it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/check-authorization should resolve the stub authorization state', async () => {
@@ -3156,6 +3666,128 @@ describe('API', () => {
       issuedAt: new Date('2026-04-27T16:00:00.000Z'),
       dueAt: new Date('2026-05-11T16:00:00.000Z'),
       notes: 'Primer borrador para onboarding de invoicing.',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/credit-notes should create a draft credit note from a source invoice', async () => {
+    getTenantInvoiceDetailUseCase.execute.mockResolvedValueOnce({
+      invoice: creditNoteDraftInvoice,
+      items: [creditNoteFirstItem, creditNoteSecondItem],
+      payments: [],
+      electronicEvents: [],
+      totals: {
+        subtotalInCents: -12500,
+        taxInCents: -1200,
+        totalInCents: -13700,
+      },
+      settlement: {
+        paidInCents: 0,
+        balanceDueInCents: 0,
+        isFullyPaid: false,
+      },
+    });
+
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/credit-notes')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        sourceInvoiceId: 'invoice_001',
+        reason: 'Devolucion parcial de la factura origen.',
+        issuedAt: '2026-05-07T16:00:00.000Z',
+        notes: 'Nota de credito de prueba.',
+      })
+      .expect(201)
+      .expect({
+        invoice: {
+          id: 'credit_note_001',
+          tenantId: 'tenant_123',
+          customerId: 'customer_acme',
+          number: '003-001-000000012',
+          documentCode: '04',
+          establishmentCode: '003',
+          emissionPointCode: '001',
+          sequenceNumber: 12,
+          buyerIdentificationType: '04',
+          buyerIdentification: '1790012345001',
+          buyerName: 'Acme Corp',
+          buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+          electronicStatus: null,
+          accessKey: null,
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage: null,
+          signedAt: null,
+          submittedAt: null,
+          submissionReference: null,
+          status: 'draft',
+          currency: 'USD',
+          issuedAt: '2026-05-07T16:00:00.000Z',
+          dueAt: null,
+          notes: 'Nota de credito de prueba.',
+          createdAt: '2026-05-07T16:00:00.000Z',
+          updatedAt: '2026-05-07T16:00:00.000Z',
+          items: [
+            {
+              id: 'credit_note_item_001',
+              tenantId: 'tenant_123',
+              invoiceId: 'credit_note_001',
+              position: 1,
+              description: 'Suscripcion mensual Growth',
+              quantity: 2,
+              unitPriceInCents: -5000,
+              lineTotalInCents: -10000,
+              taxRateId: 'tax_rate_vat_12',
+              taxRateName: 'VAT 12%',
+              taxRatePercentage: 12,
+              lineTaxInCents: -1200,
+              createdAt: '2026-05-07T16:00:00.000Z',
+              updatedAt: '2026-05-07T16:00:00.000Z',
+            },
+            {
+              id: 'credit_note_item_002',
+              tenantId: 'tenant_123',
+              invoiceId: 'credit_note_001',
+              position: 2,
+              description: 'Setup inicial',
+              quantity: 1,
+              unitPriceInCents: -2500,
+              lineTotalInCents: -2500,
+              taxRateId: null,
+              taxRateName: null,
+              taxRatePercentage: null,
+              lineTaxInCents: 0,
+              createdAt: '2026-05-07T16:00:00.000Z',
+              updatedAt: '2026-05-07T16:00:00.000Z',
+            },
+          ],
+          payments: [],
+          electronicEvents: [],
+          totals: {
+            subtotalInCents: -12500,
+            taxInCents: -1200,
+            totalInCents: -13700,
+          },
+          settlement: {
+            paidInCents: 0,
+            balanceDueInCents: 0,
+            isFullyPaid: false,
+          },
+        },
+        creditNote: {
+          sourceInvoiceId: 'invoice_001',
+          sourceInvoiceNumber: 'INV-001',
+          sourceInvoiceIssuedAt: '2026-04-27T16:00:00.000Z',
+          reason: 'Devolucion parcial de la factura origen.',
+        },
+      });
+
+    expect(createTenantCreditNoteUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      sourceInvoiceId: 'invoice_001',
+      reason: 'Devolucion parcial de la factura origen.',
+      number: undefined,
+      issuedAt: new Date('2026-05-07T16:00:00.000Z'),
+      notes: 'Nota de credito de prueba.',
     });
   });
 

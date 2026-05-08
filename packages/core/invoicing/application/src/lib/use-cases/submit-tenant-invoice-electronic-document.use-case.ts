@@ -8,6 +8,7 @@ import { InvoiceElectronicSubmissionGatewayIncompleteError } from '../errors/inv
 import { InvoiceElectronicSubmissionNotConfiguredError } from '../errors/invoice-electronic-submission-not-configured.error';
 import { InvoiceElectronicSignatureNotConfiguredError } from '../errors/invoice-electronic-signature-not-configured.error';
 import { InvoiceElectronicSignatureMaterialIncompleteError } from '../errors/invoice-electronic-signature-material-incomplete.error';
+import { UnsupportedElectronicInvoiceDocumentCodeError } from '../errors/unsupported-electronic-invoice-document-code.error';
 import { ElectronicSignatureSettingsRepository } from '../ports/electronic-signature-settings.repository';
 import { InvoiceElectronicMetadataIncompleteError } from '../errors/invoice-electronic-metadata-incomplete.error';
 import { InvoiceElectronicRemoteSubmissionReadinessError } from '../errors/invoice-electronic-remote-submission-readiness.error';
@@ -21,9 +22,9 @@ import { InvoiceRepository } from '../ports/invoice.repository';
 import { InvoiceElectronicEvent } from '@saas-platform/invoicing-domain';
 import {
   buildSriAccessKey,
-  buildSriInvoiceXmlPreview,
+  buildSriElectronicDocumentXmlPreview,
   canBuildSriAccessKey,
-  validateSriInvoiceXml,
+  validateSriElectronicDocumentXml,
 } from '../types/electronic-invoice';
 import { GetTenantInvoiceDocumentUseCase } from './get-tenant-invoice-document.use-case';
 
@@ -69,6 +70,20 @@ export class SubmitTenantInvoiceElectronicDocumentUseCase {
       throw new InvalidInvoiceElectronicSubmissionStateError(
         input.tenantSlug,
         input.invoiceId,
+      );
+    }
+
+    const documentCode = invoice.documentCode ?? '01';
+    const schemaSupport =
+      await this.electronicInvoiceXmlSchemaValidator.describeSupport(
+        documentCode,
+      );
+
+    if (!schemaSupport.isSchemaAvailable) {
+      throw new UnsupportedElectronicInvoiceDocumentCodeError(
+        input.tenantSlug,
+        input.invoiceId,
+        documentCode,
       );
     }
 
@@ -127,11 +142,11 @@ export class SubmitTenantInvoiceElectronicDocumentUseCase {
       input.tenantSlug,
       input.invoiceId,
     );
-    const xml = buildSriInvoiceXmlPreview({
+    const xml = buildSriElectronicDocumentXmlPreview({
       document,
       accessKey,
     });
-    const xmlIssues = validateSriInvoiceXml({
+    const xmlIssues = validateSriElectronicDocumentXml({
       xml,
       accessKey,
     });
@@ -142,6 +157,7 @@ export class SubmitTenantInvoiceElectronicDocumentUseCase {
 
     const schemaIssues =
       await this.electronicInvoiceXmlSchemaValidator.validate({
+        documentCode,
         xml,
       });
 

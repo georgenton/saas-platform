@@ -22,6 +22,10 @@ export interface InvoiceProps {
   establishmentCode?: string | null;
   emissionPointCode?: string | null;
   sequenceNumber?: number | null;
+  modifiedDocumentId?: string | null;
+  modifiedDocumentNumber?: string | null;
+  modifiedDocumentIssuedAt?: Date | null;
+  modificationReason?: string | null;
   buyerIdentificationType?: BuyerIdentificationType | null;
   buyerIdentification?: string | null;
   buyerName?: string | null;
@@ -80,6 +84,22 @@ export class Invoice {
 
   get sequenceNumber(): number | null {
     return this.props.sequenceNumber ?? null;
+  }
+
+  get modifiedDocumentId(): string | null {
+    return this.props.modifiedDocumentId ?? null;
+  }
+
+  get modifiedDocumentNumber(): string | null {
+    return this.props.modifiedDocumentNumber ?? null;
+  }
+
+  get modifiedDocumentIssuedAt(): Date | null {
+    return this.props.modifiedDocumentIssuedAt ?? null;
+  }
+
+  get modificationReason(): string | null {
+    return this.props.modificationReason ?? null;
   }
 
   get buyerIdentificationType(): BuyerIdentificationType | null {

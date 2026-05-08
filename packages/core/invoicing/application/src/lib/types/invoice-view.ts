@@ -221,15 +221,33 @@ export function buildInvoiceRideView(
     primitives.sequenceNumber != null
       ? String(primitives.sequenceNumber).padStart(9, '0')
       : null;
+  const rideLines =
+    primitives.documentCode === '04'
+      ? document.lines.map((line) => ({
+          ...line,
+          unitPriceInCents: Math.abs(line.unitPriceInCents),
+          lineSubtotalInCents: Math.abs(line.lineSubtotalInCents),
+          lineTaxInCents: Math.abs(line.lineTaxInCents),
+          lineTotalInCents: Math.abs(line.lineTotalInCents),
+        }))
+      : document.lines;
+  const rideTotals =
+    primitives.documentCode === '04'
+      ? {
+          subtotalInCents: Math.abs(document.totals.subtotalInCents),
+          taxInCents: Math.abs(document.totals.taxInCents),
+          totalInCents: Math.abs(document.totals.totalInCents),
+        }
+      : document.totals;
 
   return {
     issuer: document.issuer,
     customer: document.customer,
     invoice: document.invoice,
-    lines: document.lines,
-    totals: document.totals,
+    lines: rideLines,
+    totals: rideTotals,
     ride: {
-      documentLabel: primitives.documentCode === '01' ? 'RIDE Factura' : 'RIDE',
+      documentLabel: formatRideDocumentLabel(primitives.documentCode),
       environmentLabel: formatRideEnvironmentLabel(document.issuer.environment),
       emissionTypeLabel: formatRideEmissionTypeLabel(document.issuer.emissionType),
       sequenceDisplay,
@@ -333,6 +351,23 @@ function buildRideAdditionalInfoFields(
     },
   ];
 
+  if (invoice.documentCode === '04') {
+    fields.push(
+      {
+        label: 'Documento modificado',
+        value: invoice.modifiedDocumentNumber,
+      },
+      {
+        label: 'Fecha documento sustento',
+        value: invoice.modifiedDocumentIssuedAt?.toISOString() ?? null,
+      },
+      {
+        label: 'Motivo',
+        value: invoice.modificationReason,
+      },
+    );
+  }
+
   if (invoice.notes) {
     fields.push({
       label: 'Notas',
@@ -379,6 +414,32 @@ function formatRideEnvironmentLabel(value: string | null): string {
   return value === 'production' ? 'PRODUCCION' : 'PRUEBAS';
 }
 
+function formatRideDocumentLabel(documentCode: string | null): string {
+  switch (documentCode) {
+    case '01':
+      return 'RIDE Factura';
+    case '04':
+      return 'RIDE Nota de credito';
+    default:
+      return 'RIDE';
+  }
+}
+
+function formatDocumentTitle(
+  documentCode: string | null | undefined,
+): string {
+  if (documentCode == null || documentCode === '01') {
+    return 'Invoice';
+  }
+
+  switch (documentCode) {
+    case '04':
+      return 'Credit Note';
+    default:
+      return 'Document';
+  }
+}
+
 function formatRideEmissionTypeLabel(value: string | null): string {
   if (!value) {
     return 'No configurado';
@@ -405,6 +466,7 @@ function formatRideElectronicStatusLabel(value: string | null): string {
 export function renderInvoiceDocumentHtml(view: InvoiceDocumentView): string {
   const invoice = view.invoice.toPrimitives();
   const formatMoney = createDocumentCurrencyFormatter(invoice.currency);
+  const documentTitle = formatDocumentTitle(invoice.documentCode);
 
   const lineRows = view.lines
     .map(
@@ -428,7 +490,7 @@ export function renderInvoiceDocumentHtml(view: InvoiceDocumentView): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Invoice ${escapeHtml(invoice.number)}</title>
+    <title>${escapeHtml(documentTitle)} ${escapeHtml(invoice.number)}</title>
     <style>
       body { font-family: Arial, sans-serif; color: #1f1a14; margin: 32px; }
       .header { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
@@ -449,8 +511,8 @@ export function renderInvoiceDocumentHtml(view: InvoiceDocumentView): string {
   <body>
     <div class="header">
       <div>
-        <div class="muted">Invoice document</div>
-        <h1>${escapeHtml(invoice.number)}</h1>
+        <div class="muted">${escapeHtml(documentTitle)} document</div>
+        <h1>${escapeHtml(documentTitle)} ${escapeHtml(invoice.number)}</h1>
         <p>Status: ${escapeHtml(invoice.status)}</p>
       </div>
       <div class="card">

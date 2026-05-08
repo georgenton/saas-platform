@@ -1,30 +1,60 @@
 import { execFile } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Injectable } from '@nestjs/common';
-import { ElectronicInvoiceXmlSchemaValidator } from '@saas-platform/invoicing-application';
+import {
+  ElectronicInvoiceXmlSchemaSupportDescriptor,
+  ElectronicInvoiceXmlSchemaValidator,
+} from '@saas-platform/invoicing-application';
 
 @Injectable()
 export class XmllintSriInvoiceXmlSchemaValidator
   implements ElectronicInvoiceXmlSchemaValidator
 {
-  private readonly schemaPath = resolve(
-    process.cwd(),
-    'vendor/sri/factura-2.1.0/XML y XSD Factura/factura_V2.1.0.xsd',
-  );
+  private readonly schemaRegistry: Record<
+    string,
+    {
+      path: string;
+      schemaLabel: string;
+    }
+  > = {
+    '01': {
+      path: resolve(
+        process.cwd(),
+        'vendor/sri/factura-2.1.0/XML y XSD Factura/factura_V2.1.0.xsd',
+      ),
+      schemaLabel: 'factura_V2.1.0.xsd',
+    },
+    '04': {
+      path: resolve(
+        process.cwd(),
+        'vendor/sri/nota-credito-1.0.0/XML y XSD Nota de Credito/notaCredito_V1.0.0.xsd',
+      ),
+      schemaLabel: 'notaCredito_V1.0.0.xsd',
+    },
+  };
 
-  async validate(input: { xml: string }): Promise<string[]> {
+  async validate(input: {
+    documentCode: string;
+    xml: string;
+  }): Promise<string[]> {
     const tempDir = await mkdtemp(join(tmpdir(), 'sri-invoice-xsd-'));
     const xmlPath = join(tempDir, 'invoice.xml');
+    const schemaSupport = await this.describeSupport(input.documentCode);
+    const schemaPath = this.schemaRegistry[input.documentCode]?.path;
 
     try {
+      if (!schemaPath || !schemaSupport.isSchemaAvailable) {
+        return [schemaSupport.detail];
+      }
+
       await writeFile(xmlPath, input.xml, 'utf8');
 
       await new Promise<void>((resolvePromise, rejectPromise) => {
         execFile(
           'xmllint',
-          ['--noout', '--schema', this.schemaPath, xmlPath],
+          ['--noout', '--schema', schemaPath, xmlPath],
           (error, stdout, stderr) => {
             if (!error) {
               resolvePromise();
@@ -32,7 +62,11 @@ export class XmllintSriInvoiceXmlSchemaValidator
             }
 
             rejectPromise(
-              new Error(this.normalizeXmllintOutput(stderr || stdout || error.message)),
+              new Error(
+                this.normalizeXmllintOutput(
+                  stderr || stdout || error.message,
+                ),
+              ),
             );
           },
         );
@@ -40,13 +74,46 @@ export class XmllintSriInvoiceXmlSchemaValidator
 
       return [];
     } catch (error) {
-      return this.extractIssues(error);
+      return this.extractIssues(error, schemaPath);
     } finally {
       await rm(tempDir, { force: true, recursive: true });
     }
   }
 
-  private extractIssues(error: unknown): string[] {
+  async describeSupport(
+    documentCode: string,
+  ): Promise<ElectronicInvoiceXmlSchemaSupportDescriptor> {
+    const schema = this.schemaRegistry[documentCode];
+
+    if (!schema) {
+      return {
+        documentCode,
+        schemaLabel: 'schema.xsd',
+        isSchemaAvailable: false,
+        detail: `No existe una estrategia de validacion XSD registrada para el document code "${documentCode}".`,
+      };
+    }
+
+    try {
+      await access(schema.path);
+
+      return {
+        documentCode,
+        schemaLabel: schema.schemaLabel,
+        isSchemaAvailable: true,
+        detail: `El esquema oficial ${schema.schemaLabel} ya esta disponible en el repo para el document code "${documentCode}".`,
+      };
+    } catch {
+      return {
+        documentCode,
+        schemaLabel: schema.schemaLabel,
+        isSchemaAvailable: false,
+        detail: `El XSD oficial para document code "${documentCode}" todavia no esta disponible en el repo (${schema.schemaLabel}).`,
+      };
+    }
+  }
+
+  private extractIssues(error: unknown, schemaPath: string): string[] {
     const fallback =
       'La validacion XSD del comprobante electronico fallo sin un detalle legible.';
 
@@ -66,7 +133,7 @@ export class XmllintSriInvoiceXmlSchemaValidator
       .filter((line) => line.length > 0)
       .map((line) =>
         line
-          .replace(this.schemaPath, 'factura_V2.1.0.xsd')
+          .replace(schemaPath, this.toSchemaFileName(schemaPath))
           .replace(/.*\/invoice\.xml:/, 'invoice.xml:'),
       );
   }
@@ -84,4 +151,9 @@ export class XmllintSriInvoiceXmlSchemaValidator
 
     return lines.join('\n');
   }
+
+  private toSchemaFileName(schemaPath: string): string {
+    return schemaPath.split('/').pop() ?? 'schema.xsd';
+  }
+
 }

@@ -1,10 +1,12 @@
 import { ElectronicSubmissionSettingsRepository } from '../ports/electronic-submission-settings.repository';
 import { ElectronicInvoiceSigner } from '../ports/electronic-invoice-signer';
+import { ElectronicInvoiceXmlSchemaValidator } from '../ports/electronic-invoice-xml-schema-validator';
 import { ElectronicSignatureSettingsRepository } from '../ports/electronic-signature-settings.repository';
 import { InvoiceNumberingSettingsRepository } from '../ports/invoice-numbering-settings.repository';
 import { IssuerProfileRepository } from '../ports/issuer-profile.repository';
 import { SecretReferenceResolver } from '../ports/secret-reference-resolver';
 import {
+  ElectronicInvoicingDocumentSupport,
   ElectronicInvoicingReadinessCheck,
   ElectronicInvoicingSandboxReadiness,
 } from '../types/electronic-invoicing-readiness';
@@ -22,6 +24,7 @@ export class GetTenantElectronicSandboxReadinessUseCase {
     private readonly electronicSubmissionSettingsRepository: ElectronicSubmissionSettingsRepository,
     private readonly secretReferenceResolver: SecretReferenceResolver,
     private readonly electronicInvoiceSigner: ElectronicInvoiceSigner,
+    private readonly electronicInvoiceXmlSchemaValidator: ElectronicInvoiceXmlSchemaValidator,
   ) {}
 
   async execute(tenantSlug: string): Promise<ElectronicInvoicingSandboxReadiness> {
@@ -34,13 +37,25 @@ export class GetTenantElectronicSandboxReadinessUseCase {
     const [
       issuerProfile,
       invoiceNumberingSettings,
+      creditNoteNumberingSettings,
       signatureSettings,
       submissionSettings,
+      invoiceSchemaSupport,
+      creditNoteSchemaSupport,
     ] = await Promise.all([
       this.issuerProfileRepository.findByTenantId(tenant.id),
-      this.invoiceNumberingSettingsRepository.findByTenantId(tenant.id),
+      this.invoiceNumberingSettingsRepository.findByTenantIdAndDocumentCode(
+        tenant.id,
+        '01',
+      ),
+      this.invoiceNumberingSettingsRepository.findByTenantIdAndDocumentCode(
+        tenant.id,
+        '04',
+      ),
       this.electronicSignatureSettingsRepository.findByTenantId(tenant.id),
       this.electronicSubmissionSettingsRepository.findByTenantId(tenant.id),
+      this.electronicInvoiceXmlSchemaValidator.describeSupport('01'),
+      this.electronicInvoiceXmlSchemaValidator.describeSupport('04'),
     ]);
 
     const checks: ElectronicInvoicingReadinessCheck[] = [];
@@ -264,6 +279,32 @@ export class GetTenantElectronicSandboxReadinessUseCase {
     }
 
     const isReadyForRemoteSandboxSubmission = blockers.length === 0;
+    const documentSupport: ElectronicInvoicingDocumentSupport[] = [
+      {
+        documentCode: '01',
+        label: 'Factura ECU (01)',
+        numberingConfigured: Boolean(invoiceNumberingSettings),
+        previewAvailable: true,
+        rideAvailable: true,
+        schemaValidationAvailable: invoiceSchemaSupport.isSchemaAvailable,
+        submitSupported: invoiceSchemaSupport.isSchemaAvailable,
+        detail: invoiceSchemaSupport.isSchemaAvailable
+          ? 'La factura 01 ya tiene preview XML, RIDE, validacion XSD y el carril de submit electronico habilitado.'
+          : invoiceSchemaSupport.detail,
+      },
+      {
+        documentCode: '04',
+        label: 'Nota de credito ECU (04)',
+        numberingConfigured: Boolean(creditNoteNumberingSettings),
+        previewAvailable: true,
+        rideAvailable: true,
+        schemaValidationAvailable: creditNoteSchemaSupport.isSchemaAvailable,
+        submitSupported: creditNoteSchemaSupport.isSchemaAvailable,
+        detail: creditNoteSchemaSupport.isSchemaAvailable
+          ? 'La nota de credito 04 ya tiene preview XML, RIDE y validacion XSD local. El carril de submit electronico ya puede probarse con la misma frontera tecnica del documento 01.'
+          : `${creditNoteSchemaSupport.detail} El documento 04 queda hoy en modo preview y RIDE, sin submit electronico.`,
+      },
+    ];
 
     return {
       tenantSlug,
@@ -277,9 +318,10 @@ export class GetTenantElectronicSandboxReadinessUseCase {
       blockers,
       warnings,
       checks,
+      documentSupport,
       recommendedNextStep: isReadyForRemoteSandboxSubmission
-        ? 'El tenant ya puede pasar a una prueba controlada contra SRI sandbox.'
-        : 'Primero resuelve los blockers y despues cambia a una prueba controlada en sandbox.',
+        ? 'El tenant ya puede pasar a una prueba controlada contra SRI sandbox para factura 01.'
+        : 'Primero resuelve los blockers del flujo 01 y despues cambia a una prueba controlada en sandbox.',
     };
   }
 

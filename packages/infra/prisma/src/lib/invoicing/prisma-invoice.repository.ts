@@ -21,6 +21,10 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       establishmentCode: data.establishmentCode,
       emissionPointCode: data.emissionPointCode,
       sequenceNumber: data.sequenceNumber,
+      modifiedDocumentId: data.modifiedDocumentId ?? null,
+      modifiedDocumentNumber: data.modifiedDocumentNumber ?? null,
+      modifiedDocumentIssuedAt: data.modifiedDocumentIssuedAt ?? null,
+      modificationReason: data.modificationReason ?? null,
       buyerIdentificationType: data.buyerIdentificationType ?? null,
       buyerIdentification: data.buyerIdentification ?? null,
       buyerName: data.buyerName ?? null,
@@ -49,6 +53,10 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       establishmentCode: data.establishmentCode,
       emissionPointCode: data.emissionPointCode,
       sequenceNumber: data.sequenceNumber,
+      modifiedDocumentId: data.modifiedDocumentId ?? null,
+      modifiedDocumentNumber: data.modifiedDocumentNumber ?? null,
+      modifiedDocumentIssuedAt: data.modifiedDocumentIssuedAt ?? null,
+      modificationReason: data.modificationReason ?? null,
       buyerIdentificationType: data.buyerIdentificationType ?? null,
       buyerIdentification: data.buyerIdentification ?? null,
       buyerName: data.buyerName ?? null,
@@ -109,6 +117,10 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     establishmentCode: string | null;
     emissionPointCode: string | null;
     sequenceNumber: number | null;
+    modifiedDocumentId: string | null;
+    modifiedDocumentNumber: string | null;
+    modifiedDocumentIssuedAt: Date | null;
+    modificationReason: string | null;
     buyerIdentificationType: string | null;
     buyerIdentification: string | null;
     buyerName: string | null;
@@ -138,6 +150,10 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       establishmentCode: record.establishmentCode,
       emissionPointCode: record.emissionPointCode,
       sequenceNumber: record.sequenceNumber,
+      modifiedDocumentId: record.modifiedDocumentId,
+      modifiedDocumentNumber: record.modifiedDocumentNumber,
+      modifiedDocumentIssuedAt: record.modifiedDocumentIssuedAt,
+      modificationReason: record.modificationReason,
       buyerIdentificationType: record.buyerIdentificationType as BuyerIdentificationType | null,
       buyerIdentification: record.buyerIdentification,
       buyerName: record.buyerName,

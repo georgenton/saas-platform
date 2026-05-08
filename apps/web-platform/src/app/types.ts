@@ -239,7 +239,7 @@ export interface ElectronicSandboxReadinessResponse {
     detail: string;
   }>;
   documentSupport: Array<{
-    documentCode: '01' | '04' | '05';
+    documentCode: '01' | '04' | '05' | '07';
     label: string;
     numberingConfigured: boolean;
     previewAvailable: boolean;
@@ -393,6 +393,17 @@ export interface CreditNoteResponse {
 export interface DebitNoteResponse {
   invoice: InvoiceDetailResponse;
   debitNote: {
+    sourceInvoiceId: string | null;
+    sourceInvoiceNumber: string | null;
+    sourceInvoiceIssuedAt: string | null;
+    reason: string | null;
+    amountInCents: number;
+  };
+}
+
+export interface WithholdingResponse {
+  invoice: InvoiceDetailResponse;
+  withholding: {
     sourceInvoiceId: string | null;
     sourceInvoiceNumber: string | null;
     sourceInvoiceIssuedAt: string | null;

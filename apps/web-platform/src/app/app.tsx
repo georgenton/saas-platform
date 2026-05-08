@@ -7,6 +7,7 @@ import {
   createCustomer,
   createCreditNote,
   createDebitNote,
+  createWithholding,
   createInvitation,
   createInvoice,
   createInvoiceItem,
@@ -68,6 +69,7 @@ import {
   InvoiceSummaryResponse,
   PlatformPlan,
   PlatformProduct,
+  WithholdingResponse,
   TaxRateResponse,
   SessionPendingInvitation,
   SessionEntitlement,
@@ -210,6 +212,8 @@ function formatElectronicDocumentLabel(value: string | null): string {
       return 'Nota de credito';
     case '05':
       return 'Nota de debito';
+    case '07':
+      return 'Comprobante de retencion';
     case '01':
     case null:
       return 'Factura';
@@ -471,6 +475,16 @@ export function App() {
     'Nota de debito de prueba.',
   );
   const [newDebitNoteTaxRateId, setNewDebitNoteTaxRateId] = useState('');
+  const [newWithholdingReason, setNewWithholdingReason] = useState(
+    'Retencion sobre la factura origen.',
+  );
+  const [newWithholdingAmountInCents, setNewWithholdingAmountInCents] =
+    useState('1000');
+  const [newWithholdingIssuedAt, setNewWithholdingIssuedAt] = useState('');
+  const [newWithholdingNotes, setNewWithholdingNotes] = useState(
+    'Comprobante de retencion de prueba.',
+  );
+  const [newWithholdingTaxRateId, setNewWithholdingTaxRateId] = useState('');
   const [newItemDescription, setNewItemDescription] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState('1');
   const [newItemUnitPriceInCents, setNewItemUnitPriceInCents] = useState('');
@@ -1897,6 +1911,63 @@ export function App() {
     } catch (error) {
       setInvoicingError(
         error instanceof Error ? error.message : 'No se pudo crear la nota de debito.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleCreateWithholding(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const amountInCents = Number(newWithholdingAmountInCents);
+
+    if (
+      !token ||
+      !currentTenancy ||
+      !invoicingEnabled ||
+      !selectedInvoiceDetail ||
+      (selectedInvoiceDetail.documentCode ?? '01') !== '01' ||
+      !newWithholdingReason.trim() ||
+      !Number.isInteger(amountInCents) ||
+      amountInCents < 1
+    ) {
+      return;
+    }
+
+    setActionLoading('create-withholding');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const withholding: WithholdingResponse = await createWithholding(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          sourceInvoiceId: selectedInvoiceDetail.id,
+          reason: newWithholdingReason.trim(),
+          amountInCents,
+          taxRateId: newWithholdingTaxRateId.trim() || null,
+          issuedAt: newWithholdingIssuedAt.trim() || undefined,
+          notes: newWithholdingNotes.trim() || null,
+        },
+      );
+
+      setNewWithholdingReason('Retencion sobre la factura origen.');
+      setNewWithholdingAmountInCents('1000');
+      setNewWithholdingIssuedAt('');
+      setNewWithholdingNotes('Comprobante de retencion de prueba.');
+      setNewWithholdingTaxRateId('');
+      setSelectedInvoiceId(withholding.invoice.id);
+      setInvoicingActionMessage(
+        `Comprobante de retencion ${withholding.invoice.number} creado desde ${selectedInvoiceDetail.number}.`,
+      );
+      await refreshInvoicingWorkspace({ selectInvoiceId: withholding.invoice.id });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo crear el comprobante de retencion.',
       );
     } finally {
       setActionLoading(null);
@@ -4410,14 +4481,17 @@ export function App() {
                         </div>
 
                         {selectedInvoiceDetail.documentCode === '04' ||
-                        selectedInvoiceDetail.documentCode === '05' ? (
+                        selectedInvoiceDetail.documentCode === '05' ||
+                        selectedInvoiceDetail.documentCode === '07' ? (
                           <div className={styles.detailCard}>
                             <div className={styles.sectionHeading}>
                               <div>
                                 <span className={styles.label}>
                                   {selectedInvoiceDetail.documentCode === '05'
                                     ? 'Debit note'
-                                    : 'Credit note'}
+                                    : selectedInvoiceDetail.documentCode === '07'
+                                      ? 'Withholding'
+                                      : 'Credit note'}
                                 </span>
                                 <h3>Documento modificado</h3>
                               </div>
@@ -4601,6 +4675,103 @@ export function App() {
                               </button>
                               <p className={styles.muted}>
                                 Este flujo crea un borrador `05` con documento sustento, motivo inicial y una primera linea positiva para continuar el carril electronico.
+                              </p>
+                            </form>
+                          </div>
+                        ) : null}
+
+                        {(selectedInvoiceDetail.documentCode ?? '01') === '01' ? (
+                          <div className={styles.detailCard}>
+                            <div className={styles.sectionHeading}>
+                              <div>
+                                <span className={styles.label}>Withholding</span>
+                                <h3>Crear borrador `07` desde esta factura</h3>
+                              </div>
+                            </div>
+
+                            <form className={styles.stack} onSubmit={handleCreateWithholding}>
+                              <label className={styles.field}>
+                                <span>Motivo</span>
+                                <textarea
+                                  onChange={(event) =>
+                                    setNewWithholdingReason(event.target.value)
+                                  }
+                                  placeholder="Retencion sobre la factura origen."
+                                  value={newWithholdingReason}
+                                />
+                              </label>
+
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Valor retenido (centavos)</span>
+                                  <input
+                                    min="1"
+                                    onChange={(event) =>
+                                      setNewWithholdingAmountInCents(event.target.value)
+                                    }
+                                    placeholder="1000"
+                                    step="1"
+                                    type="number"
+                                    value={newWithholdingAmountInCents}
+                                  />
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Tasa opcional</span>
+                                  <select
+                                    onChange={(event) =>
+                                      setNewWithholdingTaxRateId(event.target.value)
+                                    }
+                                    value={newWithholdingTaxRateId}
+                                  >
+                                    <option value="">Sin tasa</option>
+                                    {taxRates.map((taxRate) => (
+                                      <option key={taxRate.id} value={taxRate.id}>
+                                        {taxRate.name} · {formatPercentage(taxRate.percentage)}%
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              </div>
+
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Fecha emision</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewWithholdingIssuedAt(event.target.value)
+                                    }
+                                    type="datetime-local"
+                                    value={newWithholdingIssuedAt}
+                                  />
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Notas</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewWithholdingNotes(event.target.value)
+                                    }
+                                    placeholder="Comprobante de retencion de prueba."
+                                    value={newWithholdingNotes}
+                                  />
+                                </label>
+                              </div>
+
+                              <button
+                                className={styles.secondaryButton}
+                                disabled={
+                                  actionLoading === 'create-withholding' ||
+                                  !newWithholdingReason.trim() ||
+                                  !/^\d+$/.test(newWithholdingAmountInCents.trim()) ||
+                                  Number(newWithholdingAmountInCents) < 1
+                                }
+                                type="submit"
+                              >
+                                {actionLoading === 'create-withholding'
+                                  ? 'Creando comprobante de retencion...'
+                                  : 'Crear comprobante de retencion'}
+                              </button>
+                              <p className={styles.muted}>
+                                Este flujo crea un borrador `07` con documento sustento, motivo inicial y una primera linea para continuar el carril electronico del comprobante de retencion.
                               </p>
                             </form>
                           </div>

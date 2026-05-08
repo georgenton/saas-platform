@@ -46,6 +46,7 @@ import {
   CreateTenantCustomerUseCase,
   CreateTenantCreditNoteUseCase,
   CreateTenantDebitNoteUseCase,
+  CreateTenantWithholdingUseCase,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
   CreateTenantInvoicePaymentUseCase,
@@ -191,6 +192,7 @@ describe('API', () => {
   let createTenantCustomerUseCase: { execute: jest.Mock };
   let createTenantCreditNoteUseCase: { execute: jest.Mock };
   let createTenantDebitNoteUseCase: { execute: jest.Mock };
+  let createTenantWithholdingUseCase: { execute: jest.Mock };
   let createTenantInvoiceUseCase: { execute: jest.Mock };
   let createTenantInvoiceItemUseCase: { execute: jest.Mock };
   let createTenantInvoicePaymentUseCase: { execute: jest.Mock };
@@ -653,6 +655,17 @@ describe('API', () => {
         detail:
           'La nota de debito 05 ya tiene preview XML, RIDE y validacion XSD local. El carril de submit electronico ya puede probarse con la misma frontera tecnica de 01 y 04.',
       },
+      {
+        documentCode: '07' as const,
+        label: 'Comprobante de retencion ECU (07)',
+        numberingConfigured: true,
+        previewAvailable: true,
+        rideAvailable: true,
+        schemaValidationAvailable: true,
+        submitSupported: true,
+        detail:
+          'El comprobante de retencion 07 ya tiene preview XML, RIDE y validacion XSD local. El carril de submit electronico ya puede probarse con la misma frontera tecnica multi-documento.',
+      },
     ],
     recommendedNextStep:
       'Primero resuelve los blockers del flujo 01 y despues cambia a una prueba controlada en sandbox.',
@@ -702,6 +715,16 @@ describe('API', () => {
     nextSequenceNumber: 7,
     createdAt: new Date('2026-05-08T15:10:00.000Z'),
     updatedAt: new Date('2026-05-08T15:10:00.000Z'),
+  });
+  const withholdingNumberingSettings = InvoiceNumberingSettings.create({
+    id: 'invoice_numbering_007',
+    tenantId: 'tenant_123',
+    documentCode: '07',
+    establishmentCode: '005',
+    emissionPointCode: '001',
+    nextSequenceNumber: 9,
+    createdAt: new Date('2026-05-08T19:10:00.000Z'),
+    updatedAt: new Date('2026-05-08T19:10:00.000Z'),
   });
   const electronicDraftInvoice = Invoice.create({
     id: 'invoice_003',
@@ -821,6 +844,47 @@ describe('API', () => {
     lineTaxInCents: 300,
     createdAt: new Date('2026-05-08T16:00:00.000Z'),
     updatedAt: new Date('2026-05-08T16:00:00.000Z'),
+  });
+  const withholdingDraftInvoice = Invoice.create({
+    id: 'withholding_001',
+    tenantId: 'tenant_123',
+    customerId: 'customer_acme',
+    number: '005-001-000000009',
+    documentCode: '07',
+    establishmentCode: '005',
+    emissionPointCode: '001',
+    sequenceNumber: 9,
+    modifiedDocumentId: 'invoice_001',
+    modifiedDocumentNumber: 'INV-001',
+    modifiedDocumentIssuedAt: new Date('2026-04-27T16:00:00.000Z'),
+    modificationReason: 'Retencion sobre la factura origen.',
+    buyerIdentificationType: '04',
+    buyerIdentification: '1790012345001',
+    buyerName: 'Acme Corp',
+    buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+    status: 'draft',
+    currency: 'USD',
+    issuedAt: new Date('2026-05-08T19:30:00.000Z'),
+    dueAt: null,
+    notes: 'Comprobante de retencion de prueba.',
+    createdAt: new Date('2026-05-08T19:30:00.000Z'),
+    updatedAt: new Date('2026-05-08T19:30:00.000Z'),
+  });
+  const withholdingFirstItem = InvoiceItem.create({
+    id: 'withholding_item_001',
+    tenantId: 'tenant_123',
+    invoiceId: 'withholding_001',
+    position: 1,
+    description: 'Retencion sobre la factura origen.',
+    quantity: 1,
+    unitPriceInCents: 1000,
+    lineTotalInCents: 1000,
+    taxRateId: 'tax_rate_vat_12',
+    taxRateName: 'VAT 12%',
+    taxRatePercentage: 12,
+    lineTaxInCents: 0,
+    createdAt: new Date('2026-05-08T19:30:00.000Z'),
+    updatedAt: new Date('2026-05-08T19:30:00.000Z'),
   });
   const creditNoteDocumentView = {
     issuer: {
@@ -957,6 +1021,69 @@ describe('API', () => {
     </motivo>
   </motivos>
 </notaDebito>`;
+  const withholdingDocumentView = {
+    issuer: {
+      tenantId: 'tenant_123',
+      tenantName: 'SaaS Platform',
+      tenantSlug: 'saas-platform',
+      legalName: 'SaaS Platform S.A.',
+      commercialName: 'SaaS Platform',
+      taxId: '1790012345001',
+      environment: 'test',
+      emissionType: 'normal',
+      accountingObligated: true,
+      specialTaxpayerCode: null,
+      rimpeTaxpayerType: null,
+      matrixAddress: 'Av. Principal y Calle Secundaria',
+      establishmentAddress: 'Sucursal Matriz',
+    },
+    customer: {
+      name: 'Acme Corp',
+      email: 'billing@acme.dev',
+      taxId: '1790012345001',
+      identificationType: '04',
+      identification: '1790012345001',
+      billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+    },
+    invoice: withholdingDraftInvoice,
+    lines: [
+      {
+        id: 'withholding_item_001',
+        position: 1,
+        description: 'Retencion sobre la factura origen.',
+        quantity: 1,
+        unitPriceInCents: 1000,
+        lineSubtotalInCents: 1000,
+        taxRateId: 'tax_rate_vat_12',
+        taxRateName: 'VAT 12%',
+        taxRatePercentage: 12,
+        lineTaxInCents: 0,
+        lineTotalInCents: 1000,
+      },
+    ],
+    totals: {
+      subtotalInCents: 1000,
+      taxInCents: 0,
+      totalInCents: 1000,
+    },
+  };
+  const withholdingXmlPreview = `<?xml version="1.0" encoding="UTF-8"?>
+<comprobanteRetencion id="comprobante" version="2.0.0">
+  <infoTributaria>
+    <claveAcceso>080520260717900123450010050010000000091234567813</claveAcceso>
+    <codDoc>07</codDoc>
+  </infoTributaria>
+  <infoCompRetencion>
+    <periodoFiscal>05/2026</periodoFiscal>
+  </infoCompRetencion>
+  <impuestos>
+    <impuesto>
+      <codDocSustento>01</codDocSustento>
+      <numDocSustento>001002000000031</numDocSustento>
+      <valorRetenido>10.00</valorRetenido>
+    </impuesto>
+  </impuestos>
+</comprobanteRetencion>`;
 
   const signJwt = (payload: Record<string, unknown>): string => {
     const encode = (value: unknown): string =>
@@ -1305,6 +1432,13 @@ describe('API', () => {
         initialItem: debitNoteFirstItem,
       }),
     };
+    createTenantWithholdingUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        withholding: withholdingDraftInvoice,
+        sourceInvoice: draftInvoice,
+        initialItem: withholdingFirstItem,
+      }),
+    };
     createTenantInvoiceUseCase = {
       execute: jest.fn().mockResolvedValue(draftInvoice),
     };
@@ -1646,6 +1780,8 @@ describe('API', () => {
       .useValue(createTenantCreditNoteUseCase)
       .overrideProvider(CreateTenantDebitNoteUseCase)
       .useValue(createTenantDebitNoteUseCase)
+      .overrideProvider(CreateTenantWithholdingUseCase)
+      .useValue(createTenantWithholdingUseCase)
       .overrideProvider(CreateTenantInvoiceUseCase)
       .useValue(createTenantInvoiceUseCase)
       .overrideProvider(CreateTenantInvoiceItemUseCase)
@@ -2529,6 +2665,70 @@ describe('API', () => {
       establishmentCode: '004',
       emissionPointCode: '001',
       nextSequenceNumber: 7,
+    });
+  });
+
+  it('GET /api/invoicing/tenants/:slug/numbering/withholding should return withholding numbering settings', async () => {
+    getTenantInvoiceNumberingSettingsUseCase.execute.mockResolvedValueOnce(
+      withholdingNumberingSettings,
+    );
+
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/numbering/withholding')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'invoice_numbering_007',
+        tenantId: 'tenant_123',
+        documentCode: '07',
+        establishmentCode: '005',
+        emissionPointCode: '001',
+        nextSequenceNumber: 9,
+        previewNumber: '005-001-000000009',
+        createdAt: '2026-05-08T19:10:00.000Z',
+        updatedAt: '2026-05-08T19:10:00.000Z',
+      });
+
+    expect(getTenantInvoiceNumberingSettingsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      '07',
+    );
+  });
+
+  it('POST /api/invoicing/tenants/:slug/numbering/withholding should upsert withholding numbering settings', async () => {
+    upsertTenantInvoiceNumberingSettingsUseCase.execute.mockResolvedValueOnce(
+      withholdingNumberingSettings,
+    );
+
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/numbering/withholding')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        establishmentCode: '005',
+        emissionPointCode: '001',
+        nextSequenceNumber: 9,
+      })
+      .expect(201)
+      .expect({
+        id: 'invoice_numbering_007',
+        tenantId: 'tenant_123',
+        documentCode: '07',
+        establishmentCode: '005',
+        emissionPointCode: '001',
+        nextSequenceNumber: 9,
+        previewNumber: '005-001-000000009',
+        createdAt: '2026-05-08T19:10:00.000Z',
+        updatedAt: '2026-05-08T19:10:00.000Z',
+      });
+
+    expect(
+      upsertTenantInvoiceNumberingSettingsUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      documentCode: '07',
+      establishmentCode: '005',
+      emissionPointCode: '001',
+      nextSequenceNumber: 9,
     });
   });
 
@@ -3447,6 +3647,124 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride should return the electronic RIDE view for a withholding', async () => {
+    getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
+      withholdingDocumentView,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/withholding_001/electronic-document/ride',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        issuer: withholdingDocumentView.issuer,
+        customer: withholdingDocumentView.customer,
+        invoice: {
+          id: 'withholding_001',
+          tenantId: 'tenant_123',
+          customerId: 'customer_acme',
+          number: '005-001-000000009',
+          documentCode: '07',
+          establishmentCode: '005',
+          emissionPointCode: '001',
+          sequenceNumber: 9,
+          buyerIdentificationType: '04',
+          buyerIdentification: '1790012345001',
+          buyerName: 'Acme Corp',
+          buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+          electronicStatus: null,
+          accessKey: null,
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage: null,
+          signedAt: null,
+          submittedAt: null,
+          submissionReference: null,
+          status: 'draft',
+          currency: 'USD',
+          issuedAt: '2026-05-08T19:30:00.000Z',
+          dueAt: null,
+          notes: 'Comprobante de retencion de prueba.',
+          createdAt: '2026-05-08T19:30:00.000Z',
+          updatedAt: '2026-05-08T19:30:00.000Z',
+        },
+        lines: [
+          {
+            id: 'withholding_item_001',
+            position: 1,
+            description: 'Retencion sobre la factura origen.',
+            quantity: 1,
+            unitPriceInCents: 1000,
+            lineSubtotalInCents: 1000,
+            taxRateId: 'tax_rate_vat_12',
+            taxRateName: 'VAT 12%',
+            taxRatePercentage: 12,
+            lineTaxInCents: 0,
+            lineTotalInCents: 1000,
+          },
+        ],
+        totals: {
+          subtotalInCents: 1000,
+          taxInCents: 0,
+          totalInCents: 1000,
+        },
+        ride: {
+          documentLabel: 'RIDE Comprobante de retencion',
+          environmentLabel: 'PRUEBAS',
+          emissionTypeLabel: 'NORMAL',
+          sequenceDisplay: '000000009',
+          electronicStatusLabel: 'Sin estado electronico',
+          canBePrintedAsAuthorized: false,
+          accessKey: null,
+          accessKeyChunks: [],
+          authorizationNumber: null,
+          authorizedAt: null,
+          authorizationMessage: null,
+          additionalInfoFields: [
+            {
+              label: 'Email comprador',
+              value: 'billing@acme.dev',
+            },
+            {
+              label: 'Direccion comprador',
+              value: 'Av. Amazonas N34-451 y Av. Atahualpa',
+            },
+            {
+              label: 'Direccion matriz',
+              value: 'Av. Principal y Calle Secundaria',
+            },
+            {
+              label: 'Direccion establecimiento',
+              value: 'Sucursal Matriz',
+            },
+            {
+              label: 'Documento modificado',
+              value: 'INV-001',
+            },
+            {
+              label: 'Fecha documento sustento',
+              value: '2026-04-27T16:00:00.000Z',
+            },
+            {
+              label: 'Motivo',
+              value: 'Retencion sobre la factura origen.',
+            },
+            {
+              label: 'Notas',
+              value: 'Comprobante de retencion de prueba.',
+            },
+          ],
+        },
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'withholding_001',
+    );
+  });
+
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/artifacts should return formal electronic artifact metadata', async () => {
     await request(httpServer)
       .get(
@@ -3524,6 +3842,33 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/artifacts should return withholding electronic artifact metadata', async () => {
+    getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
+      withholdingDocumentView,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/withholding_001/electronic-document/artifacts',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        fileBaseName: '1790012345001-07-005-001-000000009',
+        rideHtmlFileName: '1790012345001-07-005-001-000000009-ride.html',
+        xmlFileName: '1790012345001-07-005-001-000000009.xml',
+        accessKey: null,
+        electronicStatus: null,
+        canDownloadRide: true,
+        canDownloadXml: true,
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'withholding_001',
+    );
+  });
+
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/xml should return the Ecuador XML preview', async () => {
     await request(httpServer)
       .get(
@@ -3597,6 +3942,32 @@ describe('API', () => {
     expect(
       getTenantInvoiceElectronicXmlPreviewUseCase.execute,
     ).toHaveBeenCalledWith('saas-platform', 'debit_note_001');
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/xml should return the Ecuador withholding XML preview', async () => {
+    getTenantInvoiceElectronicXmlPreviewUseCase.execute.mockResolvedValueOnce(
+      withholdingXmlPreview,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/withholding_001/electronic-document/xml',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /application\/xml/)
+      .expect((response) => {
+        expect(response.text).toContain(
+          '<comprobanteRetencion id="comprobante" version="2.0.0">',
+        );
+        expect(response.text).toContain('<codDoc>07</codDoc>');
+        expect(response.text).toContain('<periodoFiscal>05/2026</periodoFiscal>');
+        expect(response.text).toContain('<valorRetenido>10.00</valorRetenido>');
+      });
+
+    expect(
+      getTenantInvoiceElectronicXmlPreviewUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'withholding_001');
   });
 
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride/download should return the RIDE as attachment', async () => {
@@ -3984,6 +4355,94 @@ describe('API', () => {
       invoiceId: 'debit_note_001',
       signedXml:
         '<notaDebito id="comprobante" version="1.0.0"><infoTributaria><codDoc>05</codDoc><claveAcceso>080520260517900123450010040010000000071234567814</claveAcceso></infoTributaria><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"></ds:Signature></notaDebito>',
+      signerName: 'sandbox-signer',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/submit should also submit a withholding when its XSD support is available', async () => {
+    submitTenantInvoiceElectronicDocumentUseCase.execute.mockResolvedValueOnce(
+      withholdingDraftInvoice.updateElectronicStatus(
+        {
+          electronicStatus: 'submitted',
+          accessKey: '080520260717900123450010050010000000091234567813',
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage:
+            'Comprobante de retencion firmado y enviado al gateway stub del SRI. Pendiente de autorizacion real.',
+          signedAt: new Date('2026-05-08T19:50:00.000Z'),
+          submittedAt: new Date('2026-05-08T19:50:05.000Z'),
+          submissionReference: 'stub-sri-withholding_001-1746733805000',
+        },
+        new Date('2026-05-08T19:50:05.000Z'),
+      ),
+    );
+
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/invoices/withholding_001/electronic-document/submit',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect({
+        submitted: true,
+        electronicStatus: 'submitted',
+        accessKey: '080520260717900123450010050010000000091234567813',
+        submittedAt: '2026-05-08T19:50:05.000Z',
+        submissionReference: 'stub-sri-withholding_001-1746733805000',
+      });
+
+    expect(
+      submitTenantInvoiceElectronicDocumentUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'withholding_001',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/submit-presigned should also submit a withholding when its XSD support is available', async () => {
+    submitTenantPresignedInvoiceElectronicDocumentUseCase.execute.mockResolvedValueOnce(
+      withholdingDraftInvoice.updateElectronicStatus(
+        {
+          electronicStatus: 'submitted',
+          accessKey: '080520260717900123450010050010000000091234567813',
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage:
+            'XML firmado externamente por sandbox-signer. Comprobante de retencion enviado al gateway stub del SRI.',
+          signedAt: new Date('2026-05-08T19:51:00.000Z'),
+          submittedAt: new Date('2026-05-08T19:51:10.000Z'),
+          submissionReference: 'stub-sri-presigned-withholding_001-123456789',
+        },
+        new Date('2026-05-08T19:51:10.000Z'),
+      ),
+    );
+
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/invoices/withholding_001/electronic-document/submit-presigned',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        signedXml:
+          '<comprobanteRetencion id="comprobante" version="2.0.0"><infoTributaria><codDoc>07</codDoc><claveAcceso>080520260717900123450010050010000000091234567813</claveAcceso></infoTributaria><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"></ds:Signature></comprobanteRetencion>',
+        signerName: 'sandbox-signer',
+      })
+      .expect(201)
+      .expect({
+        submitted: true,
+        electronicStatus: 'submitted',
+        accessKey: '080520260717900123450010050010000000091234567813',
+        submittedAt: '2026-05-08T19:51:10.000Z',
+        submissionReference: 'stub-sri-presigned-withholding_001-123456789',
+      });
+
+    expect(
+      submitTenantPresignedInvoiceElectronicDocumentUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'withholding_001',
+      signedXml:
+        '<comprobanteRetencion id="comprobante" version="2.0.0"><infoTributaria><codDoc>07</codDoc><claveAcceso>080520260717900123450010050010000000091234567813</claveAcceso></infoTributaria><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"></ds:Signature></comprobanteRetencion>',
       signerName: 'sandbox-signer',
     });
   });
@@ -4457,6 +4916,117 @@ describe('API', () => {
       number: undefined,
       issuedAt: new Date('2026-05-08T16:00:00.000Z'),
       notes: 'Nota de debito de prueba.',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/withholdings should create a draft withholding from a source invoice', async () => {
+    getTenantInvoiceDetailUseCase.execute.mockResolvedValueOnce({
+      invoice: withholdingDraftInvoice,
+      items: [withholdingFirstItem],
+      payments: [],
+      electronicEvents: [],
+      totals: {
+        subtotalInCents: 1000,
+        taxInCents: 0,
+        totalInCents: 1000,
+      },
+      settlement: {
+        paidInCents: 0,
+        balanceDueInCents: 1000,
+        isFullyPaid: false,
+      },
+    });
+
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/withholdings')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        sourceInvoiceId: 'invoice_001',
+        reason: 'Retencion sobre la factura origen.',
+        amountInCents: 1000,
+        taxRateId: 'tax_rate_vat_12',
+        issuedAt: '2026-05-08T19:30:00.000Z',
+        notes: 'Comprobante de retencion de prueba.',
+      })
+      .expect(201)
+      .expect({
+        invoice: {
+          id: 'withholding_001',
+          tenantId: 'tenant_123',
+          customerId: 'customer_acme',
+          number: '005-001-000000009',
+          documentCode: '07',
+          establishmentCode: '005',
+          emissionPointCode: '001',
+          sequenceNumber: 9,
+          buyerIdentificationType: '04',
+          buyerIdentification: '1790012345001',
+          buyerName: 'Acme Corp',
+          buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+          electronicStatus: null,
+          accessKey: null,
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage: null,
+          signedAt: null,
+          submittedAt: null,
+          submissionReference: null,
+          status: 'draft',
+          currency: 'USD',
+          issuedAt: '2026-05-08T19:30:00.000Z',
+          dueAt: null,
+          notes: 'Comprobante de retencion de prueba.',
+          createdAt: '2026-05-08T19:30:00.000Z',
+          updatedAt: '2026-05-08T19:30:00.000Z',
+          items: [
+            {
+              id: 'withholding_item_001',
+              tenantId: 'tenant_123',
+              invoiceId: 'withholding_001',
+              position: 1,
+              description: 'Retencion sobre la factura origen.',
+              quantity: 1,
+              unitPriceInCents: 1000,
+              lineTotalInCents: 1000,
+              taxRateId: 'tax_rate_vat_12',
+              taxRateName: 'VAT 12%',
+              taxRatePercentage: 12,
+              lineTaxInCents: 0,
+              createdAt: '2026-05-08T19:30:00.000Z',
+              updatedAt: '2026-05-08T19:30:00.000Z',
+            },
+          ],
+          payments: [],
+          electronicEvents: [],
+          totals: {
+            subtotalInCents: 1000,
+            taxInCents: 0,
+            totalInCents: 1000,
+          },
+          settlement: {
+            paidInCents: 0,
+            balanceDueInCents: 1000,
+            isFullyPaid: false,
+          },
+        },
+        withholding: {
+          sourceInvoiceId: 'invoice_001',
+          sourceInvoiceNumber: 'INV-001',
+          sourceInvoiceIssuedAt: '2026-04-27T16:00:00.000Z',
+          reason: 'Retencion sobre la factura origen.',
+          amountInCents: 1000,
+        },
+      });
+
+    expect(createTenantWithholdingUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      sourceInvoiceId: 'invoice_001',
+      reason: 'Retencion sobre la factura origen.',
+      amountInCents: 1000,
+      taxRateId: 'tax_rate_vat_12',
+      number: undefined,
+      issuedAt: new Date('2026-05-08T19:30:00.000Z'),
+      notes: 'Comprobante de retencion de prueba.',
     });
   });
 

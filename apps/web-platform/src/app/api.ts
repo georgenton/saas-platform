@@ -3,6 +3,7 @@ import {
   AuthenticatedSessionResponse,
   CreditNoteResponse,
   DebitNoteResponse,
+  WithholdingResponse,
   CustomerResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSubmissionSettingsResponse,
@@ -472,6 +473,38 @@ export async function upsertCreditNoteNumberingSettings(
   );
 }
 
+export async function fetchWithholdingNumberingSettings(
+  token: string,
+  tenantSlug: string,
+): Promise<InvoiceNumberingSettingsResponse> {
+  return request<InvoiceNumberingSettingsResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/numbering/withholding`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function upsertWithholdingNumberingSettings(
+  token: string,
+  tenantSlug: string,
+  body: {
+    establishmentCode: string;
+    emissionPointCode: string;
+    nextSequenceNumber: number;
+  },
+): Promise<InvoiceNumberingSettingsResponse> {
+  return request<InvoiceNumberingSettingsResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/numbering/withholding`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
 export async function createCustomer(
   token: string,
   tenantSlug: string,
@@ -788,6 +821,29 @@ export async function createDebitNote(
 ): Promise<DebitNoteResponse> {
   return request<DebitNoteResponse>(
     `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/debit-notes`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function createWithholding(
+  token: string,
+  tenantSlug: string,
+  body: {
+    sourceInvoiceId: string;
+    reason: string;
+    amountInCents: number;
+    taxRateId?: string | null;
+    number?: string;
+    issuedAt?: string;
+    notes?: string | null;
+  },
+): Promise<WithholdingResponse> {
+  return request<WithholdingResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/withholdings`,
     {
       method: 'POST',
       token,

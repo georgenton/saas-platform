@@ -39,11 +39,13 @@ export class GetTenantElectronicSandboxReadinessUseCase {
       invoiceNumberingSettings,
       creditNoteNumberingSettings,
       debitNoteNumberingSettings,
+      withholdingNumberingSettings,
       signatureSettings,
       submissionSettings,
       invoiceSchemaSupport,
       creditNoteSchemaSupport,
       debitNoteSchemaSupport,
+      withholdingSchemaSupport,
     ] = await Promise.all([
       this.issuerProfileRepository.findByTenantId(tenant.id),
       this.invoiceNumberingSettingsRepository.findByTenantIdAndDocumentCode(
@@ -58,11 +60,16 @@ export class GetTenantElectronicSandboxReadinessUseCase {
         tenant.id,
         '05',
       ),
+      this.invoiceNumberingSettingsRepository.findByTenantIdAndDocumentCode(
+        tenant.id,
+        '07',
+      ),
       this.electronicSignatureSettingsRepository.findByTenantId(tenant.id),
       this.electronicSubmissionSettingsRepository.findByTenantId(tenant.id),
       this.electronicInvoiceXmlSchemaValidator.describeSupport('01'),
       this.electronicInvoiceXmlSchemaValidator.describeSupport('04'),
       this.electronicInvoiceXmlSchemaValidator.describeSupport('05'),
+      this.electronicInvoiceXmlSchemaValidator.describeSupport('07'),
     ]);
 
     const checks: ElectronicInvoicingReadinessCheck[] = [];
@@ -322,6 +329,18 @@ export class GetTenantElectronicSandboxReadinessUseCase {
         detail: debitNoteSchemaSupport.isSchemaAvailable
           ? 'La nota de debito 05 ya tiene draft, preview XML, RIDE y validacion XSD local. El carril de submit electronico queda habilitado sobre la misma frontera tecnica multi-documento.'
           : `${debitNoteSchemaSupport.detail} El documento 05 queda hoy en modo draft, preview y RIDE, sin submit electronico.`,
+      },
+      {
+        documentCode: '07',
+        label: 'Comprobante de retencion ECU (07)',
+        numberingConfigured: Boolean(withholdingNumberingSettings),
+        previewAvailable: true,
+        rideAvailable: true,
+        schemaValidationAvailable: withholdingSchemaSupport.isSchemaAvailable,
+        submitSupported: withholdingSchemaSupport.isSchemaAvailable,
+        detail: withholdingSchemaSupport.isSchemaAvailable
+          ? 'El comprobante de retencion 07 ya tiene draft, preview XML, RIDE y validacion XSD local. El carril de submit electronico queda habilitado sobre la misma frontera tecnica multi-documento.'
+          : `${withholdingSchemaSupport.detail} El documento 07 queda hoy en modo draft, preview y RIDE, sin submit electronico.`,
       },
     ];
 

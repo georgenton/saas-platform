@@ -425,13 +425,16 @@ function formatRideDocumentLabel(documentCode: string | null): string {
   }
 }
 
-function formatDocumentTitle(documentCode: string | null): string {
+function formatDocumentTitle(
+  documentCode: string | null | undefined,
+): string {
+  if (documentCode == null || documentCode === '01') {
+    return 'Invoice';
+  }
+
   switch (documentCode) {
     case '04':
       return 'Credit Note';
-    case '01':
-    case null:
-      return 'Invoice';
     default:
       return 'Document';
   }

@@ -45,6 +45,7 @@ import {
   CheckTenantInvoiceElectronicAuthorizationUseCase,
   CreateTenantCustomerUseCase,
   CreateTenantCreditNoteUseCase,
+  CreateTenantDebitNoteUseCase,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
   CreateTenantInvoicePaymentUseCase,
@@ -189,6 +190,7 @@ describe('API', () => {
   let setTenantFeatureFlagUseCase: { execute: jest.Mock };
   let createTenantCustomerUseCase: { execute: jest.Mock };
   let createTenantCreditNoteUseCase: { execute: jest.Mock };
+  let createTenantDebitNoteUseCase: { execute: jest.Mock };
   let createTenantInvoiceUseCase: { execute: jest.Mock };
   let createTenantInvoiceItemUseCase: { execute: jest.Mock };
   let createTenantInvoicePaymentUseCase: { execute: jest.Mock };
@@ -640,6 +642,17 @@ describe('API', () => {
         detail:
           'La nota de credito 04 ya tiene preview XML, RIDE y validacion XSD local. El carril de submit electronico ya puede probarse con la misma frontera tecnica del documento 01.',
       },
+      {
+        documentCode: '05' as const,
+        label: 'Nota de debito ECU (05)',
+        numberingConfigured: true,
+        previewAvailable: true,
+        rideAvailable: true,
+        schemaValidationAvailable: true,
+        submitSupported: true,
+        detail:
+          'La nota de debito 05 ya tiene preview XML, RIDE y validacion XSD local. El carril de submit electronico ya puede probarse con la misma frontera tecnica de 01 y 04.',
+      },
     ],
     recommendedNextStep:
       'Primero resuelve los blockers del flujo 01 y despues cambia a una prueba controlada en sandbox.',
@@ -679,6 +692,16 @@ describe('API', () => {
     nextSequenceNumber: 12,
     createdAt: new Date('2026-04-29T16:10:00.000Z'),
     updatedAt: new Date('2026-04-29T16:10:00.000Z'),
+  });
+  const debitNoteNumberingSettings = InvoiceNumberingSettings.create({
+    id: 'invoice_numbering_005',
+    tenantId: 'tenant_123',
+    documentCode: '05',
+    establishmentCode: '004',
+    emissionPointCode: '001',
+    nextSequenceNumber: 7,
+    createdAt: new Date('2026-05-08T15:10:00.000Z'),
+    updatedAt: new Date('2026-05-08T15:10:00.000Z'),
   });
   const electronicDraftInvoice = Invoice.create({
     id: 'invoice_003',
@@ -758,6 +781,47 @@ describe('API', () => {
     createdAt: new Date('2026-05-07T16:00:00.000Z'),
     updatedAt: new Date('2026-05-07T16:00:00.000Z'),
   });
+  const debitNoteDraftInvoice = Invoice.create({
+    id: 'debit_note_001',
+    tenantId: 'tenant_123',
+    customerId: 'customer_acme',
+    number: '004-001-000000007',
+    documentCode: '05',
+    establishmentCode: '004',
+    emissionPointCode: '001',
+    sequenceNumber: 7,
+    modifiedDocumentId: 'invoice_001',
+    modifiedDocumentNumber: 'INV-001',
+    modifiedDocumentIssuedAt: new Date('2026-04-27T16:00:00.000Z'),
+    modificationReason: 'Interes por mora de la factura origen.',
+    buyerIdentificationType: '04',
+    buyerIdentification: '1790012345001',
+    buyerName: 'Acme Corp',
+    buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+    status: 'draft',
+    currency: 'USD',
+    issuedAt: new Date('2026-05-08T16:00:00.000Z'),
+    dueAt: new Date('2026-05-11T16:00:00.000Z'),
+    notes: 'Nota de debito de prueba.',
+    createdAt: new Date('2026-05-08T16:00:00.000Z'),
+    updatedAt: new Date('2026-05-08T16:00:00.000Z'),
+  });
+  const debitNoteFirstItem = InvoiceItem.create({
+    id: 'debit_note_item_001',
+    tenantId: 'tenant_123',
+    invoiceId: 'debit_note_001',
+    position: 1,
+    description: 'Interes por mora de la factura origen.',
+    quantity: 1,
+    unitPriceInCents: 2500,
+    lineTotalInCents: 2500,
+    taxRateId: 'tax_rate_vat_12',
+    taxRateName: 'VAT 12%',
+    taxRatePercentage: 12,
+    lineTaxInCents: 300,
+    createdAt: new Date('2026-05-08T16:00:00.000Z'),
+    updatedAt: new Date('2026-05-08T16:00:00.000Z'),
+  });
   const creditNoteDocumentView = {
     issuer: {
       tenantId: 'tenant_123',
@@ -829,6 +893,70 @@ describe('API', () => {
     <valorModificacion>137.00</valorModificacion>
   </infoNotaCredito>
 </notaCredito>`;
+  const debitNoteDocumentView = {
+    issuer: {
+      tenantId: 'tenant_123',
+      tenantName: 'SaaS Platform',
+      tenantSlug: 'saas-platform',
+      legalName: 'SaaS Platform S.A.',
+      commercialName: 'SaaS Platform',
+      taxId: '1790012345001',
+      environment: 'test',
+      emissionType: 'normal',
+      accountingObligated: true,
+      specialTaxpayerCode: null,
+      rimpeTaxpayerType: null,
+      matrixAddress: 'Av. Principal y Calle Secundaria',
+      establishmentAddress: 'Sucursal Matriz',
+    },
+    customer: {
+      name: 'Acme Corp',
+      email: 'billing@acme.dev',
+      taxId: '1790012345001',
+      identificationType: '04',
+      identification: '1790012345001',
+      billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+    },
+    invoice: debitNoteDraftInvoice,
+    lines: [
+      {
+        id: 'debit_note_item_001',
+        position: 1,
+        description: 'Interes por mora de la factura origen.',
+        quantity: 1,
+        unitPriceInCents: 2500,
+        lineSubtotalInCents: 2500,
+        taxRateId: 'tax_rate_vat_12',
+        taxRateName: 'VAT 12%',
+        taxRatePercentage: 12,
+        lineTaxInCents: 300,
+        lineTotalInCents: 2800,
+      },
+    ],
+    totals: {
+      subtotalInCents: 2500,
+      taxInCents: 300,
+      totalInCents: 2800,
+    },
+  };
+  const debitNoteXmlPreview = `<?xml version="1.0" encoding="UTF-8"?>
+<notaDebito id="comprobante" version="1.0.0">
+  <infoTributaria>
+    <claveAcceso>080520260517900123450010040010000000071234567814</claveAcceso>
+    <codDoc>05</codDoc>
+  </infoTributaria>
+  <infoNotaDebito>
+    <codDocModificado>01</codDocModificado>
+    <numDocModificado>INV-001</numDocModificado>
+    <valorTotal>28.00</valorTotal>
+  </infoNotaDebito>
+  <motivos>
+    <motivo>
+      <razon>Interes por mora de la factura origen.</razon>
+      <valor>25.00</valor>
+    </motivo>
+  </motivos>
+</notaDebito>`;
 
   const signJwt = (payload: Record<string, unknown>): string => {
     const encode = (value: unknown): string =>
@@ -1170,6 +1298,13 @@ describe('API', () => {
         sourceInvoice: draftInvoice,
       }),
     };
+    createTenantDebitNoteUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        debitNote: debitNoteDraftInvoice,
+        sourceInvoice: draftInvoice,
+        initialItem: debitNoteFirstItem,
+      }),
+    };
     createTenantInvoiceUseCase = {
       execute: jest.fn().mockResolvedValue(draftInvoice),
     };
@@ -1509,6 +1644,8 @@ describe('API', () => {
       .useValue(createTenantCustomerUseCase)
       .overrideProvider(CreateTenantCreditNoteUseCase)
       .useValue(createTenantCreditNoteUseCase)
+      .overrideProvider(CreateTenantDebitNoteUseCase)
+      .useValue(createTenantDebitNoteUseCase)
       .overrideProvider(CreateTenantInvoiceUseCase)
       .useValue(createTenantInvoiceUseCase)
       .overrideProvider(CreateTenantInvoiceItemUseCase)
@@ -2331,6 +2468,70 @@ describe('API', () => {
     });
   });
 
+  it('GET /api/invoicing/tenants/:slug/numbering/debit-note should return debit note numbering settings', async () => {
+    getTenantInvoiceNumberingSettingsUseCase.execute.mockResolvedValueOnce(
+      debitNoteNumberingSettings,
+    );
+
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/numbering/debit-note')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'invoice_numbering_005',
+        tenantId: 'tenant_123',
+        documentCode: '05',
+        establishmentCode: '004',
+        emissionPointCode: '001',
+        nextSequenceNumber: 7,
+        previewNumber: '004-001-000000007',
+        createdAt: '2026-05-08T15:10:00.000Z',
+        updatedAt: '2026-05-08T15:10:00.000Z',
+      });
+
+    expect(getTenantInvoiceNumberingSettingsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      '05',
+    );
+  });
+
+  it('POST /api/invoicing/tenants/:slug/numbering/debit-note should upsert debit note numbering settings', async () => {
+    upsertTenantInvoiceNumberingSettingsUseCase.execute.mockResolvedValueOnce(
+      debitNoteNumberingSettings,
+    );
+
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/numbering/debit-note')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        establishmentCode: '004',
+        emissionPointCode: '001',
+        nextSequenceNumber: 7,
+      })
+      .expect(201)
+      .expect({
+        id: 'invoice_numbering_005',
+        tenantId: 'tenant_123',
+        documentCode: '05',
+        establishmentCode: '004',
+        emissionPointCode: '001',
+        nextSequenceNumber: 7,
+        previewNumber: '004-001-000000007',
+        createdAt: '2026-05-08T15:10:00.000Z',
+        updatedAt: '2026-05-08T15:10:00.000Z',
+      });
+
+    expect(
+      upsertTenantInvoiceNumberingSettingsUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      documentCode: '05',
+      establishmentCode: '004',
+      emissionPointCode: '001',
+      nextSequenceNumber: 7,
+    });
+  });
+
   it('GET /api/invoicing/tenants/:slug/reports/summary should return the invoicing report summary', async () => {
     await request(httpServer)
       .get('/api/invoicing/tenants/saas-platform/reports/summary')
@@ -2791,6 +2992,30 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/document/html should return printable debit note html', async () => {
+    getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
+      debitNoteDocumentView,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/debit_note_001/document/html',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /text\/html/)
+      .expect((response) => {
+        expect(response.text).toContain('<!doctype html>');
+        expect(response.text).toContain('Debit Note 004-001-000000007');
+        expect(response.text).toContain('Acme Corp');
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'debit_note_001',
+    );
+  });
+
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride should return the electronic RIDE view', async () => {
     await request(httpServer)
       .get(
@@ -2948,6 +3173,31 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride/html should return printable debit note RIDE html', async () => {
+    getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
+      debitNoteDocumentView,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/debit_note_001/electronic-document/ride/html',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /text\/html/)
+      .expect((response) => {
+        expect(response.text).toContain('<!doctype html>');
+        expect(response.text).toContain('RIDE Nota de debito');
+        expect(response.text).toContain('Documento modificado');
+        expect(response.text).toContain('Acme Corp');
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'debit_note_001',
+    );
+  });
+
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride should return the electronic RIDE view for a credit note', async () => {
     getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
       creditNoteDocumentView,
@@ -3079,6 +3329,124 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride should return the electronic RIDE view for a debit note', async () => {
+    getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
+      debitNoteDocumentView,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/debit_note_001/electronic-document/ride',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        issuer: debitNoteDocumentView.issuer,
+        customer: debitNoteDocumentView.customer,
+        invoice: {
+          id: 'debit_note_001',
+          tenantId: 'tenant_123',
+          customerId: 'customer_acme',
+          number: '004-001-000000007',
+          documentCode: '05',
+          establishmentCode: '004',
+          emissionPointCode: '001',
+          sequenceNumber: 7,
+          buyerIdentificationType: '04',
+          buyerIdentification: '1790012345001',
+          buyerName: 'Acme Corp',
+          buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+          electronicStatus: null,
+          accessKey: null,
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage: null,
+          signedAt: null,
+          submittedAt: null,
+          submissionReference: null,
+          status: 'draft',
+          currency: 'USD',
+          issuedAt: '2026-05-08T16:00:00.000Z',
+          dueAt: '2026-05-11T16:00:00.000Z',
+          notes: 'Nota de debito de prueba.',
+          createdAt: '2026-05-08T16:00:00.000Z',
+          updatedAt: '2026-05-08T16:00:00.000Z',
+        },
+        lines: [
+          {
+            id: 'debit_note_item_001',
+            position: 1,
+            description: 'Interes por mora de la factura origen.',
+            quantity: 1,
+            unitPriceInCents: 2500,
+            lineSubtotalInCents: 2500,
+            taxRateId: 'tax_rate_vat_12',
+            taxRateName: 'VAT 12%',
+            taxRatePercentage: 12,
+            lineTaxInCents: 300,
+            lineTotalInCents: 2800,
+          },
+        ],
+        totals: {
+          subtotalInCents: 2500,
+          taxInCents: 300,
+          totalInCents: 2800,
+        },
+        ride: {
+          documentLabel: 'RIDE Nota de debito',
+          environmentLabel: 'PRUEBAS',
+          emissionTypeLabel: 'NORMAL',
+          sequenceDisplay: '000000007',
+          electronicStatusLabel: 'Sin estado electronico',
+          canBePrintedAsAuthorized: false,
+          accessKey: null,
+          accessKeyChunks: [],
+          authorizationNumber: null,
+          authorizedAt: null,
+          authorizationMessage: null,
+          additionalInfoFields: [
+            {
+              label: 'Email comprador',
+              value: 'billing@acme.dev',
+            },
+            {
+              label: 'Direccion comprador',
+              value: 'Av. Amazonas N34-451 y Av. Atahualpa',
+            },
+            {
+              label: 'Direccion matriz',
+              value: 'Av. Principal y Calle Secundaria',
+            },
+            {
+              label: 'Direccion establecimiento',
+              value: 'Sucursal Matriz',
+            },
+            {
+              label: 'Documento modificado',
+              value: 'INV-001',
+            },
+            {
+              label: 'Fecha documento sustento',
+              value: '2026-04-27T16:00:00.000Z',
+            },
+            {
+              label: 'Motivo',
+              value: 'Interes por mora de la factura origen.',
+            },
+            {
+              label: 'Notas',
+              value: 'Nota de debito de prueba.',
+            },
+          ],
+        },
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'debit_note_001',
+    );
+  });
+
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/artifacts should return formal electronic artifact metadata', async () => {
     await request(httpServer)
       .get(
@@ -3129,6 +3497,33 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/artifacts should return debit note electronic artifact metadata', async () => {
+    getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
+      debitNoteDocumentView,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/debit_note_001/electronic-document/artifacts',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        fileBaseName: '1790012345001-05-004-001-000000007',
+        rideHtmlFileName: '1790012345001-05-004-001-000000007-ride.html',
+        xmlFileName: '1790012345001-05-004-001-000000007.xml',
+        accessKey: null,
+        electronicStatus: null,
+        canDownloadRide: true,
+        canDownloadXml: true,
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'debit_note_001',
+    );
+  });
+
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/xml should return the Ecuador XML preview', async () => {
     await request(httpServer)
       .get(
@@ -3176,6 +3571,34 @@ describe('API', () => {
     ).toHaveBeenCalledWith('saas-platform', 'credit_note_001');
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/xml should return the Ecuador debit note XML preview', async () => {
+    getTenantInvoiceElectronicXmlPreviewUseCase.execute.mockResolvedValueOnce(
+      debitNoteXmlPreview,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/debit_note_001/electronic-document/xml',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /application\/xml/)
+      .expect((response) => {
+        expect(response.text).toContain(
+          '<notaDebito id="comprobante" version="1.0.0">',
+        );
+        expect(response.text).toContain('<codDoc>05</codDoc>');
+        expect(response.text).toContain(
+          '<numDocModificado>INV-001</numDocModificado>',
+        );
+        expect(response.text).toContain('<valorTotal>28.00</valorTotal>');
+      });
+
+    expect(
+      getTenantInvoiceElectronicXmlPreviewUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'debit_note_001');
+  });
+
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride/download should return the RIDE as attachment', async () => {
     await request(httpServer)
       .get(
@@ -3192,6 +3615,29 @@ describe('API', () => {
     expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'invoice_001',
+    );
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride/download should return the debit note RIDE as attachment', async () => {
+    getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
+      debitNoteDocumentView,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/debit_note_001/electronic-document/ride/download',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /text\/html/)
+      .expect('Content-Disposition', /attachment; filename=/)
+      .expect((response) => {
+        expect(response.text).toContain('RIDE Nota de debito');
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'debit_note_001',
     );
   });
 
@@ -3215,6 +3661,30 @@ describe('API', () => {
     expect(
       getTenantInvoiceElectronicXmlPreviewUseCase.execute,
     ).toHaveBeenCalledWith('saas-platform', 'invoice_001');
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/xml/download should return the debit note XML as attachment', async () => {
+    getTenantInvoiceElectronicXmlPreviewUseCase.execute.mockResolvedValueOnce(
+      debitNoteXmlPreview,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/debit_note_001/electronic-document/xml/download',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /application\/xml/)
+      .expect('Content-Disposition', /attachment; filename=/)
+      .expect((response) => {
+        expect(response.text).toContain(
+          '<notaDebito id="comprobante" version="1.0.0">',
+        );
+      });
+
+    expect(
+      getTenantInvoiceElectronicXmlPreviewUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'debit_note_001');
   });
 
   it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/send-email should trigger invoice delivery', async () => {
@@ -3426,6 +3896,94 @@ describe('API', () => {
       invoiceId: 'credit_note_001',
       signedXml:
         '<notaCredito id="comprobante" version="1.0.0"><infoTributaria><codDoc>04</codDoc><claveAcceso>020520260117900123450010030010000000121234567815</claveAcceso></infoTributaria><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"></ds:Signature></notaCredito>',
+      signerName: 'sandbox-signer',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/submit should also submit a debit note when its XSD support is available', async () => {
+    submitTenantInvoiceElectronicDocumentUseCase.execute.mockResolvedValueOnce(
+      debitNoteDraftInvoice.updateElectronicStatus(
+        {
+          electronicStatus: 'submitted',
+          accessKey: '080520260517900123450010040010000000071234567814',
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage:
+            'Nota de debito firmada y enviada al gateway stub del SRI. Pendiente de autorizacion real.',
+          signedAt: new Date('2026-05-08T18:10:00.000Z'),
+          submittedAt: new Date('2026-05-08T18:10:05.000Z'),
+          submissionReference: 'stub-sri-debit_note_001-1746727805000',
+        },
+        new Date('2026-05-08T18:10:05.000Z'),
+      ),
+    );
+
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/invoices/debit_note_001/electronic-document/submit',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect({
+        submitted: true,
+        electronicStatus: 'submitted',
+        accessKey: '080520260517900123450010040010000000071234567814',
+        submittedAt: '2026-05-08T18:10:05.000Z',
+        submissionReference: 'stub-sri-debit_note_001-1746727805000',
+      });
+
+    expect(
+      submitTenantInvoiceElectronicDocumentUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'debit_note_001',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/submit-presigned should also submit a debit note when its XSD support is available', async () => {
+    submitTenantPresignedInvoiceElectronicDocumentUseCase.execute.mockResolvedValueOnce(
+      debitNoteDraftInvoice.updateElectronicStatus(
+        {
+          electronicStatus: 'submitted',
+          accessKey: '080520260517900123450010040010000000071234567814',
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage:
+            'XML firmado externamente por sandbox-signer. Nota de debito enviada al gateway stub del SRI.',
+          signedAt: new Date('2026-05-08T18:11:00.000Z'),
+          submittedAt: new Date('2026-05-08T18:11:10.000Z'),
+          submissionReference: 'stub-sri-presigned-debit_note_001-123456789',
+        },
+        new Date('2026-05-08T18:11:10.000Z'),
+      ),
+    );
+
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/invoices/debit_note_001/electronic-document/submit-presigned',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        signedXml:
+          '<notaDebito id="comprobante" version="1.0.0"><infoTributaria><codDoc>05</codDoc><claveAcceso>080520260517900123450010040010000000071234567814</claveAcceso></infoTributaria><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"></ds:Signature></notaDebito>',
+        signerName: 'sandbox-signer',
+      })
+      .expect(201)
+      .expect({
+        submitted: true,
+        electronicStatus: 'submitted',
+        accessKey: '080520260517900123450010040010000000071234567814',
+        submittedAt: '2026-05-08T18:11:10.000Z',
+        submissionReference: 'stub-sri-presigned-debit_note_001-123456789',
+      });
+
+    expect(
+      submitTenantPresignedInvoiceElectronicDocumentUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'debit_note_001',
+      signedXml:
+        '<notaDebito id="comprobante" version="1.0.0"><infoTributaria><codDoc>05</codDoc><claveAcceso>080520260517900123450010040010000000071234567814</claveAcceso></infoTributaria><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"></ds:Signature></notaDebito>',
       signerName: 'sandbox-signer',
     });
   });
@@ -3788,6 +4346,117 @@ describe('API', () => {
       number: undefined,
       issuedAt: new Date('2026-05-07T16:00:00.000Z'),
       notes: 'Nota de credito de prueba.',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/debit-notes should create a draft debit note from a source invoice', async () => {
+    getTenantInvoiceDetailUseCase.execute.mockResolvedValueOnce({
+      invoice: debitNoteDraftInvoice,
+      items: [debitNoteFirstItem],
+      payments: [],
+      electronicEvents: [],
+      totals: {
+        subtotalInCents: 2500,
+        taxInCents: 300,
+        totalInCents: 2800,
+      },
+      settlement: {
+        paidInCents: 0,
+        balanceDueInCents: 2800,
+        isFullyPaid: false,
+      },
+    });
+
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/debit-notes')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        sourceInvoiceId: 'invoice_001',
+        reason: 'Interes por mora de la factura origen.',
+        amountInCents: 2500,
+        taxRateId: 'tax_rate_vat_12',
+        issuedAt: '2026-05-08T16:00:00.000Z',
+        notes: 'Nota de debito de prueba.',
+      })
+      .expect(201)
+      .expect({
+        invoice: {
+          id: 'debit_note_001',
+          tenantId: 'tenant_123',
+          customerId: 'customer_acme',
+          number: '004-001-000000007',
+          documentCode: '05',
+          establishmentCode: '004',
+          emissionPointCode: '001',
+          sequenceNumber: 7,
+          buyerIdentificationType: '04',
+          buyerIdentification: '1790012345001',
+          buyerName: 'Acme Corp',
+          buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+          electronicStatus: null,
+          accessKey: null,
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage: null,
+          signedAt: null,
+          submittedAt: null,
+          submissionReference: null,
+          status: 'draft',
+          currency: 'USD',
+          issuedAt: '2026-05-08T16:00:00.000Z',
+          dueAt: '2026-05-11T16:00:00.000Z',
+          notes: 'Nota de debito de prueba.',
+          createdAt: '2026-05-08T16:00:00.000Z',
+          updatedAt: '2026-05-08T16:00:00.000Z',
+          items: [
+            {
+              id: 'debit_note_item_001',
+              tenantId: 'tenant_123',
+              invoiceId: 'debit_note_001',
+              position: 1,
+              description: 'Interes por mora de la factura origen.',
+              quantity: 1,
+              unitPriceInCents: 2500,
+              lineTotalInCents: 2500,
+              taxRateId: 'tax_rate_vat_12',
+              taxRateName: 'VAT 12%',
+              taxRatePercentage: 12,
+              lineTaxInCents: 300,
+              createdAt: '2026-05-08T16:00:00.000Z',
+              updatedAt: '2026-05-08T16:00:00.000Z',
+            },
+          ],
+          payments: [],
+          electronicEvents: [],
+          totals: {
+            subtotalInCents: 2500,
+            taxInCents: 300,
+            totalInCents: 2800,
+          },
+          settlement: {
+            paidInCents: 0,
+            balanceDueInCents: 2800,
+            isFullyPaid: false,
+          },
+        },
+        debitNote: {
+          sourceInvoiceId: 'invoice_001',
+          sourceInvoiceNumber: 'INV-001',
+          sourceInvoiceIssuedAt: '2026-04-27T16:00:00.000Z',
+          reason: 'Interes por mora de la factura origen.',
+          amountInCents: 2500,
+        },
+      });
+
+    expect(createTenantDebitNoteUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      sourceInvoiceId: 'invoice_001',
+      reason: 'Interes por mora de la factura origen.',
+      amountInCents: 2500,
+      taxRateId: 'tax_rate_vat_12',
+      number: undefined,
+      issuedAt: new Date('2026-05-08T16:00:00.000Z'),
+      notes: 'Nota de debito de prueba.',
     });
   });
 

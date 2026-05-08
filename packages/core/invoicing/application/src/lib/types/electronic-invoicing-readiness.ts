@@ -21,7 +21,7 @@ export interface ElectronicInvoicingReadinessCheck {
 }
 
 export interface ElectronicInvoicingDocumentSupport {
-  documentCode: '01' | '04';
+  documentCode: '01' | '04' | '05';
   label: string;
   numberingConfigured: boolean;
   previewAvailable: boolean;

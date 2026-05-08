@@ -351,7 +351,7 @@ function buildRideAdditionalInfoFields(
     },
   ];
 
-  if (invoice.documentCode === '04') {
+  if (invoice.documentCode === '04' || invoice.documentCode === '05') {
     fields.push(
       {
         label: 'Documento modificado',
@@ -420,6 +420,8 @@ function formatRideDocumentLabel(documentCode: string | null): string {
       return 'RIDE Factura';
     case '04':
       return 'RIDE Nota de credito';
+    case '05':
+      return 'RIDE Nota de debito';
     default:
       return 'RIDE';
   }
@@ -435,6 +437,8 @@ function formatDocumentTitle(
   switch (documentCode) {
     case '04':
       return 'Credit Note';
+    case '05':
+      return 'Debit Note';
     default:
       return 'Document';
   }
@@ -546,7 +550,7 @@ export function renderInvoiceDocumentHtml(view: InvoiceDocumentView): string {
         <p>Document code: ${escapeHtml(invoice.documentCode ?? 'Not set')}</p>
         <p>Establishment: ${escapeHtml(invoice.establishmentCode ?? 'Not set')}</p>
         <p>Emission point: ${escapeHtml(invoice.emissionPointCode ?? 'Not set')}</p>
-        <p>Sequence: ${invoice.sequenceNumber !== null ? escapeHtml(String(invoice.sequenceNumber)) : 'Not set'}</p>
+        <p>Sequence: ${invoice.sequenceNumber != null ? escapeHtml(String(invoice.sequenceNumber)) : 'Not set'}</p>
       </div>
       <div class="card">
         <div class="muted">Electronic authorization</div>

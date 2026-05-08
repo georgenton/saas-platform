@@ -33,6 +33,13 @@ export class XmllintSriInvoiceXmlSchemaValidator
       ),
       schemaLabel: 'notaCredito_V1.0.0.xsd',
     },
+    '05': {
+      path: resolve(
+        process.cwd(),
+        'vendor/sri/nota-debito-1.0.0/XML y XSD Nota de Debito/notaDebito_V1.0.0.xsd',
+      ),
+      schemaLabel: 'notaDebito_V1.0.0.xsd',
+    },
   };
 
   async validate(input: {

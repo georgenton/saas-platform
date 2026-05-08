@@ -6,6 +6,7 @@ import {
   checkInvoiceElectronicAuthorization,
   createCustomer,
   createCreditNote,
+  createDebitNote,
   createInvitation,
   createInvoice,
   createInvoiceItem,
@@ -200,6 +201,20 @@ function formatBuyerIdentificationType(value: string | null): string {
       return 'Exterior';
     default:
       return value ?? 'No configurado';
+  }
+}
+
+function formatElectronicDocumentLabel(value: string | null): string {
+  switch (value) {
+    case '04':
+      return 'Nota de credito';
+    case '05':
+      return 'Nota de debito';
+    case '01':
+    case null:
+      return 'Factura';
+    default:
+      return `Documento ${value}`;
   }
 }
 
@@ -447,6 +462,15 @@ export function App() {
   const [newCreditNoteNotes, setNewCreditNoteNotes] = useState(
     'Nota de credito de prueba.',
   );
+  const [newDebitNoteReason, setNewDebitNoteReason] = useState(
+    'Interes por mora de la factura origen.',
+  );
+  const [newDebitNoteAmountInCents, setNewDebitNoteAmountInCents] = useState('2500');
+  const [newDebitNoteIssuedAt, setNewDebitNoteIssuedAt] = useState('');
+  const [newDebitNoteNotes, setNewDebitNoteNotes] = useState(
+    'Nota de debito de prueba.',
+  );
+  const [newDebitNoteTaxRateId, setNewDebitNoteTaxRateId] = useState('');
   const [newItemDescription, setNewItemDescription] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState('1');
   const [newItemUnitPriceInCents, setNewItemUnitPriceInCents] = useState('');
@@ -1787,7 +1811,7 @@ export function App() {
       !currentTenancy ||
       !invoicingEnabled ||
       !selectedInvoiceDetail ||
-      selectedInvoiceDetail.documentCode === '04' ||
+      (selectedInvoiceDetail.documentCode ?? '01') !== '01' ||
       !newCreditNoteReason.trim()
     ) {
       return;
@@ -1822,6 +1846,57 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo crear la nota de credito.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleCreateDebitNote(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const amountInCents = Number(newDebitNoteAmountInCents);
+
+    if (
+      !token ||
+      !currentTenancy ||
+      !invoicingEnabled ||
+      !selectedInvoiceDetail ||
+      (selectedInvoiceDetail.documentCode ?? '01') !== '01' ||
+      !newDebitNoteReason.trim() ||
+      !Number.isInteger(amountInCents) ||
+      amountInCents < 1
+    ) {
+      return;
+    }
+
+    setActionLoading('create-debit-note');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const debitNote = await createDebitNote(token, currentTenancy.tenant.slug, {
+        sourceInvoiceId: selectedInvoiceDetail.id,
+        reason: newDebitNoteReason.trim(),
+        amountInCents,
+        taxRateId: newDebitNoteTaxRateId.trim() || null,
+        issuedAt: newDebitNoteIssuedAt.trim() || undefined,
+        notes: newDebitNoteNotes.trim() || null,
+      });
+
+      setNewDebitNoteReason('Interes por mora de la factura origen.');
+      setNewDebitNoteAmountInCents('2500');
+      setNewDebitNoteIssuedAt('');
+      setNewDebitNoteNotes('Nota de debito de prueba.');
+      setNewDebitNoteTaxRateId('');
+      setSelectedInvoiceId(debitNote.invoice.id);
+      setInvoicingActionMessage(
+        `Nota de debito ${debitNote.invoice.number} creada desde ${selectedInvoiceDetail.number}.`,
+      );
+      await refreshInvoicingWorkspace({ selectInvoiceId: debitNote.invoice.id });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error ? error.message : 'No se pudo crear la nota de debito.',
       );
     } finally {
       setActionLoading(null);
@@ -4334,11 +4409,16 @@ export function App() {
                           ) : null}
                         </div>
 
-                        {selectedInvoiceDetail.documentCode === '04' ? (
+                        {selectedInvoiceDetail.documentCode === '04' ||
+                        selectedInvoiceDetail.documentCode === '05' ? (
                           <div className={styles.detailCard}>
                             <div className={styles.sectionHeading}>
                               <div>
-                                <span className={styles.label}>Credit note</span>
+                                <span className={styles.label}>
+                                  {selectedInvoiceDetail.documentCode === '05'
+                                    ? 'Debit note'
+                                    : 'Credit note'}
+                                </span>
                                 <h3>Documento modificado</h3>
                               </div>
                             </div>
@@ -4366,7 +4446,7 @@ export function App() {
                           </div>
                         ) : null}
 
-                        {selectedInvoiceDetail.documentCode !== '04' ? (
+                        {(selectedInvoiceDetail.documentCode ?? '01') === '01' ? (
                           <div className={styles.detailCard}>
                             <div className={styles.sectionHeading}>
                               <div>
@@ -4424,6 +4504,103 @@ export function App() {
                               </button>
                               <p className={styles.muted}>
                                 Este flujo crea un borrador `04` con lineas reversadas y numeracion independiente si ya configuraste el carril de nota de credito.
+                              </p>
+                            </form>
+                          </div>
+                        ) : null}
+
+                        {(selectedInvoiceDetail.documentCode ?? '01') === '01' ? (
+                          <div className={styles.detailCard}>
+                            <div className={styles.sectionHeading}>
+                              <div>
+                                <span className={styles.label}>Debit note</span>
+                                <h3>Crear borrador `05` desde esta factura</h3>
+                              </div>
+                            </div>
+
+                            <form className={styles.stack} onSubmit={handleCreateDebitNote}>
+                              <label className={styles.field}>
+                                <span>Motivo</span>
+                                <textarea
+                                  onChange={(event) =>
+                                    setNewDebitNoteReason(event.target.value)
+                                  }
+                                  placeholder="Interes por mora de la factura origen."
+                                  value={newDebitNoteReason}
+                                />
+                              </label>
+
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Valor inicial (centavos)</span>
+                                  <input
+                                    min="1"
+                                    onChange={(event) =>
+                                      setNewDebitNoteAmountInCents(event.target.value)
+                                    }
+                                    placeholder="2500"
+                                    step="1"
+                                    type="number"
+                                    value={newDebitNoteAmountInCents}
+                                  />
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Tasa IVA opcional</span>
+                                  <select
+                                    onChange={(event) =>
+                                      setNewDebitNoteTaxRateId(event.target.value)
+                                    }
+                                    value={newDebitNoteTaxRateId}
+                                  >
+                                    <option value="">Sin impuesto</option>
+                                    {taxRates.map((taxRate) => (
+                                      <option key={taxRate.id} value={taxRate.id}>
+                                        {taxRate.name} · {formatPercentage(taxRate.percentage)}%
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              </div>
+
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Fecha emision</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewDebitNoteIssuedAt(event.target.value)
+                                    }
+                                    type="datetime-local"
+                                    value={newDebitNoteIssuedAt}
+                                  />
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Notas</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewDebitNoteNotes(event.target.value)
+                                    }
+                                    placeholder="Nota de debito de prueba."
+                                    value={newDebitNoteNotes}
+                                  />
+                                </label>
+                              </div>
+
+                              <button
+                                className={styles.secondaryButton}
+                                disabled={
+                                  actionLoading === 'create-debit-note' ||
+                                  !newDebitNoteReason.trim() ||
+                                  !/^\d+$/.test(newDebitNoteAmountInCents.trim()) ||
+                                  Number(newDebitNoteAmountInCents) < 1
+                                }
+                                type="submit"
+                              >
+                                {actionLoading === 'create-debit-note'
+                                  ? 'Creando nota de debito...'
+                                  : 'Crear nota de debito'}
+                              </button>
+                              <p className={styles.muted}>
+                                Este flujo crea un borrador `05` con documento sustento, motivo inicial y una primera linea positiva para continuar el carril electronico.
                               </p>
                             </form>
                           </div>
@@ -4792,7 +4969,12 @@ export function App() {
                             <div className={styles.sectionHeading}>
                               <div>
                                 <span className={styles.label}>Document preview</span>
-                                <h3>Factura {selectedInvoiceDocument.invoice.number}</h3>
+                                <h3>
+                                  {formatElectronicDocumentLabel(
+                                    selectedInvoiceDocument.invoice.documentCode,
+                                  )}{' '}
+                                  {selectedInvoiceDocument.invoice.number}
+                                </h3>
                               </div>
                               <button
                                 className={styles.secondaryButton}

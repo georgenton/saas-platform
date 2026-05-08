@@ -284,31 +284,30 @@ Main current module:
 
 ### Current scope
 
-What exists today is closer to:
+What exists today is already closer to:
 
-- `Commercial Invoicing Core`
+- `Electronic Invoicing Ecuador Foundation`
 
 than to:
 
-- `Electronic Invoicing Ecuador`
+- `Commercial Invoicing Core`
 
-### Ecuador-specific capabilities still missing
+### Ecuador-specific capabilities already implemented
 
 - issuer fiscal profile
   - RUC
   - razón social
   - nombre comercial
   - dirección matriz
-  - establecimiento
-  - punto de emisión
+  - ambiente y tipo de emisión
   - obligado a llevar contabilidad
   - contribuyente especial
   - RIMPE metadata when applicable
 - Ecuador buyer identification semantics
   - type of identification
   - identification number
-  - buyer address
-- Ecuador numbering and authorization
+  - buyer address snapshot
+- Ecuador numbering and authorization metadata
   - `codDoc`
   - `estab`
   - `ptoEmi`
@@ -317,23 +316,40 @@ than to:
   - authorization status
   - authorization number
   - authorization timestamp
-  - environment
-  - emission type
-- tax document structure for SRI XML
+- tax document structure and previews
   - `infoTributaria`
   - `infoFactura`
-  - detail tax nodes
+  - `infoNotaCredito`
+  - initial `infoNotaDebito`
   - payment method nodes
   - additional information fields
-- XML generation aligned to SRI XSD
-- electronic signature
-- SRI submission and authorization
-- real RIDE
-- support for credit notes, debit notes, retentions, and remisión guides
+- XML generation aligned to SRI semantics
+- XSD validation in repo for:
+  - factura (`01`)
+  - nota de crédito (`04`)
+  - nota de débito (`05`)
+- RIDE generation and formal artifact downloads
+- submission history, readiness checks, presigned XML path
+- support for:
+  - factura (`01`)
+  - nota de crédito (`04`)
+  - first debit note electronic flow (`05`)
+
+### Ecuador-specific capabilities still missing or partial
+
+- real XAdES/PKCS#12 signing flow inside the product runtime
+- sustained remote sandbox certification flow without external signing fallback
+- official local XSD bundle and submit enablement for:
+  - guía de remisión (`06`)
+  - comprobante de retención (`07`)
+- full electronic flows for:
+  - retentions
+  - remisión guides
+- richer debit-note operations beyond the first foundation slice
 
 ### Strategic recommendation
 
-Treat the current implementation as the foundation for `Electronic Invoicing EC`, not as the finished product.
+Treat the current implementation as a strong `Electronic Invoicing EC` foundation, but not yet as the finished country product.
 
 ## Product: Accounting & Tax Compliance
 
@@ -601,6 +617,12 @@ Convert current invoicing into a real Ecuador-compliant electronic invoicing pro
 7. RIDE generation
 8. authorization status tracking
 
+### Current progress snapshot
+
+- slices `1` to `8` are already represented for invoice `01`
+- credit note `04` already has numbering, draft flow, XML preview, RIDE, XSD validation, and submit path
+- debit note `05` already has numbering, draft flow, XML preview, RIDE, XSD validation, and submit path
+
 ### Why this is next
 
 It leverages current work directly and turns `Invoicing` into a stronger, country-aware product.
@@ -735,10 +757,10 @@ Use the common platform, growth, conversations, and AI capabilities for vertical
 
 Given the current repository state, the best next strategic step is:
 
-1. define `Electronic Invoicing EC` explicitly as the next evolution of current `Invoicing`
-2. implement the Ecuador issuer profile and numbering model
-3. keep `Ecommerce` as the next major product domain after that
-4. defer formal extraction of shared foundations until the second product actually needs them
+1. keep extending `Electronic Invoicing EC` document-by-document inside the existing invoicing domain
+2. keep `05` on the same testing and hardening rail as `01` and `04`
+3. then choose between retentions (`07`) or remisión guides (`06`) as the next country-specific document
+4. keep `Ecommerce` as the next major product domain only after this Ecuador MVP teaches enough about shared foundations
 
 That path keeps momentum, preserves current work, and gives the platform a much clearer multi-product context.
 
@@ -747,13 +769,13 @@ That path keeps momentum, preserves current work, and gives the platform a much 
 If we want to keep the roadmap practical, the next implementation sequence should be:
 
 1. `Electronic Invoicing EC`
-   - issuer profile
-   - Ecuador numbering
-   - buyer identification semantics
+   - invoice (`01`) already mature
+   - credit note (`04`) already on the electronic rail
+   - debit note (`05`) already on the electronic rail
 2. `Electronic Invoicing EC` compliance flow
-   - XML generation
-   - signature
-   - authorization status model
+   - strengthen signature
+   - complete remote sandbox behavior
+   - continue document bundle coverage for `06` and `07`
 3. first shared foundation pressure review
    - decide whether `Customer`, `Payment`, and `TaxRate` should still stay inside `Invoicing`
 4. first `Growth & Conversations` slice

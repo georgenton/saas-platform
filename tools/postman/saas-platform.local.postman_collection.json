@@ -641,7 +641,10 @@
                   "pm.environment.set('invoice01SubmitSupported', String(Boolean(invoiceSupport && invoiceSupport.submitSupported)));",
                   "pm.environment.set('invoice01SchemaValidationAvailable', String(Boolean(invoiceSupport && invoiceSupport.schemaValidationAvailable)));",
                   "pm.environment.set('creditNote04SubmitSupported', String(Boolean(creditNoteSupport && creditNoteSupport.submitSupported)));",
-                  "pm.environment.set('creditNote04SchemaValidationAvailable', String(Boolean(creditNoteSupport && creditNoteSupport.schemaValidationAvailable)));"
+                  "pm.environment.set('creditNote04SchemaValidationAvailable', String(Boolean(creditNoteSupport && creditNoteSupport.schemaValidationAvailable)));",
+                  "const debitNoteSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '05') : null;",
+                  "pm.environment.set('debitNote05SubmitSupported', String(Boolean(debitNoteSupport && debitNoteSupport.submitSupported)));",
+                  "pm.environment.set('debitNote05SchemaValidationAvailable', String(Boolean(debitNoteSupport && debitNoteSupport.schemaValidationAvailable)));"
                 ]
               }
             }
@@ -744,6 +747,45 @@
               "raw": "{\n  \"establishmentCode\": \"{{creditNoteEstablishmentCode}}\",\n  \"emissionPointCode\": \"{{creditNoteEmissionPointCode}}\",\n  \"nextSequenceNumber\": {{creditNoteNextSequenceNumber}}\n}"
             },
             "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/credit-note"
+          }
+        },
+        {
+          "name": "Get Debit Note Numbering",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/debit-note"
+          }
+        },
+        {
+          "name": "Upsert Debit Note Numbering",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"establishmentCode\": \"{{debitNoteEstablishmentCode}}\",\n  \"emissionPointCode\": \"{{debitNoteEmissionPointCode}}\",\n  \"nextSequenceNumber\": {{debitNoteNextSequenceNumber}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/debit-note"
           }
         },
         {
@@ -1019,6 +1061,127 @@
                   "if (data.accessKey) pm.environment.set('creditNoteAccessKey', data.accessKey);",
                   "if (data.submissionReference) pm.environment.set('creditNoteSubmissionReference', data.submissionReference);",
                   "if (data.authorizationNumber) pm.environment.set('creditNoteAuthorizationNumber', data.authorizationNumber);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Debit Note From Invoice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.invoice && data.invoice.id) pm.environment.set('debitNoteId', data.invoice.id);",
+                  "if (data.invoice && data.invoice.number) pm.environment.set('debitNoteNumber', data.invoice.number);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceInvoiceId\": \"{{invoiceId}}\",\n  \"reason\": \"{{debitNoteReason}}\",\n  \"amountInCents\": {{debitNoteAmountInCents}},\n  \"taxRateId\": \"{{debitNoteTaxRateId}}\",\n  \"issuedAt\": \"{{debitNoteIssuedAt}}\",\n  \"notes\": \"{{debitNoteNotes}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/debit-notes"
+          }
+        },
+        {
+          "name": "Get Debit Note Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('debitNoteId', data.id);",
+                  "if (data.number) pm.environment.set('debitNoteNumber', data.number);",
+                  "if (data.accessKey) pm.environment.set('debitNoteAccessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('debitNoteSubmissionReference', data.submissionReference);",
+                  "if (data.authorizationNumber) pm.environment.set('debitNoteAuthorizationNumber', data.authorizationNumber);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Debit Note XML Preview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/xml"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.environment.set('debitNoteXmlPreview', pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Debit Note RIDE",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/ride"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.ride && data.ride.sequenceDisplay) pm.environment.set('debitNoteSequenceDisplay', data.ride.sequenceDisplay);"
                 ]
               }
             }
@@ -1638,6 +1801,165 @@
               }
             ],
             "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{creditNoteId}}/electronic-document/check-authorization"
+          }
+        },
+        {
+          "name": "Get Debit Note RIDE HTML",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/ride/html"
+          }
+        },
+        {
+          "name": "Get Debit Note Artifacts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.fileBaseName) pm.environment.set('debitNoteArtifactsFileBaseName', data.fileBaseName);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/artifacts"
+          }
+        },
+        {
+          "name": "Download Debit Note RIDE",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/ride/download"
+          }
+        },
+        {
+          "name": "Download Debit Note XML",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/xml/download"
+          }
+        },
+        {
+          "name": "Submit Debit Note Electronic Document (stub signer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.accessKey) pm.environment.set('debitNoteAccessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('debitNoteSubmissionReference', data.submissionReference);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/submit"
+          }
+        },
+        {
+          "name": "Submit Debit Note Presigned Electronic Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.accessKey) pm.environment.set('debitNoteAccessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('debitNoteSubmissionReference', data.submissionReference);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signedXml\": {{debitNotePresignedXmlJson}},\n  \"signerName\": {{externalSignerNameJson}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/submit-presigned"
+          }
+        },
+        {
+          "name": "Check Debit Note Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.submissionReference) pm.environment.set('debitNoteSubmissionReference', data.submissionReference);",
+                  "if (data.authorizationNumber) pm.environment.set('debitNoteAuthorizationNumber', data.authorizationNumber);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/check-authorization"
           }
         }
       ]
@@ -2536,6 +2858,381 @@
                       "if (data.accessKey) pm.environment.set('creditNoteAccessKey', data.accessKey);",
                       "if (data.submissionReference) pm.environment.set('creditNoteSubmissionReference', data.submissionReference);",
                       "if (data.authorizationNumber) pm.environment.set('creditNoteAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "EC Debit Note Happy Path - Stub",
+          "item": [
+            {
+              "name": "Step 01 / Upsert Debit Note Numbering",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"establishmentCode\": \"{{debitNoteEstablishmentCode}}\",\n  \"emissionPointCode\": \"{{debitNoteEmissionPointCode}}\",\n  \"nextSequenceNumber\": {{debitNoteNextSequenceNumber}}\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/debit-note"
+              }
+            },
+            {
+              "name": "Step 02 / Get Sandbox Readiness",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-document/readiness"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "const debitNoteSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '05') : null;",
+                      "pm.environment.set('debitNote05SubmitSupported', String(Boolean(debitNoteSupport && debitNoteSupport.submitSupported)));",
+                      "pm.environment.set('debitNote05SchemaValidationAvailable', String(Boolean(debitNoteSupport && debitNoteSupport.schemaValidationAvailable)));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 03 / Create Debit Note From Invoice",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sourceInvoiceId\": \"{{invoiceId}}\",\n  \"reason\": \"{{debitNoteReason}}\",\n  \"amountInCents\": {{debitNoteAmountInCents}},\n  \"taxRateId\": \"{{debitNoteTaxRateId}}\",\n  \"issuedAt\": \"{{debitNoteIssuedAt}}\",\n  \"notes\": \"{{debitNoteNotes}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/debit-notes"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.invoice && data.invoice.id) pm.environment.set('debitNoteId', data.invoice.id);",
+                      "if (data.invoice && data.invoice.number) pm.environment.set('debitNoteNumber', data.invoice.number);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 04 / Get Debit Note Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) pm.environment.set('debitNoteId', data.id);",
+                      "if (data.number) pm.environment.set('debitNoteNumber', data.number);",
+                      "if (data.accessKey) pm.environment.set('debitNoteAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('debitNoteSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('debitNoteAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 05 / Get Debit Note XML Preview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/xml"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "pm.environment.set('debitNoteXmlPreview', pm.response.text());"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 08 / Get Debit Note Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('debitNoteAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('debitNoteSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('debitNoteAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 09 / Get Debit Note RIDE",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/ride"
+              }
+            },
+            {
+              "name": "Step 10 / Get Debit Note Artifacts",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/artifacts"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.fileBaseName) pm.environment.set('debitNoteArtifactsFileBaseName', data.fileBaseName);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "EC Debit Note Presigned Flow - Continue After External Signature",
+          "item": [
+            {
+              "name": "Step 01 / Create Debit Note From Invoice",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sourceInvoiceId\": \"{{invoiceId}}\",\n  \"reason\": \"{{debitNoteReason}}\",\n  \"amountInCents\": {{debitNoteAmountInCents}},\n  \"taxRateId\": \"{{debitNoteTaxRateId}}\",\n  \"issuedAt\": \"{{debitNoteIssuedAt}}\",\n  \"notes\": \"{{debitNoteNotes}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/debit-notes"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.invoice && data.invoice.id) pm.environment.set('debitNoteId', data.invoice.id);",
+                      "if (data.invoice && data.invoice.number) pm.environment.set('debitNoteNumber', data.invoice.number);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 02 / Get Debit Note XML Preview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/xml"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "pm.environment.set('debitNoteXmlPreview', pm.response.text());"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 03 / Submit Debit Note Presigned XML",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"signedXml\": {{debitNotePresignedXmlJson}},\n  \"signerName\": {{externalSignerNameJson}}\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/submit-presigned"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('debitNoteAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('debitNoteSubmissionReference', data.submissionReference);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 04 / Check Debit Note Authorization",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/check-authorization"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.submissionReference) pm.environment.set('debitNoteSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('debitNoteAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 05 / Get Debit Note Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('debitNoteAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('debitNoteSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('debitNoteAuthorizationNumber', data.authorizationNumber);"
                     ]
                   }
                 }

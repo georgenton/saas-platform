@@ -62,6 +62,33 @@ const bundleRegistry = {
       },
     ],
   },
+  '05': {
+    label: 'Nota de debito ECU',
+    targetDir: resolve(
+      process.cwd(),
+      'vendor/sri/nota-debito-1.0.0/XML y XSD Nota de Debito',
+    ),
+    requiredFiles: [
+      {
+        targetName: 'notaDebito_V1.0.0.xsd',
+        sourceNames: ['notaDebito_V1.0.0.xsd', 'NotaDebito_V1.0.0.xsd'],
+      },
+      {
+        targetName: 'xmldsig-core-schema.xsd',
+        sourceNames: ['xmldsig-core-schema.xsd'],
+        fallbackPath: resolve(
+          process.cwd(),
+          'vendor/sri/factura-2.1.0/XML y XSD Factura/xmldsig-core-schema.xsd',
+        ),
+      },
+    ],
+    optionalFiles: [
+      {
+        targetName: 'notaDebito_V1.0.0.xml',
+        sourceNames: ['notaDebito_V1.0.0.xml', 'NotaDebito_V1.0.0.xml'],
+      },
+    ],
+  },
 };
 
 async function main() {
@@ -159,7 +186,7 @@ function parseArgs(argv) {
 
   if (!documentCode || !zip) {
     throw new Error(
-      'Uso: node tools/sri/install-sri-schema-bundle.mjs --document-code <01|04> --zip </ruta/al/zip>',
+      'Uso: node tools/sri/install-sri-schema-bundle.mjs --document-code <01|04|05> --zip </ruta/al/zip>',
     );
   }
 

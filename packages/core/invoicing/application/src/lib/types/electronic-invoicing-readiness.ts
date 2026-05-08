@@ -20,6 +20,17 @@ export interface ElectronicInvoicingReadinessCheck {
   detail: string;
 }
 
+export interface ElectronicInvoicingDocumentSupport {
+  documentCode: '01' | '04';
+  label: string;
+  numberingConfigured: boolean;
+  previewAvailable: boolean;
+  rideAvailable: boolean;
+  schemaValidationAvailable: boolean;
+  submitSupported: boolean;
+  detail: string;
+}
+
 export interface ElectronicInvoicingSandboxReadiness {
   tenantSlug: string;
   stage: 'electronic_invoicing_ec_mvp';
@@ -31,5 +42,6 @@ export interface ElectronicInvoicingSandboxReadiness {
   blockers: string[];
   warnings: string[];
   checks: ElectronicInvoicingReadinessCheck[];
+  documentSupport: ElectronicInvoicingDocumentSupport[];
   recommendedNextStep: string;
 }

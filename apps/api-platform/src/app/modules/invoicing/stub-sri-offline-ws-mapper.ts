@@ -215,10 +215,14 @@ function validateSignedXml(
     };
   }
 
-  if (!input.signedXml.includes('<factura')) {
+  if (
+    !input.signedXml.includes('<factura') &&
+    !input.signedXml.includes('<notaCredito')
+  ) {
     return {
       ok: false,
-      message: 'El XML firmado no contiene la raiz esperada de factura.',
+      message:
+        'El XML firmado no contiene una raiz esperada de comprobante electronico.',
     };
   }
 

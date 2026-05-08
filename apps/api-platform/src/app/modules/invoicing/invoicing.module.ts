@@ -9,6 +9,7 @@ import { FEATURE_FLAG_REPOSITORY } from '@saas-platform/feature-flags-applicatio
 import {
   CheckTenantInvoiceElectronicAuthorizationUseCase,
   CreateTenantCustomerUseCase,
+  CreateTenantCreditNoteUseCase,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
   CreateTenantInvoicePaymentUseCase,
@@ -153,6 +154,7 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
         ELECTRONIC_SUBMISSION_SETTINGS_REPOSITORY,
         SECRET_REFERENCE_RESOLVER,
         ELECTRONIC_INVOICE_SIGNER,
+        ELECTRONIC_INVOICE_XML_SCHEMA_VALIDATOR,
       ],
       useFactory: (
         tenantRepository,
@@ -162,6 +164,7 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
         electronicSubmissionSettingsRepository,
         secretReferenceResolver,
         electronicInvoiceSigner,
+        electronicInvoiceXmlSchemaValidator,
       ) =>
         new GetTenantElectronicSandboxReadinessUseCase(
           tenantRepository,
@@ -171,6 +174,7 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
           electronicSubmissionSettingsRepository,
           secretReferenceResolver,
           electronicInvoiceSigner,
+          electronicInvoiceXmlSchemaValidator,
         ),
     },
     {
@@ -400,6 +404,33 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
           customerRepository,
           invoiceRepository,
           invoiceIdGenerator,
+          invoiceNumberingSettingsRepository,
+        ),
+    },
+    {
+      provide: CreateTenantCreditNoteUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+        INVOICE_ID_GENERATOR,
+        INVOICE_ITEM_ID_GENERATOR,
+        INVOICE_NUMBERING_SETTINGS_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        invoiceRepository,
+        invoiceItemRepository,
+        invoiceIdGenerator,
+        invoiceItemIdGenerator,
+        invoiceNumberingSettingsRepository,
+      ) =>
+        new CreateTenantCreditNoteUseCase(
+          tenantRepository,
+          invoiceRepository,
+          invoiceItemRepository,
+          invoiceIdGenerator,
+          invoiceItemIdGenerator,
           invoiceNumberingSettingsRepository,
         ),
     },

@@ -5,6 +5,7 @@ import {
   cancelInvitation,
   checkInvoiceElectronicAuthorization,
   createCustomer,
+  createCreditNote,
   createInvitation,
   createInvoice,
   createInvoiceItem,
@@ -256,6 +257,20 @@ function getNumberEntitlement(
   return typeof value === 'number' ? value : null;
 }
 
+function findRideAdditionalInfoValue(
+  ride: InvoiceRideResponse | null,
+  label: string,
+): string | null {
+  if (!ride) {
+    return null;
+  }
+
+  return (
+    ride.ride.additionalInfoFields.find((field) => field.label === label)?.value ??
+    null
+  );
+}
+
 function findPendingInvitation(
   session: AuthenticatedSessionResponse | null,
   invitationId: string | null,
@@ -356,6 +371,13 @@ export function App() {
     string | null
   >(null);
 
+  const selectedInvoiceDocumentSupport =
+    selectedInvoiceDetail && electronicSandboxReadiness
+      ? electronicSandboxReadiness.documentSupport.find(
+          (item) => item.documentCode === (selectedInvoiceDetail.documentCode ?? '01'),
+        ) ?? null
+      : null;
+
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newCustomerEmail, setNewCustomerEmail] = useState('');
   const [newCustomerTaxId, setNewCustomerTaxId] = useState('');
@@ -418,6 +440,13 @@ export function App() {
   const [newInvoiceStatus, setNewInvoiceStatus] = useState('draft');
   const [newInvoiceDueAt, setNewInvoiceDueAt] = useState('');
   const [newInvoiceNotes, setNewInvoiceNotes] = useState('');
+  const [newCreditNoteReason, setNewCreditNoteReason] = useState(
+    'Devolucion parcial de la factura origen.',
+  );
+  const [newCreditNoteIssuedAt, setNewCreditNoteIssuedAt] = useState('');
+  const [newCreditNoteNotes, setNewCreditNoteNotes] = useState(
+    'Nota de credito de prueba.',
+  );
   const [newItemDescription, setNewItemDescription] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState('1');
   const [newItemUnitPriceInCents, setNewItemUnitPriceInCents] = useState('');
@@ -1744,6 +1773,55 @@ export function App() {
     } catch (error) {
       setInvoicingError(
         error instanceof Error ? error.message : 'No se pudo crear la factura.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleCreateCreditNote(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (
+      !token ||
+      !currentTenancy ||
+      !invoicingEnabled ||
+      !selectedInvoiceDetail ||
+      selectedInvoiceDetail.documentCode === '04' ||
+      !newCreditNoteReason.trim()
+    ) {
+      return;
+    }
+
+    setActionLoading('create-credit-note');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const creditNote = await createCreditNote(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          sourceInvoiceId: selectedInvoiceDetail.id,
+          reason: newCreditNoteReason.trim(),
+          issuedAt: newCreditNoteIssuedAt.trim() || undefined,
+          notes: newCreditNoteNotes.trim() || null,
+        },
+      );
+
+      setNewCreditNoteReason('Devolucion parcial de la factura origen.');
+      setNewCreditNoteIssuedAt('');
+      setNewCreditNoteNotes('Nota de credito de prueba.');
+      setSelectedInvoiceId(creditNote.invoice.id);
+      setInvoicingActionMessage(
+        `Nota de credito ${creditNote.invoice.number} creada desde ${selectedInvoiceDetail.number}.`,
+      );
+      await refreshInvoicingWorkspace({ selectInvoiceId: creditNote.invoice.id });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo crear la nota de credito.',
       );
     } finally {
       setActionLoading(null);
@@ -3720,6 +3798,73 @@ export function App() {
                             </div>
                           ) : null}
 
+                          {electronicSandboxReadiness.documentSupport.length > 0 ? (
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>
+                                Document support matrix
+                              </span>
+                              {electronicSandboxReadiness.documentSupport.map(
+                                (item) => (
+                                  <div
+                                    className={styles.detailCard}
+                                    key={item.documentCode}
+                                  >
+                                    <strong>
+                                      {item.label} · {item.documentCode}
+                                    </strong>
+                                    <p>{item.detail}</p>
+                                    <div className={styles.invoiceDetailGrid}>
+                                      <div className={styles.detailCard}>
+                                        <span className={styles.muted}>
+                                          Numbering
+                                        </span>
+                                        <strong>
+                                          {item.numberingConfigured
+                                            ? 'Configurado'
+                                            : 'Pendiente'}
+                                        </strong>
+                                      </div>
+                                      <div className={styles.detailCard}>
+                                        <span className={styles.muted}>
+                                          Preview XML
+                                        </span>
+                                        <strong>
+                                          {item.previewAvailable ? 'Si' : 'No'}
+                                        </strong>
+                                      </div>
+                                      <div className={styles.detailCard}>
+                                        <span className={styles.muted}>RIDE</span>
+                                        <strong>
+                                          {item.rideAvailable ? 'Si' : 'No'}
+                                        </strong>
+                                      </div>
+                                      <div className={styles.detailCard}>
+                                        <span className={styles.muted}>
+                                          XSD local
+                                        </span>
+                                        <strong>
+                                          {item.schemaValidationAvailable
+                                            ? 'Disponible'
+                                            : 'Faltante'}
+                                        </strong>
+                                      </div>
+                                      <div className={styles.detailCard}>
+                                        <span className={styles.muted}>
+                                          Submit electronico
+                                        </span>
+                                        <strong>
+                                          {item.submitSupported
+                                            ? 'Habilitado'
+                                            : 'Bloqueado'}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          ) : null}
+
                           <p className={styles.muted}>
                             {electronicSandboxReadiness.recommendedNextStep}
                           </p>
@@ -4189,6 +4334,101 @@ export function App() {
                           ) : null}
                         </div>
 
+                        {selectedInvoiceDetail.documentCode === '04' ? (
+                          <div className={styles.detailCard}>
+                            <div className={styles.sectionHeading}>
+                              <div>
+                                <span className={styles.label}>Credit note</span>
+                                <h3>Documento modificado</h3>
+                              </div>
+                            </div>
+
+                            <div className={styles.invoiceDetailGrid}>
+                              <div>
+                                <span className={styles.muted}>Documento sustento</span>
+                                <strong>
+                                  {findRideAdditionalInfoValue(
+                                    selectedInvoiceRide,
+                                    'Documento modificado',
+                                  ) ?? 'Disponible en el XML/RIDE'}
+                                </strong>
+                              </div>
+                              <div>
+                                <span className={styles.muted}>Motivo</span>
+                                <strong>
+                                  {findRideAdditionalInfoValue(
+                                    selectedInvoiceRide,
+                                    'Motivo',
+                                  ) ?? 'Disponible en el XML/RIDE'}
+                                </strong>
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {selectedInvoiceDetail.documentCode !== '04' ? (
+                          <div className={styles.detailCard}>
+                            <div className={styles.sectionHeading}>
+                              <div>
+                                <span className={styles.label}>Credit note</span>
+                                <h3>Crear borrador `04` desde esta factura</h3>
+                              </div>
+                            </div>
+
+                            <form className={styles.stack} onSubmit={handleCreateCreditNote}>
+                              <label className={styles.field}>
+                                <span>Motivo</span>
+                                <textarea
+                                  onChange={(event) =>
+                                    setNewCreditNoteReason(event.target.value)
+                                  }
+                                  placeholder="Devolucion parcial de la factura origen."
+                                  value={newCreditNoteReason}
+                                />
+                              </label>
+
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Fecha emision</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewCreditNoteIssuedAt(event.target.value)
+                                    }
+                                    type="datetime-local"
+                                    value={newCreditNoteIssuedAt}
+                                  />
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Notas</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewCreditNoteNotes(event.target.value)
+                                    }
+                                    placeholder="Nota de credito de prueba."
+                                    value={newCreditNoteNotes}
+                                  />
+                                </label>
+                              </div>
+
+                              <button
+                                className={styles.secondaryButton}
+                                disabled={
+                                  actionLoading === 'create-credit-note' ||
+                                  !newCreditNoteReason.trim()
+                                }
+                                type="submit"
+                              >
+                                {actionLoading === 'create-credit-note'
+                                  ? 'Creando nota de credito...'
+                                  : 'Crear nota de credito'}
+                              </button>
+                              <p className={styles.muted}>
+                                Este flujo crea un borrador `04` con lineas reversadas y numeracion independiente si ya configuraste el carril de nota de credito.
+                              </p>
+                            </form>
+                          </div>
+                        ) : null}
+
                         <div className={styles.invoiceTotalsGrid}>
                           <div className={styles.commercialCard}>
                             <span className={styles.muted}>Estado electronico</span>
@@ -4326,7 +4566,9 @@ export function App() {
                               className={styles.secondaryButton}
                               disabled={
                                 actionLoading === 'invoice-electronic-status' ||
-                                selectedInvoiceDetail.status === 'draft'
+                                selectedInvoiceDetail.status === 'draft' ||
+                                selectedInvoiceDocumentSupport?.submitSupported ===
+                                  false
                               }
                               type="submit"
                             >
@@ -4348,7 +4590,9 @@ export function App() {
                               className={styles.primaryButton}
                               disabled={
                                 actionLoading === 'submit-invoice-electronic-document' ||
-                                selectedInvoiceDetail.status === 'draft'
+                                selectedInvoiceDetail.status === 'draft' ||
+                                selectedInvoiceDocumentSupport?.submitSupported ===
+                                  false
                               }
                               onClick={() =>
                                 void handleSubmitInvoiceElectronicDocument()
@@ -4364,6 +4608,8 @@ export function App() {
                               disabled={
                                 actionLoading ===
                                   'check-invoice-electronic-authorization' ||
+                                selectedInvoiceDocumentSupport?.submitSupported ===
+                                  false ||
                                 selectedInvoiceDetail.electronicStatus !==
                                   'submitted'
                               }
@@ -4380,6 +4626,12 @@ export function App() {
                             <p className={styles.muted}>
                               Puedes dejar vacia la clave de acceso para que el backend la genere desde el perfil fiscal y la numeracion Ecuador.
                             </p>
+                            {selectedInvoiceDocumentSupport &&
+                            !selectedInvoiceDocumentSupport.submitSupported ? (
+                              <p className={styles.muted}>
+                                {selectedInvoiceDocumentSupport.detail}
+                              </p>
+                            ) : null}
                           </form>
 
                           <form
@@ -4426,6 +4678,8 @@ export function App() {
                                 actionLoading ===
                                   'submit-presigned-invoice-electronic-document' ||
                                 selectedInvoiceDetail.status === 'draft' ||
+                                selectedInvoiceDocumentSupport?.submitSupported ===
+                                  false ||
                                 !presignedInvoiceXml.trim()
                               }
                               type="submit"
@@ -4441,6 +4695,12 @@ export function App() {
                               firma real generada fuera del sistema, mientras la
                               firma XAdES nativa del repo sigue pendiente.
                             </p>
+                            {selectedInvoiceDocumentSupport &&
+                            !selectedInvoiceDocumentSupport.submitSupported ? (
+                              <p className={styles.muted}>
+                                {selectedInvoiceDocumentSupport.detail}
+                              </p>
+                            ) : null}
                           </form>
                         </div>
 

@@ -14,6 +14,7 @@ import {
 import {
   CheckTenantInvoiceElectronicAuthorizationUseCase,
   CreateTenantCustomerUseCase,
+  CreateTenantCreditNoteUseCase,
   CustomerNotFoundError,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
@@ -44,6 +45,7 @@ import {
   InvoiceNumberRequiredError,
   InvoiceNumberingSettingsNotFoundError,
   InvoiceNotFullySettledError,
+  InvalidCreditNoteSourceInvoiceError,
   InvalidInvoiceElectronicAuthorizationStateError,
   InvalidInvoiceElectronicSubmissionStateError,
   InvoiceElectronicSubmissionGatewayIncompleteError,
@@ -54,6 +56,7 @@ import {
   InvoiceElectronicXmlValidationError,
   InvalidInvoicePaymentStateError,
   InvalidInvoiceElectronicStatusError,
+  UnsupportedElectronicInvoiceDocumentCodeError,
   InvoiceElectronicSignatureNotConfiguredError,
   InvalidPaymentReversalStateError,
   InvalidInvoiceStatusTransitionError,
@@ -90,6 +93,7 @@ import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import { CreateCustomerRequestDto } from './dto/create-customer.request';
+import { CreateCreditNoteRequestDto } from './dto/create-credit-note.request';
 import { CreateInvoiceRequestDto } from './dto/create-invoice.request';
 import { CreateInvoiceItemRequestDto } from './dto/create-invoice-item.request';
 import { CreateTaxRateRequestDto } from './dto/create-tax-rate.request';
@@ -119,6 +123,10 @@ import {
   SubmitInvoiceElectronicDocumentResponseDto,
   toSubmitInvoiceElectronicDocumentResponseDto,
 } from './dto/submit-invoice-electronic-document.response';
+import {
+  CreditNoteResponseDto,
+  toCreditNoteResponseDto,
+} from './dto/credit-note.response';
 import {
   CustomerResponseDto,
   toCustomerResponseDto,
@@ -169,6 +177,9 @@ type HeaderWritableResponse = {
   setHeader(name: string, value: string): void;
 };
 
+const INVOICE_DOCUMENT_CODE = '01';
+const CREDIT_NOTE_DOCUMENT_CODE = '04';
+
 @Controller('invoicing/tenants')
 @UseGuards(
   JwtAuthenticationGuard,
@@ -180,6 +191,7 @@ type HeaderWritableResponse = {
 export class InvoicingController {
   constructor(
     private readonly createTenantCustomerUseCase: CreateTenantCustomerUseCase,
+    private readonly createTenantCreditNoteUseCase: CreateTenantCreditNoteUseCase,
     private readonly createTenantInvoiceUseCase: CreateTenantInvoiceUseCase,
     private readonly createTenantInvoiceItemUseCase: CreateTenantInvoiceItemUseCase,
     private readonly createTenantInvoicePaymentUseCase: CreateTenantInvoicePaymentUseCase,
@@ -413,6 +425,7 @@ export class InvoicingController {
     try {
       const settings = await this.getTenantInvoiceNumberingSettingsUseCase.execute(
         tenantAccess?.tenantSlug ?? slug,
+        INVOICE_DOCUMENT_CODE,
       );
 
       return toInvoiceNumberingSettingsResponseDto(settings);
@@ -439,7 +452,59 @@ export class InvoicingController {
       const settings =
         await this.upsertTenantInvoiceNumberingSettingsUseCase.execute({
           tenantSlug: tenantAccess?.tenantSlug ?? slug,
-          documentCode: body.documentCode,
+          documentCode: body.documentCode ?? INVOICE_DOCUMENT_CODE,
+          establishmentCode: body.establishmentCode,
+          emissionPointCode: body.emissionPointCode,
+          nextSequenceNumber: body.nextSequenceNumber,
+        });
+
+      return toInvoiceNumberingSettingsResponseDto(settings);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/numbering/credit-note')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantCreditNoteNumberingSettings(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceNumberingSettingsResponseDto> {
+    try {
+      const settings = await this.getTenantInvoiceNumberingSettingsUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        CREDIT_NOTE_DOCUMENT_CODE,
+      );
+
+      return toInvoiceNumberingSettingsResponseDto(settings);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNumberingSettingsNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/numbering/credit-note')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async upsertTenantCreditNoteNumberingSettings(
+    @Param('slug') slug: string,
+    @Body() body: UpsertInvoiceNumberingSettingsRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceNumberingSettingsResponseDto> {
+    try {
+      const settings =
+        await this.upsertTenantInvoiceNumberingSettingsUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          documentCode: CREDIT_NOTE_DOCUMENT_CODE,
           establishmentCode: body.establishmentCode,
           emissionPointCode: body.emissionPointCode,
           nextSequenceNumber: body.nextSequenceNumber,
@@ -962,6 +1027,7 @@ export class InvoicingController {
         error instanceof InvoiceElectronicSignatureMaterialIncompleteError ||
         error instanceof InvoiceElectronicSignatureNotConfiguredError ||
         error instanceof InvoiceElectronicSecretResolutionError ||
+        error instanceof UnsupportedElectronicInvoiceDocumentCodeError ||
         error instanceof InvoiceElectronicXmlValidationError
       ) {
         throw new BadRequestException(error.message);
@@ -1008,6 +1074,7 @@ export class InvoicingController {
         error instanceof InvoiceElectronicSubmissionGatewayIncompleteError ||
         error instanceof InvoiceElectronicSubmissionNotConfiguredError ||
         error instanceof InvoiceElectronicSecretResolutionError ||
+        error instanceof UnsupportedElectronicInvoiceDocumentCodeError ||
         error instanceof InvoiceElectronicXmlValidationError
       ) {
         throw new BadRequestException(error.message);
@@ -1187,6 +1254,48 @@ export class InvoicingController {
       }
 
       if (error instanceof InvoiceNumberRequiredError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/credit-notes')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async createTenantCreditNote(
+    @Param('slug') slug: string,
+    @Body() body: CreateCreditNoteRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<CreditNoteResponseDto> {
+    try {
+      const result = await this.createTenantCreditNoteUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        sourceInvoiceId: body.sourceInvoiceId,
+        reason: body.reason,
+        number: body.number?.trim() || undefined,
+        issuedAt: body.issuedAt ? new Date(body.issuedAt) : undefined,
+        notes: body.notes ?? null,
+      });
+
+      const detail = await this.getTenantInvoiceDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        result.creditNote.id,
+      );
+
+      return toCreditNoteResponseDto(detail, result.sourceInvoice);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (
+        error instanceof InvalidCreditNoteSourceInvoiceError ||
+        error instanceof InvoiceNumberRequiredError
+      ) {
         throw new BadRequestException(error.message);
       }
 

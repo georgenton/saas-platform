@@ -35,7 +35,7 @@ export class StubLocalElectronicInvoiceSigner
   </ds:Signature>`;
 
     return {
-      signedXml: input.xml.replace('</factura>', `${signatureBlock}\n</factura>`),
+      signedXml: insertStubSignature(input.xml, signatureBlock),
       signedAt,
       signerName: `stub_local:${input.signatureSettings.certificateLabel}`,
       capability: this.describeCapability({
@@ -43,4 +43,11 @@ export class StubLocalElectronicInvoiceSigner
       }),
     };
   }
+}
+
+function insertStubSignature(xml: string, signatureBlock: string): string {
+  return xml.replace(
+    /<\/(factura|notaCredito)>/i,
+    `${signatureBlock}\n</$1>`,
+  );
 }

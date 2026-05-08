@@ -10,6 +10,7 @@ import { InvalidInvoiceElectronicSubmissionStateError } from '../errors/invalid-
 import { InvoiceElectronicSubmissionGatewayIncompleteError } from '../errors/invoice-electronic-submission-gateway-incomplete.error';
 import { InvoiceElectronicSubmissionNotConfiguredError } from '../errors/invoice-electronic-submission-not-configured.error';
 import { InvoiceElectronicMetadataIncompleteError } from '../errors/invoice-electronic-metadata-incomplete.error';
+import { UnsupportedElectronicInvoiceDocumentCodeError } from '../errors/unsupported-electronic-invoice-document-code.error';
 import { InvoiceElectronicXmlValidationError } from '../errors/invoice-electronic-xml-validation.error';
 import { InvoiceNotFoundError } from '../errors/invoice-not-found.error';
 import { ElectronicInvoiceXmlSchemaValidator } from '../ports/electronic-invoice-xml-schema-validator';
@@ -19,7 +20,7 @@ import { InvoiceRepository } from '../ports/invoice.repository';
 import {
   buildSriAccessKey,
   canBuildSriAccessKey,
-  validateSriInvoiceXml,
+  validateSriElectronicDocumentXml,
 } from '../types/electronic-invoice';
 
 export interface SubmitTenantPresignedInvoiceElectronicDocumentInput {
@@ -66,6 +67,20 @@ export class SubmitTenantPresignedInvoiceElectronicDocumentUseCase {
       );
     }
 
+    const documentCode = invoice.documentCode ?? '01';
+    const schemaSupport =
+      await this.electronicInvoiceXmlSchemaValidator.describeSupport(
+        documentCode,
+      );
+
+    if (!schemaSupport.isSchemaAvailable) {
+      throw new UnsupportedElectronicInvoiceDocumentCodeError(
+        input.tenantSlug,
+        input.invoiceId,
+        documentCode,
+      );
+    }
+
     const issuerProfile = await this.issuerProfileRepository.findByTenantId(
       tenant.id,
     );
@@ -102,7 +117,7 @@ export class SubmitTenantPresignedInvoiceElectronicDocumentUseCase {
           issuerProfile,
         });
 
-    const xmlIssues = validateSriInvoiceXml({
+    const xmlIssues = validateSriElectronicDocumentXml({
       xml: input.signedXml,
       accessKey,
     });
@@ -119,6 +134,7 @@ export class SubmitTenantPresignedInvoiceElectronicDocumentUseCase {
 
     const schemaIssues =
       await this.electronicInvoiceXmlSchemaValidator.validate({
+        documentCode,
         xml: input.signedXml,
       });
 

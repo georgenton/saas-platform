@@ -45,7 +45,7 @@ model Tenant {
   electronicSubmissionSettings ElectronicSubmissionSettings?
   issuerProfile IssuerProfile?
   electronicSignatureSettings ElectronicSignatureSettings?
-  invoiceNumberingSettings InvoiceNumberingSettings?
+  invoiceNumberingSettings InvoiceNumberingSettings[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -76,6 +76,10 @@ model Invoice {
   establishmentCode String?
   emissionPointCode String?
   sequenceNumber Int?
+  modifiedDocumentId String?
+  modifiedDocumentNumber String?
+  modifiedDocumentIssuedAt DateTime?
+  modificationReason String?
   buyerIdentificationType String?
   buyerIdentification String?
   buyerName String?
@@ -180,7 +184,7 @@ model ElectronicSubmissionSettings {
 
 model InvoiceNumberingSettings {
   id                 String   @id
-  tenantId           String   @unique
+  tenantId           String
   documentCode       String
   establishmentCode  String
   emissionPointCode  String
@@ -188,6 +192,8 @@ model InvoiceNumberingSettings {
   tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+
+  @@unique([tenantId, documentCode])
 }
 
 model InvoiceItem {

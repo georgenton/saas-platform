@@ -137,6 +137,7 @@ La coleccion cubre:
 - suscripcion comercial del tenant
 - invitations
 - setup fiscal Ecuador
+- numeracion por tipo de documento (`01` factura, `04` nota de credito)
 - customers
 - taxes
 - invoices
@@ -149,6 +150,7 @@ La coleccion cubre:
 - submit stub
 - submit prefirmado
 - check authorization
+- carril dedicado de nota de credito (`04`) con submit, artifacts y runners propios
 
 ### Automatizaciones incluidas
 
@@ -171,6 +173,16 @@ La coleccion guarda automaticamente en el environment:
 - `xmlPreview`
 - `sandboxReady`
 - `sandboxRecommendedNextStep`
+- `invoice01SchemaValidationAvailable`
+- `invoice01SubmitSupported`
+- `creditNoteAccessKey`
+- `creditNoteSubmissionReference`
+- `creditNoteAuthorizationNumber`
+- `creditNoteXmlPreview`
+- `creditNoteArtifactsFileBaseName`
+- `creditNoteSequenceDisplay`
+- `creditNote04SubmitSupported`
+- `creditNote04SchemaValidationAvailable`
 
 ### Qué debes cargar manualmente
 
@@ -183,6 +195,8 @@ Postman no puede generar JWTs por ti en este flujo local. Debes pegar manualment
 La colección ahora también trae un folder específico:
 - `10. Runner Flows / EC Happy Path - Stub`
 - `10. Runner Flows / EC Presigned Flow - Continue After External Signature`
+- `10. Runner Flows / EC Credit Note Happy Path - Stub`
+- `10. Runner Flows / EC Credit Note Presigned Flow - Continue After External Signature`
 
 Eso te permite correr un lote ordenado desde Postman Runner sin ir abriendo request por request.
 
@@ -238,15 +252,17 @@ Corre en este orden:
 2. `03. Tenancy & Invitations / Get Tenant Enabled Products`
 3. `04. Invoicing Setup / Upsert Electronic Profile`
 4. `04. Invoicing Setup / Upsert Invoice Numbering`
-5. `04. Invoicing Setup / Upsert Electronic Signature`
-6. `04. Invoicing Setup / Upsert Electronic Submission`
-7. `04. Invoicing Setup / Get Electronic Sandbox Readiness`
+5. `04. Invoicing Setup / Upsert Credit Note Numbering` si quieres abrir el carril `04`
+6. `04. Invoicing Setup / Upsert Electronic Signature`
+7. `04. Invoicing Setup / Upsert Electronic Submission`
+8. `04. Invoicing Setup / Get Electronic Sandbox Readiness`
 
 ### Qué esperar
 
 - perfil fiscal creado para Ecuador
 - producto `invoicing` habilitado dentro del tenant
-- numeración tipo `001-002-000000031`
+- numeración tipo `001-002-000000031` para factura (`01`)
+- opcionalmente numeración independiente para nota de crédito (`04`)
 - firma configurada
 - gateway configurado
 - readiness indicando si el tenant puede o no pasar a sandbox remoto real
@@ -275,7 +291,44 @@ La colección guardará automáticamente:
 - `invoiceNumber`
 - `invoiceItemId`
 
-### 8.4 Revisar documento y artefactos
+### 8.4 Crear una nota de crédito borrador (`04`)
+
+Cuando ya tengas una factura origen con líneas, puedes abrir el primer flujo real de nota de crédito:
+
+1. `06. Invoicing Invoices / Create Credit Note From Invoice`
+2. `06. Invoicing Invoices / Get Credit Note Detail`
+
+La colección guardará automáticamente:
+- `creditNoteId`
+- `creditNoteNumber`
+- `creditNoteAccessKey`
+- `creditNoteSubmissionReference`
+- `creditNoteAuthorizationNumber`
+- `creditNoteXmlPreview`
+- `creditNoteArtifactsFileBaseName`
+- `creditNoteSequenceDisplay`
+
+### Qué esperar
+
+- documento con `documentCode = 04`
+- numeración independiente del carril de nota de crédito si configuraste `Upsert Credit Note Numbering`
+- referencia al comprobante modificado
+- líneas negativas que revierten los valores de la factura origen
+- totales negativos en el borrador de la nota de crédito
+
+### Estado electrónico actual del `04`
+
+En esta fase, la nota de crédito ya tiene:
+- borrador comercial
+- RIDE
+- preview XML
+- artefactos descargables
+- validación XSD oficial local
+- submit stub
+- submit prefirmado
+- check authorization
+
+### 8.5 Revisar documento y artefactos
 
 Corre:
 
@@ -284,6 +337,15 @@ Corre:
 3. `09. Invoicing Electronic Document / Get Artifacts`
 4. `09. Invoicing Electronic Document / Download XML`
 5. `09. Invoicing Electronic Document / Download RIDE`
+
+Si quieres revisar el carril `04`, usa además:
+- `06. Invoicing Invoices / Get Credit Note Detail`
+- `09. Invoicing Electronic Document / Get Credit Note XML Preview`
+- `09. Invoicing Electronic Document / Get Credit Note RIDE`
+- `09. Invoicing Electronic Document / Get Credit Note RIDE HTML`
+- `09. Invoicing Electronic Document / Get Credit Note Artifacts`
+- `09. Invoicing Electronic Document / Download Credit Note XML`
+- `09. Invoicing Electronic Document / Download Credit Note RIDE`
 
 ### Qué revisar en el XML
 
@@ -301,7 +363,16 @@ Confirma que existan estos nodos o datos:
 - `pagos`
 - `totalConImpuestos`
 
-## 8.5 Runner batch para el camino stub
+Para una nota de crédito (`04`), además revisa:
+- `<notaCredito id="comprobante" version="1.0.0">`
+- `<codDoc>04</codDoc>`
+- `codDocModificado`
+- `numDocModificado`
+- `fechaEmisionDocSustento`
+- `valorModificacion`
+- `motivos`
+
+## 8.6 Runner batch para el camino stub
 
 Si ya tienes:
 - `ownerToken`
@@ -340,6 +411,29 @@ Y si quieres valores distintos, ajusta antes:
 - numbering
 - issuer profile
 
+### Runner batch específico para nota de crédito stub
+
+Cuando ya tengas una factura origen y quieras probar el carril `04` sin ir request por request, usa:
+
+- `10. Runner Flows / EC Credit Note Happy Path - Stub`
+
+Ese folder corre en este orden:
+1. credit note numbering
+2. sandbox readiness
+3. create credit note
+4. credit note detail
+5. credit note XML preview
+6. credit note submit stub
+7. credit note check authorization
+8. credit note detail final
+9. credit note RIDE
+10. credit note artifacts
+
+Antes de lanzarlo, asegúrate de que el environment ya tenga:
+- `ownerToken`
+- `tenantSlug`
+- `invoiceId` de una factura origen válida
+
 ## 9. Dos caminos de prueba del comprobante electrónico
 
 ## 9.1 Camino A: submit local/stub
@@ -359,6 +453,11 @@ Corre:
 - `electronicStatus` moviéndose a `submitted` o `authorized` según el flujo stub
 - historial técnico visible en el detalle de factura
 
+Para `04`, usa estas variantes dedicadas:
+1. `09. Invoicing Electronic Document / Submit Credit Note Electronic Document (stub signer)`
+2. `09. Invoicing Electronic Document / Check Credit Note Authorization`
+3. `06. Invoicing Invoices / Get Credit Note Detail`
+
 ## 9.2 Camino B: submit prefirmado
 
 Este es el puente actual más útil hacia sandbox real.
@@ -377,6 +476,12 @@ Ejemplo de valor en Postman environment:
 
 ```txt
 "<factura ...><ds:Signature ...>...</ds:Signature></factura>"
+```
+
+Para nota de crédito puedes usar el environment dedicado:
+
+```txt
+creditNotePresignedXmlJson
 ```
 
 Si quieres registrar el nombre del firmador externo, ajusta:
@@ -399,6 +504,11 @@ Corre:
 2. `09. Invoicing Electronic Document / Check Authorization`
 3. `06. Invoicing Invoices / Get Invoice Detail`
 
+Para `04`, usa estas variantes:
+1. `09. Invoicing Electronic Document / Submit Credit Note Presigned Electronic Document`
+2. `09. Invoicing Electronic Document / Check Credit Note Authorization`
+3. `06. Invoicing Invoices / Get Credit Note Detail`
+
 ## 9.3 Runner batch para el camino prefirmado
 
 Cuando ya tengas un XML firmado externamente, puedes correr un lote corto desde:
@@ -417,6 +527,23 @@ Antes de ejecutar ese folder, actualiza en el environment:
 - `invoiceId`
 - `presignedXmlJson`
 - opcionalmente `externalSignerNameJson`
+
+Si quieres un runner corto equivalente para `04`, usa:
+
+- `10. Runner Flows / EC Credit Note Presigned Flow - Continue After External Signature`
+
+Y antes actualiza:
+- `invoiceId`
+- `creditNotePresignedXmlJson`
+- opcionalmente `externalSignerNameJson`
+
+El runner se encargará de:
+- crear la nota de crédito
+- guardar `creditNoteId`
+- guardar `creditNoteXmlPreview`
+- guardar `creditNoteAccessKey`
+- guardar `creditNoteSubmissionReference`
+- guardar `creditNoteAuthorizationNumber`
 
 ### Qué esperar
 
@@ -443,7 +570,20 @@ Significa que todavía falta algo para una prueba remota real. Revisa:
 
 #### `isReadyForRemoteSandboxSubmission = true`
 
-Significa que el tenant ya está alineado para una prueba controlada remota.
+Significa que el tenant ya está alineado para una prueba controlada remota de `factura (01)`.
+
+### Nueva lectura recomendada: `documentSupport`
+
+Además de los blockers generales, ahora la respuesta también incluye una matriz `documentSupport`. Úsala así:
+
+- `01`:
+  - `previewAvailable = true` y `rideAvailable = true`
+  - `schemaValidationAvailable = true` cuando el XSD de factura está presente
+  - `submitSupported = true` cuando el carril electrónico de factura puede pasar del preview al submit
+- `04`:
+  - `previewAvailable = true` y `rideAvailable = true`
+  - `schemaValidationAvailable = true` cuando el bundle `notaCredito_V1.0.0.xsd` ya existe en `vendor/sri`
+  - `submitSupported = true` cuando el repo ya detecta ese XSD local y el carril `04` puede pasar de preview a submit
 
 ### Importante
 
@@ -451,6 +591,27 @@ Hoy el repo todavía protege el submit `offline` remoto cuando la firma interna 
 - readiness limpio
 - XML firmado externamente
 - `submit-presigned`
+
+Para `nota de crédito (04)`, la restricción práctica ya no es el tipo de documento en sí, sino la presencia del XSD local:
+- si `notaCredito_V1.0.0.xsd` no existe en `vendor/sri`, el submit sigue bloqueado
+- si el bundle ya está instalado, `04` puede recorrer el mismo carril técnico de submit que `01`
+
+### Cómo destrabar localmente el XSD de `04`
+
+Si ya descargaste manualmente el ZIP oficial desde el SRI, puedes instalarlo al layout esperado del repo con:
+
+```sh
+pnpm install:sri:schema-bundle -- --document-code 04 --zip /ruta/XML-y-XSD-Nota-de-Credito.zip
+```
+
+El script copia al menos:
+- `notaCredito_V1.0.0.xsd`
+- `xmldsig-core-schema.xsd`
+
+Y los deja en:
+- [vendor/sri/nota-credito-1.0.0/README.md](/Users/jorgequizamanchuro/Projects_local/saas-platform/vendor/sri/nota-credito-1.0.0/README.md)
+
+Cuando ese bundle exista en `vendor/sri`, el readiness ya podrá reflejar que `04` tiene soporte XSD local y submit habilitado.
 
 ## 11. Variables del environment que más vas a tocar
 
@@ -487,6 +648,12 @@ Hoy el repo todavía protege el submit `offline` remoto cuando la firma interna 
 - `customerId`
 - `taxRateId`
 - `invoiceId`
+- `invoiceNumber`
+- `creditNoteId`
+- `creditNoteNumber`
+- `creditNoteReason`
+- `creditNoteIssuedAt`
+- `creditNoteNotes`
 - `accessKey`
 - `submissionReference`
 - `authorizationNumber`

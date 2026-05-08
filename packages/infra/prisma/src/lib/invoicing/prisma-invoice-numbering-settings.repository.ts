@@ -13,7 +13,12 @@ export class PrismaInvoiceNumberingSettingsRepository
     const data = settings.toPrimitives();
 
     await this.prisma.invoiceNumberingSettings.upsert({
-      where: { tenantId: data.tenantId },
+      where: {
+        tenantId_documentCode: {
+          tenantId: data.tenantId,
+          documentCode: data.documentCode,
+        },
+      },
       update: {
         documentCode: data.documentCode,
         establishmentCode: data.establishmentCode,
@@ -34,11 +39,17 @@ export class PrismaInvoiceNumberingSettingsRepository
     });
   }
 
-  async findByTenantId(
+  async findByTenantIdAndDocumentCode(
     tenantId: string,
+    documentCode: string,
   ): Promise<InvoiceNumberingSettings | null> {
     const record = await this.prisma.invoiceNumberingSettings.findUnique({
-      where: { tenantId },
+      where: {
+        tenantId_documentCode: {
+          tenantId,
+          documentCode,
+        },
+      },
     });
 
     return record ? this.toDomain(record) : null;

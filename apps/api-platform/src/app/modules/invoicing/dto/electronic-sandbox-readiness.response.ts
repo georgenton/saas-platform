@@ -16,6 +16,16 @@ export interface ElectronicSandboxReadinessResponseDto {
     status: 'ready' | 'warning' | 'blocked';
     detail: string;
   }>;
+  documentSupport: Array<{
+    documentCode: '01' | '04';
+    label: string;
+    numberingConfigured: boolean;
+    previewAvailable: boolean;
+    rideAvailable: boolean;
+    schemaValidationAvailable: boolean;
+    submitSupported: boolean;
+    detail: string;
+  }>;
   recommendedNextStep: string;
 }
 
@@ -38,6 +48,16 @@ export function toElectronicSandboxReadinessResponseDto(
       label: check.label,
       status: check.status,
       detail: check.detail,
+    })),
+    documentSupport: readiness.documentSupport.map((item) => ({
+      documentCode: item.documentCode,
+      label: item.label,
+      numberingConfigured: item.numberingConfigured,
+      previewAvailable: item.previewAvailable,
+      rideAvailable: item.rideAvailable,
+      schemaValidationAvailable: item.schemaValidationAvailable,
+      submitSupported: item.submitSupported,
+      detail: item.detail,
     })),
     recommendedNextStep: readiness.recommendedNextStep,
   };

@@ -238,6 +238,16 @@ export interface ElectronicSandboxReadinessResponse {
     status: 'ready' | 'warning' | 'blocked';
     detail: string;
   }>;
+  documentSupport: Array<{
+    documentCode: '01' | '04';
+    label: string;
+    numberingConfigured: boolean;
+    previewAvailable: boolean;
+    rideAvailable: boolean;
+    schemaValidationAvailable: boolean;
+    submitSupported: boolean;
+    detail: string;
+  }>;
   recommendedNextStep: string;
 }
 
@@ -368,6 +378,16 @@ export interface InvoiceDetailResponse {
   }[];
   totals: InvoiceTotals;
   settlement: InvoiceSettlement;
+}
+
+export interface CreditNoteResponse {
+  invoice: InvoiceDetailResponse;
+  creditNote: {
+    sourceInvoiceId: string | null;
+    sourceInvoiceNumber: string | null;
+    sourceInvoiceIssuedAt: string | null;
+    reason: string | null;
+  };
 }
 
 export interface InvoiceDocumentResponse {

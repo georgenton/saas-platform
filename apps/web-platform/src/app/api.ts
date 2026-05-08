@@ -1,6 +1,7 @@
 import {
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
+  CreditNoteResponse,
   CustomerResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSubmissionSettingsResponse,
@@ -418,6 +419,19 @@ export async function fetchInvoiceNumberingSettings(
   );
 }
 
+export async function fetchCreditNoteNumberingSettings(
+  token: string,
+  tenantSlug: string,
+): Promise<InvoiceNumberingSettingsResponse> {
+  return request<InvoiceNumberingSettingsResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/numbering/credit-note`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function upsertInvoiceNumberingSettings(
   token: string,
   tenantSlug: string,
@@ -430,6 +444,25 @@ export async function upsertInvoiceNumberingSettings(
 ): Promise<InvoiceNumberingSettingsResponse> {
   return request<InvoiceNumberingSettingsResponse>(
     `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/numbering/invoice`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function upsertCreditNoteNumberingSettings(
+  token: string,
+  tenantSlug: string,
+  body: {
+    establishmentCode: string;
+    emissionPointCode: string;
+    nextSequenceNumber: number;
+  },
+): Promise<InvoiceNumberingSettingsResponse> {
+  return request<InvoiceNumberingSettingsResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/numbering/credit-note`,
     {
       method: 'POST',
       token,
@@ -710,6 +743,27 @@ export async function createInvoice(
 ): Promise<InvoiceDetailResponse> {
   return request<InvoiceDetailResponse>(
     `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/invoices`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function createCreditNote(
+  token: string,
+  tenantSlug: string,
+  body: {
+    sourceInvoiceId: string;
+    reason: string;
+    number?: string;
+    issuedAt?: string;
+    notes?: string | null;
+  },
+): Promise<CreditNoteResponse> {
+  return request<CreditNoteResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/credit-notes`,
     {
       method: 'POST',
       token,

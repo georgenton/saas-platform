@@ -2,6 +2,7 @@ import {
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CreditNoteResponse,
+  DebitNoteResponse,
   CustomerResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSubmissionSettingsResponse,
@@ -764,6 +765,29 @@ export async function createCreditNote(
 ): Promise<CreditNoteResponse> {
   return request<CreditNoteResponse>(
     `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/credit-notes`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function createDebitNote(
+  token: string,
+  tenantSlug: string,
+  body: {
+    sourceInvoiceId: string;
+    reason: string;
+    amountInCents: number;
+    taxRateId?: string | null;
+    number?: string;
+    issuedAt?: string;
+    notes?: string | null;
+  },
+): Promise<DebitNoteResponse> {
+  return request<DebitNoteResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/debit-notes`,
     {
       method: 'POST',
       token,

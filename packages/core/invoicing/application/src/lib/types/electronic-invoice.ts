@@ -98,8 +98,10 @@ export function buildSriElectronicDocumentXmlPreview(input: {
 }): string {
   const invoice = input.document.invoice.toPrimitives();
   const documentCode = invoice.documentCode ?? '01';
+  const isCreditNote = documentCode === '04';
+  const isDebitNote = documentCode === '05';
   const xmlLines =
-    documentCode === '04'
+    isCreditNote
       ? input.document.lines.map((line) => ({
           ...line,
           unitPriceInCents: Math.abs(line.unitPriceInCents),
@@ -119,6 +121,18 @@ export function buildSriElectronicDocumentXmlPreview(input: {
         <baseImponible>${formatCents(group.baseInCents)}</baseImponible>
         <valor>${formatCents(group.taxInCents)}</valor>
       </totalImpuesto>`,
+    )
+    .join('');
+  const debitTaxesXml = details.taxGroups
+    .map(
+      (group) => `
+      <impuesto>
+        <codigo>2</codigo>
+        <codigoPorcentaje>${escapeXml(group.percentageCode)}</codigoPorcentaje>
+        <tarifa>${formatPercentage(group.ratePercentage)}</tarifa>
+        <baseImponible>${formatCents(group.baseInCents)}</baseImponible>
+        <valor>${formatCents(group.taxInCents)}</valor>
+      </impuesto>`,
     )
     .join('');
 
@@ -164,7 +178,7 @@ export function buildSriElectronicDocumentXmlPreview(input: {
     <dirMatriz>${escapeXml(input.document.issuer.matrixAddress ?? '')}</dirMatriz>
   </infoTributaria>`;
   const obligatedAccounting = input.document.issuer.accountingObligated ? 'SI' : 'NO';
-  if (documentCode === '04') {
+  if (isCreditNote) {
     const modificationAmountInCents = Math.abs(input.document.totals.totalInCents);
     const subtotalInCents = Math.abs(input.document.totals.subtotalInCents);
 
@@ -216,6 +230,68 @@ ${infoTributariaXml}
   <detalles>${detailXml}
   </detalles>
 </notaCredito>
+`;
+  }
+
+  if (isDebitNote) {
+    const paymentDelayInDays = invoice.dueAt
+      ? Math.max(calculateDiffInDays(invoice.issuedAt, invoice.dueAt), 0)
+      : 0;
+    const motiveXml = details.lines
+      .map(
+        (line) => `
+      <motivo>
+        <razon>${escapeXml(line.description)}</razon>
+        <valor>${formatCents(line.lineSubtotalInCents)}</valor>
+      </motivo>`,
+      )
+      .join('');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<notaDebito id="comprobante" version="1.0.0">
+${infoTributariaXml}
+  <infoNotaDebito>
+    <fechaEmision>${escapeXml(formatSriIssueDate(invoice.issuedAt))}</fechaEmision>
+    <dirEstablecimiento>${escapeXml(
+      input.document.issuer.establishmentAddress ?? input.document.issuer.matrixAddress ?? '',
+    )}</dirEstablecimiento>
+    ${
+      input.document.issuer.specialTaxpayerCode
+        ? `<contribuyenteEspecial>${escapeXml(
+            input.document.issuer.specialTaxpayerCode,
+          )}</contribuyenteEspecial>`
+        : ''
+    }
+    <obligadoContabilidad>${obligatedAccounting}</obligadoContabilidad>
+    <tipoIdentificacionComprador>${escapeXml(
+      input.document.customer.identificationType ?? '',
+    )}</tipoIdentificacionComprador>
+    <razonSocialComprador>${escapeXml(input.document.customer.name)}</razonSocialComprador>
+    <identificacionComprador>${escapeXml(
+      input.document.customer.identification ?? input.document.customer.taxId ?? '',
+    )}</identificacionComprador>
+    <codDocModificado>01</codDocModificado>
+    <numDocModificado>${escapeXml(invoice.modifiedDocumentNumber ?? '')}</numDocModificado>
+    <fechaEmisionDocSustento>${escapeXml(
+      invoice.modifiedDocumentIssuedAt
+        ? formatSriIssueDate(invoice.modifiedDocumentIssuedAt)
+        : '',
+    )}</fechaEmisionDocSustento>
+    <impuestos>${debitTaxesXml}
+    </impuestos>
+    <valorTotal>${formatCents(input.document.totals.totalInCents)}</valorTotal>
+    <pagos>
+      <pago>
+        <formaPago>20</formaPago>
+        <total>${formatCents(input.document.totals.totalInCents)}</total>
+        <plazo>${paymentDelayInDays}</plazo>
+        <unidadTiempo>DAYS</unidadTiempo>
+      </pago>
+    </pagos>
+  </infoNotaDebito>
+  <motivos>${motiveXml}
+  </motivos>
+</notaDebito>
 `;
   }
 
@@ -287,9 +363,16 @@ export function validateSriElectronicDocumentXml(input: {
   const accessKey = normalizeDigits(input.accessKey);
   const codDoc = extractTagValue(xml, 'codDoc');
   const valorModificacion = extractTagValue(xml, 'valorModificacion');
+  const valorTotal = extractTagValue(xml, 'valorTotal');
   const isCreditNote = codDoc === '04' || xml.includes('<notaCredito ');
-  const rootTag = isCreditNote ? 'notaCredito' : 'factura';
-  const versionLabel = isCreditNote ? '1.0.0' : '2.1.0';
+  const isDebitNote = codDoc === '05' || xml.includes('<notaDebito ');
+  const rootTag = isCreditNote
+    ? 'notaCredito'
+    : isDebitNote
+      ? 'notaDebito'
+      : 'factura';
+  const versionLabel =
+    isCreditNote || isDebitNote ? '1.0.0' : '2.1.0';
 
   if (!xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')) {
     issues.push('El XML debe comenzar con la declaracion XML UTF-8.');
@@ -297,7 +380,9 @@ export function validateSriElectronicDocumentXml(input: {
 
   if (!xml.includes(`<${rootTag} id="comprobante" version="${versionLabel}">`)) {
     issues.push(
-      `El comprobante debe declarar ${isCreditNote ? 'notaCredito' : 'factura'} version ${versionLabel}.`,
+      `El comprobante debe declarar ${
+        isCreditNote ? 'notaCredito' : isDebitNote ? 'notaDebito' : 'factura'
+      } version ${versionLabel}.`,
     );
   }
 
@@ -305,13 +390,27 @@ export function validateSriElectronicDocumentXml(input: {
     issues.push('Falta el bloque infoTributaria.');
   }
 
-  if (!xml.includes(isCreditNote ? '<infoNotaCredito>' : '<infoFactura>')) {
+  if (
+    !xml.includes(
+      isCreditNote
+        ? '<infoNotaCredito>'
+        : isDebitNote
+          ? '<infoNotaDebito>'
+          : '<infoFactura>',
+    )
+  ) {
     issues.push(
-      `Falta el bloque ${isCreditNote ? 'infoNotaCredito' : 'infoFactura'}.`,
+      `Falta el bloque ${
+        isCreditNote
+          ? 'infoNotaCredito'
+          : isDebitNote
+            ? 'infoNotaDebito'
+            : 'infoFactura'
+      }.`,
     );
   }
 
-  if (!xml.includes('<detalles>')) {
+  if (!isDebitNote && !xml.includes('<detalles>')) {
     issues.push('Falta el bloque detalles.');
   }
 
@@ -339,7 +438,7 @@ export function validateSriElectronicDocumentXml(input: {
     'tipoIdentificacionComprador',
     'razonSocialComprador',
     'identificacionComprador',
-    ...(isCreditNote ? [] : ['importeTotal']),
+    ...(isCreditNote ? [] : isDebitNote ? ['valorTotal'] : ['importeTotal']),
   ]) {
     if (!extractTagValue(xml, tagName)) {
       issues.push(`Falta el valor obligatorio ${tagName} en el XML.`);
@@ -367,20 +466,31 @@ export function validateSriElectronicDocumentXml(input: {
   const buyerIdentification = extractTagValue(xml, 'identificacionComprador');
   const buyerAddress = extractTagValue(xml, 'direccionComprador');
   const totalSinImpuestos = extractTagValue(xml, 'totalSinImpuestos');
-  const importeTotal = isCreditNote ? valorModificacion : extractTagValue(xml, 'importeTotal');
-  const moneda = extractTagValue(xml, 'moneda');
+  const importeTotal = isCreditNote
+    ? valorModificacion
+    : isDebitNote
+      ? valorTotal
+      : extractTagValue(xml, 'importeTotal');
+  const moneda = isDebitNote ? null : extractTagValue(xml, 'moneda');
   const paymentTotal = isCreditNote ? null : extractTagValue(xml, 'total');
-  const totalDescuento = isCreditNote ? '0.00' : extractTagValue(xml, 'totalDescuento');
-  const propina = isCreditNote ? '0.00' : extractTagValue(xml, 'propina');
+  const totalDescuento =
+    isCreditNote || isDebitNote ? '0.00' : extractTagValue(xml, 'totalDescuento');
+  const propina = isCreditNote || isDebitNote ? '0.00' : extractTagValue(xml, 'propina');
   const infoTributariaBlocks = extractTagBlocks(xml, 'infoTributaria');
   const infoComprobanteBlocks = extractTagBlocks(
     xml,
-    isCreditNote ? 'infoNotaCredito' : 'infoFactura',
+    isCreditNote
+      ? 'infoNotaCredito'
+      : isDebitNote
+        ? 'infoNotaDebito'
+        : 'infoFactura',
   );
   const pagosBlocks = extractTagBlocks(xml, 'pagos');
   const pagoBlocks = extractTagBlocks(xml, 'pago');
   const detalleBlocks = extractTagBlocks(xml, 'detalle');
-  const totalImpuestoBlocks = extractTagBlocks(xml, 'totalImpuesto');
+  const totalImpuestoBlocks = isDebitNote
+    ? extractTagBlocks(xml, 'impuesto')
+    : extractTagBlocks(xml, 'totalImpuesto');
   const codDocModificado = extractTagValue(xml, 'codDocModificado');
   const numDocModificado = extractTagValue(xml, 'numDocModificado');
   const fechaEmisionDocSustento = extractTagValue(
@@ -396,7 +506,11 @@ export function validateSriElectronicDocumentXml(input: {
   if (infoComprobanteBlocks.length !== 1) {
     issues.push(
       `El XML debe contener exactamente un bloque ${
-        isCreditNote ? 'infoNotaCredito' : 'infoFactura'
+        isCreditNote
+          ? 'infoNotaCredito'
+          : isDebitNote
+            ? 'infoNotaDebito'
+            : 'infoFactura'
       }.`,
     );
   }
@@ -465,7 +579,7 @@ export function validateSriElectronicDocumentXml(input: {
     issues.push('La razon social del comprador debe tener contenido suficiente.');
   }
 
-  if (!buyerAddress || buyerAddress.trim().length < 5) {
+  if (!isDebitNote && (!buyerAddress || buyerAddress.trim().length < 5)) {
     issues.push('La direccion del comprador debe estar informada.');
   }
 
@@ -477,18 +591,20 @@ export function validateSriElectronicDocumentXml(input: {
     );
   }
 
-  if (detalleBlocks.length === 0) {
+  if (!isDebitNote && detalleBlocks.length === 0) {
     issues.push('La factura electronica debe contener al menos un detalle.');
   }
 
-  const parsedSubtotal = parseAmount(totalSinImpuestos);
+  const parsedSubtotal = isDebitNote
+    ? sumTagValues(motivoBlocks, 'valor')
+    : parseAmount(totalSinImpuestos);
   const parsedTotal = parseAmount(importeTotal);
   const parsedPaymentTotal = parseAmount(paymentTotal);
   const detailSubtotalSum = sumTagValues(detalleBlocks, 'precioTotalSinImpuesto');
   const detailTaxSum = sumNestedTaxValues(detalleBlocks, 'valor');
   const headerTaxSum = sumTagValues(totalImpuestoBlocks, 'valor');
 
-  if (parsedSubtotal === null) {
+  if (!isDebitNote && parsedSubtotal === null) {
     issues.push('totalSinImpuestos debe ser un decimal valido con dos decimales.');
   }
 
@@ -508,7 +624,7 @@ export function validateSriElectronicDocumentXml(input: {
     issues.push('El total del bloque pagos debe ser un decimal valido con dos decimales.');
   }
 
-  if (!moneda || !/^[A-Z]{3}$/.test(moneda)) {
+  if (!isDebitNote && (!moneda || !/^[A-Z]{3}$/.test(moneda))) {
     issues.push('La moneda debe estar en formato ISO de 3 letras mayusculas.');
   }
 
@@ -572,17 +688,61 @@ export function validateSriElectronicDocumentXml(input: {
         );
       }
     }
+  } else if (isDebitNote) {
+    if (codDoc !== '05') {
+      issues.push('La nota de debito debe declarar codDoc 05.');
+    }
+
+    if (codDocModificado !== '01') {
+      issues.push(
+        'La nota de debito debe declarar codDocModificado 01 para este MVP.',
+      );
+    }
+
+    if (!numDocModificado || numDocModificado.trim().length < 3) {
+      issues.push(
+        'La nota de debito debe incluir numDocModificado del comprobante sustento.',
+      );
+    }
+
+    if (
+      !fechaEmisionDocSustento ||
+      !/^\d{2}\/\d{2}\/\d{4}$/.test(fechaEmisionDocSustento)
+    ) {
+      issues.push(
+        'La nota de debito debe incluir fechaEmisionDocSustento con formato dd/mm/yyyy.',
+      );
+    }
+
+    if (motivoBlocks.length === 0) {
+      issues.push('La nota de debito debe contener al menos un motivo.');
+    } else {
+      for (const motivoBlock of motivoBlocks) {
+        const razon = extractTagValue(motivoBlock, 'razon');
+        const valor = extractTagValue(motivoBlock, 'valor');
+
+        if (!razon || razon.trim().length < 3) {
+          issues.push('Cada motivo de la nota de debito debe incluir una razon suficiente.');
+        }
+
+        const parsedMotivoValor = parseAmount(valor);
+
+        if (parsedMotivoValor === null) {
+          issues.push('Cada motivo de la nota de debito debe incluir un valor decimal valido.');
+        }
+      }
+    }
   } else if (codDoc && codDoc !== '01') {
     issues.push('La factura electronica debe declarar codDoc 01.');
   }
 
-  if (parsedSubtotal !== null && detailSubtotalSum !== parsedSubtotal) {
+  if (!isDebitNote && parsedSubtotal !== null && detailSubtotalSum !== parsedSubtotal) {
     issues.push(
       'La suma de precioTotalSinImpuesto de los detalles no coincide con totalSinImpuestos.',
     );
   }
 
-  if (detailTaxSum !== headerTaxSum) {
+  if (!isDebitNote && detailTaxSum !== headerTaxSum) {
     issues.push(
       'La suma de impuestos de los detalles no coincide con totalConImpuestos.',
     );
@@ -610,8 +770,12 @@ export function validateSriElectronicDocumentXml(input: {
   if (!isCreditNote) {
     validatePaymentBlocks(pagoBlocks, issues);
   }
-  validateTotalTaxBlocks(totalImpuestoBlocks, issues);
-  validateDetailBlocks(detalleBlocks, issues);
+  if (isDebitNote) {
+    validateDebitTaxBlocks(totalImpuestoBlocks, issues);
+  } else {
+    validateTotalTaxBlocks(totalImpuestoBlocks, issues);
+    validateDetailBlocks(detalleBlocks, issues);
+  }
 
   return issues;
 }
@@ -631,13 +795,19 @@ function buildInvoiceXmlDetails(lines: InvoiceDocumentLineView[]): {
   >;
   taxGroups: Array<{
     percentageCode: string;
+    ratePercentage: number;
     baseInCents: number;
     taxInCents: number;
   }>;
 } {
   const taxGroups = new Map<
     string,
-    { percentageCode: string; baseInCents: number; taxInCents: number }
+    {
+      percentageCode: string;
+      ratePercentage: number;
+      baseInCents: number;
+      taxInCents: number;
+    }
   >();
 
   const normalizedLines = lines.map((line) => {
@@ -650,6 +820,7 @@ function buildInvoiceXmlDetails(lines: InvoiceDocumentLineView[]): {
     } else {
       taxGroups.set(taxPercentageCode, {
         percentageCode: taxPercentageCode,
+        ratePercentage: line.taxRatePercentage ?? 0,
         baseInCents: line.lineSubtotalInCents,
         taxInCents: line.lineTaxInCents,
       });
@@ -867,6 +1038,43 @@ function validateTotalTaxBlocks(blocks: string[], issues: string[]): void {
 
     if (parseAmount(valor) === null) {
       issues.push('Cada totalImpuesto debe incluir un valor decimal valido.');
+    }
+  }
+}
+
+function validateDebitTaxBlocks(blocks: string[], issues: string[]): void {
+  if (blocks.length === 0) {
+    issues.push('La nota de debito debe contener al menos un impuesto en cabecera.');
+    return;
+  }
+
+  for (const block of blocks) {
+    const codigo = extractTagValue(block, 'codigo');
+    const codigoPorcentaje = extractTagValue(block, 'codigoPorcentaje');
+    const tarifa = extractTagValue(block, 'tarifa');
+    const baseImponible = extractTagValue(block, 'baseImponible');
+    const valor = extractTagValue(block, 'valor');
+
+    if (codigo !== '2') {
+      issues.push('Cada impuesto de nota de debito debe usar codigo 2 para IVA en este MVP.');
+    }
+
+    if (!codigoPorcentaje || !/^\d+$/.test(codigoPorcentaje)) {
+      issues.push('Cada impuesto de nota de debito debe incluir un codigoPorcentaje numerico.');
+    }
+
+    if (!tarifa || !/^\d+\.\d{2}$/.test(tarifa)) {
+      issues.push('Cada impuesto de nota de debito debe incluir una tarifa decimal valida.');
+    }
+
+    if (parseAmount(baseImponible) === null) {
+      issues.push(
+        'Cada impuesto de nota de debito debe incluir una baseImponible decimal valida.',
+      );
+    }
+
+    if (parseAmount(valor) === null) {
+      issues.push('Cada impuesto de nota de debito debe incluir un valor decimal valido.');
     }
   }
 }

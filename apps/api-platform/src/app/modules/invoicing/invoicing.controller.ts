@@ -15,6 +15,7 @@ import {
   CheckTenantInvoiceElectronicAuthorizationUseCase,
   CreateTenantCustomerUseCase,
   CreateTenantCreditNoteUseCase,
+  CreateTenantDebitNoteUseCase,
   CustomerNotFoundError,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
@@ -46,6 +47,7 @@ import {
   InvoiceNumberingSettingsNotFoundError,
   InvoiceNotFullySettledError,
   InvalidCreditNoteSourceInvoiceError,
+  InvalidDebitNoteSourceInvoiceError,
   InvalidInvoiceElectronicAuthorizationStateError,
   InvalidInvoiceElectronicSubmissionStateError,
   InvoiceElectronicSubmissionGatewayIncompleteError,
@@ -94,6 +96,7 @@ import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import { CreateCustomerRequestDto } from './dto/create-customer.request';
 import { CreateCreditNoteRequestDto } from './dto/create-credit-note.request';
+import { CreateDebitNoteRequestDto } from './dto/create-debit-note.request';
 import { CreateInvoiceRequestDto } from './dto/create-invoice.request';
 import { CreateInvoiceItemRequestDto } from './dto/create-invoice-item.request';
 import { CreateTaxRateRequestDto } from './dto/create-tax-rate.request';
@@ -127,6 +130,10 @@ import {
   CreditNoteResponseDto,
   toCreditNoteResponseDto,
 } from './dto/credit-note.response';
+import {
+  DebitNoteResponseDto,
+  toDebitNoteResponseDto,
+} from './dto/debit-note.response';
 import {
   CustomerResponseDto,
   toCustomerResponseDto,
@@ -179,6 +186,7 @@ type HeaderWritableResponse = {
 
 const INVOICE_DOCUMENT_CODE = '01';
 const CREDIT_NOTE_DOCUMENT_CODE = '04';
+const DEBIT_NOTE_DOCUMENT_CODE = '05';
 
 @Controller('invoicing/tenants')
 @UseGuards(
@@ -192,6 +200,7 @@ export class InvoicingController {
   constructor(
     private readonly createTenantCustomerUseCase: CreateTenantCustomerUseCase,
     private readonly createTenantCreditNoteUseCase: CreateTenantCreditNoteUseCase,
+    private readonly createTenantDebitNoteUseCase: CreateTenantDebitNoteUseCase,
     private readonly createTenantInvoiceUseCase: CreateTenantInvoiceUseCase,
     private readonly createTenantInvoiceItemUseCase: CreateTenantInvoiceItemUseCase,
     private readonly createTenantInvoicePaymentUseCase: CreateTenantInvoicePaymentUseCase,
@@ -505,6 +514,58 @@ export class InvoicingController {
         await this.upsertTenantInvoiceNumberingSettingsUseCase.execute({
           tenantSlug: tenantAccess?.tenantSlug ?? slug,
           documentCode: CREDIT_NOTE_DOCUMENT_CODE,
+          establishmentCode: body.establishmentCode,
+          emissionPointCode: body.emissionPointCode,
+          nextSequenceNumber: body.nextSequenceNumber,
+        });
+
+      return toInvoiceNumberingSettingsResponseDto(settings);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/numbering/debit-note')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantDebitNoteNumberingSettings(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceNumberingSettingsResponseDto> {
+    try {
+      const settings = await this.getTenantInvoiceNumberingSettingsUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        DEBIT_NOTE_DOCUMENT_CODE,
+      );
+
+      return toInvoiceNumberingSettingsResponseDto(settings);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNumberingSettingsNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/numbering/debit-note')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async upsertTenantDebitNoteNumberingSettings(
+    @Param('slug') slug: string,
+    @Body() body: UpsertInvoiceNumberingSettingsRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceNumberingSettingsResponseDto> {
+    try {
+      const settings =
+        await this.upsertTenantInvoiceNumberingSettingsUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          documentCode: DEBIT_NOTE_DOCUMENT_CODE,
           establishmentCode: body.establishmentCode,
           emissionPointCode: body.emissionPointCode,
           nextSequenceNumber: body.nextSequenceNumber,
@@ -1294,6 +1355,51 @@ export class InvoicingController {
 
       if (
         error instanceof InvalidCreditNoteSourceInvoiceError ||
+        error instanceof InvoiceNumberRequiredError
+      ) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/debit-notes')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async createTenantDebitNote(
+    @Param('slug') slug: string,
+    @Body() body: CreateDebitNoteRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<DebitNoteResponseDto> {
+    try {
+      const result = await this.createTenantDebitNoteUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        sourceInvoiceId: body.sourceInvoiceId,
+        reason: body.reason,
+        amountInCents: body.amountInCents,
+        taxRateId: body.taxRateId ?? null,
+        number: body.number?.trim() || undefined,
+        issuedAt: body.issuedAt ? new Date(body.issuedAt) : undefined,
+        notes: body.notes ?? null,
+      });
+
+      const detail = await this.getTenantInvoiceDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        result.debitNote.id,
+      );
+
+      return toDebitNoteResponseDto(detail, result.sourceInvoice);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof TaxRateNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (
+        error instanceof InvalidDebitNoteSourceInvoiceError ||
         error instanceof InvoiceNumberRequiredError
       ) {
         throw new BadRequestException(error.message);

@@ -137,7 +137,7 @@ La coleccion cubre:
 - suscripcion comercial del tenant
 - invitations
 - setup fiscal Ecuador
-- numeracion por tipo de documento (`01` factura, `04` nota de credito)
+- numeracion por tipo de documento (`01` factura, `04` nota de credito, `05` nota de debito)
 - customers
 - taxes
 - invoices
@@ -151,6 +151,7 @@ La coleccion cubre:
 - submit prefirmado
 - check authorization
 - carril dedicado de nota de credito (`04`) con submit, artifacts y runners propios
+- carril de nota de debito (`05`) con submit, artifacts y runners propios
 
 ### Automatizaciones incluidas
 
@@ -183,6 +184,16 @@ La coleccion guarda automaticamente en el environment:
 - `creditNoteSequenceDisplay`
 - `creditNote04SubmitSupported`
 - `creditNote04SchemaValidationAvailable`
+- `debitNote05SubmitSupported`
+- `debitNote05SchemaValidationAvailable`
+- `debitNoteId`
+- `debitNoteNumber`
+- `debitNoteAccessKey`
+- `debitNoteSubmissionReference`
+- `debitNoteAuthorizationNumber`
+- `debitNoteXmlPreview`
+- `debitNoteArtifactsFileBaseName`
+- `debitNoteSequenceDisplay`
 
 ### Qué debes cargar manualmente
 
@@ -197,6 +208,8 @@ La colección ahora también trae un folder específico:
 - `10. Runner Flows / EC Presigned Flow - Continue After External Signature`
 - `10. Runner Flows / EC Credit Note Happy Path - Stub`
 - `10. Runner Flows / EC Credit Note Presigned Flow - Continue After External Signature`
+- `10. Runner Flows / EC Debit Note Happy Path - Stub`
+- `10. Runner Flows / EC Debit Note Presigned Flow - Continue After External Signature`
 
 Eso te permite correr un lote ordenado desde Postman Runner sin ir abriendo request por request.
 
@@ -253,9 +266,10 @@ Corre en este orden:
 3. `04. Invoicing Setup / Upsert Electronic Profile`
 4. `04. Invoicing Setup / Upsert Invoice Numbering`
 5. `04. Invoicing Setup / Upsert Credit Note Numbering` si quieres abrir el carril `04`
-6. `04. Invoicing Setup / Upsert Electronic Signature`
-7. `04. Invoicing Setup / Upsert Electronic Submission`
-8. `04. Invoicing Setup / Get Electronic Sandbox Readiness`
+6. `04. Invoicing Setup / Upsert Debit Note Numbering` si quieres abrir el carril `05`
+7. `04. Invoicing Setup / Upsert Electronic Signature`
+8. `04. Invoicing Setup / Upsert Electronic Submission`
+9. `04. Invoicing Setup / Get Electronic Sandbox Readiness`
 
 ### Qué esperar
 
@@ -263,6 +277,7 @@ Corre en este orden:
 - producto `invoicing` habilitado dentro del tenant
 - numeración tipo `001-002-000000031` para factura (`01`)
 - opcionalmente numeración independiente para nota de crédito (`04`)
+- opcionalmente numeración independiente para nota de débito (`05`)
 - firma configurada
 - gateway configurado
 - readiness indicando si el tenant puede o no pasar a sandbox remoto real
@@ -372,6 +387,42 @@ Para una nota de crédito (`04`), además revisa:
 - `valorModificacion`
 - `motivos`
 
+### 8.5.b Crear una nota de débito borrador (`05`)
+
+Cuando ya tengas una factura origen y quieras abrir el siguiente documento SRI del mismo carril, usa:
+
+1. `06. Invoicing Invoices / Create Debit Note From Invoice`
+2. `06. Invoicing Invoices / Get Debit Note Detail`
+
+La colección guardará automáticamente:
+- `debitNoteId`
+- `debitNoteNumber`
+- `debitNoteAccessKey`
+- `debitNoteSubmissionReference`
+- `debitNoteAuthorizationNumber`
+- `debitNoteXmlPreview`
+- `debitNoteArtifactsFileBaseName`
+- `debitNoteSequenceDisplay`
+
+### Qué esperar
+
+- documento con `documentCode = 05`
+- numeración independiente del carril de nota de débito si configuraste `Upsert Debit Note Numbering`
+- referencia al comprobante modificado
+- una primera línea positiva creada desde el motivo inicial
+- totales positivos y listos para continuar hacia XML/RIDE
+
+### Estado electrónico actual del `05`
+
+En esta fase, la nota de débito ya tiene:
+- borrador comercial
+- RIDE
+- preview XML
+- artefactos descargables
+- matriz de readiness por documento
+- validación XSD local
+- submit stub y prefirmado cuando el tenant esté listo
+
 ## 8.6 Runner batch para el camino stub
 
 Si ya tienes:
@@ -434,6 +485,26 @@ Antes de lanzarlo, asegúrate de que el environment ya tenga:
 - `tenantSlug`
 - `invoiceId` de una factura origen válida
 
+### Runner batch específico para nota de débito stub
+
+Cuando ya tengas una factura origen y quieras probar el carril `05` sin ir request por request, usa:
+
+- `10. Runner Flows / EC Debit Note Happy Path - Stub`
+
+Ese folder corre en este orden:
+1. debit note numbering
+2. sandbox readiness
+3. create debit note
+4. debit note detail
+5. debit note XML preview
+6. debit note RIDE
+7. debit note artifacts
+
+Antes de lanzarlo, asegúrate de que el environment ya tenga:
+- `ownerToken`
+- `tenantSlug`
+- `invoiceId` de una factura origen válida
+
 ## 9. Dos caminos de prueba del comprobante electrónico
 
 ## 9.1 Camino A: submit local/stub
@@ -457,6 +528,11 @@ Para `04`, usa estas variantes dedicadas:
 1. `09. Invoicing Electronic Document / Submit Credit Note Electronic Document (stub signer)`
 2. `09. Invoicing Electronic Document / Check Credit Note Authorization`
 3. `06. Invoicing Invoices / Get Credit Note Detail`
+
+Para `05`, usa estas variantes. En este branch el XSD local ya viene soportado por el repo:
+1. `09. Invoicing Electronic Document / Submit Debit Note Electronic Document (stub signer)`
+2. `09. Invoicing Electronic Document / Check Debit Note Authorization`
+3. `06. Invoicing Invoices / Get Debit Note Detail`
 
 ## 9.2 Camino B: submit prefirmado
 
@@ -509,6 +585,11 @@ Para `04`, usa estas variantes:
 2. `09. Invoicing Electronic Document / Check Credit Note Authorization`
 3. `06. Invoicing Invoices / Get Credit Note Detail`
 
+Para `05`, usa estas variantes:
+1. `09. Invoicing Electronic Document / Submit Debit Note Presigned Electronic Document`
+2. `09. Invoicing Electronic Document / Check Debit Note Authorization`
+3. `06. Invoicing Invoices / Get Debit Note Detail`
+
 ## 9.3 Runner batch para el camino prefirmado
 
 Cuando ya tengas un XML firmado externamente, puedes correr un lote corto desde:
@@ -531,6 +612,10 @@ Antes de ejecutar ese folder, actualiza en el environment:
 Si quieres un runner corto equivalente para `04`, usa:
 
 - `10. Runner Flows / EC Credit Note Presigned Flow - Continue After External Signature`
+
+Si quieres un runner corto equivalente para `05`, usa:
+
+- `10. Runner Flows / EC Debit Note Presigned Flow - Continue After External Signature`
 
 Y antes actualiza:
 - `invoiceId`
@@ -584,6 +669,10 @@ Además de los blockers generales, ahora la respuesta también incluye una matri
   - `previewAvailable = true` y `rideAvailable = true`
   - `schemaValidationAvailable = true` cuando el bundle `notaCredito_V1.0.0.xsd` ya existe en `vendor/sri`
   - `submitSupported = true` cuando el repo ya detecta ese XSD local y el carril `04` puede pasar de preview a submit
+- `05`:
+  - `previewAvailable = true` y `rideAvailable = true`
+  - `schemaValidationAvailable = true` cuando el bundle `notaDebito_V1.0.0.xsd` ya existe en `vendor/sri`
+  - `submitSupported = true` cuando el repo ya detecta ese XSD local y el carril `05` puede pasar de preview a submit
 
 ### Importante
 
@@ -595,6 +684,10 @@ Hoy el repo todavía protege el submit `offline` remoto cuando la firma interna 
 Para `nota de crédito (04)`, la restricción práctica ya no es el tipo de documento en sí, sino la presencia del XSD local:
 - si `notaCredito_V1.0.0.xsd` no existe en `vendor/sri`, el submit sigue bloqueado
 - si el bundle ya está instalado, `04` puede recorrer el mismo carril técnico de submit que `01`
+
+Para `nota de débito (05)`, aplica el mismo criterio:
+- si `notaDebito_V1.0.0.xsd` no existe en `vendor/sri`, el submit sigue bloqueado
+- si el bundle ya está instalado, `05` puede recorrer la misma frontera técnica multi-documento
 
 ### Cómo destrabar localmente el XSD de `04`
 
@@ -612,6 +705,33 @@ Y los deja en:
 - [vendor/sri/nota-credito-1.0.0/README.md](/Users/jorgequizamanchuro/Projects_local/saas-platform/vendor/sri/nota-credito-1.0.0/README.md)
 
 Cuando ese bundle exista en `vendor/sri`, el readiness ya podrá reflejar que `04` tiene soporte XSD local y submit habilitado.
+
+### Cómo reinstalar localmente el XSD de `05`
+
+Si ya descargaste manualmente el ZIP oficial desde el SRI, puedes instalarlo al layout esperado del repo con:
+
+```sh
+pnpm install:sri:schema-bundle -- --document-code 05 --zip /ruta/XML-y-XSD-Nota-de-Debito.zip
+```
+
+El script copia al menos:
+- `notaDebito_V1.0.0.xsd`
+- `xmldsig-core-schema.xsd`
+
+Y los deja en:
+- [vendor/sri/nota-debito-1.0.0/README.md](/Users/jorgequizamanchuro/Projects_local/saas-platform/vendor/sri/nota-debito-1.0.0/README.md)
+
+Cuando el bundle ya esté instalado, puedes validarlo de forma aislada con:
+
+```sh
+pnpm validate:sri:xsd:debit-note
+```
+
+Y si además quieres comprobar el estado completo del repo para los documentos que hoy sí están cargados en `vendor/sri`, puedes usar:
+
+```sh
+pnpm validate:sri:xsd
+```
 
 ## 11. Variables del environment que más vas a tocar
 

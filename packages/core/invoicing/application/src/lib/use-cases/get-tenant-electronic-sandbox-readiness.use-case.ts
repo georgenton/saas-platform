@@ -38,10 +38,12 @@ export class GetTenantElectronicSandboxReadinessUseCase {
       issuerProfile,
       invoiceNumberingSettings,
       creditNoteNumberingSettings,
+      debitNoteNumberingSettings,
       signatureSettings,
       submissionSettings,
       invoiceSchemaSupport,
       creditNoteSchemaSupport,
+      debitNoteSchemaSupport,
     ] = await Promise.all([
       this.issuerProfileRepository.findByTenantId(tenant.id),
       this.invoiceNumberingSettingsRepository.findByTenantIdAndDocumentCode(
@@ -52,10 +54,15 @@ export class GetTenantElectronicSandboxReadinessUseCase {
         tenant.id,
         '04',
       ),
+      this.invoiceNumberingSettingsRepository.findByTenantIdAndDocumentCode(
+        tenant.id,
+        '05',
+      ),
       this.electronicSignatureSettingsRepository.findByTenantId(tenant.id),
       this.electronicSubmissionSettingsRepository.findByTenantId(tenant.id),
       this.electronicInvoiceXmlSchemaValidator.describeSupport('01'),
       this.electronicInvoiceXmlSchemaValidator.describeSupport('04'),
+      this.electronicInvoiceXmlSchemaValidator.describeSupport('05'),
     ]);
 
     const checks: ElectronicInvoicingReadinessCheck[] = [];
@@ -303,6 +310,18 @@ export class GetTenantElectronicSandboxReadinessUseCase {
         detail: creditNoteSchemaSupport.isSchemaAvailable
           ? 'La nota de credito 04 ya tiene preview XML, RIDE y validacion XSD local. El carril de submit electronico ya puede probarse con la misma frontera tecnica del documento 01.'
           : `${creditNoteSchemaSupport.detail} El documento 04 queda hoy en modo preview y RIDE, sin submit electronico.`,
+      },
+      {
+        documentCode: '05',
+        label: 'Nota de debito ECU (05)',
+        numberingConfigured: Boolean(debitNoteNumberingSettings),
+        previewAvailable: true,
+        rideAvailable: true,
+        schemaValidationAvailable: debitNoteSchemaSupport.isSchemaAvailable,
+        submitSupported: debitNoteSchemaSupport.isSchemaAvailable,
+        detail: debitNoteSchemaSupport.isSchemaAvailable
+          ? 'La nota de debito 05 ya tiene draft, preview XML, RIDE y validacion XSD local. El carril de submit electronico queda habilitado sobre la misma frontera tecnica multi-documento.'
+          : `${debitNoteSchemaSupport.detail} El documento 05 queda hoy en modo draft, preview y RIDE, sin submit electronico.`,
       },
     ];
 

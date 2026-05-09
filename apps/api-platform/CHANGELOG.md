@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.21.0
+
+### Minor Changes
+
+- fd50454: Add Ecuador withholding certificate (`07`) foundation with draft creation, document numbering, XML preview, RIDE, readiness visibility, and testing assets.
+
 ## 0.20.0
 
 ### Minor Changes

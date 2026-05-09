@@ -40,6 +40,13 @@ export class XmllintSriInvoiceXmlSchemaValidator
       ),
       schemaLabel: 'notaDebito_V1.0.0.xsd',
     },
+    '07': {
+      path: resolve(
+        process.cwd(),
+        'vendor/sri/comprobante-retencion-2.0.0/XML y XSD Comprobante de Retencion/comprobanteRetencion_V2.0.0.xsd',
+      ),
+      schemaLabel: 'comprobanteRetencion_V2.0.0.xsd',
+    },
   };
 
   async validate(input: {

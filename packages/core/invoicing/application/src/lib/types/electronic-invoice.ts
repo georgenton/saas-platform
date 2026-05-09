@@ -100,6 +100,7 @@ export function buildSriElectronicDocumentXmlPreview(input: {
   const documentCode = invoice.documentCode ?? '01';
   const isCreditNote = documentCode === '04';
   const isDebitNote = documentCode === '05';
+  const isWithholding = documentCode === '07';
   const xmlLines =
     isCreditNote
       ? input.document.lines.map((line) => ({
@@ -132,6 +133,25 @@ export function buildSriElectronicDocumentXmlPreview(input: {
         <tarifa>${formatPercentage(group.ratePercentage)}</tarifa>
         <baseImponible>${formatCents(group.baseInCents)}</baseImponible>
         <valor>${formatCents(group.taxInCents)}</valor>
+      </impuesto>`,
+    )
+    .join('');
+  const withholdingTaxesXml = details.lines
+    .map(
+      (line) => `
+      <impuesto>
+        <codigo>${escapeXml(line.taxRatePercentage === null ? '1' : '2')}</codigo>
+        <codigoRetencion>${escapeXml(line.taxRatePercentage === null ? '001' : '001')}</codigoRetencion>
+        <baseImponible>${formatCents(line.lineSubtotalInCents)}</baseImponible>
+        <porcentajeRetener>${formatPercentage(line.taxRatePercentage ?? 0)}</porcentajeRetener>
+        <valorRetenido>${formatCents(line.lineTotalInCents)}</valorRetenido>
+        <codDocSustento>01</codDocSustento>
+        <numDocSustento>${escapeXml(normalizeDigits(invoice.modifiedDocumentNumber ?? ''))}</numDocSustento>
+        <fechaEmisionDocSustento>${escapeXml(
+          invoice.modifiedDocumentIssuedAt
+            ? formatSriIssueDate(invoice.modifiedDocumentIssuedAt)
+            : '',
+        )}</fechaEmisionDocSustento>
       </impuesto>`,
     )
     .join('');
@@ -295,6 +315,38 @@ ${infoTributariaXml}
 `;
   }
 
+  if (isWithholding) {
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<comprobanteRetencion id="comprobante" version="2.0.0">
+${infoTributariaXml}
+  <infoCompRetencion>
+    <fechaEmision>${escapeXml(formatSriIssueDate(invoice.issuedAt))}</fechaEmision>
+    <dirEstablecimiento>${escapeXml(
+      input.document.issuer.establishmentAddress ?? input.document.issuer.matrixAddress ?? '',
+    )}</dirEstablecimiento>
+    ${
+      input.document.issuer.specialTaxpayerCode
+        ? `<contribuyenteEspecial>${escapeXml(
+            input.document.issuer.specialTaxpayerCode,
+          )}</contribuyenteEspecial>`
+        : ''
+    }
+    <obligadoContabilidad>${obligatedAccounting}</obligadoContabilidad>
+    <tipoIdentificacionSujetoRetenido>${escapeXml(
+      input.document.customer.identificationType ?? '',
+    )}</tipoIdentificacionSujetoRetenido>
+    <razonSocialSujetoRetenido>${escapeXml(input.document.customer.name)}</razonSocialSujetoRetenido>
+    <identificacionSujetoRetenido>${escapeXml(
+      input.document.customer.identification ?? input.document.customer.taxId ?? '',
+    )}</identificacionSujetoRetenido>
+    <periodoFiscal>${escapeXml(formatSriFiscalPeriod(invoice.issuedAt))}</periodoFiscal>
+  </infoCompRetencion>
+  <impuestos>${withholdingTaxesXml}
+  </impuestos>
+</comprobanteRetencion>
+`;
+  }
+
   const paymentDelayInDays = invoice.dueAt
     ? Math.max(calculateDiffInDays(invoice.issuedAt, invoice.dueAt), 0)
     : 0;
@@ -366,13 +418,16 @@ export function validateSriElectronicDocumentXml(input: {
   const valorTotal = extractTagValue(xml, 'valorTotal');
   const isCreditNote = codDoc === '04' || xml.includes('<notaCredito ');
   const isDebitNote = codDoc === '05' || xml.includes('<notaDebito ');
+  const isWithholding = codDoc === '07' || xml.includes('<comprobanteRetencion ');
   const rootTag = isCreditNote
     ? 'notaCredito'
     : isDebitNote
       ? 'notaDebito'
+      : isWithholding
+        ? 'comprobanteRetencion'
       : 'factura';
   const versionLabel =
-    isCreditNote || isDebitNote ? '1.0.0' : '2.1.0';
+    isWithholding ? '2.0.0' : isCreditNote || isDebitNote ? '1.0.0' : '2.1.0';
 
   if (!xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')) {
     issues.push('El XML debe comenzar con la declaracion XML UTF-8.');
@@ -381,7 +436,13 @@ export function validateSriElectronicDocumentXml(input: {
   if (!xml.includes(`<${rootTag} id="comprobante" version="${versionLabel}">`)) {
     issues.push(
       `El comprobante debe declarar ${
-        isCreditNote ? 'notaCredito' : isDebitNote ? 'notaDebito' : 'factura'
+        isCreditNote
+          ? 'notaCredito'
+          : isDebitNote
+            ? 'notaDebito'
+            : isWithholding
+              ? 'comprobanteRetencion'
+              : 'factura'
       } version ${versionLabel}.`,
     );
   }
@@ -396,6 +457,8 @@ export function validateSriElectronicDocumentXml(input: {
         ? '<infoNotaCredito>'
         : isDebitNote
           ? '<infoNotaDebito>'
+          : isWithholding
+            ? '<infoCompRetencion>'
           : '<infoFactura>',
     )
   ) {
@@ -405,12 +468,14 @@ export function validateSriElectronicDocumentXml(input: {
           ? 'infoNotaCredito'
           : isDebitNote
             ? 'infoNotaDebito'
+            : isWithholding
+              ? 'infoCompRetencion'
             : 'infoFactura'
       }.`,
     );
   }
 
-  if (!isDebitNote && !xml.includes('<detalles>')) {
+  if (!isDebitNote && !isWithholding && !xml.includes('<detalles>')) {
     issues.push('Falta el bloque detalles.');
   }
 
@@ -435,10 +500,19 @@ export function validateSriElectronicDocumentXml(input: {
     'ptoEmi',
     'secuencial',
     'fechaEmision',
-    'tipoIdentificacionComprador',
-    'razonSocialComprador',
-    'identificacionComprador',
-    ...(isCreditNote ? [] : isDebitNote ? ['valorTotal'] : ['importeTotal']),
+    ...(isWithholding
+      ? [
+          'tipoIdentificacionSujetoRetenido',
+          'razonSocialSujetoRetenido',
+          'identificacionSujetoRetenido',
+          'periodoFiscal',
+        ]
+      : [
+          'tipoIdentificacionComprador',
+          'razonSocialComprador',
+          'identificacionComprador',
+        ]),
+    ...(isCreditNote ? [] : isDebitNote ? ['valorTotal'] : isWithholding ? [] : ['importeTotal']),
   ]) {
     if (!extractTagValue(xml, tagName)) {
       issues.push(`Falta el valor obligatorio ${tagName} en el XML.`);
@@ -460,22 +534,39 @@ export function validateSriElectronicDocumentXml(input: {
   const ruc = extractTagValue(xml, 'ruc');
   const buyerIdentificationType = extractTagValue(
     xml,
-    'tipoIdentificacionComprador',
+    isWithholding
+      ? 'tipoIdentificacionSujetoRetenido'
+      : 'tipoIdentificacionComprador',
   );
-  const buyerName = extractTagValue(xml, 'razonSocialComprador');
-  const buyerIdentification = extractTagValue(xml, 'identificacionComprador');
+  const buyerName = extractTagValue(
+    xml,
+    isWithholding ? 'razonSocialSujetoRetenido' : 'razonSocialComprador',
+  );
+  const buyerIdentification = extractTagValue(
+    xml,
+    isWithholding
+      ? 'identificacionSujetoRetenido'
+      : 'identificacionComprador',
+  );
   const buyerAddress = extractTagValue(xml, 'direccionComprador');
   const totalSinImpuestos = extractTagValue(xml, 'totalSinImpuestos');
   const importeTotal = isCreditNote
     ? valorModificacion
     : isDebitNote
       ? valorTotal
+      : isWithholding
+        ? null
       : extractTagValue(xml, 'importeTotal');
-  const moneda = isDebitNote ? null : extractTagValue(xml, 'moneda');
-  const paymentTotal = isCreditNote ? null : extractTagValue(xml, 'total');
+  const moneda = isDebitNote || isWithholding ? null : extractTagValue(xml, 'moneda');
+  const paymentTotal = isCreditNote || isWithholding ? null : extractTagValue(xml, 'total');
   const totalDescuento =
-    isCreditNote || isDebitNote ? '0.00' : extractTagValue(xml, 'totalDescuento');
-  const propina = isCreditNote || isDebitNote ? '0.00' : extractTagValue(xml, 'propina');
+    isCreditNote || isDebitNote || isWithholding
+      ? '0.00'
+      : extractTagValue(xml, 'totalDescuento');
+  const propina =
+    isCreditNote || isDebitNote || isWithholding
+      ? '0.00'
+      : extractTagValue(xml, 'propina');
   const infoTributariaBlocks = extractTagBlocks(xml, 'infoTributaria');
   const infoComprobanteBlocks = extractTagBlocks(
     xml,
@@ -483,6 +574,8 @@ export function validateSriElectronicDocumentXml(input: {
       ? 'infoNotaCredito'
       : isDebitNote
         ? 'infoNotaDebito'
+        : isWithholding
+          ? 'infoCompRetencion'
         : 'infoFactura',
   );
   const pagosBlocks = extractTagBlocks(xml, 'pagos');
@@ -490,6 +583,8 @@ export function validateSriElectronicDocumentXml(input: {
   const detalleBlocks = extractTagBlocks(xml, 'detalle');
   const totalImpuestoBlocks = isDebitNote
     ? extractTagBlocks(xml, 'impuesto')
+    : isWithholding
+      ? extractTagBlocks(xml, 'impuesto')
     : extractTagBlocks(xml, 'totalImpuesto');
   const codDocModificado = extractTagValue(xml, 'codDocModificado');
   const numDocModificado = extractTagValue(xml, 'numDocModificado');
@@ -498,6 +593,7 @@ export function validateSriElectronicDocumentXml(input: {
     'fechaEmisionDocSustento',
   );
   const motivoBlocks = extractTagBlocks(xml, 'motivo');
+  const periodoFiscal = extractTagValue(xml, 'periodoFiscal');
 
   if (infoTributariaBlocks.length !== 1) {
     issues.push('El XML debe contener exactamente un bloque infoTributaria.');
@@ -510,12 +606,14 @@ export function validateSriElectronicDocumentXml(input: {
           ? 'infoNotaCredito'
           : isDebitNote
             ? 'infoNotaDebito'
+            : isWithholding
+              ? 'infoCompRetencion'
             : 'infoFactura'
       }.`,
     );
   }
 
-  if (!isCreditNote) {
+  if (!isCreditNote && !isWithholding) {
     if (pagosBlocks.length !== 1) {
       issues.push('El XML debe contener exactamente un bloque pagos.');
     }
@@ -579,7 +677,7 @@ export function validateSriElectronicDocumentXml(input: {
     issues.push('La razon social del comprador debe tener contenido suficiente.');
   }
 
-  if (!isDebitNote && (!buyerAddress || buyerAddress.trim().length < 5)) {
+  if (!isDebitNote && !isWithholding && (!buyerAddress || buyerAddress.trim().length < 5)) {
     issues.push('La direccion del comprador debe estar informada.');
   }
 
@@ -591,12 +689,14 @@ export function validateSriElectronicDocumentXml(input: {
     );
   }
 
-  if (!isDebitNote && detalleBlocks.length === 0) {
+  if (!isDebitNote && !isWithholding && detalleBlocks.length === 0) {
     issues.push('La factura electronica debe contener al menos un detalle.');
   }
 
   const parsedSubtotal = isDebitNote
     ? sumTagValues(motivoBlocks, 'valor')
+    : isWithholding
+      ? sumTagValues(totalImpuestoBlocks, 'valorRetenido')
     : parseAmount(totalSinImpuestos);
   const parsedTotal = parseAmount(importeTotal);
   const parsedPaymentTotal = parseAmount(paymentTotal);
@@ -612,7 +712,7 @@ export function validateSriElectronicDocumentXml(input: {
     issues.push('totalDescuento debe ser un decimal valido con dos decimales.');
   }
 
-  if (parsedTotal === null) {
+  if (!isWithholding && parsedTotal === null) {
     issues.push('importeTotal debe ser un decimal valido con dos decimales.');
   }
 
@@ -620,11 +720,11 @@ export function validateSriElectronicDocumentXml(input: {
     issues.push('propina debe ser un decimal valido con dos decimales.');
   }
 
-  if (parsedPaymentTotal === null) {
+  if (!isWithholding && parsedPaymentTotal === null) {
     issues.push('El total del bloque pagos debe ser un decimal valido con dos decimales.');
   }
 
-  if (!isDebitNote && (!moneda || !/^[A-Z]{3}$/.test(moneda))) {
+  if (!isDebitNote && !isWithholding && (!moneda || !/^[A-Z]{3}$/.test(moneda))) {
     issues.push('La moneda debe estar en formato ISO de 3 letras mayusculas.');
   }
 
@@ -732,6 +832,80 @@ export function validateSriElectronicDocumentXml(input: {
         }
       }
     }
+  } else if (isWithholding) {
+    if (codDoc !== '07') {
+      issues.push('El comprobante de retencion debe declarar codDoc 07.');
+    }
+
+    if (!periodoFiscal || !/^\d{2}\/\d{4}$/.test(periodoFiscal)) {
+      issues.push(
+        'El comprobante de retencion debe incluir periodoFiscal con formato mm/yyyy.',
+      );
+    }
+
+    if (totalImpuestoBlocks.length === 0) {
+      issues.push('El comprobante de retencion debe contener al menos un impuesto.');
+    } else {
+      for (const impuestoBlock of totalImpuestoBlocks) {
+        const codigo = extractTagValue(impuestoBlock, 'codigo');
+        const codigoRetencion = extractTagValue(impuestoBlock, 'codigoRetencion');
+        const baseImponible = extractTagValue(impuestoBlock, 'baseImponible');
+        const porcentajeRetener = extractTagValue(impuestoBlock, 'porcentajeRetener');
+        const valorRetenido = extractTagValue(impuestoBlock, 'valorRetenido');
+        const codDocSustento = extractTagValue(impuestoBlock, 'codDocSustento');
+        const numDocSustento = extractTagValue(impuestoBlock, 'numDocSustento');
+        const fechaDocSustento = extractTagValue(
+          impuestoBlock,
+          'fechaEmisionDocSustento',
+        );
+
+        if (!codigo || !/^\d+$/.test(codigo)) {
+          issues.push('Cada impuesto de retencion debe incluir un codigo numerico.');
+        }
+
+        if (!codigoRetencion || !/^\d+$/.test(codigoRetencion)) {
+          issues.push(
+            'Cada impuesto de retencion debe incluir un codigoRetencion numerico.',
+          );
+        }
+
+        if (parseAmount(baseImponible) === null) {
+          issues.push(
+            'Cada impuesto de retencion debe incluir una baseImponible decimal valida.',
+          );
+        }
+
+        if (!porcentajeRetener || !/^\d+\.\d{2}$/.test(porcentajeRetener)) {
+          issues.push(
+            'Cada impuesto de retencion debe incluir un porcentajeRetener decimal valido.',
+          );
+        }
+
+        if (parseAmount(valorRetenido) === null) {
+          issues.push(
+            'Cada impuesto de retencion debe incluir un valorRetenido decimal valido.',
+          );
+        }
+
+        if (codDocSustento !== '01') {
+          issues.push(
+            'Cada impuesto de retencion debe declarar codDocSustento 01 para este MVP.',
+          );
+        }
+
+        if (!numDocSustento || normalizeDigits(numDocSustento).length < 9) {
+          issues.push(
+            'Cada impuesto de retencion debe incluir un numDocSustento suficiente.',
+          );
+        }
+
+        if (!fechaDocSustento || !/^\d{2}\/\d{2}\/\d{4}$/.test(fechaDocSustento)) {
+          issues.push(
+            'Cada impuesto de retencion debe incluir fechaEmisionDocSustento con formato dd/mm/yyyy.',
+          );
+        }
+      }
+    }
   } else if (codDoc && codDoc !== '01') {
     issues.push('La factura electronica debe declarar codDoc 01.');
   }
@@ -749,6 +923,7 @@ export function validateSriElectronicDocumentXml(input: {
   }
 
   if (
+    !isWithholding &&
     parsedSubtotal !== null &&
     parsedTotal !== null &&
     parsedSubtotal + headerTaxSum !== parsedTotal
@@ -760,6 +935,7 @@ export function validateSriElectronicDocumentXml(input: {
 
   if (
     !isCreditNote &&
+    !isWithholding &&
     parsedTotal !== null &&
     parsedPaymentTotal !== null &&
     parsedTotal !== parsedPaymentTotal
@@ -767,11 +943,13 @@ export function validateSriElectronicDocumentXml(input: {
     issues.push('El bloque pagos debe coincidir con el importe total de la factura.');
   }
 
-  if (!isCreditNote) {
+  if (!isCreditNote && !isWithholding) {
     validatePaymentBlocks(pagoBlocks, issues);
   }
   if (isDebitNote) {
     validateDebitTaxBlocks(totalImpuestoBlocks, issues);
+  } else if (isWithholding) {
+    validateWithholdingTaxBlocks(totalImpuestoBlocks, issues);
   } else {
     validateTotalTaxBlocks(totalImpuestoBlocks, issues);
     validateDetailBlocks(detalleBlocks, issues);
@@ -898,6 +1076,10 @@ function formatPercentage(value: number): string {
 
 function formatQuantity(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
+function formatSriFiscalPeriod(value: Date): string {
+  return `${String(value.getUTCMonth() + 1).padStart(2, '0')}/${value.getUTCFullYear()}`;
 }
 
 function escapeXml(value: string): string {
@@ -1075,6 +1257,53 @@ function validateDebitTaxBlocks(blocks: string[], issues: string[]): void {
 
     if (parseAmount(valor) === null) {
       issues.push('Cada impuesto de nota de debito debe incluir un valor decimal valido.');
+    }
+  }
+}
+
+function validateWithholdingTaxBlocks(blocks: string[], issues: string[]): void {
+  if (blocks.length === 0) {
+    issues.push(
+      'El comprobante de retencion debe contener al menos un impuesto en cabecera.',
+    );
+    return;
+  }
+
+  for (const block of blocks) {
+    const codigo = extractTagValue(block, 'codigo');
+    const codigoRetencion = extractTagValue(block, 'codigoRetencion');
+    const baseImponible = extractTagValue(block, 'baseImponible');
+    const porcentajeRetener = extractTagValue(block, 'porcentajeRetener');
+    const valorRetenido = extractTagValue(block, 'valorRetenido');
+
+    if (!codigo || !/^\d+$/.test(codigo)) {
+      issues.push(
+        'Cada impuesto de retencion debe incluir un codigo numerico valido.',
+      );
+    }
+
+    if (!codigoRetencion || !/^\d+$/.test(codigoRetencion)) {
+      issues.push(
+        'Cada impuesto de retencion debe incluir un codigoRetencion numerico valido.',
+      );
+    }
+
+    if (parseAmount(baseImponible) === null) {
+      issues.push(
+        'Cada impuesto de retencion debe incluir una baseImponible decimal valida.',
+      );
+    }
+
+    if (!porcentajeRetener || !/^\d+\.\d{2}$/.test(porcentajeRetener)) {
+      issues.push(
+        'Cada impuesto de retencion debe incluir un porcentajeRetener decimal valido.',
+      );
+    }
+
+    if (parseAmount(valorRetenido) === null) {
+      issues.push(
+        'Cada impuesto de retencion debe incluir un valorRetenido decimal valido.',
+      );
     }
   }
 }

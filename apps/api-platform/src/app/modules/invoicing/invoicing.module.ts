@@ -11,6 +11,7 @@ import {
   CreateTenantCustomerUseCase,
   CreateTenantCreditNoteUseCase,
   CreateTenantDebitNoteUseCase,
+  CreateTenantWithholdingUseCase,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
   CreateTenantInvoicePaymentUseCase,
@@ -456,6 +457,36 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
         taxRateRepository,
       ) =>
         new CreateTenantDebitNoteUseCase(
+          tenantRepository,
+          invoiceRepository,
+          invoiceItemRepository,
+          invoiceIdGenerator,
+          invoiceItemIdGenerator,
+          invoiceNumberingSettingsRepository,
+          taxRateRepository,
+        ),
+    },
+    {
+      provide: CreateTenantWithholdingUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+        INVOICE_ID_GENERATOR,
+        INVOICE_ITEM_ID_GENERATOR,
+        INVOICE_NUMBERING_SETTINGS_REPOSITORY,
+        TAX_RATE_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        invoiceRepository,
+        invoiceItemRepository,
+        invoiceIdGenerator,
+        invoiceItemIdGenerator,
+        invoiceNumberingSettingsRepository,
+        taxRateRepository,
+      ) =>
+        new CreateTenantWithholdingUseCase(
           tenantRepository,
           invoiceRepository,
           invoiceItemRepository,

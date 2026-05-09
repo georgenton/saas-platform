@@ -89,6 +89,53 @@ const bundleRegistry = {
       },
     ],
   },
+  '07': {
+    label: 'Comprobante de retencion ECU',
+    targetDir: resolve(
+      process.cwd(),
+      'vendor/sri/comprobante-retencion-2.0.0/XML y XSD Comprobante de Retencion',
+    ),
+    requiredFiles: [
+      {
+        targetName: 'comprobanteRetencion_V2.0.0.xsd',
+        sourceNames: [
+          'comprobanteRetencion_V2.0.0.xsd',
+          'ComprobanteRetencion_V2.0.0.xsd',
+        ],
+      },
+      {
+        targetName: 'xmldsig-core-schema.xsd',
+        sourceNames: ['xmldsig-core-schema.xsd'],
+        fallbackPath: resolve(
+          process.cwd(),
+          'vendor/sri/factura-2.1.0/XML y XSD Factura/xmldsig-core-schema.xsd',
+        ),
+      },
+    ],
+    optionalFiles: [
+      {
+        targetName: 'comprobanteRetencion_V2.0.0.xml',
+        sourceNames: [
+          'comprobanteRetencion_V2.0.0.xml',
+          'ComprobanteRetencion_V2.0.0.xml',
+        ],
+      },
+      {
+        targetName: 'comprobanteRetencion_V1.0.0.xsd',
+        sourceNames: [
+          'comprobanteRetencion_V1.0.0.xsd',
+          'ComprobanteRetencion_V1.0.0.xsd',
+        ],
+      },
+      {
+        targetName: 'comprobanteRetencion_V1.0.0.xml',
+        sourceNames: [
+          'comprobanteRetencion_V1.0.0.xml',
+          'ComprobanteRetencion_V1.0.0.xml',
+        ],
+      },
+    ],
+  },
 };
 
 async function main() {
@@ -186,7 +233,7 @@ function parseArgs(argv) {
 
   if (!documentCode || !zip) {
     throw new Error(
-      'Uso: node tools/sri/install-sri-schema-bundle.mjs --document-code <01|04|05> --zip </ruta/al/zip>',
+      'Uso: node tools/sri/install-sri-schema-bundle.mjs --document-code <01|04|05|07> --zip </ruta/al/zip>',
     );
   }
 

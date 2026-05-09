@@ -351,7 +351,11 @@ function buildRideAdditionalInfoFields(
     },
   ];
 
-  if (invoice.documentCode === '04' || invoice.documentCode === '05') {
+  if (
+    invoice.documentCode === '04' ||
+    invoice.documentCode === '05' ||
+    invoice.documentCode === '07'
+  ) {
     fields.push(
       {
         label: 'Documento modificado',
@@ -422,6 +426,8 @@ function formatRideDocumentLabel(documentCode: string | null): string {
       return 'RIDE Nota de credito';
     case '05':
       return 'RIDE Nota de debito';
+    case '07':
+      return 'RIDE Comprobante de retencion';
     default:
       return 'RIDE';
   }
@@ -439,6 +445,8 @@ function formatDocumentTitle(
       return 'Credit Note';
     case '05':
       return 'Debit Note';
+    case '07':
+      return 'Withholding Certificate';
     default:
       return 'Document';
   }

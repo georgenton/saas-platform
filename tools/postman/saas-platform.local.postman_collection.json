@@ -644,7 +644,10 @@
                   "pm.environment.set('creditNote04SchemaValidationAvailable', String(Boolean(creditNoteSupport && creditNoteSupport.schemaValidationAvailable)));",
                   "const debitNoteSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '05') : null;",
                   "pm.environment.set('debitNote05SubmitSupported', String(Boolean(debitNoteSupport && debitNoteSupport.submitSupported)));",
-                  "pm.environment.set('debitNote05SchemaValidationAvailable', String(Boolean(debitNoteSupport && debitNoteSupport.schemaValidationAvailable)));"
+                  "pm.environment.set('debitNote05SchemaValidationAvailable', String(Boolean(debitNoteSupport && debitNoteSupport.schemaValidationAvailable)));",
+                  "const withholdingSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '07') : null;",
+                  "pm.environment.set('withholding07SubmitSupported', String(Boolean(withholdingSupport && withholdingSupport.submitSupported)));",
+                  "pm.environment.set('withholding07SchemaValidationAvailable', String(Boolean(withholdingSupport && withholdingSupport.schemaValidationAvailable)));"
                 ]
               }
             }
@@ -786,6 +789,45 @@
               }
             },
             "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/debit-note"
+          }
+        },
+        {
+          "name": "Get Withholding Numbering",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/withholding"
+          }
+        },
+        {
+          "name": "Upsert Withholding Numbering",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"establishmentCode\": \"{{withholdingEstablishmentCode}}\",\n  \"emissionPointCode\": \"{{withholdingEmissionPointCode}}\",\n  \"nextSequenceNumber\": {{withholdingNextSequenceNumber}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/withholding"
           }
         },
         {
@@ -1182,6 +1224,127 @@
                   "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
                   "const data = pm.response.json();",
                   "if (data.ride && data.ride.sequenceDisplay) pm.environment.set('debitNoteSequenceDisplay', data.ride.sequenceDisplay);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Withholding From Invoice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.invoice && data.invoice.id) pm.environment.set('withholdingId', data.invoice.id);",
+                  "if (data.invoice && data.invoice.number) pm.environment.set('withholdingNumber', data.invoice.number);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceInvoiceId\": \"{{invoiceId}}\",\n  \"reason\": \"{{withholdingReason}}\",\n  \"amountInCents\": {{withholdingAmountInCents}},\n  \"taxRateId\": \"{{withholdingTaxRateId}}\",\n  \"issuedAt\": \"{{withholdingIssuedAt}}\",\n  \"notes\": \"{{withholdingNotes}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/withholdings"
+          }
+        },
+        {
+          "name": "Get Withholding Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('withholdingId', data.id);",
+                  "if (data.number) pm.environment.set('withholdingNumber', data.number);",
+                  "if (data.accessKey) pm.environment.set('withholdingAccessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('withholdingSubmissionReference', data.submissionReference);",
+                  "if (data.authorizationNumber) pm.environment.set('withholdingAuthorizationNumber', data.authorizationNumber);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Withholding XML Preview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/xml"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.environment.set('withholdingXmlPreview', pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Withholding RIDE",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/ride"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.ride && data.ride.sequenceDisplay) pm.environment.set('withholdingSequenceDisplay', data.ride.sequenceDisplay);"
                 ]
               }
             }
@@ -1960,6 +2123,165 @@
               }
             ],
             "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{debitNoteId}}/electronic-document/check-authorization"
+          }
+        },
+        {
+          "name": "Get Withholding RIDE HTML",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/ride/html"
+          }
+        },
+        {
+          "name": "Get Withholding Artifacts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.fileBaseName) pm.environment.set('withholdingArtifactsFileBaseName', data.fileBaseName);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/artifacts"
+          }
+        },
+        {
+          "name": "Download Withholding RIDE",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/ride/download"
+          }
+        },
+        {
+          "name": "Download Withholding XML",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/xml/download"
+          }
+        },
+        {
+          "name": "Submit Withholding Electronic Document (stub signer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.accessKey) pm.environment.set('withholdingAccessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('withholdingSubmissionReference', data.submissionReference);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/submit"
+          }
+        },
+        {
+          "name": "Submit Withholding Presigned Electronic Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.accessKey) pm.environment.set('withholdingAccessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('withholdingSubmissionReference', data.submissionReference);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signedXml\": {{withholdingPresignedXmlJson}},\n  \"signerName\": {{externalSignerNameJson}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/submit-presigned"
+          }
+        },
+        {
+          "name": "Check Withholding Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.submissionReference) pm.environment.set('withholdingSubmissionReference', data.submissionReference);",
+                  "if (data.authorizationNumber) pm.environment.set('withholdingAuthorizationNumber', data.authorizationNumber);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/check-authorization"
           }
         }
       ]
@@ -2911,7 +3233,10 @@
                       "const data = pm.response.json();",
                       "const debitNoteSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '05') : null;",
                       "pm.environment.set('debitNote05SubmitSupported', String(Boolean(debitNoteSupport && debitNoteSupport.submitSupported)));",
-                      "pm.environment.set('debitNote05SchemaValidationAvailable', String(Boolean(debitNoteSupport && debitNoteSupport.schemaValidationAvailable)));"
+                      "pm.environment.set('debitNote05SchemaValidationAvailable', String(Boolean(debitNoteSupport && debitNoteSupport.schemaValidationAvailable)));",
+                      "const withholdingSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '07') : null;",
+                      "pm.environment.set('withholding07SubmitSupported', String(Boolean(withholdingSupport && withholdingSupport.submitSupported)));",
+                      "pm.environment.set('withholding07SchemaValidationAvailable', String(Boolean(withholdingSupport && withholdingSupport.schemaValidationAvailable)));"
                     ]
                   }
                 }
@@ -3011,7 +3336,7 @@
               ]
             },
             {
-              "name": "Step 08 / Get Debit Note Detail",
+              "name": "Step 06 / Get Debit Note Detail",
               "request": {
                 "method": "GET",
                 "header": [
@@ -3038,7 +3363,7 @@
               ]
             },
             {
-              "name": "Step 09 / Get Debit Note RIDE",
+              "name": "Step 07 / Get Debit Note RIDE",
               "request": {
                 "method": "GET",
                 "header": [
@@ -3051,7 +3376,7 @@
               }
             },
             {
-              "name": "Step 10 / Get Debit Note Artifacts",
+              "name": "Step 08 / Get Debit Note Artifacts",
               "request": {
                 "method": "GET",
                 "header": [
@@ -3233,6 +3558,452 @@
                       "if (data.accessKey) pm.environment.set('debitNoteAccessKey', data.accessKey);",
                       "if (data.submissionReference) pm.environment.set('debitNoteSubmissionReference', data.submissionReference);",
                       "if (data.authorizationNumber) pm.environment.set('debitNoteAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "EC Withholding Happy Path - Stub",
+          "item": [
+            {
+              "name": "Step 01 / Upsert Withholding Numbering",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"establishmentCode\": \"{{withholdingEstablishmentCode}}\",\n  \"emissionPointCode\": \"{{withholdingEmissionPointCode}}\",\n  \"nextSequenceNumber\": {{withholdingNextSequenceNumber}}\n}"
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/withholding"
+              }
+            },
+            {
+              "name": "Step 02 / Get Sandbox Readiness",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-document/readiness"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "const withholdingSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '07') : null;",
+                      "pm.environment.set('withholding07SubmitSupported', String(Boolean(withholdingSupport && withholdingSupport.submitSupported)));",
+                      "pm.environment.set('withholding07SchemaValidationAvailable', String(Boolean(withholdingSupport && withholdingSupport.schemaValidationAvailable)));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 03 / Create Withholding From Invoice",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sourceInvoiceId\": \"{{invoiceId}}\",\n  \"reason\": \"{{withholdingReason}}\",\n  \"amountInCents\": {{withholdingAmountInCents}},\n  \"taxRateId\": \"{{withholdingTaxRateId}}\",\n  \"issuedAt\": \"{{withholdingIssuedAt}}\",\n  \"notes\": \"{{withholdingNotes}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/withholdings"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.invoice && data.invoice.id) pm.environment.set('withholdingId', data.invoice.id);",
+                      "if (data.invoice && data.invoice.number) pm.environment.set('withholdingNumber', data.invoice.number);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 04 / Get Withholding Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) pm.environment.set('withholdingId', data.id);",
+                      "if (data.number) pm.environment.set('withholdingNumber', data.number);",
+                      "if (data.accessKey) pm.environment.set('withholdingAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('withholdingSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('withholdingAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 05 / Get Withholding XML Preview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/xml"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "pm.environment.set('withholdingXmlPreview', pm.response.text());"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 06 / Submit Withholding Electronic Document (stub signer)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('withholdingAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('withholdingSubmissionReference', data.submissionReference);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/submit"
+              }
+            },
+            {
+              "name": "Step 07 / Check Withholding Authorization",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.submissionReference) pm.environment.set('withholdingSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('withholdingAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/check-authorization"
+              }
+            },
+            {
+              "name": "Step 08 / Get Withholding Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "if (data.id) pm.environment.set('withholdingId', data.id);",
+                      "if (data.number) pm.environment.set('withholdingNumber', data.number);",
+                      "if (data.accessKey) pm.environment.set('withholdingAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('withholdingSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('withholdingAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 09 / Get Withholding RIDE",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/ride"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "if (data.ride && data.ride.sequenceDisplay) pm.environment.set('withholdingSequenceDisplay', data.ride.sequenceDisplay);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 10 / Get Withholding Artifacts",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "if (data.fileBaseName) pm.environment.set('withholdingArtifactsFileBaseName', data.fileBaseName);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/artifacts"
+              }
+            }
+          ]
+        },
+        {
+          "name": "EC Withholding Presigned Flow - Continue After External Signature",
+          "item": [
+            {
+              "name": "Step 01 / Create Withholding From Invoice",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sourceInvoiceId\": \"{{invoiceId}}\",\n  \"reason\": \"{{withholdingReason}}\",\n  \"amountInCents\": {{withholdingAmountInCents}},\n  \"taxRateId\": \"{{withholdingTaxRateId}}\",\n  \"issuedAt\": \"{{withholdingIssuedAt}}\",\n  \"notes\": \"{{withholdingNotes}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/withholdings"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.invoice && data.invoice.id) pm.environment.set('withholdingId', data.invoice.id);",
+                      "if (data.invoice && data.invoice.number) pm.environment.set('withholdingNumber', data.invoice.number);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 02 / Get Withholding XML Preview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/xml"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "pm.environment.set('withholdingXmlPreview', pm.response.text());"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 03 / Submit Withholding Presigned XML",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"signedXml\": {{withholdingPresignedXmlJson}},\n  \"signerName\": {{externalSignerNameJson}}\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/submit-presigned"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('withholdingAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('withholdingSubmissionReference', data.submissionReference);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 04 / Check Withholding Authorization",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}/electronic-document/check-authorization"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.submissionReference) pm.environment.set('withholdingSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('withholdingAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 05 / Get Withholding Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{withholdingId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('withholdingAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('withholdingSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('withholdingAuthorizationNumber', data.authorizationNumber);"
                     ]
                   }
                 }

@@ -137,7 +137,7 @@ La coleccion cubre:
 - suscripcion comercial del tenant
 - invitations
 - setup fiscal Ecuador
-- numeracion por tipo de documento (`01` factura, `04` nota de credito, `05` nota de debito)
+- numeracion por tipo de documento (`01` factura, `04` nota de credito, `05` nota de debito, `07` comprobante de retencion)
 - customers
 - taxes
 - invoices
@@ -152,6 +152,8 @@ La coleccion cubre:
 - check authorization
 - carril dedicado de nota de credito (`04`) con submit, artifacts y runners propios
 - carril de nota de debito (`05`) con submit, artifacts y runners propios
+- foundation de comprobante de retencion (`07`) con draft, XML preview, RIDE y artifacts
+- carril de comprobante de retencion (`07`) con submit, artifacts y runners propios
 
 ### Automatizaciones incluidas
 
@@ -186,6 +188,8 @@ La coleccion guarda automaticamente en el environment:
 - `creditNote04SchemaValidationAvailable`
 - `debitNote05SubmitSupported`
 - `debitNote05SchemaValidationAvailable`
+- `withholding07SubmitSupported`
+- `withholding07SchemaValidationAvailable`
 - `debitNoteId`
 - `debitNoteNumber`
 - `debitNoteAccessKey`
@@ -194,6 +198,11 @@ La coleccion guarda automaticamente en el environment:
 - `debitNoteXmlPreview`
 - `debitNoteArtifactsFileBaseName`
 - `debitNoteSequenceDisplay`
+- `withholdingId`
+- `withholdingNumber`
+- `withholdingXmlPreview`
+- `withholdingArtifactsFileBaseName`
+- `withholdingSequenceDisplay`
 
 ### Qué debes cargar manualmente
 
@@ -210,6 +219,8 @@ La colección ahora también trae un folder específico:
 - `10. Runner Flows / EC Credit Note Presigned Flow - Continue After External Signature`
 - `10. Runner Flows / EC Debit Note Happy Path - Stub`
 - `10. Runner Flows / EC Debit Note Presigned Flow - Continue After External Signature`
+- `10. Runner Flows / EC Withholding Happy Path - Stub`
+- `10. Runner Flows / EC Withholding Presigned Flow - Continue After External Signature`
 
 Eso te permite correr un lote ordenado desde Postman Runner sin ir abriendo request por request.
 
@@ -267,9 +278,10 @@ Corre en este orden:
 4. `04. Invoicing Setup / Upsert Invoice Numbering`
 5. `04. Invoicing Setup / Upsert Credit Note Numbering` si quieres abrir el carril `04`
 6. `04. Invoicing Setup / Upsert Debit Note Numbering` si quieres abrir el carril `05`
-7. `04. Invoicing Setup / Upsert Electronic Signature`
-8. `04. Invoicing Setup / Upsert Electronic Submission`
-9. `04. Invoicing Setup / Get Electronic Sandbox Readiness`
+7. `04. Invoicing Setup / Upsert Withholding Numbering` si quieres abrir el carril `07`
+8. `04. Invoicing Setup / Upsert Electronic Signature`
+9. `04. Invoicing Setup / Upsert Electronic Submission`
+10. `04. Invoicing Setup / Get Electronic Sandbox Readiness`
 
 ### Qué esperar
 
@@ -278,6 +290,7 @@ Corre en este orden:
 - numeración tipo `001-002-000000031` para factura (`01`)
 - opcionalmente numeración independiente para nota de crédito (`04`)
 - opcionalmente numeración independiente para nota de débito (`05`)
+- opcionalmente numeración independiente para comprobante de retención (`07`)
 - firma configurada
 - gateway configurado
 - readiness indicando si el tenant puede o no pasar a sandbox remoto real
@@ -423,6 +436,39 @@ En esta fase, la nota de débito ya tiene:
 - validación XSD local
 - submit stub y prefirmado cuando el tenant esté listo
 
+### 8.5.c Crear un comprobante de retención borrador (`07`)
+
+Cuando ya tengas una factura origen y quieras abrir el carril inicial de retención, usa:
+
+1. `06. Invoicing Invoices / Create Withholding From Invoice`
+2. `06. Invoicing Invoices / Get Withholding Detail`
+
+La colección guardará automáticamente:
+- `withholdingId`
+- `withholdingNumber`
+- `withholdingXmlPreview`
+- `withholdingArtifactsFileBaseName`
+- `withholdingSequenceDisplay`
+
+### Qué esperar
+
+- documento con `documentCode = 07`
+- numeración independiente del carril de retención si configuraste `Upsert Withholding Numbering`
+- referencia al comprobante sustento
+- una primera línea creada desde el motivo y valor retenido inicial
+- RIDE y XML preview ya disponibles
+
+### Estado electrónico actual del `07`
+
+En esta fase, el comprobante de retención ya tiene:
+- borrador comercial
+- RIDE
+- preview XML
+- artifacts descargables
+- matriz de readiness por documento
+- validación XSD local
+- submit stub y prefirmado cuando el tenant esté listo
+
 ## 8.6 Runner batch para el camino stub
 
 Si ya tienes:
@@ -497,8 +543,45 @@ Ese folder corre en este orden:
 3. create debit note
 4. debit note detail
 5. debit note XML preview
-6. debit note RIDE
-7. debit note artifacts
+6. debit note submit stub
+7. debit note check authorization
+8. debit note detail final
+9. debit note RIDE
+10. debit note artifacts
+
+Antes de lanzarlo, asegúrate de que el environment ya tenga:
+- `ownerToken`
+- `tenantSlug`
+- `invoiceId` de una factura origen válida
+
+### Runner batch específico para comprobante de retención stub
+
+Cuando ya tengas una factura origen y quieras probar el carril `07` sin ir request por request, usa:
+
+- `10. Runner Flows / EC Withholding Happy Path - Stub`
+
+Ese folder corre en este orden:
+1. withholding numbering
+2. sandbox readiness
+3. create withholding
+4. withholding detail
+5. withholding XML preview
+6. withholding submit stub
+7. withholding check authorization
+8. withholding detail final
+9. withholding RIDE
+10. withholding artifacts
+
+Antes de lanzarlo, asegúrate de que el environment ya tenga:
+- `ownerToken`
+- `tenantSlug`
+- `invoiceId` de una factura origen válida
+
+### Runner batch específico para comprobante de retención prefirmado
+
+Si ya cuentas con un XML firmado externamente para `07`, usa:
+
+- `10. Runner Flows / EC Withholding Presigned Flow - Continue After External Signature`
 
 Antes de lanzarlo, asegúrate de que el environment ya tenga:
 - `ownerToken`
@@ -533,6 +616,11 @@ Para `05`, usa estas variantes. En este branch el XSD local ya viene soportado p
 1. `09. Invoicing Electronic Document / Submit Debit Note Electronic Document (stub signer)`
 2. `09. Invoicing Electronic Document / Check Debit Note Authorization`
 3. `06. Invoicing Invoices / Get Debit Note Detail`
+
+Para `07`, usa estas variantes:
+1. `09. Invoicing Electronic Document / Submit Withholding Electronic Document (stub signer)`
+2. `09. Invoicing Electronic Document / Check Withholding Authorization`
+3. `06. Invoicing Invoices / Get Withholding Detail`
 
 ## 9.2 Camino B: submit prefirmado
 
@@ -590,6 +678,11 @@ Para `05`, usa estas variantes:
 2. `09. Invoicing Electronic Document / Check Debit Note Authorization`
 3. `06. Invoicing Invoices / Get Debit Note Detail`
 
+Para `07`, usa estas variantes:
+1. `09. Invoicing Electronic Document / Submit Withholding Presigned Electronic Document`
+2. `09. Invoicing Electronic Document / Check Withholding Authorization`
+3. `06. Invoicing Invoices / Get Withholding Detail`
+
 ## 9.3 Runner batch para el camino prefirmado
 
 Cuando ya tengas un XML firmado externamente, puedes correr un lote corto desde:
@@ -617,9 +710,13 @@ Si quieres un runner corto equivalente para `05`, usa:
 
 - `10. Runner Flows / EC Debit Note Presigned Flow - Continue After External Signature`
 
+Si quieres un runner corto equivalente para `07`, usa:
+
+- `10. Runner Flows / EC Withholding Presigned Flow - Continue After External Signature`
+
 Y antes actualiza:
 - `invoiceId`
-- `creditNotePresignedXmlJson`
+- `withholdingPresignedXmlJson`
 - opcionalmente `externalSignerNameJson`
 
 El runner se encargará de:
@@ -673,6 +770,10 @@ Además de los blockers generales, ahora la respuesta también incluye una matri
   - `previewAvailable = true` y `rideAvailable = true`
   - `schemaValidationAvailable = true` cuando el bundle `notaDebito_V1.0.0.xsd` ya existe en `vendor/sri`
   - `submitSupported = true` cuando el repo ya detecta ese XSD local y el carril `05` puede pasar de preview a submit
+- `07`:
+  - `previewAvailable = true` y `rideAvailable = true`
+  - `schemaValidationAvailable = true` cuando el bundle `comprobanteRetencion_V2.0.0.xsd` ya existe en `vendor/sri`
+  - `submitSupported = true` cuando el repo ya detecta ese XSD local y el carril `07` puede pasar de preview a submit
 
 ### Importante
 
@@ -688,6 +789,10 @@ Para `nota de crédito (04)`, la restricción práctica ya no es el tipo de docu
 Para `nota de débito (05)`, aplica el mismo criterio:
 - si `notaDebito_V1.0.0.xsd` no existe en `vendor/sri`, el submit sigue bloqueado
 - si el bundle ya está instalado, `05` puede recorrer la misma frontera técnica multi-documento
+
+Para `comprobante de retención (07)`, aplica exactamente la misma regla:
+- si `comprobanteRetencion_V2.0.0.xsd` no existe en `vendor/sri`, el submit sigue bloqueado
+- si el bundle ya está instalado, `07` puede pasar de preview a submit sobre la misma frontera multi-documento
 
 ### Cómo destrabar localmente el XSD de `04`
 
@@ -731,6 +836,23 @@ Y si además quieres comprobar el estado completo del repo para los documentos q
 
 ```sh
 pnpm validate:sri:xsd
+```
+
+### Cómo preparar localmente el XSD de `07`
+
+Cuando ya tengas el ZIP correcto del SRI para comprobante de retención, instálalo con:
+
+```sh
+pnpm install:sri:schema-bundle -- --document-code 07 --zip /ruta/XML-y-XSD-Comprobante-de-Retencion.zip
+```
+
+El layout esperado queda documentado en:
+- [vendor/sri/comprobante-retencion-2.0.0/README.md](/Users/jorgequizamanchuro/Projects_local/saas-platform/vendor/sri/comprobante-retencion-2.0.0/README.md)
+
+Y luego puedes validar el bundle aislado con:
+
+```sh
+pnpm validate:sri:xsd:withholding
 ```
 
 ## 11. Variables del environment que más vas a tocar

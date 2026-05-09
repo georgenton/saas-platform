@@ -16,6 +16,7 @@ import {
   CreateTenantCustomerUseCase,
   CreateTenantCreditNoteUseCase,
   CreateTenantDebitNoteUseCase,
+  CreateTenantWithholdingUseCase,
   CustomerNotFoundError,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
@@ -48,6 +49,7 @@ import {
   InvoiceNotFullySettledError,
   InvalidCreditNoteSourceInvoiceError,
   InvalidDebitNoteSourceInvoiceError,
+  InvalidWithholdingSourceInvoiceError,
   InvalidInvoiceElectronicAuthorizationStateError,
   InvalidInvoiceElectronicSubmissionStateError,
   InvoiceElectronicSubmissionGatewayIncompleteError,
@@ -97,6 +99,7 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
 import { CreateCustomerRequestDto } from './dto/create-customer.request';
 import { CreateCreditNoteRequestDto } from './dto/create-credit-note.request';
 import { CreateDebitNoteRequestDto } from './dto/create-debit-note.request';
+import { CreateWithholdingRequestDto } from './dto/create-withholding.request';
 import { CreateInvoiceRequestDto } from './dto/create-invoice.request';
 import { CreateInvoiceItemRequestDto } from './dto/create-invoice-item.request';
 import { CreateTaxRateRequestDto } from './dto/create-tax-rate.request';
@@ -134,6 +137,10 @@ import {
   DebitNoteResponseDto,
   toDebitNoteResponseDto,
 } from './dto/debit-note.response';
+import {
+  WithholdingResponseDto,
+  toWithholdingResponseDto,
+} from './dto/withholding.response';
 import {
   CustomerResponseDto,
   toCustomerResponseDto,
@@ -187,6 +194,7 @@ type HeaderWritableResponse = {
 const INVOICE_DOCUMENT_CODE = '01';
 const CREDIT_NOTE_DOCUMENT_CODE = '04';
 const DEBIT_NOTE_DOCUMENT_CODE = '05';
+const WITHHOLDING_DOCUMENT_CODE = '07';
 
 @Controller('invoicing/tenants')
 @UseGuards(
@@ -201,6 +209,7 @@ export class InvoicingController {
     private readonly createTenantCustomerUseCase: CreateTenantCustomerUseCase,
     private readonly createTenantCreditNoteUseCase: CreateTenantCreditNoteUseCase,
     private readonly createTenantDebitNoteUseCase: CreateTenantDebitNoteUseCase,
+    private readonly createTenantWithholdingUseCase: CreateTenantWithholdingUseCase,
     private readonly createTenantInvoiceUseCase: CreateTenantInvoiceUseCase,
     private readonly createTenantInvoiceItemUseCase: CreateTenantInvoiceItemUseCase,
     private readonly createTenantInvoicePaymentUseCase: CreateTenantInvoicePaymentUseCase,
@@ -566,6 +575,58 @@ export class InvoicingController {
         await this.upsertTenantInvoiceNumberingSettingsUseCase.execute({
           tenantSlug: tenantAccess?.tenantSlug ?? slug,
           documentCode: DEBIT_NOTE_DOCUMENT_CODE,
+          establishmentCode: body.establishmentCode,
+          emissionPointCode: body.emissionPointCode,
+          nextSequenceNumber: body.nextSequenceNumber,
+        });
+
+      return toInvoiceNumberingSettingsResponseDto(settings);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/numbering/withholding')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantWithholdingNumberingSettings(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceNumberingSettingsResponseDto> {
+    try {
+      const settings = await this.getTenantInvoiceNumberingSettingsUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        WITHHOLDING_DOCUMENT_CODE,
+      );
+
+      return toInvoiceNumberingSettingsResponseDto(settings);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNumberingSettingsNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/numbering/withholding')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async upsertTenantWithholdingNumberingSettings(
+    @Param('slug') slug: string,
+    @Body() body: UpsertInvoiceNumberingSettingsRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceNumberingSettingsResponseDto> {
+    try {
+      const settings =
+        await this.upsertTenantInvoiceNumberingSettingsUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          documentCode: WITHHOLDING_DOCUMENT_CODE,
           establishmentCode: body.establishmentCode,
           emissionPointCode: body.emissionPointCode,
           nextSequenceNumber: body.nextSequenceNumber,
@@ -1400,6 +1461,51 @@ export class InvoicingController {
 
       if (
         error instanceof InvalidDebitNoteSourceInvoiceError ||
+        error instanceof InvoiceNumberRequiredError
+      ) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/withholdings')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async createTenantWithholding(
+    @Param('slug') slug: string,
+    @Body() body: CreateWithholdingRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<WithholdingResponseDto> {
+    try {
+      const result = await this.createTenantWithholdingUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        sourceInvoiceId: body.sourceInvoiceId,
+        reason: body.reason,
+        amountInCents: body.amountInCents,
+        taxRateId: body.taxRateId ?? null,
+        number: body.number?.trim() || undefined,
+        issuedAt: body.issuedAt ? new Date(body.issuedAt) : undefined,
+        notes: body.notes ?? null,
+      });
+
+      const detail = await this.getTenantInvoiceDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        result.withholding.id,
+      );
+
+      return toWithholdingResponseDto(detail, result.sourceInvoice);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof TaxRateNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (
+        error instanceof InvalidWithholdingSourceInvoiceError ||
         error instanceof InvoiceNumberRequiredError
       ) {
         throw new BadRequestException(error.message);

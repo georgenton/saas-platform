@@ -622,6 +622,7 @@ Convert current invoicing into a real Ecuador-compliant electronic invoicing pro
 - slices `1` to `8` are already represented for invoice `01`
 - credit note `04` already has numbering, draft flow, XML preview, RIDE, XSD validation, and submit path
 - debit note `05` already has numbering, draft flow, XML preview, RIDE, XSD validation, and submit path
+- withholding certificate `07` already has numbering, draft flow, XML preview, RIDE, XSD validation, and submit path
 
 ### Why this is next
 

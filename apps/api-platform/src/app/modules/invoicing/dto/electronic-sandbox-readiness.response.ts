@@ -17,7 +17,7 @@ export interface ElectronicSandboxReadinessResponseDto {
     detail: string;
   }>;
   documentSupport: Array<{
-    documentCode: '01' | '04' | '05';
+    documentCode: '01' | '04' | '05' | '07';
     label: string;
     numberingConfigured: boolean;
     previewAvailable: boolean;

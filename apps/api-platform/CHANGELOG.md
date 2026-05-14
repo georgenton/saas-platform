@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.22.0
+
+### Minor Changes
+
+- 0cf4eaf: Add Ecuador remission guide document foundation with numbering, draft creation, XML preview, RIDE, artifacts, readiness, and testing flows.
+
 ## 0.21.0
 
 ### Minor Changes

@@ -16,6 +16,7 @@ import {
   CreateTenantCustomerUseCase,
   CreateTenantCreditNoteUseCase,
   CreateTenantDebitNoteUseCase,
+  CreateTenantRemissionGuideUseCase,
   CreateTenantWithholdingUseCase,
   CustomerNotFoundError,
   CreateTenantInvoiceUseCase,
@@ -49,6 +50,7 @@ import {
   InvoiceNotFullySettledError,
   InvalidCreditNoteSourceInvoiceError,
   InvalidDebitNoteSourceInvoiceError,
+  InvalidRemissionGuideSourceInvoiceError,
   InvalidWithholdingSourceInvoiceError,
   InvalidInvoiceElectronicAuthorizationStateError,
   InvalidInvoiceElectronicSubmissionStateError,
@@ -99,6 +101,7 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
 import { CreateCustomerRequestDto } from './dto/create-customer.request';
 import { CreateCreditNoteRequestDto } from './dto/create-credit-note.request';
 import { CreateDebitNoteRequestDto } from './dto/create-debit-note.request';
+import { CreateRemissionGuideRequestDto } from './dto/create-remission-guide.request';
 import { CreateWithholdingRequestDto } from './dto/create-withholding.request';
 import { CreateInvoiceRequestDto } from './dto/create-invoice.request';
 import { CreateInvoiceItemRequestDto } from './dto/create-invoice-item.request';
@@ -137,6 +140,10 @@ import {
   DebitNoteResponseDto,
   toDebitNoteResponseDto,
 } from './dto/debit-note.response';
+import {
+  RemissionGuideResponseDto,
+  toRemissionGuideResponseDto,
+} from './dto/remission-guide.response';
 import {
   WithholdingResponseDto,
   toWithholdingResponseDto,
@@ -194,6 +201,7 @@ type HeaderWritableResponse = {
 const INVOICE_DOCUMENT_CODE = '01';
 const CREDIT_NOTE_DOCUMENT_CODE = '04';
 const DEBIT_NOTE_DOCUMENT_CODE = '05';
+const REMISSION_GUIDE_DOCUMENT_CODE = '06';
 const WITHHOLDING_DOCUMENT_CODE = '07';
 
 @Controller('invoicing/tenants')
@@ -209,6 +217,7 @@ export class InvoicingController {
     private readonly createTenantCustomerUseCase: CreateTenantCustomerUseCase,
     private readonly createTenantCreditNoteUseCase: CreateTenantCreditNoteUseCase,
     private readonly createTenantDebitNoteUseCase: CreateTenantDebitNoteUseCase,
+    private readonly createTenantRemissionGuideUseCase: CreateTenantRemissionGuideUseCase,
     private readonly createTenantWithholdingUseCase: CreateTenantWithholdingUseCase,
     private readonly createTenantInvoiceUseCase: CreateTenantInvoiceUseCase,
     private readonly createTenantInvoiceItemUseCase: CreateTenantInvoiceItemUseCase,
@@ -627,6 +636,58 @@ export class InvoicingController {
         await this.upsertTenantInvoiceNumberingSettingsUseCase.execute({
           tenantSlug: tenantAccess?.tenantSlug ?? slug,
           documentCode: WITHHOLDING_DOCUMENT_CODE,
+          establishmentCode: body.establishmentCode,
+          emissionPointCode: body.emissionPointCode,
+          nextSequenceNumber: body.nextSequenceNumber,
+        });
+
+      return toInvoiceNumberingSettingsResponseDto(settings);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/numbering/remission-guide')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async getTenantRemissionGuideNumberingSettings(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceNumberingSettingsResponseDto> {
+    try {
+      const settings = await this.getTenantInvoiceNumberingSettingsUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        REMISSION_GUIDE_DOCUMENT_CODE,
+      );
+
+      return toInvoiceNumberingSettingsResponseDto(settings);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof InvoiceNumberingSettingsNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/numbering/remission-guide')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async upsertTenantRemissionGuideNumberingSettings(
+    @Param('slug') slug: string,
+    @Body() body: UpsertInvoiceNumberingSettingsRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceNumberingSettingsResponseDto> {
+    try {
+      const settings =
+        await this.upsertTenantInvoiceNumberingSettingsUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          documentCode: REMISSION_GUIDE_DOCUMENT_CODE,
           establishmentCode: body.establishmentCode,
           emissionPointCode: body.emissionPointCode,
           nextSequenceNumber: body.nextSequenceNumber,
@@ -1506,6 +1567,54 @@ export class InvoicingController {
 
       if (
         error instanceof InvalidWithholdingSourceInvoiceError ||
+        error instanceof InvoiceNumberRequiredError
+      ) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/remission-guides')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async createTenantRemissionGuide(
+    @Param('slug') slug: string,
+    @Body() body: CreateRemissionGuideRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<RemissionGuideResponseDto> {
+    try {
+      const result = await this.createTenantRemissionGuideUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        sourceInvoiceId: body.sourceInvoiceId,
+        shipmentReason: body.shipmentReason,
+        shipmentStartAt: new Date(body.shipmentStartAt),
+        shipmentEndAt: new Date(body.shipmentEndAt),
+        departureAddress: body.departureAddress,
+        arrivalAddress: body.arrivalAddress,
+        carrierName: body.carrierName,
+        carrierIdentificationType: body.carrierIdentificationType,
+        carrierIdentification: body.carrierIdentification,
+        vehiclePlate: body.vehiclePlate,
+        destinationRoute: body.destinationRoute ?? null,
+        number: body.number?.trim() || undefined,
+        issuedAt: body.issuedAt ? new Date(body.issuedAt) : undefined,
+        notes: body.notes ?? null,
+      });
+
+      const detail = await this.getTenantInvoiceDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        result.remissionGuide.id,
+      );
+
+      return toRemissionGuideResponseDto(detail, result.sourceInvoice);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError || error instanceof InvoiceNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (
+        error instanceof InvalidRemissionGuideSourceInvoiceError ||
         error instanceof InvoiceNumberRequiredError
       ) {
         throw new BadRequestException(error.message);

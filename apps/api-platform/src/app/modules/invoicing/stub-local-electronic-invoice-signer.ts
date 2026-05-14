@@ -6,6 +6,7 @@ import {
   SignElectronicInvoiceInput,
   SignedElectronicInvoice,
 } from '@saas-platform/invoicing-application';
+import { insertElectronicSignature } from './insert-electronic-signature';
 
 @Injectable()
 export class StubLocalElectronicInvoiceSigner
@@ -35,7 +36,7 @@ export class StubLocalElectronicInvoiceSigner
   </ds:Signature>`;
 
     return {
-      signedXml: insertStubSignature(input.xml, signatureBlock),
+      signedXml: insertElectronicSignature(input.xml, signatureBlock),
       signedAt,
       signerName: `stub_local:${input.signatureSettings.certificateLabel}`,
       capability: this.describeCapability({
@@ -43,11 +44,4 @@ export class StubLocalElectronicInvoiceSigner
       }),
     };
   }
-}
-
-function insertStubSignature(xml: string, signatureBlock: string): string {
-  return xml.replace(
-    /<\/(factura|notaCredito)>/i,
-    `${signatureBlock}\n</$1>`,
-  );
 }

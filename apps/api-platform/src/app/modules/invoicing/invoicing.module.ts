@@ -11,6 +11,7 @@ import {
   CreateTenantCustomerUseCase,
   CreateTenantCreditNoteUseCase,
   CreateTenantDebitNoteUseCase,
+  CreateTenantRemissionGuideUseCase,
   CreateTenantWithholdingUseCase,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
@@ -20,6 +21,7 @@ import {
   CUSTOMER_ID_GENERATOR,
   CUSTOMER_REPOSITORY,
   ELECTRONIC_SUBMISSION_SETTINGS_REPOSITORY,
+  ELECTRONIC_SIGNATURE_MATERIAL_INSPECTOR,
   ELECTRONIC_SIGNATURE_SETTINGS_REPOSITORY,
   ELECTRONIC_INVOICE_SIGNER,
   ELECTRONIC_INVOICE_XML_SCHEMA_VALIDATOR,
@@ -82,6 +84,7 @@ import { AuthModule } from '../auth/auth.module';
 import { InvoicingController } from './invoicing.controller';
 import { AxiosSriOfflineWsClient } from './axios-sri-offline-ws-client';
 import { EnvSecretReferenceResolver } from './env-secret-reference-resolver';
+import { EnvElectronicSignatureMaterialInspector } from './env-electronic-signature-material-inspector';
 import { RoutingElectronicInvoiceSubmissionGateway } from './routing-electronic-invoice-submission-gateway';
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
@@ -115,6 +118,10 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
       useExisting: EnvSecretReferenceResolver,
     },
     {
+      provide: ELECTRONIC_SIGNATURE_MATERIAL_INSPECTOR,
+      useExisting: EnvElectronicSignatureMaterialInspector,
+    },
+    {
       provide: ELECTRONIC_INVOICE_XML_SCHEMA_VALIDATOR,
       useExisting: XmllintSriInvoiceXmlSchemaValidator,
     },
@@ -122,6 +129,7 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
       provide: ELECTRONIC_INVOICE_SUBMISSION_GATEWAY,
       useExisting: RoutingElectronicInvoiceSubmissionGateway,
     },
+    EnvElectronicSignatureMaterialInspector,
     EnvSecretReferenceResolver,
     XmllintSriInvoiceXmlSchemaValidator,
     RoutingElectronicInvoiceSubmissionGateway,
@@ -155,6 +163,7 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
         ELECTRONIC_SIGNATURE_SETTINGS_REPOSITORY,
         ELECTRONIC_SUBMISSION_SETTINGS_REPOSITORY,
         SECRET_REFERENCE_RESOLVER,
+        ELECTRONIC_SIGNATURE_MATERIAL_INSPECTOR,
         ELECTRONIC_INVOICE_SIGNER,
         ELECTRONIC_INVOICE_XML_SCHEMA_VALIDATOR,
       ],
@@ -165,6 +174,7 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
         electronicSignatureSettingsRepository,
         electronicSubmissionSettingsRepository,
         secretReferenceResolver,
+        electronicSignatureMaterialInspector,
         electronicInvoiceSigner,
         electronicInvoiceXmlSchemaValidator,
       ) =>
@@ -175,6 +185,7 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
           electronicSignatureSettingsRepository,
           electronicSubmissionSettingsRepository,
           secretReferenceResolver,
+          electronicSignatureMaterialInspector,
           electronicInvoiceSigner,
           electronicInvoiceXmlSchemaValidator,
         ),
@@ -494,6 +505,33 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
           invoiceItemIdGenerator,
           invoiceNumberingSettingsRepository,
           taxRateRepository,
+        ),
+    },
+    {
+      provide: CreateTenantRemissionGuideUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+        INVOICE_ID_GENERATOR,
+        INVOICE_ITEM_ID_GENERATOR,
+        INVOICE_NUMBERING_SETTINGS_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        invoiceRepository,
+        invoiceItemRepository,
+        invoiceIdGenerator,
+        invoiceItemIdGenerator,
+        invoiceNumberingSettingsRepository,
+      ) =>
+        new CreateTenantRemissionGuideUseCase(
+          tenantRepository,
+          invoiceRepository,
+          invoiceItemRepository,
+          invoiceIdGenerator,
+          invoiceItemIdGenerator,
+          invoiceNumberingSettingsRepository,
         ),
     },
     {

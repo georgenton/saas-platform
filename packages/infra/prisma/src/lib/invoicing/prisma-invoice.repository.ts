@@ -25,6 +25,16 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       modifiedDocumentNumber: data.modifiedDocumentNumber ?? null,
       modifiedDocumentIssuedAt: data.modifiedDocumentIssuedAt ?? null,
       modificationReason: data.modificationReason ?? null,
+      shipmentReason: data.shipmentReason ?? null,
+      shipmentStartAt: data.shipmentStartAt ?? null,
+      shipmentEndAt: data.shipmentEndAt ?? null,
+      departureAddress: data.departureAddress ?? null,
+      arrivalAddress: data.arrivalAddress ?? null,
+      carrierName: data.carrierName ?? null,
+      carrierIdentificationType: data.carrierIdentificationType ?? null,
+      carrierIdentification: data.carrierIdentification ?? null,
+      vehiclePlate: data.vehiclePlate ?? null,
+      destinationRoute: data.destinationRoute ?? null,
       buyerIdentificationType: data.buyerIdentificationType ?? null,
       buyerIdentification: data.buyerIdentification ?? null,
       buyerName: data.buyerName ?? null,
@@ -57,6 +67,16 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       modifiedDocumentNumber: data.modifiedDocumentNumber ?? null,
       modifiedDocumentIssuedAt: data.modifiedDocumentIssuedAt ?? null,
       modificationReason: data.modificationReason ?? null,
+      shipmentReason: data.shipmentReason ?? null,
+      shipmentStartAt: data.shipmentStartAt ?? null,
+      shipmentEndAt: data.shipmentEndAt ?? null,
+      departureAddress: data.departureAddress ?? null,
+      arrivalAddress: data.arrivalAddress ?? null,
+      carrierName: data.carrierName ?? null,
+      carrierIdentificationType: data.carrierIdentificationType ?? null,
+      carrierIdentification: data.carrierIdentification ?? null,
+      vehiclePlate: data.vehiclePlate ?? null,
+      destinationRoute: data.destinationRoute ?? null,
       buyerIdentificationType: data.buyerIdentificationType ?? null,
       buyerIdentification: data.buyerIdentification ?? null,
       buyerName: data.buyerName ?? null,
@@ -121,6 +141,16 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
     modifiedDocumentNumber: string | null;
     modifiedDocumentIssuedAt: Date | null;
     modificationReason: string | null;
+    shipmentReason: string | null;
+    shipmentStartAt: Date | null;
+    shipmentEndAt: Date | null;
+    departureAddress: string | null;
+    arrivalAddress: string | null;
+    carrierName: string | null;
+    carrierIdentificationType: string | null;
+    carrierIdentification: string | null;
+    vehiclePlate: string | null;
+    destinationRoute: string | null;
     buyerIdentificationType: string | null;
     buyerIdentification: string | null;
     buyerName: string | null;
@@ -154,6 +184,17 @@ export class PrismaInvoiceRepository implements InvoiceRepository {
       modifiedDocumentNumber: record.modifiedDocumentNumber,
       modifiedDocumentIssuedAt: record.modifiedDocumentIssuedAt,
       modificationReason: record.modificationReason,
+      shipmentReason: record.shipmentReason,
+      shipmentStartAt: record.shipmentStartAt,
+      shipmentEndAt: record.shipmentEndAt,
+      departureAddress: record.departureAddress,
+      arrivalAddress: record.arrivalAddress,
+      carrierName: record.carrierName,
+      carrierIdentificationType:
+        record.carrierIdentificationType as BuyerIdentificationType | null,
+      carrierIdentification: record.carrierIdentification,
+      vehiclePlate: record.vehiclePlate,
+      destinationRoute: record.destinationRoute,
       buyerIdentificationType: record.buyerIdentificationType as BuyerIdentificationType | null,
       buyerIdentification: record.buyerIdentification,
       buyerName: record.buyerName,

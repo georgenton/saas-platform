@@ -354,6 +354,7 @@ function buildRideAdditionalInfoFields(
   if (
     invoice.documentCode === '04' ||
     invoice.documentCode === '05' ||
+    invoice.documentCode === '06' ||
     invoice.documentCode === '07'
   ) {
     fields.push(
@@ -368,6 +369,43 @@ function buildRideAdditionalInfoFields(
       {
         label: 'Motivo',
         value: invoice.modificationReason,
+      },
+    );
+  }
+
+  if (invoice.documentCode === '06') {
+    fields.push(
+      {
+        label: 'Fecha inicio traslado',
+        value: invoice.shipmentStartAt?.toISOString() ?? null,
+      },
+      {
+        label: 'Fecha fin traslado',
+        value: invoice.shipmentEndAt?.toISOString() ?? null,
+      },
+      {
+        label: 'Direccion partida',
+        value: invoice.departureAddress,
+      },
+      {
+        label: 'Direccion llegada',
+        value: invoice.arrivalAddress,
+      },
+      {
+        label: 'Transportista',
+        value: invoice.carrierName,
+      },
+      {
+        label: 'Identificacion transportista',
+        value: invoice.carrierIdentification,
+      },
+      {
+        label: 'Placa',
+        value: invoice.vehiclePlate,
+      },
+      {
+        label: 'Ruta',
+        value: invoice.destinationRoute,
       },
     );
   }
@@ -426,6 +464,8 @@ function formatRideDocumentLabel(documentCode: string | null): string {
       return 'RIDE Nota de credito';
     case '05':
       return 'RIDE Nota de debito';
+    case '06':
+      return 'RIDE Guia de remision';
     case '07':
       return 'RIDE Comprobante de retencion';
     default:
@@ -445,6 +485,8 @@ function formatDocumentTitle(
       return 'Credit Note';
     case '05':
       return 'Debit Note';
+    case '06':
+      return 'Remission Guide';
     case '07':
       return 'Withholding Certificate';
     default:

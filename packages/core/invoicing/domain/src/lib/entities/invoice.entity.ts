@@ -26,6 +26,16 @@ export interface InvoiceProps {
   modifiedDocumentNumber?: string | null;
   modifiedDocumentIssuedAt?: Date | null;
   modificationReason?: string | null;
+  shipmentReason?: string | null;
+  shipmentStartAt?: Date | null;
+  shipmentEndAt?: Date | null;
+  departureAddress?: string | null;
+  arrivalAddress?: string | null;
+  carrierName?: string | null;
+  carrierIdentificationType?: BuyerIdentificationType | null;
+  carrierIdentification?: string | null;
+  vehiclePlate?: string | null;
+  destinationRoute?: string | null;
   buyerIdentificationType?: BuyerIdentificationType | null;
   buyerIdentification?: string | null;
   buyerName?: string | null;
@@ -100,6 +110,46 @@ export class Invoice {
 
   get modificationReason(): string | null {
     return this.props.modificationReason ?? null;
+  }
+
+  get shipmentReason(): string | null {
+    return this.props.shipmentReason ?? null;
+  }
+
+  get shipmentStartAt(): Date | null {
+    return this.props.shipmentStartAt ?? null;
+  }
+
+  get shipmentEndAt(): Date | null {
+    return this.props.shipmentEndAt ?? null;
+  }
+
+  get departureAddress(): string | null {
+    return this.props.departureAddress ?? null;
+  }
+
+  get arrivalAddress(): string | null {
+    return this.props.arrivalAddress ?? null;
+  }
+
+  get carrierName(): string | null {
+    return this.props.carrierName ?? null;
+  }
+
+  get carrierIdentificationType(): BuyerIdentificationType | null {
+    return this.props.carrierIdentificationType ?? null;
+  }
+
+  get carrierIdentification(): string | null {
+    return this.props.carrierIdentification ?? null;
+  }
+
+  get vehiclePlate(): string | null {
+    return this.props.vehiclePlate ?? null;
+  }
+
+  get destinationRoute(): string | null {
+    return this.props.destinationRoute ?? null;
   }
 
   get buyerIdentificationType(): BuyerIdentificationType | null {

@@ -80,6 +80,16 @@ model Invoice {
   modifiedDocumentNumber String?
   modifiedDocumentIssuedAt DateTime?
   modificationReason String?
+  shipmentReason String?
+  shipmentStartAt DateTime?
+  shipmentEndAt DateTime?
+  departureAddress String?
+  arrivalAddress String?
+  carrierName String?
+  carrierIdentificationType String?
+  carrierIdentification String?
+  vehiclePlate String?
+  destinationRoute String?
   buyerIdentificationType String?
   buyerIdentification String?
   buyerName String?

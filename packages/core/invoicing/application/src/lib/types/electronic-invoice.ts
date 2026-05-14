@@ -100,6 +100,7 @@ export function buildSriElectronicDocumentXmlPreview(input: {
   const documentCode = invoice.documentCode ?? '01';
   const isCreditNote = documentCode === '04';
   const isDebitNote = documentCode === '05';
+  const isRemissionGuide = documentCode === '06';
   const isWithholding = documentCode === '07';
   const xmlLines =
     isCreditNote
@@ -347,6 +348,85 @@ ${infoTributariaXml}
 `;
   }
 
+  if (isRemissionGuide) {
+    const guideDetailXml = details.lines
+      .map(
+        (line) => `
+        <detalle>
+          <codigoInterno>${line.position}</codigoInterno>
+          <descripcion>${escapeXml(line.description)}</descripcion>
+          <cantidad>${formatQuantity(line.quantity)}</cantidad>
+        </detalle>`,
+      )
+      .join('');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<guiaRemision id="comprobante" version="1.0.0">
+${infoTributariaXml}
+  <infoGuiaRemision>
+    <dirEstablecimiento>${escapeXml(
+      input.document.issuer.establishmentAddress ?? input.document.issuer.matrixAddress ?? '',
+    )}</dirEstablecimiento>
+    <dirPartida>${escapeXml(invoice.departureAddress ?? '')}</dirPartida>
+    <razonSocialTransportista>${escapeXml(invoice.carrierName ?? '')}</razonSocialTransportista>
+    <tipoIdentificacionTransportista>${escapeXml(
+      invoice.carrierIdentificationType ?? '',
+    )}</tipoIdentificacionTransportista>
+    <rucTransportista>${escapeXml(
+      normalizeDigits(invoice.carrierIdentification ?? ''),
+    )}</rucTransportista>
+    ${
+      input.document.issuer.specialTaxpayerCode
+        ? `<contribuyenteEspecial>${escapeXml(
+            input.document.issuer.specialTaxpayerCode,
+          )}</contribuyenteEspecial>`
+        : ''
+    }
+    <obligadoContabilidad>${obligatedAccounting}</obligadoContabilidad>
+    <fechaIniTransporte>${escapeXml(
+      invoice.shipmentStartAt
+        ? formatSriIssueDate(invoice.shipmentStartAt)
+        : formatSriIssueDate(invoice.issuedAt),
+    )}</fechaIniTransporte>
+    <fechaFinTransporte>${escapeXml(
+      invoice.shipmentEndAt
+        ? formatSriIssueDate(invoice.shipmentEndAt)
+        : formatSriIssueDate(invoice.issuedAt),
+    )}</fechaFinTransporte>
+    <placa>${escapeXml(invoice.vehiclePlate ?? '')}</placa>
+  </infoGuiaRemision>
+  <destinatarios>
+    <destinatario>
+      <identificacionDestinatario>${escapeXml(
+        input.document.customer.identification ?? input.document.customer.taxId ?? '',
+      )}</identificacionDestinatario>
+      <razonSocialDestinatario>${escapeXml(input.document.customer.name)}</razonSocialDestinatario>
+      <dirDestinatario>${escapeXml(
+        invoice.arrivalAddress ?? input.document.customer.billingAddress ?? '',
+      )}</dirDestinatario>
+      <motivoTraslado>${escapeXml(
+        invoice.shipmentReason ?? invoice.modificationReason ?? 'Traslado de mercaderia',
+      )}</motivoTraslado>
+      <codDocSustento>01</codDocSustento>
+      <numDocSustento>${escapeXml(invoice.modifiedDocumentNumber ?? '')}</numDocSustento>
+      <fechaEmisionDocSustento>${escapeXml(
+        invoice.modifiedDocumentIssuedAt
+          ? formatSriIssueDate(invoice.modifiedDocumentIssuedAt)
+          : '',
+      )}</fechaEmisionDocSustento>
+      ${
+        invoice.destinationRoute
+          ? `<ruta>${escapeXml(invoice.destinationRoute)}</ruta>`
+          : ''
+      }
+      <detalles>${guideDetailXml}
+      </detalles>
+    </destinatario>
+  </destinatarios>
+</guiaRemision>
+`;
+  }
+
   const paymentDelayInDays = invoice.dueAt
     ? Math.max(calculateDiffInDays(invoice.issuedAt, invoice.dueAt), 0)
     : 0;
@@ -418,16 +498,23 @@ export function validateSriElectronicDocumentXml(input: {
   const valorTotal = extractTagValue(xml, 'valorTotal');
   const isCreditNote = codDoc === '04' || xml.includes('<notaCredito ');
   const isDebitNote = codDoc === '05' || xml.includes('<notaDebito ');
+  const isRemissionGuide = codDoc === '06' || xml.includes('<guiaRemision ');
   const isWithholding = codDoc === '07' || xml.includes('<comprobanteRetencion ');
   const rootTag = isCreditNote
     ? 'notaCredito'
     : isDebitNote
       ? 'notaDebito'
+      : isRemissionGuide
+        ? 'guiaRemision'
       : isWithholding
         ? 'comprobanteRetencion'
       : 'factura';
   const versionLabel =
-    isWithholding ? '2.0.0' : isCreditNote || isDebitNote ? '1.0.0' : '2.1.0';
+    isWithholding
+      ? '2.0.0'
+      : isCreditNote || isDebitNote || isRemissionGuide
+        ? '1.0.0'
+        : '2.1.0';
 
   if (!xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')) {
     issues.push('El XML debe comenzar con la declaracion XML UTF-8.');
@@ -440,6 +527,8 @@ export function validateSriElectronicDocumentXml(input: {
           ? 'notaCredito'
           : isDebitNote
             ? 'notaDebito'
+            : isRemissionGuide
+              ? 'guiaRemision'
             : isWithholding
               ? 'comprobanteRetencion'
               : 'factura'
@@ -457,6 +546,8 @@ export function validateSriElectronicDocumentXml(input: {
         ? '<infoNotaCredito>'
         : isDebitNote
           ? '<infoNotaDebito>'
+          : isRemissionGuide
+            ? '<infoGuiaRemision>'
           : isWithholding
             ? '<infoCompRetencion>'
           : '<infoFactura>',
@@ -468,6 +559,8 @@ export function validateSriElectronicDocumentXml(input: {
           ? 'infoNotaCredito'
           : isDebitNote
             ? 'infoNotaDebito'
+            : isRemissionGuide
+              ? 'infoGuiaRemision'
             : isWithholding
               ? 'infoCompRetencion'
             : 'infoFactura'
@@ -499,8 +592,27 @@ export function validateSriElectronicDocumentXml(input: {
     'estab',
     'ptoEmi',
     'secuencial',
-    'fechaEmision',
-    ...(isWithholding
+    ...(isRemissionGuide
+      ? [
+          'dirPartida',
+          'razonSocialTransportista',
+          'tipoIdentificacionTransportista',
+          'rucTransportista',
+          'fechaIniTransporte',
+          'fechaFinTransporte',
+          'placa',
+          'identificacionDestinatario',
+          'razonSocialDestinatario',
+          'dirDestinatario',
+          'motivoTraslado',
+          'codDocSustento',
+          'numDocSustento',
+          'fechaEmisionDocSustento',
+        ]
+      : ['fechaEmision']),
+    ...(isRemissionGuide
+      ? []
+      : isWithholding
       ? [
           'tipoIdentificacionSujetoRetenido',
           'razonSocialSujetoRetenido',
@@ -512,7 +624,13 @@ export function validateSriElectronicDocumentXml(input: {
           'razonSocialComprador',
           'identificacionComprador',
         ]),
-    ...(isCreditNote ? [] : isDebitNote ? ['valorTotal'] : isWithholding ? [] : ['importeTotal']),
+    ...(isCreditNote
+      ? []
+      : isDebitNote
+        ? ['valorTotal']
+        : isRemissionGuide || isWithholding
+          ? []
+          : ['importeTotal']),
   ]) {
     if (!extractTagValue(xml, tagName)) {
       issues.push(`Falta el valor obligatorio ${tagName} en el XML.`);
@@ -534,37 +652,56 @@ export function validateSriElectronicDocumentXml(input: {
   const ruc = extractTagValue(xml, 'ruc');
   const buyerIdentificationType = extractTagValue(
     xml,
-    isWithholding
-      ? 'tipoIdentificacionSujetoRetenido'
-      : 'tipoIdentificacionComprador',
+    isRemissionGuide
+      ? 'tipoIdentificacionTransportista'
+      : isWithholding
+        ? 'tipoIdentificacionSujetoRetenido'
+        : 'tipoIdentificacionComprador',
   );
   const buyerName = extractTagValue(
     xml,
-    isWithholding ? 'razonSocialSujetoRetenido' : 'razonSocialComprador',
+    isRemissionGuide
+      ? 'razonSocialDestinatario'
+      : isWithholding
+        ? 'razonSocialSujetoRetenido'
+        : 'razonSocialComprador',
   );
   const buyerIdentification = extractTagValue(
     xml,
-    isWithholding
-      ? 'identificacionSujetoRetenido'
-      : 'identificacionComprador',
+    isRemissionGuide
+      ? 'identificacionDestinatario'
+      : isWithholding
+        ? 'identificacionSujetoRetenido'
+        : 'identificacionComprador',
   );
-  const buyerAddress = extractTagValue(xml, 'direccionComprador');
-  const totalSinImpuestos = extractTagValue(xml, 'totalSinImpuestos');
+  const buyerAddress = extractTagValue(
+    xml,
+    isRemissionGuide ? 'dirDestinatario' : 'direccionComprador',
+  );
+  const totalSinImpuestos = isRemissionGuide
+    ? null
+    : extractTagValue(xml, 'totalSinImpuestos');
   const importeTotal = isCreditNote
     ? valorModificacion
     : isDebitNote
       ? valorTotal
-      : isWithholding
+      : isRemissionGuide || isWithholding
         ? null
-      : extractTagValue(xml, 'importeTotal');
-  const moneda = isDebitNote || isWithholding ? null : extractTagValue(xml, 'moneda');
-  const paymentTotal = isCreditNote || isWithholding ? null : extractTagValue(xml, 'total');
+        : extractTagValue(xml, 'importeTotal');
+  const moneda =
+    isDebitNote || isRemissionGuide || isWithholding
+      ? null
+      : extractTagValue(xml, 'moneda');
+  const paymentTotal =
+    isCreditNote || isRemissionGuide || isWithholding
+      ? null
+      : extractTagValue(xml, 'total');
   const totalDescuento =
-    isCreditNote || isDebitNote || isWithholding
+    isCreditNote || isDebitNote || isRemissionGuide || isWithholding
       ? '0.00'
       : extractTagValue(xml, 'totalDescuento');
   const propina =
-    isCreditNote || isDebitNote || isWithholding
+    isCreditNote || isDebitNote || isRemissionGuide || isWithholding
       ? '0.00'
       : extractTagValue(xml, 'propina');
   const infoTributariaBlocks = extractTagBlocks(xml, 'infoTributaria');
@@ -574,6 +711,8 @@ export function validateSriElectronicDocumentXml(input: {
       ? 'infoNotaCredito'
       : isDebitNote
         ? 'infoNotaDebito'
+        : isRemissionGuide
+          ? 'infoGuiaRemision'
         : isWithholding
           ? 'infoCompRetencion'
         : 'infoFactura',
@@ -606,6 +745,8 @@ export function validateSriElectronicDocumentXml(input: {
           ? 'infoNotaCredito'
           : isDebitNote
             ? 'infoNotaDebito'
+            : isRemissionGuide
+              ? 'infoGuiaRemision'
             : isWithholding
               ? 'infoCompRetencion'
             : 'infoFactura'
@@ -613,7 +754,7 @@ export function validateSriElectronicDocumentXml(input: {
     );
   }
 
-  if (!isCreditNote && !isWithholding) {
+  if (!isCreditNote && !isRemissionGuide && !isWithholding) {
     if (pagosBlocks.length !== 1) {
       issues.push('El XML debe contener exactamente un bloque pagos.');
     }
@@ -693,18 +834,20 @@ export function validateSriElectronicDocumentXml(input: {
     issues.push('La factura electronica debe contener al menos un detalle.');
   }
 
+  const detailSubtotalSum = sumTagValues(detalleBlocks, 'precioTotalSinImpuesto');
   const parsedSubtotal = isDebitNote
     ? sumTagValues(motivoBlocks, 'valor')
+    : isRemissionGuide
+      ? detailSubtotalSum
     : isWithholding
       ? sumTagValues(totalImpuestoBlocks, 'valorRetenido')
     : parseAmount(totalSinImpuestos);
   const parsedTotal = parseAmount(importeTotal);
   const parsedPaymentTotal = parseAmount(paymentTotal);
-  const detailSubtotalSum = sumTagValues(detalleBlocks, 'precioTotalSinImpuesto');
   const detailTaxSum = sumNestedTaxValues(detalleBlocks, 'valor');
   const headerTaxSum = sumTagValues(totalImpuestoBlocks, 'valor');
 
-  if (!isDebitNote && parsedSubtotal === null) {
+  if (!isDebitNote && !isRemissionGuide && parsedSubtotal === null) {
     issues.push('totalSinImpuestos debe ser un decimal valido con dos decimales.');
   }
 
@@ -712,7 +855,7 @@ export function validateSriElectronicDocumentXml(input: {
     issues.push('totalDescuento debe ser un decimal valido con dos decimales.');
   }
 
-  if (!isWithholding && parsedTotal === null) {
+  if (!isRemissionGuide && !isWithholding && parsedTotal === null) {
     issues.push('importeTotal debe ser un decimal valido con dos decimales.');
   }
 
@@ -720,11 +863,11 @@ export function validateSriElectronicDocumentXml(input: {
     issues.push('propina debe ser un decimal valido con dos decimales.');
   }
 
-  if (!isWithholding && parsedPaymentTotal === null) {
+  if (!isRemissionGuide && !isWithholding && parsedPaymentTotal === null) {
     issues.push('El total del bloque pagos debe ser un decimal valido con dos decimales.');
   }
 
-  if (!isDebitNote && !isWithholding && (!moneda || !/^[A-Z]{3}$/.test(moneda))) {
+  if (!isDebitNote && !isRemissionGuide && !isWithholding && (!moneda || !/^[A-Z]{3}$/.test(moneda))) {
     issues.push('La moneda debe estar en formato ISO de 3 letras mayusculas.');
   }
 
@@ -832,6 +975,125 @@ export function validateSriElectronicDocumentXml(input: {
         }
       }
     }
+  } else if (isRemissionGuide) {
+    const dirPartida = extractTagValue(xml, 'dirPartida');
+    const razonSocialTransportista = extractTagValue(
+      xml,
+      'razonSocialTransportista',
+    );
+    const tipoIdentificacionTransportista = extractTagValue(
+      xml,
+      'tipoIdentificacionTransportista',
+    );
+    const rucTransportista = extractTagValue(xml, 'rucTransportista');
+    const fechaIniTransporte = extractTagValue(xml, 'fechaIniTransporte');
+    const fechaFinTransporte = extractTagValue(xml, 'fechaFinTransporte');
+    const placa = extractTagValue(xml, 'placa');
+    const identificacionDestinatario = extractTagValue(
+      xml,
+      'identificacionDestinatario',
+    );
+    const razonSocialDestinatario = extractTagValue(
+      xml,
+      'razonSocialDestinatario',
+    );
+    const dirDestinatario = extractTagValue(xml, 'dirDestinatario');
+    const motivoTraslado = extractTagValue(xml, 'motivoTraslado');
+    const codDocSustento = extractTagValue(xml, 'codDocSustento');
+    const numDocSustento = extractTagValue(xml, 'numDocSustento');
+    const destinatarioBlocks = extractTagBlocks(xml, 'destinatario');
+
+    if (codDoc !== '06') {
+      issues.push('La guia de remision debe declarar codDoc 06.');
+    }
+
+    if (destinatarioBlocks.length !== 1) {
+      issues.push(
+        'La guia de remision debe contener exactamente un bloque destinatario para este MVP.',
+      );
+    }
+
+    if (!dirPartida || dirPartida.trim().length < 5) {
+      issues.push('La guia de remision debe incluir dirPartida suficiente.');
+    }
+
+    if (!razonSocialTransportista || razonSocialTransportista.trim().length < 3) {
+      issues.push(
+        'La guia de remision debe incluir razonSocialTransportista suficiente.',
+      );
+    }
+
+    if (!tipoIdentificacionTransportista) {
+      issues.push(
+        'La guia de remision debe incluir tipoIdentificacionTransportista.',
+      );
+    } else {
+      validateBuyerIdentificationByType(
+        tipoIdentificacionTransportista,
+        rucTransportista,
+        issues,
+      );
+    }
+
+    if (!fechaIniTransporte || !/^\d{2}\/\d{2}\/\d{4}$/.test(fechaIniTransporte)) {
+      issues.push(
+        'La guia de remision debe incluir fechaIniTransporte con formato dd/mm/yyyy.',
+      );
+    }
+
+    if (!fechaFinTransporte || !/^\d{2}\/\d{2}\/\d{4}$/.test(fechaFinTransporte)) {
+      issues.push(
+        'La guia de remision debe incluir fechaFinTransporte con formato dd/mm/yyyy.',
+      );
+    }
+
+    if (!placa || placa.trim().length < 5) {
+      issues.push('La guia de remision debe incluir una placa suficiente.');
+    }
+
+    if (
+      !identificacionDestinatario ||
+      normalizeDigits(identificacionDestinatario).length < 5
+    ) {
+      issues.push(
+        'La guia de remision debe incluir identificacionDestinatario suficiente.',
+      );
+    }
+
+    if (!razonSocialDestinatario || razonSocialDestinatario.trim().length < 3) {
+      issues.push(
+        'La guia de remision debe incluir razonSocialDestinatario suficiente.',
+      );
+    }
+
+    if (!dirDestinatario || dirDestinatario.trim().length < 5) {
+      issues.push('La guia de remision debe incluir dirDestinatario suficiente.');
+    }
+
+    if (!motivoTraslado || motivoTraslado.trim().length < 3) {
+      issues.push('La guia de remision debe incluir motivoTraslado suficiente.');
+    }
+
+    if (codDocSustento !== '01') {
+      issues.push(
+        'La guia de remision debe declarar codDocSustento 01 para este MVP.',
+      );
+    }
+
+    if (!numDocSustento || normalizeDigits(numDocSustento).length < 9) {
+      issues.push(
+        'La guia de remision debe incluir un numDocSustento suficiente.',
+      );
+    }
+
+    if (
+      !fechaEmisionDocSustento ||
+      !/^\d{2}\/\d{2}\/\d{4}$/.test(fechaEmisionDocSustento)
+    ) {
+      issues.push(
+        'La guia de remision debe incluir fechaEmisionDocSustento con formato dd/mm/yyyy.',
+      );
+    }
   } else if (isWithholding) {
     if (codDoc !== '07') {
       issues.push('El comprobante de retencion debe declarar codDoc 07.');
@@ -910,19 +1172,20 @@ export function validateSriElectronicDocumentXml(input: {
     issues.push('La factura electronica debe declarar codDoc 01.');
   }
 
-  if (!isDebitNote && parsedSubtotal !== null && detailSubtotalSum !== parsedSubtotal) {
+  if (!isDebitNote && !isRemissionGuide && parsedSubtotal !== null && detailSubtotalSum !== parsedSubtotal) {
     issues.push(
       'La suma de precioTotalSinImpuesto de los detalles no coincide con totalSinImpuestos.',
     );
   }
 
-  if (!isDebitNote && detailTaxSum !== headerTaxSum) {
+  if (!isDebitNote && !isRemissionGuide && detailTaxSum !== headerTaxSum) {
     issues.push(
       'La suma de impuestos de los detalles no coincide con totalConImpuestos.',
     );
   }
 
   if (
+    !isRemissionGuide &&
     !isWithholding &&
     parsedSubtotal !== null &&
     parsedTotal !== null &&
@@ -935,6 +1198,7 @@ export function validateSriElectronicDocumentXml(input: {
 
   if (
     !isCreditNote &&
+    !isRemissionGuide &&
     !isWithholding &&
     parsedTotal !== null &&
     parsedPaymentTotal !== null &&
@@ -943,13 +1207,15 @@ export function validateSriElectronicDocumentXml(input: {
     issues.push('El bloque pagos debe coincidir con el importe total de la factura.');
   }
 
-  if (!isCreditNote && !isWithholding) {
+  if (!isCreditNote && !isRemissionGuide && !isWithholding) {
     validatePaymentBlocks(pagoBlocks, issues);
   }
   if (isDebitNote) {
     validateDebitTaxBlocks(totalImpuestoBlocks, issues);
   } else if (isWithholding) {
     validateWithholdingTaxBlocks(totalImpuestoBlocks, issues);
+  } else if (isRemissionGuide) {
+    validateRemissionGuideDetailBlocks(detalleBlocks, issues);
   } else {
     validateTotalTaxBlocks(totalImpuestoBlocks, issues);
     validateDetailBlocks(detalleBlocks, issues);
@@ -1304,6 +1570,29 @@ function validateWithholdingTaxBlocks(blocks: string[], issues: string[]): void 
       issues.push(
         'Cada impuesto de retencion debe incluir un valorRetenido decimal valido.',
       );
+    }
+  }
+}
+
+function validateRemissionGuideDetailBlocks(
+  blocks: string[],
+  issues: string[],
+): void {
+  for (const block of blocks) {
+    const codigoInterno = extractTagValue(block, 'codigoInterno');
+    const descripcion = extractTagValue(block, 'descripcion');
+    const cantidad = extractTagValue(block, 'cantidad');
+
+    if (!codigoInterno || !/^\d+$/.test(codigoInterno)) {
+      issues.push('Cada detalle de guia de remision debe incluir un codigoInterno numerico.');
+    }
+
+    if (!descripcion || descripcion.trim().length < 3) {
+      issues.push('Cada detalle de guia de remision debe incluir una descripcion suficiente.');
+    }
+
+    if (!cantidad || !/^\d+(\.\d{1,2})?$/.test(cantidad) || Number(cantidad) <= 0) {
+      issues.push('Cada detalle de guia de remision debe incluir una cantidad positiva valida.');
     }
   }
 }

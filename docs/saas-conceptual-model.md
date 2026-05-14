@@ -622,7 +622,11 @@ Convert current invoicing into a real Ecuador-compliant electronic invoicing pro
 - slices `1` to `8` are already represented for invoice `01`
 - credit note `04` already has numbering, draft flow, XML preview, RIDE, XSD validation, and submit path
 - debit note `05` already has numbering, draft flow, XML preview, RIDE, XSD validation, and submit path
+- remission guide `06` already has numbering, draft flow, XML preview, RIDE, XSD validation, and submit path
 - withholding certificate `07` already has numbering, draft flow, XML preview, RIDE, XSD validation, and submit path
+- the next Ecuador gap is no longer document coverage but compliance hardening around signer capability and remote sandbox behavior
+- readiness now distinguishes `local stub`, `remote presigned`, and `remote internal signer`
+- internal PKCS#12 material now has a structural probe so the product can tell when signer secrets merely exist versus when they already look loadable
 
 ### Why this is next
 
@@ -759,8 +763,8 @@ Use the common platform, growth, conversations, and AI capabilities for vertical
 Given the current repository state, the best next strategic step is:
 
 1. keep extending `Electronic Invoicing EC` document-by-document inside the existing invoicing domain
-2. keep `05` on the same testing and hardening rail as `01` and `04`
-3. then choose between retentions (`07`) or remisión guides (`06`) as the next country-specific document
+2. move from document-by-document coverage into compliance hardening for the now-covered Ecuador document set
+3. strengthen signature and remote sandbox behavior before opening the next major product front
 4. keep `Ecommerce` as the next major product domain only after this Ecuador MVP teaches enough about shared foundations
 
 That path keeps momentum, preserves current work, and gives the platform a much clearer multi-product context.
@@ -773,10 +777,12 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
    - invoice (`01`) already mature
    - credit note (`04`) already on the electronic rail
    - debit note (`05`) already on the electronic rail
+   - withholding certificate (`07`) already on the electronic rail
+   - remission guide (`06`) already on the electronic rail
 2. `Electronic Invoicing EC` compliance flow
    - strengthen signature
    - complete remote sandbox behavior
-   - continue document bundle coverage for `06` and `07`
+   - consolidate the full multi-document Ecuador rail (`01`, `04`, `05`, `06`, `07`)
 3. first shared foundation pressure review
    - decide whether `Customer`, `Payment`, and `TaxRate` should still stay inside `Invoicing`
 4. first `Growth & Conversations` slice

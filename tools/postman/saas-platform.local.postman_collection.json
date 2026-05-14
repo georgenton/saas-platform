@@ -637,6 +637,11 @@
                   "const invoiceSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '01') : null;",
                   "const creditNoteSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '04') : null;",
                   "pm.environment.set('sandboxReady', String(Boolean(data.isReadyForRemoteSandboxSubmission)));",
+                  "pm.environment.set('sandboxLocalStubReady', String(Boolean(data.isReadyForLocalStubSubmission)));",
+                  "pm.environment.set('sandboxPresignedReady', String(Boolean(data.isReadyForPresignedRemoteSandboxSubmission)));",
+                  "pm.environment.set('sandboxInternalSignerMaterialReady', String(Boolean(data.isInternalSignerMaterialReady)));",
+                  "pm.environment.set('sandboxInternalSignerMaterialStatus', data.internalSignerMaterialStatus || '');",
+                  "pm.environment.set('sandboxInternalSignerMaterialDetail', data.internalSignerMaterialDetail || '');",
                   "pm.environment.set('sandboxRecommendedNextStep', data.recommendedNextStep || '');",
                   "pm.environment.set('invoice01SubmitSupported', String(Boolean(invoiceSupport && invoiceSupport.submitSupported)));",
                   "pm.environment.set('invoice01SchemaValidationAvailable', String(Boolean(invoiceSupport && invoiceSupport.schemaValidationAvailable)));",
@@ -645,6 +650,9 @@
                   "const debitNoteSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '05') : null;",
                   "pm.environment.set('debitNote05SubmitSupported', String(Boolean(debitNoteSupport && debitNoteSupport.submitSupported)));",
                   "pm.environment.set('debitNote05SchemaValidationAvailable', String(Boolean(debitNoteSupport && debitNoteSupport.schemaValidationAvailable)));",
+                  "const remissionGuideSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '06') : null;",
+                  "pm.environment.set('remissionGuide06SubmitSupported', String(Boolean(remissionGuideSupport && remissionGuideSupport.submitSupported)));",
+                  "pm.environment.set('remissionGuide06SchemaValidationAvailable', String(Boolean(remissionGuideSupport && remissionGuideSupport.schemaValidationAvailable)));",
                   "const withholdingSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '07') : null;",
                   "pm.environment.set('withholding07SubmitSupported', String(Boolean(withholdingSupport && withholdingSupport.submitSupported)));",
                   "pm.environment.set('withholding07SchemaValidationAvailable', String(Boolean(withholdingSupport && withholdingSupport.schemaValidationAvailable)));"
@@ -789,6 +797,45 @@
               }
             },
             "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/debit-note"
+          }
+        },
+        {
+          "name": "Get Remission Guide Numbering",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/remission-guide"
+          }
+        },
+        {
+          "name": "Upsert Remission Guide Numbering",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"establishmentCode\": \"{{withholdingEstablishmentCode}}\",\n  \"emissionPointCode\": \"{{withholdingEmissionPointCode}}\",\n  \"nextSequenceNumber\": {{withholdingNextSequenceNumber}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/remission-guide"
           }
         },
         {
@@ -1224,6 +1271,127 @@
                   "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
                   "const data = pm.response.json();",
                   "if (data.ride && data.ride.sequenceDisplay) pm.environment.set('debitNoteSequenceDisplay', data.ride.sequenceDisplay);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Remission Guide From Invoice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.invoice && data.invoice.id) pm.environment.set('remissionGuideId', data.invoice.id);",
+                  "if (data.invoice && data.invoice.number) pm.environment.set('remissionGuideNumber', data.invoice.number);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceInvoiceId\": \"{{invoiceId}}\",\n  \"shipmentReason\": \"{{remissionGuideReason}}\",\n  \"shipmentStartAt\": \"{{remissionGuideShipmentStartAt}}\",\n  \"shipmentEndAt\": \"{{remissionGuideShipmentEndAt}}\",\n  \"departureAddress\": \"{{remissionGuideDepartureAddress}}\",\n  \"arrivalAddress\": \"{{remissionGuideArrivalAddress}}\",\n  \"carrierName\": \"{{remissionGuideCarrierName}}\",\n  \"carrierIdentificationType\": \"{{remissionGuideCarrierIdentificationType}}\",\n  \"carrierIdentification\": \"{{remissionGuideCarrierIdentification}}\",\n  \"vehiclePlate\": \"{{remissionGuideVehiclePlate}}\",\n  \"destinationRoute\": \"{{remissionGuideDestinationRoute}}\",\n  \"issuedAt\": \"{{remissionGuideIssuedAt}}\",\n  \"notes\": \"{{remissionGuideNotes}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/remission-guides"
+          }
+        },
+        {
+          "name": "Get Remission Guide Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.environment.set('remissionGuideId', data.id);",
+                  "if (data.number) pm.environment.set('remissionGuideNumber', data.number);",
+                  "if (data.accessKey) pm.environment.set('remissionGuideAccessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('remissionGuideSubmissionReference', data.submissionReference);",
+                  "if (data.authorizationNumber) pm.environment.set('remissionGuideAuthorizationNumber', data.authorizationNumber);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Remission Guide XML Preview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/xml"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.environment.set('remissionGuideXmlPreview', pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Remission Guide RIDE",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/ride"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.ride && data.ride.sequenceDisplay) pm.environment.set('remissionGuideSequenceDisplay', data.ride.sequenceDisplay);"
                 ]
               }
             }
@@ -2032,6 +2200,165 @@
           }
         },
         {
+          "name": "Get Remission Guide RIDE HTML",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/ride/html"
+          }
+        },
+        {
+          "name": "Get Remission Guide Artifacts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "if (data.fileBaseName) pm.environment.set('remissionGuideArtifactsFileBaseName', data.fileBaseName);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/artifacts"
+          }
+        },
+        {
+          "name": "Download Remission Guide RIDE",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/ride/download"
+          }
+        },
+        {
+          "name": "Download Remission Guide XML",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/xml/download"
+          }
+        },
+        {
+          "name": "Submit Remission Guide Electronic Document (stub signer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.accessKey) pm.environment.set('remissionGuideAccessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('remissionGuideSubmissionReference', data.submissionReference);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/submit"
+          }
+        },
+        {
+          "name": "Submit Remission Guide Presigned Electronic Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.accessKey) pm.environment.set('remissionGuideAccessKey', data.accessKey);",
+                  "if (data.submissionReference) pm.environment.set('remissionGuideSubmissionReference', data.submissionReference);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"signedXml\": {{remissionGuidePresignedXmlJson}},\n  \"signerName\": {{externalSignerNameJson}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/submit-presigned"
+          }
+        },
+        {
+          "name": "Check Remission Guide Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.submissionReference) pm.environment.set('remissionGuideSubmissionReference', data.submissionReference);",
+                  "if (data.authorizationNumber) pm.environment.set('remissionGuideAuthorizationNumber', data.authorizationNumber);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/check-authorization"
+          }
+        },
+        {
           "name": "Submit Debit Note Electronic Document (stub signer)",
           "event": [
             {
@@ -2419,6 +2746,11 @@
                       "const data = pm.response.json();",
                       "const invoiceSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '01') : null;",
                       "pm.environment.set('sandboxReady', String(Boolean(data.isReadyForRemoteSandboxSubmission)));",
+                      "pm.environment.set('sandboxLocalStubReady', String(Boolean(data.isReadyForLocalStubSubmission)));",
+                      "pm.environment.set('sandboxPresignedReady', String(Boolean(data.isReadyForPresignedRemoteSandboxSubmission)));",
+                      "pm.environment.set('sandboxInternalSignerMaterialReady', String(Boolean(data.isInternalSignerMaterialReady)));",
+                      "pm.environment.set('sandboxInternalSignerMaterialStatus', data.internalSignerMaterialStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerMaterialDetail', data.internalSignerMaterialDetail || '');",
                       "pm.environment.set('sandboxRecommendedNextStep', data.recommendedNextStep || '');",
                       "pm.environment.set('invoice01SubmitSupported', String(Boolean(invoiceSupport && invoiceSupport.submitSupported)));"
                     ]
@@ -4004,6 +4336,707 @@
                       "if (data.accessKey) pm.environment.set('withholdingAccessKey', data.accessKey);",
                       "if (data.submissionReference) pm.environment.set('withholdingSubmissionReference', data.submissionReference);",
                       "if (data.authorizationNumber) pm.environment.set('withholdingAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "EC Remission Guide Foundation",
+          "item": [
+            {
+              "name": "Step 01 / Upsert Remission Guide Numbering",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"establishmentCode\": \"{{withholdingEstablishmentCode}}\",\n  \"emissionPointCode\": \"{{withholdingEmissionPointCode}}\",\n  \"nextSequenceNumber\": {{withholdingNextSequenceNumber}}\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/remission-guide"
+              }
+            },
+            {
+              "name": "Step 02 / Get Sandbox Readiness",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "const invoiceSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '01') : null;",
+                      "const creditNoteSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '04') : null;",
+                      "pm.environment.set('sandboxReady', String(Boolean(data.isReadyForRemoteSandboxSubmission)));",
+                      "pm.environment.set('sandboxLocalStubReady', String(Boolean(data.isReadyForLocalStubSubmission)));",
+                      "pm.environment.set('sandboxPresignedReady', String(Boolean(data.isReadyForPresignedRemoteSandboxSubmission)));",
+                      "pm.environment.set('sandboxInternalSignerMaterialReady', String(Boolean(data.isInternalSignerMaterialReady)));",
+                      "pm.environment.set('sandboxInternalSignerMaterialStatus', data.internalSignerMaterialStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerMaterialDetail', data.internalSignerMaterialDetail || '');",
+                      "pm.environment.set('sandboxRecommendedNextStep', data.recommendedNextStep || '');",
+                      "pm.environment.set('invoice01SubmitSupported', String(Boolean(invoiceSupport && invoiceSupport.submitSupported)));",
+                      "pm.environment.set('invoice01SchemaValidationAvailable', String(Boolean(invoiceSupport && invoiceSupport.schemaValidationAvailable)));",
+                      "pm.environment.set('creditNote04SubmitSupported', String(Boolean(creditNoteSupport && creditNoteSupport.submitSupported)));",
+                      "pm.environment.set('creditNote04SchemaValidationAvailable', String(Boolean(creditNoteSupport && creditNoteSupport.schemaValidationAvailable)));",
+                      "const debitNoteSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '05') : null;",
+                      "pm.environment.set('debitNote05SubmitSupported', String(Boolean(debitNoteSupport && debitNoteSupport.submitSupported)));",
+                      "pm.environment.set('debitNote05SchemaValidationAvailable', String(Boolean(debitNoteSupport && debitNoteSupport.schemaValidationAvailable)));",
+                      "const remissionGuideSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '06') : null;",
+                      "pm.environment.set('remissionGuide06SubmitSupported', String(Boolean(remissionGuideSupport && remissionGuideSupport.submitSupported)));",
+                      "pm.environment.set('remissionGuide06SchemaValidationAvailable', String(Boolean(remissionGuideSupport && remissionGuideSupport.schemaValidationAvailable)));",
+                      "const withholdingSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '07') : null;",
+                      "pm.environment.set('withholding07SubmitSupported', String(Boolean(withholdingSupport && withholdingSupport.submitSupported)));",
+                      "pm.environment.set('withholding07SchemaValidationAvailable', String(Boolean(withholdingSupport && withholdingSupport.schemaValidationAvailable)));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-document/readiness"
+              }
+            },
+            {
+              "name": "Step 03 / Create Remission Guide From Invoice",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.invoice && data.invoice.id) pm.environment.set('remissionGuideId', data.invoice.id);",
+                      "if (data.invoice && data.invoice.number) pm.environment.set('remissionGuideNumber', data.invoice.number);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sourceInvoiceId\": \"{{invoiceId}}\",\n  \"shipmentReason\": \"{{remissionGuideReason}}\",\n  \"shipmentStartAt\": \"{{remissionGuideShipmentStartAt}}\",\n  \"shipmentEndAt\": \"{{remissionGuideShipmentEndAt}}\",\n  \"departureAddress\": \"{{remissionGuideDepartureAddress}}\",\n  \"arrivalAddress\": \"{{remissionGuideArrivalAddress}}\",\n  \"carrierName\": \"{{remissionGuideCarrierName}}\",\n  \"carrierIdentificationType\": \"{{remissionGuideCarrierIdentificationType}}\",\n  \"carrierIdentification\": \"{{remissionGuideCarrierIdentification}}\",\n  \"vehiclePlate\": \"{{remissionGuideVehiclePlate}}\",\n  \"destinationRoute\": \"{{remissionGuideDestinationRoute}}\",\n  \"issuedAt\": \"{{remissionGuideIssuedAt}}\",\n  \"notes\": \"{{remissionGuideNotes}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/remission-guides"
+              }
+            },
+            {
+              "name": "Step 04 / Get Remission Guide Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "if (data.id) pm.environment.set('remissionGuideId', data.id);",
+                      "if (data.number) pm.environment.set('remissionGuideNumber', data.number);",
+                      "if (data.accessKey) pm.environment.set('remissionGuideAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('remissionGuideSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('remissionGuideAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 05 / Get Remission Guide XML Preview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/xml"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "pm.environment.set('remissionGuideXmlPreview', pm.response.text());"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 06 / Get Remission Guide RIDE",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/ride"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "if (data.ride && data.ride.sequenceDisplay) pm.environment.set('remissionGuideSequenceDisplay', data.ride.sequenceDisplay);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 07 / Get Remission Guide Artifacts",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "if (data.fileBaseName) pm.environment.set('remissionGuideArtifactsFileBaseName', data.fileBaseName);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/artifacts"
+              }
+            }
+          ]
+        },
+        {
+          "name": "EC Remission Guide Happy Path - Stub",
+          "item": [
+            {
+              "name": "Step 01 / Upsert Remission Guide Numbering",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"establishmentCode\": \"{{withholdingEstablishmentCode}}\",\n  \"emissionPointCode\": \"{{withholdingEmissionPointCode}}\",\n  \"nextSequenceNumber\": {{withholdingNextSequenceNumber}}\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/numbering/remission-guide"
+              }
+            },
+            {
+              "name": "Step 02 / Get Sandbox Readiness",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "const invoiceSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '01') : null;",
+                      "const creditNoteSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '04') : null;",
+                      "pm.environment.set('sandboxReady', String(Boolean(data.isReadyForRemoteSandboxSubmission)));",
+                      "pm.environment.set('sandboxLocalStubReady', String(Boolean(data.isReadyForLocalStubSubmission)));",
+                      "pm.environment.set('sandboxPresignedReady', String(Boolean(data.isReadyForPresignedRemoteSandboxSubmission)));",
+                      "pm.environment.set('sandboxInternalSignerMaterialReady', String(Boolean(data.isInternalSignerMaterialReady)));",
+                      "pm.environment.set('sandboxInternalSignerMaterialStatus', data.internalSignerMaterialStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerMaterialDetail', data.internalSignerMaterialDetail || '');",
+                      "pm.environment.set('sandboxRecommendedNextStep', data.recommendedNextStep || '');",
+                      "pm.environment.set('invoice01SubmitSupported', String(Boolean(invoiceSupport && invoiceSupport.submitSupported)));",
+                      "pm.environment.set('invoice01SchemaValidationAvailable', String(Boolean(invoiceSupport && invoiceSupport.schemaValidationAvailable)));",
+                      "pm.environment.set('creditNote04SubmitSupported', String(Boolean(creditNoteSupport && creditNoteSupport.submitSupported)));",
+                      "pm.environment.set('creditNote04SchemaValidationAvailable', String(Boolean(creditNoteSupport && creditNoteSupport.schemaValidationAvailable)));",
+                      "const debitNoteSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '05') : null;",
+                      "pm.environment.set('debitNote05SubmitSupported', String(Boolean(debitNoteSupport && debitNoteSupport.submitSupported)));",
+                      "pm.environment.set('debitNote05SchemaValidationAvailable', String(Boolean(debitNoteSupport && debitNoteSupport.schemaValidationAvailable)));",
+                      "const remissionGuideSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '06') : null;",
+                      "pm.environment.set('remissionGuide06SubmitSupported', String(Boolean(remissionGuideSupport && remissionGuideSupport.submitSupported)));",
+                      "pm.environment.set('remissionGuide06SchemaValidationAvailable', String(Boolean(remissionGuideSupport && remissionGuideSupport.schemaValidationAvailable)));",
+                      "const withholdingSupport = Array.isArray(data.documentSupport) ? data.documentSupport.find((item) => item.documentCode === '07') : null;",
+                      "pm.environment.set('withholding07SubmitSupported', String(Boolean(withholdingSupport && withholdingSupport.submitSupported)));",
+                      "pm.environment.set('withholding07SchemaValidationAvailable', String(Boolean(withholdingSupport && withholdingSupport.schemaValidationAvailable)));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-document/readiness"
+              }
+            },
+            {
+              "name": "Step 03 / Create Remission Guide From Invoice",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.invoice && data.invoice.id) pm.environment.set('remissionGuideId', data.invoice.id);",
+                      "if (data.invoice && data.invoice.number) pm.environment.set('remissionGuideNumber', data.invoice.number);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sourceInvoiceId\": \"{{invoiceId}}\",\n  \"shipmentReason\": \"{{remissionGuideReason}}\",\n  \"shipmentStartAt\": \"{{remissionGuideShipmentStartAt}}\",\n  \"shipmentEndAt\": \"{{remissionGuideShipmentEndAt}}\",\n  \"departureAddress\": \"{{remissionGuideDepartureAddress}}\",\n  \"arrivalAddress\": \"{{remissionGuideArrivalAddress}}\",\n  \"carrierName\": \"{{remissionGuideCarrierName}}\",\n  \"carrierIdentificationType\": \"{{remissionGuideCarrierIdentificationType}}\",\n  \"carrierIdentification\": \"{{remissionGuideCarrierIdentification}}\",\n  \"vehiclePlate\": \"{{remissionGuideVehiclePlate}}\",\n  \"destinationRoute\": \"{{remissionGuideDestinationRoute}}\",\n  \"issuedAt\": \"{{remissionGuideIssuedAt}}\",\n  \"notes\": \"{{remissionGuideNotes}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/remission-guides"
+              }
+            },
+            {
+              "name": "Step 04 / Get Remission Guide Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "if (data.id) pm.environment.set('remissionGuideId', data.id);",
+                      "if (data.number) pm.environment.set('remissionGuideNumber', data.number);",
+                      "if (data.accessKey) pm.environment.set('remissionGuideAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('remissionGuideSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('remissionGuideAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 05 / Get Remission Guide XML Preview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/xml"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "pm.environment.set('remissionGuideXmlPreview', pm.response.text());"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 06 / Submit Remission Guide Electronic Document (stub signer)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/submit"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('remissionGuideAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('remissionGuideSubmissionReference', data.submissionReference);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 07 / Check Remission Guide Authorization",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/check-authorization"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.submissionReference) pm.environment.set('remissionGuideSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('remissionGuideAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 08 / Get Remission Guide Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "if (data.id) pm.environment.set('remissionGuideId', data.id);",
+                      "if (data.number) pm.environment.set('remissionGuideNumber', data.number);",
+                      "if (data.accessKey) pm.environment.set('remissionGuideAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('remissionGuideSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('remissionGuideAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 09 / Get Remission Guide RIDE",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/ride"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "if (data.ride && data.ride.sequenceDisplay) pm.environment.set('remissionGuideSequenceDisplay', data.ride.sequenceDisplay);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 10 / Get Remission Guide Artifacts",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/artifacts"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "if (data.fileBaseName) pm.environment.set('remissionGuideArtifactsFileBaseName', data.fileBaseName);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "EC Remission Guide Presigned Flow - Continue After External Signature",
+          "item": [
+            {
+              "name": "Step 01 / Create Remission Guide From Invoice",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sourceInvoiceId\": \"{{invoiceId}}\",\n  \"shipmentReason\": \"{{remissionGuideReason}}\",\n  \"shipmentStartAt\": \"{{remissionGuideShipmentStartAt}}\",\n  \"shipmentEndAt\": \"{{remissionGuideShipmentEndAt}}\",\n  \"departureAddress\": \"{{remissionGuideDepartureAddress}}\",\n  \"arrivalAddress\": \"{{remissionGuideArrivalAddress}}\",\n  \"carrierName\": \"{{remissionGuideCarrierName}}\",\n  \"carrierIdentificationType\": \"{{remissionGuideCarrierIdentificationType}}\",\n  \"carrierIdentification\": \"{{remissionGuideCarrierIdentification}}\",\n  \"vehiclePlate\": \"{{remissionGuideVehiclePlate}}\",\n  \"destinationRoute\": \"{{remissionGuideDestinationRoute}}\",\n  \"issuedAt\": \"{{remissionGuideIssuedAt}}\",\n  \"notes\": \"{{remissionGuideNotes}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/remission-guides"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.invoice && data.invoice.id) pm.environment.set('remissionGuideId', data.invoice.id);",
+                      "if (data.invoice && data.invoice.number) pm.environment.set('remissionGuideNumber', data.invoice.number);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 02 / Get Remission Guide XML Preview",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/xml"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "pm.environment.set('remissionGuideXmlPreview', pm.response.text());"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 03 / Submit Remission Guide Presigned XML",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"signedXml\": {{remissionGuidePresignedXmlJson}},\n  \"signerName\": {{externalSignerNameJson}}\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/submit-presigned"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.accessKey) pm.environment.set('remissionGuideAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('remissionGuideSubmissionReference', data.submissionReference);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 04 / Check Remission Guide Authorization",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}/electronic-document/check-authorization"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                      "const data = pm.response.json();",
+                      "if (data.submissionReference) pm.environment.set('remissionGuideSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('remissionGuideAuthorizationNumber', data.authorizationNumber);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Step 05 / Get Remission Guide Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{ownerToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/invoices/{{remissionGuideId}}"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                      "const data = pm.response.json();",
+                      "if (data.id) pm.environment.set('remissionGuideId', data.id);",
+                      "if (data.number) pm.environment.set('remissionGuideNumber', data.number);",
+                      "if (data.accessKey) pm.environment.set('remissionGuideAccessKey', data.accessKey);",
+                      "if (data.submissionReference) pm.environment.set('remissionGuideSubmissionReference', data.submissionReference);",
+                      "if (data.authorizationNumber) pm.environment.set('remissionGuideAuthorizationNumber', data.authorizationNumber);"
                     ]
                   }
                 }

@@ -89,6 +89,33 @@ const bundleRegistry = {
       },
     ],
   },
+  '06': {
+    label: 'Guia de remision ECU',
+    targetDir: resolve(
+      process.cwd(),
+      'vendor/sri/guia-remision-1.0.0/XML y XSD Guia de Remision',
+    ),
+    requiredFiles: [
+      {
+        targetName: 'guiaRemision_V1.0.0.xsd',
+        sourceNames: ['guiaRemision_V1.0.0.xsd', 'GuiaRemision_V1.0.0.xsd'],
+      },
+      {
+        targetName: 'xmldsig-core-schema.xsd',
+        sourceNames: ['xmldsig-core-schema.xsd'],
+        fallbackPath: resolve(
+          process.cwd(),
+          'vendor/sri/factura-2.1.0/XML y XSD Factura/xmldsig-core-schema.xsd',
+        ),
+      },
+    ],
+    optionalFiles: [
+      {
+        targetName: 'guiaRemision_V1.0.0.xml',
+        sourceNames: ['guiaRemision_V1.0.0.xml', 'GuiaRemision_V1.0.0.xml'],
+      },
+    ],
+  },
   '07': {
     label: 'Comprobante de retencion ECU',
     targetDir: resolve(
@@ -233,7 +260,7 @@ function parseArgs(argv) {
 
   if (!documentCode || !zip) {
     throw new Error(
-      'Uso: node tools/sri/install-sri-schema-bundle.mjs --document-code <01|04|05|07> --zip </ruta/al/zip>',
+      'Uso: node tools/sri/install-sri-schema-bundle.mjs --document-code <01|04|05|06|07> --zip </ruta/al/zip>',
     );
   }
 

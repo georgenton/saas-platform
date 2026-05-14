@@ -7,7 +7,16 @@ export interface ElectronicSandboxReadinessResponseDto {
   signatureProvider: string | null;
   submissionProvider: string | null;
   transmissionMode: string | null;
+  internalSignerMaterialStatus:
+    | 'not_configured'
+    | 'not_applicable'
+    | 'likely_usable'
+    | 'invalid';
+  internalSignerMaterialDetail: string;
+  isInternalSignerMaterialReady: boolean;
+  isReadyForLocalStubSubmission: boolean;
   isReadyForRemoteSandboxSubmission: boolean;
+  isReadyForPresignedRemoteSandboxSubmission: boolean;
   blockers: string[];
   warnings: string[];
   checks: Array<{
@@ -17,7 +26,7 @@ export interface ElectronicSandboxReadinessResponseDto {
     detail: string;
   }>;
   documentSupport: Array<{
-    documentCode: '01' | '04' | '05' | '07';
+    documentCode: '01' | '04' | '05' | '06' | '07';
     label: string;
     numberingConfigured: boolean;
     previewAvailable: boolean;
@@ -39,8 +48,14 @@ export function toElectronicSandboxReadinessResponseDto(
     signatureProvider: readiness.signatureProvider,
     submissionProvider: readiness.submissionProvider,
     transmissionMode: readiness.transmissionMode,
+    internalSignerMaterialStatus: readiness.internalSignerMaterialStatus,
+    internalSignerMaterialDetail: readiness.internalSignerMaterialDetail,
+    isInternalSignerMaterialReady: readiness.isInternalSignerMaterialReady,
+    isReadyForLocalStubSubmission: readiness.isReadyForLocalStubSubmission,
     isReadyForRemoteSandboxSubmission:
       readiness.isReadyForRemoteSandboxSubmission,
+    isReadyForPresignedRemoteSandboxSubmission:
+      readiness.isReadyForPresignedRemoteSandboxSubmission,
     blockers: readiness.blockers,
     warnings: readiness.warnings,
     checks: readiness.checks.map((check) => ({

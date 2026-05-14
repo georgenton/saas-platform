@@ -3,6 +3,7 @@ import {
   AuthenticatedSessionResponse,
   CreditNoteResponse,
   DebitNoteResponse,
+  RemissionGuideResponse,
   WithholdingResponse,
   CustomerResponse,
   ElectronicSandboxReadinessResponse,
@@ -411,9 +412,12 @@ export async function upsertElectronicSubmissionSettings(
 export async function fetchInvoiceNumberingSettings(
   token: string,
   tenantSlug: string,
+  documentCode = '01',
 ): Promise<InvoiceNumberingSettingsResponse> {
+  const numberingPath = resolveNumberingPath(documentCode);
+
   return request<InvoiceNumberingSettingsResponse>(
-    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/numbering/invoice`,
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/numbering/${numberingPath}`,
     {
       method: 'GET',
       token,
@@ -444,8 +448,10 @@ export async function upsertInvoiceNumberingSettings(
     nextSequenceNumber: number;
   },
 ): Promise<InvoiceNumberingSettingsResponse> {
+  const numberingPath = resolveNumberingPath(body.documentCode ?? '01');
+
   return request<InvoiceNumberingSettingsResponse>(
-    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/numbering/invoice`,
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/numbering/${numberingPath}`,
     {
       method: 'POST',
       token,
@@ -829,6 +835,36 @@ export async function createDebitNote(
   );
 }
 
+export async function createRemissionGuide(
+  token: string,
+  tenantSlug: string,
+  body: {
+    sourceInvoiceId: string;
+    shipmentReason: string;
+    shipmentStartAt: string;
+    shipmentEndAt: string;
+    departureAddress: string;
+    arrivalAddress: string;
+    carrierName: string;
+    carrierIdentificationType: '04' | '05' | '06' | '07' | '08';
+    carrierIdentification: string;
+    vehiclePlate: string;
+    destinationRoute?: string | null;
+    number?: string;
+    issuedAt?: string;
+    notes?: string | null;
+  },
+): Promise<RemissionGuideResponse> {
+  return request<RemissionGuideResponse>(
+    `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/remission-guides`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
 export async function createWithholding(
   token: string,
   tenantSlug: string,
@@ -850,6 +886,22 @@ export async function createWithholding(
       body: JSON.stringify(body),
     },
   );
+}
+
+function resolveNumberingPath(documentCode: string): string {
+  switch (documentCode) {
+    case '04':
+      return 'credit-note';
+    case '05':
+      return 'debit-note';
+    case '06':
+      return 'remission-guide';
+    case '07':
+      return 'withholding';
+    case '01':
+    default:
+      return 'invoice';
+  }
 }
 
 export async function updateInvoiceStatus(

@@ -9,6 +9,7 @@ export interface ElectronicInvoicingReadinessCheck {
     | 'invoice_numbering'
     | 'signature_settings'
     | 'signature_material'
+    | 'signature_material_probe'
     | 'signature_capability'
     | 'submission_settings'
     | 'submission_gateway'
@@ -21,7 +22,7 @@ export interface ElectronicInvoicingReadinessCheck {
 }
 
 export interface ElectronicInvoicingDocumentSupport {
-  documentCode: '01' | '04' | '05' | '07';
+  documentCode: '01' | '04' | '05' | '06' | '07';
   label: string;
   numberingConfigured: boolean;
   previewAvailable: boolean;
@@ -38,7 +39,16 @@ export interface ElectronicInvoicingSandboxReadiness {
   signatureProvider: string | null;
   submissionProvider: string | null;
   transmissionMode: string | null;
+  internalSignerMaterialStatus:
+    | 'not_configured'
+    | 'not_applicable'
+    | 'likely_usable'
+    | 'invalid';
+  internalSignerMaterialDetail: string;
+  isInternalSignerMaterialReady: boolean;
+  isReadyForLocalStubSubmission: boolean;
   isReadyForRemoteSandboxSubmission: boolean;
+  isReadyForPresignedRemoteSandboxSubmission: boolean;
   blockers: string[];
   warnings: string[];
   checks: ElectronicInvoicingReadinessCheck[];

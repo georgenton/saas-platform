@@ -46,6 +46,7 @@ import {
   CreateTenantCustomerUseCase,
   CreateTenantCreditNoteUseCase,
   CreateTenantDebitNoteUseCase,
+  CreateTenantRemissionGuideUseCase,
   CreateTenantWithholdingUseCase,
   CreateTenantInvoiceUseCase,
   CreateTenantInvoiceItemUseCase,
@@ -192,6 +193,7 @@ describe('API', () => {
   let createTenantCustomerUseCase: { execute: jest.Mock };
   let createTenantCreditNoteUseCase: { execute: jest.Mock };
   let createTenantDebitNoteUseCase: { execute: jest.Mock };
+  let createTenantRemissionGuideUseCase: { execute: jest.Mock };
   let createTenantWithholdingUseCase: { execute: jest.Mock };
   let createTenantInvoiceUseCase: { execute: jest.Mock };
   let createTenantInvoiceItemUseCase: { execute: jest.Mock };
@@ -591,7 +593,13 @@ describe('API', () => {
     signatureProvider: 'stub_local',
     submissionProvider: 'stub_sri',
     transmissionMode: 'sync_stub',
+    internalSignerMaterialStatus: 'not_applicable' as const,
+    internalSignerMaterialDetail:
+      'El provider actual no usa PKCS#12. Esta inspeccion solo aplica al carril de firma interna xades_pkcs12.',
+    isInternalSignerMaterialReady: false,
+    isReadyForLocalStubSubmission: true,
     isReadyForRemoteSandboxSubmission: false,
+    isReadyForPresignedRemoteSandboxSubmission: false,
     blockers: [
       'La firma stub_local sirve para demos y previews, pero no genera una firma valida para el esquema offline del SRI.',
       'El provider actual sigue siendo stub_sri; para sandbox real debe usarse sri_offline_ws.',
@@ -605,6 +613,13 @@ describe('API', () => {
         label: 'Perfil fiscal',
         status: 'ready' as const,
         detail: 'Configurado para test con RUC 1790012345001.',
+      },
+      {
+        key: 'signature_material_probe',
+        label: 'Inspeccion estructural PKCS#12',
+        status: 'ready' as const,
+        detail:
+          'El provider actual no usa PKCS#12. Esta inspeccion solo aplica al carril de firma interna xades_pkcs12.',
       },
       {
         key: 'signature_capability',
@@ -653,7 +668,18 @@ describe('API', () => {
         schemaValidationAvailable: true,
         submitSupported: true,
         detail:
-          'La nota de debito 05 ya tiene preview XML, RIDE y validacion XSD local. El carril de submit electronico ya puede probarse con la misma frontera tecnica de 01 y 04.',
+          'La nota de debito 05 ya tiene draft, preview XML, RIDE y validacion XSD local. El carril de submit electronico queda habilitado sobre la misma frontera tecnica multi-documento.',
+      },
+      {
+        documentCode: '06' as const,
+        label: 'Guia de remision ECU (06)',
+        numberingConfigured: true,
+        previewAvailable: true,
+        rideAvailable: true,
+        schemaValidationAvailable: true,
+        submitSupported: true,
+        detail:
+          'La guia de remision 06 ya tiene draft, preview XML, RIDE y validacion XSD local. El carril de submit electronico queda habilitado sobre la misma frontera tecnica multi-documento.',
       },
       {
         documentCode: '07' as const,
@@ -664,11 +690,11 @@ describe('API', () => {
         schemaValidationAvailable: true,
         submitSupported: true,
         detail:
-          'El comprobante de retencion 07 ya tiene preview XML, RIDE y validacion XSD local. El carril de submit electronico ya puede probarse con la misma frontera tecnica multi-documento.',
+          'El comprobante de retencion 07 ya tiene draft, preview XML, RIDE y validacion XSD local. El carril de submit electronico queda habilitado sobre la misma frontera tecnica multi-documento.',
       },
     ],
     recommendedNextStep:
-      'Primero resuelve los blockers del flujo 01 y despues cambia a una prueba controlada en sandbox.',
+      'El tenant puede seguir validando el pipeline interno con stub local mientras termina de cerrar el camino remoto.',
   };
   const invoiceElectronicEvent = InvoiceElectronicEvent.create({
     id: 'invoice_event_001',
@@ -715,6 +741,16 @@ describe('API', () => {
     nextSequenceNumber: 7,
     createdAt: new Date('2026-05-08T15:10:00.000Z'),
     updatedAt: new Date('2026-05-08T15:10:00.000Z'),
+  });
+  const remissionGuideNumberingSettings = InvoiceNumberingSettings.create({
+    id: 'invoice_numbering_006',
+    tenantId: 'tenant_123',
+    documentCode: '06',
+    establishmentCode: '006',
+    emissionPointCode: '001',
+    nextSequenceNumber: 4,
+    createdAt: new Date('2026-05-12T15:10:00.000Z'),
+    updatedAt: new Date('2026-05-12T15:10:00.000Z'),
   });
   const withholdingNumberingSettings = InvoiceNumberingSettings.create({
     id: 'invoice_numbering_007',
@@ -870,6 +906,41 @@ describe('API', () => {
     createdAt: new Date('2026-05-08T19:30:00.000Z'),
     updatedAt: new Date('2026-05-08T19:30:00.000Z'),
   });
+  const remissionGuideDraftInvoice = Invoice.create({
+    id: 'remission_001',
+    tenantId: 'tenant_123',
+    customerId: 'customer_acme',
+    number: '006-001-000000004',
+    documentCode: '06',
+    establishmentCode: '006',
+    emissionPointCode: '001',
+    sequenceNumber: 4,
+    modifiedDocumentId: 'invoice_001',
+    modifiedDocumentNumber: 'INV-001',
+    modifiedDocumentIssuedAt: new Date('2026-04-27T16:00:00.000Z'),
+    modificationReason: 'Traslado de mercaderia al cliente.',
+    shipmentReason: 'Traslado de mercaderia al cliente.',
+    shipmentStartAt: new Date('2026-05-12T13:00:00.000Z'),
+    shipmentEndAt: new Date('2026-05-12T18:00:00.000Z'),
+    departureAddress: 'Sucursal Matriz',
+    arrivalAddress: 'Bodega del cliente',
+    carrierName: 'Transportes Demo S.A.',
+    carrierIdentificationType: '04',
+    carrierIdentification: '1790012345001',
+    vehiclePlate: 'ABC-1234',
+    destinationRoute: 'Matriz - Cliente',
+    buyerIdentificationType: '04',
+    buyerIdentification: '1790012345001',
+    buyerName: 'Acme Corp',
+    buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+    status: 'draft',
+    currency: 'USD',
+    issuedAt: new Date('2026-05-12T13:00:00.000Z'),
+    dueAt: new Date('2026-05-12T18:00:00.000Z'),
+    notes: 'Guia de remision de prueba.',
+    createdAt: new Date('2026-05-12T13:00:00.000Z'),
+    updatedAt: new Date('2026-05-12T13:00:00.000Z'),
+  });
   const withholdingFirstItem = InvoiceItem.create({
     id: 'withholding_item_001',
     tenantId: 'tenant_123',
@@ -885,6 +956,38 @@ describe('API', () => {
     lineTaxInCents: 0,
     createdAt: new Date('2026-05-08T19:30:00.000Z'),
     updatedAt: new Date('2026-05-08T19:30:00.000Z'),
+  });
+  const remissionGuideFirstItem = InvoiceItem.create({
+    id: 'remission_item_001',
+    tenantId: 'tenant_123',
+    invoiceId: 'remission_001',
+    position: 1,
+    description: 'Suscripcion mensual Growth',
+    quantity: 2,
+    unitPriceInCents: 0,
+    lineTotalInCents: 0,
+    taxRateId: null,
+    taxRateName: null,
+    taxRatePercentage: null,
+    lineTaxInCents: 0,
+    createdAt: new Date('2026-05-12T13:00:00.000Z'),
+    updatedAt: new Date('2026-05-12T13:00:00.000Z'),
+  });
+  const remissionGuideSecondItem = InvoiceItem.create({
+    id: 'remission_item_002',
+    tenantId: 'tenant_123',
+    invoiceId: 'remission_001',
+    position: 2,
+    description: 'Setup inicial',
+    quantity: 1,
+    unitPriceInCents: 0,
+    lineTotalInCents: 0,
+    taxRateId: null,
+    taxRateName: null,
+    taxRatePercentage: null,
+    lineTaxInCents: 0,
+    createdAt: new Date('2026-05-12T13:00:00.000Z'),
+    updatedAt: new Date('2026-05-12T13:00:00.000Z'),
   });
   const creditNoteDocumentView = {
     issuer: {
@@ -1084,6 +1187,84 @@ describe('API', () => {
     </impuesto>
   </impuestos>
 </comprobanteRetencion>`;
+  const remissionGuideDocumentView = {
+    issuer: {
+      tenantId: 'tenant_123',
+      tenantName: 'SaaS Platform',
+      tenantSlug: 'saas-platform',
+      legalName: 'SaaS Platform S.A.',
+      commercialName: 'SaaS Platform',
+      taxId: '1790012345001',
+      environment: 'test',
+      emissionType: 'normal',
+      accountingObligated: true,
+      specialTaxpayerCode: null,
+      rimpeTaxpayerType: null,
+      matrixAddress: 'Av. Principal y Calle Secundaria',
+      establishmentAddress: 'Sucursal Matriz',
+    },
+    customer: {
+      name: 'Acme Corp',
+      email: 'billing@acme.dev',
+      taxId: '1790012345001',
+      identificationType: '04',
+      identification: '1790012345001',
+      billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+    },
+    invoice: remissionGuideDraftInvoice,
+    lines: [
+      {
+        id: 'remission_item_001',
+        position: 1,
+        description: 'Suscripcion mensual Growth',
+        quantity: 2,
+        unitPriceInCents: 0,
+        lineSubtotalInCents: 0,
+        taxRateId: null,
+        taxRateName: null,
+        taxRatePercentage: null,
+        lineTaxInCents: 0,
+        lineTotalInCents: 0,
+      },
+      {
+        id: 'remission_item_002',
+        position: 2,
+        description: 'Setup inicial',
+        quantity: 1,
+        unitPriceInCents: 0,
+        lineSubtotalInCents: 0,
+        taxRateId: null,
+        taxRateName: null,
+        taxRatePercentage: null,
+        lineTaxInCents: 0,
+        lineTotalInCents: 0,
+      },
+    ],
+    totals: {
+      subtotalInCents: 0,
+      taxInCents: 0,
+      totalInCents: 0,
+    },
+  };
+  const remissionGuideXmlPreview = `<?xml version="1.0" encoding="UTF-8"?>
+<guiaRemision id="comprobante" version="1.0.0">
+  <infoTributaria>
+    <claveAcceso>120520260617900123450010060010000000041234567810</claveAcceso>
+    <codDoc>06</codDoc>
+  </infoTributaria>
+  <infoGuiaRemision>
+    <dirPartida>Sucursal Matriz</dirPartida>
+    <fechaIniTransporte>12/05/2026</fechaIniTransporte>
+    <fechaFinTransporte>12/05/2026</fechaFinTransporte>
+    <placa>ABC-1234</placa>
+  </infoGuiaRemision>
+  <destinatarios>
+    <destinatario>
+      <motivoTraslado>Traslado de mercaderia al cliente.</motivoTraslado>
+      <numDocSustento>INV-001</numDocSustento>
+    </destinatario>
+  </destinatarios>
+</guiaRemision>`;
 
   const signJwt = (payload: Record<string, unknown>): string => {
     const encode = (value: unknown): string =>
@@ -1430,6 +1611,13 @@ describe('API', () => {
         debitNote: debitNoteDraftInvoice,
         sourceInvoice: draftInvoice,
         initialItem: debitNoteFirstItem,
+      }),
+    };
+    createTenantRemissionGuideUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        remissionGuide: remissionGuideDraftInvoice,
+        sourceInvoice: draftInvoice,
+        items: [remissionGuideFirstItem, remissionGuideSecondItem],
       }),
     };
     createTenantWithholdingUseCase = {
@@ -1780,6 +1968,8 @@ describe('API', () => {
       .useValue(createTenantCreditNoteUseCase)
       .overrideProvider(CreateTenantDebitNoteUseCase)
       .useValue(createTenantDebitNoteUseCase)
+      .overrideProvider(CreateTenantRemissionGuideUseCase)
+      .useValue(createTenantRemissionGuideUseCase)
       .overrideProvider(CreateTenantWithholdingUseCase)
       .useValue(createTenantWithholdingUseCase)
       .overrideProvider(CreateTenantInvoiceUseCase)
@@ -2668,6 +2858,70 @@ describe('API', () => {
     });
   });
 
+  it('GET /api/invoicing/tenants/:slug/numbering/remission-guide should return remission guide numbering settings', async () => {
+    getTenantInvoiceNumberingSettingsUseCase.execute.mockResolvedValueOnce(
+      remissionGuideNumberingSettings,
+    );
+
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/numbering/remission-guide')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'invoice_numbering_006',
+        tenantId: 'tenant_123',
+        documentCode: '06',
+        establishmentCode: '006',
+        emissionPointCode: '001',
+        nextSequenceNumber: 4,
+        previewNumber: '006-001-000000004',
+        createdAt: '2026-05-12T15:10:00.000Z',
+        updatedAt: '2026-05-12T15:10:00.000Z',
+      });
+
+    expect(getTenantInvoiceNumberingSettingsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      '06',
+    );
+  });
+
+  it('POST /api/invoicing/tenants/:slug/numbering/remission-guide should upsert remission guide numbering settings', async () => {
+    upsertTenantInvoiceNumberingSettingsUseCase.execute.mockResolvedValueOnce(
+      remissionGuideNumberingSettings,
+    );
+
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/numbering/remission-guide')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        establishmentCode: '006',
+        emissionPointCode: '001',
+        nextSequenceNumber: 4,
+      })
+      .expect(201)
+      .expect({
+        id: 'invoice_numbering_006',
+        tenantId: 'tenant_123',
+        documentCode: '06',
+        establishmentCode: '006',
+        emissionPointCode: '001',
+        nextSequenceNumber: 4,
+        previewNumber: '006-001-000000004',
+        createdAt: '2026-05-12T15:10:00.000Z',
+        updatedAt: '2026-05-12T15:10:00.000Z',
+      });
+
+    expect(
+      upsertTenantInvoiceNumberingSettingsUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      documentCode: '06',
+      establishmentCode: '006',
+      emissionPointCode: '001',
+      nextSequenceNumber: 4,
+    });
+  });
+
   it('GET /api/invoicing/tenants/:slug/numbering/withholding should return withholding numbering settings', async () => {
     getTenantInvoiceNumberingSettingsUseCase.execute.mockResolvedValueOnce(
       withholdingNumberingSettings,
@@ -3213,6 +3467,30 @@ describe('API', () => {
     expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'debit_note_001',
+    );
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/document/html should return printable remission guide html', async () => {
+    getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
+      remissionGuideDocumentView,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/remission_001/document/html',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /text\/html/)
+      .expect((response) => {
+        expect(response.text).toContain('<!doctype html>');
+        expect(response.text).toContain('Remission Guide 006-001-000000004');
+        expect(response.text).toContain('Acme Corp');
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'remission_001',
     );
   });
 
@@ -3765,6 +4043,44 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride should return the electronic RIDE view for a remission guide', async () => {
+    getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
+      remissionGuideDocumentView,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/remission_001/electronic-document/ride',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.invoice.number).toBe('006-001-000000004');
+        expect(response.body.ride.documentLabel).toBe('RIDE Guia de remision');
+        expect(response.body.ride.additionalInfoFields).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              label: 'Direccion partida',
+              value: 'Sucursal Matriz',
+            }),
+            expect.objectContaining({
+              label: 'Transportista',
+              value: 'Transportes Demo S.A.',
+            }),
+            expect.objectContaining({
+              label: 'Placa',
+              value: 'ABC-1234',
+            }),
+          ]),
+        );
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'remission_001',
+    );
+  });
+
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/artifacts should return formal electronic artifact metadata', async () => {
     await request(httpServer)
       .get(
@@ -3869,6 +4185,33 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/artifacts should return remission guide electronic artifact metadata', async () => {
+    getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
+      remissionGuideDocumentView,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/remission_001/electronic-document/artifacts',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        fileBaseName: '1790012345001-06-006-001-000000004',
+        rideHtmlFileName: '1790012345001-06-006-001-000000004-ride.html',
+        xmlFileName: '1790012345001-06-006-001-000000004.xml',
+        accessKey: null,
+        electronicStatus: null,
+        canDownloadRide: true,
+        canDownloadXml: true,
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'remission_001',
+    );
+  });
+
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/xml should return the Ecuador XML preview', async () => {
     await request(httpServer)
       .get(
@@ -3970,6 +4313,33 @@ describe('API', () => {
     ).toHaveBeenCalledWith('saas-platform', 'withholding_001');
   });
 
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/xml should return the Ecuador remission guide XML preview', async () => {
+    getTenantInvoiceElectronicXmlPreviewUseCase.execute.mockResolvedValueOnce(
+      remissionGuideXmlPreview,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/remission_001/electronic-document/xml',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /application\/xml/)
+      .expect((response) => {
+        expect(response.text).toContain(
+          '<guiaRemision id="comprobante" version="1.0.0">',
+        );
+        expect(response.text).toContain('<codDoc>06</codDoc>');
+        expect(response.text).toContain(
+          '<motivoTraslado>Traslado de mercaderia al cliente.</motivoTraslado>',
+        );
+      });
+
+    expect(
+      getTenantInvoiceElectronicXmlPreviewUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'remission_001');
+  });
+
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride/download should return the RIDE as attachment', async () => {
     await request(httpServer)
       .get(
@@ -4009,6 +4379,29 @@ describe('API', () => {
     expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'debit_note_001',
+    );
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/ride/download should return the remission guide RIDE as attachment', async () => {
+    getTenantInvoiceDocumentUseCase.execute.mockResolvedValueOnce(
+      remissionGuideDocumentView,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/remission_001/electronic-document/ride/download',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /text\/html/)
+      .expect('Content-Disposition', /attachment; filename=/)
+      .expect((response) => {
+        expect(response.text).toContain('RIDE Guia de remision');
+      });
+
+    expect(getTenantInvoiceDocumentUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'remission_001',
     );
   });
 
@@ -4056,6 +4449,30 @@ describe('API', () => {
     expect(
       getTenantInvoiceElectronicXmlPreviewUseCase.execute,
     ).toHaveBeenCalledWith('saas-platform', 'debit_note_001');
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/xml/download should return the remission guide XML as attachment', async () => {
+    getTenantInvoiceElectronicXmlPreviewUseCase.execute.mockResolvedValueOnce(
+      remissionGuideXmlPreview,
+    );
+
+    await request(httpServer)
+      .get(
+        '/api/invoicing/tenants/saas-platform/invoices/remission_001/electronic-document/xml/download',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect('Content-Type', /application\/xml/)
+      .expect('Content-Disposition', /attachment; filename=/)
+      .expect((response) => {
+        expect(response.text).toContain(
+          '<guiaRemision id="comprobante" version="1.0.0">',
+        );
+      });
+
+    expect(
+      getTenantInvoiceElectronicXmlPreviewUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'remission_001');
   });
 
   it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/send-email should trigger invoice delivery', async () => {
@@ -4443,6 +4860,94 @@ describe('API', () => {
       invoiceId: 'withholding_001',
       signedXml:
         '<comprobanteRetencion id="comprobante" version="2.0.0"><infoTributaria><codDoc>07</codDoc><claveAcceso>080520260717900123450010050010000000091234567813</claveAcceso></infoTributaria><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"></ds:Signature></comprobanteRetencion>',
+      signerName: 'sandbox-signer',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/submit should also submit a remission guide when its XSD support is available', async () => {
+    submitTenantInvoiceElectronicDocumentUseCase.execute.mockResolvedValueOnce(
+      remissionGuideDraftInvoice.updateElectronicStatus(
+        {
+          electronicStatus: 'submitted',
+          accessKey: '120520260617900123450010060010000000041234567810',
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage:
+            'Guia de remision firmada y enviada al gateway stub del SRI. Pendiente de autorizacion real.',
+          signedAt: new Date('2026-05-12T15:41:00.000Z'),
+          submittedAt: new Date('2026-05-12T15:41:08.000Z'),
+          submissionReference: 'stub-sri-remission_001-1747064468000',
+        },
+        new Date('2026-05-12T15:41:08.000Z'),
+      ),
+    );
+
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/invoices/remission_001/electronic-document/submit',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect({
+        submitted: true,
+        electronicStatus: 'submitted',
+        accessKey: '120520260617900123450010060010000000041234567810',
+        submittedAt: '2026-05-12T15:41:08.000Z',
+        submissionReference: 'stub-sri-remission_001-1747064468000',
+      });
+
+    expect(
+      submitTenantInvoiceElectronicDocumentUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'remission_001',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/invoices/:invoiceId/electronic-document/submit-presigned should also submit a remission guide when its XSD support is available', async () => {
+    submitTenantPresignedInvoiceElectronicDocumentUseCase.execute.mockResolvedValueOnce(
+      remissionGuideDraftInvoice.updateElectronicStatus(
+        {
+          electronicStatus: 'submitted',
+          accessKey: '120520260617900123450010060010000000041234567810',
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage:
+            'XML firmado externamente por sandbox-signer. Guia de remision enviada al gateway stub del SRI.',
+          signedAt: new Date('2026-05-12T15:42:00.000Z'),
+          submittedAt: new Date('2026-05-12T15:42:09.000Z'),
+          submissionReference: 'stub-sri-presigned-remission_001-123456789',
+        },
+        new Date('2026-05-12T15:42:09.000Z'),
+      ),
+    );
+
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/invoices/remission_001/electronic-document/submit-presigned',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        signedXml:
+          '<guiaRemision id="comprobante" version="1.0.0"><infoTributaria><codDoc>06</codDoc><claveAcceso>120520260617900123450010060010000000041234567810</claveAcceso></infoTributaria><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"></ds:Signature></guiaRemision>',
+        signerName: 'sandbox-signer',
+      })
+      .expect(201)
+      .expect({
+        submitted: true,
+        electronicStatus: 'submitted',
+        accessKey: '120520260617900123450010060010000000041234567810',
+        submittedAt: '2026-05-12T15:42:09.000Z',
+        submissionReference: 'stub-sri-presigned-remission_001-123456789',
+      });
+
+    expect(
+      submitTenantPresignedInvoiceElectronicDocumentUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      invoiceId: 'remission_001',
+      signedXml:
+        '<guiaRemision id="comprobante" version="1.0.0"><infoTributaria><codDoc>06</codDoc><claveAcceso>120520260617900123450010060010000000041234567810</claveAcceso></infoTributaria><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"></ds:Signature></guiaRemision>',
       signerName: 'sandbox-signer',
     });
   });
@@ -5027,6 +5532,155 @@ describe('API', () => {
       number: undefined,
       issuedAt: new Date('2026-05-08T19:30:00.000Z'),
       notes: 'Comprobante de retencion de prueba.',
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/remission-guides should create a draft remission guide from a source invoice', async () => {
+    getTenantInvoiceDetailUseCase.execute.mockResolvedValueOnce({
+      invoice: remissionGuideDraftInvoice,
+      items: [remissionGuideFirstItem, remissionGuideSecondItem],
+      payments: [],
+      electronicEvents: [],
+      totals: {
+        subtotalInCents: 0,
+        taxInCents: 0,
+        totalInCents: 0,
+      },
+      settlement: {
+        paidInCents: 0,
+        balanceDueInCents: 0,
+        isFullyPaid: false,
+      },
+    });
+
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/remission-guides')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        sourceInvoiceId: 'invoice_001',
+        shipmentReason: 'Traslado de mercaderia al cliente.',
+        shipmentStartAt: '2026-05-12T13:00:00.000Z',
+        shipmentEndAt: '2026-05-12T18:00:00.000Z',
+        departureAddress: 'Sucursal Matriz',
+        arrivalAddress: 'Bodega del cliente',
+        carrierName: 'Transportes Demo S.A.',
+        carrierIdentificationType: '04',
+        carrierIdentification: '1790012345001',
+        vehiclePlate: 'ABC-1234',
+        destinationRoute: 'Matriz - Cliente',
+        issuedAt: '2026-05-12T13:00:00.000Z',
+        notes: 'Guia de remision de prueba.',
+      })
+      .expect(201)
+      .expect({
+        invoice: {
+          id: 'remission_001',
+          tenantId: 'tenant_123',
+          customerId: 'customer_acme',
+          number: '006-001-000000004',
+          documentCode: '06',
+          establishmentCode: '006',
+          emissionPointCode: '001',
+          sequenceNumber: 4,
+          buyerIdentificationType: '04',
+          buyerIdentification: '1790012345001',
+          buyerName: 'Acme Corp',
+          buyerAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+          electronicStatus: null,
+          accessKey: null,
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage: null,
+          signedAt: null,
+          submittedAt: null,
+          submissionReference: null,
+          status: 'draft',
+          currency: 'USD',
+          issuedAt: '2026-05-12T13:00:00.000Z',
+          dueAt: '2026-05-12T18:00:00.000Z',
+          notes: 'Guia de remision de prueba.',
+          createdAt: '2026-05-12T13:00:00.000Z',
+          updatedAt: '2026-05-12T13:00:00.000Z',
+          items: [
+            {
+              id: 'remission_item_001',
+              tenantId: 'tenant_123',
+              invoiceId: 'remission_001',
+              position: 1,
+              description: 'Suscripcion mensual Growth',
+              quantity: 2,
+              unitPriceInCents: 0,
+              lineTotalInCents: 0,
+              taxRateId: null,
+              taxRateName: null,
+              taxRatePercentage: null,
+              lineTaxInCents: 0,
+              createdAt: '2026-05-12T13:00:00.000Z',
+              updatedAt: '2026-05-12T13:00:00.000Z',
+            },
+            {
+              id: 'remission_item_002',
+              tenantId: 'tenant_123',
+              invoiceId: 'remission_001',
+              position: 2,
+              description: 'Setup inicial',
+              quantity: 1,
+              unitPriceInCents: 0,
+              lineTotalInCents: 0,
+              taxRateId: null,
+              taxRateName: null,
+              taxRatePercentage: null,
+              lineTaxInCents: 0,
+              createdAt: '2026-05-12T13:00:00.000Z',
+              updatedAt: '2026-05-12T13:00:00.000Z',
+            },
+          ],
+          payments: [],
+          electronicEvents: [],
+          totals: {
+            subtotalInCents: 0,
+            taxInCents: 0,
+            totalInCents: 0,
+          },
+          settlement: {
+            paidInCents: 0,
+            balanceDueInCents: 0,
+            isFullyPaid: false,
+          },
+        },
+        remissionGuide: {
+          sourceInvoiceId: 'invoice_001',
+          sourceInvoiceNumber: 'INV-001',
+          sourceInvoiceIssuedAt: '2026-04-27T16:00:00.000Z',
+          shipmentReason: 'Traslado de mercaderia al cliente.',
+          shipmentStartAt: '2026-05-12T13:00:00.000Z',
+          shipmentEndAt: '2026-05-12T18:00:00.000Z',
+          departureAddress: 'Sucursal Matriz',
+          arrivalAddress: 'Bodega del cliente',
+          carrierName: 'Transportes Demo S.A.',
+          carrierIdentificationType: '04',
+          carrierIdentification: '1790012345001',
+          vehiclePlate: 'ABC-1234',
+          destinationRoute: 'Matriz - Cliente',
+        },
+      });
+
+    expect(createTenantRemissionGuideUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      sourceInvoiceId: 'invoice_001',
+      shipmentReason: 'Traslado de mercaderia al cliente.',
+      shipmentStartAt: new Date('2026-05-12T13:00:00.000Z'),
+      shipmentEndAt: new Date('2026-05-12T18:00:00.000Z'),
+      departureAddress: 'Sucursal Matriz',
+      arrivalAddress: 'Bodega del cliente',
+      carrierName: 'Transportes Demo S.A.',
+      carrierIdentificationType: '04',
+      carrierIdentification: '1790012345001',
+      vehiclePlate: 'ABC-1234',
+      destinationRoute: 'Matriz - Cliente',
+      number: undefined,
+      issuedAt: new Date('2026-05-12T13:00:00.000Z'),
+      notes: 'Guia de remision de prueba.',
     });
   });
 

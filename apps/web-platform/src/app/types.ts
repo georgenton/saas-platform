@@ -229,7 +229,16 @@ export interface ElectronicSandboxReadinessResponse {
   signatureProvider: string | null;
   submissionProvider: string | null;
   transmissionMode: string | null;
+  internalSignerMaterialStatus:
+    | 'not_configured'
+    | 'not_applicable'
+    | 'likely_usable'
+    | 'invalid';
+  internalSignerMaterialDetail: string;
+  isInternalSignerMaterialReady: boolean;
+  isReadyForLocalStubSubmission: boolean;
   isReadyForRemoteSandboxSubmission: boolean;
+  isReadyForPresignedRemoteSandboxSubmission: boolean;
   blockers: string[];
   warnings: string[];
   checks: Array<{
@@ -239,7 +248,7 @@ export interface ElectronicSandboxReadinessResponse {
     detail: string;
   }>;
   documentSupport: Array<{
-    documentCode: '01' | '04' | '05' | '07';
+    documentCode: '01' | '04' | '05' | '06' | '07';
     label: string;
     numberingConfigured: boolean;
     previewAvailable: boolean;
@@ -398,6 +407,25 @@ export interface DebitNoteResponse {
     sourceInvoiceIssuedAt: string | null;
     reason: string | null;
     amountInCents: number;
+  };
+}
+
+export interface RemissionGuideResponse {
+  invoice: InvoiceDetailResponse;
+  remissionGuide: {
+    sourceInvoiceId: string | null;
+    sourceInvoiceNumber: string | null;
+    sourceInvoiceIssuedAt: string | null;
+    shipmentReason: string | null;
+    shipmentStartAt: string | null;
+    shipmentEndAt: string | null;
+    departureAddress: string | null;
+    arrivalAddress: string | null;
+    carrierName: string | null;
+    carrierIdentificationType: string | null;
+    carrierIdentification: string | null;
+    vehiclePlate: string | null;
+    destinationRoute: string | null;
   };
 }
 

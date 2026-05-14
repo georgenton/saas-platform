@@ -40,6 +40,13 @@ export class XmllintSriInvoiceXmlSchemaValidator
       ),
       schemaLabel: 'notaDebito_V1.0.0.xsd',
     },
+    '06': {
+      path: resolve(
+        process.cwd(),
+        'vendor/sri/guia-remision-1.0.0/XML y XSD Guia de Remision/guiaRemision_V1.0.0.xsd',
+      ),
+      schemaLabel: 'guiaRemision_V1.0.0.xsd',
+    },
     '07': {
       path: resolve(
         process.cwd(),

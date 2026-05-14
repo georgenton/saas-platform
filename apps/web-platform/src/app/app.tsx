@@ -7,6 +7,7 @@ import {
   createCustomer,
   createCreditNote,
   createDebitNote,
+  createRemissionGuide,
   createWithholding,
   createInvitation,
   createInvoice,
@@ -69,6 +70,7 @@ import {
   InvoiceSummaryResponse,
   PlatformPlan,
   PlatformProduct,
+  RemissionGuideResponse,
   WithholdingResponse,
   TaxRateResponse,
   SessionPendingInvitation,
@@ -212,6 +214,8 @@ function formatElectronicDocumentLabel(value: string | null): string {
       return 'Nota de credito';
     case '05':
       return 'Nota de debito';
+    case '06':
+      return 'Guia de remision';
     case '07':
       return 'Comprobante de retencion';
     case '01':
@@ -475,6 +479,35 @@ export function App() {
     'Nota de debito de prueba.',
   );
   const [newDebitNoteTaxRateId, setNewDebitNoteTaxRateId] = useState('');
+  const [newRemissionGuideReason, setNewRemissionGuideReason] = useState(
+    'Traslado de mercaderia al cliente.',
+  );
+  const [newRemissionGuideStartAt, setNewRemissionGuideStartAt] = useState('');
+  const [newRemissionGuideEndAt, setNewRemissionGuideEndAt] = useState('');
+  const [newRemissionGuideDepartureAddress, setNewRemissionGuideDepartureAddress] =
+    useState('Sucursal Matriz');
+  const [newRemissionGuideArrivalAddress, setNewRemissionGuideArrivalAddress] =
+    useState('Bodega del cliente');
+  const [newRemissionGuideCarrierName, setNewRemissionGuideCarrierName] = useState(
+    'Transportes Demo S.A.',
+  );
+  const [
+    newRemissionGuideCarrierIdentificationType,
+    setNewRemissionGuideCarrierIdentificationType,
+  ] = useState<'04' | '05' | '06' | '07' | '08'>('04');
+  const [
+    newRemissionGuideCarrierIdentification,
+    setNewRemissionGuideCarrierIdentification,
+  ] = useState('1790012345001');
+  const [newRemissionGuideVehiclePlate, setNewRemissionGuideVehiclePlate] =
+    useState('ABC-1234');
+  const [newRemissionGuideRoute, setNewRemissionGuideRoute] = useState(
+    'Matriz - Cliente',
+  );
+  const [newRemissionGuideIssuedAt, setNewRemissionGuideIssuedAt] = useState('');
+  const [newRemissionGuideNotes, setNewRemissionGuideNotes] = useState(
+    'Guia de remision de prueba.',
+  );
   const [newWithholdingReason, setNewWithholdingReason] = useState(
     'Retencion sobre la factura origen.',
   );
@@ -1968,6 +2001,94 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo crear el comprobante de retencion.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleCreateRemissionGuide(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (
+      !token ||
+      !currentTenancy ||
+      !invoicingEnabled ||
+      !selectedInvoiceDetail ||
+      (selectedInvoiceDetail.documentCode ?? '01') !== '01' ||
+      !newRemissionGuideReason.trim() ||
+      !newRemissionGuideStartAt.trim() ||
+      !newRemissionGuideEndAt.trim() ||
+      !newRemissionGuideDepartureAddress.trim() ||
+      !newRemissionGuideArrivalAddress.trim() ||
+      !newRemissionGuideCarrierName.trim() ||
+      !newRemissionGuideCarrierIdentification.trim() ||
+      !newRemissionGuideVehiclePlate.trim()
+    ) {
+      return;
+    }
+
+    if (
+      new Date(newRemissionGuideEndAt).getTime() <
+      new Date(newRemissionGuideStartAt).getTime()
+    ) {
+      setInvoicingError(
+        'La fecha fin de traslado debe ser igual o posterior a la fecha de inicio.',
+      );
+      return;
+    }
+
+    setActionLoading('create-remission-guide');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const remissionGuide: RemissionGuideResponse = await createRemissionGuide(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          sourceInvoiceId: selectedInvoiceDetail.id,
+          shipmentReason: newRemissionGuideReason.trim(),
+          shipmentStartAt: newRemissionGuideStartAt,
+          shipmentEndAt: newRemissionGuideEndAt,
+          departureAddress: newRemissionGuideDepartureAddress.trim(),
+          arrivalAddress: newRemissionGuideArrivalAddress.trim(),
+          carrierName: newRemissionGuideCarrierName.trim(),
+          carrierIdentificationType:
+            newRemissionGuideCarrierIdentificationType,
+          carrierIdentification:
+            newRemissionGuideCarrierIdentification.trim(),
+          vehiclePlate: newRemissionGuideVehiclePlate.trim().toUpperCase(),
+          destinationRoute: newRemissionGuideRoute.trim() || null,
+          issuedAt: newRemissionGuideIssuedAt.trim() || undefined,
+          notes: newRemissionGuideNotes.trim() || null,
+        },
+      );
+
+      setNewRemissionGuideReason('Traslado de mercaderia al cliente.');
+      setNewRemissionGuideStartAt('');
+      setNewRemissionGuideEndAt('');
+      setNewRemissionGuideDepartureAddress('Sucursal Matriz');
+      setNewRemissionGuideArrivalAddress('Bodega del cliente');
+      setNewRemissionGuideCarrierName('Transportes Demo S.A.');
+      setNewRemissionGuideCarrierIdentificationType('04');
+      setNewRemissionGuideCarrierIdentification('1790012345001');
+      setNewRemissionGuideVehiclePlate('ABC-1234');
+      setNewRemissionGuideRoute('Matriz - Cliente');
+      setNewRemissionGuideIssuedAt('');
+      setNewRemissionGuideNotes('Guia de remision de prueba.');
+      setSelectedInvoiceId(remissionGuide.invoice.id);
+      setInvoicingActionMessage(
+        `Guia de remision ${remissionGuide.invoice.number} creada desde ${selectedInvoiceDetail.number}.`,
+      );
+      await refreshInvoicingWorkspace({
+        selectInvoiceId: remissionGuide.invoice.id,
+      });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo crear la guia de remision.',
       );
     } finally {
       setActionLoading(null);
@@ -3899,8 +4020,12 @@ export function App() {
                               </span>
                               <h3>
                                 {electronicSandboxReadiness.isReadyForRemoteSandboxSubmission
-                                  ? 'Listo para una prueba controlada'
-                                  : 'Todavia bloqueado para sandbox real'}
+                                  ? 'Listo para sandbox remoto con firma interna'
+                                  : electronicSandboxReadiness.isReadyForPresignedRemoteSandboxSubmission
+                                    ? 'Listo para sandbox remoto con XML prefirmado'
+                                    : electronicSandboxReadiness.isReadyForLocalStubSubmission
+                                      ? 'Listo para validacion local con stub'
+                                      : 'Todavia bloqueado para sandbox real'}
                               </h3>
                             </div>
                           </div>
@@ -3922,6 +4047,55 @@ export function App() {
                               <small>
                                 {electronicSandboxReadiness.transmissionMode ??
                                   'Sin transmission mode'}
+                              </small>
+                            </div>
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>Local stub</span>
+                              <strong>
+                                {electronicSandboxReadiness.isReadyForLocalStubSubmission
+                                  ? 'Listo'
+                                  : 'Pendiente'}
+                              </strong>
+                            </div>
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>
+                                Remote presigned
+                              </span>
+                              <strong>
+                                {electronicSandboxReadiness.isReadyForPresignedRemoteSandboxSubmission
+                                  ? 'Listo'
+                                  : 'Pendiente'}
+                              </strong>
+                            </div>
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>
+                                Remote internal signer
+                              </span>
+                              <strong>
+                                {electronicSandboxReadiness.isReadyForRemoteSandboxSubmission
+                                  ? 'Listo'
+                                  : 'Pendiente'}
+                              </strong>
+                            </div>
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>
+                                PKCS#12 interno
+                              </span>
+                              <strong>
+                                {electronicSandboxReadiness.isInternalSignerMaterialReady
+                                  ? 'Cargable'
+                                  : electronicSandboxReadiness.internalSignerMaterialStatus ===
+                                      'not_applicable'
+                                    ? 'No aplica'
+                                    : electronicSandboxReadiness.internalSignerMaterialStatus ===
+                                        'not_configured'
+                                      ? 'No configurado'
+                                      : 'Pendiente'}
+                              </strong>
+                              <small>
+                                {
+                                  electronicSandboxReadiness.internalSignerMaterialDetail
+                                }
                               </small>
                             </div>
                           </div>
@@ -4482,6 +4656,7 @@ export function App() {
 
                         {selectedInvoiceDetail.documentCode === '04' ||
                         selectedInvoiceDetail.documentCode === '05' ||
+                        selectedInvoiceDetail.documentCode === '06' ||
                         selectedInvoiceDetail.documentCode === '07' ? (
                           <div className={styles.detailCard}>
                             <div className={styles.sectionHeading}>
@@ -4489,6 +4664,8 @@ export function App() {
                                 <span className={styles.label}>
                                   {selectedInvoiceDetail.documentCode === '05'
                                     ? 'Debit note'
+                                    : selectedInvoiceDetail.documentCode === '06'
+                                      ? 'Remission guide'
                                     : selectedInvoiceDetail.documentCode === '07'
                                       ? 'Withholding'
                                       : 'Credit note'}
@@ -4514,6 +4691,96 @@ export function App() {
                                     selectedInvoiceRide,
                                     'Motivo',
                                   ) ?? 'Disponible en el XML/RIDE'}
+                                </strong>
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {selectedInvoiceDetail.documentCode === '06' ? (
+                          <div className={styles.detailCard}>
+                            <div className={styles.sectionHeading}>
+                              <div>
+                                <span className={styles.label}>Shipment</span>
+                                <h3>Datos de traslado</h3>
+                              </div>
+                            </div>
+
+                            <div className={styles.invoiceDetailGrid}>
+                              <div>
+                                <span className={styles.muted}>Transportista</span>
+                                <strong>
+                                  {findRideAdditionalInfoValue(
+                                    selectedInvoiceRide,
+                                    'Transportista',
+                                  ) ?? 'No registrado'}
+                                </strong>
+                              </div>
+                              <div>
+                                <span className={styles.muted}>Identificacion</span>
+                                <strong>
+                                  {findRideAdditionalInfoValue(
+                                    selectedInvoiceRide,
+                                    'Identificacion transportista',
+                                  ) ?? 'No registrada'}
+                                </strong>
+                              </div>
+                              <div>
+                                <span className={styles.muted}>Direccion partida</span>
+                                <strong>
+                                  {findRideAdditionalInfoValue(
+                                    selectedInvoiceRide,
+                                    'Direccion partida',
+                                  ) ?? 'No registrada'}
+                                </strong>
+                              </div>
+                              <div>
+                                <span className={styles.muted}>Direccion llegada</span>
+                                <strong>
+                                  {findRideAdditionalInfoValue(
+                                    selectedInvoiceRide,
+                                    'Direccion llegada',
+                                  ) ?? 'No registrada'}
+                                </strong>
+                              </div>
+                              <div>
+                                <span className={styles.muted}>Fecha inicio</span>
+                                <strong>
+                                  {formatDate(
+                                    findRideAdditionalInfoValue(
+                                      selectedInvoiceRide,
+                                      'Fecha inicio traslado',
+                                    ),
+                                  )}
+                                </strong>
+                              </div>
+                              <div>
+                                <span className={styles.muted}>Fecha fin</span>
+                                <strong>
+                                  {formatDate(
+                                    findRideAdditionalInfoValue(
+                                      selectedInvoiceRide,
+                                      'Fecha fin traslado',
+                                    ),
+                                  )}
+                                </strong>
+                              </div>
+                              <div>
+                                <span className={styles.muted}>Placa</span>
+                                <strong>
+                                  {findRideAdditionalInfoValue(
+                                    selectedInvoiceRide,
+                                    'Placa',
+                                  ) ?? 'No registrada'}
+                                </strong>
+                              </div>
+                              <div>
+                                <span className={styles.muted}>Ruta</span>
+                                <strong>
+                                  {findRideAdditionalInfoValue(
+                                    selectedInvoiceRide,
+                                    'Ruta',
+                                  ) ?? 'No registrada'}
                                 </strong>
                               </div>
                             </div>
@@ -4578,6 +4845,203 @@ export function App() {
                               </button>
                               <p className={styles.muted}>
                                 Este flujo crea un borrador `04` con lineas reversadas y numeracion independiente si ya configuraste el carril de nota de credito.
+                              </p>
+                            </form>
+                          </div>
+                        ) : null}
+
+                        {(selectedInvoiceDetail.documentCode ?? '01') === '01' ? (
+                          <div className={styles.detailCard}>
+                            <div className={styles.sectionHeading}>
+                              <div>
+                                <span className={styles.label}>Remission guide</span>
+                                <h3>Crear borrador `06` desde esta factura</h3>
+                              </div>
+                            </div>
+
+                            <form className={styles.stack} onSubmit={handleCreateRemissionGuide}>
+                              <label className={styles.field}>
+                                <span>Motivo de traslado</span>
+                                <textarea
+                                  onChange={(event) =>
+                                    setNewRemissionGuideReason(event.target.value)
+                                  }
+                                  placeholder="Traslado de mercaderia al cliente."
+                                  value={newRemissionGuideReason}
+                                />
+                              </label>
+
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Inicio traslado</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewRemissionGuideStartAt(event.target.value)
+                                    }
+                                    type="datetime-local"
+                                    value={newRemissionGuideStartAt}
+                                  />
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Fin traslado</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewRemissionGuideEndAt(event.target.value)
+                                    }
+                                    type="datetime-local"
+                                    value={newRemissionGuideEndAt}
+                                  />
+                                </label>
+                              </div>
+
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Direccion partida</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewRemissionGuideDepartureAddress(
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder="Sucursal Matriz"
+                                    value={newRemissionGuideDepartureAddress}
+                                  />
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Direccion llegada</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewRemissionGuideArrivalAddress(
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder="Bodega del cliente"
+                                    value={newRemissionGuideArrivalAddress}
+                                  />
+                                </label>
+                              </div>
+
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Transportista</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewRemissionGuideCarrierName(
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder="Transportes Demo S.A."
+                                    value={newRemissionGuideCarrierName}
+                                  />
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Tipo identificacion</span>
+                                  <select
+                                    onChange={(event) =>
+                                      setNewRemissionGuideCarrierIdentificationType(
+                                        event.target.value as
+                                          | '04'
+                                          | '05'
+                                          | '06'
+                                          | '07'
+                                          | '08',
+                                      )
+                                    }
+                                    value={newRemissionGuideCarrierIdentificationType}
+                                  >
+                                    <option value="04">RUC</option>
+                                    <option value="05">Cedula</option>
+                                    <option value="06">Pasaporte</option>
+                                    <option value="07">Consumidor final</option>
+                                    <option value="08">Exterior</option>
+                                  </select>
+                                </label>
+                              </div>
+
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Identificacion transportista</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewRemissionGuideCarrierIdentification(
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder="1790012345001"
+                                    value={newRemissionGuideCarrierIdentification}
+                                  />
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Placa</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewRemissionGuideVehiclePlate(
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder="ABC-1234"
+                                    value={newRemissionGuideVehiclePlate}
+                                  />
+                                </label>
+                              </div>
+
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Ruta</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewRemissionGuideRoute(event.target.value)
+                                    }
+                                    placeholder="Matriz - Cliente"
+                                    value={newRemissionGuideRoute}
+                                  />
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Fecha emision</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setNewRemissionGuideIssuedAt(
+                                        event.target.value,
+                                      )
+                                    }
+                                    type="datetime-local"
+                                    value={newRemissionGuideIssuedAt}
+                                  />
+                                </label>
+                              </div>
+
+                              <label className={styles.field}>
+                                <span>Notas</span>
+                                <input
+                                  onChange={(event) =>
+                                    setNewRemissionGuideNotes(event.target.value)
+                                  }
+                                  placeholder="Guia de remision de prueba."
+                                  value={newRemissionGuideNotes}
+                                />
+                              </label>
+
+                              <button
+                                className={styles.secondaryButton}
+                                disabled={
+                                  actionLoading === 'create-remission-guide' ||
+                                  !newRemissionGuideReason.trim() ||
+                                  !newRemissionGuideStartAt.trim() ||
+                                  !newRemissionGuideEndAt.trim() ||
+                                  !newRemissionGuideDepartureAddress.trim() ||
+                                  !newRemissionGuideArrivalAddress.trim() ||
+                                  !newRemissionGuideCarrierName.trim() ||
+                                  !newRemissionGuideCarrierIdentification.trim() ||
+                                  !newRemissionGuideVehiclePlate.trim()
+                                }
+                                type="submit"
+                              >
+                                {actionLoading === 'create-remission-guide'
+                                  ? 'Creando guia de remision...'
+                                  : 'Crear guia de remision'}
+                              </button>
+                              <p className={styles.muted}>
+                                Este flujo crea un borrador `06` con documento sustento, metadata de traslado y detalle logistico base para continuar el carril electronico.
                               </p>
                             </form>
                           </div>

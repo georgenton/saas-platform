@@ -137,7 +137,7 @@ La coleccion cubre:
 - suscripcion comercial del tenant
 - invitations
 - setup fiscal Ecuador
-- numeracion por tipo de documento (`01` factura, `04` nota de credito, `05` nota de debito, `07` comprobante de retencion)
+- numeracion por tipo de documento (`01` factura, `04` nota de credito, `05` nota de debito, `06` guia de remision, `07` comprobante de retencion)
 - customers
 - taxes
 - invoices
@@ -152,6 +152,7 @@ La coleccion cubre:
 - check authorization
 - carril dedicado de nota de credito (`04`) con submit, artifacts y runners propios
 - carril de nota de debito (`05`) con submit, artifacts y runners propios
+- carril de guia de remision (`06`) con submit, artifacts y runners propios
 - foundation de comprobante de retencion (`07`) con draft, XML preview, RIDE y artifacts
 - carril de comprobante de retencion (`07`) con submit, artifacts y runners propios
 
@@ -279,9 +280,10 @@ Corre en este orden:
 5. `04. Invoicing Setup / Upsert Credit Note Numbering` si quieres abrir el carril `04`
 6. `04. Invoicing Setup / Upsert Debit Note Numbering` si quieres abrir el carril `05`
 7. `04. Invoicing Setup / Upsert Withholding Numbering` si quieres abrir el carril `07`
-8. `04. Invoicing Setup / Upsert Electronic Signature`
-9. `04. Invoicing Setup / Upsert Electronic Submission`
-10. `04. Invoicing Setup / Get Electronic Sandbox Readiness`
+8. `04. Invoicing Setup / Upsert Remission Guide Numbering` si quieres abrir el carril `06`
+9. `04. Invoicing Setup / Upsert Electronic Signature`
+10. `04. Invoicing Setup / Upsert Electronic Submission`
+11. `04. Invoicing Setup / Get Electronic Sandbox Readiness`
 
 ### Qué esperar
 
@@ -290,6 +292,7 @@ Corre en este orden:
 - numeración tipo `001-002-000000031` para factura (`01`)
 - opcionalmente numeración independiente para nota de crédito (`04`)
 - opcionalmente numeración independiente para nota de débito (`05`)
+- opcionalmente numeración independiente para guía de remisión (`06`)
 - opcionalmente numeración independiente para comprobante de retención (`07`)
 - firma configurada
 - gateway configurado
@@ -469,6 +472,62 @@ En esta fase, el comprobante de retención ya tiene:
 - validación XSD local
 - submit stub y prefirmado cuando el tenant esté listo
 
+### 8.5.d Crear una guía de remisión borrador (`06`)
+
+Cuando ya tengas una factura origen y quieras abrir el carril inicial de traslado, usa:
+
+1. `06. Invoicing Invoices / Create Remission Guide From Invoice`
+2. `06. Invoicing Invoices / Get Remission Guide Detail`
+3. `06. Invoicing Invoices / Get Remission Guide XML Preview`
+4. `06. Invoicing Invoices / Get Remission Guide RIDE`
+
+La colección guardará automáticamente:
+- `remissionGuideId`
+- `remissionGuideNumber`
+- `remissionGuideXmlPreview`
+- `remissionGuideArtifactsFileBaseName`
+- `remissionGuideSequenceDisplay`
+
+### Qué esperar
+
+- documento con `documentCode = 06`
+- numeración independiente del carril de guía de remisión si configuraste `Upsert Remission Guide Numbering`
+- referencia a la factura sustento
+- metadata de traslado: motivo, fechas, direcciones, transportista, identificación, placa y ruta
+- detalle logístico base derivado de las líneas de la factura origen
+- RIDE y XML preview ya disponibles
+
+### Estado electrónico actual del `06`
+
+En esta fase, la guía de remisión ya tiene:
+- borrador comercial
+- RIDE
+- preview XML
+- artifacts descargables
+- matriz de readiness por documento
+- validacion XSD local
+- submit stub y prefirmado cuando el tenant este listo
+
+### Instalar el bundle XSD/XML oficial para `06`
+
+Cuando tengas el ZIP oficial del SRI para guía de remisión en tu máquina, instálalo así desde la raíz del repo:
+
+```sh
+pnpm install:sri:schema-bundle -- --document-code 06 --zip "$HOME/Downloads/XML y XSD Guia de Remision.zip"
+```
+
+Después valida el bundle local:
+
+```sh
+pnpm validate:sri:xsd:remission-guide
+```
+
+Y luego verifica que el readiness del tenant ya refleje el cambio:
+
+- `documentSupport` para `06`
+- `schemaValidationAvailable = true`
+- `submitSupported = true`
+
 ## 8.6 Runner batch para el camino stub
 
 Si ya tienes:
@@ -577,6 +636,56 @@ Antes de lanzarlo, asegúrate de que el environment ya tenga:
 - `tenantSlug`
 - `invoiceId` de una factura origen válida
 
+### Runner batch específico para guía de remisión foundation
+
+Cuando ya tengas una factura origen y quieras probar el carril `06` sin ir request por request, usa:
+
+- `10. Runner Flows / EC Remission Guide Foundation`
+
+Ese folder corre en este orden:
+1. remission guide numbering
+2. sandbox readiness
+3. create remission guide
+4. remission guide detail
+5. remission guide XML preview
+6. remission guide RIDE
+7. remission guide artifacts
+
+Antes de lanzarlo, asegúrate de que el environment ya tenga:
+- `ownerToken`
+- `tenantSlug`
+- `invoiceId` de una factura origen válida
+
+### Runner batch específico para guía de remisión stub
+
+Cuando ya tengas una factura origen y quieras probar el carril `06` con submit electrónico de punta a punta, usa:
+
+- `10. Runner Flows / EC Remission Guide Happy Path - Stub`
+
+Ese folder corre en este orden:
+1. remission guide numbering
+2. sandbox readiness
+3. create remission guide
+4. remission guide detail
+5. remission guide XML preview
+6. remission guide submit stub
+7. remission guide check authorization
+8. remission guide detail final
+9. remission guide RIDE
+10. remission guide artifacts
+
+### Runner batch específico para guía de remisión prefirmada
+
+Si ya cuentas con un XML firmado externamente para `06`, usa:
+
+- `10. Runner Flows / EC Remission Guide Presigned Flow - Continue After External Signature`
+
+Antes de lanzarlo, asegúrate de que el environment ya tenga:
+- `ownerToken`
+- `tenantSlug`
+- `invoiceId` de una factura origen válida
+- `remissionGuidePresignedXmlJson`
+
 ### Runner batch específico para comprobante de retención prefirmado
 
 Si ya cuentas con un XML firmado externamente para `07`, usa:
@@ -621,6 +730,11 @@ Para `07`, usa estas variantes:
 1. `09. Invoicing Electronic Document / Submit Withholding Electronic Document (stub signer)`
 2. `09. Invoicing Electronic Document / Check Withholding Authorization`
 3. `06. Invoicing Invoices / Get Withholding Detail`
+
+Para `06`, usa estas variantes:
+1. `09. Invoicing Electronic Document / Submit Remission Guide Electronic Document (stub signer)`
+2. `09. Invoicing Electronic Document / Check Remission Guide Authorization`
+3. `06. Invoicing Invoices / Get Remission Guide Detail`
 
 ## 9.2 Camino B: submit prefirmado
 
@@ -750,9 +864,21 @@ Significa que todavía falta algo para una prueba remota real. Revisa:
 - `warnings`
 - `recommendedNextStep`
 
+#### `isReadyForPresignedRemoteSandboxSubmission = true`
+
+Significa que ya puedes probar el gateway remoto con XML firmado externamente, aunque la firma interna real todavía no esté lista.
+
+#### `isInternalSignerMaterialReady = true`
+
+Significa que el `pkcs12SecretRef` y su password ya resolvieron a un material que parece PKCS#12 base64/DER cargable por una frontera interna. Aun no garantiza firma criptografica valida para SRI; solo confirma que el material ya no parece vacio, PEM equivocado o basura imposible de cargar.
+
+#### `isReadyForLocalStubSubmission = true`
+
+Significa que el tenant todavía puede validar el pipeline interno usando `stub_sri`, aunque el camino remoto real siga pendiente.
+
 #### `isReadyForRemoteSandboxSubmission = true`
 
-Significa que el tenant ya está alineado para una prueba controlada remota de `factura (01)`.
+Significa que el tenant ya está alineado para una prueba controlada remota con firma interna y gateway sandbox.
 
 ### Nueva lectura recomendada: `documentSupport`
 
@@ -770,10 +896,33 @@ Además de los blockers generales, ahora la respuesta también incluye una matri
   - `previewAvailable = true` y `rideAvailable = true`
   - `schemaValidationAvailable = true` cuando el bundle `notaDebito_V1.0.0.xsd` ya existe en `vendor/sri`
   - `submitSupported = true` cuando el repo ya detecta ese XSD local y el carril `05` puede pasar de preview a submit
+- `06`:
+  - `previewAvailable = true` y `rideAvailable = true`
+  - `schemaValidationAvailable = true` cuando el bundle `guiaRemision_V1.0.0.xsd` ya existe en `vendor/sri`
+  - `submitSupported = true` cuando el repo ya detecta ese XSD local y el carril `06` puede pasar de preview a submit
 - `07`:
   - `previewAvailable = true` y `rideAvailable = true`
   - `schemaValidationAvailable = true` cuando el bundle `comprobanteRetencion_V2.0.0.xsd` ya existe en `vendor/sri`
   - `submitSupported = true` cuando el repo ya detecta ese XSD local y el carril `07` puede pasar de preview a submit
+
+### Nueva lectura recomendada: material del signer interno
+
+Además del semáforo remoto, ahora la respuesta también expone:
+
+- `internalSignerMaterialStatus`
+- `internalSignerMaterialDetail`
+- `isInternalSignerMaterialReady`
+
+Úsalo así:
+
+- `not_applicable`:
+  - el provider actual no usa PKCS#12, normalmente `stub_local`
+- `not_configured`:
+  - todavía no existe una configuración activa de firma
+- `invalid`:
+  - el secret respondió vacío, parece PEM en vez de PKCS#12, o no decodifica como base64/DER utilizable
+- `likely_usable`:
+  - el material ya parece cargable por una frontera interna, aunque la firma real todavía siga en modo stub
 
 ### Importante
 
@@ -788,7 +937,11 @@ Para `nota de crédito (04)`, la restricción práctica ya no es el tipo de docu
 
 Para `nota de débito (05)`, aplica el mismo criterio:
 - si `notaDebito_V1.0.0.xsd` no existe en `vendor/sri`, el submit sigue bloqueado
-- si el bundle ya está instalado, `05` puede recorrer la misma frontera técnica multi-documento
+- si el bundle ya está instalado, `05` puede recorrer el mismo carril técnico de submit que `01`
+
+Para `guía de remisión (06)`, aplica exactamente la misma regla:
+- si `guiaRemision_V1.0.0.xsd` no existe en `vendor/sri`, el submit sigue bloqueado
+- si el bundle ya está instalado, `06` puede pasar de preview a submit sobre la misma frontera multi-documento
 
 Para `comprobante de retención (07)`, aplica exactamente la misma regla:
 - si `comprobanteRetencion_V2.0.0.xsd` no existe en `vendor/sri`, el submit sigue bloqueado
@@ -885,6 +1038,13 @@ pnpm validate:sri:xsd:withholding
 - `submissionAuthorizationUrlJson`
 - `submissionCredentialsSecretRefJson`
 - `submissionTimeoutMs`
+- `sandboxReady`
+- `sandboxLocalStubReady`
+- `sandboxPresignedReady`
+- `sandboxInternalSignerMaterialReady`
+- `sandboxInternalSignerMaterialStatus`
+- `sandboxInternalSignerMaterialDetail`
+- `sandboxRecommendedNextStep`
 
 ### Factura y comprobante
 - `customerId`

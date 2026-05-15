@@ -6,4 +6,9 @@ export interface InvoiceElectronicEventRepository {
     tenantId: string,
     invoiceId: string,
   ): Promise<InvoiceElectronicEvent[]>;
+  findLatestByTenantIdAndProvider(
+    tenantId: string,
+    provider: string,
+    eventType?: InvoiceElectronicEvent['eventType'],
+  ): Promise<InvoiceElectronicEvent | null>;
 }

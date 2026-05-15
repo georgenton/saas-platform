@@ -33,6 +33,10 @@ export class UpsertElectronicSignatureSettingsRequestDto {
   @MinLength(1)
   subjectName?: string | null;
 
+  @IsOptional()
+  @IsBoolean()
+  hydrateMetadataFromPkcs12?: boolean;
+
   @IsBoolean()
   isActive!: boolean;
 }

@@ -26,6 +26,7 @@ import {
   canBuildSriAccessKey,
   validateSriElectronicDocumentXml,
 } from '../types/electronic-invoice';
+import { validateSriOfflineSignedXmlShape } from '../types/sri-offline-signature';
 import { GetTenantInvoiceDocumentUseCase } from './get-tenant-invoice-document.use-case';
 
 export interface SubmitTenantInvoiceElectronicDocumentInput {
@@ -188,6 +189,37 @@ export class SubmitTenantInvoiceElectronicDocumentUseCase {
       issuerProfile,
       signatureSettings,
     });
+    const signedXmlIssues = validateSriElectronicDocumentXml({
+      xml: signedDocument.signedXml,
+      accessKey,
+    });
+
+    if (!hasXmlDigitalSignature(signedDocument.signedXml)) {
+      signedXmlIssues.push(
+        'El XML firmado internamente no contiene un bloque ds:Signature reconocible.',
+      );
+    }
+
+    if (signedDocument.capability.signatureMode === 'xades_pkcs12_real') {
+      signedXmlIssues.push(
+        ...validateSriOfflineSignedXmlShape(signedDocument.signedXml),
+      );
+    }
+
+    if (signedXmlIssues.length > 0) {
+      throw new InvoiceElectronicXmlValidationError(signedXmlIssues);
+    }
+
+    const signedSchemaIssues =
+      await this.electronicInvoiceXmlSchemaValidator.validate({
+        documentCode,
+        xml: signedDocument.signedXml,
+      });
+
+    if (signedSchemaIssues.length > 0) {
+      throw new InvoiceElectronicXmlValidationError(signedSchemaIssues);
+    }
+
     const submissionResult = await this.electronicInvoiceSubmissionGateway.submit({
       tenantSlug: input.tenantSlug,
       invoiceId: input.invoiceId,
@@ -238,4 +270,8 @@ export class SubmitTenantInvoiceElectronicDocumentUseCase {
   private canSubmitElectronicDocument(status: InvoiceStatus): boolean {
     return status === 'issued' || status === 'partially_paid' || status === 'paid';
   }
+}
+
+function hasXmlDigitalSignature(xml: string): boolean {
+  return /<ds:Signature\b/i.test(xml) || /<Signature\b/i.test(xml);
 }

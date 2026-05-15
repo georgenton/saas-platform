@@ -14,6 +14,48 @@ export interface ElectronicSandboxReadinessResponseDto {
     | 'invalid';
   internalSignerMaterialDetail: string;
   isInternalSignerMaterialReady: boolean;
+  internalSignerCertificateValidityStatus:
+    | 'not_applicable'
+    | 'unknown'
+    | 'valid'
+    | 'expiring_soon'
+    | 'expired'
+    | 'not_yet_valid';
+  internalSignerCertificateValidityDetail: string;
+  internalSignerCertificateValidUntil: string | null;
+  isInternalSignerCertificateCurrentlyValid: boolean;
+  internalSignerCryptoProofStatus:
+    | 'not_applicable'
+    | 'unknown'
+    | 'verified'
+    | 'failed';
+  internalSignerCryptoProofDetail: string;
+  isInternalSignerCryptographicallyReady: boolean;
+  internalSignerOfflineCompatibilityStatus:
+    | 'not_applicable'
+    | 'unknown'
+    | 'verified'
+    | 'failed';
+  internalSignerOfflineCompatibilityDetail: string;
+  isInternalSignerOfflineCompatible: boolean;
+  internalSignerIssuerAlignmentStatus:
+    | 'not_applicable'
+    | 'unknown'
+    | 'matched'
+    | 'mismatched';
+  internalSignerIssuerAlignmentDetail: string;
+  internalSignerExtractedTaxId: string | null;
+  isInternalSignerIssuerAligned: boolean;
+  latestRemoteSriSubmissionStatus: string | null;
+  latestRemoteSriSubmissionSummary: string | null;
+  latestRemoteSriSubmissionCategory:
+    | 'taxpayer_not_registered'
+    | 'xml_structure'
+    | 'authorization_rejected'
+    | 'technical_failure'
+    | 'unknown'
+    | null;
+  latestRemoteSriSubmissionOccurredAt: string | null;
   isReadyForLocalStubSubmission: boolean;
   isReadyForRemoteSandboxSubmission: boolean;
   isReadyForPresignedRemoteSandboxSubmission: boolean;
@@ -51,6 +93,38 @@ export function toElectronicSandboxReadinessResponseDto(
     internalSignerMaterialStatus: readiness.internalSignerMaterialStatus,
     internalSignerMaterialDetail: readiness.internalSignerMaterialDetail,
     isInternalSignerMaterialReady: readiness.isInternalSignerMaterialReady,
+    internalSignerCertificateValidityStatus:
+      readiness.internalSignerCertificateValidityStatus,
+    internalSignerCertificateValidityDetail:
+      readiness.internalSignerCertificateValidityDetail,
+    internalSignerCertificateValidUntil:
+      readiness.internalSignerCertificateValidUntil,
+    isInternalSignerCertificateCurrentlyValid:
+      readiness.isInternalSignerCertificateCurrentlyValid,
+    internalSignerCryptoProofStatus: readiness.internalSignerCryptoProofStatus,
+    internalSignerCryptoProofDetail: readiness.internalSignerCryptoProofDetail,
+    isInternalSignerCryptographicallyReady:
+      readiness.isInternalSignerCryptographicallyReady,
+    internalSignerOfflineCompatibilityStatus:
+      readiness.internalSignerOfflineCompatibilityStatus,
+    internalSignerOfflineCompatibilityDetail:
+      readiness.internalSignerOfflineCompatibilityDetail,
+    isInternalSignerOfflineCompatible:
+      readiness.isInternalSignerOfflineCompatible,
+    internalSignerIssuerAlignmentStatus:
+      readiness.internalSignerIssuerAlignmentStatus,
+    internalSignerIssuerAlignmentDetail:
+      readiness.internalSignerIssuerAlignmentDetail,
+    internalSignerExtractedTaxId: readiness.internalSignerExtractedTaxId,
+    isInternalSignerIssuerAligned:
+      readiness.isInternalSignerIssuerAligned,
+    latestRemoteSriSubmissionStatus: readiness.latestRemoteSriSubmissionStatus,
+    latestRemoteSriSubmissionSummary:
+      readiness.latestRemoteSriSubmissionSummary,
+    latestRemoteSriSubmissionCategory:
+      readiness.latestRemoteSriSubmissionCategory,
+    latestRemoteSriSubmissionOccurredAt:
+      readiness.latestRemoteSriSubmissionOccurredAt,
     isReadyForLocalStubSubmission: readiness.isReadyForLocalStubSubmission,
     isReadyForRemoteSandboxSubmission:
       readiness.isReadyForRemoteSandboxSubmission,

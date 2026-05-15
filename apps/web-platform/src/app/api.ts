@@ -7,6 +7,7 @@ import {
   WithholdingResponse,
   CustomerResponse,
   ElectronicSandboxReadinessResponse,
+  ElectronicSignatureMaterialInspectionResponse,
   ElectronicSubmissionSettingsResponse,
   ElectronicSignatureSettingsResponse,
   InvoiceElectronicArtifactsResponse,
@@ -320,12 +321,42 @@ export async function upsertIssuerProfile(
   );
 }
 
+export async function syncIssuerProfileTaxIdFromSignature(
+  token: string,
+  tenantSlug: string,
+): Promise<IssuerProfileResponse> {
+  return request<IssuerProfileResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/electronic-profile/sync-certificate-tax-id`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
 export async function fetchElectronicSignatureSettings(
   token: string,
   tenantSlug: string,
 ): Promise<ElectronicSignatureSettingsResponse> {
   return request<ElectronicSignatureSettingsResponse>(
     `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/electronic-signature`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchElectronicSignatureMaterialInspection(
+  token: string,
+  tenantSlug: string,
+): Promise<ElectronicSignatureMaterialInspectionResponse> {
+  return request<ElectronicSignatureMaterialInspectionResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/electronic-signature/inspection`,
     {
       method: 'GET',
       token,
@@ -372,6 +403,7 @@ export async function upsertElectronicSignatureSettings(
     pkcs12SecretRef?: string | null;
     privateKeyPasswordSecretRef?: string | null;
     subjectName?: string | null;
+    hydrateMetadataFromPkcs12?: boolean;
     isActive: boolean;
   },
 ): Promise<ElectronicSignatureSettingsResponse> {

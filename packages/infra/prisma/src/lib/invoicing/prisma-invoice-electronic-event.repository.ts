@@ -80,4 +80,40 @@ export class PrismaInvoiceElectronicEventRepository
       }),
     );
   }
+
+  async findLatestByTenantIdAndProvider(
+    tenantId: string,
+    provider: string,
+    eventType?: InvoiceElectronicEvent['eventType'],
+  ): Promise<InvoiceElectronicEvent | null> {
+    const event = await this.prisma.invoiceElectronicEvent.findFirst({
+      where: {
+        tenantId,
+        provider,
+        ...(eventType ? { eventType } : {}),
+      },
+      orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+    });
+
+    if (!event) {
+      return null;
+    }
+
+    return InvoiceElectronicEvent.create({
+      id: event.id,
+      tenantId: event.tenantId,
+      invoiceId: event.invoiceId,
+      eventType: event.eventType as InvoiceElectronicEventType,
+      provider: event.provider,
+      providerStatus: event.providerStatus,
+      endpoint: event.endpoint,
+      soapAction: event.soapAction,
+      message: event.message,
+      requestPayload: event.requestPayload,
+      responsePayload: event.responsePayload,
+      submissionReference: event.submissionReference,
+      authorizationNumber: event.authorizationNumber,
+      occurredAt: event.occurredAt,
+    });
+  }
 }

@@ -18,6 +18,7 @@ import {
   downloadInvoiceElectronicXmlPreview,
   fetchElectronicSandboxReadiness,
   fetchElectronicSubmissionSettings,
+  fetchElectronicSignatureMaterialInspection,
   fetchElectronicSignatureSettings,
   fetchInvitationForInvitee,
   fetchInvoiceDetail,
@@ -45,6 +46,7 @@ import {
   setCurrentTenancy,
   submitInvoiceElectronicDocument,
   submitPresignedInvoiceElectronicDocument,
+  syncIssuerProfileTaxIdFromSignature,
   upsertElectronicSubmissionSettings,
   upsertElectronicSignatureSettings,
   upsertInvoiceNumberingSettings,
@@ -57,6 +59,7 @@ import {
   AuthenticatedSessionResponse,
   CustomerResponse,
   ElectronicSandboxReadinessResponse,
+  ElectronicSignatureMaterialInspectionResponse,
   ElectronicSubmissionSettingsResponse,
   ElectronicSignatureSettingsResponse,
   InvoiceElectronicArtifactsResponse,
@@ -311,6 +314,7 @@ function findPendingInvitation(
 
 async function loadOptionalInvoicingSettings(token: string, tenantSlug: string): Promise<{
   electronicSandboxReadiness: ElectronicSandboxReadinessResponse | null;
+  electronicSignatureMaterialInspection: ElectronicSignatureMaterialInspectionResponse | null;
   electronicSubmissionSettings: ElectronicSubmissionSettingsResponse | null;
   electronicSignatureSettings: ElectronicSignatureSettingsResponse | null;
   issuerProfile: IssuerProfileResponse | null;
@@ -318,6 +322,7 @@ async function loadOptionalInvoicingSettings(token: string, tenantSlug: string):
 }> {
   const [
     electronicSandboxReadiness,
+    electronicSignatureMaterialInspection,
     electronicSubmissionSettings,
     electronicSignatureSettings,
     issuerProfile,
@@ -325,6 +330,9 @@ async function loadOptionalInvoicingSettings(token: string, tenantSlug: string):
   ] =
     await Promise.all([
       fetchElectronicSandboxReadiness(token, tenantSlug).catch(() => null),
+      fetchElectronicSignatureMaterialInspection(token, tenantSlug).catch(
+        () => null,
+      ),
       fetchElectronicSubmissionSettings(token, tenantSlug).catch(() => null),
       fetchElectronicSignatureSettings(token, tenantSlug).catch(() => null),
       fetchIssuerProfile(token, tenantSlug).catch(() => null),
@@ -333,6 +341,7 @@ async function loadOptionalInvoicingSettings(token: string, tenantSlug: string):
 
   return {
     electronicSandboxReadiness,
+    electronicSignatureMaterialInspection,
     electronicSubmissionSettings,
     electronicSignatureSettings,
     issuerProfile,
@@ -366,6 +375,10 @@ export function App() {
     useState<ElectronicSubmissionSettingsResponse | null>(null);
   const [electronicSandboxReadiness, setElectronicSandboxReadiness] =
     useState<ElectronicSandboxReadinessResponse | null>(null);
+  const [
+    electronicSignatureMaterialInspection,
+    setElectronicSignatureMaterialInspection,
+  ] = useState<ElectronicSignatureMaterialInspectionResponse | null>(null);
   const [electronicSignatureSettings, setElectronicSignatureSettings] =
     useState<ElectronicSignatureSettingsResponse | null>(null);
   const [issuerProfile, setIssuerProfile] = useState<IssuerProfileResponse | null>(
@@ -422,6 +435,20 @@ export function App() {
   const [issuerMatrixAddress, setIssuerMatrixAddress] = useState('');
   const [issuerEstablishmentAddress, setIssuerEstablishmentAddress] =
     useState('');
+  const extractedCertificateTaxId = useMemo(() => {
+    const value =
+      electronicSignatureMaterialInspection?.inspection.extractedTaxId?.trim() ??
+      '';
+
+    return value || null;
+  }, [electronicSignatureMaterialInspection]);
+  const issuerTaxIdMatchesCertificate = useMemo(() => {
+    if (!extractedCertificateTaxId || !issuerTaxId.trim()) {
+      return null;
+    }
+
+    return extractedCertificateTaxId === issuerTaxId.trim();
+  }, [extractedCertificateTaxId, issuerTaxId]);
   const [signatureProvider, setSignatureProvider] = useState<
     'stub_local' | 'xades_pkcs12'
   >('stub_local');
@@ -435,6 +462,8 @@ export function App() {
   const [signaturePasswordSecretRef, setSignaturePasswordSecretRef] =
     useState('');
   const [signatureSubjectName, setSignatureSubjectName] = useState('');
+  const [signatureHydrateMetadataFromPkcs12, setSignatureHydrateMetadataFromPkcs12] =
+    useState(false);
   const [signatureIsActive, setSignatureIsActive] = useState(true);
   const [submissionProvider, setSubmissionProvider] = useState<
     'stub_sri' | 'sri_offline_ws'
@@ -826,6 +855,7 @@ export function App() {
       setTaxRates([]);
       setInvoices([]);
       setElectronicSandboxReadiness(null);
+      setElectronicSignatureMaterialInspection(null);
       setElectronicSubmissionSettings(null);
       setElectronicSignatureSettings(null);
       setIssuerProfile(null);
@@ -875,6 +905,9 @@ export function App() {
           setElectronicSandboxReadiness(
             nextSettings.electronicSandboxReadiness,
           );
+          setElectronicSignatureMaterialInspection(
+            nextSettings.electronicSignatureMaterialInspection,
+          );
           setElectronicSubmissionSettings(
             nextSettings.electronicSubmissionSettings,
           );
@@ -895,6 +928,7 @@ export function App() {
 
         setCustomers([]);
         setElectronicSandboxReadiness(null);
+        setElectronicSignatureMaterialInspection(null);
         setElectronicSignatureSettings(null);
         setIssuerProfile(null);
         setInvoiceNumberingSettings(null);
@@ -1178,6 +1212,7 @@ export function App() {
       setSignaturePkcs12SecretRef('');
       setSignaturePasswordSecretRef('');
       setSignatureSubjectName('');
+      setSignatureHydrateMetadataFromPkcs12(false);
       setSignatureIsActive(true);
       return;
     }
@@ -1205,6 +1240,11 @@ export function App() {
       electronicSignatureSettings.privateKeyPasswordSecretRef ?? '',
     );
     setSignatureSubjectName(electronicSignatureSettings.subjectName ?? '');
+    setSignatureHydrateMetadataFromPkcs12(
+      electronicSignatureSettings.provider === 'xades_pkcs12' &&
+        (!electronicSignatureSettings.certificateFingerprint ||
+          !electronicSignatureSettings.subjectName),
+    );
     setSignatureIsActive(electronicSignatureSettings.isActive);
   }, [electronicSignatureSettings]);
 
@@ -1356,6 +1396,9 @@ export function App() {
         setCustomers(nextCustomers);
         setInvoices(nextInvoices);
         setElectronicSandboxReadiness(nextSettings.electronicSandboxReadiness);
+        setElectronicSignatureMaterialInspection(
+          nextSettings.electronicSignatureMaterialInspection,
+        );
         setElectronicSubmissionSettings(nextSettings.electronicSubmissionSettings);
         setElectronicSignatureSettings(nextSettings.electronicSignatureSettings);
         setIssuerProfile(nextSettings.issuerProfile);
@@ -1661,6 +1704,37 @@ export function App() {
     }
   }
 
+  async function handleSyncIssuerProfileTaxIdFromSignature() {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      return;
+    }
+
+    setActionLoading('sync-issuer-profile-tax-id');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const profile = await syncIssuerProfileTaxIdFromSignature(
+        token,
+        currentTenancy.tenant.slug,
+      );
+
+      setIssuerTaxId(profile.taxId);
+      setInvoicingActionMessage(
+        'RUC del perfil fiscal alineado con el certificado.',
+      );
+      await refreshInvoicingWorkspace();
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo alinear el RUC del perfil fiscal con el certificado.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   async function handleUpsertElectronicSignatureSettings(
     event: FormEvent<HTMLFormElement>,
   ) {
@@ -1689,6 +1763,10 @@ export function App() {
         privateKeyPasswordSecretRef:
           signaturePasswordSecretRef.trim() || null,
         subjectName: signatureSubjectName.trim() || null,
+        hydrateMetadataFromPkcs12:
+          signatureProvider === 'xades_pkcs12'
+            ? signatureHydrateMetadataFromPkcs12
+            : undefined,
         isActive: signatureIsActive,
       });
 
@@ -3535,6 +3613,44 @@ export function App() {
                         </label>
                       </div>
 
+                      {extractedCertificateTaxId ? (
+                        <div className={styles.detailCard}>
+                          <span className={styles.muted}>
+                            RUC extraido del certificado
+                          </span>
+                          <strong>{extractedCertificateTaxId}</strong>
+                          <p>
+                            {issuerTaxIdMatchesCertificate === true
+                              ? 'El perfil fiscal actual ya coincide con el certificado inspeccionado.'
+                              : issuerTaxIdMatchesCertificate === false
+                                ? 'El RUC del perfil fiscal no coincide con el certificado. Antes de probar CELCER conviene alinearlos.'
+                                : 'Todavia falta completar el RUC del perfil fiscal para contrastarlo contra el certificado.'}
+                          </p>
+                          <button
+                            className={styles.secondaryButton}
+                            disabled={issuerTaxId.trim() === extractedCertificateTaxId}
+                            onClick={() => setIssuerTaxId(extractedCertificateTaxId)}
+                            type="button"
+                          >
+                            Usar RUC del certificado
+                          </button>
+                          <button
+                            className={styles.secondaryButton}
+                            disabled={
+                              actionLoading === 'sync-issuer-profile-tax-id' ||
+                              !currentTenancy ||
+                              !invoicingEnabled
+                            }
+                            onClick={handleSyncIssuerProfileTaxIdFromSignature}
+                            type="button"
+                          >
+                            {actionLoading === 'sync-issuer-profile-tax-id'
+                              ? 'Alineando...'
+                              : 'Alinear y guardar'}
+                          </button>
+                        </div>
+                      ) : null}
+
                       <div className={styles.invoiceInlineGrid}>
                         <label className={styles.field}>
                           <span>Contribuyente especial</span>
@@ -3791,28 +3907,46 @@ export function App() {
                       </div>
 
                       {signatureProvider === 'xades_pkcs12' ? (
-                        <div className={styles.invoiceInlineGrid}>
-                          <label className={styles.field}>
-                            <span>PKCS#12 secret ref</span>
+                        <>
+                          <div className={styles.invoiceInlineGrid}>
+                            <label className={styles.field}>
+                              <span>PKCS#12 secret ref</span>
+                              <input
+                                onChange={(event) =>
+                                  setSignaturePkcs12SecretRef(event.target.value)
+                                }
+                                placeholder="vault://ec/signatures/tenant-123/pkcs12"
+                                value={signaturePkcs12SecretRef}
+                              />
+                            </label>
+                            <label className={styles.field}>
+                              <span>Password secret ref</span>
+                              <input
+                                onChange={(event) =>
+                                  setSignaturePasswordSecretRef(event.target.value)
+                                }
+                                placeholder="vault://ec/signatures/tenant-123/password"
+                                value={signaturePasswordSecretRef}
+                              />
+                            </label>
+                          </div>
+
+                          <label className={styles.checkboxField}>
                             <input
+                              checked={signatureHydrateMetadataFromPkcs12}
                               onChange={(event) =>
-                                setSignaturePkcs12SecretRef(event.target.value)
+                                setSignatureHydrateMetadataFromPkcs12(
+                                  event.target.checked,
+                                )
                               }
-                              placeholder="vault://ec/signatures/tenant-123/pkcs12"
-                              value={signaturePkcs12SecretRef}
+                              type="checkbox"
                             />
+                            <span>
+                              Hidratar fingerprint y subject desde el PKCS#12 al
+                              guardar
+                            </span>
                           </label>
-                          <label className={styles.field}>
-                            <span>Password secret ref</span>
-                            <input
-                              onChange={(event) =>
-                                setSignaturePasswordSecretRef(event.target.value)
-                              }
-                              placeholder="vault://ec/signatures/tenant-123/password"
-                              value={signaturePasswordSecretRef}
-                            />
-                          </label>
-                        </div>
+                        </>
                       ) : null}
 
                       <label className={styles.checkboxField}>
@@ -3844,9 +3978,167 @@ export function App() {
                         Esta configuracion separa metadatos visibles del
                         material sensible. Para `xades_pkcs12`, el sistema ya
                         exige referencias al PKCS#12 y su password antes de
-                        firmar, aunque el signer siga siendo stub en este
-                        branch.
+                        firmar, y ahora ya puede producir una firma
+                        criptografica inicial aunque XAdES completo siga
+                        pendiente.
                       </p>
+
+                      {electronicSignatureMaterialInspection ? (
+                        <div className={styles.detailCard}>
+                          <span className={styles.muted}>
+                            PKCS#12 inspection
+                          </span>
+                          <h3>
+                            {electronicSignatureMaterialInspection.inspection.status ===
+                            'likely_usable'
+                              ? 'Keystore abrible'
+                              : electronicSignatureMaterialInspection.inspection
+                                    .status === 'not_applicable'
+                                ? 'No aplica'
+                                : electronicSignatureMaterialInspection.inspection
+                                      .status === 'not_configured'
+                                  ? 'Sin configuracion'
+                                  : 'Inspeccion con hallazgos'}
+                          </h3>
+                          <p>
+                            {
+                              electronicSignatureMaterialInspection.inspection
+                                .detail
+                            }
+                          </p>
+                          <div className={styles.invoiceInlineGrid}>
+                            <div className={styles.field}>
+                              <span>Probe method</span>
+                              <input
+                                disabled
+                                value={
+                                  electronicSignatureMaterialInspection.inspection
+                                    .probeMethod
+                                }
+                              />
+                            </div>
+                            <div className={styles.field}>
+                              <span>Encoding</span>
+                              <input
+                                disabled
+                                value={
+                                  electronicSignatureMaterialInspection.inspection
+                                    .encoding
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div className={styles.invoiceInlineGrid}>
+                            <div className={styles.field}>
+                              <span>Extracted fingerprint</span>
+                              <input
+                                disabled
+                                value={
+                                  electronicSignatureMaterialInspection.inspection
+                                    .extractedFingerprint ?? 'No extraido'
+                                }
+                              />
+                            </div>
+                            <div className={styles.field}>
+                              <span>Extracted subject</span>
+                              <input
+                                disabled
+                                value={
+                                  electronicSignatureMaterialInspection.inspection
+                                    .extractedSubjectName ?? 'No extraido'
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div className={styles.invoiceInlineGrid}>
+                            <div className={styles.field}>
+                              <span>Extracted issuer</span>
+                              <input
+                                disabled
+                                value={
+                                  electronicSignatureMaterialInspection.inspection
+                                    .extractedIssuerName ?? 'No extraido'
+                                }
+                              />
+                            </div>
+                            <div className={styles.field}>
+                              <span>Extracted tax ID</span>
+                              <input
+                                disabled
+                                value={
+                                  electronicSignatureMaterialInspection.inspection
+                                    .extractedTaxId ?? 'No extraido'
+                                }
+                              />
+                            </div>
+                            <div className={styles.field}>
+                              <span>Validity status</span>
+                              <input
+                                disabled
+                                value={
+                                  electronicSignatureMaterialInspection.inspection
+                                    .certificateValidityStatus
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div className={styles.invoiceInlineGrid}>
+                            <div className={styles.field}>
+                              <span>Valid from</span>
+                              <input
+                                disabled
+                                value={
+                                  electronicSignatureMaterialInspection.inspection
+                                    .validFrom ?? 'No extraido'
+                                }
+                              />
+                            </div>
+                            <div className={styles.field}>
+                              <span>Valid until</span>
+                              <input
+                                disabled
+                                value={
+                                  electronicSignatureMaterialInspection.inspection
+                                    .validUntil ?? 'No extraido'
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div className={styles.invoiceInlineGrid}>
+                            <div className={styles.field}>
+                              <span>Days until expiry</span>
+                              <input
+                                disabled
+                                value={
+                                  electronicSignatureMaterialInspection.inspection
+                                    .daysUntilExpiry !== null
+                                    ? String(
+                                        electronicSignatureMaterialInspection
+                                          .inspection.daysUntilExpiry,
+                                      )
+                                    : 'No calculado'
+                                }
+                              />
+                            </div>
+                            <div className={styles.field}>
+                              <span>Crypto proof</span>
+                              <input
+                                disabled
+                                value={
+                                  electronicSignatureMaterialInspection.inspection
+                                    .cryptographicProofStatus
+                                }
+                              />
+                            </div>
+                          </div>
+                          <p>
+                            {
+                              electronicSignatureMaterialInspection.inspection
+                                .cryptographicProofDetail
+                            }
+                          </p>
+                        </div>
+                      ) : null}
                     </form>
                   </div>
 
@@ -4007,8 +4299,9 @@ export function App() {
                       <p className={styles.muted}>
                         Este setting prepara la frontera real de recepcion y
                         autorizacion. En `stub_sri` todo queda local; en
-                        `sri_offline_ws` ya empezamos a modelar URLs y secretos
-                        por tenant sin cambiar el contrato del gateway.
+                        `sri_offline_ws` ya empezamos a modelar URLs y,
+                        opcionalmente, secretos por tenant sin cambiar el
+                        contrato del gateway.
                       </p>
 
                       {electronicSandboxReadiness ? (
@@ -4097,6 +4390,164 @@ export function App() {
                                   electronicSandboxReadiness.internalSignerMaterialDetail
                                 }
                               </small>
+                            </div>
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>
+                                Vigencia certificado
+                              </span>
+                              <strong>
+                                {electronicSandboxReadiness.internalSignerCertificateValidityStatus ===
+                                'valid'
+                                  ? 'Vigente'
+                                  : electronicSandboxReadiness
+                                        .internalSignerCertificateValidityStatus ===
+                                      'expiring_soon'
+                                    ? 'Por vencer'
+                                    : electronicSandboxReadiness
+                                          .internalSignerCertificateValidityStatus ===
+                                        'expired'
+                                      ? 'Vencido'
+                                      : electronicSandboxReadiness
+                                            .internalSignerCertificateValidityStatus ===
+                                          'not_yet_valid'
+                                        ? 'Aun no vigente'
+                                        : electronicSandboxReadiness
+                                              .internalSignerCertificateValidityStatus ===
+                                            'not_applicable'
+                                          ? 'No aplica'
+                                          : 'Desconocida'}
+                              </strong>
+                              <small>
+                                {
+                                  electronicSandboxReadiness.internalSignerCertificateValidityDetail
+                                }
+                              </small>
+                              {electronicSandboxReadiness.internalSignerCertificateValidUntil ? (
+                                <small>
+                                  Vence:
+                                  {' '}
+                                  {
+                                    electronicSandboxReadiness.internalSignerCertificateValidUntil
+                                  }
+                                </small>
+                              ) : null}
+                            </div>
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>
+                                Prueba criptografica
+                              </span>
+                              <strong>
+                                {electronicSandboxReadiness.internalSignerCryptoProofStatus ===
+                                'verified'
+                                  ? 'Verificada'
+                                  : electronicSandboxReadiness
+                                        .internalSignerCryptoProofStatus ===
+                                      'not_applicable'
+                                    ? 'No aplica'
+                                    : electronicSandboxReadiness
+                                          .internalSignerCryptoProofStatus ===
+                                        'unknown'
+                                      ? 'Pendiente'
+                                      : 'Fallida'}
+                              </strong>
+                              <small>
+                                {
+                                  electronicSandboxReadiness.internalSignerCryptoProofDetail
+                                }
+                              </small>
+                            </div>
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>
+                                Compatibilidad offline
+                              </span>
+                              <strong>
+                                {electronicSandboxReadiness.internalSignerOfflineCompatibilityStatus ===
+                                'verified'
+                                  ? 'Verificada'
+                                  : electronicSandboxReadiness
+                                        .internalSignerOfflineCompatibilityStatus ===
+                                      'not_applicable'
+                                    ? 'No aplica'
+                                    : electronicSandboxReadiness
+                                          .internalSignerOfflineCompatibilityStatus ===
+                                        'unknown'
+                                      ? 'Pendiente'
+                                      : 'Fallida'}
+                              </strong>
+                              <small>
+                                {
+                                  electronicSandboxReadiness.internalSignerOfflineCompatibilityDetail
+                                }
+                              </small>
+                            </div>
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>
+                                Alineacion emisor-certificado
+                              </span>
+                              <strong>
+                                {electronicSandboxReadiness.internalSignerIssuerAlignmentStatus ===
+                                'matched'
+                                  ? 'Alineado'
+                                  : electronicSandboxReadiness.internalSignerIssuerAlignmentStatus ===
+                                      'mismatched'
+                                    ? 'Desalineado'
+                                    : electronicSandboxReadiness.internalSignerIssuerAlignmentStatus ===
+                                        'not_applicable'
+                                      ? 'No aplica'
+                                      : 'Sin evidencia'}
+                              </strong>
+                              <small>
+                                {
+                                  electronicSandboxReadiness.internalSignerIssuerAlignmentDetail
+                                }
+                              </small>
+                              {electronicSandboxReadiness.internalSignerExtractedTaxId ? (
+                                <small>
+                                  RUC extraido:
+                                  {' '}
+                                  {
+                                    electronicSandboxReadiness.internalSignerExtractedTaxId
+                                  }
+                                </small>
+                              ) : null}
+                            </div>
+                            <div className={styles.detailCard}>
+                              <span className={styles.muted}>
+                                Ultimo feedback remoto SRI
+                              </span>
+                              <strong>
+                                {electronicSandboxReadiness.latestRemoteSriSubmissionCategory ===
+                                'taxpayer_not_registered'
+                                  ? 'Emisor no registrado'
+                                  : electronicSandboxReadiness.latestRemoteSriSubmissionCategory ===
+                                      'xml_structure'
+                                    ? 'Estructura XML'
+                                    : electronicSandboxReadiness.latestRemoteSriSubmissionCategory ===
+                                        'authorization_rejected'
+                                      ? 'Autorizacion rechazada'
+                                      : electronicSandboxReadiness.latestRemoteSriSubmissionCategory ===
+                                          'technical_failure'
+                                        ? 'Falla tecnica'
+                                        : electronicSandboxReadiness.latestRemoteSriSubmissionSummary
+                                          ? 'Registrado'
+                                          : 'Sin historial remoto'}
+                              </strong>
+                              <small>
+                                {electronicSandboxReadiness.latestRemoteSriSubmissionSummary ??
+                                  'Todavia no existe un envio remoto reciente registrado para este tenant.'}
+                              </small>
+                              {electronicSandboxReadiness.latestRemoteSriSubmissionOccurredAt ? (
+                                <small>
+                                  Ultimo intento:
+                                  {' '}
+                                  {formatDate(
+                                    electronicSandboxReadiness.latestRemoteSriSubmissionOccurredAt,
+                                  )}
+                                  {electronicSandboxReadiness.latestRemoteSriSubmissionStatus
+                                    ? ` · ${electronicSandboxReadiness.latestRemoteSriSubmissionStatus}`
+                                    : ''}
+                                </small>
+                              ) : null}
                             </div>
                           </div>
 
@@ -5561,6 +6012,11 @@ export function App() {
                                   </strong>
                                   <small>{formatDate(event.occurredAt)}</small>
                                   <small>{event.message}</small>
+                                  {event.sriDiagnostics?.summary ? (
+                                    <small>
+                                      Diagnostico SRI: {event.sriDiagnostics.summary}
+                                    </small>
+                                  ) : null}
                                   <small>
                                     {event.soapAction
                                       ? `SOAP ${event.soapAction}`
@@ -5576,6 +6032,37 @@ export function App() {
                                     <small>
                                       Autorizacion: {event.authorizationNumber}
                                     </small>
+                                  ) : null}
+                                  {event.sriDiagnostics?.messages.length ? (
+                                    <details>
+                                      <summary>Mensajes estructurados SRI</summary>
+                                      <div className={styles.stack}>
+                                        {event.sriDiagnostics.messages.map(
+                                          (message, index) => (
+                                            <div
+                                              className={styles.detailCard}
+                                              key={`${event.id}-sri-message-${index}`}
+                                            >
+                                              <small>
+                                                {message.identifier
+                                                  ? `Identificador ${message.identifier}`
+                                                  : 'Mensaje SRI'}
+                                              </small>
+                                              <strong>{message.message}</strong>
+                                              {message.additionalInfo.map(
+                                                (detail, detailIndex) => (
+                                                  <small
+                                                    key={`${event.id}-sri-message-${index}-detail-${detailIndex}`}
+                                                  >
+                                                    {detail}
+                                                  </small>
+                                                ),
+                                              )}
+                                            </div>
+                                          ),
+                                        )}
+                                      </div>
+                                    </details>
                                   ) : null}
                                   {event.requestPayload ? (
                                     <details>

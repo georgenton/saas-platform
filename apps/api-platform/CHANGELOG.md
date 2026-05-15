@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.23.0
+
+### Minor Changes
+
+- c37d26c: Harden PKCS#12 material inspection for Ecuador electronic invoicing readiness using an OpenSSL-backed probe, certificate metadata hydration, certificate validity checks, and an initial internal cryptographic signer rail.
+
 ## 0.22.0
 
 ### Minor Changes

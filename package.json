@@ -14,6 +14,7 @@
     "dev:web": "pnpm nx dev web-platform",
     "auth:token:local": "node tools/auth/generate-local-jwt.mjs",
     "install:sri:schema-bundle": "node tools/sri/install-sri-schema-bundle.mjs",
+    "smoke:ec:issuer-alignment": "node tools/smoke/run-ec-issuer-alignment-smoke.mjs",
     "package:api": "pnpm nx build api-platform && pnpm nx run api-platform:prune",
     "test": "pnpm nx test api-platform-e2e",
     "check": "pnpm prisma:validate && pnpm build",

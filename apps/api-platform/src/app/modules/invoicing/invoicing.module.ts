@@ -18,8 +18,10 @@ import {
   CreateTenantInvoicePaymentUseCase,
   CreateTenantTaxRateUseCase,
   GetTenantElectronicSandboxReadinessUseCase,
+  InspectTenantElectronicSignatureMaterialUseCase,
   CUSTOMER_ID_GENERATOR,
   CUSTOMER_REPOSITORY,
+  ELECTRONIC_INVOICE_OFFLINE_SIGNATURE_PROBE,
   ELECTRONIC_SUBMISSION_SETTINGS_REPOSITORY,
   ELECTRONIC_SIGNATURE_MATERIAL_INSPECTOR,
   ELECTRONIC_SIGNATURE_SETTINGS_REPOSITORY,
@@ -59,6 +61,7 @@ import {
   SendTenantInvoiceEmailUseCase,
   SubmitTenantInvoiceElectronicDocumentUseCase,
   SubmitTenantPresignedInvoiceElectronicDocumentUseCase,
+  SyncTenantIssuerProfileTaxIdFromSignatureUseCase,
   TAX_RATE_ID_GENERATOR,
   TAX_RATE_REPOSITORY,
   UpdateTenantInvoiceStatusUseCase,
@@ -85,6 +88,7 @@ import { InvoicingController } from './invoicing.controller';
 import { AxiosSriOfflineWsClient } from './axios-sri-offline-ws-client';
 import { EnvSecretReferenceResolver } from './env-secret-reference-resolver';
 import { EnvElectronicSignatureMaterialInspector } from './env-electronic-signature-material-inspector';
+import { EnvElectronicInvoiceOfflineSignatureProbe } from './env-electronic-invoice-offline-signature-probe';
 import { RoutingElectronicInvoiceSubmissionGateway } from './routing-electronic-invoice-submission-gateway';
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
@@ -122,6 +126,10 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
       useExisting: EnvElectronicSignatureMaterialInspector,
     },
     {
+      provide: ELECTRONIC_INVOICE_OFFLINE_SIGNATURE_PROBE,
+      useExisting: EnvElectronicInvoiceOfflineSignatureProbe,
+    },
+    {
       provide: ELECTRONIC_INVOICE_XML_SCHEMA_VALIDATOR,
       useExisting: XmllintSriInvoiceXmlSchemaValidator,
     },
@@ -130,6 +138,7 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
       useExisting: RoutingElectronicInvoiceSubmissionGateway,
     },
     EnvElectronicSignatureMaterialInspector,
+    EnvElectronicInvoiceOfflineSignatureProbe,
     EnvSecretReferenceResolver,
     XmllintSriInvoiceXmlSchemaValidator,
     RoutingElectronicInvoiceSubmissionGateway,
@@ -155,6 +164,24 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
         }),
     },
     {
+      provide: InspectTenantElectronicSignatureMaterialUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        ELECTRONIC_SIGNATURE_SETTINGS_REPOSITORY,
+        ELECTRONIC_SIGNATURE_MATERIAL_INSPECTOR,
+      ],
+      useFactory: (
+        tenantRepository,
+        electronicSignatureSettingsRepository,
+        electronicSignatureMaterialInspector,
+      ) =>
+        new InspectTenantElectronicSignatureMaterialUseCase(
+          tenantRepository,
+          electronicSignatureSettingsRepository,
+          electronicSignatureMaterialInspector,
+        ),
+    },
+    {
       provide: GetTenantElectronicSandboxReadinessUseCase,
       inject: [
         TENANT_REPOSITORY,
@@ -162,10 +189,12 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
         INVOICE_NUMBERING_SETTINGS_REPOSITORY,
         ELECTRONIC_SIGNATURE_SETTINGS_REPOSITORY,
         ELECTRONIC_SUBMISSION_SETTINGS_REPOSITORY,
+        INVOICE_ELECTRONIC_EVENT_REPOSITORY,
         SECRET_REFERENCE_RESOLVER,
         ELECTRONIC_SIGNATURE_MATERIAL_INSPECTOR,
         ELECTRONIC_INVOICE_SIGNER,
         ELECTRONIC_INVOICE_XML_SCHEMA_VALIDATOR,
+        ELECTRONIC_INVOICE_OFFLINE_SIGNATURE_PROBE,
       ],
       useFactory: (
         tenantRepository,
@@ -173,10 +202,12 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
         invoiceNumberingSettingsRepository,
         electronicSignatureSettingsRepository,
         electronicSubmissionSettingsRepository,
+        invoiceElectronicEventRepository,
         secretReferenceResolver,
         electronicSignatureMaterialInspector,
         electronicInvoiceSigner,
         electronicInvoiceXmlSchemaValidator,
+        electronicInvoiceOfflineSignatureProbe,
       ) =>
         new GetTenantElectronicSandboxReadinessUseCase(
           tenantRepository,
@@ -184,10 +215,12 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
           invoiceNumberingSettingsRepository,
           electronicSignatureSettingsRepository,
           electronicSubmissionSettingsRepository,
+          invoiceElectronicEventRepository,
           secretReferenceResolver,
           electronicSignatureMaterialInspector,
           electronicInvoiceSigner,
           electronicInvoiceXmlSchemaValidator,
+          electronicInvoiceOfflineSignatureProbe,
         ),
     },
     {
@@ -342,6 +375,24 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
         ),
     },
     {
+      provide: SyncTenantIssuerProfileTaxIdFromSignatureUseCase,
+      inject: [
+        GetTenantIssuerProfileUseCase,
+        InspectTenantElectronicSignatureMaterialUseCase,
+        UpsertTenantIssuerProfileUseCase,
+      ],
+      useFactory: (
+        getTenantIssuerProfileUseCase,
+        inspectTenantElectronicSignatureMaterialUseCase,
+        upsertTenantIssuerProfileUseCase,
+      ) =>
+        new SyncTenantIssuerProfileTaxIdFromSignatureUseCase(
+          getTenantIssuerProfileUseCase,
+          inspectTenantElectronicSignatureMaterialUseCase,
+          upsertTenantIssuerProfileUseCase,
+        ),
+    },
+    {
       provide: UpsertTenantElectronicSubmissionSettingsUseCase,
       inject: [TENANT_REPOSITORY, ELECTRONIC_SUBMISSION_SETTINGS_REPOSITORY],
       useFactory: (tenantRepository, electronicSubmissionSettingsRepository) =>
@@ -352,11 +403,20 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
     },
     {
       provide: UpsertTenantElectronicSignatureSettingsUseCase,
-      inject: [TENANT_REPOSITORY, ELECTRONIC_SIGNATURE_SETTINGS_REPOSITORY],
-      useFactory: (tenantRepository, electronicSignatureSettingsRepository) =>
+      inject: [
+        TENANT_REPOSITORY,
+        ELECTRONIC_SIGNATURE_SETTINGS_REPOSITORY,
+        ELECTRONIC_SIGNATURE_MATERIAL_INSPECTOR,
+      ],
+      useFactory: (
+        tenantRepository,
+        electronicSignatureSettingsRepository,
+        electronicSignatureMaterialInspector,
+      ) =>
         new UpsertTenantElectronicSignatureSettingsUseCase(
           tenantRepository,
           electronicSignatureSettingsRepository,
+          electronicSignatureMaterialInspector,
         ),
     },
     {

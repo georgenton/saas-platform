@@ -23,7 +23,10 @@ import {
   CreateTenantInvoiceItemUseCase,
   CreateTenantInvoicePaymentUseCase,
   CreateTenantTaxRateUseCase,
+  ElectronicSignatureMetadataHydrationError,
+  ElectronicSignatureExtractedTaxIdUnavailableError,
   GetTenantElectronicSandboxReadinessUseCase,
+  InspectTenantElectronicSignatureMaterialUseCase,
   CustomerEmailMissingError,
   ElectronicSubmissionSettingsNotFoundError,
   ElectronicSignatureSettingsNotFoundError,
@@ -57,6 +60,7 @@ import {
   InvoiceElectronicSubmissionGatewayIncompleteError,
   InvoiceElectronicSubmissionNotConfiguredError,
   InvoiceElectronicSecretResolutionError,
+  InvoiceElectronicSigningOperationError,
   InvoiceElectronicRemoteSubmissionReadinessError,
   InvoiceElectronicSignatureMaterialIncompleteError,
   InvoiceElectronicXmlValidationError,
@@ -79,6 +83,7 @@ import {
   SendTenantInvoiceEmailUseCase,
   SubmitTenantInvoiceElectronicDocumentUseCase,
   SubmitTenantPresignedInvoiceElectronicDocumentUseCase,
+  SyncTenantIssuerProfileTaxIdFromSignatureUseCase,
   TaxRateNotFoundError,
   UpdateTenantInvoiceStatusUseCase,
   UpdateTenantInvoiceElectronicStatusUseCase,
@@ -128,6 +133,10 @@ import {
   ElectronicSignatureSettingsResponseDto,
   toElectronicSignatureSettingsResponseDto,
 } from './dto/electronic-signature-settings.response';
+import {
+  ElectronicSignatureMaterialInspectionResponseDto,
+  toElectronicSignatureMaterialInspectionResponseDto,
+} from './dto/electronic-signature-material-inspection.response';
 import {
   SubmitInvoiceElectronicDocumentResponseDto,
   toSubmitInvoiceElectronicDocumentResponseDto,
@@ -224,6 +233,8 @@ export class InvoicingController {
     private readonly createTenantInvoicePaymentUseCase: CreateTenantInvoicePaymentUseCase,
     private readonly createTenantTaxRateUseCase: CreateTenantTaxRateUseCase,
     private readonly getTenantElectronicSandboxReadinessUseCase: GetTenantElectronicSandboxReadinessUseCase,
+    private readonly inspectTenantElectronicSignatureMaterialUseCase: InspectTenantElectronicSignatureMaterialUseCase,
+    private readonly syncTenantIssuerProfileTaxIdFromSignatureUseCase: SyncTenantIssuerProfileTaxIdFromSignatureUseCase,
     private readonly getTenantCustomerByIdUseCase: GetTenantCustomerByIdUseCase,
     private readonly getTenantElectronicSubmissionSettingsUseCase: GetTenantElectronicSubmissionSettingsUseCase,
     private readonly getTenantElectronicSignatureSettingsUseCase: GetTenantElectronicSignatureSettingsUseCase,
@@ -296,10 +307,37 @@ export class InvoicingController {
           privateKeyPasswordSecretRef:
             body.privateKeyPasswordSecretRef ?? null,
           subjectName: body.subjectName ?? null,
+          hydrateMetadataFromPkcs12: body.hydrateMetadataFromPkcs12,
           isActive: body.isActive,
         });
 
       return toElectronicSignatureSettingsResponseDto(settings);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof ElectronicSignatureMetadataHydrationError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/electronic-signature/inspection')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_READ)
+  async inspectTenantElectronicSignatureMaterial(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<ElectronicSignatureMaterialInspectionResponseDto> {
+    try {
+      const inspection =
+        await this.inspectTenantElectronicSignatureMaterialUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toElectronicSignatureMaterialInspectionResponseDto(inspection);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
@@ -437,6 +475,35 @@ export class InvoicingController {
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/electronic-profile/sync-certificate-tax-id')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.INVOICES_MANAGE)
+  async syncTenantIssuerProfileTaxIdFromSignature(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<IssuerProfileResponseDto> {
+    try {
+      const profile =
+        await this.syncTenantIssuerProfileTaxIdFromSignatureUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toIssuerProfileResponseDto(profile);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof IssuerProfileNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof ElectronicSignatureExtractedTaxIdUnavailableError) {
+        throw new BadRequestException(error.message);
       }
 
       throw error;
@@ -1210,6 +1277,7 @@ export class InvoicingController {
         error instanceof InvoiceElectronicSignatureMaterialIncompleteError ||
         error instanceof InvoiceElectronicSignatureNotConfiguredError ||
         error instanceof InvoiceElectronicSecretResolutionError ||
+        error instanceof InvoiceElectronicSigningOperationError ||
         error instanceof UnsupportedElectronicInvoiceDocumentCodeError ||
         error instanceof InvoiceElectronicXmlValidationError
       ) {

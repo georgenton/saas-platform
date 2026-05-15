@@ -14,6 +14,10 @@ import {
   SriOfflineWsClient,
   SriOfflineWsReceptionResult,
 } from './sri-offline-ws.client';
+import {
+  parseSriOfflineResponseDiagnostics,
+  summarizeSriOfflineResponseDiagnostics,
+} from './sri-offline-response-diagnostics';
 
 @Injectable()
 export class AxiosSriOfflineWsClient implements SriOfflineWsClient {
@@ -186,8 +190,15 @@ function buildResponseMessage(input: {
   fallback: string;
   payload: string;
 }): string {
+  const diagnostics = parseSriOfflineResponseDiagnostics(input.payload);
+
   return (
-    extractTagValue(input.payload, 'mensaje') ??
+    summarizeSriOfflineResponseDiagnostics(
+      diagnostics ?? {
+        state: null,
+        messages: [],
+      },
+    ) ??
     extractTagValue(input.payload, 'identificador') ??
     input.fallback
   );

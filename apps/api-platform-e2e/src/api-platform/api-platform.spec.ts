@@ -53,6 +53,7 @@ import {
   CreateTenantInvoicePaymentUseCase,
   CreateTenantTaxRateUseCase,
   GetTenantElectronicSandboxReadinessUseCase,
+  InspectTenantElectronicSignatureMaterialUseCase,
   InvoiceElectronicRemoteSubmissionReadinessError,
   InvoiceElectronicXmlValidationError,
   GetTenantElectronicSubmissionSettingsUseCase,
@@ -77,6 +78,7 @@ import {
   SendTenantInvoiceEmailUseCase,
   SubmitTenantInvoiceElectronicDocumentUseCase,
   SubmitTenantPresignedInvoiceElectronicDocumentUseCase,
+  SyncTenantIssuerProfileTaxIdFromSignatureUseCase,
   UpdateTenantInvoiceStatusUseCase,
   UpdateTenantInvoiceElectronicStatusUseCase,
   UpsertTenantElectronicSubmissionSettingsUseCase,
@@ -142,6 +144,7 @@ describe('API', () => {
   let getTenantCustomerByIdUseCase: { execute: jest.Mock };
   let getTenantElectronicSubmissionSettingsUseCase: { execute: jest.Mock };
   let getTenantElectronicSandboxReadinessUseCase: { execute: jest.Mock };
+  let inspectTenantElectronicSignatureMaterialUseCase: { execute: jest.Mock };
   let getTenantElectronicSignatureSettingsUseCase: { execute: jest.Mock };
   let getTenantInvoiceDetailUseCase: { execute: jest.Mock };
   let getTenantInvoiceDocumentUseCase: { execute: jest.Mock };
@@ -210,6 +213,7 @@ describe('API', () => {
   let upsertTenantElectronicSignatureSettingsUseCase: { execute: jest.Mock };
   let upsertTenantInvoiceNumberingSettingsUseCase: { execute: jest.Mock };
   let upsertTenantIssuerProfileUseCase: { execute: jest.Mock };
+  let syncTenantIssuerProfileTaxIdFromSignatureUseCase: { execute: jest.Mock };
   let createTenantUseCase: { execute: jest.Mock };
   let ownerToken: string;
   let inviteeToken: string;
@@ -572,6 +576,37 @@ describe('API', () => {
     createdAt: new Date('2026-05-01T16:50:00.000Z'),
     updatedAt: new Date('2026-05-01T16:50:00.000Z'),
   });
+  const electronicSignatureMaterialInspection = {
+    tenantSlug: 'saas-platform',
+    signatureProvider: 'stub_local',
+    certificateLabel: 'Firma pruebas SaaS Platform',
+    storageMode: 'stub_inline',
+    isActive: true,
+    materialConfigured: true,
+    inspection: {
+      status: 'not_applicable' as const,
+      detail:
+        'El provider actual no usa PKCS#12. Esta inspeccion solo aplica al carril de firma interna xades_pkcs12.',
+      encoding: 'not_applicable' as const,
+      probeMethod: 'not_applicable' as const,
+      certificateValidityStatus: 'not_applicable' as const,
+      cryptographicProofStatus: 'not_applicable' as const,
+      cryptographicProofDetail:
+        'El provider actual no usa PKCS#12. La prueba criptografica no aplica.',
+      passwordPresent: false,
+      hasAdvisoryWarning: false,
+      fingerprintPresent: true,
+      subjectNamePresent: false,
+      extractedFingerprint: null,
+      extractedTaxId: null,
+      extractedSubjectName: null,
+      extractedIssuerName: null,
+      validFrom: null,
+      validUntil: null,
+      daysUntilExpiry: null,
+      byteLength: null,
+    },
+  };
   const electronicSubmissionSettings = ElectronicSubmissionSettings.create({
     id: 'submission_settings_001',
     tenantId: 'tenant_123',
@@ -597,6 +632,28 @@ describe('API', () => {
     internalSignerMaterialDetail:
       'El provider actual no usa PKCS#12. Esta inspeccion solo aplica al carril de firma interna xades_pkcs12.',
     isInternalSignerMaterialReady: false,
+    internalSignerCertificateValidityStatus: 'not_applicable' as const,
+    internalSignerCertificateValidityDetail:
+      'La vigencia del certificado no aplica para providers que no usan PKCS#12.',
+    internalSignerCertificateValidUntil: null,
+    isInternalSignerCertificateCurrentlyValid: false,
+    internalSignerCryptoProofStatus: 'not_applicable' as const,
+    internalSignerCryptoProofDetail:
+      'La prueba criptografica no aplica para providers que no usan PKCS#12.',
+    isInternalSignerCryptographicallyReady: false,
+    internalSignerOfflineCompatibilityStatus: 'not_applicable' as const,
+    internalSignerOfflineCompatibilityDetail:
+      'La compatibilidad offline local no aplica para providers que no usan PKCS#12.',
+    isInternalSignerOfflineCompatible: false,
+    internalSignerIssuerAlignmentStatus: 'not_applicable' as const,
+    internalSignerIssuerAlignmentDetail:
+      'La alineacion entre certificado y emisor no aplica para providers que no usan PKCS#12.',
+    internalSignerExtractedTaxId: null,
+    isInternalSignerIssuerAligned: false,
+    latestRemoteSriSubmissionStatus: null,
+    latestRemoteSriSubmissionSummary: null,
+    latestRemoteSriSubmissionCategory: null,
+    latestRemoteSriSubmissionOccurredAt: null,
     isReadyForLocalStubSubmission: true,
     isReadyForRemoteSandboxSubmission: false,
     isReadyForPresignedRemoteSandboxSubmission: false,
@@ -604,9 +661,7 @@ describe('API', () => {
       'La firma stub_local sirve para demos y previews, pero no genera una firma valida para el esquema offline del SRI.',
       'El provider actual sigue siendo stub_sri; para sandbox real debe usarse sri_offline_ws.',
     ],
-    warnings: [
-      'No existe credentialsSecretRef configurado para el gateway remoto.',
-    ],
+    warnings: [],
     checks: [
       {
         key: 'issuer_profile',
@@ -620,6 +675,34 @@ describe('API', () => {
         status: 'ready' as const,
         detail:
           'El provider actual no usa PKCS#12. Esta inspeccion solo aplica al carril de firma interna xades_pkcs12.',
+      },
+      {
+        key: 'signature_certificate_validity',
+        label: 'Vigencia del certificado',
+        status: 'ready' as const,
+        detail:
+          'La vigencia del certificado no aplica para providers que no usan PKCS#12.',
+      },
+      {
+        key: 'signature_crypto_proof',
+        label: 'Prueba criptografica interna',
+        status: 'ready' as const,
+        detail:
+          'La prueba criptografica no aplica para providers que no usan PKCS#12.',
+      },
+      {
+        key: 'signature_offline_probe',
+        label: 'Compatibilidad offline local',
+        status: 'ready' as const,
+        detail:
+          'La compatibilidad offline local no aplica para providers que no usan PKCS#12.',
+      },
+      {
+        key: 'signature_issuer_alignment',
+        label: 'Alineacion emisor-certificado',
+        status: 'ready' as const,
+        detail:
+          'La alineacion entre certificado y emisor no aplica para providers que no usan PKCS#12.',
       },
       {
         key: 'signature_capability',
@@ -711,6 +794,46 @@ describe('API', () => {
     submissionReference: 'stub-sri-invoice_001-123456789',
     authorizationNumber: null,
     occurredAt: new Date('2026-05-01T18:00:00.000Z'),
+  });
+  const sriRejectedInvoiceElectronicEvent = InvoiceElectronicEvent.create({
+    id: 'invoice_event_sri_001',
+    tenantId: 'tenant_123',
+    invoiceId: 'invoice_001',
+    eventType: 'submission',
+    provider: 'sri_offline_ws',
+    providerStatus: 'DEVUELTA',
+    endpoint:
+      'https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl',
+    soapAction: 'validarComprobante',
+    message:
+      '35 - ARCHIVO NO CUMPLE ESTRUCTURA XML · No existe un contribuyente registrado con el RUC 1790012345001',
+    requestPayload: '<soap:Envelope>request</soap:Envelope>',
+    responsePayload: `
+      <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <soap:Body>
+          <ns2:validarComprobanteResponse xmlns:ns2="http://ec.gob.sri.ws.recepcion">
+            <RespuestaRecepcionComprobante>
+              <estado>DEVUELTA</estado>
+              <comprobantes>
+                <comprobante>
+                  <claveAcceso>120520260117900123450010010020000000011234567815</claveAcceso>
+                  <mensajes>
+                    <mensaje>
+                      <identificador>35</identificador>
+                      <mensaje>ARCHIVO NO CUMPLE ESTRUCTURA XML</mensaje>
+                      <informacionAdicional>No existe un contribuyente registrado con el RUC 1790012345001</informacionAdicional>
+                    </mensaje>
+                  </mensajes>
+                </comprobante>
+              </comprobantes>
+            </RespuestaRecepcionComprobante>
+          </ns2:validarComprobanteResponse>
+        </soap:Body>
+      </soap:Envelope>
+    `,
+    submissionReference: 'SRI-HTTP-invoice_001-1778815396909',
+    authorizationNumber: null,
+    occurredAt: new Date('2026-05-14T15:39:56.909Z'),
   });
   const invoiceNumberingSettings = InvoiceNumberingSettings.create({
     id: 'invoice_numbering_001',
@@ -1362,6 +1485,11 @@ describe('API', () => {
     getTenantElectronicSandboxReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(electronicSandboxReadiness),
     };
+    inspectTenantElectronicSignatureMaterialUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(electronicSignatureMaterialInspection),
+    };
     getTenantElectronicSignatureSettingsUseCase = {
       execute: jest.fn().mockResolvedValue(electronicSignatureSettings),
     };
@@ -1751,6 +1879,9 @@ describe('API', () => {
     upsertTenantIssuerProfileUseCase = {
       execute: jest.fn().mockResolvedValue(issuerProfile),
     };
+    syncTenantIssuerProfileTaxIdFromSignatureUseCase = {
+      execute: jest.fn().mockResolvedValue(issuerProfile),
+    };
     upsertTenantInvoiceNumberingSettingsUseCase = {
       execute: jest.fn().mockResolvedValue(invoiceNumberingSettings),
     };
@@ -1894,6 +2025,8 @@ describe('API', () => {
       .useValue(getTenantElectronicSubmissionSettingsUseCase)
       .overrideProvider(GetTenantElectronicSandboxReadinessUseCase)
       .useValue(getTenantElectronicSandboxReadinessUseCase)
+      .overrideProvider(InspectTenantElectronicSignatureMaterialUseCase)
+      .useValue(inspectTenantElectronicSignatureMaterialUseCase)
       .overrideProvider(GetTenantElectronicSignatureSettingsUseCase)
       .useValue(getTenantElectronicSignatureSettingsUseCase)
       .overrideProvider(GetTenantIssuerProfileUseCase)
@@ -2000,6 +2133,8 @@ describe('API', () => {
       .useValue(upsertTenantElectronicSignatureSettingsUseCase)
       .overrideProvider(UpsertTenantIssuerProfileUseCase)
       .useValue(upsertTenantIssuerProfileUseCase)
+      .overrideProvider(SyncTenantIssuerProfileTaxIdFromSignatureUseCase)
+      .useValue(syncTenantIssuerProfileTaxIdFromSignatureUseCase)
       .overrideProvider(UpsertTenantInvoiceNumberingSettingsUseCase)
       .useValue(upsertTenantInvoiceNumberingSettingsUseCase)
       .overrideProvider(AcceptTenantInvitationUseCase)
@@ -2520,6 +2655,35 @@ describe('API', () => {
     });
   });
 
+  it('POST /api/invoicing/tenants/:slug/electronic-profile/sync-certificate-tax-id should align the issuer tax id from the certificate', async () => {
+    await request(httpServer)
+      .post(
+        '/api/invoicing/tenants/saas-platform/electronic-profile/sync-certificate-tax-id',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect({
+        id: 'issuer_profile_001',
+        tenantId: 'tenant_123',
+        legalName: 'SaaS Platform S.A.',
+        commercialName: 'SaaS Platform',
+        taxId: '1790012345001',
+        environment: 'test',
+        emissionType: 'normal',
+        accountingObligated: true,
+        specialTaxpayerCode: null,
+        rimpeTaxpayerType: null,
+        matrixAddress: 'Av. Principal y Calle Secundaria',
+        establishmentAddress: 'Sucursal Matriz',
+        createdAt: '2026-04-29T16:00:00.000Z',
+        updatedAt: '2026-04-29T16:00:00.000Z',
+      });
+
+    expect(
+      syncTenantIssuerProfileTaxIdFromSignatureUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform');
+  });
+
   it('GET /api/invoicing/tenants/:slug/electronic-signature should return electronic signature settings', async () => {
     await request(httpServer)
       .get('/api/invoicing/tenants/saas-platform/electronic-signature')
@@ -2543,6 +2707,18 @@ describe('API', () => {
 
     expect(
       getTenantElectronicSignatureSettingsUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform');
+  });
+
+  it('GET /api/invoicing/tenants/:slug/electronic-signature/inspection should return signature material inspection', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/electronic-signature/inspection')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect(electronicSignatureMaterialInspection);
+
+    expect(
+      inspectTenantElectronicSignatureMaterialUseCase.execute,
     ).toHaveBeenCalledWith('saas-platform');
   });
 
@@ -2585,6 +2761,37 @@ describe('API', () => {
       pkcs12SecretRef: null,
       privateKeyPasswordSecretRef: null,
       subjectName: null,
+      isActive: true,
+    });
+  });
+
+  it('POST /api/invoicing/tenants/:slug/electronic-signature should forward PKCS#12 metadata hydration when requested', async () => {
+    await request(httpServer)
+      .post('/api/invoicing/tenants/saas-platform/electronic-signature')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        provider: 'xades_pkcs12',
+        certificateLabel: 'Firma Legal PKCS12',
+        storageMode: 'secret_ref',
+        pkcs12SecretRef: 'env:EC_PKCS12',
+        privateKeyPasswordSecretRef: 'env:EC_PKCS12_PASSWORD',
+        hydrateMetadataFromPkcs12: true,
+        isActive: true,
+      })
+      .expect(201);
+
+    expect(
+      upsertTenantElectronicSignatureSettingsUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      provider: 'xades_pkcs12',
+      certificateLabel: 'Firma Legal PKCS12',
+      storageMode: 'secret_ref',
+      certificateFingerprint: null,
+      pkcs12SecretRef: 'env:EC_PKCS12',
+      privateKeyPasswordSecretRef: 'env:EC_PKCS12_PASSWORD',
+      subjectName: null,
+      hydrateMetadataFromPkcs12: true,
       isActive: true,
     });
   });
@@ -3312,6 +3519,7 @@ describe('API', () => {
             submissionReference: 'stub-sri-invoice_001-123456789',
             authorizationNumber: null,
             occurredAt: '2026-05-01T18:00:00.000Z',
+            sriDiagnostics: null,
           },
         ],
         settlement: {
@@ -3325,6 +3533,67 @@ describe('API', () => {
       'saas-platform',
       'invoice_001',
     );
+  });
+
+  it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId should expose structured SRI diagnostics when the response payload is XML', async () => {
+    getTenantInvoiceDetailUseCase.execute.mockResolvedValueOnce({
+      invoice: draftInvoice.updateElectronicStatus(
+        {
+          electronicStatus: 'rejected',
+          accessKey:
+            '120520260117900123450010010020000000011234567815',
+          authorizationNumber: null,
+          authorizedAt: null,
+          electronicStatusMessage:
+            '35 - ARCHIVO NO CUMPLE ESTRUCTURA XML · No existe un contribuyente registrado con el RUC 1790012345001',
+          signedAt: new Date('2026-05-14T15:39:50.000Z'),
+          submittedAt: new Date('2026-05-14T15:39:56.909Z'),
+          submissionReference: 'SRI-HTTP-invoice_001-1778815396909',
+        },
+        new Date('2026-05-14T15:39:56.909Z'),
+      ),
+      items: [firstInvoiceItem, secondInvoiceItem],
+      payments: [],
+      electronicEvents: [sriRejectedInvoiceElectronicEvent],
+      totals: {
+        subtotalInCents: 12500,
+        taxInCents: 1200,
+        totalInCents: 13700,
+      },
+      settlement: {
+        paidInCents: 0,
+        balanceDueInCents: 13700,
+        isFullyPaid: false,
+      },
+    });
+
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/invoices/invoice_001')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.electronicStatus).toBe('rejected');
+        expect(response.body.electronicStatusMessage).toBe(
+          '35 - ARCHIVO NO CUMPLE ESTRUCTURA XML · No existe un contribuyente registrado con el RUC 1790012345001',
+        );
+        expect(response.body.electronicEvents[0].sriDiagnostics).toEqual({
+          state: 'DEVUELTA',
+          authorizationNumber: null,
+          authorizationDate: null,
+          accessKey: '120520260117900123450010010020000000011234567815',
+          summary:
+            '35 - ARCHIVO NO CUMPLE ESTRUCTURA XML · No existe un contribuyente registrado con el RUC 1790012345001',
+          messages: [
+            {
+              identifier: '35',
+              message: 'ARCHIVO NO CUMPLE ESTRUCTURA XML',
+              additionalInfo: [
+                'No existe un contribuyente registrado con el RUC 1790012345001',
+              ],
+            },
+          ],
+        });
+      });
   });
 
   it('GET /api/invoicing/tenants/:slug/invoices/:invoiceId/document should return the invoice document view', async () => {

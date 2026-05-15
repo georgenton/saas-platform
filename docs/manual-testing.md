@@ -282,8 +282,9 @@ Corre en este orden:
 7. `04. Invoicing Setup / Upsert Withholding Numbering` si quieres abrir el carril `07`
 8. `04. Invoicing Setup / Upsert Remission Guide Numbering` si quieres abrir el carril `06`
 9. `04. Invoicing Setup / Upsert Electronic Signature`
-10. `04. Invoicing Setup / Upsert Electronic Submission`
-11. `04. Invoicing Setup / Get Electronic Sandbox Readiness`
+10. `04. Invoicing Setup / Get Electronic Signature Inspection`
+11. `04. Invoicing Setup / Upsert Electronic Submission`
+12. `04. Invoicing Setup / Get Electronic Sandbox Readiness`
 
 ### Qué esperar
 
@@ -295,8 +296,25 @@ Corre en este orden:
 - opcionalmente numeración independiente para guía de remisión (`06`)
 - opcionalmente numeración independiente para comprobante de retención (`07`)
 - firma configurada
+- inspección concreta del PKCS#12 si usas `xades_pkcs12`
 - gateway configurado
 - readiness indicando si el tenant puede o no pasar a sandbox remoto real
+
+Cuando el provider remoto sea `sri_offline_ws`, el detalle de factura ya expone un diagnostico estructurado por evento:
+- `sriDiagnostics.summary`
+- `sriDiagnostics.messages[].identifier`
+- `sriDiagnostics.messages[].message`
+- `sriDiagnostics.messages[].additionalInfo`
+
+Eso ayuda a leer devoluciones reales del SRI sin tener que inspeccionar el `responsePayload` XML completo.
+
+Importante: el RUC de ejemplo `1790012345001` sirve para fixtures locales y previews, pero ya no debe considerarse apto para `sandboxReady=true` en CELCER. Si apuntas al sandbox real del SRI, usa un contribuyente realmente habilitado en ese ambiente.
+
+Si quieres ahorrar trabajo manual con `xades_pkcs12`, puedes dejar:
+
+- `signatureHydrateMetadataJson = true`
+
+Entonces `Upsert Electronic Signature` intentará completar `certificateFingerprint` y `subjectName` desde el propio PKCS#12 cuando el keystore ya pueda abrirse.
 
 ### 8.2 Datos maestros de negocio
 
@@ -866,11 +884,11 @@ Significa que todavía falta algo para una prueba remota real. Revisa:
 
 #### `isReadyForPresignedRemoteSandboxSubmission = true`
 
-Significa que ya puedes probar el gateway remoto con XML firmado externamente, aunque la firma interna real todavía no esté lista.
+Significa que ya puedes probar el gateway remoto con XML firmado externamente, aunque la firma interna todavía no haya quedado verificada para ese tenant.
 
 #### `isInternalSignerMaterialReady = true`
 
-Significa que el `pkcs12SecretRef` y su password ya resolvieron a un material que parece PKCS#12 base64/DER cargable por una frontera interna. Aun no garantiza firma criptografica valida para SRI; solo confirma que el material ya no parece vacio, PEM equivocado o basura imposible de cargar.
+Significa que el `pkcs12SecretRef` y su password ya resolvieron a un material que OpenSSL pudo abrir como PKCS#12 y del que ya fue posible leer el certificado. Aun no garantiza firma criptografica valida para SRI; solo confirma que el keystore ya no parece vacio, PEM equivocado o basura imposible de cargar.
 
 #### `isReadyForLocalStubSubmission = true`
 
@@ -879,6 +897,38 @@ Significa que el tenant todavía puede validar el pipeline interno usando `stub_
 #### `isReadyForRemoteSandboxSubmission = true`
 
 Significa que el tenant ya está alineado para una prueba controlada remota con firma interna y gateway sandbox.
+
+#### `latestRemoteSriSubmission*`
+
+Cuando ya hubo al menos un intento real contra `sri_offline_ws`, la respuesta también expone:
+
+- `latestRemoteSriSubmissionStatus`
+- `latestRemoteSriSubmissionSummary`
+- `latestRemoteSriSubmissionCategory`
+- `latestRemoteSriSubmissionOccurredAt`
+
+Úsalo así:
+
+- `taxpayer_not_registered`:
+  - el último rechazo remoto apunta a identidad fiscal no habilitada en CELCER
+  - normalmente no tiene sentido seguir afinando firma mientras el emisor siga en ese estado
+- `xml_structure`:
+  - el SRI devolvió una observación estructural sobre el XML enviado
+  - aquí ya conviene revisar shape de firma, estructura del documento o compatibilidad XSD/XAdES
+- `authorization_rejected`:
+  - el documento pasó la frontera de recepción pero terminó rechazado en autorización
+- `technical_failure`:
+  - hubo una falla de transporte o de integración que no parece de negocio
+- `unknown`:
+  - hubo feedback remoto, pero todavía no cayó limpiamente en una categoría conocida
+
+Si `latestRemoteSriSubmissionSummary` ya trae un rechazo claro, úsalo como evidencia más fuerte que un supuesto local: el readiness ahora puede reflejar no solo lo que “parece faltar”, sino también lo último que el SRI ya dijo explícitamente.
+
+Además, `recommendedNextStep` ya toma en cuenta esa categoría remota. Si el último rechazo fue por `taxpayer_not_registered`, la recomendación te va a empujar a alinear el emisor sandbox; si fue `xml_structure`, te va a mandar primero a revisar la firma/XML antes de insistir con otra prueba.
+
+#### `credentialsSecretRef`
+
+Hoy es opcional para el cliente `sri_offline_ws` del repo. Si está vacío, el readiness no debería degradarse por eso solo. Configúralo únicamente cuando tu entorno, proxy o integración necesiten cabeceras adicionales para salir hacia el gateway remoto.
 
 ### Nueva lectura recomendada: `documentSupport`
 
@@ -912,6 +962,13 @@ Además del semáforo remoto, ahora la respuesta también expone:
 - `internalSignerMaterialStatus`
 - `internalSignerMaterialDetail`
 - `isInternalSignerMaterialReady`
+- `internalSignerCertificateValidityStatus`
+- `internalSignerCertificateValidityDetail`
+- `internalSignerCertificateValidUntil`
+- `isInternalSignerCertificateCurrentlyValid`
+- `internalSignerCryptoProofStatus`
+- `internalSignerCryptoProofDetail`
+- `isInternalSignerCryptographicallyReady`
 
 Úsalo así:
 
@@ -922,14 +979,182 @@ Además del semáforo remoto, ahora la respuesta también expone:
 - `invalid`:
   - el secret respondió vacío, parece PEM en vez de PKCS#12, o no decodifica como base64/DER utilizable
 - `likely_usable`:
-  - el material ya parece cargable por una frontera interna, aunque la firma real todavía siga en modo stub
+  - el material ya parece cargable por una frontera interna, idealmente porque OpenSSL pudo abrir el PKCS#12
+  - si el detail menciona metadata faltante o ausencia de OpenSSL en runtime, todavía conviene cerrar esa parte antes de confiar demasiado en el carril interno
+
+### Nueva lectura recomendada: vigencia del certificado interno
+
+Cuando el provider es `xades_pkcs12`, ahora también vale mirar:
+
+- `internalSignerCertificateValidityStatus`
+- `internalSignerCertificateValidityDetail`
+- `internalSignerCertificateValidUntil`
+- `isInternalSignerCertificateCurrentlyValid`
+
+Úsalo así:
+
+- `valid`:
+  - el certificado está vigente y no vence dentro del umbral cercano
+- `expiring_soon`:
+  - el certificado sigue vigente, pero conviene renovarlo pronto
+  - no bloquea por sí solo el carril remoto, pero sí deja warning
+- `expired`:
+  - bloquea el carril remoto interno aunque el PKCS#12 abra bien
+- `not_yet_valid`:
+  - el certificado todavía no entra en vigencia y el carril remoto interno queda bloqueado
+- `unknown`:
+  - el keystore abrió, pero no fue posible interpretar con certeza sus fechas
+- `not_applicable`:
+  - el provider actual no usa PKCS#12
+
+### Nueva lectura recomendada: prueba criptográfica interna
+
+Cuando el provider es `xades_pkcs12`, ahora también vale mirar:
+
+- `internalSignerCryptoProofStatus`
+- `internalSignerCryptoProofDetail`
+- `isInternalSignerCryptographicallyReady`
+
+Úsalo así:
+
+- `verified`:
+  - OpenSSL logró extraer la llave privada, firmar un challenge SHA-256 y verificarlo con el certificado del mismo PKCS#12
+  - esto todavía no significa XAdES/SRI listo, pero sí demuestra que la llave privada ya es operable de verdad
+- `failed`:
+  - el keystore abrió, pero la llave privada no superó la prueba de firma/verificación
+  - en ese estado conviene revisar password, compatibilidad del PKCS#12 o material corrupto
+- `unknown`:
+  - todavía no fue posible ejecutar la prueba real porque la inspección ni siquiera logró abrir bien el PKCS#12
+- `not_applicable`:
+  - el provider actual no usa PKCS#12
+
+### Nueva lectura recomendada: compatibilidad offline local
+
+Cuando el provider es `xades_pkcs12`, ahora también vale mirar:
+
+- `internalSignerOfflineCompatibilityStatus`
+- `internalSignerOfflineCompatibilityDetail`
+- `isInternalSignerOfflineCompatible`
+- `internalSignerIssuerAlignmentStatus`
+- `internalSignerIssuerAlignmentDetail`
+- `internalSignerExtractedTaxId`
+- `isInternalSignerIssuerAligned`
+
+Úsalo así:
+
+- `verified`:
+  - la firma interna pudo firmar comprobantes oficiales del repo y volver a pasar chequeo estructural offline + XSD local
+  - esto todavía no significa “sandbox SRI ya listo”, pero sí demuestra que el artefacto firmado ya está mucho más cerca del perfil esperado
+- `failed`:
+  - la firma interna todavía arma un XML que no supera alguno de los chequeos offline locales
+  - normalmente aquí conviene revisar referencias, `SignedProperties`, serial del certificado o compatibilidad final de XAdES
+- `unknown`:
+  - todavía no fue posible correr la prueba porque falta cerrar una condición previa, normalmente material o prueba criptográfica
+- `not_applicable`:
+  - el provider actual no usa PKCS#12
+
+### Nueva lectura recomendada: alineación emisor-certificado
+
+Cuando el provider es `xades_pkcs12`, ahora también vale mirar:
+
+- `internalSignerIssuerAlignmentStatus`
+- `internalSignerIssuerAlignmentDetail`
+- `internalSignerExtractedTaxId`
+- `isInternalSignerIssuerAligned`
+
+Úsalo así:
+
+- `matched`:
+  - el certificado inspeccionado deja ver un RUC y coincide con el `issuerProfile.taxId` del tenant
+- `mismatched`:
+  - el certificado sugiere un RUC distinto del emisor fiscal configurado
+  - aquí conviene frenar antes de CELCER y alinear primero tenant + PKCS#12
+- `unknown`:
+  - el keystore abrió, pero no dejó evidencia suficiente para extraer un RUC claro
+  - no siempre bloquea por sí solo, pero sí deja pendiente una verificación manual
+- `not_applicable`:
+  - el provider actual no usa PKCS#12
+
+En la web ahora puedes usar el botón `Usar RUC del certificado` para prefijar el formulario o `Alinear y guardar` para ejecutar la alineación directamente desde backend. En Postman existen `Upsert Electronic Profile Using Signature Tax ID` y `Sync Issuer Profile Tax ID From Signature Certificate`, y ambos aprovechan el RUC extraído de la inspección cuando está disponible.
+
+### Request específico: `Get Electronic Signature Inspection`
+
+Este request complementa el readiness general y te sirve para revisar directamente el keystore del signer interno:
+
+- `inspection.status`
+- `inspection.probeMethod`
+- `inspection.extractedFingerprint`
+- `inspection.extractedSubjectName`
+- `inspection.extractedIssuerName`
+- `inspection.certificateValidityStatus`
+- `inspection.cryptographicProofStatus`
+- `inspection.cryptographicProofDetail`
+- `inspection.validFrom`
+- `inspection.validUntil`
+- `inspection.daysUntilExpiry`
+- `inspection.detail`
+
+Úsalo especialmente cuando:
+
+- el tenant está en `xades_pkcs12`
+- quieres validar si el password realmente abre el PKCS#12
+- quieres comparar la huella configurada con la huella extraída
+- quieres recuperar el `subjectName` correcto del certificado antes de guardarlo
+- quieres revisar si el certificado ya venció o está por vencer antes de intentar sandbox remoto interno
+- quieres confirmar si la llave privada realmente firma y verifica un challenge antes de apostar por el signer interno
+
+### Smoke CLI: alineación rápida emisor-certificado
+
+Para evitar repetir a mano:
+- inspección del PKCS#12
+- lectura del `issuerProfile`
+- ajuste del `taxId` usando el RUC extraído del certificado
+- y revisión final del readiness
+
+ahora existe este comando:
+
+```sh
+pnpm smoke:ec:issuer-alignment -- --sub "OWNER_USER_ID" --email "owner@saas-platform.dev" --tenant-slug "saas-platform-local"
+```
+
+Parámetros útiles:
+- `--base-url http://127.0.0.1:3000/api`
+- `--tenant-slug saas-platform-local`
+- `--token TU_JWT` para reutilizar un token ya generado
+- `--sub ... --email ...` para que el script genere el JWT local automáticamente
+- `--sync-issuer-tax-id` para regrabar el `issuerProfile.taxId` usando el RUC extraído del certificado cuando ya existe un perfil fiscal
+- `--require-remote-ready` para que el comando falle si `isReadyForRemoteSandboxSubmission` sigue en `false`
+
+Ejemplo completo:
+
+```sh
+pnpm smoke:ec:issuer-alignment -- \
+  --sub "OWNER_USER_ID" \
+  --email "owner@saas-platform.dev" \
+  --tenant-slug "saas-platform-local" \
+  --sync-issuer-tax-id \
+  --require-remote-ready
+```
+
+El script imprime:
+- resultado de `electronic-signature/inspection`
+- `taxId` actual del emisor
+- `internalSignerIssuerAlignmentStatus`
+- `internalSignerOfflineCompatibilityStatus`
+- último feedback remoto del SRI
+- `recommendedNextStep`
+
+Si el perfil fiscal todavía no existe, el smoke no lo inventa; solo reporta el faltante para no pisar datos fiscales sin contexto.
 
 ### Importante
 
-Hoy el repo todavía protege el submit `offline` remoto cuando la firma interna sigue siendo stub. Eso es intencional. El camino correcto para sandbox real es:
+El carril remoto interno solo debe usarse cuando `isReadyForRemoteSandboxSubmission = true`. Si ese semáforo todavía no está en verde, el camino correcto para sandbox real sigue siendo:
 - readiness limpio
+- compatibilidad offline local verificada
 - XML firmado externamente
 - `submit-presigned`
+
+Cuando `isReadyForRemoteSandboxSubmission = true`, ya puedes intentar una prueba controlada con firma interna sobre `xades_pkcs12`.
 
 Para `nota de crédito (04)`, la restricción práctica ya no es el tipo de documento en sí, sino la presencia del XSD local:
 - si `notaCredito_V1.0.0.xsd` no existe en `vendor/sri`, el submit sigue bloqueado
@@ -1030,6 +1255,13 @@ pnpm validate:sri:xsd:withholding
 - `signaturePkcs12SecretRefJson`
 - `signaturePasswordSecretRefJson`
 - `signatureSubjectNameJson`
+- `signatureHydrateMetadataJson`
+- `signatureInspectionStatus`
+- `signatureInspectionProbeMethod`
+- `signatureInspectionExtractedFingerprint`
+- `signatureInspectionExtractedSubjectName`
+- `signatureInspectionDetail`
+- `signatureInspectionReady`
 
 ### Gateway
 - `submissionProvider`

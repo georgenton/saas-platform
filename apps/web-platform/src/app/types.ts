@@ -206,6 +206,46 @@ export interface ElectronicSignatureSettingsResponse {
   updatedAt: string;
 }
 
+export interface ElectronicSignatureMaterialInspectionResponse {
+  tenantSlug: string;
+  signatureProvider: string | null;
+  certificateLabel: string | null;
+  storageMode: string | null;
+  isActive: boolean;
+  materialConfigured: boolean;
+  inspection: {
+    status: 'not_configured' | 'not_applicable' | 'likely_usable' | 'invalid';
+    detail: string;
+    encoding: 'not_applicable' | 'base64_der' | 'pem_like' | 'unknown';
+    probeMethod: 'not_applicable' | 'shape_only' | 'openssl_pkcs12';
+    certificateValidityStatus:
+      | 'not_applicable'
+      | 'unknown'
+      | 'valid'
+      | 'expiring_soon'
+      | 'expired'
+      | 'not_yet_valid';
+    cryptographicProofStatus:
+      | 'not_applicable'
+      | 'unknown'
+      | 'verified'
+      | 'failed';
+    cryptographicProofDetail: string;
+    passwordPresent: boolean;
+    hasAdvisoryWarning: boolean;
+    fingerprintPresent: boolean;
+    subjectNamePresent: boolean;
+    extractedFingerprint: string | null;
+    extractedTaxId: string | null;
+    extractedSubjectName: string | null;
+    extractedIssuerName: string | null;
+    validFrom: string | null;
+    validUntil: string | null;
+    daysUntilExpiry: number | null;
+    byteLength: number | null;
+  };
+}
+
 export interface ElectronicSubmissionSettingsResponse {
   id: string;
   tenantId: string;
@@ -236,6 +276,48 @@ export interface ElectronicSandboxReadinessResponse {
     | 'invalid';
   internalSignerMaterialDetail: string;
   isInternalSignerMaterialReady: boolean;
+  internalSignerCertificateValidityStatus:
+    | 'not_applicable'
+    | 'unknown'
+    | 'valid'
+    | 'expiring_soon'
+    | 'expired'
+    | 'not_yet_valid';
+  internalSignerCertificateValidityDetail: string;
+  internalSignerCertificateValidUntil: string | null;
+  isInternalSignerCertificateCurrentlyValid: boolean;
+  internalSignerCryptoProofStatus:
+    | 'not_applicable'
+    | 'unknown'
+    | 'verified'
+    | 'failed';
+  internalSignerCryptoProofDetail: string;
+  isInternalSignerCryptographicallyReady: boolean;
+  internalSignerOfflineCompatibilityStatus:
+    | 'not_applicable'
+    | 'unknown'
+    | 'verified'
+    | 'failed';
+  internalSignerOfflineCompatibilityDetail: string;
+  isInternalSignerOfflineCompatible: boolean;
+  internalSignerIssuerAlignmentStatus:
+    | 'not_applicable'
+    | 'unknown'
+    | 'matched'
+    | 'mismatched';
+  internalSignerIssuerAlignmentDetail: string;
+  internalSignerExtractedTaxId: string | null;
+  isInternalSignerIssuerAligned: boolean;
+  latestRemoteSriSubmissionStatus: string | null;
+  latestRemoteSriSubmissionSummary: string | null;
+  latestRemoteSriSubmissionCategory:
+    | 'taxpayer_not_registered'
+    | 'xml_structure'
+    | 'authorization_rejected'
+    | 'technical_failure'
+    | 'unknown'
+    | null;
+  latestRemoteSriSubmissionOccurredAt: string | null;
   isReadyForLocalStubSubmission: boolean;
   isReadyForRemoteSandboxSubmission: boolean;
   isReadyForPresignedRemoteSandboxSubmission: boolean;
@@ -384,6 +466,18 @@ export interface InvoiceDetailResponse {
     submissionReference: string | null;
     authorizationNumber: string | null;
     occurredAt: string;
+    sriDiagnostics: {
+      state: string | null;
+      authorizationNumber: string | null;
+      authorizationDate: string | null;
+      accessKey: string | null;
+      summary: string | null;
+      messages: Array<{
+        identifier: string | null;
+        message: string;
+        additionalInfo: string[];
+      }>;
+    } | null;
   }[];
   totals: InvoiceTotals;
   settlement: InvoiceSettlement;

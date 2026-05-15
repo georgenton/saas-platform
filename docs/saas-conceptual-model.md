@@ -626,7 +626,10 @@ Convert current invoicing into a real Ecuador-compliant electronic invoicing pro
 - withholding certificate `07` already has numbering, draft flow, XML preview, RIDE, XSD validation, and submit path
 - the next Ecuador gap is no longer document coverage but compliance hardening around signer capability and remote sandbox behavior
 - readiness now distinguishes `local stub`, `remote presigned`, and `remote internal signer`
-- internal PKCS#12 material now has a structural probe so the product can tell when signer secrets merely exist versus when they already look loadable
+- internal PKCS#12 material now has an OpenSSL-backed probe so the product can tell when signer secrets merely exist versus when the keystore can actually be opened and inspected
+- signer inspection now also extracts certificate metadata and vigencia so the remote internal path can warn on upcoming expiry or block expired certificates
+- signer inspection now also runs a cryptographic proof with the private key so the product can distinguish “keystore opens” from “private key is actually operable”
+- readiness now also includes a local offline-compatibility probe so the product can tell when the internal signer already produces signed XML that passes structural offline checks plus local XSD validation for Ecuador document flows
 
 ### Why this is next
 

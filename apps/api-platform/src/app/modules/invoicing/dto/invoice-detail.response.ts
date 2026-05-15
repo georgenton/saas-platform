@@ -1,6 +1,20 @@
 import { InvoiceDetailView } from '@saas-platform/invoicing-application';
 import { toInvoiceItemResponseDto } from './invoice-item.response';
 import { toPaymentResponseDto } from './payment.response';
+import { parseSriOfflineResponseDiagnostics } from '../sri-offline-response-diagnostics';
+
+export interface InvoiceElectronicEventSriDiagnosticsResponseDto {
+  state: string | null;
+  authorizationNumber: string | null;
+  authorizationDate: string | null;
+  accessKey: string | null;
+  summary: string | null;
+  messages: Array<{
+    identifier: string | null;
+    message: string;
+    additionalInfo: string[];
+  }>;
+}
 
 export interface InvoiceElectronicEventResponseDto {
   id: string;
@@ -17,6 +31,7 @@ export interface InvoiceElectronicEventResponseDto {
   submissionReference: string | null;
   authorizationNumber: string | null;
   occurredAt: string;
+  sriDiagnostics: InvoiceElectronicEventSriDiagnosticsResponseDto | null;
 }
 
 export interface InvoiceDetailResponseDto {
@@ -112,6 +127,7 @@ export const toInvoiceDetailResponseDto = (
       submissionReference: event.submissionReference,
       authorizationNumber: event.authorizationNumber,
       occurredAt: event.occurredAt.toISOString(),
+      sriDiagnostics: parseSriOfflineResponseDiagnostics(event.responsePayload),
     })),
     totals: view.totals,
     settlement: view.settlement,

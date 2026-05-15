@@ -578,6 +578,66 @@
           }
         },
         {
+          "name": "Upsert Electronic Profile Using Signature Tax ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.taxId) pm.environment.set('issuerTaxId', data.taxId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"legalName\": \"{{issuerLegalName}}\",\n  \"commercialName\": \"{{issuerCommercialName}}\",\n  \"taxId\": \"{{signatureInspectionExtractedTaxId}}\",\n  \"environment\": \"{{issuerEnvironment}}\",\n  \"emissionType\": \"normal\",\n  \"accountingObligated\": true,\n  \"specialTaxpayerCode\": null,\n  \"rimpeTaxpayerType\": null,\n  \"matrixAddress\": \"{{issuerMatrixAddress}}\",\n  \"establishmentAddress\": \"{{issuerEstablishmentAddress}}\"\n}"
+            },
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-profile"
+          }
+        },
+        {
+          "name": "Sync Issuer Profile Tax ID From Signature Certificate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+                  "const data = pm.response.json();",
+                  "if (data.taxId) pm.environment.set('issuerTaxId', data.taxId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-profile/sync-certificate-tax-id"
+          }
+        },
+        {
           "name": "Get Electronic Signature",
           "request": {
             "method": "GET",
@@ -588,6 +648,45 @@
               }
             ],
             "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-signature"
+          }
+        },
+        {
+          "name": "Get Electronic Signature Inspection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.environment.set('signatureInspectionStatus', data.inspection?.status || '');",
+                  "pm.environment.set('signatureInspectionProbeMethod', data.inspection?.probeMethod || '');",
+                  "pm.environment.set('signatureInspectionExtractedFingerprint', data.inspection?.extractedFingerprint || '');",
+                  "pm.environment.set('signatureInspectionExtractedTaxId', data.inspection?.extractedTaxId || '');",
+                  "pm.environment.set('signatureInspectionExtractedSubjectName', data.inspection?.extractedSubjectName || '');",
+                  "pm.environment.set('signatureInspectionExtractedIssuerName', data.inspection?.extractedIssuerName || '');",
+                  "pm.environment.set('signatureInspectionCertificateValidityStatus', data.inspection?.certificateValidityStatus || '');",
+                  "pm.environment.set('signatureInspectionCryptographicProofStatus', data.inspection?.cryptographicProofStatus || '');",
+                  "pm.environment.set('signatureInspectionCryptographicProofDetail', data.inspection?.cryptographicProofDetail || '');",
+                  "pm.environment.set('signatureInspectionValidFrom', data.inspection?.validFrom || '');",
+                  "pm.environment.set('signatureInspectionValidUntil', data.inspection?.validUntil || '');",
+                  "pm.environment.set('signatureInspectionDaysUntilExpiry', data.inspection?.daysUntilExpiry !== null && data.inspection?.daysUntilExpiry !== undefined ? String(data.inspection.daysUntilExpiry) : '');",
+                  "pm.environment.set('signatureInspectionDetail', data.inspection?.detail || '');",
+                  "pm.environment.set('signatureInspectionReady', String(data.inspection?.status === 'likely_usable'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-signature/inspection"
           }
         },
         {
@@ -606,7 +705,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"provider\": \"{{signatureProvider}}\",\n  \"certificateLabel\": \"{{signatureCertificateLabel}}\",\n  \"storageMode\": \"{{signatureStorageMode}}\",\n  \"certificateFingerprint\": \"{{signatureCertificateFingerprint}}\",\n  \"pkcs12SecretRef\": {{signaturePkcs12SecretRefJson}},\n  \"privateKeyPasswordSecretRef\": {{signaturePasswordSecretRefJson}},\n  \"subjectName\": {{signatureSubjectNameJson}},\n  \"isActive\": true\n}"
+              "raw": "{\n  \"provider\": \"{{signatureProvider}}\",\n  \"certificateLabel\": \"{{signatureCertificateLabel}}\",\n  \"storageMode\": \"{{signatureStorageMode}}\",\n  \"certificateFingerprint\": {{signatureCertificateFingerprintJson}},\n  \"pkcs12SecretRef\": {{signaturePkcs12SecretRefJson}},\n  \"privateKeyPasswordSecretRef\": {{signaturePasswordSecretRefJson}},\n  \"subjectName\": {{signatureSubjectNameJson}},\n  \"hydrateMetadataFromPkcs12\": {{signatureHydrateMetadataJson}},\n  \"isActive\": {{signatureIsActive}}\n}"
             },
             "url": "{{baseUrl}}/invoicing/tenants/{{tenantSlug}}/electronic-signature"
           }
@@ -642,6 +741,24 @@
                   "pm.environment.set('sandboxInternalSignerMaterialReady', String(Boolean(data.isInternalSignerMaterialReady)));",
                   "pm.environment.set('sandboxInternalSignerMaterialStatus', data.internalSignerMaterialStatus || '');",
                   "pm.environment.set('sandboxInternalSignerMaterialDetail', data.internalSignerMaterialDetail || '');",
+                  "pm.environment.set('sandboxInternalSignerCertificateValidityStatus', data.internalSignerCertificateValidityStatus || '');",
+                  "pm.environment.set('sandboxInternalSignerCertificateValidityDetail', data.internalSignerCertificateValidityDetail || '');",
+                  "pm.environment.set('sandboxInternalSignerCertificateValidUntil', data.internalSignerCertificateValidUntil || '');",
+                  "pm.environment.set('sandboxInternalSignerCertificateCurrentlyValid', String(Boolean(data.isInternalSignerCertificateCurrentlyValid)));",
+                  "pm.environment.set('sandboxInternalSignerCryptoProofStatus', data.internalSignerCryptoProofStatus || '');",
+                  "pm.environment.set('sandboxInternalSignerCryptoProofDetail', data.internalSignerCryptoProofDetail || '');",
+                  "pm.environment.set('sandboxInternalSignerCryptographicallyReady', String(Boolean(data.isInternalSignerCryptographicallyReady)));",
+                  "pm.environment.set('sandboxInternalSignerOfflineCompatibilityStatus', data.internalSignerOfflineCompatibilityStatus || '');",
+                  "pm.environment.set('sandboxInternalSignerOfflineCompatibilityDetail', data.internalSignerOfflineCompatibilityDetail || '');",
+                  "pm.environment.set('sandboxInternalSignerOfflineCompatible', String(Boolean(data.isInternalSignerOfflineCompatible)));",
+                  "pm.environment.set('sandboxInternalSignerIssuerAlignmentStatus', data.internalSignerIssuerAlignmentStatus || '');",
+                  "pm.environment.set('sandboxInternalSignerIssuerAlignmentDetail', data.internalSignerIssuerAlignmentDetail || '');",
+                  "pm.environment.set('sandboxInternalSignerExtractedTaxId', data.internalSignerExtractedTaxId || '');",
+                  "pm.environment.set('sandboxInternalSignerIssuerAligned', String(Boolean(data.isInternalSignerIssuerAligned)));",
+                  "pm.environment.set('sandboxLatestRemoteSriSubmissionStatus', data.latestRemoteSriSubmissionStatus || '');",
+                  "pm.environment.set('sandboxLatestRemoteSriSubmissionSummary', data.latestRemoteSriSubmissionSummary || '');",
+                  "pm.environment.set('sandboxLatestRemoteSriSubmissionCategory', data.latestRemoteSriSubmissionCategory || '');",
+                  "pm.environment.set('sandboxLatestRemoteSriSubmissionOccurredAt', data.latestRemoteSriSubmissionOccurredAt || '');",
                   "pm.environment.set('sandboxRecommendedNextStep', data.recommendedNextStep || '');",
                   "pm.environment.set('invoice01SubmitSupported', String(Boolean(invoiceSupport && invoiceSupport.submitSupported)));",
                   "pm.environment.set('invoice01SchemaValidationAvailable', String(Boolean(invoiceSupport && invoiceSupport.schemaValidationAvailable)));",
@@ -2751,6 +2868,24 @@
                       "pm.environment.set('sandboxInternalSignerMaterialReady', String(Boolean(data.isInternalSignerMaterialReady)));",
                       "pm.environment.set('sandboxInternalSignerMaterialStatus', data.internalSignerMaterialStatus || '');",
                       "pm.environment.set('sandboxInternalSignerMaterialDetail', data.internalSignerMaterialDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerCertificateValidityStatus', data.internalSignerCertificateValidityStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerCertificateValidityDetail', data.internalSignerCertificateValidityDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerCertificateValidUntil', data.internalSignerCertificateValidUntil || '');",
+                      "pm.environment.set('sandboxInternalSignerCertificateCurrentlyValid', String(Boolean(data.isInternalSignerCertificateCurrentlyValid)));",
+                      "pm.environment.set('sandboxInternalSignerCryptoProofStatus', data.internalSignerCryptoProofStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerCryptoProofDetail', data.internalSignerCryptoProofDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerCryptographicallyReady', String(Boolean(data.isInternalSignerCryptographicallyReady)));",
+                      "pm.environment.set('sandboxInternalSignerOfflineCompatibilityStatus', data.internalSignerOfflineCompatibilityStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerOfflineCompatibilityDetail', data.internalSignerOfflineCompatibilityDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerOfflineCompatible', String(Boolean(data.isInternalSignerOfflineCompatible)));",
+                      "pm.environment.set('sandboxInternalSignerIssuerAlignmentStatus', data.internalSignerIssuerAlignmentStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerIssuerAlignmentDetail', data.internalSignerIssuerAlignmentDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerExtractedTaxId', data.internalSignerExtractedTaxId || '');",
+                      "pm.environment.set('sandboxInternalSignerIssuerAligned', String(Boolean(data.isInternalSignerIssuerAligned)));",
+                      "pm.environment.set('sandboxLatestRemoteSriSubmissionStatus', data.latestRemoteSriSubmissionStatus || '');",
+                      "pm.environment.set('sandboxLatestRemoteSriSubmissionSummary', data.latestRemoteSriSubmissionSummary || '');",
+                      "pm.environment.set('sandboxLatestRemoteSriSubmissionCategory', data.latestRemoteSriSubmissionCategory || '');",
+                      "pm.environment.set('sandboxLatestRemoteSriSubmissionOccurredAt', data.latestRemoteSriSubmissionOccurredAt || '');",
                       "pm.environment.set('sandboxRecommendedNextStep', data.recommendedNextStep || '');",
                       "pm.environment.set('invoice01SubmitSupported', String(Boolean(invoiceSupport && invoiceSupport.submitSupported)));"
                     ]
@@ -4390,6 +4525,24 @@
                       "pm.environment.set('sandboxInternalSignerMaterialReady', String(Boolean(data.isInternalSignerMaterialReady)));",
                       "pm.environment.set('sandboxInternalSignerMaterialStatus', data.internalSignerMaterialStatus || '');",
                       "pm.environment.set('sandboxInternalSignerMaterialDetail', data.internalSignerMaterialDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerCertificateValidityStatus', data.internalSignerCertificateValidityStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerCertificateValidityDetail', data.internalSignerCertificateValidityDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerCertificateValidUntil', data.internalSignerCertificateValidUntil || '');",
+                      "pm.environment.set('sandboxInternalSignerCertificateCurrentlyValid', String(Boolean(data.isInternalSignerCertificateCurrentlyValid)));",
+                      "pm.environment.set('sandboxInternalSignerCryptoProofStatus', data.internalSignerCryptoProofStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerCryptoProofDetail', data.internalSignerCryptoProofDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerCryptographicallyReady', String(Boolean(data.isInternalSignerCryptographicallyReady)));",
+                      "pm.environment.set('sandboxInternalSignerOfflineCompatibilityStatus', data.internalSignerOfflineCompatibilityStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerOfflineCompatibilityDetail', data.internalSignerOfflineCompatibilityDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerOfflineCompatible', String(Boolean(data.isInternalSignerOfflineCompatible)));",
+                      "pm.environment.set('sandboxInternalSignerIssuerAlignmentStatus', data.internalSignerIssuerAlignmentStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerIssuerAlignmentDetail', data.internalSignerIssuerAlignmentDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerExtractedTaxId', data.internalSignerExtractedTaxId || '');",
+                      "pm.environment.set('sandboxInternalSignerIssuerAligned', String(Boolean(data.isInternalSignerIssuerAligned)));",
+                      "pm.environment.set('sandboxLatestRemoteSriSubmissionStatus', data.latestRemoteSriSubmissionStatus || '');",
+                      "pm.environment.set('sandboxLatestRemoteSriSubmissionSummary', data.latestRemoteSriSubmissionSummary || '');",
+                      "pm.environment.set('sandboxLatestRemoteSriSubmissionCategory', data.latestRemoteSriSubmissionCategory || '');",
+                      "pm.environment.set('sandboxLatestRemoteSriSubmissionOccurredAt', data.latestRemoteSriSubmissionOccurredAt || '');",
                       "pm.environment.set('sandboxRecommendedNextStep', data.recommendedNextStep || '');",
                       "pm.environment.set('invoice01SubmitSupported', String(Boolean(invoiceSupport && invoiceSupport.submitSupported)));",
                       "pm.environment.set('invoice01SchemaValidationAvailable', String(Boolean(invoiceSupport && invoiceSupport.schemaValidationAvailable)));",
@@ -4615,6 +4768,24 @@
                       "pm.environment.set('sandboxInternalSignerMaterialReady', String(Boolean(data.isInternalSignerMaterialReady)));",
                       "pm.environment.set('sandboxInternalSignerMaterialStatus', data.internalSignerMaterialStatus || '');",
                       "pm.environment.set('sandboxInternalSignerMaterialDetail', data.internalSignerMaterialDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerCertificateValidityStatus', data.internalSignerCertificateValidityStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerCertificateValidityDetail', data.internalSignerCertificateValidityDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerCertificateValidUntil', data.internalSignerCertificateValidUntil || '');",
+                      "pm.environment.set('sandboxInternalSignerCertificateCurrentlyValid', String(Boolean(data.isInternalSignerCertificateCurrentlyValid)));",
+                      "pm.environment.set('sandboxInternalSignerCryptoProofStatus', data.internalSignerCryptoProofStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerCryptoProofDetail', data.internalSignerCryptoProofDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerCryptographicallyReady', String(Boolean(data.isInternalSignerCryptographicallyReady)));",
+                      "pm.environment.set('sandboxInternalSignerOfflineCompatibilityStatus', data.internalSignerOfflineCompatibilityStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerOfflineCompatibilityDetail', data.internalSignerOfflineCompatibilityDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerOfflineCompatible', String(Boolean(data.isInternalSignerOfflineCompatible)));",
+                      "pm.environment.set('sandboxInternalSignerIssuerAlignmentStatus', data.internalSignerIssuerAlignmentStatus || '');",
+                      "pm.environment.set('sandboxInternalSignerIssuerAlignmentDetail', data.internalSignerIssuerAlignmentDetail || '');",
+                      "pm.environment.set('sandboxInternalSignerExtractedTaxId', data.internalSignerExtractedTaxId || '');",
+                      "pm.environment.set('sandboxInternalSignerIssuerAligned', String(Boolean(data.isInternalSignerIssuerAligned)));",
+                      "pm.environment.set('sandboxLatestRemoteSriSubmissionStatus', data.latestRemoteSriSubmissionStatus || '');",
+                      "pm.environment.set('sandboxLatestRemoteSriSubmissionSummary', data.latestRemoteSriSubmissionSummary || '');",
+                      "pm.environment.set('sandboxLatestRemoteSriSubmissionCategory', data.latestRemoteSriSubmissionCategory || '');",
+                      "pm.environment.set('sandboxLatestRemoteSriSubmissionOccurredAt', data.latestRemoteSriSubmissionOccurredAt || '');",
                       "pm.environment.set('sandboxRecommendedNextStep', data.recommendedNextStep || '');",
                       "pm.environment.set('invoice01SubmitSupported', String(Boolean(invoiceSupport && invoiceSupport.submitSupported)));",
                       "pm.environment.set('invoice01SchemaValidationAvailable', String(Boolean(invoiceSupport && invoiceSupport.schemaValidationAvailable)));",

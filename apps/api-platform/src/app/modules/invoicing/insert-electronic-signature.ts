@@ -19,5 +19,5 @@ export function insertElectronicSignature(
     return xml;
   }
 
-  return xml.replace(closingTagPattern, `${signatureBlock}\n</$1>`);
+  return xml.replace(closingTagPattern, `${signatureBlock}</$1>`);
 }

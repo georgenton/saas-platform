@@ -61,6 +61,8 @@ import {
 } from '@saas-platform/infra-prisma';
 import {
   MEMBERSHIP_REPOSITORY,
+  ResolveTenantAccessUseCase,
+  TENANT_ACCESS_REPOSITORY,
   TENANT_REPOSITORY,
 } from '@saas-platform/tenancy-application';
 import { AuthModule } from '../auth/auth.module';
@@ -86,6 +88,12 @@ import { MetaWhatsappWebhookVerifier } from './meta-whatsapp-webhook-verifier';
     {
       provide: WHATSAPP_OUTBOUND_MESSAGE_GATEWAY,
       useExisting: MetaCloudApiWhatsappOutboundMessageGateway,
+    },
+    {
+      provide: ResolveTenantAccessUseCase,
+      inject: [TENANT_REPOSITORY, TENANT_ACCESS_REPOSITORY],
+      useFactory: (tenantRepository, tenantAccessRepository) =>
+        new ResolveTenantAccessUseCase(tenantRepository, tenantAccessRepository),
     },
     {
       provide: AssignTenantConversationThreadUseCase,

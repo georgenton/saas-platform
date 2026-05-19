@@ -1,0 +1,7 @@
+{
+  "name": "growth-application",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/growth/application/src",
+  "projectType": "library",
+  "tags": ["scope:core", "domain:growth", "type:application", "layer:application"]
+}

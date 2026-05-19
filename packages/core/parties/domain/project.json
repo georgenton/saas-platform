@@ -1,0 +1,7 @@
+{
+  "name": "parties-domain",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/parties/domain/src",
+  "projectType": "library",
+  "tags": ["scope:core", "domain:parties", "type:domain", "layer:domain"]
+}

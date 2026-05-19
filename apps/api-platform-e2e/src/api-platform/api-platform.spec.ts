@@ -42,6 +42,53 @@ import {
 } from '@saas-platform/feature-flags-application';
 import { FeatureFlag } from '@saas-platform/feature-flags-domain';
 import {
+  AssignTenantConversationThreadUseCase,
+  AssignTenantOpportunityUseCase,
+  CreateTenantWhatsappAutomationRuleUseCase,
+  CreateTenantConversationMessageUseCase,
+  CreateTenantConversationThreadUseCase,
+  CreateTenantLeadUseCase,
+  CreateTenantOpportunityUseCase,
+  CreateTenantWhatsappMessageTemplateUseCase,
+  GetTenantConversationThreadByIdUseCase,
+  GetTenantGrowthAssignmentWorkloadUseCase,
+  GetTenantLeadByIdUseCase,
+  GetTenantOpportunityByIdUseCase,
+  GetTenantWhatsappAutomationRuleByIdUseCase,
+  GetTenantWhatsappAutomationSuggestionsUseCase,
+  GetTenantWhatsappOutboundReportingSummaryUseCase,
+  GetTenantWhatsappMessageTemplateByIdUseCase,
+  GetTenantWebhookEventEnvelopeByIdUseCase,
+  GROWTH_PERMISSIONS,
+  IngestTenantWhatsappConversationMessageUseCase,
+  IngestTenantWhatsappDeliveryEventUseCase,
+  ListTenantConversationMessageDeliveryEventsUseCase,
+  ListTenantConversationMessagesUseCase,
+  ListTenantConversationThreadsUseCase,
+  ListTenantLeadsUseCase,
+  ListTenantOpportunitiesUseCase,
+  ListTenantWebhookEventEnvelopesUseCase,
+  ListTenantWhatsappAutomationRulesUseCase,
+  ListTenantWhatsappConversationThreadsUseCase,
+  ListTenantWhatsappMessageTemplatesUseCase,
+  ProcessTenantMetaWhatsappWebhookUseCase,
+  ReceiveTenantMetaWhatsappWebhookUseCase,
+  ReplayTenantWebhookEventEnvelopeUseCase,
+  SendTenantWhatsappConversationMessageUseCase,
+  UpdateTenantOpportunityStageUseCase,
+  WebhookEventEnvelopeNotFoundError,
+} from '@saas-platform/growth-application';
+import {
+  ConversationDeliveryEvent,
+  ConversationMessage,
+  ConversationThread,
+  Lead,
+  Opportunity,
+  WebhookEventEnvelope,
+  WhatsappAutomationRule,
+  WhatsappMessageTemplate,
+} from '@saas-platform/growth-domain';
+import {
   CheckTenantInvoiceElectronicAuthorizationUseCase,
   CreateTenantCustomerUseCase,
   CreateTenantCreditNoteUseCase,
@@ -98,6 +145,11 @@ import {
   Payment,
   TaxRate,
 } from '@saas-platform/invoicing-domain';
+import {
+  GetTenantPartyByIdUseCase,
+  ListTenantPartiesUseCase,
+} from '@saas-platform/parties-application';
+import { Party } from '@saas-platform/parties-domain';
 import { PrismaService } from '@saas-platform/infra-prisma';
 import {
   AcceptTenantInvitationUseCase,
@@ -131,6 +183,9 @@ import {
 import { AcceptAuthenticatedUserInvitationUseCase } from '../../../api-platform/src/app/modules/auth/accept-authenticated-user-invitation.use-case';
 import { AppModule } from '../../../api-platform/src/app/app.module';
 import { configureApp } from '../../../api-platform/src/app/app.setup';
+import { MetaWhatsappWebhookSignatureVerifier } from '../../../api-platform/src/app/modules/growth/meta-whatsapp-webhook-signature-verifier';
+import { MetaWhatsappWebhookTenantResolver } from '../../../api-platform/src/app/modules/growth/meta-whatsapp-webhook-tenant-resolver';
+import { MetaWhatsappWebhookVerifier } from '../../../api-platform/src/app/modules/growth/meta-whatsapp-webhook-verifier';
 
 describe('API', () => {
   let app: INestApplication;
@@ -154,8 +209,29 @@ describe('API', () => {
   let getTenantInvoiceByIdUseCase: { execute: jest.Mock };
   let getTenantInvoiceItemByIdUseCase: { execute: jest.Mock };
   let getTenantIssuerProfileUseCase: { execute: jest.Mock };
+  let getTenantPartyByIdUseCase: { execute: jest.Mock };
+  let getTenantConversationThreadByIdUseCase: { execute: jest.Mock };
+  let getTenantGrowthAssignmentWorkloadUseCase: { execute: jest.Mock };
+  let getTenantLeadByIdUseCase: { execute: jest.Mock };
+  let getTenantOpportunityByIdUseCase: { execute: jest.Mock };
+  let getTenantWhatsappAutomationRuleByIdUseCase: { execute: jest.Mock };
+  let getTenantWhatsappAutomationSuggestionsUseCase: { execute: jest.Mock };
+  let getTenantWhatsappOutboundReportingSummaryUseCase: { execute: jest.Mock };
+  let getTenantWhatsappMessageTemplateByIdUseCase: { execute: jest.Mock };
+  let getTenantWebhookEventEnvelopeByIdUseCase: { execute: jest.Mock };
   let getTenantSubscriptionUseCase: { execute: jest.Mock };
+  let ingestTenantWhatsappConversationMessageUseCase: { execute: jest.Mock };
+  let ingestTenantWhatsappDeliveryEventUseCase: { execute: jest.Mock };
+  let processTenantMetaWhatsappWebhookUseCase: { execute: jest.Mock };
+  let receiveTenantMetaWhatsappWebhookUseCase: { execute: jest.Mock };
+  let replayTenantWebhookEventEnvelopeUseCase: { execute: jest.Mock };
+  let metaWhatsappWebhookSignatureVerifier: {
+    isConfigured: jest.Mock;
+    verify: jest.Mock;
+  };
+  let metaWhatsappWebhookTenantResolver: { resolve: jest.Mock };
   let listTenantCustomersUseCase: { execute: jest.Mock };
+  let listTenantPartiesUseCase: { execute: jest.Mock };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
   let listTenantInvoicePaymentsUseCase: { execute: jest.Mock };
   let listTenantInvoiceSummariesUseCase: { execute: jest.Mock };
@@ -163,6 +239,15 @@ describe('API', () => {
   let listTenantTaxRatesUseCase: { execute: jest.Mock };
   let listTenantEnabledProductsUseCase: { execute: jest.Mock };
   let listTenantFeatureFlagsUseCase: { execute: jest.Mock };
+  let listTenantConversationMessagesUseCase: { execute: jest.Mock };
+  let listTenantConversationMessageDeliveryEventsUseCase: { execute: jest.Mock };
+  let listTenantConversationThreadsUseCase: { execute: jest.Mock };
+  let listTenantLeadsUseCase: { execute: jest.Mock };
+  let listTenantOpportunitiesUseCase: { execute: jest.Mock };
+  let listTenantWebhookEventEnvelopesUseCase: { execute: jest.Mock };
+  let listTenantWhatsappAutomationRulesUseCase: { execute: jest.Mock };
+  let listTenantWhatsappConversationThreadsUseCase: { execute: jest.Mock };
+  let listTenantWhatsappMessageTemplatesUseCase: { execute: jest.Mock };
   let listPlanEntitlementsUseCase: { execute: jest.Mock };
   let listPlansUseCase: { execute: jest.Mock };
   let registerUserUseCase: { execute: jest.Mock };
@@ -194,6 +279,15 @@ describe('API', () => {
   let resolveTenantAccessUseCase: { execute: jest.Mock };
   let setTenantFeatureFlagUseCase: { execute: jest.Mock };
   let createTenantCustomerUseCase: { execute: jest.Mock };
+  let createTenantConversationMessageUseCase: { execute: jest.Mock };
+  let createTenantConversationThreadUseCase: { execute: jest.Mock };
+  let createTenantLeadUseCase: { execute: jest.Mock };
+  let createTenantOpportunityUseCase: { execute: jest.Mock };
+  let createTenantWhatsappAutomationRuleUseCase: { execute: jest.Mock };
+  let createTenantWhatsappMessageTemplateUseCase: { execute: jest.Mock };
+  let assignTenantConversationThreadUseCase: { execute: jest.Mock };
+  let assignTenantOpportunityUseCase: { execute: jest.Mock };
+  let sendTenantWhatsappConversationMessageUseCase: { execute: jest.Mock };
   let createTenantCreditNoteUseCase: { execute: jest.Mock };
   let createTenantDebitNoteUseCase: { execute: jest.Mock };
   let createTenantRemissionGuideUseCase: { execute: jest.Mock };
@@ -207,6 +301,7 @@ describe('API', () => {
   let sendTenantInvoiceEmailUseCase: { execute: jest.Mock };
   let submitTenantInvoiceElectronicDocumentUseCase: { execute: jest.Mock };
   let submitTenantPresignedInvoiceElectronicDocumentUseCase: { execute: jest.Mock };
+  let updateTenantOpportunityStageUseCase: { execute: jest.Mock };
   let updateTenantInvoiceStatusUseCase: { execute: jest.Mock };
   let updateTenantInvoiceElectronicStatusUseCase: { execute: jest.Mock };
   let upsertTenantElectronicSubmissionSettingsUseCase: { execute: jest.Mock };
@@ -214,6 +309,7 @@ describe('API', () => {
   let upsertTenantInvoiceNumberingSettingsUseCase: { execute: jest.Mock };
   let upsertTenantIssuerProfileUseCase: { execute: jest.Mock };
   let syncTenantIssuerProfileTaxIdFromSignatureUseCase: { execute: jest.Mock };
+  let metaWhatsappWebhookVerifier: { verify: jest.Mock };
   let createTenantUseCase: { execute: jest.Mock };
   let ownerToken: string;
   let inviteeToken: string;
@@ -246,6 +342,12 @@ describe('API', () => {
     INVOICING_PERMISSIONS.TAXES_MANAGE,
     INVOICING_PERMISSIONS.NOTIFICATIONS_SEND,
     INVOICING_PERMISSIONS.REPORTS_READ,
+    GROWTH_PERMISSIONS.CONVERSATIONS_READ,
+    GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE,
+    GROWTH_PERMISSIONS.LEADS_READ,
+    GROWTH_PERMISSIONS.LEADS_MANAGE,
+    GROWTH_PERMISSIONS.OPPORTUNITIES_READ,
+    GROWTH_PERMISSIONS.OPPORTUNITIES_MANAGE,
   ];
   const user = User.create({
     id: 'user_123',
@@ -452,6 +554,374 @@ describe('API', () => {
     billingAddress: null,
     createdAt: new Date('2026-04-27T15:10:00.000Z'),
     updatedAt: new Date('2026-04-27T15:10:00.000Z'),
+  });
+  const acmeParty = Party.create({
+    id: 'customer_acme',
+    tenantId: 'tenant_123',
+    displayName: 'Acme Corp',
+    email: 'billing@acme.dev',
+    taxId: '1790012345001',
+    identificationType: '04',
+    identification: '1790012345001',
+    billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+    roles: ['customer'],
+    kind: 'organization',
+    sourceContext: 'invoicing_customer',
+    createdAt: customerCreatedAt,
+    updatedAt: customerCreatedAt,
+  });
+  const globexParty = Party.create({
+    id: 'customer_globex',
+    tenantId: 'tenant_123',
+    displayName: 'Globex LLC',
+    email: null,
+    taxId: null,
+    identificationType: null,
+    identification: null,
+    billingAddress: null,
+    roles: ['customer'],
+    kind: 'unknown',
+    sourceContext: 'invoicing_customer',
+    createdAt: new Date('2026-04-27T15:10:00.000Z'),
+    updatedAt: new Date('2026-04-27T15:10:00.000Z'),
+  });
+  const capturedLead = Lead.create({
+    id: 'lead_001',
+    tenantId: 'tenant_123',
+    fullName: 'Maria Perez',
+    email: 'maria@example.com',
+    phoneE164: '+593999111222',
+    whatsappE164: '+593999111222',
+    source: 'landing_page',
+    status: 'captured',
+    notes: 'Quiere demo del modulo de facturacion.',
+    createdAt: new Date('2026-05-15T14:30:00.000Z'),
+    updatedAt: new Date('2026-05-15T14:30:00.000Z'),
+  });
+  const qualifiedLead = Lead.create({
+    id: 'lead_002',
+    tenantId: 'tenant_123',
+    fullName: 'Carlos Mena',
+    email: null,
+    phoneE164: '+593988000777',
+    whatsappE164: null,
+    source: 'whatsapp_campaign',
+    status: 'qualified',
+    notes: null,
+    createdAt: new Date('2026-05-15T13:10:00.000Z'),
+    updatedAt: new Date('2026-05-15T13:10:00.000Z'),
+  });
+  const conversationThread = ConversationThread.create({
+    id: 'thread_001',
+    tenantId: 'tenant_123',
+    leadId: 'lead_001',
+    assigneeUserId: null,
+    subject: 'Demo de onboarding facturacion',
+    channel: 'manual',
+    externalConversationId: null,
+    participantDisplayName: null,
+    participantHandle: null,
+    status: 'open',
+    latestMessagePreview: 'Hola Maria, te comparto los siguientes pasos para la demo.',
+    messageCount: 2,
+    openedAt: new Date('2026-05-15T14:40:00.000Z'),
+    closedAt: null,
+    lastActivityAt: new Date('2026-05-15T14:45:00.000Z'),
+    createdAt: new Date('2026-05-15T14:40:00.000Z'),
+    updatedAt: new Date('2026-05-15T14:45:00.000Z'),
+  });
+  const firstConversationMessage = ConversationMessage.create({
+    id: 'message_001',
+    tenantId: 'tenant_123',
+    threadId: 'thread_001',
+    direction: 'outbound',
+    body: 'Hola Maria, te comparto los siguientes pasos para la demo.',
+    templateId: null,
+    outboundIntentKey: null,
+    provider: null,
+    deliveryStatus: null,
+    externalMessageId: null,
+    failureReason: null,
+    deliveredAt: null,
+    readAt: null,
+    createdAt: new Date('2026-05-15T14:40:00.000Z'),
+  });
+  const secondConversationMessage = ConversationMessage.create({
+    id: 'message_002',
+    tenantId: 'tenant_123',
+    threadId: 'thread_001',
+    direction: 'inbound',
+    body: 'Perfecto, quedo atenta a la hora de la llamada.',
+    templateId: null,
+    outboundIntentKey: null,
+    provider: null,
+    deliveryStatus: null,
+    externalMessageId: null,
+    failureReason: null,
+    deliveredAt: null,
+    readAt: null,
+    createdAt: new Date('2026-05-15T14:45:00.000Z'),
+  });
+  const whatsappConversationThread = ConversationThread.create({
+    id: 'thread_whatsapp_001',
+    tenantId: 'tenant_123',
+    leadId: 'lead_001',
+    assigneeUserId: null,
+    subject: 'Maria Perez',
+    channel: 'whatsapp',
+    externalConversationId: 'wa_conv_001',
+    participantDisplayName: 'Maria Perez',
+    participantHandle: '+593999111222',
+    status: 'open',
+    latestMessagePreview: 'Hola, quiero retomar la propuesta.',
+    messageCount: 1,
+    openedAt: new Date('2026-05-16T14:00:00.000Z'),
+    closedAt: null,
+    lastActivityAt: new Date('2026-05-16T14:00:00.000Z'),
+    createdAt: new Date('2026-05-16T14:00:00.000Z'),
+    updatedAt: new Date('2026-05-16T14:00:00.000Z'),
+  });
+  const inboundWhatsappMessage = ConversationMessage.create({
+    id: 'message_whatsapp_001',
+    tenantId: 'tenant_123',
+    threadId: 'thread_whatsapp_001',
+    direction: 'inbound',
+    body: 'Hola, quiero retomar la propuesta.',
+    templateId: null,
+    outboundIntentKey: null,
+    provider: 'meta_cloud_api_stub',
+    deliveryStatus: 'delivered',
+    externalMessageId: 'wamid-001',
+    failureReason: null,
+    deliveredAt: new Date('2026-05-16T14:00:10.000Z'),
+    readAt: null,
+    createdAt: new Date('2026-05-16T14:00:00.000Z'),
+  });
+  const outboundWhatsappMessage = ConversationMessage.create({
+    id: 'message_whatsapp_002',
+    tenantId: 'tenant_123',
+    threadId: 'thread_whatsapp_001',
+    direction: 'outbound',
+    body: 'Perfecto, te escribo en unos minutos.',
+    templateId: null,
+    outboundIntentKey: 'follow_up',
+    provider: 'meta_cloud_api_stub',
+    deliveryStatus: 'pending',
+    externalMessageId: 'wamid-002',
+    failureReason: null,
+    deliveredAt: null,
+    readAt: null,
+    createdAt: new Date('2026-05-16T14:05:00.000Z'),
+  });
+  const whatsappDeliveryEvent = ConversationDeliveryEvent.create({
+    id: 'delivery_event_001',
+    tenantId: 'tenant_123',
+    messageId: 'message_whatsapp_002',
+    provider: 'meta_cloud_api_stub',
+    eventKey: 'wamid-002:delivered:0:0:0',
+    providerEventId: 'status:wamid-002',
+    externalMessageId: 'wamid-002',
+    deliveryStatus: 'delivered',
+    failureReason: null,
+    providerStatusDetail: 'conversation:service;pricing:utility',
+    providerConversationCategory: 'service',
+    providerPricingCategory: 'utility',
+    providerErrorCode: null,
+    payloadJson: '{"status":"delivered"}',
+    occurredAt: new Date('2026-05-16T14:06:00.000Z'),
+    createdAt: new Date('2026-05-16T14:06:00.000Z'),
+  });
+  const qualifiedOpportunity = Opportunity.create({
+    id: 'opportunity_001',
+    tenantId: 'tenant_123',
+    leadId: 'lead_001',
+    threadId: 'thread_001',
+    assigneeUserId: null,
+    title: 'Onboarding anual facturacion electronica',
+    stage: 'proposal',
+    amountInCents: 199000,
+    currency: 'USD',
+    notes: 'Cliente con alto interes y decision esta semana.',
+    closedAt: null,
+    createdAt: new Date('2026-05-15T15:00:00.000Z'),
+    updatedAt: new Date('2026-05-15T15:20:00.000Z'),
+  });
+  const growthAssignmentWorkload = {
+    tenantSlug: 'saas-platform',
+    generatedAt: new Date('2026-05-18T16:00:00.000Z'),
+    totals: {
+      openThreadCount: 2,
+      unassignedOpenThreadCount: 1,
+      openOpportunityCount: 2,
+      unassignedOpenOpportunityCount: 1,
+      openOpportunityAmountInCents: 289000,
+    },
+    assignees: [
+      {
+        userId: 'user_456',
+        displayName: 'Maria Sales',
+        email: 'sales@saas-platform.dev',
+        openThreadCount: 1,
+        openWhatsappThreadCount: 1,
+        openManualThreadCount: 0,
+        openOpportunityCount: 1,
+        openOpportunityAmountInCents: 199000,
+        wonOpportunityCount: 0,
+        lostOpportunityCount: 0,
+      },
+      {
+        userId: 'user_123',
+        displayName: 'Jorge',
+        email: 'hello@saas-platform.dev',
+        openThreadCount: 0,
+        openWhatsappThreadCount: 0,
+        openManualThreadCount: 0,
+        openOpportunityCount: 0,
+        openOpportunityAmountInCents: 0,
+        wonOpportunityCount: 0,
+        lostOpportunityCount: 0,
+      },
+    ],
+  };
+  const whatsappOutboundReportingSummary = {
+    tenantSlug: 'saas-platform',
+    generatedAt: new Date('2026-05-18T16:30:00.000Z'),
+    totals: {
+      outboundMessageCount: 3,
+      freeformMessageCount: 1,
+      templateMessageCount: 2,
+      approvedTemplateMessageCount: 1,
+      pendingCount: 1,
+      sentCount: 0,
+      deliveredCount: 1,
+      readCount: 0,
+      failedCount: 1,
+    },
+    byIntent: [
+      {
+        outboundIntentKey: 'follow_up',
+        messageCount: 2,
+        pendingCount: 1,
+        sentCount: 0,
+        deliveredCount: 1,
+        readCount: 0,
+        failedCount: 0,
+      },
+      {
+        outboundIntentKey: 'renewal_offer',
+        messageCount: 1,
+        pendingCount: 0,
+        sentCount: 0,
+        deliveredCount: 0,
+        readCount: 0,
+        failedCount: 1,
+      },
+    ],
+    byTemplate: [
+      {
+        templateId: 'template_001',
+        templateKey: 'follow_up_demo',
+        templateName: 'Follow Up Demo',
+        providerTemplateName: 'follow_up_demo_meta',
+        providerApprovalStatus: 'approved',
+        messageCount: 1,
+        pendingCount: 1,
+        sentCount: 0,
+        deliveredCount: 0,
+        readCount: 0,
+        failedCount: 0,
+      },
+      {
+        templateId: 'template_002',
+        templateKey: 'renewal_offer_demo',
+        templateName: 'Renewal Offer Demo',
+        providerTemplateName: 'renewal_offer_demo_meta',
+        providerApprovalStatus: 'pending_review',
+        messageCount: 1,
+        pendingCount: 0,
+        sentCount: 0,
+        deliveredCount: 0,
+        readCount: 0,
+        failedCount: 1,
+      },
+    ],
+  };
+  const whatsappMessageTemplate = WhatsappMessageTemplate.create({
+    id: 'template_001',
+    tenantId: 'tenant_123',
+    key: 'follow_up_demo',
+    name: 'Follow Up Demo',
+    languageCode: 'es_EC',
+    category: 'utility',
+    bodyTemplate: 'Hola {{firstName}}, retomamos la demo de {{product}}.',
+    intentKey: 'follow_up',
+    providerTemplateName: 'follow_up_demo_meta',
+    providerApprovalStatus: 'approved',
+    status: 'active',
+    createdAt: new Date('2026-05-18T15:30:00.000Z'),
+    updatedAt: new Date('2026-05-18T15:30:00.000Z'),
+  });
+  const whatsappAutomationRule = WhatsappAutomationRule.create({
+    id: 'automation_001',
+    tenantId: 'tenant_123',
+    key: 'follow_up_unassigned',
+    name: 'Follow Up Unassigned',
+    triggerEvent: 'inbound_message',
+    matchOutboundIntentKey: 'follow_up',
+    matchDeliveryStatus: null,
+    matchAssigneeMode: 'unassigned',
+    templateId: 'template_001',
+    actionType: 'suggest_template',
+    actionOutboundIntentKey: 'follow_up',
+    status: 'active',
+    createdAt: new Date('2026-05-18T15:40:00.000Z'),
+    updatedAt: new Date('2026-05-18T15:40:00.000Z'),
+  });
+  const whatsappAutomationSuggestions = {
+    tenantSlug: 'saas-platform',
+    threadId: 'thread_whatsapp_001',
+    generatedAt: new Date('2026-05-19T09:00:00.000Z'),
+    suggestions: [
+      {
+        ruleId: 'automation_001',
+        ruleKey: 'follow_up_unassigned',
+        ruleName: 'Follow Up Unassigned',
+        triggerEvent: 'inbound_message',
+        actionType: 'suggest_template',
+        actionOutboundIntentKey: 'follow_up',
+        templateId: 'template_001',
+        templateKey: 'follow_up_demo',
+        templateName: 'Follow Up Demo',
+        providerTemplateName: 'follow_up_demo_meta',
+        providerApprovalStatus: 'approved',
+        bodyTemplatePreview:
+          'Hola {{firstName}}, retomamos la demo de {{product}}.',
+      },
+    ],
+  };
+  const whatsappWebhookEnvelope = WebhookEventEnvelope.create({
+    id: 'webhook-envelope-001',
+    tenantId: 'tenant_123',
+    provider: 'meta_cloud_api_stub',
+    channel: 'whatsapp',
+    eventKey: 'event-key-001',
+    providerEventId: 'message:wamid-001',
+    payloadHash: 'payload-hash-001',
+    signatureHeader: 'sha256=test-signature',
+    objectType: 'whatsapp_business_account',
+    externalAccountId: 'waba-001',
+    externalPhoneNumberId: '1234567890',
+    status: 'processed',
+    replayCount: 0,
+    lastReplayedAt: null,
+    processedInboundMessages: 1,
+    processedDeliveryEvents: 1,
+    failureReason: null,
+    payloadJson: '{"object":"whatsapp_business_account"}',
+    receivedAt: new Date('2026-05-18T15:00:00.000Z'),
+    processedAt: new Date('2026-05-18T15:00:01.000Z'),
+    createdAt: new Date('2026-05-18T15:00:00.000Z'),
+    updatedAt: new Date('2026-05-18T15:00:01.000Z'),
   });
   const invoiceCreatedAt = new Date('2026-04-27T16:00:00.000Z');
   const draftInvoice = Invoice.create({
@@ -1622,8 +2092,94 @@ describe('API', () => {
     getTenantInvoiceItemByIdUseCase = {
       execute: jest.fn().mockResolvedValue(firstInvoiceItem),
     };
+    getTenantPartyByIdUseCase = {
+      execute: jest.fn().mockResolvedValue(acmeParty),
+    };
+    getTenantConversationThreadByIdUseCase = {
+      execute: jest.fn().mockResolvedValue(conversationThread),
+    };
+    getTenantGrowthAssignmentWorkloadUseCase = {
+      execute: jest.fn().mockResolvedValue(growthAssignmentWorkload),
+    };
+    getTenantWhatsappAutomationRuleByIdUseCase = {
+      execute: jest.fn().mockResolvedValue(whatsappAutomationRule),
+    };
+    getTenantWhatsappAutomationSuggestionsUseCase = {
+      execute: jest.fn().mockResolvedValue(whatsappAutomationSuggestions),
+    };
+    getTenantWhatsappOutboundReportingSummaryUseCase = {
+      execute: jest.fn().mockResolvedValue(whatsappOutboundReportingSummary),
+    };
+    getTenantLeadByIdUseCase = {
+      execute: jest.fn().mockResolvedValue(capturedLead),
+    };
+    getTenantOpportunityByIdUseCase = {
+      execute: jest.fn().mockResolvedValue(qualifiedOpportunity),
+    };
+    getTenantWhatsappMessageTemplateByIdUseCase = {
+      execute: jest.fn().mockResolvedValue(whatsappMessageTemplate),
+    };
+    getTenantWebhookEventEnvelopeByIdUseCase = {
+      execute: jest.fn().mockResolvedValue(whatsappWebhookEnvelope),
+    };
     getTenantSubscriptionUseCase = {
       execute: jest.fn().mockResolvedValue(tenantSubscription),
+    };
+    ingestTenantWhatsappConversationMessageUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        createdThread: true,
+        thread: whatsappConversationThread,
+        message: inboundWhatsappMessage,
+      }),
+    };
+    ingestTenantWhatsappDeliveryEventUseCase = {
+      execute: jest.fn().mockResolvedValue(
+        ConversationMessage.create({
+          ...outboundWhatsappMessage.toPrimitives(),
+          deliveryStatus: 'delivered',
+          deliveredAt: new Date('2026-05-16T14:06:00.000Z'),
+        }),
+      ),
+    };
+    processTenantMetaWhatsappWebhookUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        processedInboundMessages: 1,
+        processedDeliveryEvents: 1,
+      }),
+    };
+    receiveTenantMetaWhatsappWebhookUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        envelopeId: 'webhook-envelope-001',
+        eventKey: 'event-key-001',
+        duplicate: false,
+        envelopeStatus: 'processed',
+        processedInboundMessages: 1,
+        processedDeliveryEvents: 1,
+      }),
+    };
+    replayTenantWebhookEventEnvelopeUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        envelope: WebhookEventEnvelope.create({
+          ...whatsappWebhookEnvelope.toPrimitives(),
+          replayCount: 1,
+          lastReplayedAt: new Date('2026-05-18T16:00:00.000Z'),
+          updatedAt: new Date('2026-05-18T16:00:00.000Z'),
+        }),
+        processedInboundMessages: 1,
+        processedDeliveryEvents: 1,
+      }),
+    };
+    metaWhatsappWebhookSignatureVerifier = {
+      isConfigured: jest.fn().mockReturnValue(true),
+      verify: jest.fn().mockReturnValue(true),
+    };
+    metaWhatsappWebhookTenantResolver = {
+      resolve: jest.fn().mockReturnValue({
+        tenantSlug: 'saas-platform',
+        source: 'phone_number_id',
+        evidence: '1234567890',
+      }),
     };
     listPlanEntitlementsUseCase = {
       execute: jest.fn().mockResolvedValue(growthPlanEntitlements),
@@ -1671,6 +2227,41 @@ describe('API', () => {
     };
     listTenantCustomersUseCase = {
       execute: jest.fn().mockResolvedValue([acmeCustomer, globexCustomer]),
+    };
+    listTenantPartiesUseCase = {
+      execute: jest.fn().mockResolvedValue([acmeParty, globexParty]),
+    };
+    listTenantConversationThreadsUseCase = {
+      execute: jest.fn().mockResolvedValue([conversationThread]),
+    };
+    listTenantConversationMessagesUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue([
+          firstConversationMessage,
+          secondConversationMessage,
+        ]),
+    };
+    listTenantConversationMessageDeliveryEventsUseCase = {
+      execute: jest.fn().mockResolvedValue([whatsappDeliveryEvent]),
+    };
+    listTenantLeadsUseCase = {
+      execute: jest.fn().mockResolvedValue([capturedLead, qualifiedLead]),
+    };
+    listTenantOpportunitiesUseCase = {
+      execute: jest.fn().mockResolvedValue([qualifiedOpportunity]),
+    };
+    listTenantWebhookEventEnvelopesUseCase = {
+      execute: jest.fn().mockResolvedValue([whatsappWebhookEnvelope]),
+    };
+    listTenantWhatsappConversationThreadsUseCase = {
+      execute: jest.fn().mockResolvedValue([whatsappConversationThread]),
+    };
+    listTenantWhatsappAutomationRulesUseCase = {
+      execute: jest.fn().mockResolvedValue([whatsappAutomationRule]),
+    };
+    listTenantWhatsappMessageTemplatesUseCase = {
+      execute: jest.fn().mockResolvedValue([whatsappMessageTemplate]),
     };
     listTenantInvoiceItemsUseCase = {
       execute: jest.fn().mockResolvedValue([
@@ -1727,6 +2318,51 @@ describe('API', () => {
     };
     createTenantCustomerUseCase = {
       execute: jest.fn().mockResolvedValue(acmeCustomer),
+    };
+    createTenantConversationThreadUseCase = {
+      execute: jest.fn().mockResolvedValue(conversationThread),
+    };
+    createTenantWhatsappAutomationRuleUseCase = {
+      execute: jest.fn().mockResolvedValue(whatsappAutomationRule),
+    };
+    createTenantWhatsappMessageTemplateUseCase = {
+      execute: jest.fn().mockResolvedValue(whatsappMessageTemplate),
+    };
+    assignTenantConversationThreadUseCase = {
+      execute: jest.fn().mockResolvedValue(
+        ConversationThread.create({
+          ...whatsappConversationThread.toPrimitives(),
+          assigneeUserId: 'user_456',
+          updatedAt: new Date('2026-05-16T14:10:00.000Z'),
+        }),
+      ),
+    };
+    createTenantConversationMessageUseCase = {
+      execute: jest.fn().mockResolvedValue(firstConversationMessage),
+    };
+    createTenantLeadUseCase = {
+      execute: jest.fn().mockResolvedValue(capturedLead),
+    };
+    createTenantOpportunityUseCase = {
+      execute: jest.fn().mockResolvedValue(qualifiedOpportunity),
+    };
+    assignTenantOpportunityUseCase = {
+      execute: jest.fn().mockResolvedValue(
+        Opportunity.create({
+          ...qualifiedOpportunity.toPrimitives(),
+          assigneeUserId: 'user_456',
+          updatedAt: new Date('2026-05-15T15:30:00.000Z'),
+        }),
+      ),
+    };
+    sendTenantWhatsappConversationMessageUseCase = {
+      execute: jest.fn().mockResolvedValue(
+        ConversationMessage.create({
+          ...outboundWhatsappMessage.toPrimitives(),
+          templateId: 'template_001',
+          outboundIntentKey: 'follow_up',
+        }),
+      ),
     };
     createTenantCreditNoteUseCase = {
       execute: jest.fn().mockResolvedValue({
@@ -1833,6 +2469,16 @@ describe('API', () => {
           },
           new Date('2026-05-02T18:26:00.000Z'),
         ),
+      ),
+    };
+    updateTenantOpportunityStageUseCase = {
+      execute: jest.fn().mockResolvedValue(
+        Opportunity.create({
+          ...qualifiedOpportunity.toPrimitives(),
+          stage: 'won',
+          closedAt: new Date('2026-05-15T15:45:00.000Z'),
+          updatedAt: new Date('2026-05-15T15:45:00.000Z'),
+        }),
       ),
     };
     updateTenantInvoiceStatusUseCase = {
@@ -1998,6 +2644,9 @@ describe('API', () => {
     createTenantUseCase = {
       execute: jest.fn().mockResolvedValue(tenant),
     };
+    metaWhatsappWebhookVerifier = {
+      verify: jest.fn().mockReturnValue(true),
+    };
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -2045,12 +2694,52 @@ describe('API', () => {
       .useValue(getTenantInvoiceByIdUseCase)
       .overrideProvider(GetTenantInvoiceItemByIdUseCase)
       .useValue(getTenantInvoiceItemByIdUseCase)
+      .overrideProvider(GetTenantPartyByIdUseCase)
+      .useValue(getTenantPartyByIdUseCase)
+      .overrideProvider(GetTenantConversationThreadByIdUseCase)
+      .useValue(getTenantConversationThreadByIdUseCase)
+      .overrideProvider(GetTenantGrowthAssignmentWorkloadUseCase)
+      .useValue(getTenantGrowthAssignmentWorkloadUseCase)
+      .overrideProvider(GetTenantWhatsappAutomationRuleByIdUseCase)
+      .useValue(getTenantWhatsappAutomationRuleByIdUseCase)
+      .overrideProvider(GetTenantWhatsappAutomationSuggestionsUseCase)
+      .useValue(getTenantWhatsappAutomationSuggestionsUseCase)
+      .overrideProvider(GetTenantWhatsappOutboundReportingSummaryUseCase)
+      .useValue(getTenantWhatsappOutboundReportingSummaryUseCase)
+      .overrideProvider(GetTenantLeadByIdUseCase)
+      .useValue(getTenantLeadByIdUseCase)
+      .overrideProvider(GetTenantOpportunityByIdUseCase)
+      .useValue(getTenantOpportunityByIdUseCase)
+      .overrideProvider(GetTenantWhatsappMessageTemplateByIdUseCase)
+      .useValue(getTenantWhatsappMessageTemplateByIdUseCase)
+      .overrideProvider(GetTenantWebhookEventEnvelopeByIdUseCase)
+      .useValue(getTenantWebhookEventEnvelopeByIdUseCase)
       .overrideProvider(GetTenantSubscriptionUseCase)
       .useValue(getTenantSubscriptionUseCase)
       .overrideProvider(ListTenantEnabledProductsUseCase)
       .useValue(listTenantEnabledProductsUseCase)
       .overrideProvider(ListTenantCustomersUseCase)
       .useValue(listTenantCustomersUseCase)
+      .overrideProvider(ListTenantPartiesUseCase)
+      .useValue(listTenantPartiesUseCase)
+      .overrideProvider(ListTenantConversationMessagesUseCase)
+      .useValue(listTenantConversationMessagesUseCase)
+      .overrideProvider(ListTenantConversationMessageDeliveryEventsUseCase)
+      .useValue(listTenantConversationMessageDeliveryEventsUseCase)
+      .overrideProvider(ListTenantConversationThreadsUseCase)
+      .useValue(listTenantConversationThreadsUseCase)
+      .overrideProvider(ListTenantLeadsUseCase)
+      .useValue(listTenantLeadsUseCase)
+      .overrideProvider(ListTenantOpportunitiesUseCase)
+      .useValue(listTenantOpportunitiesUseCase)
+      .overrideProvider(ListTenantWebhookEventEnvelopesUseCase)
+      .useValue(listTenantWebhookEventEnvelopesUseCase)
+      .overrideProvider(ListTenantWhatsappAutomationRulesUseCase)
+      .useValue(listTenantWhatsappAutomationRulesUseCase)
+      .overrideProvider(ListTenantWhatsappConversationThreadsUseCase)
+      .useValue(listTenantWhatsappConversationThreadsUseCase)
+      .overrideProvider(ListTenantWhatsappMessageTemplatesUseCase)
+      .useValue(listTenantWhatsappMessageTemplatesUseCase)
       .overrideProvider(ListTenantInvoiceItemsUseCase)
       .useValue(listTenantInvoiceItemsUseCase)
       .overrideProvider(ListTenantInvoicePaymentsUseCase)
@@ -2097,6 +2786,38 @@ describe('API', () => {
       .useValue(setTenantFeatureFlagUseCase)
       .overrideProvider(CreateTenantCustomerUseCase)
       .useValue(createTenantCustomerUseCase)
+      .overrideProvider(CreateTenantConversationMessageUseCase)
+      .useValue(createTenantConversationMessageUseCase)
+      .overrideProvider(CreateTenantConversationThreadUseCase)
+      .useValue(createTenantConversationThreadUseCase)
+      .overrideProvider(CreateTenantWhatsappAutomationRuleUseCase)
+      .useValue(createTenantWhatsappAutomationRuleUseCase)
+      .overrideProvider(CreateTenantWhatsappMessageTemplateUseCase)
+      .useValue(createTenantWhatsappMessageTemplateUseCase)
+      .overrideProvider(AssignTenantConversationThreadUseCase)
+      .useValue(assignTenantConversationThreadUseCase)
+      .overrideProvider(CreateTenantLeadUseCase)
+      .useValue(createTenantLeadUseCase)
+      .overrideProvider(CreateTenantOpportunityUseCase)
+      .useValue(createTenantOpportunityUseCase)
+      .overrideProvider(AssignTenantOpportunityUseCase)
+      .useValue(assignTenantOpportunityUseCase)
+      .overrideProvider(IngestTenantWhatsappConversationMessageUseCase)
+      .useValue(ingestTenantWhatsappConversationMessageUseCase)
+      .overrideProvider(IngestTenantWhatsappDeliveryEventUseCase)
+      .useValue(ingestTenantWhatsappDeliveryEventUseCase)
+      .overrideProvider(ProcessTenantMetaWhatsappWebhookUseCase)
+      .useValue(processTenantMetaWhatsappWebhookUseCase)
+      .overrideProvider(ReceiveTenantMetaWhatsappWebhookUseCase)
+      .useValue(receiveTenantMetaWhatsappWebhookUseCase)
+      .overrideProvider(ReplayTenantWebhookEventEnvelopeUseCase)
+      .useValue(replayTenantWebhookEventEnvelopeUseCase)
+      .overrideProvider(MetaWhatsappWebhookSignatureVerifier)
+      .useValue(metaWhatsappWebhookSignatureVerifier)
+      .overrideProvider(MetaWhatsappWebhookTenantResolver)
+      .useValue(metaWhatsappWebhookTenantResolver)
+      .overrideProvider(SendTenantWhatsappConversationMessageUseCase)
+      .useValue(sendTenantWhatsappConversationMessageUseCase)
       .overrideProvider(CreateTenantCreditNoteUseCase)
       .useValue(createTenantCreditNoteUseCase)
       .overrideProvider(CreateTenantDebitNoteUseCase)
@@ -2123,6 +2844,8 @@ describe('API', () => {
       .useValue(submitTenantInvoiceElectronicDocumentUseCase)
       .overrideProvider(SubmitTenantPresignedInvoiceElectronicDocumentUseCase)
       .useValue(submitTenantPresignedInvoiceElectronicDocumentUseCase)
+      .overrideProvider(UpdateTenantOpportunityStageUseCase)
+      .useValue(updateTenantOpportunityStageUseCase)
       .overrideProvider(UpdateTenantInvoiceStatusUseCase)
       .useValue(updateTenantInvoiceStatusUseCase)
       .overrideProvider(UpdateTenantInvoiceElectronicStatusUseCase)
@@ -2135,6 +2858,8 @@ describe('API', () => {
       .useValue(upsertTenantIssuerProfileUseCase)
       .overrideProvider(SyncTenantIssuerProfileTaxIdFromSignatureUseCase)
       .useValue(syncTenantIssuerProfileTaxIdFromSignatureUseCase)
+      .overrideProvider(MetaWhatsappWebhookVerifier)
+      .useValue(metaWhatsappWebhookVerifier)
       .overrideProvider(UpsertTenantInvoiceNumberingSettingsUseCase)
       .useValue(upsertTenantInvoiceNumberingSettingsUseCase)
       .overrideProvider(AcceptTenantInvitationUseCase)
@@ -2161,7 +2886,9 @@ describe('API', () => {
       .useValue(createTenantUseCase)
       .compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication({
+      rawBody: true,
+    });
     configureApp(app);
     await app.init();
     await app.listen(0);
@@ -2177,6 +2904,514 @@ describe('API', () => {
       .get('/api')
       .expect(200)
       .expect({ message: 'Hello API' });
+  });
+
+  it('GET /api/growth/webhooks/whatsapp/meta should verify the webhook challenge without auth', async () => {
+    await request(httpServer)
+      .get('/api/growth/webhooks/whatsapp/meta')
+      .query({
+        'hub.mode': 'subscribe',
+        'hub.verify_token': 'verify-token-123',
+        'hub.challenge': 'challenge-xyz',
+      })
+      .expect(200)
+      .expect('challenge-xyz');
+
+    expect(metaWhatsappWebhookVerifier.verify).toHaveBeenCalledWith(
+      'verify-token-123',
+    );
+  });
+
+  it('GET /api/growth/webhooks/whatsapp/meta/tenants/:slug should verify the webhook challenge without auth', async () => {
+    await request(httpServer)
+      .get('/api/growth/webhooks/whatsapp/meta/tenants/saas-platform')
+      .query({
+        'hub.mode': 'subscribe',
+        'hub.verify_token': 'verify-token-123',
+        'hub.challenge': 'challenge-xyz',
+      })
+      .expect(200)
+      .expect('challenge-xyz');
+
+    expect(metaWhatsappWebhookVerifier.verify).toHaveBeenCalledWith(
+      'verify-token-123',
+    );
+  });
+
+  it('GET /api/growth/webhooks/whatsapp/meta/tenants/:slug should reject an invalid verify token', async () => {
+    metaWhatsappWebhookVerifier.verify.mockReturnValueOnce(false);
+
+    await request(httpServer)
+      .get('/api/growth/webhooks/whatsapp/meta/tenants/saas-platform')
+      .query({
+        'hub.mode': 'subscribe',
+        'hub.verify_token': 'wrong-token',
+        'hub.challenge': 'challenge-xyz',
+      })
+      .expect(403)
+      .expect({
+        statusCode: 403,
+        message: 'WhatsApp webhook verification token is invalid.',
+        error: 'Forbidden',
+      });
+  });
+
+  it('POST /api/growth/webhooks/whatsapp/meta should process a signed Meta-like webhook payload without auth', async () => {
+    const payload = {
+      object: 'whatsapp_business_account',
+      entry: [
+        {
+          id: 'waba-001',
+          changes: [
+            {
+              field: 'messages',
+              value: {
+                metadata: {
+                  phone_number_id: '1234567890',
+                },
+                contacts: [
+                  {
+                    wa_id: '+593999111222',
+                    profile: {
+                      name: 'Maria Perez',
+                    },
+                  },
+                ],
+                messages: [
+                  {
+                    id: 'wamid-001',
+                    from: '+593999111222',
+                    timestamp: '1715868000',
+                    type: 'text',
+                    text: {
+                      body: 'Hola, quiero retomar la propuesta.',
+                    },
+                  },
+                ],
+                statuses: [
+                  {
+                    id: 'wamid-002',
+                    status: 'delivered',
+                    timestamp: '1715868060',
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    await request(httpServer)
+      .post('/api/growth/webhooks/whatsapp/meta')
+      .set('x-hub-signature-256', 'sha256=test-signature')
+      .send(payload)
+      .expect(201)
+      .expect({
+        status: 'EVENT_RECEIVED',
+        tenantSlug: 'saas-platform',
+        tenantResolutionSource: 'phone_number_id',
+        envelopeId: 'webhook-envelope-001',
+        eventKey: 'event-key-001',
+        duplicate: false,
+        envelopeStatus: 'processed',
+        processedInboundMessages: 1,
+        processedDeliveryEvents: 1,
+      });
+
+    expect(metaWhatsappWebhookSignatureVerifier.isConfigured).toHaveBeenCalled();
+    expect(metaWhatsappWebhookSignatureVerifier.verify).toHaveBeenCalled();
+    expect(metaWhatsappWebhookTenantResolver.resolve).toHaveBeenCalledWith(
+      payload,
+      null,
+    );
+    expect(receiveTenantMetaWhatsappWebhookUseCase.execute).toHaveBeenCalledWith(
+      {
+        tenantSlug: 'saas-platform',
+        provider: 'meta_cloud_api',
+        payload,
+        rawPayloadJson: JSON.stringify(payload),
+        signatureHeader: 'sha256=test-signature',
+      },
+    );
+  });
+
+  it('POST /api/growth/webhooks/whatsapp/meta should reject an invalid webhook signature', async () => {
+    metaWhatsappWebhookSignatureVerifier.verify.mockReturnValueOnce(false);
+
+    await request(httpServer)
+      .post('/api/growth/webhooks/whatsapp/meta')
+      .set('x-hub-signature-256', 'sha256=wrong-signature')
+      .send({
+        object: 'whatsapp_business_account',
+        entry: [],
+      })
+      .expect(403)
+      .expect({
+        statusCode: 403,
+        message: 'WhatsApp webhook signature is invalid.',
+        error: 'Forbidden',
+      });
+  });
+
+  it('POST /api/growth/webhooks/whatsapp/meta/tenants/:slug should process a Meta-like webhook payload without auth', async () => {
+    await request(httpServer)
+      .post('/api/growth/webhooks/whatsapp/meta/tenants/saas-platform')
+      .send({
+        object: 'whatsapp_business_account',
+        entry: [
+          {
+            changes: [
+              {
+                field: 'messages',
+                value: {
+                  contacts: [
+                    {
+                      wa_id: '+593999111222',
+                      profile: {
+                        name: 'Maria Perez',
+                      },
+                    },
+                  ],
+                  messages: [
+                    {
+                      id: 'wamid-001',
+                      from: '+593999111222',
+                      timestamp: '1715868000',
+                      type: 'text',
+                      text: {
+                        body: 'Hola, quiero retomar la propuesta.',
+                      },
+                    },
+                  ],
+                  statuses: [
+                    {
+                      id: 'wamid-002',
+                      status: 'delivered',
+                      timestamp: '1715868060',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      })
+      .expect(201)
+      .expect({
+        status: 'EVENT_RECEIVED',
+        tenantSlug: 'saas-platform',
+        tenantResolutionSource: 'phone_number_id',
+        envelopeId: 'webhook-envelope-001',
+        eventKey: 'event-key-001',
+        duplicate: false,
+        envelopeStatus: 'processed',
+        processedInboundMessages: 1,
+        processedDeliveryEvents: 1,
+      });
+
+    expect(metaWhatsappWebhookTenantResolver.resolve).toHaveBeenCalledWith(
+      {
+        object: 'whatsapp_business_account',
+        entry: [
+          {
+            changes: [
+              {
+                field: 'messages',
+                value: {
+                  contacts: [
+                    {
+                      wa_id: '+593999111222',
+                      profile: {
+                        name: 'Maria Perez',
+                      },
+                    },
+                  ],
+                  messages: [
+                    {
+                      id: 'wamid-001',
+                      from: '+593999111222',
+                      timestamp: '1715868000',
+                      type: 'text',
+                      text: {
+                        body: 'Hola, quiero retomar la propuesta.',
+                      },
+                    },
+                  ],
+                  statuses: [
+                    {
+                      id: 'wamid-002',
+                      status: 'delivered',
+                      timestamp: '1715868060',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      'saas-platform',
+    );
+    expect(receiveTenantMetaWhatsappWebhookUseCase.execute).toHaveBeenCalledWith(
+      {
+        tenantSlug: 'saas-platform',
+        provider: 'meta_cloud_api_stub',
+        payload: {
+          object: 'whatsapp_business_account',
+          entry: [
+            {
+              changes: [
+                {
+                  field: 'messages',
+                  value: {
+                    contacts: [
+                      {
+                        wa_id: '+593999111222',
+                        profile: {
+                          name: 'Maria Perez',
+                        },
+                      },
+                    ],
+                    messages: [
+                      {
+                        id: 'wamid-001',
+                        from: '+593999111222',
+                        timestamp: '1715868000',
+                        type: 'text',
+                        text: {
+                          body: 'Hola, quiero retomar la propuesta.',
+                        },
+                      },
+                    ],
+                    statuses: [
+                      {
+                        id: 'wamid-002',
+                        status: 'delivered',
+                        timestamp: '1715868060',
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        rawPayloadJson: JSON.stringify({
+          object: 'whatsapp_business_account',
+          entry: [
+            {
+              changes: [
+                {
+                  field: 'messages',
+                  value: {
+                    contacts: [
+                      {
+                        wa_id: '+593999111222',
+                        profile: {
+                          name: 'Maria Perez',
+                        },
+                      },
+                    ],
+                    messages: [
+                      {
+                        id: 'wamid-001',
+                        from: '+593999111222',
+                        timestamp: '1715868000',
+                        type: 'text',
+                        text: {
+                          body: 'Hola, quiero retomar la propuesta.',
+                        },
+                      },
+                    ],
+                    statuses: [
+                      {
+                        id: 'wamid-002',
+                        status: 'delivered',
+                        timestamp: '1715868060',
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+        signatureHeader: null,
+      },
+    );
+  });
+
+  it('POST /api/growth/webhooks/whatsapp/meta should expose duplicate webhook processing safely', async () => {
+    receiveTenantMetaWhatsappWebhookUseCase.execute.mockResolvedValueOnce({
+      tenantSlug: 'saas-platform',
+      envelopeId: 'webhook-envelope-001',
+      eventKey: 'event-key-001',
+      duplicate: true,
+      envelopeStatus: 'processed',
+      processedInboundMessages: 1,
+      processedDeliveryEvents: 1,
+    });
+
+    await request(httpServer)
+      .post('/api/growth/webhooks/whatsapp/meta')
+      .set('x-hub-signature-256', 'sha256=test-signature')
+      .send({
+        object: 'whatsapp_business_account',
+        entry: [
+          {
+            id: 'waba-001',
+            changes: [
+              {
+                field: 'messages',
+                value: {
+                  metadata: {
+                    phone_number_id: '1234567890',
+                  },
+                  messages: [
+                    {
+                      id: 'wamid-001',
+                      from: '+593999111222',
+                      timestamp: '1715868000',
+                      type: 'text',
+                      text: {
+                        body: 'Hola otra vez',
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      })
+      .expect(201)
+      .expect({
+        status: 'EVENT_RECEIVED',
+        tenantSlug: 'saas-platform',
+        tenantResolutionSource: 'phone_number_id',
+        envelopeId: 'webhook-envelope-001',
+        eventKey: 'event-key-001',
+        duplicate: true,
+        envelopeStatus: 'processed',
+        processedInboundMessages: 1,
+        processedDeliveryEvents: 1,
+      });
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/whatsapp-inbox/webhook-envelopes should return persisted webhook envelopes', async () => {
+    await request(httpServer)
+      .get(
+        '/api/growth/tenants/saas-platform/conversations/whatsapp-inbox/webhook-envelopes',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'webhook-envelope-001',
+          tenantId: 'tenant_123',
+          provider: 'meta_cloud_api_stub',
+          channel: 'whatsapp',
+          eventKey: 'event-key-001',
+          providerEventId: 'message:wamid-001',
+          payloadHash: 'payload-hash-001',
+          signatureHeader: 'sha256=test-signature',
+          objectType: 'whatsapp_business_account',
+          externalAccountId: 'waba-001',
+          externalPhoneNumberId: '1234567890',
+          status: 'processed',
+          replayCount: 0,
+          lastReplayedAt: null,
+          processedInboundMessages: 1,
+          processedDeliveryEvents: 1,
+          failureReason: null,
+          payloadJson: '{"object":"whatsapp_business_account"}',
+          receivedAt: '2026-05-18T15:00:00.000Z',
+          processedAt: '2026-05-18T15:00:01.000Z',
+          createdAt: '2026-05-18T15:00:00.000Z',
+          updatedAt: '2026-05-18T15:00:01.000Z',
+        },
+      ]);
+
+    expect(listTenantWebhookEventEnvelopesUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/whatsapp-inbox/webhook-envelopes/:envelopeId should return one webhook envelope', async () => {
+    await request(httpServer)
+      .get(
+        '/api/growth/tenants/saas-platform/conversations/whatsapp-inbox/webhook-envelopes/webhook-envelope-001',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'webhook-envelope-001',
+        tenantId: 'tenant_123',
+        provider: 'meta_cloud_api_stub',
+        channel: 'whatsapp',
+        eventKey: 'event-key-001',
+        providerEventId: 'message:wamid-001',
+        payloadHash: 'payload-hash-001',
+        signatureHeader: 'sha256=test-signature',
+        objectType: 'whatsapp_business_account',
+        externalAccountId: 'waba-001',
+        externalPhoneNumberId: '1234567890',
+        status: 'processed',
+        replayCount: 0,
+        lastReplayedAt: null,
+        processedInboundMessages: 1,
+        processedDeliveryEvents: 1,
+        failureReason: null,
+        payloadJson: '{"object":"whatsapp_business_account"}',
+        receivedAt: '2026-05-18T15:00:00.000Z',
+        processedAt: '2026-05-18T15:00:01.000Z',
+        createdAt: '2026-05-18T15:00:00.000Z',
+        updatedAt: '2026-05-18T15:00:01.000Z',
+      });
+
+    expect(getTenantWebhookEventEnvelopeByIdUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'webhook-envelope-001',
+    );
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/whatsapp-inbox/webhook-envelopes/:envelopeId/replay should replay a persisted envelope', async () => {
+    await request(httpServer)
+      .post(
+        '/api/growth/tenants/saas-platform/conversations/whatsapp-inbox/webhook-envelopes/webhook-envelope-001/replay',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect({
+        id: 'webhook-envelope-001',
+        tenantId: 'tenant_123',
+        provider: 'meta_cloud_api_stub',
+        channel: 'whatsapp',
+        eventKey: 'event-key-001',
+        providerEventId: 'message:wamid-001',
+        payloadHash: 'payload-hash-001',
+        signatureHeader: 'sha256=test-signature',
+        objectType: 'whatsapp_business_account',
+        externalAccountId: 'waba-001',
+        externalPhoneNumberId: '1234567890',
+        status: 'processed',
+        replayCount: 1,
+        lastReplayedAt: '2026-05-18T16:00:00.000Z',
+        processedInboundMessages: 1,
+        processedDeliveryEvents: 1,
+        failureReason: null,
+        payloadJson: '{"object":"whatsapp_business_account"}',
+        receivedAt: '2026-05-18T15:00:00.000Z',
+        processedAt: '2026-05-18T15:00:01.000Z',
+        createdAt: '2026-05-18T15:00:00.000Z',
+        updatedAt: '2026-05-18T16:00:00.000Z',
+      });
+
+    expect(replayTenantWebhookEventEnvelopeUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'webhook-envelope-001',
+    );
   });
 
   it('GET /api/identity/users/:id should return a user', async () => {
@@ -2555,6 +3790,1288 @@ describe('API', () => {
     expect(listTenantCustomersUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
     );
+  });
+
+  it('GET /api/parties/tenants/:slug/parties should return tenant-scoped shared parties', async () => {
+    await request(httpServer)
+      .get('/api/parties/tenants/saas-platform/parties')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'customer_acme',
+          tenantId: 'tenant_123',
+          displayName: 'Acme Corp',
+          email: 'billing@acme.dev',
+          taxId: '1790012345001',
+          identificationType: '04',
+          identification: '1790012345001',
+          billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+          roles: ['customer'],
+          kind: 'organization',
+          sourceContext: 'invoicing_customer',
+          createdAt: '2026-04-27T15:00:00.000Z',
+          updatedAt: '2026-04-27T15:00:00.000Z',
+        },
+        {
+          id: 'customer_globex',
+          tenantId: 'tenant_123',
+          displayName: 'Globex LLC',
+          email: null,
+          taxId: null,
+          identificationType: null,
+          identification: null,
+          billingAddress: null,
+          roles: ['customer'],
+          kind: 'unknown',
+          sourceContext: 'invoicing_customer',
+          createdAt: '2026-04-27T15:10:00.000Z',
+          updatedAt: '2026-04-27T15:10:00.000Z',
+        },
+      ]);
+
+    expect(getTenantEnabledProductByKeyUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoicing',
+    );
+    expect(listTenantPartiesUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/parties/tenants/:slug/parties/:partyId should return one shared party', async () => {
+    await request(httpServer)
+      .get('/api/parties/tenants/saas-platform/parties/customer_acme')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'customer_acme',
+        tenantId: 'tenant_123',
+        displayName: 'Acme Corp',
+        email: 'billing@acme.dev',
+        taxId: '1790012345001',
+        identificationType: '04',
+        identification: '1790012345001',
+        billingAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+        roles: ['customer'],
+        kind: 'organization',
+        sourceContext: 'invoicing_customer',
+        createdAt: '2026-04-27T15:00:00.000Z',
+        updatedAt: '2026-04-27T15:00:00.000Z',
+      });
+
+    expect(getTenantPartyByIdUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'customer_acme',
+    );
+  });
+
+  it('GET /api/parties/tenants/:slug/parties should require customer visibility permission', async () => {
+    resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
+      tenantId: 'tenant_123',
+      tenantSlug: 'saas-platform',
+      userId: 'user_456',
+      membershipId: 'membership_456',
+      membershipStatus: MembershipStatus.Active,
+      roleKeys: ['tenant_member'],
+      permissionKeys: [TENANT_PERMISSIONS.READ],
+    });
+
+    await request(httpServer)
+      .get('/api/parties/tenants/saas-platform/parties')
+      .set('Authorization', `Bearer ${memberToken}`)
+      .expect(403)
+      .expect({
+        statusCode: 403,
+        message:
+          'Permission "invoicing.customers.read" is required for this tenant resource.',
+        error: 'Forbidden',
+      });
+  });
+
+  it('GET /api/growth/tenants/:slug/leads should return tenant-scoped leads', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/leads')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'lead_001',
+          tenantId: 'tenant_123',
+          fullName: 'Maria Perez',
+          email: 'maria@example.com',
+          phoneE164: '+593999111222',
+          whatsappE164: '+593999111222',
+          source: 'landing_page',
+          status: 'captured',
+          notes: 'Quiere demo del modulo de facturacion.',
+          createdAt: '2026-05-15T14:30:00.000Z',
+          updatedAt: '2026-05-15T14:30:00.000Z',
+        },
+        {
+          id: 'lead_002',
+          tenantId: 'tenant_123',
+          fullName: 'Carlos Mena',
+          email: null,
+          phoneE164: '+593988000777',
+          whatsappE164: null,
+          source: 'whatsapp_campaign',
+          status: 'qualified',
+          notes: null,
+          createdAt: '2026-05-15T13:10:00.000Z',
+          updatedAt: '2026-05-15T13:10:00.000Z',
+        },
+      ]);
+
+    expect(listTenantLeadsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/growth/tenants/:slug/leads/:leadId should return one tenant lead', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/leads/lead_001')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'lead_001',
+        tenantId: 'tenant_123',
+        fullName: 'Maria Perez',
+        email: 'maria@example.com',
+        phoneE164: '+593999111222',
+        whatsappE164: '+593999111222',
+        source: 'landing_page',
+        status: 'captured',
+        notes: 'Quiere demo del modulo de facturacion.',
+        createdAt: '2026-05-15T14:30:00.000Z',
+        updatedAt: '2026-05-15T14:30:00.000Z',
+      });
+
+    expect(getTenantLeadByIdUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'lead_001',
+    );
+  });
+
+  it('POST /api/growth/tenants/:slug/leads should create a tenant lead', async () => {
+    await request(httpServer)
+      .post('/api/growth/tenants/saas-platform/leads')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        fullName: 'Maria Perez',
+        email: 'Maria@Example.com',
+        phoneE164: '+593999111222',
+        whatsappE164: '+593999111222',
+        source: 'landing_page',
+        status: 'captured',
+        notes: 'Quiere demo del modulo de facturacion.',
+      })
+      .expect(201)
+      .expect({
+        id: 'lead_001',
+        tenantId: 'tenant_123',
+        fullName: 'Maria Perez',
+        email: 'maria@example.com',
+        phoneE164: '+593999111222',
+        whatsappE164: '+593999111222',
+        source: 'landing_page',
+        status: 'captured',
+        notes: 'Quiere demo del modulo de facturacion.',
+        createdAt: '2026-05-15T14:30:00.000Z',
+        updatedAt: '2026-05-15T14:30:00.000Z',
+      });
+
+    expect(createTenantLeadUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      fullName: 'Maria Perez',
+      email: 'Maria@Example.com',
+      phoneE164: '+593999111222',
+      whatsappE164: '+593999111222',
+      source: 'landing_page',
+      status: 'captured',
+      notes: 'Quiere demo del modulo de facturacion.',
+    });
+  });
+
+  it('GET /api/growth/tenants/:slug/leads should require growth read permission', async () => {
+    resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
+      tenantId: 'tenant_123',
+      tenantSlug: 'saas-platform',
+      userId: 'user_456',
+      membershipId: 'membership_456',
+      membershipStatus: MembershipStatus.Active,
+      roleKeys: ['tenant_member'],
+      permissionKeys: [TENANT_PERMISSIONS.READ],
+    });
+
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/leads')
+      .set('Authorization', `Bearer ${memberToken}`)
+      .expect(403)
+      .expect({
+        statusCode: 403,
+        message:
+          'Permission "growth.leads.read" is required for this tenant resource.',
+        error: 'Forbidden',
+      });
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations should return tenant-scoped conversation threads', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/conversations')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'thread_001',
+          tenantId: 'tenant_123',
+          leadId: 'lead_001',
+          assigneeUserId: null,
+          subject: 'Demo de onboarding facturacion',
+          channel: 'manual',
+          externalConversationId: null,
+          participantDisplayName: null,
+          participantHandle: null,
+          status: 'open',
+          latestMessagePreview:
+            'Hola Maria, te comparto los siguientes pasos para la demo.',
+          messageCount: 2,
+          openedAt: '2026-05-15T14:40:00.000Z',
+          closedAt: null,
+          lastActivityAt: '2026-05-15T14:45:00.000Z',
+          createdAt: '2026-05-15T14:40:00.000Z',
+          updatedAt: '2026-05-15T14:45:00.000Z',
+        },
+      ]);
+
+    expect(listTenantConversationThreadsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations?assigneeUserId=:userId should forward the assignee filter', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/conversations?assigneeUserId=user_456')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(listTenantConversationThreadsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'user_456',
+    );
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/:threadId should return one conversation thread', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/conversations/thread_001')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'thread_001',
+        tenantId: 'tenant_123',
+        leadId: 'lead_001',
+        assigneeUserId: null,
+        subject: 'Demo de onboarding facturacion',
+        channel: 'manual',
+        externalConversationId: null,
+        participantDisplayName: null,
+        participantHandle: null,
+        status: 'open',
+        latestMessagePreview:
+          'Hola Maria, te comparto los siguientes pasos para la demo.',
+        messageCount: 2,
+        openedAt: '2026-05-15T14:40:00.000Z',
+        closedAt: null,
+        lastActivityAt: '2026-05-15T14:45:00.000Z',
+        createdAt: '2026-05-15T14:40:00.000Z',
+        updatedAt: '2026-05-15T14:45:00.000Z',
+      });
+
+    expect(getTenantConversationThreadByIdUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'thread_001',
+    );
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations should create a conversation thread', async () => {
+    await request(httpServer)
+      .post('/api/growth/tenants/saas-platform/conversations')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        leadId: 'lead_001',
+        subject: 'Demo de onboarding facturacion',
+        channel: 'manual',
+        status: 'open',
+      })
+      .expect(201)
+      .expect({
+        id: 'thread_001',
+        tenantId: 'tenant_123',
+        leadId: 'lead_001',
+        assigneeUserId: null,
+        subject: 'Demo de onboarding facturacion',
+        channel: 'manual',
+        externalConversationId: null,
+        participantDisplayName: null,
+        participantHandle: null,
+        status: 'open',
+        latestMessagePreview:
+          'Hola Maria, te comparto los siguientes pasos para la demo.',
+        messageCount: 2,
+        openedAt: '2026-05-15T14:40:00.000Z',
+        closedAt: null,
+        lastActivityAt: '2026-05-15T14:45:00.000Z',
+        createdAt: '2026-05-15T14:40:00.000Z',
+        updatedAt: '2026-05-15T14:45:00.000Z',
+      });
+
+    expect(createTenantConversationThreadUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      leadId: 'lead_001',
+      subject: 'Demo de onboarding facturacion',
+      channel: 'manual',
+      status: 'open',
+    });
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/:threadId/assignment should assign one thread owner', async () => {
+    await request(httpServer)
+      .post('/api/growth/tenants/saas-platform/conversations/thread_whatsapp_001/assignment')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        assigneeUserId: 'user_456',
+      })
+      .expect(201)
+      .expect({
+        id: 'thread_whatsapp_001',
+        tenantId: 'tenant_123',
+        leadId: 'lead_001',
+        assigneeUserId: 'user_456',
+        subject: 'Maria Perez',
+        channel: 'whatsapp',
+        externalConversationId: 'wa_conv_001',
+        participantDisplayName: 'Maria Perez',
+        participantHandle: '+593999111222',
+        status: 'open',
+        latestMessagePreview: 'Hola, quiero retomar la propuesta.',
+        messageCount: 1,
+        openedAt: '2026-05-16T14:00:00.000Z',
+        closedAt: null,
+        lastActivityAt: '2026-05-16T14:00:00.000Z',
+        createdAt: '2026-05-16T14:00:00.000Z',
+        updatedAt: '2026-05-16T14:10:00.000Z',
+      });
+
+    expect(assignTenantConversationThreadUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      threadId: 'thread_whatsapp_001',
+      assigneeUserId: 'user_456',
+    });
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/:threadId/messages should return conversation messages', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/conversations/thread_001/messages')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'message_001',
+          tenantId: 'tenant_123',
+          threadId: 'thread_001',
+          direction: 'outbound',
+          body: 'Hola Maria, te comparto los siguientes pasos para la demo.',
+          templateId: null,
+          outboundIntentKey: null,
+          provider: null,
+          deliveryStatus: null,
+          externalMessageId: null,
+          failureReason: null,
+          deliveredAt: null,
+          readAt: null,
+          createdAt: '2026-05-15T14:40:00.000Z',
+        },
+        {
+          id: 'message_002',
+          tenantId: 'tenant_123',
+          threadId: 'thread_001',
+          direction: 'inbound',
+          body: 'Perfecto, quedo atenta a la hora de la llamada.',
+          templateId: null,
+          outboundIntentKey: null,
+          provider: null,
+          deliveryStatus: null,
+          externalMessageId: null,
+          failureReason: null,
+          deliveredAt: null,
+          readAt: null,
+          createdAt: '2026-05-15T14:45:00.000Z',
+        },
+      ]);
+
+    expect(listTenantConversationMessagesUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'thread_001',
+    );
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/:threadId/messages should create a conversation message', async () => {
+    await request(httpServer)
+      .post('/api/growth/tenants/saas-platform/conversations/thread_001/messages')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        direction: 'outbound',
+        body: 'Hola Maria, te comparto los siguientes pasos para la demo.',
+      })
+      .expect(201)
+      .expect({
+        id: 'message_001',
+        tenantId: 'tenant_123',
+        threadId: 'thread_001',
+        direction: 'outbound',
+        body: 'Hola Maria, te comparto los siguientes pasos para la demo.',
+        templateId: null,
+        outboundIntentKey: null,
+        provider: null,
+        deliveryStatus: null,
+        externalMessageId: null,
+        failureReason: null,
+        deliveredAt: null,
+        readAt: null,
+        createdAt: '2026-05-15T14:40:00.000Z',
+      });
+
+    expect(createTenantConversationMessageUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      threadId: 'thread_001',
+      direction: 'outbound',
+      body: 'Hola Maria, te comparto los siguientes pasos para la demo.',
+      externalMessageId: undefined,
+    });
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations should require conversation read permission', async () => {
+    resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
+      tenantId: 'tenant_123',
+      tenantSlug: 'saas-platform',
+      userId: 'user_456',
+      membershipId: 'membership_456',
+      membershipStatus: MembershipStatus.Active,
+      roleKeys: ['tenant_member'],
+      permissionKeys: [TENANT_PERMISSIONS.READ],
+    });
+
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/conversations')
+      .set('Authorization', `Bearer ${memberToken}`)
+      .expect(403)
+      .expect({
+        statusCode: 403,
+        message:
+          'Permission "growth.conversations.read" is required for this tenant resource.',
+        error: 'Forbidden',
+      });
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/whatsapp-inbox should return whatsapp conversation threads', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/conversations/whatsapp-inbox')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'thread_whatsapp_001',
+          tenantId: 'tenant_123',
+          leadId: 'lead_001',
+          assigneeUserId: null,
+          subject: 'Maria Perez',
+          channel: 'whatsapp',
+          externalConversationId: 'wa_conv_001',
+          participantDisplayName: 'Maria Perez',
+          participantHandle: '+593999111222',
+          status: 'open',
+          latestMessagePreview: 'Hola, quiero retomar la propuesta.',
+          messageCount: 1,
+          openedAt: '2026-05-16T14:00:00.000Z',
+          closedAt: null,
+          lastActivityAt: '2026-05-16T14:00:00.000Z',
+          createdAt: '2026-05-16T14:00:00.000Z',
+          updatedAt: '2026-05-16T14:00:00.000Z',
+        },
+      ]);
+
+    expect(
+      listTenantWhatsappConversationThreadsUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform');
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/whatsapp-templates should return whatsapp message templates', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/conversations/whatsapp-templates')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'template_001',
+          tenantId: 'tenant_123',
+          key: 'follow_up_demo',
+          name: 'Follow Up Demo',
+          languageCode: 'es_EC',
+          category: 'utility',
+          bodyTemplate: 'Hola {{firstName}}, retomamos la demo de {{product}}.',
+          intentKey: 'follow_up',
+          providerTemplateName: 'follow_up_demo_meta',
+          providerApprovalStatus: 'approved',
+          status: 'active',
+          createdAt: '2026-05-18T15:30:00.000Z',
+          updatedAt: '2026-05-18T15:30:00.000Z',
+        },
+      ]);
+
+    expect(listTenantWhatsappMessageTemplatesUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/whatsapp-automations should return whatsapp automation rules', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/conversations/whatsapp-automations')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'automation_001',
+          tenantId: 'tenant_123',
+          key: 'follow_up_unassigned',
+          name: 'Follow Up Unassigned',
+          triggerEvent: 'inbound_message',
+          matchOutboundIntentKey: 'follow_up',
+          matchDeliveryStatus: null,
+          matchAssigneeMode: 'unassigned',
+          templateId: 'template_001',
+          actionType: 'suggest_template',
+          actionOutboundIntentKey: 'follow_up',
+          status: 'active',
+          createdAt: '2026-05-18T15:40:00.000Z',
+          updatedAt: '2026-05-18T15:40:00.000Z',
+        },
+      ]);
+
+    expect(listTenantWhatsappAutomationRulesUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/whatsapp-templates/:templateId should return one whatsapp message template', async () => {
+    await request(httpServer)
+      .get(
+        '/api/growth/tenants/saas-platform/conversations/whatsapp-templates/template_001',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'template_001',
+        tenantId: 'tenant_123',
+        key: 'follow_up_demo',
+        name: 'Follow Up Demo',
+        languageCode: 'es_EC',
+        category: 'utility',
+        bodyTemplate: 'Hola {{firstName}}, retomamos la demo de {{product}}.',
+        intentKey: 'follow_up',
+        providerTemplateName: 'follow_up_demo_meta',
+        providerApprovalStatus: 'approved',
+        status: 'active',
+        createdAt: '2026-05-18T15:30:00.000Z',
+        updatedAt: '2026-05-18T15:30:00.000Z',
+      });
+
+    expect(getTenantWhatsappMessageTemplateByIdUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'template_001',
+    );
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/whatsapp-automations/:automationId should return one whatsapp automation rule', async () => {
+    await request(httpServer)
+      .get(
+        '/api/growth/tenants/saas-platform/conversations/whatsapp-automations/automation_001',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'automation_001',
+        tenantId: 'tenant_123',
+        key: 'follow_up_unassigned',
+        name: 'Follow Up Unassigned',
+        triggerEvent: 'inbound_message',
+        matchOutboundIntentKey: 'follow_up',
+        matchDeliveryStatus: null,
+        matchAssigneeMode: 'unassigned',
+        templateId: 'template_001',
+        actionType: 'suggest_template',
+        actionOutboundIntentKey: 'follow_up',
+        status: 'active',
+        createdAt: '2026-05-18T15:40:00.000Z',
+        updatedAt: '2026-05-18T15:40:00.000Z',
+      });
+
+    expect(getTenantWhatsappAutomationRuleByIdUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'automation_001',
+    );
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/whatsapp-templates should create one whatsapp message template', async () => {
+    await request(httpServer)
+      .post('/api/growth/tenants/saas-platform/conversations/whatsapp-templates')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        key: 'follow_up_demo',
+        name: 'Follow Up Demo',
+        languageCode: 'es_EC',
+        category: 'utility',
+        bodyTemplate: 'Hola {{firstName}}, retomamos la demo de {{product}}.',
+        intentKey: 'follow_up',
+        providerTemplateName: 'follow_up_demo_meta',
+        providerApprovalStatus: 'approved',
+      })
+      .expect(201)
+      .expect({
+        id: 'template_001',
+        tenantId: 'tenant_123',
+        key: 'follow_up_demo',
+        name: 'Follow Up Demo',
+        languageCode: 'es_EC',
+        category: 'utility',
+        bodyTemplate: 'Hola {{firstName}}, retomamos la demo de {{product}}.',
+        intentKey: 'follow_up',
+        providerTemplateName: 'follow_up_demo_meta',
+        providerApprovalStatus: 'approved',
+        status: 'active',
+        createdAt: '2026-05-18T15:30:00.000Z',
+        updatedAt: '2026-05-18T15:30:00.000Z',
+      });
+
+    expect(createTenantWhatsappMessageTemplateUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      key: 'follow_up_demo',
+      name: 'Follow Up Demo',
+      languageCode: 'es_EC',
+      category: 'utility',
+      bodyTemplate: 'Hola {{firstName}}, retomamos la demo de {{product}}.',
+      intentKey: 'follow_up',
+      providerTemplateName: 'follow_up_demo_meta',
+      providerApprovalStatus: 'approved',
+    });
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/whatsapp-automations should create one whatsapp automation rule', async () => {
+    await request(httpServer)
+      .post('/api/growth/tenants/saas-platform/conversations/whatsapp-automations')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        key: 'follow_up_unassigned',
+        name: 'Follow Up Unassigned',
+        triggerEvent: 'inbound_message',
+        matchOutboundIntentKey: 'follow_up',
+        matchAssigneeMode: 'unassigned',
+        templateId: 'template_001',
+        actionOutboundIntentKey: 'follow_up',
+      })
+      .expect(201)
+      .expect({
+        id: 'automation_001',
+        tenantId: 'tenant_123',
+        key: 'follow_up_unassigned',
+        name: 'Follow Up Unassigned',
+        triggerEvent: 'inbound_message',
+        matchOutboundIntentKey: 'follow_up',
+        matchDeliveryStatus: null,
+        matchAssigneeMode: 'unassigned',
+        templateId: 'template_001',
+        actionType: 'suggest_template',
+        actionOutboundIntentKey: 'follow_up',
+        status: 'active',
+        createdAt: '2026-05-18T15:40:00.000Z',
+        updatedAt: '2026-05-18T15:40:00.000Z',
+      });
+
+    expect(createTenantWhatsappAutomationRuleUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      key: 'follow_up_unassigned',
+      name: 'Follow Up Unassigned',
+      triggerEvent: 'inbound_message',
+      matchOutboundIntentKey: 'follow_up',
+      matchDeliveryStatus: undefined,
+      matchAssigneeMode: 'unassigned',
+      templateId: 'template_001',
+      actionOutboundIntentKey: 'follow_up',
+    });
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/whatsapp-inbox?assigneeUserId=:userId should forward the assignee filter', async () => {
+    await request(httpServer)
+      .get(
+        '/api/growth/tenants/saas-platform/conversations/whatsapp-inbox?assigneeUserId=user_456',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(
+      listTenantWhatsappConversationThreadsUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'user_456');
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/whatsapp-inbox/messages should ingest an inbound whatsapp message', async () => {
+    await request(httpServer)
+      .post('/api/growth/tenants/saas-platform/conversations/whatsapp-inbox/messages')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        externalConversationId: 'wa_conv_001',
+        participantHandle: '+593999111222',
+        participantDisplayName: 'Maria Perez',
+        leadId: 'lead_001',
+        body: 'Hola, quiero retomar la propuesta.',
+        externalMessageId: 'wamid-001',
+        occurredAt: '2026-05-16T14:00:00.000Z',
+      })
+      .expect(201)
+      .expect({
+        createdThread: true,
+        thread: {
+          id: 'thread_whatsapp_001',
+          tenantId: 'tenant_123',
+          leadId: 'lead_001',
+          assigneeUserId: null,
+          subject: 'Maria Perez',
+          channel: 'whatsapp',
+          externalConversationId: 'wa_conv_001',
+          participantDisplayName: 'Maria Perez',
+          participantHandle: '+593999111222',
+          status: 'open',
+          latestMessagePreview: 'Hola, quiero retomar la propuesta.',
+          messageCount: 1,
+          openedAt: '2026-05-16T14:00:00.000Z',
+          closedAt: null,
+          lastActivityAt: '2026-05-16T14:00:00.000Z',
+          createdAt: '2026-05-16T14:00:00.000Z',
+          updatedAt: '2026-05-16T14:00:00.000Z',
+        },
+        message: {
+          id: 'message_whatsapp_001',
+          tenantId: 'tenant_123',
+          threadId: 'thread_whatsapp_001',
+          direction: 'inbound',
+          body: 'Hola, quiero retomar la propuesta.',
+          templateId: null,
+          outboundIntentKey: null,
+          provider: 'meta_cloud_api_stub',
+          deliveryStatus: 'delivered',
+          externalMessageId: 'wamid-001',
+          failureReason: null,
+          deliveredAt: '2026-05-16T14:00:10.000Z',
+          readAt: null,
+          createdAt: '2026-05-16T14:00:00.000Z',
+        },
+      });
+
+    expect(
+      ingestTenantWhatsappConversationMessageUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      externalConversationId: 'wa_conv_001',
+      participantHandle: '+593999111222',
+      participantDisplayName: 'Maria Perez',
+      leadId: 'lead_001',
+      body: 'Hola, quiero retomar la propuesta.',
+      externalMessageId: 'wamid-001',
+      occurredAt: new Date('2026-05-16T14:00:00.000Z'),
+    });
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/whatsapp-inbox/:threadId/outbound-messages should create a whatsapp outbound message', async () => {
+    await request(httpServer)
+      .post(
+        '/api/growth/tenants/saas-platform/conversations/whatsapp-inbox/thread_whatsapp_001/outbound-messages',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        templateId: 'template_001',
+        templateVariables: {
+          firstName: 'Maria',
+          product: 'facturacion',
+        },
+        outboundIntentKey: 'follow_up',
+        externalMessageId: 'wamid-002',
+        occurredAt: '2026-05-16T14:05:00.000Z',
+      })
+      .expect(201)
+      .expect({
+        id: 'message_whatsapp_002',
+        tenantId: 'tenant_123',
+        threadId: 'thread_whatsapp_001',
+        direction: 'outbound',
+        body: 'Perfecto, te escribo en unos minutos.',
+        templateId: 'template_001',
+        outboundIntentKey: 'follow_up',
+        provider: 'meta_cloud_api_stub',
+        deliveryStatus: 'pending',
+        externalMessageId: 'wamid-002',
+        failureReason: null,
+        deliveredAt: null,
+        readAt: null,
+        createdAt: '2026-05-16T14:05:00.000Z',
+      });
+
+    expect(sendTenantWhatsappConversationMessageUseCase.execute).toHaveBeenCalledWith(
+      {
+        tenantSlug: 'saas-platform',
+        threadId: 'thread_whatsapp_001',
+        body: undefined,
+        templateId: 'template_001',
+        templateVariables: {
+          firstName: 'Maria',
+          product: 'facturacion',
+        },
+        outboundIntentKey: 'follow_up',
+        externalMessageId: 'wamid-002',
+        occurredAt: new Date('2026-05-16T14:05:00.000Z'),
+      },
+    );
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/:threadId/whatsapp-automation-suggestions should return suggestions for one whatsapp thread', async () => {
+    await request(httpServer)
+      .get(
+        '/api/growth/tenants/saas-platform/conversations/thread_whatsapp_001/whatsapp-automation-suggestions',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        tenantSlug: 'saas-platform',
+        threadId: 'thread_whatsapp_001',
+        generatedAt: '2026-05-19T09:00:00.000Z',
+        suggestions: [
+          {
+            ruleId: 'automation_001',
+            ruleKey: 'follow_up_unassigned',
+            ruleName: 'Follow Up Unassigned',
+            triggerEvent: 'inbound_message',
+            actionType: 'suggest_template',
+            actionOutboundIntentKey: 'follow_up',
+            templateId: 'template_001',
+            templateKey: 'follow_up_demo',
+            templateName: 'Follow Up Demo',
+            providerTemplateName: 'follow_up_demo_meta',
+            providerApprovalStatus: 'approved',
+            bodyTemplatePreview:
+              'Hola {{firstName}}, retomamos la demo de {{product}}.',
+          },
+        ],
+      });
+
+    expect(
+      getTenantWhatsappAutomationSuggestionsUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'thread_whatsapp_001');
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/whatsapp-inbox/delivery-events should update whatsapp delivery state', async () => {
+    await request(httpServer)
+      .post('/api/growth/tenants/saas-platform/conversations/whatsapp-inbox/delivery-events')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        externalMessageId: 'wamid-002',
+        deliveryStatus: 'delivered',
+        occurredAt: '2026-05-16T14:06:00.000Z',
+      })
+      .expect(201)
+      .expect({
+        id: 'message_whatsapp_002',
+        tenantId: 'tenant_123',
+        threadId: 'thread_whatsapp_001',
+        direction: 'outbound',
+        body: 'Perfecto, te escribo en unos minutos.',
+        templateId: null,
+        outboundIntentKey: 'follow_up',
+        provider: 'meta_cloud_api_stub',
+        deliveryStatus: 'delivered',
+        externalMessageId: 'wamid-002',
+        failureReason: null,
+        deliveredAt: '2026-05-16T14:06:00.000Z',
+        readAt: null,
+        createdAt: '2026-05-16T14:05:00.000Z',
+      });
+
+    expect(ingestTenantWhatsappDeliveryEventUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      externalMessageId: 'wamid-002',
+      deliveryStatus: 'delivered',
+      provider: undefined,
+      providerEventId: undefined,
+      payloadJson: undefined,
+      eventKey: undefined,
+      failureReason: undefined,
+      providerStatusDetail: undefined,
+      providerConversationCategory: undefined,
+      providerPricingCategory: undefined,
+      providerErrorCode: undefined,
+      occurredAt: new Date('2026-05-16T14:06:00.000Z'),
+    });
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/:threadId/messages/:messageId/delivery-events should return delivery events for one message', async () => {
+    await request(httpServer)
+      .get(
+        '/api/growth/tenants/saas-platform/conversations/thread_whatsapp_001/messages/message_whatsapp_002/delivery-events',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'delivery_event_001',
+          tenantId: 'tenant_123',
+          messageId: 'message_whatsapp_002',
+          provider: 'meta_cloud_api_stub',
+          eventKey: 'wamid-002:delivered:0:0:0',
+          providerEventId: 'status:wamid-002',
+          externalMessageId: 'wamid-002',
+          deliveryStatus: 'delivered',
+          failureReason: null,
+          providerStatusDetail: 'conversation:service;pricing:utility',
+          providerConversationCategory: 'service',
+          providerPricingCategory: 'utility',
+          providerErrorCode: null,
+          payloadJson: '{"status":"delivered"}',
+          occurredAt: '2026-05-16T14:06:00.000Z',
+          createdAt: '2026-05-16T14:06:00.000Z',
+        },
+      ]);
+
+    expect(
+      listTenantConversationMessageDeliveryEventsUseCase.execute,
+    ).toHaveBeenCalledWith(
+      'saas-platform',
+      'thread_whatsapp_001',
+      'message_whatsapp_002',
+    );
+  });
+
+  it('GET /api/growth/tenants/:slug/opportunities should return tenant-scoped opportunities', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/opportunities')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'opportunity_001',
+          tenantId: 'tenant_123',
+          leadId: 'lead_001',
+          threadId: 'thread_001',
+          assigneeUserId: null,
+          title: 'Onboarding anual facturacion electronica',
+          stage: 'proposal',
+          amountInCents: 199000,
+          currency: 'USD',
+          notes: 'Cliente con alto interes y decision esta semana.',
+          closedAt: null,
+          createdAt: '2026-05-15T15:00:00.000Z',
+          updatedAt: '2026-05-15T15:20:00.000Z',
+        },
+      ]);
+
+    expect(listTenantOpportunitiesUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/growth/tenants/:slug/opportunities?assigneeUserId=:userId should forward the assignee filter', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/opportunities?assigneeUserId=user_456')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(listTenantOpportunitiesUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'user_456',
+    );
+  });
+
+  it('GET /api/growth/tenants/:slug/assignment-workload should return workload analytics', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/assignment-workload')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        tenantSlug: 'saas-platform',
+        generatedAt: '2026-05-18T16:00:00.000Z',
+        totals: {
+          openThreadCount: 2,
+          unassignedOpenThreadCount: 1,
+          openOpportunityCount: 2,
+          unassignedOpenOpportunityCount: 1,
+          openOpportunityAmountInCents: 289000,
+        },
+        assignees: [
+          {
+            userId: 'user_456',
+            displayName: 'Maria Sales',
+            email: 'sales@saas-platform.dev',
+            openThreadCount: 1,
+            openWhatsappThreadCount: 1,
+            openManualThreadCount: 0,
+            openOpportunityCount: 1,
+            openOpportunityAmountInCents: 199000,
+            wonOpportunityCount: 0,
+            lostOpportunityCount: 0,
+          },
+          {
+            userId: 'user_123',
+            displayName: 'Jorge',
+            email: 'hello@saas-platform.dev',
+            openThreadCount: 0,
+            openWhatsappThreadCount: 0,
+            openManualThreadCount: 0,
+            openOpportunityCount: 0,
+            openOpportunityAmountInCents: 0,
+            wonOpportunityCount: 0,
+            lostOpportunityCount: 0,
+          },
+        ],
+      });
+
+    expect(getTenantGrowthAssignmentWorkloadUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/outbound-summary should return outbound reporting analytics', async () => {
+    await request(httpServer)
+      .get(
+        '/api/growth/tenants/saas-platform/conversations/whatsapp-reporting/outbound-summary',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        tenantSlug: 'saas-platform',
+        generatedAt: '2026-05-18T16:30:00.000Z',
+        totals: {
+          outboundMessageCount: 3,
+          freeformMessageCount: 1,
+          templateMessageCount: 2,
+          approvedTemplateMessageCount: 1,
+          pendingCount: 1,
+          sentCount: 0,
+          deliveredCount: 1,
+          readCount: 0,
+          failedCount: 1,
+        },
+        byIntent: [
+          {
+            outboundIntentKey: 'follow_up',
+            messageCount: 2,
+            pendingCount: 1,
+            sentCount: 0,
+            deliveredCount: 1,
+            readCount: 0,
+            failedCount: 0,
+          },
+          {
+            outboundIntentKey: 'renewal_offer',
+            messageCount: 1,
+            pendingCount: 0,
+            sentCount: 0,
+            deliveredCount: 0,
+            readCount: 0,
+            failedCount: 1,
+          },
+        ],
+        byTemplate: [
+          {
+            templateId: 'template_001',
+            templateKey: 'follow_up_demo',
+            templateName: 'Follow Up Demo',
+            providerTemplateName: 'follow_up_demo_meta',
+            providerApprovalStatus: 'approved',
+            messageCount: 1,
+            pendingCount: 1,
+            sentCount: 0,
+            deliveredCount: 0,
+            readCount: 0,
+            failedCount: 0,
+          },
+          {
+            templateId: 'template_002',
+            templateKey: 'renewal_offer_demo',
+            templateName: 'Renewal Offer Demo',
+            providerTemplateName: 'renewal_offer_demo_meta',
+            providerApprovalStatus: 'pending_review',
+            messageCount: 1,
+            pendingCount: 0,
+            sentCount: 0,
+            deliveredCount: 0,
+            readCount: 0,
+            failedCount: 1,
+          },
+        ],
+      });
+
+    expect(
+      getTenantWhatsappOutboundReportingSummaryUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform');
+  });
+
+  it('GET /api/growth/tenants/:slug/opportunities/:opportunityId should return one opportunity', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/opportunities/opportunity_001')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'opportunity_001',
+        tenantId: 'tenant_123',
+        leadId: 'lead_001',
+        threadId: 'thread_001',
+        assigneeUserId: null,
+        title: 'Onboarding anual facturacion electronica',
+        stage: 'proposal',
+        amountInCents: 199000,
+        currency: 'USD',
+        notes: 'Cliente con alto interes y decision esta semana.',
+        closedAt: null,
+        createdAt: '2026-05-15T15:00:00.000Z',
+        updatedAt: '2026-05-15T15:20:00.000Z',
+      });
+
+    expect(getTenantOpportunityByIdUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'opportunity_001',
+    );
+  });
+
+  it('POST /api/growth/tenants/:slug/opportunities should create an opportunity', async () => {
+    await request(httpServer)
+      .post('/api/growth/tenants/saas-platform/opportunities')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        leadId: 'lead_001',
+        threadId: 'thread_001',
+        title: 'Onboarding anual facturacion electronica',
+        stage: 'proposal',
+        amountInCents: 199000,
+        currency: 'USD',
+        notes: 'Cliente con alto interes y decision esta semana.',
+      })
+      .expect(201)
+      .expect({
+        id: 'opportunity_001',
+        tenantId: 'tenant_123',
+        leadId: 'lead_001',
+        threadId: 'thread_001',
+        assigneeUserId: null,
+        title: 'Onboarding anual facturacion electronica',
+        stage: 'proposal',
+        amountInCents: 199000,
+        currency: 'USD',
+        notes: 'Cliente con alto interes y decision esta semana.',
+        closedAt: null,
+        createdAt: '2026-05-15T15:00:00.000Z',
+        updatedAt: '2026-05-15T15:20:00.000Z',
+      });
+
+    expect(createTenantOpportunityUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      leadId: 'lead_001',
+      threadId: 'thread_001',
+      title: 'Onboarding anual facturacion electronica',
+      stage: 'proposal',
+      amountInCents: 199000,
+      currency: 'USD',
+      notes: 'Cliente con alto interes y decision esta semana.',
+    });
+  });
+
+  it('PUT /api/growth/tenants/:slug/opportunities/:opportunityId/stage should move the opportunity stage', async () => {
+    await request(httpServer)
+      .put('/api/growth/tenants/saas-platform/opportunities/opportunity_001/stage')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        stage: 'won',
+      })
+      .expect(200)
+      .expect({
+        id: 'opportunity_001',
+        tenantId: 'tenant_123',
+        leadId: 'lead_001',
+        threadId: 'thread_001',
+        assigneeUserId: null,
+        title: 'Onboarding anual facturacion electronica',
+        stage: 'won',
+        amountInCents: 199000,
+        currency: 'USD',
+        notes: 'Cliente con alto interes y decision esta semana.',
+        closedAt: '2026-05-15T15:45:00.000Z',
+        createdAt: '2026-05-15T15:00:00.000Z',
+        updatedAt: '2026-05-15T15:45:00.000Z',
+      });
+
+    expect(updateTenantOpportunityStageUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      opportunityId: 'opportunity_001',
+      stage: 'won',
+    });
+  });
+
+  it('POST /api/growth/tenants/:slug/opportunities/:opportunityId/assignment should assign one opportunity owner', async () => {
+    await request(httpServer)
+      .post('/api/growth/tenants/saas-platform/opportunities/opportunity_001/assignment')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        assigneeUserId: 'user_456',
+      })
+      .expect(201)
+      .expect({
+        id: 'opportunity_001',
+        tenantId: 'tenant_123',
+        leadId: 'lead_001',
+        threadId: 'thread_001',
+        assigneeUserId: 'user_456',
+        title: 'Onboarding anual facturacion electronica',
+        stage: 'proposal',
+        amountInCents: 199000,
+        currency: 'USD',
+        notes: 'Cliente con alto interes y decision esta semana.',
+        closedAt: null,
+        createdAt: '2026-05-15T15:00:00.000Z',
+        updatedAt: '2026-05-15T15:30:00.000Z',
+      });
+
+    expect(assignTenantOpportunityUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      opportunityId: 'opportunity_001',
+      assigneeUserId: 'user_456',
+    });
+  });
+
+  it('GET /api/growth/tenants/:slug/opportunities should require opportunity read permission', async () => {
+    resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
+      tenantId: 'tenant_123',
+      tenantSlug: 'saas-platform',
+      userId: 'user_456',
+      membershipId: 'membership_456',
+      membershipStatus: MembershipStatus.Active,
+      roleKeys: ['tenant_member'],
+      permissionKeys: [TENANT_PERMISSIONS.READ],
+    });
+
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/opportunities')
+      .set('Authorization', `Bearer ${memberToken}`)
+      .expect(403)
+      .expect({
+        statusCode: 403,
+        message:
+          'Permission "growth.opportunities.read" is required for this tenant resource.',
+        error: 'Forbidden',
+      });
   });
 
   it('GET /api/invoicing/tenants/:slug/taxes should return tenant tax rates', async () => {

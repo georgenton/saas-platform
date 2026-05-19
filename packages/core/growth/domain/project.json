@@ -1,0 +1,7 @@
+{
+  "name": "growth-domain",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/growth/domain/src",
+  "projectType": "library",
+  "tags": ["scope:core", "domain:growth", "type:domain", "layer:domain"]
+}

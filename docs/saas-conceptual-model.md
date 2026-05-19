@@ -159,12 +159,16 @@ Partially present, but still embedded inside `Invoicing`:
 - `Customer`
 - `TaxRate`
 - `Payment`
+- first read-only `Party` directory already exists as a shared facade backed by `Customer`
 
 Current locations:
 
 - `packages/core/invoicing/domain/src/lib/entities/customer.entity.ts`
 - `packages/core/invoicing/domain/src/lib/entities/tax-rate.entity.ts`
 - `packages/core/invoicing/domain/src/lib/entities/payment.entity.ts`
+- `packages/core/parties/domain`
+- `packages/core/parties/application`
+- `apps/api-platform/src/app/modules/parties`
 
 ### Recommendation
 
@@ -175,6 +179,7 @@ Instead:
 - keep them working where they are
 - mark them as future candidates for extraction into shared foundations
 - avoid naming or behavior that makes them impossible to reuse later
+- use small read models like `Party` to prove the extraction path before moving persistence or write workflows
 
 ## Layer 3: Growth & Conversations Platform
 
@@ -320,7 +325,9 @@ than to:
   - `infoTributaria`
   - `infoFactura`
   - `infoNotaCredito`
-  - initial `infoNotaDebito`
+  - `infoNotaDebito`
+  - `infoGuiaRemision`
+  - `infoCompRetencion`
   - payment method nodes
   - additional information fields
 - XML generation aligned to SRI semantics
@@ -328,24 +335,23 @@ than to:
   - factura (`01`)
   - nota de crédito (`04`)
   - nota de débito (`05`)
+  - guía de remisión (`06`)
+  - comprobante de retención (`07`)
 - RIDE generation and formal artifact downloads
 - submission history, readiness checks, presigned XML path
 - support for:
   - factura (`01`)
   - nota de crédito (`04`)
-  - first debit note electronic flow (`05`)
+  - nota de débito (`05`)
+  - guía de remisión (`06`)
+  - comprobante de retención (`07`)
 
 ### Ecuador-specific capabilities still missing or partial
 
-- real XAdES/PKCS#12 signing flow inside the product runtime
-- sustained remote sandbox certification flow without external signing fallback
-- official local XSD bundle and submit enablement for:
-  - guía de remisión (`06`)
-  - comprobante de retención (`07`)
-- full electronic flows for:
-  - retentions
-  - remisión guides
-- richer debit-note operations beyond the first foundation slice
+- remote sandbox onboarding still needs smoother tenant bootstrap ergonomics
+- the internal PKCS#12 signer is already much stronger, but still needs sustained CELCER validation with a sandbox-enabled taxpayer
+- remote sandbox rollout still depends on real issuer-certificate alignment, not just local fixtures
+- richer debit-note and withholding operations can still grow beyond the current electronic baseline
 
 ### Strategic recommendation
 
@@ -662,6 +668,16 @@ Extract reusable business concepts once at least two products need them.
 
 Do not extract too early if it slows product delivery.
 
+### Current practical state
+
+The repository already has the first safe pressure test of this stage:
+
+- a read-only `Party` directory backed by `Invoicing.Customer`
+- no persistence split yet
+- no write workflow migration yet
+
+This is intentional. It gives the platform a reusable business surface without forcing a premature data migration.
+
 ## Stage 4: Growth & Conversations Platform
 
 ### Goal
@@ -671,11 +687,12 @@ Create the transversal commercial engine used by all products.
 ### Recommended slices
 
 1. lead capture
-2. pipeline
-3. WhatsApp conversation inbox
-4. message templates
-5. funnel pages
-6. automations
+2. conversation thread foundation
+3. pipeline
+4. WhatsApp conversation inbox
+5. message templates
+6. funnel pages
+7. automations
 
 ### Important timing note
 
@@ -785,11 +802,32 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
 2. `Electronic Invoicing EC` compliance flow
    - strengthen signature
    - complete remote sandbox behavior
+   - make tenant bootstrap to `xades_pkcs12 + sri_offline_ws` reproducible
+   - make remote submission smoke runs reproducible over real tenant configuration
    - consolidate the full multi-document Ecuador rail (`01`, `04`, `05`, `06`, `07`)
 3. first shared foundation pressure review
+   - `Party` read-only facade over `Customer` already in place
    - decide whether `Customer`, `Payment`, and `TaxRate` should still stay inside `Invoicing`
+   - use the new `Party` surface to measure whether future products need read reuse before write extraction
 4. first `Growth & Conversations` slice
-   - lead capture plus WhatsApp inbox
+   - first lead capture slice already in place
+   - first manual conversation thread and message foundation already in place
+   - first opportunity pipeline foundation already in place
+   - first assignment + ownership foundation for threads and opportunities already in place
+   - first assignment analytics and workload views already in place
+   - first WhatsApp inbox foundation already in place
+   - outbound delivery-state foundation already in place
+   - first message template plus outbound intent foundation already in place
+   - first provider-approved template semantics foundation already in place
+   - first outbound reporting by intent/template already in place
+   - first WhatsApp automation rule plus suggestion foundation already in place
+   - Meta-like webhook verification and intake foundation already in place
+   - provider authenticity and tenant routing foundation already in place
+   - webhook envelope persistence, inspection, replay, and first idempotent ingestion foundation already in place
+   - provider semantics plus durable delivery event persistence already in place
+   - first outbound real/stub provider gateway foundation already in place
+   - richer provider delivery semantics foundation now also in place
+   - next pressure is real automation execution, SLA/workbench behavior, or deeper provider semantics, not inbox zero-to-one
 5. `Ecommerce` first domain slice
    - catalog plus orders
 

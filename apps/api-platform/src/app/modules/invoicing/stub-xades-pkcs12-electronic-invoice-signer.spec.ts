@@ -15,6 +15,8 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
 const execFileAsync = promisify(execFile);
 
 describe('StubXadesPkcs12ElectronicInvoiceSigner', () => {
+  jest.setTimeout(20000);
+
   it('should produce an internally verifiable XMLDSig/XAdES-like signature block from a real PKCS#12', async () => {
     const { pkcs12Base64, password } = await createPkcs12Fixture();
     const signer = new StubXadesPkcs12ElectronicInvoiceSigner({

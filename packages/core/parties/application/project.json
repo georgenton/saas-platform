@@ -1,0 +1,7 @@
+{
+  "name": "parties-application",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/parties/application/src",
+  "projectType": "library",
+  "tags": ["scope:core", "domain:parties", "type:application", "layer:application"]
+}

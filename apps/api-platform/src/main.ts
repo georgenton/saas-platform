@@ -4,7 +4,9 @@ import { AppModule } from './app/app.module';
 import { configureApp } from './app/app.setup';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true,
+  });
   configureApp(app);
   const port = process.env.PORT || 3000;
   const host = process.env.HOST || '127.0.0.1';

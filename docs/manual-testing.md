@@ -1146,6 +1146,755 @@ El script imprime:
 
 Si el perfil fiscal todavía no existe, el smoke no lo inventa; solo reporta el faltante para no pisar datos fiscales sin contexto.
 
+### Bootstrap CLI: pasar de `stub_local + stub_sri` a sandbox remoto interno
+
+Si tu tenant todavía está en configuración local de demo, ahora puedes hacer el salto inicial con un solo comando:
+
+```sh
+pnpm smoke:ec:sandbox-bootstrap -- \
+  --sub "OWNER_USER_ID" \
+  --email "owner@saas-platform.dev" \
+  --tenant-slug "saas-platform-local" \
+  --sync-issuer-tax-id \
+  --require-remote-ready
+```
+
+Este bootstrap hace, en orden:
+- `POST /electronic-signature` con `provider=xades_pkcs12`
+- `POST /electronic-submission` con `provider=sri_offline_ws`
+- inspección del PKCS#12
+- intento de alineación del `issuerProfile.taxId` usando el RUC extraído del certificado
+- revisión final de `electronic-document/readiness`
+
+Defaults importantes:
+- `--signature-provider xades_pkcs12`
+- `--signature-storage-mode secret_ref`
+- `--pkcs12-secret-ref env:EC_PKCS12`
+- `--pkcs12-password-secret-ref env:EC_PKCS12_PASSWORD`
+- `--submission-provider sri_offline_ws`
+- `--submission-environment test`
+- `--submission-mode offline`
+- `--submission-reception-url https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl`
+- `--submission-authorization-url https://celcer.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline?wsdl`
+
+Parámetros útiles adicionales:
+- `--certificate-label "Firma interna PKCS#12 Sandbox"`
+- `--submission-credentials-secret-ref env:EC_SRI_WS_CREDENTIALS`
+- `--submission-timeout-ms 15000`
+- `--no-hydrate-metadata-from-pkcs12` si quieres evitar que el backend rellene metadata desde el keystore
+- `--token TU_JWT` si prefieres reutilizar un token ya generado
+
+Este comando no inventa el perfil fiscal si todavía no existe. Si no encuentra `issuerProfile`, deja el readiness y el diagnóstico listos para que completes primero los datos del emisor.
+
+### Smoke CLI: submit remoto interno de factura (`01`)
+
+Cuando el readiness remoto interno ya esté en verde, puedes hacer una prueba operacional más completa:
+
+```sh
+pnpm smoke:ec:remote-submit -- \
+  --sub "OWNER_USER_ID" \
+  --email "owner@saas-platform.dev" \
+  --tenant-slug "saas-platform-local"
+```
+
+Este smoke hace, en orden:
+- inspección opcional + sincronización del `taxId` del emisor desde el certificado
+- verificación de `electronic-document/readiness`
+- `POST /numbering/invoice`
+- `POST /customers`
+- `POST /taxes`
+- `POST /invoices`
+- `POST /invoices/:invoiceId/items`
+- `POST /invoices/:invoiceId/status` con `issued`
+- `POST /invoices/:invoiceId/electronic-document/submit`
+- `GET /invoices/:invoiceId`
+
+Flags útiles:
+- `--bootstrap-remote-sandbox` para configurar antes `xades_pkcs12 + sri_offline_ws`
+- `--sync-issuer-tax-id` para alinear el `issuerProfile.taxId` con el RUC extraído del certificado
+- `--check-authorization` para disparar además `electronic-document/check-authorization`
+
+## Shared foundation pressure review: `Party` read-only directory
+
+Como primer paso de fundación compartida, el backend ya expone un directorio `Party` montado sobre los `Customer` actuales de `Invoicing`. La idea no es mover persistencia todavía, sino ofrecer una superficie reusable para próximos productos.
+
+Endpoints:
+
+```http
+GET /api/parties/tenants/:slug/parties
+GET /api/parties/tenants/:slug/parties/:partyId
+```
+
+Comportamiento actual:
+- exige acceso al producto `invoicing`
+- exige permiso `invoicing.customers.read`
+- devuelve parties con `roles=["customer"]`
+- `sourceContext` actual: `invoicing_customer`
+
+Smoke rápido con `curl`:
+
+```sh
+curl -s \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  http://127.0.0.1:3000/api/parties/tenants/saas-platform-local/parties
+```
+
+Ejemplo esperado:
+
+```json
+[
+  {
+    "id": "customer_acme",
+    "tenantId": "tenant_123",
+    "displayName": "Acme Corp",
+    "email": "billing@acme.dev",
+    "taxId": "1790012345001",
+    "identificationType": "04",
+    "identification": "1790012345001",
+    "billingAddress": "Av. Amazonas N34-451 y Av. Atahualpa",
+    "roles": ["customer"],
+    "kind": "organization",
+    "sourceContext": "invoicing_customer"
+  }
+]
+```
+
+Este slice sirve como prueba de arquitectura:
+- reutiliza datos existentes sin mover tablas
+- nos deja validar si `Ecommerce`, `Growth` u otros dominios realmente necesitan leer `Party`
+- posterga con seguridad la decisión difícil de extraer escritura y persistencia
+
+## Growth slice: tenant lead capture
+
+El primer slice de `Growth & Conversations` ya vive en backend como captura de leads tenant-aware, sin abrir todavía inbox de WhatsApp.
+
+Endpoints:
+
+```http
+GET /api/growth/tenants/:slug/leads
+GET /api/growth/tenants/:slug/leads/:leadId
+POST /api/growth/tenants/:slug/leads
+```
+
+Permisos:
+- `growth.leads.read`
+- `growth.leads.manage`
+
+Ejemplo de creación:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/leads \
+  -d '{
+    "fullName": "Maria Perez",
+    "email": "maria@example.com",
+    "phoneE164": "+593999111222",
+    "whatsappE164": "+593999111222",
+    "source": "landing_page",
+    "status": "captured",
+    "notes": "Quiere demo del modulo de facturacion."
+  }'
+```
+
+Notas de alcance:
+- este slice ya tiene persistencia propia (`Lead`)
+- todavía no crea `Party` automáticamente
+- todavía no existe inbox de WhatsApp
+- ahora sí existe una fundación manual mínima de conversaciones ligada opcionalmente a `Lead`
+
+## Growth slice: conversation thread foundation
+
+Este segundo corte de `Growth & Conversations` abre un primer carril manual de threads y mensajes dentro del tenant. Todavía no hay inbox omnicanal ni integración con WhatsApp, pero ya existe una estructura útil para empezar a conectar `Lead` con seguimiento comercial.
+
+Endpoints:
+
+```http
+GET /api/growth/tenants/:slug/conversations
+GET /api/growth/tenants/:slug/conversations/:threadId
+POST /api/growth/tenants/:slug/conversations
+GET /api/growth/tenants/:slug/conversations/:threadId/messages
+POST /api/growth/tenants/:slug/conversations/:threadId/messages
+```
+
+Permisos:
+- `growth.conversations.read`
+- `growth.conversations.manage`
+
+Ejemplo de creación de thread:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations \
+  -d '{
+    "leadId": "LEAD_ID_OPCIONAL",
+    "subject": "Seguimiento demo facturacion electronica",
+    "channel": "manual",
+    "status": "open"
+  }'
+```
+
+Ejemplo de creación de mensaje:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/THREAD_ID/messages \
+  -d '{
+    "direction": "outbound",
+    "body": "Hola, te comparto la propuesta de onboarding para el modulo.",
+    "externalMessageId": null
+  }'
+```
+
+Notas de alcance:
+- este slice ya tiene persistencia propia (`ConversationThread`, `ConversationMessage`)
+- el canal inicial es una fundación manual, no un inbox conectado
+- el siguiente paso natural en `Growth` es abrir pipeline o integrar un inbox real sobre esta base
+
+## Growth slice: pipeline foundation
+
+Este tercer corte de `Growth & Conversations` abre un pipeline comercial mínimo con `Opportunity`, enlazable opcionalmente a `Lead` y `ConversationThread`. Todavía no hay automatizaciones ni vista kanban, pero ya existe una base operable para seguimiento comercial por etapa.
+
+Endpoints:
+
+```http
+GET /api/growth/tenants/:slug/opportunities
+GET /api/growth/tenants/:slug/opportunities/:opportunityId
+POST /api/growth/tenants/:slug/opportunities
+PUT /api/growth/tenants/:slug/opportunities/:opportunityId/stage
+```
+
+Permisos:
+- `growth.opportunities.read`
+- `growth.opportunities.manage`
+
+Ejemplo de creación:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/opportunities \
+  -d '{
+    "leadId": "LEAD_ID_OPCIONAL",
+    "threadId": "THREAD_ID_OPCIONAL",
+    "title": "Onboarding anual facturacion electronica",
+    "stage": "proposal",
+    "amountInCents": 199000,
+    "currency": "USD",
+    "notes": "Cliente con alto interes y decision esta semana."
+  }'
+```
+
+Ejemplo de cambio de etapa:
+
+```sh
+curl -s \
+  -X PUT \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/opportunities/OPPORTUNITY_ID/stage \
+  -d '{
+    "stage": "won"
+  }'
+```
+
+Notas de alcance:
+- este slice ya tiene persistencia propia (`Opportunity`)
+- `Opportunity` ya soporta `assigneeUserId` como ownership explícito dentro del tenant
+- el pipeline todavía no tiene vista kanban ni automatizaciones
+- el siguiente paso natural en `Growth` es sumar inbox real o enriquecer pipeline con activities, analytics o conversiones
+
+Ejemplo de assignment:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/opportunities/OPPORTUNITY_ID/assignment \
+  -d '{
+    "assigneeUserId": "USER_ID_DEL_TENANT"
+  }'
+```
+
+## Growth slice: WhatsApp inbox foundation
+
+Este cuarto corte de `Growth & Conversations` ya abre una fundación de inbox para WhatsApp sobre los mismos `ConversationThread` y `ConversationMessage`. Todavía no existe integración real con proveedor ni webhooks definitivos, pero ya podemos ingestar mensajes inbound, agruparlos por `externalConversationId` y listarlos como inbox.
+
+Endpoints:
+
+```http
+GET /api/growth/tenants/:slug/conversations/whatsapp-inbox
+POST /api/growth/tenants/:slug/conversations/whatsapp-inbox/messages
+```
+
+Permisos:
+- `growth.conversations.read`
+- `growth.conversations.manage`
+
+Ejemplo de ingesta inbound:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/whatsapp-inbox/messages \
+  -d '{
+    "externalConversationId": "wa_conv_001",
+    "participantHandle": "+593999111222",
+    "participantDisplayName": "Maria Perez",
+    "leadId": "LEAD_ID_OPCIONAL",
+    "body": "Hola, quiero retomar la propuesta.",
+    "externalMessageId": "wamid-001",
+    "occurredAt": "2026-05-16T14:00:00.000Z"
+  }'
+```
+
+Notas de alcance:
+- este slice reutiliza `ConversationThread` y `ConversationMessage`
+- `ConversationThread` ya soporta `assigneeUserId` como ownership explícito dentro del tenant
+- el inbox ya puede registrar outbound y eventos de entrega internos
+- ahora también puede usar un gateway outbound real de Meta Cloud API cuando el entorno tenga `GROWTH_WHATSAPP_OUTBOUND_PROVIDER=meta_cloud_api`, `GROWTH_WHATSAPP_META_ACCESS_TOKEN` y `GROWTH_WHATSAPP_META_OUTBOUND_PHONE_NUMBER_ID`
+- si esos envs no existen, el mismo endpoint cae de forma segura al carril `meta_cloud_api_stub`
+- ahora también soporta `WhatsApp message templates` tenant-aware y `outboundIntentKey` para dar semántica comercial explícita al outbound
+- cuando un template ya tiene `providerTemplateName` y `providerApprovalStatus=approved`, el gateway real usa payload `type=template` contra Meta Cloud API
+- ahora también existe una vista derivada de reporting para medir outbound por `outboundIntentKey` y por template
+- ahora también existe una primera fundación de automatizaciones con reglas persistidas y sugerencias por thread
+- los delivery events ahora guardan semántica enriquecida del provider como categorías y error code cuando exista
+- el siguiente paso natural ya no es foundation básica, sino ejecución automática más profunda o semántica de proveedor todavía más fina
+
+Templates disponibles:
+
+```http
+GET /api/growth/tenants/:slug/conversations/whatsapp-templates
+GET /api/growth/tenants/:slug/conversations/whatsapp-templates/:templateId
+POST /api/growth/tenants/:slug/conversations/whatsapp-templates
+```
+
+Automatizaciones disponibles:
+
+```http
+GET /api/growth/tenants/:slug/conversations/whatsapp-automations
+GET /api/growth/tenants/:slug/conversations/whatsapp-automations/:automationId
+POST /api/growth/tenants/:slug/conversations/whatsapp-automations
+GET /api/growth/tenants/:slug/conversations/:threadId/whatsapp-automation-suggestions
+```
+
+Ejemplo de creación:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/whatsapp-templates \
+  -d '{
+    "key": "follow_up_demo",
+    "name": "Follow Up Demo",
+    "languageCode": "es_EC",
+    "category": "utility",
+    "bodyTemplate": "Hola {{firstName}}, retomamos la demo de {{product}}.",
+    "intentKey": "follow_up",
+    "providerTemplateName": "follow_up_demo_meta",
+    "providerApprovalStatus": "approved"
+  }'
+```
+
+Estados de aprobación soportados:
+- `draft`
+- `pending_review`
+- `approved`
+- `rejected`
+
+Semántica:
+- `approved` habilita el carril `template` cuando el provider real Meta está activo
+- cualquier otro estado conserva el template como modelo interno, pero el envío sigue pudiendo caer a `text`
+
+Ejemplo de outbound:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/whatsapp-inbox/THREAD_ID/outbound-messages \
+  -d '{
+    "body": "Perfecto, te escribo en unos minutos.",
+    "externalMessageId": "wamid-002",
+    "occurredAt": "2026-05-16T14:05:00.000Z"
+  }'
+```
+
+Ejemplo de outbound usando template + intent:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/whatsapp-inbox/THREAD_ID/outbound-messages \
+  -d '{
+    "templateId": "TEMPLATE_ID",
+    "templateVariables": {
+      "firstName": "Maria",
+      "product": "facturacion"
+    },
+    "outboundIntentKey": "follow_up",
+    "externalMessageId": "wamid-002",
+    "occurredAt": "2026-05-16T14:05:00.000Z"
+  }'
+```
+
+Ejemplo de evento de entrega:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/whatsapp-inbox/delivery-events \
+  -d '{
+    "externalMessageId": "wamid-002",
+    "deliveryStatus": "delivered",
+    "occurredAt": "2026-05-16T14:06:00.000Z"
+  }'
+```
+
+Inspección de delivery events persistidos:
+
+```http
+GET /api/growth/tenants/:slug/conversations/:threadId/messages/:messageId/delivery-events
+```
+
+Ejemplo:
+
+```sh
+curl -s \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/THREAD_ID/messages/MESSAGE_ID/delivery-events
+```
+
+Campos enriquecidos que ahora puedes esperar en cada delivery event:
+- `providerStatusDetail`
+- `providerConversationCategory`
+- `providerPricingCategory`
+- `providerErrorCode`
+
+Ejemplo de assignment de thread:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/THREAD_ID/assignment \
+  -d '{
+    "assigneeUserId": "USER_ID_DEL_TENANT"
+  }'
+```
+
+Vista rápida de workload por owner:
+
+```http
+GET /api/growth/tenants/:slug/assignment-workload
+GET /api/growth/tenants/:slug/conversations?assigneeUserId=:userId
+GET /api/growth/tenants/:slug/conversations/whatsapp-inbox?assigneeUserId=:userId
+GET /api/growth/tenants/:slug/opportunities?assigneeUserId=:userId
+```
+
+Ejemplo:
+
+```sh
+curl -s \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/assignment-workload
+```
+
+Qué devuelve esta vista:
+- threads abiertos totales
+- threads abiertos sin owner
+- oportunidades abiertas totales
+- oportunidades abiertas sin owner
+- monto abierto agregado
+- carga por usuario con split entre `whatsapp`, `manual`, `open`, `won` y `lost`
+
+Esto sirve para responder rápidamente:
+- quién tiene carga operativa hoy
+- cuánto está sin asignar
+- cuánto pipeline abierto está concentrado en cada owner
+- y filtrar inbox u oportunidades por `assigneeUserId` sin montar todavía una UI de workload completa
+
+Vista rápida de reporting outbound WhatsApp:
+
+```http
+GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/outbound-summary
+```
+
+Ejemplo:
+
+```sh
+curl -s \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/whatsapp-reporting/outbound-summary
+```
+
+Qué devuelve esta vista:
+- totales de outbound WhatsApp
+- split entre mensajes `freeform` y mensajes basados en template
+- conteo de templates ya `approved`
+- estado actual del funnel de entrega (`pending`, `sent`, `delivered`, `read`, `failed`)
+- agregado por `outboundIntentKey`
+- agregado por template, incluyendo `providerTemplateName` y `providerApprovalStatus`
+
+Esto sirve para responder rápidamente:
+- qué intención comercial estamos ejecutando más
+- qué templates se están usando de verdad
+- cuántos mensajes siguen libres vs semánticos
+- y qué parte del outbound ya está apoyándose en templates alineados con proveedor
+
+Ejemplo de creación de automation rule:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/whatsapp-automations \
+  -d '{
+    "key": "follow_up_unassigned",
+    "name": "Follow Up Unassigned",
+    "triggerEvent": "inbound_message",
+    "matchOutboundIntentKey": "follow_up",
+    "matchAssigneeMode": "unassigned",
+    "templateId": "TEMPLATE_ID",
+    "actionOutboundIntentKey": "follow_up"
+  }'
+```
+
+Semántica de esta fundación:
+- no dispara mensajes automáticamente
+- sí evalúa si un thread WhatsApp ya cumple una regla
+- y devuelve sugerencias accionables basadas en ownership, último intent y estado del thread
+
+Ejemplo de sugerencias:
+
+```sh
+curl -s \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/THREAD_ID/whatsapp-automation-suggestions
+```
+
+## Growth slice: Meta-like webhook foundation
+
+Este siguiente corte abre una frontera pública de webhook para WhatsApp con semántica inspirada en Meta Cloud API y ya con una primera capa operativa de autenticidad/routing. La idea es que el backend ya pueda:
+- verificar un webhook
+- recibir payloads inbound
+- procesar delivery statuses
+- enrutar todo eso al inbox existente
+- validar firma `X-Hub-Signature-256` cuando usamos la ruta provider-facing
+- resolver tenant por metadata del proveedor cuando no queremos depender del `slug` en la URL
+- persistir el envelope recibido para trazabilidad e idempotencia
+- ignorar reintentos del mismo envelope sin volver a disparar side effects
+
+Endpoints públicos:
+
+```http
+GET /api/growth/webhooks/whatsapp/meta
+POST /api/growth/webhooks/whatsapp/meta
+GET /api/growth/webhooks/whatsapp/meta/tenants/:slug
+POST /api/growth/webhooks/whatsapp/meta/tenants/:slug
+```
+
+Verificación:
+- requiere `GROWTH_WHATSAPP_META_VERIFY_TOKEN` en el entorno del backend
+- compara el `hub.verify_token` recibido con ese valor
+- la ruta `POST /meta` además requiere `GROWTH_WHATSAPP_META_APP_SECRET`
+- el routing provider-facing puede usar:
+  - `GROWTH_WHATSAPP_META_PHONE_NUMBER_ID_TENANT_MAP`
+  - `GROWTH_WHATSAPP_META_BUSINESS_ACCOUNT_ID_TENANT_MAP`
+
+Ejemplo de verificación:
+
+```sh
+curl -i \
+  "http://127.0.0.1:3000/api/growth/webhooks/whatsapp/meta?hub.mode=subscribe&hub.verify_token=TU_VERIFY_TOKEN&hub.challenge=challenge-xyz"
+```
+
+Ejemplo de mapping por `phone_number_id`:
+
+```sh
+export GROWTH_WHATSAPP_META_PHONE_NUMBER_ID_TENANT_MAP='{"1234567890":"saas-platform-local"}'
+```
+
+Ejemplo de payload `Meta-like` por la ruta provider-facing:
+
+```sh
+RAW_PAYLOAD='{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "waba-001",
+      "changes": [
+        {
+          "field": "messages",
+          "value": {
+            "metadata": {
+              "phone_number_id": "1234567890",
+              "display_phone_number": "+593999111222"
+            },
+            "contacts": [
+              {
+                "wa_id": "+593999111222",
+                "profile": {
+                  "name": "Maria Perez"
+                }
+              }
+            ],
+            "messages": [
+              {
+                "id": "wamid-001",
+                "from": "+593999111222",
+                "timestamp": "1715868000",
+                "type": "text",
+                "text": {
+                  "body": "Hola, quiero retomar la propuesta."
+                }
+              }
+            ],
+            "statuses": [
+              {
+                "id": "wamid-002",
+                "status": "delivered",
+                "timestamp": "1715868060"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}'
+
+SIGNATURE=$(printf '%s' "$RAW_PAYLOAD" | openssl dgst -sha256 -hmac "$GROWTH_WHATSAPP_META_APP_SECRET" -hex | sed 's/^.* //')
+
+curl -s \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
+  http://127.0.0.1:3000/api/growth/webhooks/whatsapp/meta \
+  -d "$RAW_PAYLOAD"
+```
+
+Notas de alcance:
+- esta fundación ya no requiere auth bearer en esas rutas públicas
+- la ruta con `:slug` sigue siendo útil para pruebas locales y slices tempranos
+- la ruta provider-facing ya valida firma HMAC y puede resolver tenant por `phone_number_id` o `business_account_id`
+- el webhook ya persiste envelope con `eventKey`, `payloadHash`, metadata externa y estado de procesamiento
+- un reintento del mismo envelope responde como `duplicate=true` y no vuelve a ejecutar la ingestión interna
+- ahora también existe superficie autenticada para inspección y replay operativo del envelope persistido
+- los `statuses` del provider ya pueden aterrizar como `ConversationDeliveryEvent` durables, con `eventKey`, `providerEventId`, `payloadJson` y no-op seguro ante duplicados o eventos atrasados
+- el siguiente paso natural es profundizar assignment, analytics o integraciones de proveedor adicionales, ya no la base operativa del webhook
+
+Inspección autenticada:
+
+```http
+GET /api/growth/tenants/:slug/conversations/whatsapp-inbox/webhook-envelopes
+GET /api/growth/tenants/:slug/conversations/whatsapp-inbox/webhook-envelopes/:envelopeId
+POST /api/growth/tenants/:slug/conversations/whatsapp-inbox/webhook-envelopes/:envelopeId/replay
+```
+
+Ejemplo de listado:
+
+```sh
+curl -s \
+  -H "Authorization: Bearer $TOKEN" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/whatsapp-inbox/webhook-envelopes
+```
+
+Ejemplo de replay:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/whatsapp-inbox/webhook-envelopes/WEBHOOK_ENVELOPE_ID/replay
+```
+
+Qué aporta este corte:
+- inspección operativa del payload recibido y su metadata de provider
+- `providerEventId` best-effort para lectura humana
+- replay manual controlado sobre envelopes fallidos o sospechosos
+- idempotencia doble:
+  - por envelope (`eventKey`)
+  - por mensaje/estado (`externalMessageId` y jerarquía de delivery status)
+- persistencia durable de delivery events por mensaje para trazabilidad de estado
+- un primer carril outbound real/stub con semántica de proveedor más honesta
+
+## Smoke remoto Ecuador: remote submit
+
+Ejemplo completo:
+
+```sh
+pnpm smoke:ec:remote-submit -- \
+  --sub "OWNER_USER_ID" \
+  --email "owner@saas-platform.dev" \
+  --tenant-slug "saas-platform-local" \
+  --bootstrap-remote-sandbox \
+  --sync-issuer-tax-id \
+  --check-authorization
+```
+
+Este smoke no crea el `issuerProfile` desde cero. Si el tenant todavía no tiene perfil fiscal o sigue bloqueado por readiness, el script corta temprano y deja el mensaje del bloqueo explícito.
+
+### Preparar `EC_PKCS12` y `EC_PKCS12_PASSWORD` desde un certificado real
+
+Cuando por fin consigas un `.p12` o `.pfx` funcional, ya no hace falta convertirlo a mano. Ahora existe:
+
+```sh
+pnpm prepare:ec:pkcs12-env -- \
+  --file /ruta/certificado.p12 \
+  --password "TU_PASSWORD" \
+  --print-next-steps
+```
+
+Qué hace:
+- abre el PKCS#12 con OpenSSL
+- extrae huella, `subject`, `issuer` y vigencia
+- intenta una prueba criptográfica simple con la llave privada
+- genera el bloque `.env` listo para `EC_PKCS12` y `EC_PKCS12_PASSWORD`
+
+Si quieres guardar la salida en un archivo auxiliar en vez de copiarla desde consola:
+
+```sh
+pnpm prepare:ec:pkcs12-env -- \
+  --file /ruta/certificado.p12 \
+  --password "TU_PASSWORD" \
+  --out-file .env.pkcs12.local \
+  --print-next-steps
+```
+
+La salida incluye por defecto:
+- `EC_PKCS12`
+- `EC_PKCS12_PASSWORD`
+- `EC_PKCS12_SECRET_REF="env:EC_PKCS12"`
+- `EC_PKCS12_PASSWORD_SECRET_REF="env:EC_PKCS12_PASSWORD"`
+
+Importante:
+- no subas ese bloque al repo
+- úsalo solo en tu entorno local o en un secreto seguro
+- si la herramienta no logra abrir el archivo o verificar la llave, todavía no es el certificado correcto para continuar con sandbox remoto
+
 ### Importante
 
 El carril remoto interno solo debe usarse cuando `isReadyForRemoteSandboxSubmission = true`. Si ese semáforo todavía no está en verde, el camino correcto para sandbox real sigue siendo:

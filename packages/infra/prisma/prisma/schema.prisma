@@ -36,6 +36,14 @@ model Tenant {
   subscriptions Subscription[]
   entitlements Entitlement[]
   featureFlags FeatureFlag[]
+  leads        Lead[]
+  opportunities Opportunity[]
+  conversationThreads ConversationThread[]
+  conversationMessages ConversationMessage[]
+  conversationDeliveryEvents ConversationDeliveryEvent[]
+  whatsappMessageTemplates WhatsappMessageTemplate[]
+  whatsappAutomationRules WhatsappAutomationRule[]
+  webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
   invoices     Invoice[]
@@ -48,6 +56,206 @@ model Tenant {
   invoiceNumberingSettings InvoiceNumberingSettings[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+}
+
+model Lead {
+  id           String   @id
+  tenantId      String
+  fullName     String
+  email        String?
+  phoneE164    String?
+  whatsappE164 String?
+  source       String
+  status       String
+  notes        String?
+  opportunities Opportunity[]
+  conversationThreads ConversationThread[]
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status, createdAt])
+}
+
+model ConversationThread {
+  id                   String   @id
+  tenantId             String
+  leadId               String?
+  assigneeUserId       String?
+  subject              String
+  channel              String
+  externalConversationId String?
+  participantDisplayName String?
+  participantHandle    String?
+  status               String
+  latestMessagePreview String?
+  messageCount         Int      @default(0)
+  openedAt             DateTime
+  closedAt             DateTime?
+  lastActivityAt       DateTime
+  tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lead                 Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  opportunities        Opportunity[]
+  messages             ConversationMessage[]
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, lastActivityAt])
+  @@index([tenantId, leadId])
+  @@index([tenantId, channel, lastActivityAt])
+}
+
+model ConversationMessage {
+  id                String   @id
+  tenantId          String
+  threadId          String
+  direction         String
+  body              String
+  templateId        String?
+  outboundIntentKey String?
+  provider          String?
+  deliveryStatus    String?
+  externalMessageId String?
+  failureReason     String?
+  deliveredAt       DateTime?
+  readAt            DateTime?
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  thread            ConversationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  template          WhatsappMessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  deliveryEvents    ConversationDeliveryEvent[]
+  createdAt         DateTime @default(now())
+
+  @@index([tenantId, threadId, createdAt])
+  @@index([tenantId, externalMessageId])
+}
+
+model WhatsappMessageTemplate {
+  id           String   @id
+  tenantId     String
+  key          String
+  name         String
+  languageCode String
+  category     String
+  bodyTemplate String
+  intentKey    String?
+  providerTemplateName String?
+  providerApprovalStatus String
+  status       String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages     ConversationMessage[]
+  automationRules WhatsappAutomationRule[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([tenantId, key])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, intentKey])
+}
+
+model WhatsappAutomationRule {
+  id                    String   @id
+  tenantId              String
+  key                   String
+  name                  String
+  triggerEvent          String
+  matchOutboundIntentKey String?
+  matchDeliveryStatus   String?
+  matchAssigneeMode     String
+  templateId            String?
+  actionType            String
+  actionOutboundIntentKey String?
+  status                String
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  template              WhatsappMessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([tenantId, key])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status, triggerEvent])
+}
+
+model ConversationDeliveryEvent {
+  id                String   @id
+  tenantId          String
+  messageId         String?
+  provider          String
+  eventKey          String
+  providerEventId   String?
+  externalMessageId String
+  deliveryStatus    String
+  failureReason     String?
+  providerStatusDetail String?
+  providerConversationCategory String?
+  providerPricingCategory String?
+  providerErrorCode String?
+  payloadJson       String?
+  occurredAt        DateTime
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  message           ConversationMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  createdAt         DateTime @default(now())
+
+  @@unique([tenantId, provider, eventKey])
+  @@index([tenantId, providerEventId])
+  @@index([tenantId, externalMessageId, occurredAt])
+  @@index([tenantId, messageId, occurredAt])
+}
+
+model WebhookEventEnvelope {
+  id                    String   @id
+  tenantId              String
+  provider              String
+  channel               String
+  eventKey              String
+  providerEventId       String?
+  payloadHash           String
+  signatureHeader       String?
+  objectType            String?
+  externalAccountId     String?
+  externalPhoneNumberId String?
+  status                String
+  replayCount           Int      @default(0)
+  lastReplayedAt        DateTime?
+  processedInboundMessages Int   @default(0)
+  processedDeliveryEvents Int    @default(0)
+  failureReason         String?
+  payloadJson           String
+  receivedAt            DateTime
+  processedAt           DateTime?
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([tenantId, provider, eventKey])
+  @@index([tenantId, providerEventId])
+  @@index([tenantId, channel, receivedAt])
+  @@index([tenantId, status, receivedAt])
+}
+
+model Opportunity {
+  id            String   @id
+  tenantId      String
+  leadId        String?
+  threadId      String?
+  assigneeUserId String?
+  title         String
+  stage         String
+  amountInCents Int?
+  currency      String?
+  notes         String?
+  closedAt      DateTime?
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lead          Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  thread        ConversationThread? @relation(fields: [threadId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, stage, updatedAt])
+  @@index([tenantId, leadId])
+  @@index([tenantId, threadId])
 }
 
 model Customer {

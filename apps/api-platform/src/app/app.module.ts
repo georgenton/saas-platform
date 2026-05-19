@@ -6,8 +6,10 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { CommercialModule } from './modules/commercial/commercial.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
+import { GrowthModule } from './modules/growth/growth.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { InvoicingModule } from './modules/invoicing/invoicing.module';
+import { PartiesModule } from './modules/parties/parties.module';
 import { TenancyModule } from './modules/tenancy/tenancy.module';
 
 @Module({
@@ -17,8 +19,10 @@ import { TenancyModule } from './modules/tenancy/tenancy.module';
     CatalogModule,
     CommercialModule,
     FeatureFlagsModule,
+    GrowthModule,
     IdentityModule,
     InvoicingModule,
+    PartiesModule,
     TenancyModule,
   ],
   controllers: [AppController],

@@ -1,134 +1,15 @@
-import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-function loadDotEnv() {
-  const envPath = resolve(process.cwd(), '.env');
-
-  if (!existsSync(envPath)) {
-    return;
-  }
-
-  const content = readFileSync(envPath, 'utf8');
-
-  for (const line of content.split(/\r?\n/)) {
-    const trimmed = line.trim();
-
-    if (!trimmed || trimmed.startsWith('#')) {
-      continue;
-    }
-
-    const separatorIndex = trimmed.indexOf('=');
-
-    if (separatorIndex === -1) {
-      continue;
-    }
-
-    const key = trimmed.slice(0, separatorIndex).trim();
-    const rawValue = trimmed.slice(separatorIndex + 1).trim();
-    const value = rawValue.replace(/^['"]|['"]$/g, '');
-
-    if (!process.env[key]) {
-      process.env[key] = value;
-    }
-  }
-}
-
-function getArg(name, fallback) {
-  const flag = `--${name}`;
-  const index = process.argv.indexOf(flag);
-
-  if (index === -1 || !process.argv[index + 1]) {
-    return fallback;
-  }
-
-  return process.argv[index + 1];
-}
-
-function hasFlag(name) {
-  return process.argv.includes(`--${name}`);
-}
-
-function toBoolean(value) {
-  return value === 'true' || value === '1' || value === 'yes';
-}
-
-function printSection(title) {
-  process.stdout.write(`\n${title}\n`);
-}
-
-function printLine(label, value) {
-  process.stdout.write(`- ${label}: ${value ?? 'n/a'}\n`);
-}
-
-function normalizeBaseUrl(value) {
-  return value.replace(/\/+$/, '');
-}
-
-function resolveToken() {
-  const explicitToken = getArg('token', process.env.SMOKE_OWNER_TOKEN);
-
-  if (explicitToken) {
-    return explicitToken;
-  }
-
-  const sub = getArg('sub', process.env.SMOKE_OWNER_SUB);
-  const email = getArg('email', process.env.SMOKE_OWNER_EMAIL);
-
-  if (!sub || !email) {
-    throw new Error(
-      'Missing authentication context. Provide --token or both --sub and --email.',
-    );
-  }
-
-  return execFileSync(
-    'node',
-    [
-      'tools/auth/generate-local-jwt.mjs',
-      '--sub',
-      sub,
-      '--email',
-      email,
-    ],
-    {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-    },
-  ).trim();
-}
-
-async function apiRequest({ baseUrl, path, token, method = 'GET', body }) {
-  const response = await fetch(`${baseUrl}${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
-
-  const text = await response.text();
-  let data = null;
-
-  if (text) {
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = text;
-    }
-  }
-
-  if (!response.ok) {
-    const error =
-      typeof data === 'object' && data && 'message' in data
-        ? data.message
-        : text || response.statusText;
-
-    throw new Error(`${method} ${path} failed (${response.status}): ${error}`);
-  }
-
-  return data;
-}
+import {
+  apiRequest,
+  bootstrapRemoteSandboxConfiguration,
+  getArg,
+  hasFlag,
+  loadDotEnv,
+  normalizeBaseUrl,
+  printLine,
+  printSection,
+  resolveToken,
+  toBoolean,
+} from './ec-sandbox-smoke-lib.mjs';
 
 async function main() {
   loadDotEnv();
@@ -137,14 +18,26 @@ async function main() {
     getArg('base-url', 'http://127.0.0.1:3000/api'),
   );
   const tenantSlug = getArg('tenant-slug', 'saas-platform-local');
-  const syncIssuerTaxId =
+  const bootstrapRemoteSandbox =
+    hasFlag('bootstrap-remote-sandbox') ||
+    toBoolean(getArg('bootstrap-remote-sandbox', 'false'));
+  const syncIssuerTaxIdExplicit =
     hasFlag('sync-issuer-tax-id') ||
     toBoolean(getArg('sync-issuer-tax-id', 'false'));
+  const syncIssuerTaxId = syncIssuerTaxIdExplicit || bootstrapRemoteSandbox;
   const requireRemoteReady =
     hasFlag('require-remote-ready') ||
     toBoolean(getArg('require-remote-ready', 'false'));
 
   const token = resolveToken();
+
+  if (bootstrapRemoteSandbox) {
+    await bootstrapRemoteSandboxConfiguration({
+      baseUrl,
+      tenantSlug,
+      token,
+    });
+  }
 
   const inspectionResponse = await apiRequest({
     baseUrl,

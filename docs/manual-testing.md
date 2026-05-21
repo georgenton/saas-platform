@@ -1882,8 +1882,18 @@ Consumer web inicial para este snapshot operativo:
         - `resolve`
         - `reopen`
         - actualizar estado explícito de `follow_up` entre `pending_team`, `scheduled` y `waiting_customer`
+      - cada caso ahora también expone un `routingPolicyKey` calculado, por ejemplo:
+        - `growth_ops`
+        - `owner_assignment`
+        - `follow_up_team`
+        - `follow_up_waiting_customer`
+      - la cola ya no se muestra plana:
+        - fleet y tenant actual ahora pueden filtrarse por `routingPolicyKey`
+        - ambos consumers agrupan los casos visibles por lane para que `growth_ops`, `owner_assignment` y los dos carriles de `follow_up` se lean como colas operativas distintas
 - el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
   - `GET /api/growth/tenants/:slug/conversations/operational-cases`
+    - acepta `status`
+    - acepta `routingPolicyKey`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/take`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/resolve`

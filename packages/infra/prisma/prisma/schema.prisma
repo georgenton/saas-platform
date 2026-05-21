@@ -295,6 +295,7 @@ model GrowthOperationalCase {
   summary           String
   nextAction        String
   followUpState     String?
+  routingPolicyKey  String
   threadId          String?
   alertKey          String?
   dueAt             DateTime?
@@ -311,6 +312,7 @@ model GrowthOperationalCase {
 
   @@unique([tenantId, sourceKey])
   @@index([tenantId, status, priority, updatedAt])
+  @@index([tenantId, routingPolicyKey, status, updatedAt])
   @@index([tenantId, threadId, updatedAt])
   @@index([tenantId, dueAt])
 }

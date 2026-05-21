@@ -1165,6 +1165,7 @@ describe('API', () => {
     nextAction:
       'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
     followUpState: null,
+    routingPolicyKey: 'growth_ops' as const,
     threadId: null,
     alertKey: 'retry_queue_ready',
     dueAt: new Date('2026-05-20T11:00:00.000Z'),
@@ -2558,6 +2559,7 @@ describe('API', () => {
         status: 'in_progress',
         threadId: 'thread_001',
         followUpState: 'waiting_customer',
+        routingPolicyKey: 'follow_up_waiting_customer',
         nextAction:
           'Esperar respuesta del cliente antes del siguiente outreach.',
         dueAt: null,
@@ -4573,7 +4575,7 @@ describe('API', () => {
   it('GET /api/growth/tenants/:slug/conversations/operational-cases should return persisted operational cases', async () => {
     await request(httpServer)
       .get(
-        '/api/growth/tenants/saas-platform/conversations/operational-cases?status=open',
+        '/api/growth/tenants/saas-platform/conversations/operational-cases?status=open&routingPolicyKey=growth_ops',
       )
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
@@ -4590,6 +4592,7 @@ describe('API', () => {
           nextAction:
             'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
           followUpState: null,
+          routingPolicyKey: 'growth_ops',
           threadId: null,
           alertKey: 'retry_queue_ready',
           dueAt: '2026-05-20T11:00:00.000Z',
@@ -4608,6 +4611,7 @@ describe('API', () => {
     expect(listTenantGrowthOperationalCasesUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'open',
+      'growth_ops',
     );
   });
 
@@ -4638,6 +4642,7 @@ describe('API', () => {
         nextAction:
           'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
         followUpState: null,
+        routingPolicyKey: 'growth_ops',
         threadId: null,
         alertKey: 'retry_queue_ready',
         dueAt: '2026-05-20T11:00:00.000Z',
@@ -4688,6 +4693,7 @@ describe('API', () => {
         nextAction:
           'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
         followUpState: null,
+        routingPolicyKey: 'growth_ops',
         threadId: null,
         alertKey: 'retry_queue_ready',
         dueAt: '2026-05-20T11:00:00.000Z',
@@ -4728,6 +4734,7 @@ describe('API', () => {
         nextAction:
           'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
         followUpState: null,
+        routingPolicyKey: 'growth_ops',
         threadId: null,
         alertKey: 'retry_queue_ready',
         dueAt: '2026-05-20T11:00:00.000Z',
@@ -4770,6 +4777,7 @@ describe('API', () => {
         nextAction:
           'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
         followUpState: null,
+        routingPolicyKey: 'growth_ops',
         threadId: null,
         alertKey: 'retry_queue_ready',
         dueAt: '2026-05-20T11:00:00.000Z',
@@ -4815,6 +4823,7 @@ describe('API', () => {
         nextAction:
           'Esperar respuesta del cliente antes del siguiente outreach.',
         followUpState: 'waiting_customer',
+        routingPolicyKey: 'follow_up_waiting_customer',
         threadId: 'thread_001',
         alertKey: 'retry_queue_ready',
         dueAt: null,

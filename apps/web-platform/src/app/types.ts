@@ -916,6 +916,11 @@ export interface GrowthOperationalCaseResponse {
   summary: string;
   nextAction: string;
   followUpState: 'pending_team' | 'scheduled' | 'waiting_customer' | null;
+  routingPolicyKey:
+    | 'growth_ops'
+    | 'owner_assignment'
+    | 'follow_up_team'
+    | 'follow_up_waiting_customer';
   threadId: string | null;
   alertKey: string | null;
   dueAt: string | null;

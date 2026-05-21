@@ -9,6 +9,7 @@ import {
   GrowthOperationalCaseRepository,
   GrowthOperationalCaseType,
 } from '../ports/growth-operational-case.repository';
+import { resolveGrowthOperationalCaseRoutingPolicyKey } from '../support/growth-operational-case-routing-policy';
 
 export interface CreateTenantGrowthOperationalCaseInput {
   tenantSlug: string;
@@ -48,6 +49,15 @@ export class CreateTenantGrowthOperationalCaseUseCase {
         input.sourceKey,
       );
 
+    const followUpState = this.resolveFollowUpState(
+      input.caseType,
+      input.followUpState,
+    );
+    const routingPolicyKey = resolveGrowthOperationalCaseRoutingPolicyKey({
+      caseType: input.caseType,
+      followUpState,
+    });
+
     if (!existing) {
       return this.growthOperationalCaseRepository.create({
         tenantId: tenant.id,
@@ -58,10 +68,8 @@ export class CreateTenantGrowthOperationalCaseUseCase {
         title: input.title,
         summary: input.summary,
         nextAction: input.nextAction,
-        followUpState: this.resolveFollowUpState(
-          input.caseType,
-          input.followUpState,
-        ),
+        followUpState,
+        routingPolicyKey,
         threadId: input.threadId ?? null,
         alertKey: input.alertKey ?? null,
         dueAt: input.dueAt ?? null,
@@ -90,10 +98,8 @@ export class CreateTenantGrowthOperationalCaseUseCase {
       title: input.title,
       summary: input.summary,
       nextAction: input.nextAction,
-      followUpState: this.resolveFollowUpState(
-        input.caseType,
-        input.followUpState,
-      ),
+      followUpState,
+      routingPolicyKey,
       threadId: input.threadId ?? null,
       alertKey: input.alertKey ?? null,
       dueAt: input.dueAt ?? null,

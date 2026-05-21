@@ -39,6 +39,7 @@ describe('Growth operational cases use cases', () => {
       summary: 'Old summary',
       nextAction: 'Old next action',
       followUpState: null,
+      routingPolicyKey: 'growth_ops',
       threadId: null,
       alertKey: 'retry_queue_ready',
       dueAt: null,
@@ -84,6 +85,7 @@ describe('Growth operational cases use cases', () => {
         resolvedAt: null,
         resolvedByUserId: null,
         resolvedByEmail: null,
+        routingPolicyKey: 'growth_ops',
       }),
     );
     expect(result).toEqual(
@@ -107,6 +109,7 @@ describe('Growth operational cases use cases', () => {
       summary: 'Hace falta seguimiento explícito del equipo.',
       nextAction: 'Definir próximo outreach.',
       followUpState: 'pending_team',
+      routingPolicyKey: 'follow_up_team',
       threadId: 'thread_001',
       alertKey: null,
       dueAt: new Date('2026-05-20T12:00:00.000Z'),
@@ -199,6 +202,7 @@ describe('Growth operational cases use cases', () => {
       summary: 'Hace falta seguimiento explícito del equipo.',
       nextAction: 'Definir próximo outreach.',
       followUpState: 'pending_team',
+      routingPolicyKey: 'follow_up_team',
       threadId: 'thread_001',
       alertKey: null,
       dueAt: new Date('2026-05-20T12:00:00.000Z'),
@@ -232,6 +236,7 @@ describe('Growth operational cases use cases', () => {
     expect(updated).toEqual(
       expect.objectContaining({
         followUpState: 'waiting_customer',
+        routingPolicyKey: 'follow_up_waiting_customer',
         nextAction:
           'Esperar respuesta del cliente antes del siguiente outreach.',
         dueAt: null,

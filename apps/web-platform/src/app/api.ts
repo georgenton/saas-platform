@@ -1240,8 +1240,23 @@ export async function fetchGrowthOperationalCases(
   token: string,
   tenantSlug: string,
   status?: 'open' | 'in_progress' | 'resolved',
+  routingPolicyKey?:
+    | 'growth_ops'
+    | 'owner_assignment'
+    | 'follow_up_team'
+    | 'follow_up_waiting_customer',
 ): Promise<GrowthOperationalCaseResponse[]> {
-  const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  const params = new URLSearchParams();
+
+  if (status) {
+    params.set('status', status);
+  }
+
+  if (routingPolicyKey) {
+    params.set('routingPolicyKey', routingPolicyKey);
+  }
+
+  const query = params.size > 0 ? `?${params.toString()}` : '';
 
   return request<GrowthOperationalCaseResponse[]>(
     `/growth/tenants/${encodeURIComponent(

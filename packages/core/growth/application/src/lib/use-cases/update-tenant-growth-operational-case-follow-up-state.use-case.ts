@@ -9,7 +9,10 @@ import {
   GrowthOperationalCaseRecord,
   GrowthOperationalCaseRepository,
 } from '../ports/growth-operational-case.repository';
-import { resolveGrowthOperationalCaseRoutingPolicyKey } from '../support/growth-operational-case-routing-policy';
+import {
+  resolveGrowthOperationalCasePriority,
+  resolveGrowthOperationalCaseRoutingPolicyKey,
+} from '../support/growth-operational-case-routing-policy';
 
 export interface UpdateTenantGrowthOperationalCaseFollowUpStateInput {
   tenantSlug: string;
@@ -51,16 +54,30 @@ export class UpdateTenantGrowthOperationalCaseFollowUpStateUseCase {
       throw new GrowthOperationalCaseFollowUpStateNotAllowedError(input.caseId);
     }
 
+    const now = this.nowProvider();
+    const priority = resolveGrowthOperationalCasePriority({
+      caseType: record.caseType,
+      status: record.status,
+      currentPriority: record.priority,
+      followUpState: input.followUpState,
+      dueAt: input.dueAt === undefined ? record.dueAt : input.dueAt,
+      now,
+    });
+
     return this.growthOperationalCaseRepository.save({
       ...record,
+      priority,
       followUpState: input.followUpState,
       routingPolicyKey: resolveGrowthOperationalCaseRoutingPolicyKey({
         caseType: record.caseType,
+        status: record.status,
         followUpState: input.followUpState,
+        dueAt: input.dueAt === undefined ? record.dueAt : input.dueAt,
+        now,
       }),
       nextAction: input.nextAction ?? record.nextAction,
       dueAt: input.dueAt === undefined ? record.dueAt : input.dueAt,
-      updatedAt: this.nowProvider(),
+      updatedAt: now,
     });
   }
 }

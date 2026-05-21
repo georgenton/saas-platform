@@ -54,6 +54,7 @@ import {
   ProcessTenantMetaWhatsappWebhookUseCase,
   ReceiveTenantMetaWhatsappWebhookUseCase,
   ReplayTenantWebhookEventEnvelopeUseCase,
+  ReviewTenantGrowthOperationalCaseRoutingUseCase,
   ReopenTenantGrowthOperationalCaseUseCase,
   ResolveTenantGrowthOperationalCaseUseCase,
   RetryTenantWhatsappFailedConversationMessageUseCase,
@@ -540,6 +541,15 @@ import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp
       inject: [TENANT_REPOSITORY, GROWTH_OPERATIONAL_CASE_REPOSITORY],
       useFactory: (tenantRepository, growthOperationalCaseRepository) =>
         new ReopenTenantGrowthOperationalCaseUseCase(
+          tenantRepository,
+          growthOperationalCaseRepository,
+        ),
+    },
+    {
+      provide: ReviewTenantGrowthOperationalCaseRoutingUseCase,
+      inject: [TENANT_REPOSITORY, GROWTH_OPERATIONAL_CASE_REPOSITORY],
+      useFactory: (tenantRepository, growthOperationalCaseRepository) =>
+        new ReviewTenantGrowthOperationalCaseRoutingUseCase(
           tenantRepository,
           growthOperationalCaseRepository,
         ),

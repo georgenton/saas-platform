@@ -52,6 +52,7 @@ import {
   runWhatsappOperationalMonitor,
   acknowledgeWhatsappOperationalAlert,
   reopenGrowthOperationalCase,
+  reviewGrowthOperationalCaseRouting,
   resendInvitation,
   resolveGrowthOperationalCase,
   sendInvoiceEmail,
@@ -78,6 +79,7 @@ import {
   ElectronicSignatureSettingsResponse,
   GrowthConversationWorkbenchResponse,
   GrowthOperationalCaseResponse,
+  GrowthOperationalCaseRoutingReviewResponse,
   InvoiceElectronicArtifactsResponse,
   InvoiceNumberingSettingsResponse,
   InvoiceDetailResponse,
@@ -159,6 +161,11 @@ const growthOperationalCaseRoutingPolicies: Array<{
     key: 'growth_ops',
     label: 'Growth ops',
     summary: 'Escalaciones y bloqueos que piden triage operativo.',
+  },
+  {
+    key: 'escalation_review',
+    label: 'Escalation review',
+    summary: 'Casos vencidos que ya piden revisión operativa.',
   },
   {
     key: 'owner_assignment',
@@ -497,6 +504,8 @@ function growthOperationalCaseRoutingPolicyLabel(
   switch (value) {
     case 'growth_ops':
       return 'Growth ops';
+    case 'escalation_review':
+      return 'Escalation review';
     case 'owner_assignment':
       return 'Owner assignment';
     case 'follow_up_team':
@@ -515,6 +524,16 @@ function growthOperationalCaseRoutingPolicySummary(
     growthOperationalCaseRoutingPolicies.find((entry) => entry.key === value)?.summary ??
     'Lane operativo compartido.'
   );
+}
+
+function summarizeGrowthOperationalCaseRoutingReview(
+  result: GrowthOperationalCaseRoutingReviewResponse,
+): string {
+  if (result.updatedCount === 0) {
+    return `Se revisaron ${result.reviewedCount} casos y no hizo falta reubicar ninguno.`;
+  }
+
+  return `Se revisaron ${result.reviewedCount} casos, se actualizaron ${result.updatedCount} y ${result.escalationReviewCount} quedaron en escalation review.`;
 }
 
 function getEntitlementValue(
@@ -1065,6 +1084,7 @@ export function App() {
       },
       {
         growth_ops: 0,
+        escalation_review: 0,
         owner_assignment: 0,
         follow_up_team: 0,
         follow_up_waiting_customer: 0,
@@ -1175,6 +1195,7 @@ export function App() {
       },
       {
         growth_ops: 0,
+        escalation_review: 0,
         owner_assignment: 0,
         follow_up_team: 0,
         follow_up_waiting_customer: 0,
@@ -1240,6 +1261,7 @@ export function App() {
       },
       {
         growth_ops: 0,
+        escalation_review: 0,
         owner_assignment: 0,
         follow_up_team: 0,
         follow_up_waiting_customer: 0,
@@ -3103,6 +3125,32 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo actualizar el estado de follow-up.',
+      );
+    } finally {
+      setGrowthActionLoading(null);
+    }
+  }
+
+  async function handleReviewGrowthOperationalCaseRouting(tenantSlug: string) {
+    if (!token || !canManageGrowthConversations) {
+      return;
+    }
+
+    setGrowthActionLoading(`review-routing:${tenantSlug}`);
+    setGrowthActionMessage(null);
+    setGrowthError(null);
+
+    try {
+      const result = await reviewGrowthOperationalCaseRouting(token, tenantSlug);
+      await Promise.all([refreshGrowthWorkspace(), refreshGrowthFleet()]);
+      setGrowthActionMessage(
+        summarizeGrowthOperationalCaseRoutingReview(result),
+      );
+    } catch (error) {
+      setGrowthError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo revisar el routing de los casos operativos.',
       );
     } finally {
       setGrowthActionLoading(null);
@@ -5223,10 +5271,32 @@ export function App() {
                       <span className={styles.label}>Operational cases</span>
                       <h3>Cola compartida ya promovida a workflow</h3>
                     </div>
-                    <small className={styles.muted}>
-                      {filteredGrowthFleetOperationalCases.length} visibles ·{' '}
-                      {growthFleetOperationalCaseQueue.length} abiertas
-                    </small>
+                    <div className={styles.inlineActionRow}>
+                      <small className={styles.muted}>
+                        {filteredGrowthFleetOperationalCases.length} visibles ·{' '}
+                        {growthFleetOperationalCaseQueue.length} abiertas
+                      </small>
+                      {selectedGrowthFleetTenant ? (
+                        <button
+                          className={styles.ghostButton}
+                          disabled={
+                            growthActionLoading ===
+                            `review-routing:${selectedGrowthFleetTenant.tenancy.tenant.slug}`
+                          }
+                          onClick={() =>
+                            void handleReviewGrowthOperationalCaseRouting(
+                              selectedGrowthFleetTenant.tenancy.tenant.slug,
+                            )
+                          }
+                          type="button"
+                        >
+                          {growthActionLoading ===
+                          `review-routing:${selectedGrowthFleetTenant.tenancy.tenant.slug}`
+                            ? 'Revisando...'
+                            : 'Revisar routing'}
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className={styles.selectorGrid}>
@@ -6374,13 +6444,39 @@ export function App() {
                     <span className={styles.label}>Operational cases</span>
                     <h3>Cola compartida del tenant</h3>
                   </div>
-                  {filteredGrowthOperationalCases.length > 0 ? (
-                    <small className={styles.muted}>
-                      {filteredGrowthOperationalCases.length} visibles ·{' '}
-                      {growthOperationalCases.filter((entry) => entry.status !== 'resolved').length}{' '}
-                      abiertas
-                    </small>
-                  ) : null}
+                  <div className={styles.inlineActionRow}>
+                    {filteredGrowthOperationalCases.length > 0 ? (
+                      <small className={styles.muted}>
+                        {filteredGrowthOperationalCases.length} visibles ·{' '}
+                        {
+                          growthOperationalCases.filter(
+                            (entry) => entry.status !== 'resolved',
+                          ).length
+                        }{' '}
+                        abiertas
+                      </small>
+                    ) : null}
+                    {currentTenancy ? (
+                      <button
+                        className={styles.ghostButton}
+                        disabled={
+                          growthActionLoading ===
+                          `review-routing:${currentTenancy.tenant.slug}`
+                        }
+                        onClick={() =>
+                          void handleReviewGrowthOperationalCaseRouting(
+                            currentTenancy.tenant.slug,
+                          )
+                        }
+                        type="button"
+                      >
+                        {growthActionLoading ===
+                        `review-routing:${currentTenancy.tenant.slug}`
+                          ? 'Revisando...'
+                          : 'Revisar routing'}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className={styles.selectorGrid}>

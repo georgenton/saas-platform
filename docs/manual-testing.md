@@ -1864,6 +1864,11 @@ Consumer web inicial para este snapshot operativo:
   - `drill-down inspector` para alertas, taxonomías, códigos del provider, threads e historial
   - `acknowledgements` compartidos por alerta, persistidos por tenant en backend
   - `monitor history` compartido, alimentado por corridas manuales y del scheduler
+  - una consola `fleet` cross-tenant para operadores con permiso en varias tenancies:
+    - ordena qué tenant atender primero por estado, alertas activas y ready-now retries
+    - resume hotspots compartidos y taxonomías repetidas entre tenancies
+    - permite saltar desde el radar fleet al workspace puntual del tenant elegido
+    - ya incluye primeras lecturas de `escalation candidates` y `staffing pressure` usando workbench + monitor history compartidos
 - el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
   - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor-runs`
   - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor-analytics`

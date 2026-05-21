@@ -44,6 +44,7 @@ import { FeatureFlag } from '@saas-platform/feature-flags-domain';
 import {
   AssignTenantConversationThreadUseCase,
   AssignTenantOpportunityUseCase,
+  CreateTenantGrowthOperationalCaseUseCase,
   CreateTenantWhatsappAutomationRuleUseCase,
   CreateTenantConversationMessageUseCase,
   CreateTenantConversationThreadUseCase,
@@ -66,6 +67,7 @@ import {
   IngestTenantWhatsappDeliveryEventUseCase,
   ListTenantConversationMessageDeliveryEventsUseCase,
   ListTenantConversationMessagesUseCase,
+  ListTenantGrowthOperationalCasesUseCase,
   ListTenantConversationThreadsUseCase,
   ListTenantLeadsUseCase,
   ListTenantOpportunitiesUseCase,
@@ -75,11 +77,15 @@ import {
   ListTenantWhatsappMessageTemplatesUseCase,
   ProcessTenantMetaWhatsappWebhookUseCase,
   ReceiveTenantMetaWhatsappWebhookUseCase,
+  ReopenTenantGrowthOperationalCaseUseCase,
   ReplayTenantWebhookEventEnvelopeUseCase,
+  ResolveTenantGrowthOperationalCaseUseCase,
   RetryTenantWhatsappFailedConversationMessageUseCase,
   RunTenantWhatsappOperationalMonitorUseCase,
   RunTenantWhatsappReadyRetriesUseCase,
   SendTenantWhatsappConversationMessageUseCase,
+  TakeTenantGrowthOperationalCaseUseCase,
+  UpdateTenantGrowthOperationalCaseFollowUpStateUseCase,
   UpdateTenantOpportunityStageUseCase,
   WebhookEventEnvelopeNotFoundError,
 } from '@saas-platform/growth-application';
@@ -231,10 +237,16 @@ describe('API', () => {
   let ingestTenantWhatsappDeliveryEventUseCase: { execute: jest.Mock };
   let processTenantMetaWhatsappWebhookUseCase: { execute: jest.Mock };
   let receiveTenantMetaWhatsappWebhookUseCase: { execute: jest.Mock };
+  let reopenTenantGrowthOperationalCaseUseCase: { execute: jest.Mock };
   let replayTenantWebhookEventEnvelopeUseCase: { execute: jest.Mock };
+  let resolveTenantGrowthOperationalCaseUseCase: { execute: jest.Mock };
   let retryTenantWhatsappFailedConversationMessageUseCase: { execute: jest.Mock };
   let runTenantWhatsappOperationalMonitorUseCase: { execute: jest.Mock };
   let runTenantWhatsappReadyRetriesUseCase: { execute: jest.Mock };
+  let takeTenantGrowthOperationalCaseUseCase: { execute: jest.Mock };
+  let updateTenantGrowthOperationalCaseFollowUpStateUseCase: {
+    execute: jest.Mock;
+  };
   let metaWhatsappWebhookSignatureVerifier: {
     isConfigured: jest.Mock;
     verify: jest.Mock;
@@ -251,6 +263,7 @@ describe('API', () => {
   let listTenantFeatureFlagsUseCase: { execute: jest.Mock };
   let listTenantConversationMessagesUseCase: { execute: jest.Mock };
   let listTenantConversationMessageDeliveryEventsUseCase: { execute: jest.Mock };
+  let listTenantGrowthOperationalCasesUseCase: { execute: jest.Mock };
   let listTenantConversationThreadsUseCase: { execute: jest.Mock };
   let listTenantLeadsUseCase: { execute: jest.Mock };
   let listTenantOpportunitiesUseCase: { execute: jest.Mock };
@@ -291,6 +304,7 @@ describe('API', () => {
   let createTenantCustomerUseCase: { execute: jest.Mock };
   let createTenantConversationMessageUseCase: { execute: jest.Mock };
   let createTenantConversationThreadUseCase: { execute: jest.Mock };
+  let createTenantGrowthOperationalCaseUseCase: { execute: jest.Mock };
   let createTenantLeadUseCase: { execute: jest.Mock };
   let createTenantOpportunityUseCase: { execute: jest.Mock };
   let createTenantWhatsappAutomationRuleUseCase: { execute: jest.Mock };
@@ -1138,6 +1152,31 @@ describe('API', () => {
     operationalAlerts: whatsappOutboundReportingSummary.operationalAlerts,
     retryRunnerExecuted: true,
     retryRunnerSummary: whatsappRetryRunnerSummary,
+  };
+  const growthOperationalCase = {
+    id: 'op-case-001',
+    tenantId: 'tenant_123',
+    sourceKey: 'alert:retry_queue_ready',
+    caseType: 'alert_escalation' as const,
+    status: 'open' as const,
+    priority: 'warning' as const,
+    title: 'Retry queue has ready-now messages',
+    summary: '1 failed outbound messages are ready for retry execution now.',
+    nextAction:
+      'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+    followUpState: null,
+    threadId: null,
+    alertKey: 'retry_queue_ready',
+    dueAt: new Date('2026-05-20T11:00:00.000Z'),
+    assignedUserId: null,
+    assignedUserEmail: null,
+    createdByUserId: 'user_123',
+    createdByEmail: 'hello@saas-platform.dev',
+    resolvedAt: null,
+    resolvedByUserId: null,
+    resolvedByEmail: null,
+    createdAt: new Date('2026-05-20T10:05:00.000Z'),
+    updatedAt: new Date('2026-05-20T10:05:00.000Z'),
   };
   const whatsappMessageTemplate = WhatsappMessageTemplate.create({
     id: 'template_001',
@@ -2463,6 +2502,13 @@ describe('API', () => {
         processedDeliveryEvents: 1,
       }),
     };
+    reopenTenantGrowthOperationalCaseUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        ...growthOperationalCase,
+        status: 'open',
+        updatedAt: new Date('2026-05-20T10:20:00.000Z'),
+      }),
+    };
     replayTenantWebhookEventEnvelopeUseCase = {
       execute: jest.fn().mockResolvedValue({
         envelope: WebhookEventEnvelope.create({
@@ -2483,6 +2529,42 @@ describe('API', () => {
     };
     runTenantWhatsappReadyRetriesUseCase = {
       execute: jest.fn().mockResolvedValue(whatsappRetryRunnerSummary),
+    };
+    resolveTenantGrowthOperationalCaseUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        ...growthOperationalCase,
+        status: 'resolved',
+        assignedUserId: 'user_123',
+        assignedUserEmail: 'hello@saas-platform.dev',
+        resolvedAt: new Date('2026-05-20T10:16:00.000Z'),
+        resolvedByUserId: 'user_123',
+        resolvedByEmail: 'hello@saas-platform.dev',
+        updatedAt: new Date('2026-05-20T10:16:00.000Z'),
+      }),
+    };
+    takeTenantGrowthOperationalCaseUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        ...growthOperationalCase,
+        status: 'in_progress',
+        assignedUserId: 'user_123',
+        assignedUserEmail: 'hello@saas-platform.dev',
+        updatedAt: new Date('2026-05-20T10:12:00.000Z'),
+      }),
+    };
+    updateTenantGrowthOperationalCaseFollowUpStateUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        ...growthOperationalCase,
+        caseType: 'follow_up',
+        status: 'in_progress',
+        threadId: 'thread_001',
+        followUpState: 'waiting_customer',
+        nextAction:
+          'Esperar respuesta del cliente antes del siguiente outreach.',
+        dueAt: null,
+        assignedUserId: 'user_123',
+        assignedUserEmail: 'hello@saas-platform.dev',
+        updatedAt: new Date('2026-05-20T10:13:00.000Z'),
+      }),
     };
     metaWhatsappWebhookSignatureVerifier = {
       isConfigured: jest.fn().mockReturnValue(true),
@@ -2558,6 +2640,9 @@ describe('API', () => {
     };
     listTenantConversationMessageDeliveryEventsUseCase = {
       execute: jest.fn().mockResolvedValue([whatsappDeliveryEvent]),
+    };
+    listTenantGrowthOperationalCasesUseCase = {
+      execute: jest.fn().mockResolvedValue([growthOperationalCase]),
     };
     listTenantLeadsUseCase = {
       execute: jest.fn().mockResolvedValue([capturedLead, qualifiedLead]),
@@ -2635,6 +2720,9 @@ describe('API', () => {
     };
     createTenantConversationThreadUseCase = {
       execute: jest.fn().mockResolvedValue(conversationThread),
+    };
+    createTenantGrowthOperationalCaseUseCase = {
+      execute: jest.fn().mockResolvedValue(growthOperationalCase),
     };
     createTenantWhatsappAutomationRuleUseCase = {
       execute: jest.fn().mockResolvedValue(whatsappAutomationRule),
@@ -3042,6 +3130,8 @@ describe('API', () => {
       .useValue(listTenantConversationMessagesUseCase)
       .overrideProvider(ListTenantConversationMessageDeliveryEventsUseCase)
       .useValue(listTenantConversationMessageDeliveryEventsUseCase)
+      .overrideProvider(ListTenantGrowthOperationalCasesUseCase)
+      .useValue(listTenantGrowthOperationalCasesUseCase)
       .overrideProvider(ListTenantConversationThreadsUseCase)
       .useValue(listTenantConversationThreadsUseCase)
       .overrideProvider(ListTenantLeadsUseCase)
@@ -3106,6 +3196,8 @@ describe('API', () => {
       .useValue(createTenantConversationMessageUseCase)
       .overrideProvider(CreateTenantConversationThreadUseCase)
       .useValue(createTenantConversationThreadUseCase)
+      .overrideProvider(CreateTenantGrowthOperationalCaseUseCase)
+      .useValue(createTenantGrowthOperationalCaseUseCase)
       .overrideProvider(CreateTenantWhatsappAutomationRuleUseCase)
       .useValue(createTenantWhatsappAutomationRuleUseCase)
       .overrideProvider(ExecuteTenantWhatsappAutomationActionsUseCase)
@@ -3128,14 +3220,22 @@ describe('API', () => {
       .useValue(processTenantMetaWhatsappWebhookUseCase)
       .overrideProvider(ReceiveTenantMetaWhatsappWebhookUseCase)
       .useValue(receiveTenantMetaWhatsappWebhookUseCase)
+      .overrideProvider(ReopenTenantGrowthOperationalCaseUseCase)
+      .useValue(reopenTenantGrowthOperationalCaseUseCase)
       .overrideProvider(ReplayTenantWebhookEventEnvelopeUseCase)
       .useValue(replayTenantWebhookEventEnvelopeUseCase)
+      .overrideProvider(ResolveTenantGrowthOperationalCaseUseCase)
+      .useValue(resolveTenantGrowthOperationalCaseUseCase)
       .overrideProvider(RetryTenantWhatsappFailedConversationMessageUseCase)
       .useValue(retryTenantWhatsappFailedConversationMessageUseCase)
       .overrideProvider(RunTenantWhatsappOperationalMonitorUseCase)
       .useValue(runTenantWhatsappOperationalMonitorUseCase)
       .overrideProvider(RunTenantWhatsappReadyRetriesUseCase)
       .useValue(runTenantWhatsappReadyRetriesUseCase)
+      .overrideProvider(TakeTenantGrowthOperationalCaseUseCase)
+      .useValue(takeTenantGrowthOperationalCaseUseCase)
+      .overrideProvider(UpdateTenantGrowthOperationalCaseFollowUpStateUseCase)
+      .useValue(updateTenantGrowthOperationalCaseFollowUpStateUseCase)
       .overrideProvider(MetaWhatsappWebhookSignatureVerifier)
       .useValue(metaWhatsappWebhookSignatureVerifier)
       .overrideProvider(MetaWhatsappWebhookTenantResolver)
@@ -4468,6 +4568,277 @@ describe('API', () => {
         staleThreadHours: 24,
       },
     );
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/operational-cases should return persisted operational cases', async () => {
+    await request(httpServer)
+      .get(
+        '/api/growth/tenants/saas-platform/conversations/operational-cases?status=open',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'op-case-001',
+          sourceKey: 'alert:retry_queue_ready',
+          caseType: 'alert_escalation',
+          status: 'open',
+          priority: 'warning',
+          title: 'Retry queue has ready-now messages',
+          summary:
+            '1 failed outbound messages are ready for retry execution now.',
+          nextAction:
+            'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+          followUpState: null,
+          threadId: null,
+          alertKey: 'retry_queue_ready',
+          dueAt: '2026-05-20T11:00:00.000Z',
+          assignedUserId: null,
+          assignedUserEmail: null,
+          createdByUserId: 'user_123',
+          createdByEmail: 'hello@saas-platform.dev',
+          resolvedAt: null,
+          resolvedByUserId: null,
+          resolvedByEmail: null,
+          createdAt: '2026-05-20T10:05:00.000Z',
+          updatedAt: '2026-05-20T10:05:00.000Z',
+        },
+      ]);
+
+    expect(listTenantGrowthOperationalCasesUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'open',
+    );
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/operational-cases should create or reopen one operational case', async () => {
+    await request(httpServer)
+      .post('/api/growth/tenants/saas-platform/conversations/operational-cases')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        sourceKey: 'alert:retry_queue_ready',
+        caseType: 'alert_escalation',
+        priority: 'warning',
+        title: 'Retry queue has ready-now messages',
+        summary: '1 failed outbound messages are ready for retry execution now.',
+        nextAction:
+          'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+        alertKey: 'retry_queue_ready',
+        dueAt: '2026-05-20T11:00:00.000Z',
+      })
+      .expect(201)
+      .expect({
+        id: 'op-case-001',
+        sourceKey: 'alert:retry_queue_ready',
+        caseType: 'alert_escalation',
+        status: 'open',
+        priority: 'warning',
+        title: 'Retry queue has ready-now messages',
+        summary: '1 failed outbound messages are ready for retry execution now.',
+        nextAction:
+          'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+        followUpState: null,
+        threadId: null,
+        alertKey: 'retry_queue_ready',
+        dueAt: '2026-05-20T11:00:00.000Z',
+        assignedUserId: null,
+        assignedUserEmail: null,
+        createdByUserId: 'user_123',
+        createdByEmail: 'hello@saas-platform.dev',
+        resolvedAt: null,
+        resolvedByUserId: null,
+        resolvedByEmail: null,
+        createdAt: '2026-05-20T10:05:00.000Z',
+        updatedAt: '2026-05-20T10:05:00.000Z',
+      });
+
+    expect(createTenantGrowthOperationalCaseUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      sourceKey: 'alert:retry_queue_ready',
+      caseType: 'alert_escalation',
+      priority: 'warning',
+      title: 'Retry queue has ready-now messages',
+      summary: '1 failed outbound messages are ready for retry execution now.',
+      nextAction:
+        'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+      followUpState: null,
+      threadId: null,
+      alertKey: 'retry_queue_ready',
+      dueAt: new Date('2026-05-20T11:00:00.000Z'),
+      createdByUserId: 'user_123',
+      createdByEmail: 'hello@saas-platform.dev',
+    });
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/take should assign the case to the current operator', async () => {
+    await request(httpServer)
+      .post(
+        '/api/growth/tenants/saas-platform/conversations/operational-cases/op-case-001/take',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect({
+        id: 'op-case-001',
+        sourceKey: 'alert:retry_queue_ready',
+        caseType: 'alert_escalation',
+        status: 'in_progress',
+        priority: 'warning',
+        title: 'Retry queue has ready-now messages',
+        summary: '1 failed outbound messages are ready for retry execution now.',
+        nextAction:
+          'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+        followUpState: null,
+        threadId: null,
+        alertKey: 'retry_queue_ready',
+        dueAt: '2026-05-20T11:00:00.000Z',
+        assignedUserId: 'user_123',
+        assignedUserEmail: 'hello@saas-platform.dev',
+        createdByUserId: 'user_123',
+        createdByEmail: 'hello@saas-platform.dev',
+        resolvedAt: null,
+        resolvedByUserId: null,
+        resolvedByEmail: null,
+        createdAt: '2026-05-20T10:05:00.000Z',
+        updatedAt: '2026-05-20T10:12:00.000Z',
+      });
+
+    expect(takeTenantGrowthOperationalCaseUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      caseId: 'op-case-001',
+      assignedUserId: 'user_123',
+      assignedUserEmail: 'hello@saas-platform.dev',
+    });
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/resolve should resolve one operational case', async () => {
+    await request(httpServer)
+      .post(
+        '/api/growth/tenants/saas-platform/conversations/operational-cases/op-case-001/resolve',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect({
+        id: 'op-case-001',
+        sourceKey: 'alert:retry_queue_ready',
+        caseType: 'alert_escalation',
+        status: 'resolved',
+        priority: 'warning',
+        title: 'Retry queue has ready-now messages',
+        summary: '1 failed outbound messages are ready for retry execution now.',
+        nextAction:
+          'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+        followUpState: null,
+        threadId: null,
+        alertKey: 'retry_queue_ready',
+        dueAt: '2026-05-20T11:00:00.000Z',
+        assignedUserId: 'user_123',
+        assignedUserEmail: 'hello@saas-platform.dev',
+        createdByUserId: 'user_123',
+        createdByEmail: 'hello@saas-platform.dev',
+        resolvedAt: '2026-05-20T10:16:00.000Z',
+        resolvedByUserId: 'user_123',
+        resolvedByEmail: 'hello@saas-platform.dev',
+        createdAt: '2026-05-20T10:05:00.000Z',
+        updatedAt: '2026-05-20T10:16:00.000Z',
+      });
+
+    expect(resolveTenantGrowthOperationalCaseUseCase.execute).toHaveBeenCalledWith(
+      {
+        tenantSlug: 'saas-platform',
+        caseId: 'op-case-001',
+        resolvedByUserId: 'user_123',
+        resolvedByEmail: 'hello@saas-platform.dev',
+      },
+    );
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/reopen should reopen one operational case', async () => {
+    await request(httpServer)
+      .post(
+        '/api/growth/tenants/saas-platform/conversations/operational-cases/op-case-001/reopen',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect({
+        id: 'op-case-001',
+        sourceKey: 'alert:retry_queue_ready',
+        caseType: 'alert_escalation',
+        status: 'open',
+        priority: 'warning',
+        title: 'Retry queue has ready-now messages',
+        summary: '1 failed outbound messages are ready for retry execution now.',
+        nextAction:
+          'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+        followUpState: null,
+        threadId: null,
+        alertKey: 'retry_queue_ready',
+        dueAt: '2026-05-20T11:00:00.000Z',
+        assignedUserId: null,
+        assignedUserEmail: null,
+        createdByUserId: 'user_123',
+        createdByEmail: 'hello@saas-platform.dev',
+        resolvedAt: null,
+        resolvedByUserId: null,
+        resolvedByEmail: null,
+        createdAt: '2026-05-20T10:05:00.000Z',
+        updatedAt: '2026-05-20T10:20:00.000Z',
+      });
+
+    expect(reopenTenantGrowthOperationalCaseUseCase.execute).toHaveBeenCalledWith(
+      {
+        tenantSlug: 'saas-platform',
+        caseId: 'op-case-001',
+      },
+    );
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/follow-up-state should update one follow-up case state', async () => {
+    await request(httpServer)
+      .post(
+        '/api/growth/tenants/saas-platform/conversations/operational-cases/op-case-001/follow-up-state',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        followUpState: 'waiting_customer',
+        nextAction:
+          'Esperar respuesta del cliente antes del siguiente outreach.',
+      })
+      .expect(201)
+      .expect({
+        id: 'op-case-001',
+        sourceKey: 'alert:retry_queue_ready',
+        caseType: 'follow_up',
+        status: 'in_progress',
+        priority: 'warning',
+        title: 'Retry queue has ready-now messages',
+        summary: '1 failed outbound messages are ready for retry execution now.',
+        nextAction:
+          'Esperar respuesta del cliente antes del siguiente outreach.',
+        followUpState: 'waiting_customer',
+        threadId: 'thread_001',
+        alertKey: 'retry_queue_ready',
+        dueAt: null,
+        assignedUserId: 'user_123',
+        assignedUserEmail: 'hello@saas-platform.dev',
+        createdByUserId: 'user_123',
+        createdByEmail: 'hello@saas-platform.dev',
+        resolvedAt: null,
+        resolvedByUserId: null,
+        resolvedByEmail: null,
+        createdAt: '2026-05-20T10:05:00.000Z',
+        updatedAt: '2026-05-20T10:13:00.000Z',
+      });
+
+    expect(
+      updateTenantGrowthOperationalCaseFollowUpStateUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      caseId: 'op-case-001',
+      followUpState: 'waiting_customer',
+      nextAction:
+        'Esperar respuesta del cliente antes del siguiente outreach.',
+      dueAt: undefined,
+    });
   });
 
   it('GET /api/growth/tenants/:slug/conversations/:threadId should return one conversation thread', async () => {

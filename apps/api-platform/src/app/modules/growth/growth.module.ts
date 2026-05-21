@@ -12,6 +12,7 @@ import {
   CONVERSATION_MESSAGE_REPOSITORY,
   CONVERSATION_THREAD_ID_GENERATOR,
   CONVERSATION_THREAD_REPOSITORY,
+  CreateTenantGrowthOperationalCaseUseCase,
   CreateTenantWhatsappAutomationRuleUseCase,
   CreateTenantConversationMessageUseCase,
   CreateTenantConversationThreadUseCase,
@@ -20,6 +21,7 @@ import {
   CreateTenantWhatsappMessageTemplateUseCase,
   DeleteTenantWhatsappOperationalAlertAcknowledgementUseCase,
   ExecuteTenantWhatsappAutomationActionsUseCase,
+  GROWTH_OPERATIONAL_CASE_REPOSITORY,
   GetTenantConversationThreadByIdUseCase,
   GetTenantGrowthConversationWorkbenchUseCase,
   GetTenantGrowthAssignmentWorkloadUseCase,
@@ -37,6 +39,7 @@ import {
   LEAD_ID_GENERATOR,
   LEAD_REPOSITORY,
   ListTenantConversationMessagesUseCase,
+  ListTenantGrowthOperationalCasesUseCase,
   ListTenantConversationThreadsUseCase,
   ListTenantLeadsUseCase,
   ListTenantOpportunitiesUseCase,
@@ -51,10 +54,14 @@ import {
   ProcessTenantMetaWhatsappWebhookUseCase,
   ReceiveTenantMetaWhatsappWebhookUseCase,
   ReplayTenantWebhookEventEnvelopeUseCase,
+  ReopenTenantGrowthOperationalCaseUseCase,
+  ResolveTenantGrowthOperationalCaseUseCase,
   RetryTenantWhatsappFailedConversationMessageUseCase,
   RunTenantWhatsappOperationalMonitorUseCase,
   RunTenantWhatsappReadyRetriesUseCase,
   SendTenantWhatsappConversationMessageUseCase,
+  TakeTenantGrowthOperationalCaseUseCase,
+  UpdateTenantGrowthOperationalCaseFollowUpStateUseCase,
   UpdateTenantOpportunityStageUseCase,
   WEBHOOK_EVENT_ENVELOPE_ID_GENERATOR,
   WEBHOOK_EVENT_ENVELOPE_REPOSITORY,
@@ -148,6 +155,15 @@ import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp
           tenantRepository,
           membershipRepository,
           opportunityRepository,
+        ),
+    },
+    {
+      provide: CreateTenantGrowthOperationalCaseUseCase,
+      inject: [TENANT_REPOSITORY, GROWTH_OPERATIONAL_CASE_REPOSITORY],
+      useFactory: (tenantRepository, growthOperationalCaseRepository) =>
+        new CreateTenantGrowthOperationalCaseUseCase(
+          tenantRepository,
+          growthOperationalCaseRepository,
         ),
     },
     {
@@ -418,6 +434,15 @@ import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp
         ),
     },
     {
+      provide: ListTenantGrowthOperationalCasesUseCase,
+      inject: [TENANT_REPOSITORY, GROWTH_OPERATIONAL_CASE_REPOSITORY],
+      useFactory: (tenantRepository, growthOperationalCaseRepository) =>
+        new ListTenantGrowthOperationalCasesUseCase(
+          tenantRepository,
+          growthOperationalCaseRepository,
+        ),
+    },
+    {
       provide: ListTenantConversationThreadsUseCase,
       inject: [TENANT_REPOSITORY, CONVERSATION_THREAD_REPOSITORY],
       useFactory: (tenantRepository, conversationThreadRepository) =>
@@ -490,6 +515,42 @@ import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp
           conversationThreadRepository,
           conversationMessageRepository,
           conversationDeliveryEventRepository,
+        ),
+    },
+    {
+      provide: TakeTenantGrowthOperationalCaseUseCase,
+      inject: [TENANT_REPOSITORY, GROWTH_OPERATIONAL_CASE_REPOSITORY],
+      useFactory: (tenantRepository, growthOperationalCaseRepository) =>
+        new TakeTenantGrowthOperationalCaseUseCase(
+          tenantRepository,
+          growthOperationalCaseRepository,
+        ),
+    },
+    {
+      provide: ResolveTenantGrowthOperationalCaseUseCase,
+      inject: [TENANT_REPOSITORY, GROWTH_OPERATIONAL_CASE_REPOSITORY],
+      useFactory: (tenantRepository, growthOperationalCaseRepository) =>
+        new ResolveTenantGrowthOperationalCaseUseCase(
+          tenantRepository,
+          growthOperationalCaseRepository,
+        ),
+    },
+    {
+      provide: ReopenTenantGrowthOperationalCaseUseCase,
+      inject: [TENANT_REPOSITORY, GROWTH_OPERATIONAL_CASE_REPOSITORY],
+      useFactory: (tenantRepository, growthOperationalCaseRepository) =>
+        new ReopenTenantGrowthOperationalCaseUseCase(
+          tenantRepository,
+          growthOperationalCaseRepository,
+        ),
+    },
+    {
+      provide: UpdateTenantGrowthOperationalCaseFollowUpStateUseCase,
+      inject: [TENANT_REPOSITORY, GROWTH_OPERATIONAL_CASE_REPOSITORY],
+      useFactory: (tenantRepository, growthOperationalCaseRepository) =>
+        new UpdateTenantGrowthOperationalCaseFollowUpStateUseCase(
+          tenantRepository,
+          growthOperationalCaseRepository,
         ),
     },
     {

@@ -46,6 +46,7 @@ model Tenant {
   whatsappAutomationExecutions WhatsappAutomationExecution[]
   whatsappOperationalMonitorRuns WhatsappOperationalMonitorRun[]
   whatsappOperationalAlertAcknowledgements WhatsappOperationalAlertAcknowledgement[]
+  growthOperationalCases GrowthOperationalCase[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
@@ -281,6 +282,37 @@ model WhatsappOperationalAlertAcknowledgement {
 
   @@unique([tenantId, alertKey])
   @@index([tenantId, acknowledgedAt])
+}
+
+model GrowthOperationalCase {
+  id                String   @id @default(cuid())
+  tenantId          String
+  sourceKey         String
+  caseType          String
+  status            String
+  priority          String
+  title             String
+  summary           String
+  nextAction        String
+  followUpState     String?
+  threadId          String?
+  alertKey          String?
+  dueAt             DateTime?
+  assignedUserId    String?
+  assignedUserEmail String?
+  createdByUserId   String
+  createdByEmail    String?
+  resolvedAt        DateTime?
+  resolvedByUserId  String?
+  resolvedByEmail   String?
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([tenantId, sourceKey])
+  @@index([tenantId, status, priority, updatedAt])
+  @@index([tenantId, threadId, updatedAt])
+  @@index([tenantId, dueAt])
 }
 
 model WebhookEventEnvelope {

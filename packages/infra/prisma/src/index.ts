@@ -14,6 +14,7 @@ export * from './lib/growth/growth-persistence.module';
 export * from './lib/growth/prisma-conversation-delivery-event.repository';
 export * from './lib/growth/prisma-conversation-message.repository';
 export * from './lib/growth/prisma-conversation-thread.repository';
+export * from './lib/growth/prisma-growth-operational-case.repository';
 export * from './lib/growth/prisma-lead.repository';
 export * from './lib/growth/prisma-opportunity.repository';
 export * from './lib/growth/prisma-whatsapp-operational-alert-acknowledgement.repository';

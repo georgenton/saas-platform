@@ -6,6 +6,7 @@ import {
   CONVERSATION_MESSAGE_REPOSITORY,
   CONVERSATION_THREAD_ID_GENERATOR,
   CONVERSATION_THREAD_REPOSITORY,
+  GROWTH_OPERATIONAL_CASE_REPOSITORY,
   LEAD_ID_GENERATOR,
   LEAD_REPOSITORY,
   OPPORTUNITY_ID_GENERATOR,
@@ -23,6 +24,7 @@ import {
 } from '@saas-platform/growth-application';
 import { PrismaModule } from '../prisma.module';
 import { PrismaConversationDeliveryEventRepository } from './prisma-conversation-delivery-event.repository';
+import { PrismaGrowthOperationalCaseRepository } from './prisma-growth-operational-case.repository';
 import { PrismaConversationMessageRepository } from './prisma-conversation-message.repository';
 import { PrismaConversationThreadRepository } from './prisma-conversation-thread.repository';
 import { PrismaLeadRepository } from './prisma-lead.repository';
@@ -49,6 +51,7 @@ import { UuidWebhookEventEnvelopeIdGenerator } from './uuid-webhook-event-envelo
     PrismaConversationMessageRepository,
     PrismaConversationDeliveryEventRepository,
     PrismaConversationThreadRepository,
+    PrismaGrowthOperationalCaseRepository,
     PrismaLeadRepository,
     PrismaOpportunityRepository,
     PrismaWhatsappOperationalAlertAcknowledgementRepository,
@@ -77,6 +80,10 @@ import { UuidWebhookEventEnvelopeIdGenerator } from './uuid-webhook-event-envelo
     {
       provide: CONVERSATION_THREAD_REPOSITORY,
       useExisting: PrismaConversationThreadRepository,
+    },
+    {
+      provide: GROWTH_OPERATIONAL_CASE_REPOSITORY,
+      useExisting: PrismaGrowthOperationalCaseRepository,
     },
     {
       provide: CONVERSATION_MESSAGE_ID_GENERATOR,
@@ -154,6 +161,7 @@ import { UuidWebhookEventEnvelopeIdGenerator } from './uuid-webhook-event-envelo
     CONVERSATION_DELIVERY_EVENT_REPOSITORY,
     CONVERSATION_THREAD_ID_GENERATOR,
     CONVERSATION_THREAD_REPOSITORY,
+    GROWTH_OPERATIONAL_CASE_REPOSITORY,
     LEAD_REPOSITORY,
     LEAD_ID_GENERATOR,
     OPPORTUNITY_REPOSITORY,

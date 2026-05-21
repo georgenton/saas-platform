@@ -5738,6 +5738,7 @@ describe('API', () => {
         occurredAt: new Date('2026-05-20T10:00:00.000Z'),
         autoRunReadyRetries: true,
         retryReadyLimit: 10,
+        triggerSource: 'manual',
       },
     );
   });

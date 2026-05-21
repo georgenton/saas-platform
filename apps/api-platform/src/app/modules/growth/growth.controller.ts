@@ -17,6 +17,7 @@ import {
   AssignTenantConversationThreadUseCase,
   AssignTenantOpportunityUseCase,
   ConversationThreadNotFoundError,
+  CreateTenantGrowthOperationalCaseUseCase,
   CreateTenantWhatsappAutomationRuleUseCase,
   CreateTenantConversationMessageUseCase,
   CreateTenantConversationThreadUseCase,
@@ -27,6 +28,8 @@ import {
   ConversationMessageNotFoundError,
   ExecuteTenantWhatsappAutomationActionsUseCase,
   GROWTH_PERMISSIONS,
+  GrowthOperationalCaseFollowUpStateNotAllowedError,
+  GrowthOperationalCaseNotFoundError,
   GetTenantConversationThreadByIdUseCase,
   GetTenantGrowthConversationWorkbenchUseCase,
   GetTenantGrowthAssignmentWorkloadUseCase,
@@ -44,6 +47,7 @@ import {
   LeadNotFoundError,
   ListTenantConversationMessageDeliveryEventsUseCase,
   ListTenantConversationMessagesUseCase,
+  ListTenantGrowthOperationalCasesUseCase,
   ListTenantConversationThreadsUseCase,
   ListTenantLeadsUseCase,
   ListTenantOpportunitiesUseCase,
@@ -55,10 +59,14 @@ import {
   ListTenantWhatsappMessageTemplatesUseCase,
   OpportunityNotFoundError,
   ReplayTenantWebhookEventEnvelopeUseCase,
+  ReopenTenantGrowthOperationalCaseUseCase,
+  ResolveTenantGrowthOperationalCaseUseCase,
   RetryTenantWhatsappFailedConversationMessageUseCase,
   RunTenantWhatsappOperationalMonitorUseCase,
   RunTenantWhatsappReadyRetriesUseCase,
   SendTenantWhatsappConversationMessageUseCase,
+  TakeTenantGrowthOperationalCaseUseCase,
+  UpdateTenantGrowthOperationalCaseFollowUpStateUseCase,
   UpdateTenantOpportunityStageUseCase,
   WebhookEventEnvelopeNotFoundError,
   WHATSAPP_OPERATIONAL_MONITOR_OBSERVABILITY_SINK,
@@ -79,10 +87,12 @@ import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { CreateConversationMessageRequestDto } from './dto/create-conversation-message.request';
 import { CreateConversationThreadRequestDto } from './dto/create-conversation-thread.request';
+import { CreateGrowthOperationalCaseRequestDto } from './dto/create-growth-operational-case.request';
 import { CreateLeadRequestDto } from './dto/create-lead.request';
 import { CreateOpportunityRequestDto } from './dto/create-opportunity.request';
 import { CreateWhatsappAutomationRuleRequestDto } from './dto/create-whatsapp-automation-rule.request';
 import { CreateWhatsappMessageTemplateRequestDto } from './dto/create-whatsapp-message-template.request';
+import { UpdateGrowthOperationalCaseFollowUpStateRequestDto } from './dto/update-growth-operational-case-follow-up-state.request';
 import { AssignGrowthOwnerRequestDto } from './dto/assign-growth-owner.request';
 import { AcknowledgeWhatsappOperationalAlertRequestDto } from './dto/acknowledge-whatsapp-operational-alert.request';
 import {
@@ -102,6 +112,10 @@ import {
   GrowthConversationWorkbenchResponseDto,
   toGrowthConversationWorkbenchResponseDto,
 } from './dto/growth-conversation-workbench.response';
+import {
+  GrowthOperationalCaseResponseDto,
+  toGrowthOperationalCaseResponseDto,
+} from './dto/growth-operational-case.response';
 import {
   GrowthAssignmentWorkloadResponseDto,
   toGrowthAssignmentWorkloadResponseDto,
@@ -177,6 +191,7 @@ export class GrowthController {
     private readonly acknowledgeTenantWhatsappOperationalAlertUseCase: AcknowledgeTenantWhatsappOperationalAlertUseCase,
     private readonly createTenantConversationMessageUseCase: CreateTenantConversationMessageUseCase,
     private readonly createTenantConversationThreadUseCase: CreateTenantConversationThreadUseCase,
+    private readonly createTenantGrowthOperationalCaseUseCase: CreateTenantGrowthOperationalCaseUseCase,
     private readonly createTenantLeadUseCase: CreateTenantLeadUseCase,
     private readonly createTenantOpportunityUseCase: CreateTenantOpportunityUseCase,
     private readonly createTenantWhatsappAutomationRuleUseCase: CreateTenantWhatsappAutomationRuleUseCase,
@@ -200,6 +215,7 @@ export class GrowthController {
     private readonly ingestTenantWhatsappDeliveryEventUseCase: IngestTenantWhatsappDeliveryEventUseCase,
     private readonly listTenantConversationMessageDeliveryEventsUseCase: ListTenantConversationMessageDeliveryEventsUseCase,
     private readonly listTenantConversationMessagesUseCase: ListTenantConversationMessagesUseCase,
+    private readonly listTenantGrowthOperationalCasesUseCase: ListTenantGrowthOperationalCasesUseCase,
     private readonly listTenantConversationThreadsUseCase: ListTenantConversationThreadsUseCase,
     private readonly listTenantLeadsUseCase: ListTenantLeadsUseCase,
     private readonly listTenantOpportunitiesUseCase: ListTenantOpportunitiesUseCase,
@@ -210,10 +226,14 @@ export class GrowthController {
     private readonly listTenantWhatsappMessageTemplatesUseCase: ListTenantWhatsappMessageTemplatesUseCase,
     private readonly listTenantWhatsappConversationThreadsUseCase: ListTenantWhatsappConversationThreadsUseCase,
     private readonly replayTenantWebhookEventEnvelopeUseCase: ReplayTenantWebhookEventEnvelopeUseCase,
+    private readonly reopenTenantGrowthOperationalCaseUseCase: ReopenTenantGrowthOperationalCaseUseCase,
+    private readonly resolveTenantGrowthOperationalCaseUseCase: ResolveTenantGrowthOperationalCaseUseCase,
     private readonly retryTenantWhatsappFailedConversationMessageUseCase: RetryTenantWhatsappFailedConversationMessageUseCase,
     private readonly runTenantWhatsappOperationalMonitorUseCase: RunTenantWhatsappOperationalMonitorUseCase,
     private readonly runTenantWhatsappReadyRetriesUseCase: RunTenantWhatsappReadyRetriesUseCase,
     private readonly sendTenantWhatsappConversationMessageUseCase: SendTenantWhatsappConversationMessageUseCase,
+    private readonly takeTenantGrowthOperationalCaseUseCase: TakeTenantGrowthOperationalCaseUseCase,
+    private readonly updateTenantGrowthOperationalCaseFollowUpStateUseCase: UpdateTenantGrowthOperationalCaseFollowUpStateUseCase,
     private readonly updateTenantOpportunityStageUseCase: UpdateTenantOpportunityStageUseCase,
     @Inject(WHATSAPP_OPERATIONAL_MONITOR_OBSERVABILITY_SINK)
     private readonly whatsappOperationalMonitorObservabilitySink: WhatsappOperationalMonitorObservabilitySink,
@@ -353,6 +373,204 @@ export class GrowthController {
       return toGrowthConversationWorkbenchResponseDto(workbench);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/conversations/operational-cases')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
+  async listTenantGrowthOperationalCases(
+    @Param('slug') slug: string,
+    @Query('status') status?: 'open' | 'in_progress' | 'resolved',
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<GrowthOperationalCaseResponseDto[]> {
+    try {
+      const cases = await this.listTenantGrowthOperationalCasesUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        status,
+      );
+
+      return cases.map((record) => toGrowthOperationalCaseResponseDto(record));
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/conversations/operational-cases')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
+  async createTenantGrowthOperationalCase(
+    @Param('slug') slug: string,
+    @Body() body: CreateGrowthOperationalCaseRequestDto,
+    @AuthenticatedUser() authenticatedUser?: AuthenticatedUserContext,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<GrowthOperationalCaseResponseDto> {
+    if (!authenticatedUser) {
+      throw new BadRequestException('Authenticated user context is required.');
+    }
+
+    try {
+      const record = await this.createTenantGrowthOperationalCaseUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        sourceKey: body.sourceKey,
+        caseType: body.caseType,
+        priority: body.priority,
+        title: body.title,
+        summary: body.summary,
+        nextAction: body.nextAction,
+        followUpState: body.followUpState ?? null,
+        threadId: body.threadId ?? null,
+        alertKey: body.alertKey ?? null,
+        dueAt: body.dueAt ? new Date(body.dueAt) : null,
+        createdByUserId: authenticatedUser.id,
+        createdByEmail: authenticatedUser.email,
+      });
+
+      return toGrowthOperationalCaseResponseDto(record);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/conversations/operational-cases/:caseId/take')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
+  async takeTenantGrowthOperationalCase(
+    @Param('slug') slug: string,
+    @Param('caseId') caseId: string,
+    @AuthenticatedUser() authenticatedUser?: AuthenticatedUserContext,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<GrowthOperationalCaseResponseDto> {
+    if (!authenticatedUser) {
+      throw new BadRequestException('Authenticated user context is required.');
+    }
+
+    try {
+      const record = await this.takeTenantGrowthOperationalCaseUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        caseId,
+        assignedUserId: authenticatedUser.id,
+        assignedUserEmail: authenticatedUser.email,
+      });
+
+      return toGrowthOperationalCaseResponseDto(record);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof GrowthOperationalCaseNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/conversations/operational-cases/:caseId/resolve')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
+  async resolveTenantGrowthOperationalCase(
+    @Param('slug') slug: string,
+    @Param('caseId') caseId: string,
+    @AuthenticatedUser() authenticatedUser?: AuthenticatedUserContext,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<GrowthOperationalCaseResponseDto> {
+    if (!authenticatedUser) {
+      throw new BadRequestException('Authenticated user context is required.');
+    }
+
+    try {
+      const record =
+        await this.resolveTenantGrowthOperationalCaseUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          caseId,
+          resolvedByUserId: authenticatedUser.id,
+          resolvedByEmail: authenticatedUser.email,
+        });
+
+      return toGrowthOperationalCaseResponseDto(record);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof GrowthOperationalCaseNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/conversations/operational-cases/:caseId/follow-up-state')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
+  async updateTenantGrowthOperationalCaseFollowUpState(
+    @Param('slug') slug: string,
+    @Param('caseId') caseId: string,
+    @Body() body: UpdateGrowthOperationalCaseFollowUpStateRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<GrowthOperationalCaseResponseDto> {
+    try {
+      const record =
+        await this.updateTenantGrowthOperationalCaseFollowUpStateUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            caseId,
+            followUpState: body.followUpState,
+            nextAction: body.nextAction ?? undefined,
+            dueAt: body.dueAt === undefined ? undefined : body.dueAt ? new Date(body.dueAt) : null,
+          },
+        );
+
+      return toGrowthOperationalCaseResponseDto(record);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof GrowthOperationalCaseNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof GrowthOperationalCaseFollowUpStateNotAllowedError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/conversations/operational-cases/:caseId/reopen')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
+  async reopenTenantGrowthOperationalCase(
+    @Param('slug') slug: string,
+    @Param('caseId') caseId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<GrowthOperationalCaseResponseDto> {
+    try {
+      const record = await this.reopenTenantGrowthOperationalCaseUseCase.execute(
+        {
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          caseId,
+        },
+      );
+
+      return toGrowthOperationalCaseResponseDto(record);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof GrowthOperationalCaseNotFoundError) {
         throw new NotFoundException(error.message);
       }
 

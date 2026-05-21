@@ -1872,7 +1872,23 @@ Consumer web inicial para este snapshot operativo:
     - ahora también expone:
       - `runbooks` operativos derivados del estado fleet
       - una `ownership queue` cross-tenant para threads que piden owner o follow-up más urgente
+      - una cola compartida de `operational cases` persistidos para:
+        - `alert_escalation`
+        - `ownership_routing`
+        - `follow_up`
+      - acciones de workflow compartido sobre esos casos:
+        - crear o reabrir por `sourceKey`
+        - `take`
+        - `resolve`
+        - `reopen`
+        - actualizar estado explícito de `follow_up` entre `pending_team`, `scheduled` y `waiting_customer`
 - el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
+  - `GET /api/growth/tenants/:slug/conversations/operational-cases`
+  - `POST /api/growth/tenants/:slug/conversations/operational-cases`
+  - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/take`
+  - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/resolve`
+  - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/reopen`
+  - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/follow-up-state`
   - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor-runs`
   - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor-analytics`
   - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/alert-acknowledgements`
@@ -1886,6 +1902,11 @@ Consumer web inicial para este snapshot operativo:
 
 La UI consume:
 - `GET /api/growth/tenants/:slug/conversations/workbench`
+- `GET /api/growth/tenants/:slug/conversations/operational-cases`
+- `POST /api/growth/tenants/:slug/conversations/operational-cases`
+- `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/take`
+- `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/resolve`
+- `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/reopen`
 - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/outbound-summary`
 - `POST /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor`
 - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor-runs`

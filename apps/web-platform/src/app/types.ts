@@ -906,6 +906,30 @@ export interface WhatsappOperationalAlertAcknowledgementResponse {
   updatedAt: string;
 }
 
+export interface GrowthOperationalCaseResponse {
+  id: string;
+  sourceKey: string;
+  caseType: 'alert_escalation' | 'ownership_routing' | 'follow_up';
+  status: 'open' | 'in_progress' | 'resolved';
+  priority: 'warning' | 'critical';
+  title: string;
+  summary: string;
+  nextAction: string;
+  followUpState: 'pending_team' | 'scheduled' | 'waiting_customer' | null;
+  threadId: string | null;
+  alertKey: string | null;
+  dueAt: string | null;
+  assignedUserId: string | null;
+  assignedUserEmail: string | null;
+  createdByUserId: string;
+  createdByEmail: string | null;
+  resolvedAt: string | null;
+  resolvedByUserId: string | null;
+  resolvedByEmail: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface WhatsappOperationalAlertFrequencyResponse {
   alertKey: string;
   title: string;

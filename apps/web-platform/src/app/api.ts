@@ -7,6 +7,7 @@ import {
   RemissionGuideResponse,
   WithholdingResponse,
   CustomerResponse,
+  GrowthOperationalCaseResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSignatureMaterialInspectionResponse,
   ElectronicSubmissionSettingsResponse,
@@ -1231,6 +1232,124 @@ export async function fetchWhatsappOperationalAlertAcknowledgements(
     {
       method: 'GET',
       token,
+    },
+  );
+}
+
+export async function fetchGrowthOperationalCases(
+  token: string,
+  tenantSlug: string,
+  status?: 'open' | 'in_progress' | 'resolved',
+): Promise<GrowthOperationalCaseResponse[]> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : '';
+
+  return request<GrowthOperationalCaseResponse[]>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/operational-cases${query}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function createGrowthOperationalCase(
+  token: string,
+  tenantSlug: string,
+  input: {
+    sourceKey: string;
+    caseType: 'alert_escalation' | 'ownership_routing' | 'follow_up';
+    priority: 'warning' | 'critical';
+    title: string;
+    summary: string;
+    nextAction: string;
+    followUpState?: 'pending_team' | 'scheduled' | 'waiting_customer' | null;
+    threadId?: string | null;
+    alertKey?: string | null;
+    dueAt?: string | null;
+  },
+): Promise<GrowthOperationalCaseResponse> {
+  return request<GrowthOperationalCaseResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/operational-cases`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export async function takeGrowthOperationalCase(
+  token: string,
+  tenantSlug: string,
+  caseId: string,
+): Promise<GrowthOperationalCaseResponse> {
+  return request<GrowthOperationalCaseResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/operational-cases/${encodeURIComponent(caseId)}/take`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function resolveGrowthOperationalCase(
+  token: string,
+  tenantSlug: string,
+  caseId: string,
+): Promise<GrowthOperationalCaseResponse> {
+  return request<GrowthOperationalCaseResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/operational-cases/${encodeURIComponent(caseId)}/resolve`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function reopenGrowthOperationalCase(
+  token: string,
+  tenantSlug: string,
+  caseId: string,
+): Promise<GrowthOperationalCaseResponse> {
+  return request<GrowthOperationalCaseResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/operational-cases/${encodeURIComponent(caseId)}/reopen`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function updateGrowthOperationalCaseFollowUpState(
+  token: string,
+  tenantSlug: string,
+  caseId: string,
+  input: {
+    followUpState: 'pending_team' | 'scheduled' | 'waiting_customer';
+    nextAction?: string | null;
+    dueAt?: string | null;
+  },
+): Promise<GrowthOperationalCaseResponse> {
+  return request<GrowthOperationalCaseResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/operational-cases/${encodeURIComponent(
+      caseId,
+    )}/follow-up-state`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(input),
     },
   );
 }

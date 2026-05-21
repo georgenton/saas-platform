@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.29.0
+
+### Minor Changes
+
+- b4b8be0: Add a cross-tenant Growth fleet operations console on top of shared monitor state.
+
 ## 0.28.0
 
 ### Minor Changes

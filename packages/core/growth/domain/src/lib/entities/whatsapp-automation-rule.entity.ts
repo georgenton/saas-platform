@@ -7,7 +7,9 @@ export type WhatsappAutomationAssigneeMode =
   | 'any'
   | 'unassigned'
   | 'assigned';
-export type WhatsappAutomationActionType = 'suggest_template';
+export type WhatsappAutomationActionType =
+  | 'suggest_template'
+  | 'send_template';
 export type WhatsappAutomationRuleStatus = 'active' | 'archived';
 
 export interface WhatsappAutomationRuleProps {

@@ -50,7 +50,9 @@ import {
   CreateTenantLeadUseCase,
   CreateTenantOpportunityUseCase,
   CreateTenantWhatsappMessageTemplateUseCase,
+  ExecuteTenantWhatsappAutomationActionsUseCase,
   GetTenantConversationThreadByIdUseCase,
+  GetTenantGrowthConversationWorkbenchUseCase,
   GetTenantGrowthAssignmentWorkloadUseCase,
   GetTenantLeadByIdUseCase,
   GetTenantOpportunityByIdUseCase,
@@ -74,6 +76,9 @@ import {
   ProcessTenantMetaWhatsappWebhookUseCase,
   ReceiveTenantMetaWhatsappWebhookUseCase,
   ReplayTenantWebhookEventEnvelopeUseCase,
+  RetryTenantWhatsappFailedConversationMessageUseCase,
+  RunTenantWhatsappOperationalMonitorUseCase,
+  RunTenantWhatsappReadyRetriesUseCase,
   SendTenantWhatsappConversationMessageUseCase,
   UpdateTenantOpportunityStageUseCase,
   WebhookEventEnvelopeNotFoundError,
@@ -211,6 +216,7 @@ describe('API', () => {
   let getTenantIssuerProfileUseCase: { execute: jest.Mock };
   let getTenantPartyByIdUseCase: { execute: jest.Mock };
   let getTenantConversationThreadByIdUseCase: { execute: jest.Mock };
+  let getTenantGrowthConversationWorkbenchUseCase: { execute: jest.Mock };
   let getTenantGrowthAssignmentWorkloadUseCase: { execute: jest.Mock };
   let getTenantLeadByIdUseCase: { execute: jest.Mock };
   let getTenantOpportunityByIdUseCase: { execute: jest.Mock };
@@ -220,11 +226,15 @@ describe('API', () => {
   let getTenantWhatsappMessageTemplateByIdUseCase: { execute: jest.Mock };
   let getTenantWebhookEventEnvelopeByIdUseCase: { execute: jest.Mock };
   let getTenantSubscriptionUseCase: { execute: jest.Mock };
+  let executeTenantWhatsappAutomationActionsUseCase: { execute: jest.Mock };
   let ingestTenantWhatsappConversationMessageUseCase: { execute: jest.Mock };
   let ingestTenantWhatsappDeliveryEventUseCase: { execute: jest.Mock };
   let processTenantMetaWhatsappWebhookUseCase: { execute: jest.Mock };
   let receiveTenantMetaWhatsappWebhookUseCase: { execute: jest.Mock };
   let replayTenantWebhookEventEnvelopeUseCase: { execute: jest.Mock };
+  let retryTenantWhatsappFailedConversationMessageUseCase: { execute: jest.Mock };
+  let runTenantWhatsappOperationalMonitorUseCase: { execute: jest.Mock };
+  let runTenantWhatsappReadyRetriesUseCase: { execute: jest.Mock };
   let metaWhatsappWebhookSignatureVerifier: {
     isConfigured: jest.Mock;
     verify: jest.Mock;
@@ -713,6 +723,27 @@ describe('API', () => {
     readAt: null,
     createdAt: new Date('2026-05-16T14:05:00.000Z'),
   });
+  const failedOutboundWhatsappMessage = ConversationMessage.create({
+    ...outboundWhatsappMessage.toPrimitives(),
+    deliveryStatus: 'failed',
+    failureReason: 'temporary_provider_timeout',
+  });
+  const retriedOutboundWhatsappMessage = ConversationMessage.create({
+    id: 'message_whatsapp_003',
+    tenantId: 'tenant_123',
+    threadId: 'thread_whatsapp_001',
+    direction: 'outbound',
+    body: 'Perfecto, te escribo en unos minutos.',
+    templateId: null,
+    outboundIntentKey: 'follow_up',
+    provider: 'meta_cloud_api_stub',
+    deliveryStatus: 'pending',
+    externalMessageId: 'wamid-003',
+    failureReason: null,
+    deliveredAt: null,
+    readAt: null,
+    createdAt: new Date('2026-05-16T14:12:00.000Z'),
+  });
   const whatsappDeliveryEvent = ConversationDeliveryEvent.create({
     id: 'delivery_event_001',
     tenantId: 'tenant_123',
@@ -783,6 +814,71 @@ describe('API', () => {
       },
     ],
   };
+  const growthConversationWorkbench = {
+    tenantSlug: 'saas-platform',
+    generatedAt: new Date('2026-05-19T16:45:00.000Z'),
+    policy: {
+      firstResponseSlaHours: 1,
+      followUpSlaHours: 12,
+      staleThreadHours: 48,
+    },
+    summary: {
+      openThreadCount: 2,
+      unassignedThreadCount: 1,
+      waitingOnTeamCount: 1,
+      waitingOnCustomerCount: 1,
+      overdueFirstResponseCount: 0,
+      overdueFollowUpCount: 0,
+      staleThreadCount: 0,
+    },
+    threads: [
+      {
+        threadId: 'thread_001',
+        leadId: 'lead_001',
+        assigneeUserId: null,
+        subject: 'Demo de onboarding facturacion',
+        channel: 'manual',
+        status: 'open',
+        latestMessagePreview:
+          'Hola Maria, te comparto los siguientes pasos para la demo.',
+        nextActionOwner: 'customer',
+        firstResponseStatus: 'not_applicable',
+        followUpStatus: 'not_applicable',
+        staleStatus: 'fresh',
+        priority: 'normal',
+        messageCount: 2,
+        hoursSinceLastActivity: 1.5,
+        hoursSinceLastInbound: 1.5,
+        hoursSinceOpened: 1.58,
+        openedAt: new Date('2026-05-15T14:40:00.000Z'),
+        lastActivityAt: new Date('2026-05-15T14:45:00.000Z'),
+        lastInboundAt: new Date('2026-05-15T14:45:00.000Z'),
+        lastOutboundAt: new Date('2026-05-15T14:40:00.000Z'),
+      },
+      {
+        threadId: 'thread_whatsapp_001',
+        leadId: 'lead_001',
+        assigneeUserId: null,
+        subject: 'Maria Perez',
+        channel: 'whatsapp',
+        status: 'open',
+        latestMessagePreview: 'Hola, quiero retomar la propuesta.',
+        nextActionOwner: 'team',
+        firstResponseStatus: 'not_applicable',
+        followUpStatus: 'pending',
+        staleStatus: 'fresh',
+        priority: 'high',
+        messageCount: 1,
+        hoursSinceLastActivity: 0.75,
+        hoursSinceLastInbound: 0.75,
+        hoursSinceOpened: 0.75,
+        openedAt: new Date('2026-05-16T14:00:00.000Z'),
+        lastActivityAt: new Date('2026-05-16T14:00:00.000Z'),
+        lastInboundAt: new Date('2026-05-16T14:00:00.000Z'),
+        lastOutboundAt: null,
+      },
+    ],
+  };
   const whatsappOutboundReportingSummary = {
     tenantSlug: 'saas-platform',
     generatedAt: new Date('2026-05-18T16:30:00.000Z'),
@@ -796,6 +892,10 @@ describe('API', () => {
       deliveredCount: 1,
       readCount: 0,
       failedCount: 1,
+      immediateSendRejectionFailedCount: 1,
+      asynchronousDeliveryFailedCount: 0,
+      retryableFailedCount: 1,
+      permanentFailedCount: 0,
     },
     byIntent: [
       {
@@ -845,6 +945,199 @@ describe('API', () => {
         failedCount: 1,
       },
     ],
+    byProvider: [
+      {
+        provider: 'meta_cloud_api_stub',
+        messageCount: 2,
+        pendingCount: 1,
+        sentCount: 0,
+        deliveredCount: 1,
+        readCount: 0,
+        failedCount: 0,
+      },
+      {
+        provider: 'meta_cloud_api',
+        messageCount: 1,
+        pendingCount: 0,
+        sentCount: 0,
+        deliveredCount: 0,
+        readCount: 0,
+        failedCount: 1,
+      },
+    ],
+    byFailureClass: [
+      {
+        provider: 'meta_cloud_api',
+        failureClass: 'rate_limited',
+        failurePhase: 'immediate_send_rejection',
+        messageCount: 1,
+        retryableCount: 1,
+        permanentCount: 0,
+      },
+    ],
+    byProviderTaxonomy: [
+      {
+        provider: 'meta_cloud_api',
+        providerTaxonomyFamily: 'throughput_limit',
+        providerTaxonomyDetail: 'meta_pair_rate_limit',
+        failureClass: 'rate_limited',
+        failurePhase: 'immediate_send_rejection',
+        messageCount: 1,
+        retryableCount: 1,
+        permanentCount: 0,
+      },
+    ],
+    topProviderErrorCodes: [
+      {
+        provider: 'meta_cloud_api',
+        providerErrorCode: '131053',
+        failureClass: 'rate_limited',
+        failurePhase: 'immediate_send_rejection',
+        retryDisposition: 'retryable',
+        providerTaxonomyFamily: 'throughput_limit',
+        providerTaxonomyDetail: 'meta_pair_rate_limit',
+        occurrenceCount: 1,
+        latestFailureReason: 'rate_limit_hit',
+        latestProviderStatusDetail: 'temporary_throttle',
+      },
+    ],
+    retryOperations: {
+      totalFailedMessageCount: 1,
+      retryableFailedMessageCount: 1,
+      permanentFailedMessageCount: 0,
+      cooldownBlockedCount: 0,
+      readyNowCount: 1,
+      defaultBaseBackoffMinutes: 5,
+      maxBackoffMinutes: 180,
+    },
+    operationalThresholds: {
+      immediateSendRejectionRateWarning: 0.05,
+      asynchronousDeliveryFailureRateWarning: 0.03,
+      readyRetryQueueWarningCount: 1,
+      cooldownRetryQueueWarningCount: 3,
+      authOrConfigurationCriticalCount: 1,
+      policyBlockCriticalCount: 1,
+      rateLimitedWarningCount: 1,
+      unknownFailureWarningCount: 1,
+    },
+    operationalDashboard: {
+      overallStatus: 'warning',
+      immediateSendRejectionRate: 0.3333,
+      asynchronousDeliveryFailureRate: 0,
+      readyRetryQueueCount: 1,
+      cooldownRetryQueueCount: 0,
+      permanentFailureCount: 0,
+      leadingFailureClass: 'rate_limited',
+      leadingProvider: 'meta_cloud_api',
+      leadingProviderTaxonomyFamily: 'throughput_limit',
+      leadingProviderTaxonomyDetail: 'meta_pair_rate_limit',
+    },
+    operationalAlerts: [
+      {
+        key: 'immediate_send_rejection_rate',
+        severity: 'warning',
+        title: 'Immediate send rejection rate is elevated',
+        summary:
+          'Immediate outbound rejections reached 33.33% of outbound traffic.',
+        thresholdKey: 'immediateSendRejectionRateWarning',
+        observedValue: 0.3333,
+        thresholdValue: 0.05,
+        thresholdUnit: 'rate',
+        provider: 'meta_cloud_api',
+        failureClass: 'rate_limited',
+        providerTaxonomyFamily: 'throughput_limit',
+        providerTaxonomyDetail: 'meta_pair_rate_limit',
+        affectedMessageCount: 1,
+        recommendedAction:
+          'Inspect provider-facing failures before throughput or template automation keeps amplifying the rejection rate.',
+      },
+      {
+        key: 'rate_limit:meta_cloud_api:meta_pair_rate_limit',
+        severity: 'warning',
+        title: 'Provider throttling is affecting outbound throughput',
+        summary:
+          '1 outbound failures were classified as provider throttling or rate limiting.',
+        thresholdKey: 'rateLimitedWarningCount',
+        observedValue: 1,
+        thresholdValue: 1,
+        thresholdUnit: 'count',
+        provider: 'meta_cloud_api',
+        failureClass: 'rate_limited',
+        providerTaxonomyFamily: 'throughput_limit',
+        providerTaxonomyDetail: 'meta_pair_rate_limit',
+        affectedMessageCount: 1,
+        recommendedAction:
+          'Reduce burst size, watch retry queue growth, and consider staggering automation traffic.',
+      },
+      {
+        key: 'retry_queue_ready',
+        severity: 'warning',
+        title: 'Retry queue has ready-now messages',
+        summary:
+          '1 failed outbound messages are ready for retry execution now.',
+        thresholdKey: 'readyRetryQueueWarningCount',
+        observedValue: 1,
+        thresholdValue: 1,
+        thresholdUnit: 'count',
+        provider: null,
+        failureClass: null,
+        providerTaxonomyFamily: null,
+        providerTaxonomyDetail: null,
+        affectedMessageCount: 1,
+        recommendedAction:
+          'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+      },
+    ],
+  };
+  const whatsappRetryRunnerSummary = {
+    tenantSlug: 'saas-platform',
+    generatedAt: new Date('2026-05-19T09:15:00.000Z'),
+    limitApplied: 10,
+    candidateFailedMessageCount: 3,
+    leafFailedMessageCount: 2,
+    supersededFailedMessageCount: 1,
+    readyNowCount: 1,
+    retriedCount: 1,
+    skippedCooldownCount: 1,
+    skippedPermanentCount: 0,
+    executions: [
+      {
+        sourceMessageId: 'message_whatsapp_002',
+        sourceExternalMessageId: 'wamid-002',
+        disposition: 'retryable',
+        status: 'retried',
+        failedAttemptCount: 1,
+        backoffMinutes: 5,
+        nextRetryAt: new Date('2026-05-16T14:11:00.000Z'),
+        retryMessageId: 'message_whatsapp_003',
+        retryExternalMessageId: 'wamid-003',
+      },
+      {
+        sourceMessageId: 'message_whatsapp_004',
+        sourceExternalMessageId: 'wamid-004',
+        disposition: 'retryable',
+        status: 'skipped_cooldown',
+        failedAttemptCount: 1,
+        backoffMinutes: 5,
+        nextRetryAt: new Date('2026-05-16T14:18:00.000Z'),
+        retryMessageId: null,
+        retryExternalMessageId: null,
+      },
+    ],
+  };
+  const whatsappOperationalMonitorSummary = {
+    tenantSlug: 'saas-platform',
+    generatedAt: new Date('2026-05-20T10:00:00.000Z'),
+    autoRunReadyRetriesEnabled: true,
+    overallStatus: 'warning',
+    totalAlertCount: 3,
+    criticalAlertCount: 0,
+    warningAlertCount: 3,
+    operationalThresholds: whatsappOutboundReportingSummary.operationalThresholds,
+    operationalDashboard: whatsappOutboundReportingSummary.operationalDashboard,
+    operationalAlerts: whatsappOutboundReportingSummary.operationalAlerts,
+    retryRunnerExecuted: true,
+    retryRunnerSummary: whatsappRetryRunnerSummary,
   };
   const whatsappMessageTemplate = WhatsappMessageTemplate.create({
     id: 'template_001',
@@ -2098,6 +2391,9 @@ describe('API', () => {
     getTenantConversationThreadByIdUseCase = {
       execute: jest.fn().mockResolvedValue(conversationThread),
     };
+    getTenantGrowthConversationWorkbenchUseCase = {
+      execute: jest.fn().mockResolvedValue(growthConversationWorkbench),
+    };
     getTenantGrowthAssignmentWorkloadUseCase = {
       execute: jest.fn().mockResolvedValue(growthAssignmentWorkload),
     };
@@ -2124,6 +2420,15 @@ describe('API', () => {
     };
     getTenantSubscriptionUseCase = {
       execute: jest.fn().mockResolvedValue(tenantSubscription),
+    };
+    executeTenantWhatsappAutomationActionsUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        threadId: 'thread_whatsapp_001',
+        triggerEvent: 'inbound_message',
+        executedAt: new Date('2026-05-19T09:00:00.000Z'),
+        executions: [],
+      }),
     };
     ingestTenantWhatsappConversationMessageUseCase = {
       execute: jest.fn().mockResolvedValue({
@@ -2169,6 +2474,15 @@ describe('API', () => {
         processedInboundMessages: 1,
         processedDeliveryEvents: 1,
       }),
+    };
+    retryTenantWhatsappFailedConversationMessageUseCase = {
+      execute: jest.fn().mockResolvedValue(retriedOutboundWhatsappMessage),
+    };
+    runTenantWhatsappOperationalMonitorUseCase = {
+      execute: jest.fn().mockResolvedValue(whatsappOperationalMonitorSummary),
+    };
+    runTenantWhatsappReadyRetriesUseCase = {
+      execute: jest.fn().mockResolvedValue(whatsappRetryRunnerSummary),
     };
     metaWhatsappWebhookSignatureVerifier = {
       isConfigured: jest.fn().mockReturnValue(true),
@@ -2698,6 +3012,8 @@ describe('API', () => {
       .useValue(getTenantPartyByIdUseCase)
       .overrideProvider(GetTenantConversationThreadByIdUseCase)
       .useValue(getTenantConversationThreadByIdUseCase)
+      .overrideProvider(GetTenantGrowthConversationWorkbenchUseCase)
+      .useValue(getTenantGrowthConversationWorkbenchUseCase)
       .overrideProvider(GetTenantGrowthAssignmentWorkloadUseCase)
       .useValue(getTenantGrowthAssignmentWorkloadUseCase)
       .overrideProvider(GetTenantWhatsappAutomationRuleByIdUseCase)
@@ -2792,6 +3108,8 @@ describe('API', () => {
       .useValue(createTenantConversationThreadUseCase)
       .overrideProvider(CreateTenantWhatsappAutomationRuleUseCase)
       .useValue(createTenantWhatsappAutomationRuleUseCase)
+      .overrideProvider(ExecuteTenantWhatsappAutomationActionsUseCase)
+      .useValue(executeTenantWhatsappAutomationActionsUseCase)
       .overrideProvider(CreateTenantWhatsappMessageTemplateUseCase)
       .useValue(createTenantWhatsappMessageTemplateUseCase)
       .overrideProvider(AssignTenantConversationThreadUseCase)
@@ -2812,6 +3130,12 @@ describe('API', () => {
       .useValue(receiveTenantMetaWhatsappWebhookUseCase)
       .overrideProvider(ReplayTenantWebhookEventEnvelopeUseCase)
       .useValue(replayTenantWebhookEventEnvelopeUseCase)
+      .overrideProvider(RetryTenantWhatsappFailedConversationMessageUseCase)
+      .useValue(retryTenantWhatsappFailedConversationMessageUseCase)
+      .overrideProvider(RunTenantWhatsappOperationalMonitorUseCase)
+      .useValue(runTenantWhatsappOperationalMonitorUseCase)
+      .overrideProvider(RunTenantWhatsappReadyRetriesUseCase)
+      .useValue(runTenantWhatsappReadyRetriesUseCase)
       .overrideProvider(MetaWhatsappWebhookSignatureVerifier)
       .useValue(metaWhatsappWebhookSignatureVerifier)
       .overrideProvider(MetaWhatsappWebhookTenantResolver)
@@ -4061,6 +4385,91 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/growth/tenants/:slug/conversations/workbench should return conversation workbench analytics', async () => {
+    await request(httpServer)
+      .get(
+        '/api/growth/tenants/saas-platform/conversations/workbench?assigneeUserId=user_456&channel=whatsapp&firstResponseSlaHours=2&followUpSlaHours=6&staleThreadHours=24',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        tenantSlug: 'saas-platform',
+        generatedAt: '2026-05-19T16:45:00.000Z',
+        policy: {
+          firstResponseSlaHours: 1,
+          followUpSlaHours: 12,
+          staleThreadHours: 48,
+        },
+        summary: {
+          openThreadCount: 2,
+          unassignedThreadCount: 1,
+          waitingOnTeamCount: 1,
+          waitingOnCustomerCount: 1,
+          overdueFirstResponseCount: 0,
+          overdueFollowUpCount: 0,
+          staleThreadCount: 0,
+        },
+        threads: [
+          {
+            threadId: 'thread_001',
+            leadId: 'lead_001',
+            assigneeUserId: null,
+            subject: 'Demo de onboarding facturacion',
+            channel: 'manual',
+            status: 'open',
+            latestMessagePreview:
+              'Hola Maria, te comparto los siguientes pasos para la demo.',
+            nextActionOwner: 'customer',
+            firstResponseStatus: 'not_applicable',
+            followUpStatus: 'not_applicable',
+            staleStatus: 'fresh',
+            priority: 'normal',
+            messageCount: 2,
+            hoursSinceLastActivity: 1.5,
+            hoursSinceLastInbound: 1.5,
+            hoursSinceOpened: 1.58,
+            openedAt: '2026-05-15T14:40:00.000Z',
+            lastActivityAt: '2026-05-15T14:45:00.000Z',
+            lastInboundAt: '2026-05-15T14:45:00.000Z',
+            lastOutboundAt: '2026-05-15T14:40:00.000Z',
+          },
+          {
+            threadId: 'thread_whatsapp_001',
+            leadId: 'lead_001',
+            assigneeUserId: null,
+            subject: 'Maria Perez',
+            channel: 'whatsapp',
+            status: 'open',
+            latestMessagePreview: 'Hola, quiero retomar la propuesta.',
+            nextActionOwner: 'team',
+            firstResponseStatus: 'not_applicable',
+            followUpStatus: 'pending',
+            staleStatus: 'fresh',
+            priority: 'high',
+            messageCount: 1,
+            hoursSinceLastActivity: 0.75,
+            hoursSinceLastInbound: 0.75,
+            hoursSinceOpened: 0.75,
+            openedAt: '2026-05-16T14:00:00.000Z',
+            lastActivityAt: '2026-05-16T14:00:00.000Z',
+            lastInboundAt: '2026-05-16T14:00:00.000Z',
+            lastOutboundAt: null,
+          },
+        ],
+      });
+
+    expect(getTenantGrowthConversationWorkbenchUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      {
+        assigneeUserId: 'user_456',
+        channel: 'whatsapp',
+        firstResponseSlaHours: 2,
+        followUpSlaHours: 6,
+        staleThreadHours: 24,
+      },
+    );
+  });
+
   it('GET /api/growth/tenants/:slug/conversations/:threadId should return one conversation thread', async () => {
     await request(httpServer)
       .get('/api/growth/tenants/saas-platform/conversations/thread_001')
@@ -4587,6 +4996,17 @@ describe('API', () => {
       externalMessageId: 'wamid-001',
       occurredAt: new Date('2026-05-16T14:00:00.000Z'),
     });
+    expect(
+      executeTenantWhatsappAutomationActionsUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      threadId: 'thread_whatsapp_001',
+      triggerEvent: 'inbound_message',
+      triggerMessageId: 'message_whatsapp_001',
+      triggerExternalMessageId: 'wamid-001',
+      executionKey: 'wamid-001',
+      occurredAt: new Date('2026-05-16T14:00:00.000Z'),
+    });
   });
 
   it('POST /api/growth/tenants/:slug/conversations/whatsapp-inbox/:threadId/outbound-messages should create a whatsapp outbound message', async () => {
@@ -4717,6 +5137,18 @@ describe('API', () => {
       providerErrorCode: undefined,
       occurredAt: new Date('2026-05-16T14:06:00.000Z'),
     });
+    expect(
+      executeTenantWhatsappAutomationActionsUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      threadId: 'thread_whatsapp_001',
+      triggerEvent: 'delivery_status_changed',
+      triggerMessageId: 'message_whatsapp_002',
+      triggerExternalMessageId: 'wamid-002',
+      triggerDeliveryStatus: 'delivered',
+      executionKey: 'wamid-002:delivered',
+      occurredAt: new Date('2026-05-16T14:06:00.000Z'),
+    });
   });
 
   it('GET /api/growth/tenants/:slug/conversations/:threadId/messages/:messageId/delivery-events should return delivery events for one message', async () => {
@@ -4754,6 +5186,47 @@ describe('API', () => {
       'thread_whatsapp_001',
       'message_whatsapp_002',
     );
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/:threadId/messages/:messageId/retry should retry a ready-now failed whatsapp message', async () => {
+    retryTenantWhatsappFailedConversationMessageUseCase.execute.mockResolvedValueOnce(
+      retriedOutboundWhatsappMessage,
+    );
+
+    await request(httpServer)
+      .post(
+        '/api/growth/tenants/saas-platform/conversations/thread_whatsapp_001/messages/message_whatsapp_002/retry',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        occurredAt: '2026-05-16T14:12:00.000Z',
+      })
+      .expect(201)
+      .expect({
+        id: 'message_whatsapp_003',
+        tenantId: 'tenant_123',
+        threadId: 'thread_whatsapp_001',
+        direction: 'outbound',
+        body: 'Perfecto, te escribo en unos minutos.',
+        templateId: null,
+        outboundIntentKey: 'follow_up',
+        provider: 'meta_cloud_api_stub',
+        deliveryStatus: 'pending',
+        externalMessageId: 'wamid-003',
+        failureReason: null,
+        deliveredAt: null,
+        readAt: null,
+        createdAt: '2026-05-16T14:12:00.000Z',
+      });
+
+    expect(
+      retryTenantWhatsappFailedConversationMessageUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      threadId: 'thread_whatsapp_001',
+      messageId: 'message_whatsapp_002',
+      occurredAt: new Date('2026-05-16T14:12:00.000Z'),
+    });
   });
 
   it('GET /api/growth/tenants/:slug/opportunities should return tenant-scoped opportunities', async () => {
@@ -4864,6 +5337,10 @@ describe('API', () => {
           deliveredCount: 1,
           readCount: 0,
           failedCount: 1,
+          immediateSendRejectionFailedCount: 1,
+          asynchronousDeliveryFailedCount: 0,
+          retryableFailedCount: 1,
+          permanentFailedCount: 0,
         },
         byIntent: [
           {
@@ -4913,11 +5390,356 @@ describe('API', () => {
             failedCount: 1,
           },
         ],
+        byProvider: [
+          {
+            provider: 'meta_cloud_api_stub',
+            messageCount: 2,
+            pendingCount: 1,
+            sentCount: 0,
+            deliveredCount: 1,
+            readCount: 0,
+            failedCount: 0,
+          },
+          {
+            provider: 'meta_cloud_api',
+            messageCount: 1,
+            pendingCount: 0,
+            sentCount: 0,
+            deliveredCount: 0,
+            readCount: 0,
+            failedCount: 1,
+          },
+        ],
+        byFailureClass: [
+          {
+            provider: 'meta_cloud_api',
+            failureClass: 'rate_limited',
+            failurePhase: 'immediate_send_rejection',
+            messageCount: 1,
+            retryableCount: 1,
+            permanentCount: 0,
+          },
+        ],
+        byProviderTaxonomy: [
+          {
+            provider: 'meta_cloud_api',
+            providerTaxonomyFamily: 'throughput_limit',
+            providerTaxonomyDetail: 'meta_pair_rate_limit',
+            failureClass: 'rate_limited',
+            failurePhase: 'immediate_send_rejection',
+            messageCount: 1,
+            retryableCount: 1,
+            permanentCount: 0,
+          },
+        ],
+        topProviderErrorCodes: [
+          {
+            provider: 'meta_cloud_api',
+            providerErrorCode: '131053',
+            failureClass: 'rate_limited',
+            failurePhase: 'immediate_send_rejection',
+            retryDisposition: 'retryable',
+            providerTaxonomyFamily: 'throughput_limit',
+            providerTaxonomyDetail: 'meta_pair_rate_limit',
+            occurrenceCount: 1,
+            latestFailureReason: 'rate_limit_hit',
+            latestProviderStatusDetail: 'temporary_throttle',
+          },
+        ],
+        retryOperations: {
+          totalFailedMessageCount: 1,
+          retryableFailedMessageCount: 1,
+          permanentFailedMessageCount: 0,
+          cooldownBlockedCount: 0,
+          readyNowCount: 1,
+          defaultBaseBackoffMinutes: 5,
+          maxBackoffMinutes: 180,
+        },
+        operationalThresholds: {
+          immediateSendRejectionRateWarning: 0.05,
+          asynchronousDeliveryFailureRateWarning: 0.03,
+          readyRetryQueueWarningCount: 1,
+          cooldownRetryQueueWarningCount: 3,
+          authOrConfigurationCriticalCount: 1,
+          policyBlockCriticalCount: 1,
+          rateLimitedWarningCount: 1,
+          unknownFailureWarningCount: 1,
+        },
+        operationalDashboard: {
+          overallStatus: 'warning',
+          immediateSendRejectionRate: 0.3333,
+          asynchronousDeliveryFailureRate: 0,
+          readyRetryQueueCount: 1,
+          cooldownRetryQueueCount: 0,
+          permanentFailureCount: 0,
+          leadingFailureClass: 'rate_limited',
+          leadingProvider: 'meta_cloud_api',
+          leadingProviderTaxonomyFamily: 'throughput_limit',
+          leadingProviderTaxonomyDetail: 'meta_pair_rate_limit',
+        },
+        operationalAlerts: [
+          {
+            key: 'immediate_send_rejection_rate',
+            severity: 'warning',
+            title: 'Immediate send rejection rate is elevated',
+            summary:
+              'Immediate outbound rejections reached 33.33% of outbound traffic.',
+            thresholdKey: 'immediateSendRejectionRateWarning',
+            observedValue: 0.3333,
+            thresholdValue: 0.05,
+            thresholdUnit: 'rate',
+            provider: 'meta_cloud_api',
+            failureClass: 'rate_limited',
+            providerTaxonomyFamily: 'throughput_limit',
+            providerTaxonomyDetail: 'meta_pair_rate_limit',
+            affectedMessageCount: 1,
+            recommendedAction:
+              'Inspect provider-facing failures before throughput or template automation keeps amplifying the rejection rate.',
+          },
+          {
+            key: 'rate_limit:meta_cloud_api:meta_pair_rate_limit',
+            severity: 'warning',
+            title: 'Provider throttling is affecting outbound throughput',
+            summary:
+              '1 outbound failures were classified as provider throttling or rate limiting.',
+            thresholdKey: 'rateLimitedWarningCount',
+            observedValue: 1,
+            thresholdValue: 1,
+            thresholdUnit: 'count',
+            provider: 'meta_cloud_api',
+            failureClass: 'rate_limited',
+            providerTaxonomyFamily: 'throughput_limit',
+            providerTaxonomyDetail: 'meta_pair_rate_limit',
+            affectedMessageCount: 1,
+            recommendedAction:
+              'Reduce burst size, watch retry queue growth, and consider staggering automation traffic.',
+          },
+          {
+            key: 'retry_queue_ready',
+            severity: 'warning',
+            title: 'Retry queue has ready-now messages',
+            summary:
+              '1 failed outbound messages are ready for retry execution now.',
+            thresholdKey: 'readyRetryQueueWarningCount',
+            observedValue: 1,
+            thresholdValue: 1,
+            thresholdUnit: 'count',
+            provider: null,
+            failureClass: null,
+            providerTaxonomyFamily: null,
+            providerTaxonomyDetail: null,
+            affectedMessageCount: 1,
+            recommendedAction:
+              'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+          },
+        ],
       });
 
     expect(
       getTenantWhatsappOutboundReportingSummaryUseCase.execute,
     ).toHaveBeenCalledWith('saas-platform');
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/whatsapp-reporting/retry-ready should run ready-now retries', async () => {
+    await request(httpServer)
+      .post(
+        '/api/growth/tenants/saas-platform/conversations/whatsapp-reporting/retry-ready',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        limit: 10,
+        occurredAt: '2026-05-19T09:15:00.000Z',
+      })
+      .expect(201)
+      .expect({
+        tenantSlug: 'saas-platform',
+        generatedAt: '2026-05-19T09:15:00.000Z',
+        limitApplied: 10,
+        candidateFailedMessageCount: 3,
+        leafFailedMessageCount: 2,
+        supersededFailedMessageCount: 1,
+        readyNowCount: 1,
+        retriedCount: 1,
+        skippedCooldownCount: 1,
+        skippedPermanentCount: 0,
+        executions: [
+          {
+            sourceMessageId: 'message_whatsapp_002',
+            sourceExternalMessageId: 'wamid-002',
+            disposition: 'retryable',
+            status: 'retried',
+            failedAttemptCount: 1,
+            backoffMinutes: 5,
+            nextRetryAt: '2026-05-16T14:11:00.000Z',
+            retryMessageId: 'message_whatsapp_003',
+            retryExternalMessageId: 'wamid-003',
+          },
+          {
+            sourceMessageId: 'message_whatsapp_004',
+            sourceExternalMessageId: 'wamid-004',
+            disposition: 'retryable',
+            status: 'skipped_cooldown',
+            failedAttemptCount: 1,
+            backoffMinutes: 5,
+            nextRetryAt: '2026-05-16T14:18:00.000Z',
+            retryMessageId: null,
+            retryExternalMessageId: null,
+          },
+        ],
+      });
+
+    expect(runTenantWhatsappReadyRetriesUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      limit: 10,
+      occurredAt: new Date('2026-05-19T09:15:00.000Z'),
+    });
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor should return an operational monitor snapshot and optional retry execution', async () => {
+    await request(httpServer)
+      .post(
+        '/api/growth/tenants/saas-platform/conversations/whatsapp-reporting/monitor',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        autoRunReadyRetries: true,
+        retryReadyLimit: 10,
+        occurredAt: '2026-05-20T10:00:00.000Z',
+      })
+      .expect(201)
+      .expect({
+        tenantSlug: 'saas-platform',
+        generatedAt: '2026-05-20T10:00:00.000Z',
+        autoRunReadyRetriesEnabled: true,
+        overallStatus: 'warning',
+        totalAlertCount: 3,
+        criticalAlertCount: 0,
+        warningAlertCount: 3,
+        operationalThresholds: {
+          immediateSendRejectionRateWarning: 0.05,
+          asynchronousDeliveryFailureRateWarning: 0.03,
+          readyRetryQueueWarningCount: 1,
+          cooldownRetryQueueWarningCount: 3,
+          authOrConfigurationCriticalCount: 1,
+          policyBlockCriticalCount: 1,
+          rateLimitedWarningCount: 1,
+          unknownFailureWarningCount: 1,
+        },
+        operationalDashboard: {
+          overallStatus: 'warning',
+          immediateSendRejectionRate: 0.3333,
+          asynchronousDeliveryFailureRate: 0,
+          readyRetryQueueCount: 1,
+          cooldownRetryQueueCount: 0,
+          permanentFailureCount: 0,
+          leadingFailureClass: 'rate_limited',
+          leadingProvider: 'meta_cloud_api',
+          leadingProviderTaxonomyFamily: 'throughput_limit',
+          leadingProviderTaxonomyDetail: 'meta_pair_rate_limit',
+        },
+        operationalAlerts: [
+          {
+            key: 'immediate_send_rejection_rate',
+            severity: 'warning',
+            title: 'Immediate send rejection rate is elevated',
+            summary:
+              'Immediate outbound rejections reached 33.33% of outbound traffic.',
+            thresholdKey: 'immediateSendRejectionRateWarning',
+            observedValue: 0.3333,
+            thresholdValue: 0.05,
+            thresholdUnit: 'rate',
+            provider: 'meta_cloud_api',
+            failureClass: 'rate_limited',
+            providerTaxonomyFamily: 'throughput_limit',
+            providerTaxonomyDetail: 'meta_pair_rate_limit',
+            affectedMessageCount: 1,
+            recommendedAction:
+              'Inspect provider-facing failures before throughput or template automation keeps amplifying the rejection rate.',
+          },
+          {
+            key: 'rate_limit:meta_cloud_api:meta_pair_rate_limit',
+            severity: 'warning',
+            title: 'Provider throttling is affecting outbound throughput',
+            summary:
+              '1 outbound failures were classified as provider throttling or rate limiting.',
+            thresholdKey: 'rateLimitedWarningCount',
+            observedValue: 1,
+            thresholdValue: 1,
+            thresholdUnit: 'count',
+            provider: 'meta_cloud_api',
+            failureClass: 'rate_limited',
+            providerTaxonomyFamily: 'throughput_limit',
+            providerTaxonomyDetail: 'meta_pair_rate_limit',
+            affectedMessageCount: 1,
+            recommendedAction:
+              'Reduce burst size, watch retry queue growth, and consider staggering automation traffic.',
+          },
+          {
+            key: 'retry_queue_ready',
+            severity: 'warning',
+            title: 'Retry queue has ready-now messages',
+            summary:
+              '1 failed outbound messages are ready for retry execution now.',
+            thresholdKey: 'readyRetryQueueWarningCount',
+            observedValue: 1,
+            thresholdValue: 1,
+            thresholdUnit: 'count',
+            provider: null,
+            failureClass: null,
+            providerTaxonomyFamily: null,
+            providerTaxonomyDetail: null,
+            affectedMessageCount: 1,
+            recommendedAction:
+              'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+          },
+        ],
+        retryRunnerExecuted: true,
+        retryRunnerSummary: {
+          tenantSlug: 'saas-platform',
+          generatedAt: '2026-05-19T09:15:00.000Z',
+          limitApplied: 10,
+          candidateFailedMessageCount: 3,
+          leafFailedMessageCount: 2,
+          supersededFailedMessageCount: 1,
+          readyNowCount: 1,
+          retriedCount: 1,
+          skippedCooldownCount: 1,
+          skippedPermanentCount: 0,
+          executions: [
+            {
+              sourceMessageId: 'message_whatsapp_002',
+              sourceExternalMessageId: 'wamid-002',
+              disposition: 'retryable',
+              status: 'retried',
+              failedAttemptCount: 1,
+              backoffMinutes: 5,
+              nextRetryAt: '2026-05-16T14:11:00.000Z',
+              retryMessageId: 'message_whatsapp_003',
+              retryExternalMessageId: 'wamid-003',
+            },
+            {
+              sourceMessageId: 'message_whatsapp_004',
+              sourceExternalMessageId: 'wamid-004',
+              disposition: 'retryable',
+              status: 'skipped_cooldown',
+              failedAttemptCount: 1,
+              backoffMinutes: 5,
+              nextRetryAt: '2026-05-16T14:18:00.000Z',
+              retryMessageId: null,
+              retryExternalMessageId: null,
+            },
+          ],
+        },
+      });
+
+    expect(runTenantWhatsappOperationalMonitorUseCase.execute).toHaveBeenCalledWith(
+      {
+        tenantSlug: 'saas-platform',
+        occurredAt: new Date('2026-05-20T10:00:00.000Z'),
+        autoRunReadyRetries: true,
+        retryReadyLimit: 10,
+      },
+    );
   });
 
   it('GET /api/growth/tenants/:slug/opportunities/:opportunityId should return one opportunity', async () => {

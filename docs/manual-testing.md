@@ -1591,6 +1591,12 @@ Campos enriquecidos que ahora puedes esperar en cada delivery event:
 - `providerPricingCategory`
 - `providerErrorCode`
 
+Semántica operativa importante:
+- al crear un outbound message ahora también se persiste un primer delivery event inmediato
+- ese primer evento representa si el provider aceptó o rechazó el send (`pending`, `sent` o `failed`)
+- después pueden llegar eventos adicionales del webhook con estados más profundos como `delivered` o `read`
+- esto permite distinguir entre “el provider aceptó el mensaje” y “el destinatario realmente lo recibió o leyó”
+
 Ejemplo de assignment de thread:
 
 ```sh
@@ -1635,6 +1641,50 @@ Esto sirve para responder rápidamente:
 - cuánto pipeline abierto está concentrado en cada owner
 - y filtrar inbox u oportunidades por `assigneeUserId` sin montar todavía una UI de workload completa
 
+Vista rápida de workbench / SLA de conversaciones:
+
+```http
+GET /api/growth/tenants/:slug/conversations/workbench
+```
+
+Query params opcionales:
+- `assigneeUserId`
+- `channel=manual|whatsapp`
+- `firstResponseSlaHours`
+- `followUpSlaHours`
+- `staleThreadHours`
+
+Ejemplo:
+
+```sh
+curl -s \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  "http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/workbench?channel=whatsapp&firstResponseSlaHours=2&followUpSlaHours=6&staleThreadHours=24"
+```
+
+Qué devuelve esta vista:
+- conteo de threads abiertos y sin owner
+- split entre conversaciones esperando al equipo y esperando al cliente
+- conteo de `overdueFirstResponse`
+- conteo de `overdueFollowUp`
+- conteo de `staleThread`
+- `threads[]` priorizado para operación diaria
+
+Por thread incluye:
+- `nextActionOwner`
+- `firstResponseStatus`
+- `followUpStatus`
+- `staleStatus`
+- `priority`
+- `hoursSinceLastActivity`
+- `hoursSinceLastInbound`
+
+Esto sirve para responder rápidamente:
+- qué conversaciones requieren acción del equipo ahora mismo
+- cuáles están a punto de romper o ya rompieron SLA
+- cuáles siguen sin owner
+- y cómo filtrar el workbench por owner o por canal antes de tener una UI completa
+
 Vista rápida de reporting outbound WhatsApp:
 
 ```http
@@ -1656,12 +1706,242 @@ Qué devuelve esta vista:
 - estado actual del funnel de entrega (`pending`, `sent`, `delivered`, `read`, `failed`)
 - agregado por `outboundIntentKey`
 - agregado por template, incluyendo `providerTemplateName` y `providerApprovalStatus`
+- agregado por provider (`byProvider`)
+- agregado por clase/fase de fallo (`byFailureClass`)
+- agregado por taxonomía fina del provider (`byProviderTaxonomy`)
+- top de `providerErrorCode` observados en fallos
+- postura operativa de retry/backoff (`retryOperations`)
+- dashboard operativo resumido (`operationalDashboard`)
+- alertas operativas derivadas (`operationalAlerts`)
 
 Esto sirve para responder rápidamente:
 - qué intención comercial estamos ejecutando más
 - qué templates se están usando de verdad
 - cuántos mensajes siguen libres vs semánticos
-- y qué parte del outbound ya está apoyándose en templates alineados con proveedor
+- qué parte del outbound ya está apoyándose en templates alineados con proveedor
+- qué provider está concentrando los fallos
+- qué error codes se están repitiendo
+- y cuántos fallos parecen reintentables vs permanentes
+
+Lectura operativa de los nuevos bloques:
+- `byProvider` resume volumen y estados por gateway/proveedor efectivo
+- `byFailureClass` separa mejor si el problema fue rate limiting, policy, destinatario o configuración, y además distingue rechazo inmediato vs fallo asíncrono
+- `byProviderTaxonomy` baja un nivel más, con familias y detalles como `throughput_limit / meta_pair_rate_limit` o `recipient_reachability / meta_recipient_unreachable`
+- `topProviderErrorCodes` ahora también expone `failureClass`, `failurePhase`, `retryDisposition`, `providerTaxonomyFamily` y `providerTaxonomyDetail`, ayudando a detectar patrones como throttling, policy blocks o destinos inválidos
+- `retryOperations` resume:
+  - cuántos mensajes fallidos totales tenemos
+  - cuántos parecen reintentables
+  - cuántos parecen permanentes
+  - cuántos siguen bloqueados por cooldown
+  - cuántos ya están listos para retry
+- `operationalDashboard` resume el estado general del carril outbound:
+  - `overallStatus`
+  - tasa de rechazo inmediato
+  - tasa de fallo asíncrono
+  - cola lista para retry
+  - cola bloqueada por cooldown
+  - taxonomía dominante del momento
+- `operationalThresholds` expone los thresholds calibrados que hoy gobiernan esas alertas
+- `operationalAlerts` convierte esa lectura en items accionables con severidad y recomendación
+
+Semántica actual de provider:
+- `immediate_send_rejection` cubre rechazos que nacen en el intento de envío inicial
+- `asynchronous_delivery_failure` cubre fallos reportados después por delivery webhook/event
+- `failureClass` clasifica los fallos en `rate_limited`, `recipient_issue`, `policy_block`, `auth_or_configuration`, `provider_transient` o `unknown`
+- `providerTaxonomyFamily` traduce esos fallos a buckets operativos más finos como `throughput_limit`, `template_policy`, `quality_enforcement` o `permission_scope`
+- `providerTaxonomyDetail` deja un detalle más específico inspirado en Meta, como `meta_pair_rate_limit`, `meta_template_not_approved`, `meta_quality_hold` o `meta_access_token_invalid`
+- `retryDisposition` traduce esa lectura a operación: `retryable` o `permanent`
+
+Thresholds calibrados actualmente:
+- `immediateSendRejectionRateWarning = 0.05`
+- `asynchronousDeliveryFailureRateWarning = 0.03`
+- `readyRetryQueueWarningCount = 1`
+- `cooldownRetryQueueWarningCount = 3`
+- `authOrConfigurationCriticalCount = 1`
+- `policyBlockCriticalCount = 1`
+- `rateLimitedWarningCount = 1`
+- `unknownFailureWarningCount = 1`
+
+Retry manual de un mensaje fallido listo para reintento:
+
+```http
+POST /api/growth/tenants/:slug/conversations/:threadId/messages/:messageId/retry
+```
+
+Ejemplo:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/thread_whatsapp_001/messages/message_whatsapp_002/retry \
+  -d '{
+    "occurredAt": "2026-05-16T14:12:00.000Z"
+  }'
+```
+
+Reglas actuales del retry manual:
+- usa la misma clasificación y cooldown que expone `retryOperations`
+- solo permite retry sobre mensajes outbound WhatsApp con estado `failed`
+- rechaza fallos clasificados como permanentes
+- rechaza mensajes que todavía siguen en cooldown
+- reintenta mensajes `freeform` de forma fiel
+- reintenta mensajes por template usando el snapshot persistido del render original
+- si el mensaje fue enviado antes de que existiera ese snapshot durable, responde error explícito y lo deja visible como deuda operativa legacy
+
+Runner tenant-scoped para retries listos:
+
+```http
+POST /api/growth/tenants/:slug/conversations/whatsapp-reporting/retry-ready
+```
+
+Ejemplo:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/whatsapp-reporting/retry-ready \
+  -d '{
+    "limit": 25,
+    "occurredAt": "2026-05-19T09:15:00.000Z"
+  }'
+```
+
+Qué hace este runner:
+- revisa mensajes outbound fallidos del tenant
+- ignora mensajes ya superseded por un retry hijo
+- aplica la misma clasificación `retryable` vs `permanent`
+- solo ejecuta los que ya están `readyNow`
+- devuelve un resumen con reintentos hechos, cooldowns pendientes y fallos permanentes
+
+Esto deja lista la semántica para enchufar un cron/job después sin reescribir el núcleo.
+
+Monitor operativo tenant-scoped para scheduler externo:
+
+```http
+POST /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor
+```
+
+Ejemplo:
+
+```sh
+curl -s \
+  -X POST \
+  -H "Authorization: Bearer TU_OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/whatsapp-reporting/monitor \
+  -d '{
+    "autoRunReadyRetries": true,
+    "retryReadyLimit": 25,
+    "occurredAt": "2026-05-20T10:00:00.000Z"
+  }'
+```
+
+Qué hace este monitor:
+- devuelve `operationalThresholds`, `operationalDashboard` y `operationalAlerts` en un solo snapshot
+- cuenta alertas `warning` y `critical`
+- si `autoRunReadyRetries=true`, dispara también el runner de retries listos
+- deja un `retryRunnerSummary` listo para que un cron o monitor externo lo persista o lo envíe a logs/observabilidad
+
+Scheduler interno del API para este monitor:
+- `GROWTH_WHATSAPP_OPERATIONAL_MONITOR_SCHEDULER_ENABLED=true`
+- `GROWTH_WHATSAPP_OPERATIONAL_MONITOR_TENANT_SLUGS=saas-platform-local`
+- `GROWTH_WHATSAPP_OPERATIONAL_MONITOR_INTERVAL_MS=60000`
+- `GROWTH_WHATSAPP_OPERATIONAL_MONITOR_AUTO_RUN_READY_RETRIES=true`
+- `GROWTH_WHATSAPP_OPERATIONAL_MONITOR_RETRY_READY_LIMIT=25`
+- `GROWTH_WHATSAPP_OPERATIONAL_MONITOR_OBSERVABILITY_WEBHOOK_URL=https://...`
+- `GROWTH_WHATSAPP_OPERATIONAL_MONITOR_OBSERVABILITY_AUTH_HEADER_NAME=x-monitor-token`
+- `GROWTH_WHATSAPP_OPERATIONAL_MONITOR_OBSERVABILITY_AUTH_HEADER_VALUE=...`
+- `GROWTH_WHATSAPP_OPERATIONAL_MONITOR_OBSERVABILITY_TIMEOUT_MS=5000`
+
+Con eso, el API ejecuta el monitor periódicamente al levantar el proceso y deja logs resumidos por tenant:
+- `healthy`
+- `warning`
+- `critical`
+
+Y además puede publicar cada snapshot del monitor hacia observabilidad externa real por webhook HTTP. El payload incluye:
+- `source`
+- `eventType`
+- `emittedAt`
+- `summary`
+
+Eso permite conectarlo de forma simple a:
+- una Lambda / Cloud Function receptora
+- un collector HTTP propio
+- un pipeline que reenvíe a Datadog, Grafana, OpenSearch o similares
+
+Collector local para pruebas end-to-end:
+
+Terminal aparte:
+
+```sh
+pnpm dev:whatsapp-monitor-collector
+```
+
+Eso levanta por defecto:
+- `http://127.0.0.1:4011/health`
+- `http://127.0.0.1:4011/ingest`
+- `http://127.0.0.1:4011/events`
+
+Luego configura en el API:
+
+```txt
+GROWTH_WHATSAPP_OPERATIONAL_MONITOR_OBSERVABILITY_WEBHOOK_URL=http://127.0.0.1:4011/ingest
+```
+
+Smoke end-to-end del cable de observabilidad:
+
+```sh
+pnpm smoke:growth:whatsapp-monitor-observability -- \
+  --tenant-slug saas-platform-local \
+  --collector-base-url http://127.0.0.1:4011 \
+  --sub TU_OWNER_SUB \
+  --email owner@saas-platform.dev
+```
+
+Qué verifica este smoke:
+- llama el endpoint `POST /growth/tenants/:slug/conversations/whatsapp-reporting/monitor`
+- confirma que el collector recibió un evento nuevo
+- valida que el `tenantSlug` emitido coincide con el tenant monitoreado
+
+Smoke end-to-end de taxonomía operativa con un fallo WhatsApp controlado:
+
+```sh
+pnpm smoke:growth:whatsapp-provider-taxonomy -- \
+  --tenant-slug saas-platform-local \
+  --collector-base-url http://127.0.0.1:4011 \
+  --sub TU_OWNER_SUB \
+  --email owner@saas-platform.dev
+```
+
+Qué verifica este smoke:
+- crea un thread WhatsApp local para pruebas
+- registra un outbound y luego un `deliveryStatus=failed`
+- valida que `GET /growth/tenants/:slug/conversations/whatsapp-reporting/outbound-summary` clasifica el error en la taxonomía esperada
+- vuelve a correr el monitor
+- confirma que el collector recibió un snapshot nuevo con `leadingProviderTaxonomyFamily`, `leadingProviderTaxonomyDetail` y `operationalAlerts` coherentes
+
+Valores por defecto de esta smoke:
+- `providerErrorCode=131053`
+- `expectedTaxonomyFamily=throughput_limit`
+- `expectedTaxonomyDetail=meta_pair_rate_limit`
+
+Detalles finos de taxonomía Meta que ya quedan distinguidos:
+- `meta_api_throttle`
+- `meta_pair_rate_limit`
+- `meta_recipient_unreachable`
+- `meta_reengagement_restriction`
+- `meta_template_not_approved`
+- `meta_quality_hold`
+- `meta_account_block`
+- `meta_access_token_invalid`
+- `meta_missing_permission`
+- `meta_phone_number_id_invalid`
+- `meta_platform_error`
+- `provider_unavailable`
 
 Ejemplo de creación de automation rule:
 
@@ -1678,14 +1958,17 @@ curl -s \
     "matchOutboundIntentKey": "follow_up",
     "matchAssigneeMode": "unassigned",
     "templateId": "TEMPLATE_ID",
+    "actionType": "send_template",
     "actionOutboundIntentKey": "follow_up"
   }'
 ```
 
-Semántica de esta fundación:
-- no dispara mensajes automáticamente
-- sí evalúa si un thread WhatsApp ya cumple una regla
-- y devuelve sugerencias accionables basadas en ownership, último intent y estado del thread
+Semántica actual de esta fundación:
+- las reglas con `actionType: "suggest_template"` siguen funcionando como recomendación
+- las reglas con `actionType: "send_template"` ya ejecutan un envío real cuando entra el evento compatible
+- el auto-send queda deduplicado por evento y regla para soportar retries y replays
+- el auto-send solo corre cuando el template está `active`, `approved` y con `providerTemplateName` listo
+- las variables se resuelven con el contexto actual del thread/lead (`firstName`, `fullName`, `participantDisplayName`, `participantHandle`, `leadEmail`, `leadPhoneE164`, `leadWhatsappE164`, `tenantSlug`, `threadId`)
 
 Ejemplo de sugerencias:
 
@@ -1694,6 +1977,13 @@ curl -s \
   -H "Authorization: Bearer TU_OWNER_TOKEN" \
   http://127.0.0.1:3000/api/growth/tenants/saas-platform-local/conversations/THREAD_ID/whatsapp-automation-suggestions
 ```
+
+Ejemplo práctico de auto-ejecución:
+- crea un template provider-approved
+- crea una regla `send_template`
+- ingresa un inbound por `POST /api/growth/tenants/:slug/conversations/whatsapp-inbox/messages`
+- o registra un delivery event por `POST /api/growth/tenants/:slug/conversations/whatsapp-inbox/delivery-events`
+- y el backend disparará el `outbound-message` automáticamente si la regla matchea
 
 ## Growth slice: Meta-like webhook foundation
 

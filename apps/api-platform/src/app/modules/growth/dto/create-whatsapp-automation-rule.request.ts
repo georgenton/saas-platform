@@ -1,5 +1,6 @@
-import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, MaxLength, ValidateIf } from 'class-validator';
 import {
+  WhatsappAutomationActionType,
   ConversationMessageDeliveryStatus,
   WhatsappAutomationAssigneeMode,
   WhatsappAutomationTriggerEvent,
@@ -20,6 +21,10 @@ const deliveryStatuses: ConversationMessageDeliveryStatus[] = [
   'delivered',
   'read',
   'failed',
+];
+const actionTypes: WhatsappAutomationActionType[] = [
+  'suggest_template',
+  'send_template',
 ];
 
 export class CreateWhatsappAutomationRuleRequestDto {
@@ -47,10 +52,17 @@ export class CreateWhatsappAutomationRuleRequestDto {
   @IsIn(assigneeModes)
   matchAssigneeMode?: WhatsappAutomationAssigneeMode | null;
 
-  @IsOptional()
+  @ValidateIf(
+    (object: CreateWhatsappAutomationRuleRequestDto) =>
+      object.actionType === 'send_template' || object.templateId !== undefined,
+  )
   @IsString()
   @MaxLength(120)
   templateId?: string | null;
+
+  @IsOptional()
+  @IsIn(actionTypes)
+  actionType?: WhatsappAutomationActionType | null;
 
   @IsOptional()
   @IsString()

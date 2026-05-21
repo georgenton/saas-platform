@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.25.0
+
+### Minor Changes
+
+- Add Growth conversation workbench, SLA analytics, real WhatsApp automation execution, deeper WhatsApp provider failure semantics, calibrated operational dashboard/alert thresholds, a tenant-scoped WhatsApp operational monitor plus runtime scheduler hook and external observability sink, local collector/smoke tooling, provider-aware operations/reporting foundations, persisted outbound template render snapshots, and both manual and tenant-scoped ready-now retry execution for failed WhatsApp messages.
+
 ## 0.24.0
 
 ### Minor Changes

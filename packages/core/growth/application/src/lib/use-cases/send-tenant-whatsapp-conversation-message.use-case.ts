@@ -1,6 +1,12 @@
 import { TenantNotFoundError, TenantRepository } from '@saas-platform/tenancy-application';
-import { ConversationMessage, ConversationThread } from '@saas-platform/growth-domain';
+import {
+  ConversationDeliveryEvent,
+  ConversationMessage,
+  ConversationThread,
+} from '@saas-platform/growth-domain';
 import { ConversationThreadNotFoundError } from '../errors/conversation-thread-not-found.error';
+import { ConversationDeliveryEventIdGenerator } from '../ports/conversation-delivery-event-id.generator';
+import { ConversationDeliveryEventRepository } from '../ports/conversation-delivery-event.repository';
 import { WhatsappConversationRecipientUnavailableError } from '../errors/whatsapp-conversation-recipient-unavailable.error';
 import { WhatsappMessageTemplateNotFoundError } from '../errors/whatsapp-message-template-not-found.error';
 import { WhatsappOutboundMessageContentUnresolvedError } from '../errors/whatsapp-outbound-message-content-unresolved.error';
@@ -9,6 +15,11 @@ import { ConversationMessageRepository } from '../ports/conversation-message.rep
 import { ConversationThreadRepository } from '../ports/conversation-thread.repository';
 import { WhatsappMessageTemplateRepository } from '../ports/whatsapp-message-template.repository';
 import { WhatsappOutboundMessageGateway } from '../ports/whatsapp-outbound-message-gateway';
+import {
+  buildPersistedWhatsappTemplateRenderSnapshot,
+  PersistedWhatsappTemplateRenderSnapshot,
+  serializeWhatsappTemplateRenderSnapshot,
+} from '../support/whatsapp-template-render-snapshot';
 
 export interface SendTenantWhatsappConversationMessageInput {
   tenantSlug: string;
@@ -16,6 +27,8 @@ export interface SendTenantWhatsappConversationMessageInput {
   body?: string | null;
   templateId?: string | null;
   templateVariables?: Record<string, string | number | boolean | null> | null;
+  templateRenderSnapshot?: PersistedWhatsappTemplateRenderSnapshot | null;
+  retryOfMessageId?: string | null;
   outboundIntentKey?: string | null;
   externalMessageId?: string | null;
   occurredAt?: Date | null;
@@ -27,6 +40,8 @@ export class SendTenantWhatsappConversationMessageUseCase {
     private readonly conversationThreadRepository: ConversationThreadRepository,
     private readonly conversationMessageRepository: ConversationMessageRepository,
     private readonly conversationMessageIdGenerator: ConversationMessageIdGenerator,
+    private readonly conversationDeliveryEventRepository: ConversationDeliveryEventRepository,
+    private readonly conversationDeliveryEventIdGenerator: ConversationDeliveryEventIdGenerator,
     private readonly whatsappMessageTemplateRepository: WhatsappMessageTemplateRepository,
     private readonly whatsappOutboundMessageGateway: WhatsappOutboundMessageGateway,
   ) {}
@@ -67,6 +82,7 @@ export class SendTenantWhatsappConversationMessageUseCase {
     const {
       resolvedBody,
       templateId,
+      renderedTemplateSnapshot,
       outboundIntentKey,
       providerTemplate,
     } = await this.resolveMessageContent(tenant.id, input, thread.id);
@@ -85,6 +101,10 @@ export class SendTenantWhatsappConversationMessageUseCase {
       direction: 'outbound',
       body: resolvedBody,
       templateId,
+      retryOfMessageId: this.normalizeOptionalValue(input.retryOfMessageId),
+      renderedTemplateSnapshotJson: renderedTemplateSnapshot
+        ? serializeWhatsappTemplateRenderSnapshot(renderedTemplateSnapshot)
+        : null,
       outboundIntentKey,
       provider: outboundResult.provider,
       deliveryStatus: outboundResult.deliveryStatus,
@@ -102,7 +122,28 @@ export class SendTenantWhatsappConversationMessageUseCase {
       createdAt: occurredAt,
     });
 
+    const deliveryEvent = ConversationDeliveryEvent.create({
+      id: this.conversationDeliveryEventIdGenerator.generate(),
+      tenantId: tenant.id,
+      messageId: message.id,
+      provider: outboundResult.provider,
+      eventKey: this.buildInitialDeliveryEventKey(message),
+      providerEventId: message.externalMessageId,
+      externalMessageId:
+        message.externalMessageId ?? `internal:${message.id}`,
+      deliveryStatus: message.deliveryStatus ?? 'pending',
+      failureReason: outboundResult.failureReason,
+      providerStatusDetail: outboundResult.providerStatusDetail,
+      providerConversationCategory: outboundResult.providerConversationCategory,
+      providerPricingCategory: outboundResult.providerPricingCategory,
+      providerErrorCode: outboundResult.providerErrorCode,
+      payloadJson: outboundResult.providerResponseJson,
+      occurredAt,
+      createdAt: occurredAt,
+    });
+
     await this.conversationMessageRepository.save(message);
+    await this.conversationDeliveryEventRepository.save(deliveryEvent);
     await this.conversationThreadRepository.save(
       this.withOutboundActivity(thread, message.body, occurredAt),
     );
@@ -133,6 +174,12 @@ export class SendTenantWhatsappConversationMessageUseCase {
     return normalizedValue ? normalizedValue : null;
   }
 
+  private buildInitialDeliveryEventKey(message: ConversationMessage): string {
+    return `outbound:${message.externalMessageId ?? message.id}:${
+      message.deliveryStatus ?? 'pending'
+    }`;
+  }
+
   private async resolveMessageContent(
     tenantId: string,
     input: SendTenantWhatsappConversationMessageInput,
@@ -140,6 +187,7 @@ export class SendTenantWhatsappConversationMessageUseCase {
   ): Promise<{
     resolvedBody: string;
     templateId: string | null;
+    renderedTemplateSnapshot: PersistedWhatsappTemplateRenderSnapshot | null;
     outboundIntentKey: string | null;
     providerTemplate:
       | {
@@ -150,10 +198,11 @@ export class SendTenantWhatsappConversationMessageUseCase {
       | null;
   }> {
     const templateId = this.normalizeOptionalValue(input.templateId);
+    const templateRenderSnapshot = input.templateRenderSnapshot ?? null;
     const directBody = this.normalizeOptionalValue(input.body);
     const directIntentKey = this.normalizeOptionalValue(input.outboundIntentKey);
 
-    if (!templateId && !directBody) {
+    if (!templateId && !templateRenderSnapshot && !directBody) {
       throw new WhatsappOutboundMessageContentUnresolvedError(
         input.tenantSlug,
         threadId,
@@ -161,10 +210,33 @@ export class SendTenantWhatsappConversationMessageUseCase {
       );
     }
 
+    if (templateRenderSnapshot) {
+      return {
+        resolvedBody: templateRenderSnapshot.renderedBody,
+        templateId: templateRenderSnapshot.templateId,
+        renderedTemplateSnapshot: templateRenderSnapshot,
+        outboundIntentKey:
+          directIntentKey ?? templateRenderSnapshot.templateIntentKey,
+        providerTemplate:
+          templateRenderSnapshot.providerApprovalStatus === 'approved' &&
+          templateRenderSnapshot.providerTemplateName
+            ? {
+                providerTemplateName:
+                  templateRenderSnapshot.providerTemplateName,
+                languageCode: templateRenderSnapshot.templateLanguageCode,
+                bodyParameterValues: [
+                  ...templateRenderSnapshot.bodyParameterValues,
+                ],
+              }
+            : null,
+      };
+    }
+
     if (!templateId) {
       return {
         resolvedBody: directBody as string,
         templateId: null,
+        renderedTemplateSnapshot: null,
         outboundIntentKey: directIntentKey,
         providerTemplate: null,
       };
@@ -193,6 +265,12 @@ export class SendTenantWhatsappConversationMessageUseCase {
     return {
       resolvedBody: rendered.body,
       templateId: template.id,
+      renderedTemplateSnapshot: buildPersistedWhatsappTemplateRenderSnapshot(
+        template,
+        rendered.body,
+        rendered.parameterValues,
+        input.templateVariables ?? {},
+      ),
       outboundIntentKey: directIntentKey ?? template.intentKey,
       providerTemplate:
         template.providerApprovalStatus === 'approved' &&

@@ -2,6 +2,7 @@ import { ConversationDeliveryEvent } from '@saas-platform/growth-domain';
 
 export interface ConversationDeliveryEventRepository {
   save(event: ConversationDeliveryEvent): Promise<void>;
+  findByTenantId(tenantId: string): Promise<ConversationDeliveryEvent[]>;
   findByTenantIdAndProviderAndEventKey(
     tenantId: string,
     provider: string,

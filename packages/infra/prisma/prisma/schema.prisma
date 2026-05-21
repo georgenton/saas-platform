@@ -43,6 +43,7 @@ model Tenant {
   conversationDeliveryEvents ConversationDeliveryEvent[]
   whatsappMessageTemplates WhatsappMessageTemplate[]
   whatsappAutomationRules WhatsappAutomationRule[]
+  whatsappAutomationExecutions WhatsappAutomationExecution[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
@@ -98,6 +99,7 @@ model ConversationThread {
   lead                 Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
   opportunities        Opportunity[]
   messages             ConversationMessage[]
+  automationExecutions WhatsappAutomationExecution[]
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -114,6 +116,8 @@ model ConversationMessage {
   direction         String
   body              String
   templateId        String?
+  retryOfMessageId  String?
+  renderedTemplateSnapshotJson String? @db.Text
   outboundIntentKey String?
   provider          String?
   deliveryStatus    String?
@@ -125,10 +129,12 @@ model ConversationMessage {
   thread            ConversationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
   template          WhatsappMessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   deliveryEvents    ConversationDeliveryEvent[]
+  automationExecutions WhatsappAutomationExecution[] @relation("WhatsappAutomationExecutionOutputMessage")
   createdAt         DateTime @default(now())
 
   @@index([tenantId, threadId, createdAt])
   @@index([tenantId, externalMessageId])
+  @@index([tenantId, retryOfMessageId])
 }
 
 model WhatsappMessageTemplate {
@@ -169,12 +175,37 @@ model WhatsappAutomationRule {
   status                String
   tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   template              WhatsappMessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  executions            WhatsappAutomationExecution[]
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
   @@unique([tenantId, key])
   @@index([tenantId, createdAt])
   @@index([tenantId, status, triggerEvent])
+}
+
+model WhatsappAutomationExecution {
+  id                    String   @id
+  tenantId              String
+  threadId              String
+  ruleId                String
+  triggerEvent          String
+  triggerMessageId      String?
+  triggerExternalMessageId String?
+  triggerDeliveryStatus String?
+  executionKey          String
+  status                String
+  reason                String?
+  outputMessageId       String?
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  thread                ConversationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  rule                  WhatsappAutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  outputMessage         ConversationMessage? @relation("WhatsappAutomationExecutionOutputMessage", fields: [outputMessageId], references: [id], onDelete: SetNull)
+  createdAt             DateTime @default(now())
+
+  @@unique([tenantId, executionKey])
+  @@index([tenantId, threadId, createdAt])
+  @@index([tenantId, ruleId, createdAt])
 }
 
 model ConversationDeliveryEvent {

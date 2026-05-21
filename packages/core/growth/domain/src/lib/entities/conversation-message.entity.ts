@@ -16,6 +16,8 @@ export interface ConversationMessageProps {
   direction: ConversationMessageDirection;
   body: string;
   templateId: string | null;
+  retryOfMessageId?: string | null;
+  renderedTemplateSnapshotJson?: string | null;
   outboundIntentKey: string | null;
   provider: ConversationMessageProvider | null;
   deliveryStatus: ConversationMessageDeliveryStatus | null;
@@ -30,7 +32,12 @@ export class ConversationMessage {
   private constructor(private readonly props: ConversationMessageProps) {}
 
   static create(props: ConversationMessageProps): ConversationMessage {
-    return new ConversationMessage(props);
+    return new ConversationMessage({
+      ...props,
+      retryOfMessageId: props.retryOfMessageId ?? null,
+      renderedTemplateSnapshotJson:
+        props.renderedTemplateSnapshotJson ?? null,
+    });
   }
 
   get id(): string {
@@ -55,6 +62,14 @@ export class ConversationMessage {
 
   get templateId(): string | null {
     return this.props.templateId;
+  }
+
+  get retryOfMessageId(): string | null {
+    return this.props.retryOfMessageId ?? null;
+  }
+
+  get renderedTemplateSnapshotJson(): string | null {
+    return this.props.renderedTemplateSnapshotJson ?? null;
   }
 
   get outboundIntentKey(): string | null {

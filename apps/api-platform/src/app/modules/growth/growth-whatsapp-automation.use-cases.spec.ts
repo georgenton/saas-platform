@@ -31,6 +31,7 @@ describe('Growth WhatsApp automation use cases', () => {
     {
       save: jest.fn(),
       findByTenantId: jest.fn(),
+      findByTenantIdAndId: jest.fn(),
       findByTenantIdAndThreadId: jest.fn(),
       findByTenantIdAndExternalMessageId: jest.fn(),
     };
@@ -96,11 +97,13 @@ describe('Growth WhatsApp automation use cases', () => {
       matchOutboundIntentKey: 'follow_up',
       matchAssigneeMode: 'unassigned',
       templateId: 'template_001',
+      actionType: 'send_template',
       actionOutboundIntentKey: 'follow_up',
     });
 
     expect(result.id).toBe('automation_001');
     expect(result.templateId).toBe('template_001');
+    expect(result.actionType).toBe('send_template');
     expect(result.matchAssigneeMode).toBe('unassigned');
     expect(whatsappAutomationRuleRepository.save).toHaveBeenCalledTimes(1);
   });

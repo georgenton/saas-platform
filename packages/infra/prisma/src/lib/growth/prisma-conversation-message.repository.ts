@@ -25,6 +25,9 @@ export class PrismaConversationMessageRepository
         direction: data.direction,
         body: data.body,
         templateId: data.templateId,
+        retryOfMessageId: data.retryOfMessageId ?? null,
+        renderedTemplateSnapshotJson:
+          data.renderedTemplateSnapshotJson ?? null,
         outboundIntentKey: data.outboundIntentKey,
         provider: data.provider,
         deliveryStatus: data.deliveryStatus,
@@ -40,6 +43,9 @@ export class PrismaConversationMessageRepository
         direction: data.direction,
         body: data.body,
         templateId: data.templateId,
+        retryOfMessageId: data.retryOfMessageId ?? null,
+        renderedTemplateSnapshotJson:
+          data.renderedTemplateSnapshotJson ?? null,
         outboundIntentKey: data.outboundIntentKey,
         provider: data.provider,
         deliveryStatus: data.deliveryStatus,
@@ -61,6 +67,20 @@ export class PrismaConversationMessageRepository
     });
 
     return messages.map((message) => this.toDomain(message as any));
+  }
+
+  async findByTenantIdAndId(
+    tenantId: string,
+    messageId: string,
+  ): Promise<ConversationMessage | null> {
+    const message = await this.conversationMessageDelegate.findFirst({
+      where: {
+        tenantId,
+        id: messageId,
+      },
+    });
+
+    return message ? this.toDomain(message as any) : null;
   }
 
   async findByTenantIdAndThreadId(
@@ -99,6 +119,8 @@ export class PrismaConversationMessageRepository
     direction: string;
     body: string;
     templateId: string | null;
+    retryOfMessageId: string | null;
+    renderedTemplateSnapshotJson: string | null;
     outboundIntentKey: string | null;
     provider: string | null;
     deliveryStatus: string | null;
@@ -115,6 +137,8 @@ export class PrismaConversationMessageRepository
       direction: record.direction as ConversationMessageDirection,
       body: record.body,
       templateId: record.templateId,
+      retryOfMessageId: record.retryOfMessageId,
+      renderedTemplateSnapshotJson: record.renderedTemplateSnapshotJson,
       outboundIntentKey: record.outboundIntentKey,
       provider: record.provider as ConversationMessageProvider | null,
       deliveryStatus:

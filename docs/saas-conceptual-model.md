@@ -849,12 +849,14 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
       - that consumer now also exposes an operator brief, resettable workbench policy, contextual empty states, and a clearer manual monitor readout for tenant operators
       - richer dashboard flows now also exist in that consumer, including drill-down inspection plus shared alert acknowledgements and shared monitor-run history backed by API persistence
       - that shared run history now also powers first-pass calibration analytics for thresholds, alert recurrence, and manual-vs-scheduler operational mix
+      - a first cross-tenant fleet console now also exists on top of that shared state, so operators can rank multiple tenancies, inspect shared hotspots, and jump into the tenant that needs attention first
+      - that fleet console now also exposes first escalation and staffing lenses, using monitor + workbench data to highlight which queues likely need intervention or more owner capacity
     - current explicit limitation is now narrower: legacy template messages sent before snapshot persistence still cannot be retried faithfully
     - next pressure is now operational hardening on top of these semantics:
       - calibrating thresholds with production-like traffic instead of only synthetic fixtures
       - expansion of taxonomy detail as new Meta/provider codes appear in the wild
       - externalizing scheduler state/telemetry beyond process logs once this starts running in shared environments
-      - deciding when this shared operational state should graduate again into broader cross-tenant analytics or dedicated operator tooling
+      - deciding when this fleet-level operational state should graduate into even more opinionated workflows like staffed ownership queues, follow-up runbooks, or explicit escalation state machines
 5. `Ecommerce` first domain slice
    - catalog plus orders
 

@@ -121,6 +121,15 @@ type GrowthDrilldownTarget =
       key: string;
     };
 
+type GrowthFleetTenantSnapshot = {
+  tenancy: SessionTenancy;
+  workbench: GrowthConversationWorkbenchResponse;
+  summary: WhatsappOutboundReportingSummaryResponse;
+  analytics: WhatsappOperationalMonitorAnalyticsResponse;
+  acknowledgements: WhatsappOperationalAlertAcknowledgementResponse[];
+  latestRun: WhatsappOperationalMonitorRunResponse | null;
+};
+
 function formatDate(value: string | null): string {
   if (!value) {
     return 'No registrado';
@@ -338,6 +347,21 @@ function operationalStatusLabel(
   }
 }
 
+function operationalStatusWeight(
+  status: 'healthy' | 'warning' | 'critical',
+): number {
+  switch (status) {
+    case 'critical':
+      return 3;
+    case 'warning':
+      return 2;
+    case 'healthy':
+      return 1;
+    default:
+      return 0;
+  }
+}
+
 function retryDispositionLabel(value: string): string {
   switch (value) {
     case 'retryable':
@@ -545,6 +569,16 @@ export function App() {
   const [growthMonitorHistory, setGrowthMonitorHistory] = useState<
     WhatsappOperationalMonitorRunResponse[]
   >([]);
+  const [growthFleetSnapshots, setGrowthFleetSnapshots] = useState<
+    GrowthFleetTenantSnapshot[]
+  >([]);
+  const [growthFleetLoading, setGrowthFleetLoading] = useState(false);
+  const [growthFleetError, setGrowthFleetError] = useState<string | null>(null);
+  const [growthFleetStatusFilter, setGrowthFleetStatusFilter] = useState<
+    'all' | 'healthy' | 'warning' | 'critical'
+  >('all');
+  const [selectedGrowthFleetTenantSlug, setSelectedGrowthFleetTenantSlug] =
+    useState<string | null>(null);
   const [growthDrilldownTarget, setGrowthDrilldownTarget] =
     useState<GrowthDrilldownTarget | null>(null);
 
@@ -750,6 +784,14 @@ export function App() {
   const canManageGrowthConversations = Boolean(
     currentTenancy?.permissionKeys.includes('growth.conversations.manage'),
   );
+  const growthAccessibleTenancies = useMemo(
+    () =>
+      session?.tenancies.filter((tenancy) =>
+        tenancy.permissionKeys.includes('growth.conversations.read'),
+      ) ?? [],
+    [session],
+  );
+  const growthWorkspaceFleetAvailable = growthAccessibleTenancies.length > 0;
   const selectedPendingInvitation = findPendingInvitation(
     session,
     selectedPendingInvitationId,
@@ -801,6 +843,9 @@ export function App() {
   const invoicingEnabled = enabledProductKeys.has('invoicing');
   const growthProductEnabled = enabledProductKeys.has('growth');
   const growthWorkspaceAvailable = canReadGrowthConversations;
+  const currentTenantGrowthAccessible = Boolean(
+    currentTenancy?.permissionKeys.includes('growth.conversations.read'),
+  );
   const selectedInvoiceSummary = useMemo(
     () =>
       invoices.find((invoice) => invoice.id === selectedInvoiceId) ?? null,
@@ -867,6 +912,286 @@ export function App() {
     [growthMonitorHistory],
   );
   const acknowledgedAlertCount = currentTenantAlertAcknowledgements.size;
+  const growthFleetPartialFailureCount = Math.max(
+    0,
+    growthAccessibleTenancies.length - growthFleetSnapshots.length,
+  );
+  const filteredGrowthFleetSnapshots = useMemo(() => {
+    return growthFleetSnapshots.filter((snapshot) => {
+      if (growthFleetStatusFilter === 'all') {
+        return true;
+      }
+
+      return (
+        snapshot.summary.operationalDashboard.overallStatus ===
+        growthFleetStatusFilter
+      );
+    });
+  }, [growthFleetSnapshots, growthFleetStatusFilter]);
+  const effectiveSelectedGrowthFleetTenantSlug = useMemo(() => {
+    const preferredTenantSlug = selectedGrowthFleetTenantSlug?.trim() ?? '';
+    if (
+      preferredTenantSlug &&
+      growthFleetSnapshots.some(
+        (snapshot) => snapshot.tenancy.tenant.slug === preferredTenantSlug,
+      )
+    ) {
+      return preferredTenantSlug;
+    }
+
+    const currentTenantSlug = currentTenancy?.tenant.slug ?? '';
+    if (
+      currentTenantSlug &&
+      growthFleetSnapshots.some(
+        (snapshot) => snapshot.tenancy.tenant.slug === currentTenantSlug,
+      )
+    ) {
+      return currentTenantSlug;
+    }
+
+    return growthFleetSnapshots[0]?.tenancy.tenant.slug ?? null;
+  }, [currentTenancy, growthFleetSnapshots, selectedGrowthFleetTenantSlug]);
+  const selectedGrowthFleetTenant = useMemo(() => {
+    if (!effectiveSelectedGrowthFleetTenantSlug) {
+      return null;
+    }
+
+    return (
+      growthFleetSnapshots.find(
+        (snapshot) =>
+          snapshot.tenancy.tenant.slug === effectiveSelectedGrowthFleetTenantSlug,
+      ) ?? null
+    );
+  }, [effectiveSelectedGrowthFleetTenantSlug, growthFleetSnapshots]);
+  const growthFleetOverview = useMemo(() => {
+    return growthFleetSnapshots.reduce(
+      (summary, snapshot) => {
+        const status = snapshot.summary.operationalDashboard.overallStatus;
+
+        summary.statusCounts[status] += 1;
+        summary.totalActiveAlerts += snapshot.summary.operationalAlerts.length;
+        summary.totalCriticalAlerts += snapshot.summary.operationalAlerts.filter(
+          (alert) => alert.severity === 'critical',
+        ).length;
+        summary.totalReadyRetries +=
+          snapshot.summary.retryOperations.readyNowCount;
+        summary.totalAcknowledgements += snapshot.acknowledgements.length;
+
+        return summary;
+      },
+      {
+        statusCounts: {
+          healthy: 0,
+          warning: 0,
+          critical: 0,
+        },
+        totalActiveAlerts: 0,
+        totalCriticalAlerts: 0,
+        totalReadyRetries: 0,
+        totalAcknowledgements: 0,
+      },
+    );
+  }, [growthFleetSnapshots]);
+  const growthFleetTopAlerts = useMemo(() => {
+    const alertMap = new Map<
+      string,
+      {
+        key: string;
+        title: string;
+        severity: 'warning' | 'critical';
+        tenantCount: number;
+        occurrenceCount: number;
+        lastSeenAt: string;
+      }
+    >();
+
+    for (const snapshot of growthFleetSnapshots) {
+      for (const alert of snapshot.summary.operationalAlerts) {
+        const current = alertMap.get(alert.key);
+        if (current) {
+          current.tenantCount += 1;
+          current.occurrenceCount += 1;
+          current.lastSeenAt =
+            current.lastSeenAt > snapshot.summary.generatedAt
+              ? current.lastSeenAt
+              : snapshot.summary.generatedAt;
+        } else {
+          alertMap.set(alert.key, {
+            key: alert.key,
+            title: alert.title,
+            severity: alert.severity,
+            tenantCount: 1,
+            occurrenceCount: 1,
+            lastSeenAt: snapshot.summary.generatedAt,
+          });
+        }
+      }
+    }
+
+    return [...alertMap.values()]
+      .sort((left, right) => {
+        return (
+          right.tenantCount - left.tenantCount ||
+          operationalStatusWeight(
+            left.severity === 'critical' ? 'critical' : 'warning',
+          ) -
+            operationalStatusWeight(
+              right.severity === 'critical' ? 'critical' : 'warning',
+            ) ||
+          right.lastSeenAt.localeCompare(left.lastSeenAt)
+        );
+      })
+      .slice(0, 4);
+  }, [growthFleetSnapshots]);
+  const growthFleetTopTaxonomy = useMemo(() => {
+    const taxonomyMap = new Map<
+      string,
+      {
+        key: string;
+        provider: string;
+        providerTaxonomyFamily: string;
+        providerTaxonomyDetail: string;
+        tenantCount: number;
+        messageCount: number;
+      }
+    >();
+
+    for (const snapshot of growthFleetSnapshots) {
+      for (const entry of snapshot.summary.byProviderTaxonomy) {
+        const key = `${entry.provider}-${entry.providerTaxonomyFamily}-${entry.providerTaxonomyDetail}`;
+        const current = taxonomyMap.get(key);
+        if (current) {
+          current.tenantCount += 1;
+          current.messageCount += entry.messageCount;
+        } else {
+          taxonomyMap.set(key, {
+            key,
+            provider: entry.provider,
+            providerTaxonomyFamily: entry.providerTaxonomyFamily,
+            providerTaxonomyDetail: entry.providerTaxonomyDetail,
+            tenantCount: 1,
+            messageCount: entry.messageCount,
+          });
+        }
+      }
+    }
+
+    return [...taxonomyMap.values()]
+      .sort(
+        (left, right) =>
+          right.tenantCount - left.tenantCount ||
+          right.messageCount - left.messageCount,
+      )
+      .slice(0, 4);
+  }, [growthFleetSnapshots]);
+  const growthFleetEscalationCandidates = useMemo(() => {
+    return growthFleetSnapshots
+      .map((snapshot) => {
+        const criticalAlertCount = snapshot.summary.operationalAlerts.filter(
+          (alert) => alert.severity === 'critical',
+        ).length;
+        const unacknowledgedCriticalCount = snapshot.summary.operationalAlerts.filter(
+          (alert) =>
+            alert.severity === 'critical' &&
+            !snapshot.acknowledgements.some(
+              (acknowledgement) => acknowledgement.alertKey === alert.key,
+            ),
+        ).length;
+        const staleSchedulerCoverage =
+          snapshot.analytics.triggerSourceCounts.scheduler === 0;
+        const score =
+          criticalAlertCount * 5 +
+          unacknowledgedCriticalCount * 4 +
+          snapshot.summary.retryOperations.readyNowCount * 2 +
+          (staleSchedulerCoverage ? 2 : 0) +
+          snapshot.workbench.summary.overdueFollowUpCount +
+          snapshot.workbench.summary.unassignedThreadCount;
+
+        return {
+          tenantSlug: snapshot.tenancy.tenant.slug,
+          tenantName: snapshot.tenancy.tenant.name,
+          overallStatus: snapshot.summary.operationalDashboard.overallStatus,
+          criticalAlertCount,
+          unacknowledgedCriticalCount,
+          readyNowCount: snapshot.summary.retryOperations.readyNowCount,
+          overdueFollowUpCount: snapshot.workbench.summary.overdueFollowUpCount,
+          unassignedThreadCount: snapshot.workbench.summary.unassignedThreadCount,
+          staleSchedulerCoverage,
+          score,
+        };
+      })
+      .filter((entry) => entry.score > 0)
+      .sort(
+        (left, right) =>
+          right.score - left.score ||
+          operationalStatusWeight(right.overallStatus) -
+            operationalStatusWeight(left.overallStatus) ||
+          right.criticalAlertCount - left.criticalAlertCount,
+      )
+      .slice(0, 5);
+  }, [growthFleetSnapshots]);
+  const growthFleetStaffingPressure = useMemo(() => {
+    return growthFleetSnapshots
+      .map((snapshot) => {
+        const summary = snapshot.workbench.summary;
+        const pressureScore =
+          summary.waitingOnTeamCount * 2 +
+          summary.unassignedThreadCount * 3 +
+          summary.staleThreadCount * 2 +
+          summary.overdueFirstResponseCount * 4 +
+          summary.overdueFollowUpCount * 3;
+
+        return {
+          tenantSlug: snapshot.tenancy.tenant.slug,
+          tenantName: snapshot.tenancy.tenant.name,
+          waitingOnTeamCount: summary.waitingOnTeamCount,
+          unassignedThreadCount: summary.unassignedThreadCount,
+          staleThreadCount: summary.staleThreadCount,
+          overdueFirstResponseCount: summary.overdueFirstResponseCount,
+          overdueFollowUpCount: summary.overdueFollowUpCount,
+          openThreadCount: summary.openThreadCount,
+          pressureScore,
+        };
+      })
+      .filter((entry) => entry.pressureScore > 0)
+      .sort(
+        (left, right) =>
+          right.pressureScore - left.pressureScore ||
+          right.overdueFirstResponseCount - left.overdueFirstResponseCount ||
+          right.unassignedThreadCount - left.unassignedThreadCount,
+      )
+      .slice(0, 5);
+  }, [growthFleetSnapshots]);
+  const growthFleetOperatorBrief = useMemo(() => {
+    if (!growthWorkspaceFleetAvailable) {
+      return null;
+    }
+
+    if (growthFleetOverview.statusCounts.critical > 0) {
+      return {
+        headline:
+          'Hay tenancies en estado critico; la consola fleet ya sirve para decidir donde intervenir primero.',
+        detail:
+          'Empieza por las colas con mayor numero de alertas activas o ready-now retries y luego entra al tenant puntual para operar el detalle.',
+      };
+    }
+
+    if (growthFleetOverview.statusCounts.warning > 0) {
+      return {
+        headline:
+          'La flota no esta rota, pero si muestra desgaste distribuido entre varios tenants.',
+        detail:
+          'Usa los hotspots compartidos para encontrar taxonomias o alertas repetidas antes de que se vuelvan un patron critico.',
+      };
+    }
+
+    return {
+      headline:
+        'La flota esta saludable; esta vista ya funciona como radar cruzado y no solo como panel del tenant actual.',
+      detail:
+        'Aprovecha este momento para revisar tenants sin corridas recientes o con thresholds que todavia se estan calibrando.',
+    };
+  }, [growthFleetOverview, growthWorkspaceFleetAvailable]);
   const growthFiltersCustomized = useMemo(
     () =>
       growthChannelFilter !== 'whatsapp' ||
@@ -995,6 +1320,95 @@ export function App() {
       ) ?? null
     );
   }, [growthDrilldownTarget, visibleAlertHistory]);
+
+  async function refreshGrowthFleet() {
+    if (!token || growthAccessibleTenancies.length === 0) {
+      setGrowthFleetSnapshots([]);
+      setGrowthFleetError(null);
+      return;
+    }
+
+    setGrowthFleetLoading(true);
+    setGrowthFleetError(null);
+
+    try {
+      const snapshotResults = await Promise.allSettled(
+        growthAccessibleTenancies.map(async (tenancy) => {
+          const tenantSlug = tenancy.tenant.slug;
+          const [workbench, summary, analytics, acknowledgements, monitorRuns] =
+            await Promise.all([
+              fetchGrowthConversationWorkbench(token, tenantSlug, {
+                channel: 'whatsapp',
+                firstResponseSlaHours: 2,
+                followUpSlaHours: 6,
+                staleThreadHours: 24,
+              }),
+              fetchWhatsappOutboundReportingSummary(token, tenantSlug),
+              fetchWhatsappOperationalMonitorAnalytics(token, tenantSlug),
+              fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug),
+              fetchWhatsappOperationalMonitorRuns(token, tenantSlug, 1),
+            ]);
+
+          return {
+            tenancy,
+            workbench,
+            summary,
+            analytics,
+            acknowledgements,
+            latestRun: monitorRuns[0] ?? null,
+          } satisfies GrowthFleetTenantSnapshot;
+        }),
+      );
+
+      const nextSnapshots: GrowthFleetTenantSnapshot[] = [];
+      const failedTenantSlugs: string[] = [];
+
+      snapshotResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          nextSnapshots.push(result.value);
+        } else {
+          failedTenantSlugs.push(growthAccessibleTenancies[index].tenant.slug);
+        }
+      });
+
+      nextSnapshots.sort((left, right) => {
+        return (
+          operationalStatusWeight(
+            right.summary.operationalDashboard.overallStatus,
+          ) -
+            operationalStatusWeight(
+              left.summary.operationalDashboard.overallStatus,
+            ) ||
+          right.summary.operationalAlerts.length -
+            left.summary.operationalAlerts.length ||
+          right.summary.retryOperations.readyNowCount -
+            left.summary.retryOperations.readyNowCount ||
+          left.tenancy.tenant.name.localeCompare(right.tenancy.tenant.name)
+        );
+      });
+
+      startTransition(() => {
+        setGrowthFleetSnapshots(nextSnapshots);
+      });
+
+      if (failedTenantSlugs.length > 0) {
+        setGrowthFleetError(
+          `No se pudo hidratar la vista fleet para ${failedTenantSlugs.join(', ')}.`,
+        );
+      } else {
+        setGrowthFleetError(null);
+      }
+    } catch (error) {
+      setGrowthFleetSnapshots([]);
+      setGrowthFleetError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar la consola fleet de Growth.',
+      );
+    } finally {
+      setGrowthFleetLoading(false);
+    }
+  }
 
   const aiEnabled = getBooleanEntitlement(currentEntitlements, 'ai_enabled');
   const maxUsers = getNumberEntitlement(currentEntitlements, 'max_users');
@@ -1282,6 +1696,117 @@ export function App() {
       cancelled = true;
     };
   }, [currentTenancy, invoicingEnabled, token]);
+
+  useEffect(() => {
+    if (!token || growthAccessibleTenancies.length === 0) {
+      setGrowthFleetSnapshots([]);
+      setGrowthFleetError(null);
+      setSelectedGrowthFleetTenantSlug(null);
+      setGrowthFleetLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadGrowthFleet() {
+      setGrowthFleetLoading(true);
+      setGrowthFleetError(null);
+
+      try {
+        const snapshotResults = await Promise.allSettled(
+          growthAccessibleTenancies.map(async (tenancy) => {
+            const tenantSlug = tenancy.tenant.slug;
+            const [workbench, summary, analytics, acknowledgements, monitorRuns] =
+              await Promise.all([
+                fetchGrowthConversationWorkbench(token, tenantSlug, {
+                  channel: 'whatsapp',
+                  firstResponseSlaHours: 2,
+                  followUpSlaHours: 6,
+                  staleThreadHours: 24,
+                }),
+                fetchWhatsappOutboundReportingSummary(token, tenantSlug),
+                fetchWhatsappOperationalMonitorAnalytics(token, tenantSlug),
+                fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug),
+                fetchWhatsappOperationalMonitorRuns(token, tenantSlug, 1),
+              ]);
+
+            return {
+              tenancy,
+              workbench,
+              summary,
+              analytics,
+              acknowledgements,
+              latestRun: monitorRuns[0] ?? null,
+            } satisfies GrowthFleetTenantSnapshot;
+          }),
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        const nextSnapshots: GrowthFleetTenantSnapshot[] = [];
+        const failedTenantSlugs: string[] = [];
+
+        snapshotResults.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            nextSnapshots.push(result.value);
+          } else {
+            failedTenantSlugs.push(growthAccessibleTenancies[index].tenant.slug);
+          }
+        });
+
+        nextSnapshots.sort((left, right) => {
+          return (
+            operationalStatusWeight(
+              right.summary.operationalDashboard.overallStatus,
+            ) -
+              operationalStatusWeight(
+                left.summary.operationalDashboard.overallStatus,
+              ) ||
+            right.summary.operationalAlerts.length -
+              left.summary.operationalAlerts.length ||
+            right.summary.retryOperations.readyNowCount -
+              left.summary.retryOperations.readyNowCount ||
+            left.tenancy.tenant.name.localeCompare(right.tenancy.tenant.name)
+          );
+        });
+
+        startTransition(() => {
+          setGrowthFleetSnapshots(nextSnapshots);
+        });
+
+        if (failedTenantSlugs.length > 0) {
+          setGrowthFleetError(
+            `No se pudo hidratar la vista fleet para ${failedTenantSlugs.join(', ')}.`,
+          );
+        } else {
+          setGrowthFleetError(null);
+        }
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setGrowthFleetSnapshots([]);
+        setGrowthFleetError(
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar la consola fleet de Growth.',
+        );
+      } finally {
+        if (!cancelled) {
+          setGrowthFleetLoading(false);
+        }
+      }
+    }
+
+    void loadGrowthFleet();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [growthAccessibleTenancies, token]);
 
   useEffect(() => {
     if (
@@ -1953,6 +2478,7 @@ export function App() {
       const nextAcknowledgements =
         await fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug);
       setGrowthAlertAcknowledgements(nextAcknowledgements);
+      await refreshGrowthFleet();
     } catch (error) {
       setGrowthError(
         error instanceof Error
@@ -1989,6 +2515,7 @@ export function App() {
       });
 
       await refreshGrowthWorkspace();
+      await refreshGrowthFleet();
       setGrowthActionMessage(
         summary.retryRunnerExecuted
           ? `Monitor ejecutado. Estado ${operationalStatusLabel(
@@ -2039,6 +2566,10 @@ export function App() {
     setWhatsappMonitorAnalytics(null);
     setGrowthAlertAcknowledgements([]);
     setGrowthMonitorHistory([]);
+    setGrowthFleetSnapshots([]);
+    setGrowthFleetError(null);
+    setGrowthFleetLoading(false);
+    setSelectedGrowthFleetTenantSlug(null);
     setSessionError(null);
   }
 
@@ -3959,15 +4490,27 @@ export function App() {
               <span className={styles.label}>Growth & Conversations platform</span>
               <h2>Consumer operativo de workbench, alertas y monitor</h2>
             </div>
-            {session && currentTenancy && growthWorkspaceAvailable ? (
-              <button
-                className={styles.ghostButton}
-                disabled={growthLoading || growthActionLoading !== null}
-                onClick={() => void refreshGrowthWorkspace()}
-                type="button"
-              >
-                {growthLoading ? 'Refrescando...' : 'Refrescar Growth'}
-              </button>
+            {session && growthWorkspaceFleetAvailable ? (
+              <div className={styles.inlineActionRow}>
+                <button
+                  className={styles.ghostButton}
+                  disabled={growthFleetLoading}
+                  onClick={() => void refreshGrowthFleet()}
+                  type="button"
+                >
+                  {growthFleetLoading ? 'Refrescando fleet...' : 'Refrescar fleet'}
+                </button>
+                {currentTenancy && growthWorkspaceAvailable ? (
+                  <button
+                    className={styles.ghostButton}
+                    disabled={growthLoading || growthActionLoading !== null}
+                    onClick={() => void refreshGrowthWorkspace()}
+                    type="button"
+                  >
+                    {growthLoading ? 'Refrescando...' : 'Refrescar tenant actual'}
+                  </button>
+                ) : null}
+              </div>
             ) : null}
           </div>
 
@@ -3975,24 +4518,535 @@ export function App() {
             <div className={styles.emptyState}>
               <p>Primero carguemos la sesion para abrir la consola operativa de Growth.</p>
             </div>
-          ) : !currentTenancy ? (
-            <div className={styles.emptyState}>
-              <p>Selecciona un tenant actual para consultar workbench, alertas y monitor.</p>
-            </div>
-          ) : !growthWorkspaceAvailable ? (
+          ) : !growthWorkspaceFleetAvailable ? (
             <div className={styles.emptyState}>
               <p>
-                El usuario actual no expone <code>growth.conversations.read</code>,
-                asi que esta vista no puede consumir el workbench ni el resumen
-                operativo.
+                Esta sesion no expone <code>growth.conversations.read</code> en ninguna
+                tenancy accesible, asi que todavia no podemos abrir la consola
+                operativa dedicada.
               </p>
             </div>
           ) : (
             <div className={styles.stack}>
               {growthError ? <p className={styles.errorBanner}>{growthError}</p> : null}
+              {growthFleetError ? (
+                <p className={styles.errorBanner}>{growthFleetError}</p>
+              ) : null}
               {growthActionMessage ? (
                 <p className={styles.successBanner}>{growthActionMessage}</p>
               ) : null}
+              {growthFleetOperatorBrief ? (
+                <div className={styles.operatorBrief}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Fleet operator brief</span>
+                      <h3>Radar compartido de tenancies Growth</h3>
+                    </div>
+                    <span className={styles.statusPill}>
+                      {growthFleetSnapshots.length}/{growthAccessibleTenancies.length}{' '}
+                      tenancies
+                    </span>
+                  </div>
+                  <p>{growthFleetOperatorBrief.headline}</p>
+                  <small>{growthFleetOperatorBrief.detail}</small>
+                  <div className={styles.badgeRow}>
+                    <span className={styles.badge}>
+                      Criticos {growthFleetOverview.statusCounts.critical}
+                    </span>
+                    <span className={styles.badge}>
+                      Warning {growthFleetOverview.statusCounts.warning}
+                    </span>
+                    <span className={styles.badge}>
+                      Ready retries {growthFleetOverview.totalReadyRetries}
+                    </span>
+                    <span className={styles.badge}>
+                      Hotspots {growthFleetTopAlerts.length}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className={styles.invoiceKpiGrid}>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Tenancies con Growth</span>
+                  <strong>{growthAccessibleTenancies.length}</strong>
+                  <small>
+                    {growthFleetSnapshots.length} hidratadas
+                    {growthFleetPartialFailureCount > 0
+                      ? ` · ${growthFleetPartialFailureCount} pendientes`
+                      : ''}
+                  </small>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Estados criticos</span>
+                  <strong>{growthFleetOverview.statusCounts.critical}</strong>
+                  <small>{growthFleetOverview.statusCounts.warning} warning</small>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Alertas activas</span>
+                  <strong>{growthFleetOverview.totalActiveAlerts}</strong>
+                  <small>{growthFleetOverview.totalCriticalAlerts} criticas</small>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Ready-now retries</span>
+                  <strong>{growthFleetOverview.totalReadyRetries}</strong>
+                  <small>
+                    {growthFleetOverview.totalAcknowledgements} acknowledgements
+                  </small>
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Fleet queue</span>
+                      <h3>Ordena primero que tenant atender</h3>
+                    </div>
+                    <label className={styles.field}>
+                      <span>Filtrar por estado</span>
+                      <select
+                        className={styles.selectField}
+                        onChange={(event) =>
+                          setGrowthFleetStatusFilter(
+                            event.target.value === 'healthy'
+                              ? 'healthy'
+                              : event.target.value === 'warning'
+                                ? 'warning'
+                                : event.target.value === 'critical'
+                                  ? 'critical'
+                                  : 'all',
+                          )
+                        }
+                        value={growthFleetStatusFilter}
+                      >
+                        <option value="all">Todos</option>
+                        <option value="critical">Critico</option>
+                        <option value="warning">Warning</option>
+                        <option value="healthy">Saludable</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  {filteredGrowthFleetSnapshots.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>
+                        No hay tenancies visibles para el filtro actual de la consola
+                        fleet.
+                      </p>
+                    </div>
+                  ) : (
+                    filteredGrowthFleetSnapshots.map((snapshot) => {
+                      const isSelected =
+                        effectiveSelectedGrowthFleetTenantSlug ===
+                        snapshot.tenancy.tenant.slug;
+                      const leadingAlert =
+                        snapshot.summary.operationalAlerts[0] ?? null;
+                      const latestRunAt =
+                        snapshot.latestRun?.generatedAt ??
+                        snapshot.analytics.windowEndAt ??
+                        snapshot.summary.generatedAt;
+
+                      return (
+                        <div
+                          className={`${styles.invoiceItemCard} ${
+                            isSelected ? styles.drilldownCardActive : ''
+                          }`}
+                          key={snapshot.tenancy.tenant.id}
+                        >
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>{snapshot.tenancy.tenant.name}</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                snapshot.summary.operationalDashboard.overallStatus,
+                              )}`}
+                            >
+                              {operationalStatusLabel(
+                                snapshot.summary.operationalDashboard.overallStatus,
+                              )}
+                            </span>
+                          </div>
+                          <small>
+                            {snapshot.tenancy.tenant.slug}
+                            {currentTenancy?.tenant.slug === snapshot.tenancy.tenant.slug
+                              ? ' · workspace actual'
+                              : ''}
+                          </small>
+                          <div className={styles.badgeRow}>
+                            <span className={styles.badge}>
+                              Alerts {snapshot.summary.operationalAlerts.length}
+                            </span>
+                            <span className={styles.badge}>
+                              Ready retries{' '}
+                              {snapshot.summary.retryOperations.readyNowCount}
+                            </span>
+                            <span className={styles.badge}>
+                              Ack {snapshot.acknowledgements.length}
+                            </span>
+                          </div>
+                          <small>
+                            Ultima corrida {formatDate(latestRunAt)} · scheduler{' '}
+                            {snapshot.analytics.triggerSourceCounts.scheduler} · manual{' '}
+                            {snapshot.analytics.triggerSourceCounts.manual}
+                          </small>
+                          <small>
+                            {leadingAlert?.title ??
+                              'Sin alertas activas en el snapshot actual'}
+                          </small>
+                          <div className={styles.inlineActionRow}>
+                            <button
+                              className={styles.ghostButton}
+                              onClick={() =>
+                                setSelectedGrowthFleetTenantSlug(
+                                  snapshot.tenancy.tenant.slug,
+                                )
+                              }
+                              type="button"
+                            >
+                              Inspeccionar
+                            </button>
+                            {currentTenancy?.tenant.slug !== snapshot.tenancy.tenant.slug ? (
+                              <button
+                                className={styles.secondaryButton}
+                                disabled={actionLoading !== null}
+                                onClick={() =>
+                                  void handleSelectTenancy(
+                                    snapshot.tenancy.tenant.slug,
+                                  )
+                                }
+                                type="button"
+                              >
+                                Abrir workspace
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Fleet inspector</span>
+                      <h3>Lectura rapida del tenant seleccionado</h3>
+                    </div>
+                  </div>
+
+                  {!selectedGrowthFleetTenant ? (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Selecciona un tenant de la cola fleet para ver su lectura
+                        operativa consolidada.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.stack}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>{selectedGrowthFleetTenant.tenancy.tenant.name}</strong>
+                        <span
+                          className={`${styles.statusPill} ${operationalStatusTone(
+                            selectedGrowthFleetTenant.summary.operationalDashboard
+                              .overallStatus,
+                          )}`}
+                        >
+                          {operationalStatusLabel(
+                            selectedGrowthFleetTenant.summary.operationalDashboard
+                              .overallStatus,
+                          )}
+                        </span>
+                      </div>
+                      <small>
+                        {selectedGrowthFleetTenant.tenancy.tenant.slug} · membership{' '}
+                        {selectedGrowthFleetTenant.tenancy.membership.status}
+                      </small>
+                      <div className={styles.badgeRow}>
+                        <span className={styles.badge}>
+                          Leading provider:{' '}
+                          {humanizeKey(
+                            selectedGrowthFleetTenant.summary.operationalDashboard
+                              .leadingProvider,
+                          )}
+                        </span>
+                        <span className={styles.badge}>
+                          Leading taxonomy:{' '}
+                          {humanizeKey(
+                            selectedGrowthFleetTenant.summary.operationalDashboard
+                              .leadingProviderTaxonomyDetail,
+                          )}
+                        </span>
+                        <span className={styles.badge}>
+                          Ready retries{' '}
+                          {
+                            selectedGrowthFleetTenant.summary.retryOperations
+                              .readyNowCount
+                          }
+                        </span>
+                      </div>
+                      <small>
+                        Corridas historicas{' '}
+                        {selectedGrowthFleetTenant.analytics.runCount} · scheduler{' '}
+                        {
+                          selectedGrowthFleetTenant.analytics.triggerSourceCounts
+                            .scheduler
+                        }{' '}
+                        · manual{' '}
+                        {
+                          selectedGrowthFleetTenant.analytics.triggerSourceCounts
+                            .manual
+                        }
+                      </small>
+                      {selectedGrowthFleetTenant.summary.operationalAlerts[0] ? (
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>
+                              {
+                                selectedGrowthFleetTenant.summary.operationalAlerts[0]
+                                  .title
+                              }
+                            </strong>
+                            <span className={styles.statusPill}>
+                              {
+                                selectedGrowthFleetTenant.summary.operationalAlerts[0]
+                                  .severity
+                              }
+                            </span>
+                          </div>
+                          <small>
+                            {
+                              selectedGrowthFleetTenant.summary.operationalAlerts[0]
+                                .summary
+                            }
+                          </small>
+                          <small>
+                            {
+                              selectedGrowthFleetTenant.summary.operationalAlerts[0]
+                                .recommendedAction
+                            }
+                          </small>
+                        </div>
+                      ) : null}
+                      {selectedGrowthFleetTenant.analytics.thresholdCalibration
+                        .slice(0, 2)
+                        .map((suggestion) => (
+                          <div
+                            className={styles.invoiceItemCard}
+                            key={suggestion.thresholdKey}
+                          >
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{humanizeKey(suggestion.thresholdKey)}</strong>
+                              <span className={styles.statusPill}>
+                                {humanizeKey(suggestion.direction)}
+                              </span>
+                            </div>
+                            <small>{suggestion.rationale}</small>
+                            <small>
+                              Actual{' '}
+                              {formatThresholdValue(
+                                suggestion.currentValue,
+                                suggestion.thresholdUnit,
+                              )}{' '}
+                              · recomendado{' '}
+                              {formatThresholdValue(
+                                suggestion.recommendedValue,
+                                suggestion.thresholdUnit,
+                              )}
+                            </small>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Fleet hotspots</span>
+                      <h3>Alertas repetidas entre tenancies</h3>
+                    </div>
+                  </div>
+
+                  {growthFleetTopAlerts.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>No hay alertas compartidas activas entre las tenancies visibles.</p>
+                    </div>
+                  ) : (
+                    growthFleetTopAlerts.map((alert) => (
+                      <div className={styles.invoiceItemCard} key={alert.key}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{alert.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              alert.severity === 'critical' ? 'critical' : 'warning',
+                            )}`}
+                          >
+                            {alert.tenantCount} tenants
+                          </span>
+                        </div>
+                        <small>
+                          {alert.occurrenceCount} apariciones activas · ultima vez{' '}
+                          {formatDate(alert.lastSeenAt)}
+                        </small>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Taxonomy spread</span>
+                      <h3>Patrones compartidos del provider</h3>
+                    </div>
+                  </div>
+
+                  {growthFleetTopTaxonomy.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>No hay taxonomias dominantes compartidas entre tenancies.</p>
+                    </div>
+                  ) : (
+                    growthFleetTopTaxonomy.map((entry) => (
+                      <div className={styles.invoiceItemCard} key={entry.key}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{humanizeKey(entry.providerTaxonomyDetail)}</strong>
+                          <span className={styles.statusPill}>
+                            {entry.tenantCount} tenants
+                          </span>
+                        </div>
+                        <small>
+                          {entry.provider} · {humanizeKey(entry.providerTaxonomyFamily)}
+                        </small>
+                        <small>{entry.messageCount} mensajes afectados</small>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Escalation candidates</span>
+                      <h3>Donde conviene intervenir primero</h3>
+                    </div>
+                  </div>
+
+                  {growthFleetEscalationCandidates.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>
+                        La flota no muestra señales fuertes de escalación en este
+                        momento.
+                      </p>
+                    </div>
+                  ) : (
+                    growthFleetEscalationCandidates.map((entry) => (
+                      <div className={styles.invoiceItemCard} key={entry.tenantSlug}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{entry.tenantName}</strong>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              entry.overallStatus,
+                            )}`}
+                          >
+                            score {entry.score}
+                          </span>
+                        </div>
+                        <small>{entry.tenantSlug}</small>
+                        <div className={styles.badgeRow}>
+                          <span className={styles.badge}>
+                            Criticas {entry.criticalAlertCount}
+                          </span>
+                          <span className={styles.badge}>
+                            Sin ack {entry.unacknowledgedCriticalCount}
+                          </span>
+                          <span className={styles.badge}>
+                            Ready retries {entry.readyNowCount}
+                          </span>
+                          <span className={styles.badge}>
+                            Unassigned {entry.unassignedThreadCount}
+                          </span>
+                        </div>
+                        <small>
+                          Follow-ups vencidos {entry.overdueFollowUpCount}
+                          {entry.staleSchedulerCoverage
+                            ? ' · sin cobertura del scheduler'
+                            : ''}
+                        </small>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Staffing pressure</span>
+                      <h3>Tenants con mayor presion operativa</h3>
+                    </div>
+                  </div>
+
+                  {growthFleetStaffingPressure.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>
+                        No hay presión visible de staffing en las colas cross-tenant.
+                      </p>
+                    </div>
+                  ) : (
+                    growthFleetStaffingPressure.map((entry) => (
+                      <div className={styles.invoiceItemCard} key={entry.tenantSlug}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{entry.tenantName}</strong>
+                          <span className={styles.statusPill}>
+                            pressure {entry.pressureScore}
+                          </span>
+                        </div>
+                        <small>{entry.tenantSlug}</small>
+                        <div className={styles.badgeRow}>
+                          <span className={styles.badge}>
+                            Waiting on team {entry.waitingOnTeamCount}
+                          </span>
+                          <span className={styles.badge}>
+                            Overdue first {entry.overdueFirstResponseCount}
+                          </span>
+                          <span className={styles.badge}>
+                            Stale {entry.staleThreadCount}
+                          </span>
+                          <span className={styles.badge}>
+                            Open {entry.openThreadCount}
+                          </span>
+                        </div>
+                        <small>
+                          Unassigned {entry.unassignedThreadCount} · overdue follow-up{' '}
+                          {entry.overdueFollowUpCount}
+                        </small>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {!currentTenancy ? (
+                <div className={styles.emptyState}>
+                  <p>
+                    La consola fleet ya esta disponible. Si quieres abrir workbench,
+                    monitor manual y drill-down detallado, elige un workspace actual.
+                  </p>
+                </div>
+              ) : !currentTenantGrowthAccessible ? (
+                <div className={styles.emptyState}>
+                  <p>
+                    El workspace actual no expone <code>growth.conversations.read</code>,
+                    pero la vista fleet si detecto otras tenancies con acceso a
+                    Growth. Cambia de tenant desde la cola superior para abrir el
+                    detalle operativo.
+                  </p>
+                </div>
+              ) : (
+                <>
               {!growthProductEnabled ? (
                 <div className={styles.emptyState}>
                   <p>
@@ -5023,6 +6077,8 @@ export function App() {
                   )}
                 </div>
               </div>
+                </>
+              )}
             </div>
           )}
         </section>

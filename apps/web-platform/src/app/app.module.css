@@ -348,6 +348,21 @@
   color: #7d2a22;
 }
 
+.healthy {
+  background: rgba(39, 137, 91, 0.14);
+  color: #236944;
+}
+
+.warning {
+  background: rgba(171, 112, 42, 0.16);
+  color: #8b5818;
+}
+
+.critical {
+  background: rgba(125, 42, 34, 0.14);
+  color: #7d2a22;
+}
+
 .currentWorkspace {
   margin: 20px 0;
 }
@@ -535,6 +550,34 @@
 .detailCard {
   display: grid;
   gap: 16px;
+}
+
+.operatorBrief {
+  background: linear-gradient(180deg, rgba(255, 249, 239, 0.96) 0%, rgba(245, 238, 228, 0.88) 100%);
+  border: 1px solid rgba(143, 86, 49, 0.14);
+  border-radius: 24px;
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px;
+}
+
+.operatorBrief p {
+  color: #2d241c;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.operatorBrief small {
+  color: #675b50;
+  line-height: 1.6;
+}
+
+.inlineActionRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 .errorBanner,

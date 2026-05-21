@@ -16,6 +16,7 @@ import {
   createTaxRate,
   downloadInvoiceElectronicRideHtml,
   downloadInvoiceElectronicXmlPreview,
+  fetchGrowthConversationWorkbench,
   fetchElectronicSandboxReadiness,
   fetchElectronicSubmissionSettings,
   fetchElectronicSignatureMaterialInspection,
@@ -32,6 +33,7 @@ import {
   fetchInvoicingReportSummary,
   fetchIssuerProfile,
   fetchSession,
+  fetchWhatsappOutboundReportingSummary,
   getTenantInvitation,
   listCustomers,
   listInvoices,
@@ -41,6 +43,7 @@ import {
   listTenantEnabledProducts,
   listTenantInvitations,
   reverseInvoicePayment,
+  runWhatsappOperationalMonitor,
   resendInvitation,
   sendInvoiceEmail,
   setCurrentTenancy,
@@ -62,6 +65,7 @@ import {
   ElectronicSignatureMaterialInspectionResponse,
   ElectronicSubmissionSettingsResponse,
   ElectronicSignatureSettingsResponse,
+  GrowthConversationWorkbenchResponse,
   InvoiceElectronicArtifactsResponse,
   InvoiceNumberingSettingsResponse,
   InvoiceDetailResponse,
@@ -79,6 +83,8 @@ import {
   SessionPendingInvitation,
   SessionEntitlement,
   SessionTenancy,
+  WhatsappOperationalMonitorSummaryResponse,
+  WhatsappOutboundReportingSummaryResponse,
 } from './types';
 
 const API_BASE_URL =
@@ -249,6 +255,74 @@ function formatReportMonth(value: string): string {
   }).format(new Date(Number(year), Number(month) - 1, 1));
 }
 
+function formatRate(value: number): string {
+  return new Intl.NumberFormat('es-EC', {
+    style: 'percent',
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function humanizeKey(value: string | null): string {
+  if (!value) {
+    return 'No definido';
+  }
+
+  return value.replaceAll('_', ' ');
+}
+
+function operationalStatusTone(
+  status: 'healthy' | 'warning' | 'critical',
+): string {
+  switch (status) {
+    case 'healthy':
+      return styles.healthy;
+    case 'warning':
+      return styles.warning;
+    case 'critical':
+      return styles.critical;
+    default:
+      return '';
+  }
+}
+
+function operationalStatusLabel(
+  status: 'healthy' | 'warning' | 'critical',
+): string {
+  switch (status) {
+    case 'healthy':
+      return 'Saludable';
+    case 'warning':
+      return 'Atencion';
+    case 'critical':
+      return 'Critico';
+    default:
+      return status;
+  }
+}
+
+function retryDispositionLabel(value: string): string {
+  switch (value) {
+    case 'retryable':
+      return 'Reintentable';
+    case 'permanent':
+      return 'Permanente';
+    default:
+      return humanizeKey(value);
+  }
+}
+
+function channelLabel(channel: string): string {
+  switch (channel) {
+    case 'whatsapp':
+      return 'WhatsApp';
+    case 'manual':
+      return 'Manual';
+    default:
+      return channel;
+  }
+}
+
 function getEntitlementValue(
   entitlements: SessionEntitlement[],
   key: string,
@@ -406,6 +480,26 @@ export function App() {
   const [invoicingActionMessage, setInvoicingActionMessage] = useState<
     string | null
   >(null);
+  const [growthWorkbench, setGrowthWorkbench] =
+    useState<GrowthConversationWorkbenchResponse | null>(null);
+  const [whatsappSummary, setWhatsappSummary] =
+    useState<WhatsappOutboundReportingSummaryResponse | null>(null);
+  const [whatsappMonitorSummary, setWhatsappMonitorSummary] =
+    useState<WhatsappOperationalMonitorSummaryResponse | null>(null);
+  const [growthLoading, setGrowthLoading] = useState(false);
+  const [growthError, setGrowthError] = useState<string | null>(null);
+  const [growthActionMessage, setGrowthActionMessage] = useState<string | null>(null);
+  const [growthActionLoading, setGrowthActionLoading] = useState<string | null>(null);
+  const [growthChannelFilter, setGrowthChannelFilter] = useState<
+    'all' | 'manual' | 'whatsapp'
+  >('whatsapp');
+  const [growthAssigneeFilter, setGrowthAssigneeFilter] = useState('');
+  const [firstResponseSlaHours, setFirstResponseSlaHours] = useState('2');
+  const [followUpSlaHours, setFollowUpSlaHours] = useState('6');
+  const [staleThreadHours, setStaleThreadHours] = useState('24');
+  const [monitorAutoRunReadyRetries, setMonitorAutoRunReadyRetries] =
+    useState(false);
+  const [monitorRetryReadyLimit, setMonitorRetryReadyLimit] = useState('10');
 
   const selectedInvoiceDocumentSupport =
     selectedInvoiceDetail && electronicSandboxReadiness
@@ -603,6 +697,12 @@ export function App() {
   const canSendInvoiceNotifications = Boolean(
     currentTenancy?.permissionKeys.includes('invoicing.notifications.send'),
   );
+  const canReadGrowthConversations = Boolean(
+    currentTenancy?.permissionKeys.includes('growth.conversations.read'),
+  );
+  const canManageGrowthConversations = Boolean(
+    currentTenancy?.permissionKeys.includes('growth.conversations.manage'),
+  );
   const selectedPendingInvitation = findPendingInvitation(
     session,
     selectedPendingInvitationId,
@@ -652,6 +752,8 @@ export function App() {
     [enabledProductKeys, productCatalog],
   );
   const invoicingEnabled = enabledProductKeys.has('invoicing');
+  const growthProductEnabled = enabledProductKeys.has('growth');
+  const growthWorkspaceAvailable = canReadGrowthConversations;
   const selectedInvoiceSummary = useMemo(
     () =>
       invoices.find((invoice) => invoice.id === selectedInvoiceId) ?? null,
@@ -682,6 +784,91 @@ export function App() {
       invoiceNumberingSettings?.previewNumber ??
       `INV-${String(invoices.length + 1).padStart(4, '0')}`,
     [invoiceNumberingSettings, invoices.length],
+  );
+  const leadingOperationalAlerts = useMemo(
+    () => whatsappSummary?.operationalAlerts.slice(0, 4) ?? [],
+    [whatsappSummary],
+  );
+  const leadingProviderTaxonomy = useMemo(
+    () => whatsappSummary?.byProviderTaxonomy.slice(0, 4) ?? [],
+    [whatsappSummary],
+  );
+  const leadingProviderErrors = useMemo(
+    () => whatsappSummary?.topProviderErrorCodes.slice(0, 4) ?? [],
+    [whatsappSummary],
+  );
+  const workbenchThreads = useMemo(
+    () => growthWorkbench?.threads.slice(0, 6) ?? [],
+    [growthWorkbench],
+  );
+  const growthFiltersCustomized = useMemo(
+    () =>
+      growthChannelFilter !== 'whatsapp' ||
+      growthAssigneeFilter.trim().length > 0 ||
+      firstResponseSlaHours !== '2' ||
+      followUpSlaHours !== '6' ||
+      staleThreadHours !== '24',
+    [
+      firstResponseSlaHours,
+      followUpSlaHours,
+      growthAssigneeFilter,
+      growthChannelFilter,
+      staleThreadHours,
+    ],
+  );
+  const growthOperatorBrief = useMemo(() => {
+    if (!whatsappSummary) {
+      return null;
+    }
+
+    const dashboard = whatsappSummary.operationalDashboard;
+    const firstAlert = whatsappSummary.operationalAlerts[0] ?? null;
+
+    if (dashboard.overallStatus === 'critical') {
+      return {
+        headline:
+          'La operacion necesita intervencion prioritaria antes de seguir empujando mas trafico.',
+        detail:
+          firstAlert?.recommendedAction ??
+          'Revisa bloqueos de configuracion, policy o backlog de retries antes de enviar mas mensajes.',
+      };
+    }
+
+    if (dashboard.overallStatus === 'warning') {
+      return {
+        headline:
+          'Hay senales de desgaste operativo; la cola sigue viva, pero conviene actuar antes de que escale.',
+        detail:
+          firstAlert?.recommendedAction ??
+          'Empieza por la taxonomia dominante y el backlog listo para retry para bajar la presion.',
+      };
+    }
+
+    return {
+      headline:
+        'La cola esta saludable; este es un buen momento para usar la vista como radar temprano y no solo como alarma.',
+      detail:
+        'Si cambias filtros o ejecutas el monitor manual, el dashboard te devolvera una lectura fresca del tenant actual.',
+    };
+  }, [whatsappSummary]);
+  const workbenchEmptyMessage = useMemo(() => {
+    if (!growthWorkbench) {
+      return 'Cuando termine la carga veremos el resumen SLA del workbench.';
+    }
+
+    if (growthWorkbench.summary.openThreadCount === 0) {
+      return 'No hay conversaciones abiertas para la politica actual del tenant.';
+    }
+
+    if (growthFiltersCustomized) {
+      return 'Hay conversaciones en el tenant, pero los filtros actuales no dejaron threads visibles. Prueba reseteando la policy o quitando el assignee.';
+    }
+
+    return 'No hay threads visibles para el filtro actual.';
+  }, [growthFiltersCustomized, growthWorkbench]);
+  const latestMonitorExecutions = useMemo(
+    () => whatsappMonitorSummary?.retryRunnerSummary?.executions.slice(0, 3) ?? [],
+    [whatsappMonitorSummary],
   );
 
   const aiEnabled = getBooleanEntitlement(currentEntitlements, 'ai_enabled');
@@ -957,6 +1144,83 @@ export function App() {
       cancelled = true;
     };
   }, [currentTenancy, invoicingEnabled, token]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      !growthWorkspaceAvailable
+    ) {
+      setGrowthWorkbench(null);
+      setWhatsappSummary(null);
+      setWhatsappMonitorSummary(null);
+      setGrowthError(null);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadGrowthWorkspace() {
+      setGrowthLoading(true);
+      setGrowthError(null);
+
+      try {
+        const [nextWorkbench, nextSummary] = await Promise.all([
+          fetchGrowthConversationWorkbench(token, tenantSlug, {
+            assigneeUserId: growthAssigneeFilter.trim() || null,
+            channel:
+              growthChannelFilter === 'all' ? null : growthChannelFilter,
+            firstResponseSlaHours: Number(firstResponseSlaHours) || null,
+            followUpSlaHours: Number(followUpSlaHours) || null,
+            staleThreadHours: Number(staleThreadHours) || null,
+          }),
+          fetchWhatsappOutboundReportingSummary(token, tenantSlug),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setGrowthWorkbench(nextWorkbench);
+          setWhatsappSummary(nextSummary);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setGrowthWorkbench(null);
+        setWhatsappSummary(null);
+        setWhatsappMonitorSummary(null);
+        setGrowthError(
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el workspace operativo de Growth.',
+        );
+      } finally {
+        if (!cancelled) {
+          setGrowthLoading(false);
+        }
+      }
+    }
+
+    void loadGrowthWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    currentTenancy,
+    firstResponseSlaHours,
+    followUpSlaHours,
+    growthAssigneeFilter,
+    growthChannelFilter,
+    growthWorkspaceAvailable,
+    staleThreadHours,
+    token,
+  ]);
 
   useEffect(() => {
     if (!token || !currentTenancy || !selectedInvoiceId || !invoicingEnabled) {
@@ -1430,12 +1694,108 @@ export function App() {
     }
   }
 
+  async function refreshGrowthWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !growthWorkspaceAvailable
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setGrowthLoading(true);
+    setGrowthError(null);
+
+    try {
+      const [nextWorkbench, nextSummary] = await Promise.all([
+        fetchGrowthConversationWorkbench(token, tenantSlug, {
+          assigneeUserId: growthAssigneeFilter.trim() || null,
+          channel: growthChannelFilter === 'all' ? null : growthChannelFilter,
+          firstResponseSlaHours: Number(firstResponseSlaHours) || null,
+          followUpSlaHours: Number(followUpSlaHours) || null,
+          staleThreadHours: Number(staleThreadHours) || null,
+        }),
+        fetchWhatsappOutboundReportingSummary(token, tenantSlug),
+      ]);
+
+      startTransition(() => {
+        setGrowthWorkbench(nextWorkbench);
+        setWhatsappSummary(nextSummary);
+      });
+    } catch (error) {
+      setGrowthError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo refrescar el workspace operativo de Growth.',
+      );
+    } finally {
+      setGrowthLoading(false);
+    }
+  }
+
+  function resetGrowthWorkspacePolicy() {
+    setGrowthChannelFilter('whatsapp');
+    setGrowthAssigneeFilter('');
+    setFirstResponseSlaHours('2');
+    setFollowUpSlaHours('6');
+    setStaleThreadHours('24');
+  }
+
+  async function handleRunGrowthOperationalMonitor() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canManageGrowthConversations
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setGrowthActionLoading('run-monitor');
+    setGrowthActionMessage(null);
+    setGrowthError(null);
+
+    try {
+      const summary = await runWhatsappOperationalMonitor(token, tenantSlug, {
+        autoRunReadyRetries: monitorAutoRunReadyRetries,
+        retryReadyLimit: Number(monitorRetryReadyLimit) || null,
+      });
+
+      startTransition(() => {
+        setWhatsappMonitorSummary(summary);
+      });
+
+      await refreshGrowthWorkspace();
+      setGrowthActionMessage(
+        summary.retryRunnerExecuted
+          ? `Monitor ejecutado. Estado ${operationalStatusLabel(
+              summary.overallStatus,
+            ).toLowerCase()} y retries listos procesados.`
+          : `Monitor ejecutado. Estado ${operationalStatusLabel(
+              summary.overallStatus,
+            ).toLowerCase()}.`,
+      );
+    } catch (error) {
+      setGrowthError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo ejecutar el monitor operativo de Growth.',
+      );
+    } finally {
+      setGrowthActionLoading(null);
+    }
+  }
+
   async function handleTokenSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const nextToken = tokenInput.trim();
     window.localStorage.setItem(TOKEN_STORAGE_KEY, nextToken);
     setActionMessage(null);
+    setGrowthActionMessage(null);
+    setGrowthError(null);
+    setWhatsappMonitorSummary(null);
     setSessionError(null);
     setToken(nextToken);
   }
@@ -1449,6 +1809,11 @@ export function App() {
     setPendingInvitationDetail(null);
     setSelectedTenantInvitation(null);
     setActionMessage(null);
+    setGrowthActionMessage(null);
+    setGrowthError(null);
+    setGrowthWorkbench(null);
+    setWhatsappSummary(null);
+    setWhatsappMonitorSummary(null);
     setSessionError(null);
   }
 
@@ -3358,6 +3723,593 @@ export function App() {
                     Selecciona una invitacion del tenant para revisar o disparar acciones.
                   </p>
                 )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className={styles.adminPanel}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.label}>Growth & Conversations platform</span>
+              <h2>Consumer operativo de workbench, alertas y monitor</h2>
+            </div>
+            {session && currentTenancy && growthWorkspaceAvailable ? (
+              <button
+                className={styles.ghostButton}
+                disabled={growthLoading || growthActionLoading !== null}
+                onClick={() => void refreshGrowthWorkspace()}
+                type="button"
+              >
+                {growthLoading ? 'Refrescando...' : 'Refrescar Growth'}
+              </button>
+            ) : null}
+          </div>
+
+          {!session ? (
+            <div className={styles.emptyState}>
+              <p>Primero carguemos la sesion para abrir la consola operativa de Growth.</p>
+            </div>
+          ) : !currentTenancy ? (
+            <div className={styles.emptyState}>
+              <p>Selecciona un tenant actual para consultar workbench, alertas y monitor.</p>
+            </div>
+          ) : !growthWorkspaceAvailable ? (
+            <div className={styles.emptyState}>
+              <p>
+                El usuario actual no expone <code>growth.conversations.read</code>,
+                asi que esta vista no puede consumir el workbench ni el resumen
+                operativo.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.stack}>
+              {growthError ? <p className={styles.errorBanner}>{growthError}</p> : null}
+              {growthActionMessage ? (
+                <p className={styles.successBanner}>{growthActionMessage}</p>
+              ) : null}
+              {!growthProductEnabled ? (
+                <div className={styles.emptyState}>
+                  <p>
+                    Este tenant ya deja operar el workspace de Growth por permisos
+                    efectivos, aunque <code>/products</code> todavia no publique la
+                    clave <code>growth</code>. La consola permanece visible para no
+                    ocultar alertas ni workbench reales.
+                  </p>
+                </div>
+              ) : null}
+              {growthOperatorBrief ? (
+                <div className={styles.operatorBrief}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Operator brief</span>
+                      <h3>Lectura rapida de esta cola</h3>
+                    </div>
+                    <span
+                      className={`${styles.statusPill} ${operationalStatusTone(
+                        whatsappSummary!.operationalDashboard.overallStatus,
+                      )}`}
+                    >
+                      {operationalStatusLabel(
+                        whatsappSummary!.operationalDashboard.overallStatus,
+                      )}
+                    </span>
+                  </div>
+                  <p>{growthOperatorBrief.headline}</p>
+                  <small>{growthOperatorBrief.detail}</small>
+                  <div className={styles.badgeRow}>
+                    <span className={styles.badge}>
+                      Provider dominante:{' '}
+                      {humanizeKey(
+                        whatsappSummary!.operationalDashboard.leadingProvider,
+                      )}
+                    </span>
+                    <span className={styles.badge}>
+                      Fallo lider:{' '}
+                      {humanizeKey(
+                        whatsappSummary!.operationalDashboard.leadingFailureClass,
+                      )}
+                    </span>
+                    <span className={styles.badge}>
+                      Fail rate async:{' '}
+                      {formatRate(
+                        whatsappSummary!.operationalDashboard
+                          .asynchronousDeliveryFailureRate,
+                      )}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+
+              {whatsappSummary ? (
+                <div className={styles.invoiceKpiGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Estado operativo</span>
+                    <strong>
+                      <span
+                        className={`${styles.statusPill} ${operationalStatusTone(
+                          whatsappSummary.operationalDashboard.overallStatus,
+                        )}`}
+                      >
+                        {operationalStatusLabel(
+                          whatsappSummary.operationalDashboard.overallStatus,
+                        )}
+                      </span>
+                    </strong>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Alertas activas</span>
+                    <strong>{whatsappSummary.operationalAlerts.length}</strong>
+                    <small>
+                      {whatsappSummary.operationalAlerts.filter(
+                        (alert) => alert.severity === 'critical',
+                      ).length}{' '}
+                      criticas
+                    </small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Ready-now retries</span>
+                    <strong>{whatsappSummary.retryOperations.readyNowCount}</strong>
+                    <small>
+                      Cooldown {whatsappSummary.retryOperations.cooldownBlockedCount}
+                    </small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Taxonomia lider</span>
+                    <strong>
+                      {humanizeKey(
+                        whatsappSummary.operationalDashboard
+                          .leadingProviderTaxonomyDetail,
+                      )}
+                    </strong>
+                    <small>
+                      {humanizeKey(
+                        whatsappSummary.operationalDashboard.leadingFailureClass,
+                      )}
+                    </small>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className={styles.twoColumn}>
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Workbench policy</span>
+                      <h3>Filtros operativos de conversaciones</h3>
+                    </div>
+                    <div className={styles.inlineActionRow}>
+                      <button
+                        className={styles.secondaryButton}
+                        disabled={growthLoading || !growthFiltersCustomized}
+                        onClick={resetGrowthWorkspacePolicy}
+                        type="button"
+                      >
+                        Resetear policy
+                      </button>
+                      {growthWorkbench ? (
+                        <small className={styles.muted}>
+                          Generado {formatDate(growthWorkbench.generatedAt)}
+                        </small>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className={styles.badgeRow}>
+                    <span className={styles.tokenPill}>
+                      Canal: {channelLabel(growthChannelFilter)}
+                    </span>
+                    <span className={styles.tokenPill}>
+                      First response: {firstResponseSlaHours}h
+                    </span>
+                    <span className={styles.tokenPill}>
+                      Follow-up: {followUpSlaHours}h
+                    </span>
+                    <span className={styles.tokenPill}>
+                      Stale: {staleThreadHours}h
+                    </span>
+                    {growthAssigneeFilter.trim() ? (
+                      <span className={styles.tokenPill}>
+                        Assignee: {growthAssigneeFilter.trim()}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className={styles.invoiceInlineGrid}>
+                    <label className={styles.field}>
+                      <span>Canal</span>
+                      <select
+                        className={styles.selectField}
+                        onChange={(event) =>
+                          setGrowthChannelFilter(
+                            event.target.value === 'manual'
+                              ? 'manual'
+                              : event.target.value === 'whatsapp'
+                                ? 'whatsapp'
+                                : 'all',
+                          )
+                        }
+                        value={growthChannelFilter}
+                      >
+                        <option value="all">Todos</option>
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="manual">Manual</option>
+                      </select>
+                    </label>
+
+                    <label className={styles.field}>
+                      <span>Assignee user id</span>
+                      <input
+                        onChange={(event) => setGrowthAssigneeFilter(event.target.value)}
+                        placeholder="user_123"
+                        value={growthAssigneeFilter}
+                      />
+                    </label>
+                  </div>
+
+                  <div className={styles.invoiceInlineGrid}>
+                    <label className={styles.field}>
+                      <span>First response SLA (h)</span>
+                      <input
+                        inputMode="numeric"
+                        onChange={(event) => setFirstResponseSlaHours(event.target.value)}
+                        value={firstResponseSlaHours}
+                      />
+                    </label>
+                    <label className={styles.field}>
+                      <span>Follow-up SLA (h)</span>
+                      <input
+                        inputMode="numeric"
+                        onChange={(event) => setFollowUpSlaHours(event.target.value)}
+                        value={followUpSlaHours}
+                      />
+                    </label>
+                  </div>
+
+                  <label className={styles.field}>
+                    <span>Stale thread (h)</span>
+                    <input
+                      inputMode="numeric"
+                      onChange={(event) => setStaleThreadHours(event.target.value)}
+                      value={staleThreadHours}
+                    />
+                  </label>
+
+                  {growthWorkbench ? (
+                    <div className={styles.invoiceKpiGrid}>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Open</span>
+                        <strong>{growthWorkbench.summary.openThreadCount}</strong>
+                      </div>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Unassigned</span>
+                        <strong>{growthWorkbench.summary.unassignedThreadCount}</strong>
+                      </div>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Waiting on team</span>
+                        <strong>{growthWorkbench.summary.waitingOnTeamCount}</strong>
+                      </div>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Stale</span>
+                        <strong>{growthWorkbench.summary.staleThreadCount}</strong>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>{workbenchEmptyMessage}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Operational monitor</span>
+                      <h3>Accion manual desde la UI</h3>
+                    </div>
+                    {whatsappMonitorSummary ? (
+                      <span
+                        className={`${styles.statusPill} ${operationalStatusTone(
+                          whatsappMonitorSummary.overallStatus,
+                        )}`}
+                      >
+                        {operationalStatusLabel(
+                          whatsappMonitorSummary.overallStatus,
+                        )}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <label className={styles.checkboxField}>
+                    <input
+                      checked={monitorAutoRunReadyRetries}
+                      disabled={!canManageGrowthConversations}
+                      onChange={(event) =>
+                        setMonitorAutoRunReadyRetries(event.target.checked)
+                      }
+                      type="checkbox"
+                    />
+                    <span>Auto-run ready retries durante el monitor</span>
+                  </label>
+
+                  <label className={styles.field}>
+                    <span>Retry ready limit</span>
+                    <input
+                      disabled={!canManageGrowthConversations}
+                      inputMode="numeric"
+                      onChange={(event) => setMonitorRetryReadyLimit(event.target.value)}
+                      value={monitorRetryReadyLimit}
+                    />
+                  </label>
+
+                  <button
+                    className={styles.primaryButton}
+                    disabled={
+                      !canManageGrowthConversations ||
+                      growthActionLoading === 'run-monitor'
+                    }
+                    onClick={() => void handleRunGrowthOperationalMonitor()}
+                    type="button"
+                  >
+                    {growthActionLoading === 'run-monitor'
+                      ? 'Ejecutando monitor...'
+                      : 'Ejecutar monitor'}
+                  </button>
+
+                  {!canManageGrowthConversations ? (
+                    <p className={styles.muted}>
+                      Esta accion requiere <code>growth.conversations.manage</code>.
+                    </p>
+                  ) : null}
+
+                  {whatsappMonitorSummary ? (
+                    <div className={styles.stack}>
+                      <div className={styles.invoiceKpiGrid}>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Alerts</span>
+                          <strong>{whatsappMonitorSummary.totalAlertCount}</strong>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Critical</span>
+                          <strong>{whatsappMonitorSummary.criticalAlertCount}</strong>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Warnings</span>
+                          <strong>{whatsappMonitorSummary.warningAlertCount}</strong>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Retries run</span>
+                          <strong>
+                            {whatsappMonitorSummary.retryRunnerSummary?.retriedCount ?? 0}
+                          </strong>
+                        </div>
+                      </div>
+                      <small className={styles.muted}>
+                        Ultima ejecucion {formatDate(whatsappMonitorSummary.generatedAt)}
+                      </small>
+                      <div className={styles.badgeRow}>
+                        <span className={styles.badge}>
+                          Runner:{' '}
+                          {whatsappMonitorSummary.retryRunnerExecuted
+                            ? 'ejecutado'
+                            : 'solo evaluacion'}
+                        </span>
+                        <span className={styles.badge}>
+                          Ready now:{' '}
+                          {whatsappMonitorSummary.retryRunnerSummary?.readyNowCount ?? 0}
+                        </span>
+                        <span className={styles.badge}>
+                          Cooldown:{' '}
+                          {whatsappMonitorSummary.retryRunnerSummary
+                            ?.skippedCooldownCount ?? 0}
+                        </span>
+                      </div>
+                      {latestMonitorExecutions.length > 0 ? (
+                        <div className={styles.stack}>
+                          <small className={styles.muted}>
+                            Ultimos retries evaluados por el monitor
+                          </small>
+                          {latestMonitorExecutions.map((execution) => (
+                            <div
+                              className={styles.invoiceItemCard}
+                              key={`${execution.sourceMessageId}-${execution.retryMessageId ?? 'no-retry'}`}
+                            >
+                              <div className={styles.invoiceCardHeader}>
+                                <strong>{execution.sourceMessageId}</strong>
+                                <span className={styles.statusPill}>
+                                  {retryDispositionLabel(execution.disposition)}
+                                </span>
+                              </div>
+                              <small>
+                                Estado {humanizeKey(execution.status)} · backoff{' '}
+                                {execution.backoffMinutes} min
+                              </small>
+                              <small>
+                                Proximo retry {formatDate(execution.nextRetryAt)}
+                              </small>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no corrimos el monitor manual desde la UI en esta
+                        sesion.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Operational alerts</span>
+                      <h3>Lo que hoy pide atencion</h3>
+                    </div>
+                  </div>
+
+                  {leadingOperationalAlerts.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>No hay alertas activas en el resumen actual.</p>
+                    </div>
+                  ) : (
+                    leadingOperationalAlerts.map((alert) => (
+                      <div className={styles.invoiceItemCard} key={alert.key}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{alert.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              alert.severity === 'critical' ? 'critical' : 'warning',
+                            )}`}
+                          >
+                            {alert.severity === 'critical' ? 'Critica' : 'Warning'}
+                          </span>
+                        </div>
+                        <small>{alert.summary}</small>
+                        <div className={styles.badgeRow}>
+                          {alert.provider ? (
+                            <span className={styles.badge}>{alert.provider}</span>
+                          ) : null}
+                          {alert.providerTaxonomyDetail ? (
+                            <span className={styles.badge}>
+                              {humanizeKey(alert.providerTaxonomyDetail)}
+                            </span>
+                          ) : null}
+                          {alert.failureClass ? (
+                            <span className={styles.badge}>
+                              {humanizeKey(alert.failureClass)}
+                            </span>
+                          ) : null}
+                        </div>
+                        <small>
+                          Observado {alert.observedValue} / threshold{' '}
+                          {alert.thresholdValue}{' '}
+                          {alert.thresholdUnit === 'rate' ? '(rate)' : '(count)'}
+                        </small>
+                        <small>{alert.recommendedAction}</small>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Provider taxonomy</span>
+                      <h3>Familias dominantes de fallo</h3>
+                    </div>
+                  </div>
+
+                  {leadingProviderTaxonomy.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>Sin taxonomias de fallo relevantes en el resumen actual.</p>
+                    </div>
+                  ) : (
+                    leadingProviderTaxonomy.map((entry) => (
+                      <div
+                        className={styles.invoiceItemCard}
+                        key={`${entry.provider}-${entry.providerTaxonomyFamily}-${entry.providerTaxonomyDetail}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>
+                            {humanizeKey(entry.providerTaxonomyDetail)}
+                          </strong>
+                          <span className={styles.statusPill}>
+                            {entry.messageCount} msgs
+                          </span>
+                        </div>
+                        <small>
+                          {entry.provider} · {humanizeKey(entry.providerTaxonomyFamily)}
+                        </small>
+                        <small>
+                          {humanizeKey(entry.failureClass)} ·{' '}
+                          {humanizeKey(entry.failurePhase)}
+                        </small>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Error codes</span>
+                      <h3>Top codigos del provider</h3>
+                    </div>
+                  </div>
+
+                  {leadingProviderErrors.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>No hay errores de provider relevantes en este momento.</p>
+                    </div>
+                  ) : (
+                    leadingProviderErrors.map((entry) => (
+                      <div
+                        className={styles.invoiceItemCard}
+                        key={`${entry.provider}-${entry.providerErrorCode}-${entry.providerTaxonomyDetail}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{entry.providerErrorCode}</strong>
+                          <span className={styles.statusPill}>
+                            {entry.occurrenceCount} casos
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(entry.providerTaxonomyDetail)} ·{' '}
+                          {humanizeKey(entry.retryDisposition)}
+                        </small>
+                        <small>
+                          {entry.latestProviderStatusDetail ??
+                            entry.latestFailureReason ??
+                            'Sin detalle adicional'}
+                        </small>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Conversation queue</span>
+                      <h3>Threads mas urgentes del workbench</h3>
+                    </div>
+                  </div>
+
+                  {workbenchThreads.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>{workbenchEmptyMessage}</p>
+                    </div>
+                  ) : (
+                    workbenchThreads.map((thread) => (
+                      <div className={styles.invoiceItemCard} key={thread.threadId}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{thread.subject}</strong>
+                          <span className={styles.statusPill}>
+                            {humanizeKey(thread.priority)}
+                          </span>
+                        </div>
+                        <small>
+                          {channelLabel(thread.channel)} · {humanizeKey(thread.nextActionOwner)}
+                        </small>
+                        <small>
+                          First response {humanizeKey(thread.firstResponseStatus)} ·
+                          Follow-up {humanizeKey(thread.followUpStatus)}
+                        </small>
+                        <small>
+                          {thread.hoursSinceLastActivity}h desde ultima actividad ·{' '}
+                          {thread.assigneeUserId ?? 'sin owner'}
+                        </small>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           )}

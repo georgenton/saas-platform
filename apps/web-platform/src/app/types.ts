@@ -662,3 +662,209 @@ export interface InvoicingReportSummaryResponse {
     taxInCents: number;
   }[];
 }
+
+export interface GrowthConversationWorkbenchThreadResponse {
+  threadId: string;
+  leadId: string | null;
+  assigneeUserId: string | null;
+  subject: string;
+  channel: string;
+  status: string;
+  latestMessagePreview: string | null;
+  nextActionOwner: string;
+  firstResponseStatus: string;
+  followUpStatus: string;
+  staleStatus: string;
+  priority: string;
+  messageCount: number;
+  hoursSinceLastActivity: number;
+  hoursSinceLastInbound: number | null;
+  hoursSinceOpened: number;
+  openedAt: string;
+  lastActivityAt: string;
+  lastInboundAt: string | null;
+  lastOutboundAt: string | null;
+}
+
+export interface GrowthConversationWorkbenchResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  policy: {
+    firstResponseSlaHours: number;
+    followUpSlaHours: number;
+    staleThreadHours: number;
+  };
+  summary: {
+    openThreadCount: number;
+    unassignedThreadCount: number;
+    waitingOnTeamCount: number;
+    waitingOnCustomerCount: number;
+    overdueFirstResponseCount: number;
+    overdueFollowUpCount: number;
+    staleThreadCount: number;
+  };
+  threads: GrowthConversationWorkbenchThreadResponse[];
+}
+
+export interface WhatsappProviderReportingResponse {
+  provider: string;
+  messageCount: number;
+  pendingCount: number;
+  sentCount: number;
+  deliveredCount: number;
+  readCount: number;
+  failedCount: number;
+}
+
+export interface WhatsappFailureClassReportingResponse {
+  provider: string;
+  failureClass: string;
+  failurePhase: string;
+  messageCount: number;
+  retryableCount: number;
+  permanentCount: number;
+}
+
+export interface WhatsappProviderTaxonomyReportingResponse {
+  provider: string;
+  providerTaxonomyFamily: string;
+  providerTaxonomyDetail: string;
+  failureClass: string;
+  failurePhase: string;
+  messageCount: number;
+  retryableCount: number;
+  permanentCount: number;
+}
+
+export interface WhatsappProviderErrorCodeReportingResponse {
+  provider: string;
+  providerErrorCode: string;
+  failureClass: string;
+  failurePhase: string;
+  retryDisposition: string;
+  providerTaxonomyFamily: string;
+  providerTaxonomyDetail: string;
+  occurrenceCount: number;
+  latestFailureReason: string | null;
+  latestProviderStatusDetail: string | null;
+}
+
+export interface WhatsappRetryOperationsSummaryResponse {
+  totalFailedMessageCount: number;
+  retryableFailedMessageCount: number;
+  permanentFailedMessageCount: number;
+  cooldownBlockedCount: number;
+  readyNowCount: number;
+  defaultBaseBackoffMinutes: number;
+  maxBackoffMinutes: number;
+}
+
+export interface WhatsappOperationalThresholdsResponse {
+  immediateSendRejectionRateWarning: number;
+  asynchronousDeliveryFailureRateWarning: number;
+  readyRetryQueueWarningCount: number;
+  cooldownRetryQueueWarningCount: number;
+  authOrConfigurationCriticalCount: number;
+  policyBlockCriticalCount: number;
+  rateLimitedWarningCount: number;
+  unknownFailureWarningCount: number;
+}
+
+export interface WhatsappOperationalDashboardResponse {
+  overallStatus: 'healthy' | 'warning' | 'critical';
+  immediateSendRejectionRate: number;
+  asynchronousDeliveryFailureRate: number;
+  readyRetryQueueCount: number;
+  cooldownRetryQueueCount: number;
+  permanentFailureCount: number;
+  leadingFailureClass: string | null;
+  leadingProvider: string | null;
+  leadingProviderTaxonomyFamily: string | null;
+  leadingProviderTaxonomyDetail: string | null;
+}
+
+export interface WhatsappOperationalAlertResponse {
+  key: string;
+  severity: 'warning' | 'critical';
+  title: string;
+  summary: string;
+  thresholdKey: string;
+  observedValue: number;
+  thresholdValue: number;
+  thresholdUnit: 'count' | 'rate';
+  provider: string | null;
+  failureClass: string | null;
+  providerTaxonomyFamily: string | null;
+  providerTaxonomyDetail: string | null;
+  affectedMessageCount: number;
+  recommendedAction: string;
+}
+
+export interface WhatsappOutboundReportingSummaryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  totals: {
+    outboundMessageCount: number;
+    freeformMessageCount: number;
+    templateMessageCount: number;
+    approvedTemplateMessageCount: number;
+    pendingCount: number;
+    sentCount: number;
+    deliveredCount: number;
+    readCount: number;
+    failedCount: number;
+    immediateSendRejectionFailedCount: number;
+    asynchronousDeliveryFailedCount: number;
+    retryableFailedCount: number;
+    permanentFailedCount: number;
+  };
+  byProvider: WhatsappProviderReportingResponse[];
+  byFailureClass: WhatsappFailureClassReportingResponse[];
+  byProviderTaxonomy: WhatsappProviderTaxonomyReportingResponse[];
+  topProviderErrorCodes: WhatsappProviderErrorCodeReportingResponse[];
+  retryOperations: WhatsappRetryOperationsSummaryResponse;
+  operationalThresholds: WhatsappOperationalThresholdsResponse;
+  operationalDashboard: WhatsappOperationalDashboardResponse;
+  operationalAlerts: WhatsappOperationalAlertResponse[];
+}
+
+export interface WhatsappRetryRunnerExecutionResponse {
+  sourceMessageId: string;
+  sourceExternalMessageId: string | null;
+  disposition: string;
+  status: string;
+  failedAttemptCount: number;
+  backoffMinutes: number;
+  nextRetryAt: string;
+  retryMessageId: string | null;
+  retryExternalMessageId: string | null;
+}
+
+export interface WhatsappRetryRunnerSummaryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  limitApplied: number;
+  candidateFailedMessageCount: number;
+  leafFailedMessageCount: number;
+  supersededFailedMessageCount: number;
+  readyNowCount: number;
+  retriedCount: number;
+  skippedCooldownCount: number;
+  skippedPermanentCount: number;
+  executions: WhatsappRetryRunnerExecutionResponse[];
+}
+
+export interface WhatsappOperationalMonitorSummaryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  autoRunReadyRetriesEnabled: boolean;
+  overallStatus: 'healthy' | 'warning' | 'critical';
+  totalAlertCount: number;
+  criticalAlertCount: number;
+  warningAlertCount: number;
+  operationalThresholds: WhatsappOperationalThresholdsResponse;
+  operationalDashboard: WhatsappOperationalDashboardResponse;
+  operationalAlerts: WhatsappOperationalAlertResponse[];
+  retryRunnerExecuted: boolean;
+  retryRunnerSummary: WhatsappRetryRunnerSummaryResponse | null;
+}

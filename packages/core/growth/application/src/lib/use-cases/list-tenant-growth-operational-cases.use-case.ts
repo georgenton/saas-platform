@@ -5,6 +5,7 @@ import {
 import {
   GrowthOperationalCaseRecord,
   GrowthOperationalCaseRepository,
+  GrowthOperationalCaseRoutingPolicyKey,
   GrowthOperationalCaseStatus,
 } from '../ports/growth-operational-case.repository';
 
@@ -17,6 +18,7 @@ export class ListTenantGrowthOperationalCasesUseCase {
   async execute(
     tenantSlug: string,
     status?: GrowthOperationalCaseStatus | null,
+    routingPolicyKey?: GrowthOperationalCaseRoutingPolicyKey | null,
   ): Promise<GrowthOperationalCaseRecord[]> {
     const tenant = await this.tenantRepository.findBySlug(tenantSlug);
 
@@ -26,7 +28,10 @@ export class ListTenantGrowthOperationalCasesUseCase {
 
     return this.growthOperationalCaseRepository.findByTenantId(
       tenant.id,
-      status ?? null,
+      {
+        status: status ?? null,
+        routingPolicyKey: routingPolicyKey ?? null,
+      },
     );
   }
 }

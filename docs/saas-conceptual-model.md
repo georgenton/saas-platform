@@ -860,13 +860,20 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
             - `scheduled`
             - `waiting_customer`
          - that lets operators distinguish "still owed by the team" from "already scheduled" and "waiting on customer" without prematurely resolving the shared case
+         - those cases now also expose first explicit routing-policy lanes like:
+            - `growth_ops`
+            - `owner_assignment`
+            - `follow_up_team`
+            - `follow_up_waiting_customer`
+         - that routing layer turns the shared queue from a generic backlog into a first policy-aware operator surface
+         - the consumer now also groups and filters those shared cases by routing lane, so fleet and tenant operators can read each lane as a distinct queue instead of a single flat backlog
          - the fleet console and tenant workspace now consume that shared queue so operators can promote derived pressure into explicit shared work
     - current explicit limitation is now narrower: legacy template messages sent before snapshot persistence still cannot be retried faithfully
     - next pressure is now operational hardening on top of these semantics:
       - calibrating thresholds with production-like traffic instead of only synthetic fixtures
       - expansion of taxonomy detail as new Meta/provider codes appear in the wild
       - externalizing scheduler state/telemetry beyond process logs once this starts running in shared environments
-      - deciding when this first operational-case queue should graduate into richer staffing automation, deeper SLA-specific follow-up state machines, or explicit escalation policy routing
+      - deciding when this first policy-aware operational-case queue should graduate into richer staffing automation, deeper SLA-specific follow-up state machines, or more automated escalation policy routing
 5. `Ecommerce` first domain slice
    - catalog plus orders
 

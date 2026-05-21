@@ -3,6 +3,7 @@ import {
   CreateGrowthOperationalCaseCommand,
   GrowthOperationalCaseRecord,
   GrowthOperationalCaseRepository,
+  GrowthOperationalCaseRoutingPolicyKey,
   GrowthOperationalCaseStatus,
 } from '@saas-platform/growth-application';
 import { PrismaService } from '../prisma.service';
@@ -29,6 +30,7 @@ export class PrismaGrowthOperationalCaseRepository
         summary: command.summary,
         nextAction: command.nextAction,
         followUpState: command.followUpState,
+        routingPolicyKey: command.routingPolicyKey,
         threadId: command.threadId,
         alertKey: command.alertKey,
         dueAt: command.dueAt,
@@ -61,6 +63,7 @@ export class PrismaGrowthOperationalCaseRepository
         summary: record.summary,
         nextAction: record.nextAction,
         followUpState: record.followUpState,
+        routingPolicyKey: record.routingPolicyKey,
         threadId: record.threadId,
         alertKey: record.alertKey,
         dueAt: record.dueAt,
@@ -79,12 +82,18 @@ export class PrismaGrowthOperationalCaseRepository
 
   async findByTenantId(
     tenantId: string,
-    status?: GrowthOperationalCaseStatus | null,
+    filters?: {
+      status?: GrowthOperationalCaseStatus | null;
+      routingPolicyKey?: GrowthOperationalCaseRoutingPolicyKey | null;
+    },
   ): Promise<GrowthOperationalCaseRecord[]> {
     const records = await this.delegate.findMany({
       where: {
         tenantId,
-        ...(status ? { status } : {}),
+        ...(filters?.status ? { status: filters.status } : {}),
+        ...(filters?.routingPolicyKey
+          ? { routingPolicyKey: filters.routingPolicyKey }
+          : {}),
       },
       orderBy: [
         { status: 'asc' },

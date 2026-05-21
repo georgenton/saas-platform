@@ -147,6 +147,36 @@ type GrowthFleetRunbook = {
   steps: string[];
 };
 
+type GrowthOperationalCaseRoutingPolicyKey =
+  GrowthOperationalCaseResponse['routingPolicyKey'];
+
+const growthOperationalCaseRoutingPolicies: Array<{
+  key: GrowthOperationalCaseRoutingPolicyKey;
+  label: string;
+  summary: string;
+}> = [
+  {
+    key: 'growth_ops',
+    label: 'Growth ops',
+    summary: 'Escalaciones y bloqueos que piden triage operativo.',
+  },
+  {
+    key: 'owner_assignment',
+    label: 'Owner assignment',
+    summary: 'Casos que primero necesitan dueño claro o rebalanceo.',
+  },
+  {
+    key: 'follow_up_team',
+    label: 'Follow-up team',
+    summary: 'Seguimientos que siguen del lado del equipo.',
+  },
+  {
+    key: 'follow_up_waiting_customer',
+    label: 'Waiting customer',
+    summary: 'Seguimientos que quedan a la espera del cliente.',
+  },
+];
+
 function formatDate(value: string | null): string {
   if (!value) {
     return 'No registrado';
@@ -461,6 +491,32 @@ function growthOperationalCaseFollowUpStateLabel(
   }
 }
 
+function growthOperationalCaseRoutingPolicyLabel(
+  value: GrowthOperationalCaseResponse['routingPolicyKey'],
+): string {
+  switch (value) {
+    case 'growth_ops':
+      return 'Growth ops';
+    case 'owner_assignment':
+      return 'Owner assignment';
+    case 'follow_up_team':
+      return 'Follow-up team';
+    case 'follow_up_waiting_customer':
+      return 'Follow-up waiting customer';
+    default:
+      return humanizeKey(value);
+  }
+}
+
+function growthOperationalCaseRoutingPolicySummary(
+  value: GrowthOperationalCaseResponse['routingPolicyKey'],
+): string {
+  return (
+    growthOperationalCaseRoutingPolicies.find((entry) => entry.key === value)?.summary ??
+    'Lane operativo compartido.'
+  );
+}
+
 function getEntitlementValue(
   entitlements: SessionEntitlement[],
   key: string,
@@ -657,6 +713,10 @@ export function App() {
   const [growthFleetStatusFilter, setGrowthFleetStatusFilter] = useState<
     'all' | 'healthy' | 'warning' | 'critical'
   >('all');
+  const [growthFleetOperationalCaseRoutingFilter, setGrowthFleetOperationalCaseRoutingFilter] =
+    useState<'all' | GrowthOperationalCaseRoutingPolicyKey>('all');
+  const [growthOperationalCaseRoutingFilter, setGrowthOperationalCaseRoutingFilter] =
+    useState<'all' | GrowthOperationalCaseRoutingPolicyKey>('all');
   const [selectedGrowthFleetTenantSlug, setSelectedGrowthFleetTenantSlug] =
     useState<string | null>(null);
   const [growthDrilldownTarget, setGrowthDrilldownTarget] =
@@ -994,14 +1054,60 @@ export function App() {
         .map((entry) => [entry.sourceKey, entry] as const),
     );
   }, [growthOperationalCases]);
+  const currentTenantOperationalCaseCountsByRoutingPolicy = useMemo(() => {
+    return growthOperationalCases.reduce(
+      (counts, entry) => {
+        if (entry.status !== 'resolved') {
+          counts[entry.routingPolicyKey] += 1;
+        }
+
+        return counts;
+      },
+      {
+        growth_ops: 0,
+        owner_assignment: 0,
+        follow_up_team: 0,
+        follow_up_waiting_customer: 0,
+      } satisfies Record<GrowthOperationalCaseRoutingPolicyKey, number>,
+    );
+  }, [growthOperationalCases]);
   const visibleAlertHistory = useMemo(
     () => growthMonitorHistory.slice(0, 6),
     [growthMonitorHistory],
   );
   const acknowledgedAlertCount = currentTenantAlertAcknowledgements.size;
+  const filteredGrowthOperationalCases = useMemo(
+    () =>
+      growthOperationalCases
+        .filter((entry) => entry.status !== 'resolved')
+        .filter((entry) =>
+          growthOperationalCaseRoutingFilter === 'all'
+            ? true
+            : entry.routingPolicyKey === growthOperationalCaseRoutingFilter,
+        )
+        .sort(
+          (left, right) =>
+            operationalStatusWeight(right.priority) -
+              operationalStatusWeight(left.priority) ||
+            (left.dueAt ?? '').localeCompare(right.dueAt ?? '') ||
+            right.updatedAt.localeCompare(left.updatedAt),
+        ),
+    [growthOperationalCaseRoutingFilter, growthOperationalCases],
+  );
   const visibleGrowthOperationalCases = useMemo(
-    () => growthOperationalCases.slice(0, 8),
-    [growthOperationalCases],
+    () => filteredGrowthOperationalCases.slice(0, 8),
+    [filteredGrowthOperationalCases],
+  );
+  const visibleGrowthOperationalCaseLanes = useMemo(
+    () =>
+      growthOperationalCaseRoutingPolicies.map((policy) => ({
+        ...policy,
+        count: currentTenantOperationalCaseCountsByRoutingPolicy[policy.key],
+        entries: visibleGrowthOperationalCases.filter(
+          (entry) => entry.routingPolicyKey === policy.key,
+        ),
+      })),
+    [currentTenantOperationalCaseCountsByRoutingPolicy, visibleGrowthOperationalCases],
   );
   const growthFleetPartialFailureCount = Math.max(
     0,
@@ -1054,6 +1160,27 @@ export function App() {
       ) ?? null
     );
   }, [effectiveSelectedGrowthFleetTenantSlug, growthFleetSnapshots]);
+  const selectedGrowthFleetTenantCaseCountsByRoutingPolicy = useMemo(() => {
+    if (!selectedGrowthFleetTenant) {
+      return null;
+    }
+
+    return selectedGrowthFleetTenant.cases.reduce(
+      (counts, entry) => {
+        if (entry.status !== 'resolved') {
+          counts[entry.routingPolicyKey] += 1;
+        }
+
+        return counts;
+      },
+      {
+        growth_ops: 0,
+        owner_assignment: 0,
+        follow_up_team: 0,
+        follow_up_waiting_customer: 0,
+      } satisfies Record<GrowthOperationalCaseRoutingPolicyKey, number>,
+    );
+  }, [selectedGrowthFleetTenant]);
   const growthFleetOverview = useMemo(() => {
     return growthFleetSnapshots.reduce(
       (summary, snapshot) => {
@@ -1087,7 +1214,7 @@ export function App() {
       },
     );
   }, [growthFleetSnapshots]);
-  const growthFleetOperationalCases = useMemo(() => {
+  const growthFleetOperationalCaseQueue = useMemo(() => {
     return growthFleetSnapshots
       .flatMap((snapshot) =>
         snapshot.cases.map((entry) => ({
@@ -1103,9 +1230,49 @@ export function App() {
             operationalStatusWeight(left.priority) ||
           (left.dueAt ?? '').localeCompare(right.dueAt ?? '') ||
           right.updatedAt.localeCompare(left.updatedAt),
-      )
-      .slice(0, 8);
+      );
   }, [growthFleetSnapshots]);
+  const growthFleetOperationalCaseCountsByRoutingPolicy = useMemo(() => {
+    return growthFleetOperationalCaseQueue.reduce(
+      (counts, entry) => {
+        counts[entry.routingPolicyKey] += 1;
+        return counts;
+      },
+      {
+        growth_ops: 0,
+        owner_assignment: 0,
+        follow_up_team: 0,
+        follow_up_waiting_customer: 0,
+      } satisfies Record<GrowthOperationalCaseRoutingPolicyKey, number>,
+    );
+  }, [growthFleetOperationalCaseQueue]);
+  const filteredGrowthFleetOperationalCases = useMemo(
+    () =>
+      growthFleetOperationalCaseQueue.filter((entry) =>
+        growthFleetOperationalCaseRoutingFilter === 'all'
+          ? true
+          : entry.routingPolicyKey === growthFleetOperationalCaseRoutingFilter,
+      ),
+    [growthFleetOperationalCaseQueue, growthFleetOperationalCaseRoutingFilter],
+  );
+  const visibleGrowthFleetOperationalCases = useMemo(
+    () => filteredGrowthFleetOperationalCases.slice(0, 8),
+    [filteredGrowthFleetOperationalCases],
+  );
+  const visibleGrowthFleetOperationalCaseLanes = useMemo(
+    () =>
+      growthOperationalCaseRoutingPolicies.map((policy) => ({
+        ...policy,
+        count: growthFleetOperationalCaseCountsByRoutingPolicy[policy.key],
+        entries: visibleGrowthFleetOperationalCases.filter(
+          (entry) => entry.routingPolicyKey === policy.key,
+        ),
+      })),
+    [
+      growthFleetOperationalCaseCountsByRoutingPolicy,
+      visibleGrowthFleetOperationalCases,
+    ],
+  );
   const growthFleetOperationalCasesBySourceKey = useMemo(() => {
     return new Map(
       growthFleetSnapshots.flatMap((snapshot) =>
@@ -5056,182 +5223,248 @@ export function App() {
                       <span className={styles.label}>Operational cases</span>
                       <h3>Cola compartida ya promovida a workflow</h3>
                     </div>
+                    <small className={styles.muted}>
+                      {filteredGrowthFleetOperationalCases.length} visibles ·{' '}
+                      {growthFleetOperationalCaseQueue.length} abiertas
+                    </small>
                   </div>
 
-                  {growthFleetOperationalCases.length === 0 ? (
+                  <div className={styles.selectorGrid}>
+                    <button
+                      className={`${styles.selectorCard} ${
+                        growthFleetOperationalCaseRoutingFilter === 'all'
+                          ? styles.selectorCardActive
+                          : ''
+                      }`}
+                      onClick={() => setGrowthFleetOperationalCaseRoutingFilter('all')}
+                      type="button"
+                    >
+                      <span>Todos los lanes</span>
+                      <small>
+                        {growthFleetOperationalCaseQueue.length} casos abiertos en la
+                        flota
+                      </small>
+                    </button>
+                    {growthOperationalCaseRoutingPolicies.map((policy) => (
+                      <button
+                        className={`${styles.selectorCard} ${
+                          growthFleetOperationalCaseRoutingFilter === policy.key
+                            ? styles.selectorCardActive
+                            : ''
+                        }`}
+                        key={`fleet-lane-${policy.key}`}
+                        onClick={() =>
+                          setGrowthFleetOperationalCaseRoutingFilter(policy.key)
+                        }
+                        type="button"
+                      >
+                        <span>{policy.label}</span>
+                        <small>
+                          {growthFleetOperationalCaseCountsByRoutingPolicy[policy.key]}{' '}
+                          casos · {policy.summary}
+                        </small>
+                      </button>
+                    ))}
+                  </div>
+
+                  {filteredGrowthFleetOperationalCases.length === 0 ? (
                     <div className={styles.emptyState}>
                       <p>
-                        La flota todavía no tiene casos operativos persistidos; por
-                        ahora seguimos leyendo solo la presión derivada.
+                        No hay casos operativos abiertos para el lane elegido en la
+                        flota; por ahora seguimos leyendo solo la presión derivada en
+                        ese carril.
                       </p>
                     </div>
                   ) : (
-                    growthFleetOperationalCases.map((entry) => (
-                      <div
-                        className={styles.invoiceItemCard}
-                        key={`${entry.tenantSlug}-${entry.id}`}
-                      >
-                        <div className={styles.invoiceCardHeader}>
-                          <strong>{entry.title}</strong>
-                          <span
-                            className={`${styles.statusPill} ${operationalStatusTone(
-                              entry.priority,
-                            )}`}
-                          >
-                            {growthOperationalCaseStatusLabel(entry.status)}
-                          </span>
-                        </div>
-                        <small>
-                          {entry.tenantName} · {entry.tenantSlug}
-                        </small>
-                        <div className={styles.badgeRow}>
-                          <span className={styles.badge}>
-                            {growthOperationalCaseTypeLabel(entry.caseType)}
-                          </span>
-                          {entry.caseType === 'follow_up' &&
-                          entry.followUpState ? (
-                            <span className={styles.badge}>
-                              {growthOperationalCaseFollowUpStateLabel(
-                                entry.followUpState,
-                              )}
-                            </span>
-                          ) : null}
-                          <span className={styles.badge}>
-                            {entry.assignedUserEmail ?? 'Sin owner'}
-                          </span>
-                          {entry.dueAt ? (
-                            <span className={styles.badge}>
-                              Due {formatDate(entry.dueAt)}
-                            </span>
-                          ) : null}
-                        </div>
-                        <small>{entry.summary}</small>
-                        <small>{entry.nextAction}</small>
-                        <div className={styles.inlineActionRow}>
-                          {entry.caseType === 'follow_up' &&
-                          entry.status !== 'resolved' ? (
-                            <>
-                              <button
-                                className={styles.secondaryButton}
-                                disabled={
-                                  growthActionLoading ===
-                                  `follow-up-case:${entry.id}:pending_team`
-                                }
-                                onClick={() =>
-                                  void handleUpdateGrowthOperationalCaseFollowUpState(
-                                    {
-                                      tenantSlug: entry.tenantSlug,
-                                      caseId: entry.id,
-                                      followUpState: 'pending_team',
-                                      dueAt: entry.dueAt,
-                                    },
-                                  )
-                                }
-                                type="button"
+                    <div className={styles.stack}>
+                      {visibleGrowthFleetOperationalCaseLanes
+                        .filter((lane) => lane.entries.length > 0)
+                        .map((lane) => (
+                          <div className={styles.stack} key={`fleet-lane-stack-${lane.key}`}>
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{lane.label}</strong>
+                              <span className={styles.statusPill}>
+                                {lane.count} casos
+                              </span>
+                            </div>
+                            <small>{lane.summary}</small>
+                            {lane.entries.map((entry) => (
+                              <div
+                                className={styles.invoiceItemCard}
+                                key={`${entry.tenantSlug}-${entry.id}`}
                               >
-                                {growthActionLoading ===
-                                `follow-up-case:${entry.id}:pending_team`
-                                  ? 'Actualizando...'
-                                  : 'Pendiente equipo'}
-                              </button>
-                              <button
-                                className={styles.ghostButton}
-                                disabled={
-                                  growthActionLoading ===
-                                  `follow-up-case:${entry.id}:scheduled`
-                                }
-                                onClick={() =>
-                                  void handleUpdateGrowthOperationalCaseFollowUpState(
-                                    {
-                                      tenantSlug: entry.tenantSlug,
-                                      caseId: entry.id,
-                                      followUpState: 'scheduled',
-                                      nextAction:
-                                        entry.nextAction ||
-                                        'Programar el siguiente outreach del equipo.',
-                                      dueAt:
-                                        entry.dueAt ??
-                                        new Date(
-                                          Date.now() + 24 * 60 * 60 * 1000,
-                                        ).toISOString(),
-                                    },
-                                  )
-                                }
-                                type="button"
-                              >
-                                {growthActionLoading ===
-                                `follow-up-case:${entry.id}:scheduled`
-                                  ? 'Actualizando...'
-                                  : 'Programar'}
-                              </button>
-                              <button
-                                className={styles.ghostButton}
-                                disabled={
-                                  growthActionLoading ===
-                                  `follow-up-case:${entry.id}:waiting_customer`
-                                }
-                                onClick={() =>
-                                  void handleUpdateGrowthOperationalCaseFollowUpState(
-                                    {
-                                      tenantSlug: entry.tenantSlug,
-                                      caseId: entry.id,
-                                      followUpState: 'waiting_customer',
-                                      nextAction:
-                                        'Esperar respuesta del cliente antes del siguiente outreach.',
-                                      dueAt: null,
-                                    },
-                                  )
-                                }
-                                type="button"
-                              >
-                                {growthActionLoading ===
-                                `follow-up-case:${entry.id}:waiting_customer`
-                                  ? 'Actualizando...'
-                                  : 'Esperando cliente'}
-                              </button>
-                            </>
-                          ) : null}
-                          {entry.status === 'open' ? (
-                            <button
-                              className={styles.secondaryButton}
-                              disabled={
-                                growthActionLoading === `take-case:${entry.id}`
-                              }
-                              onClick={() =>
-                                void handleTakeGrowthOperationalCase(
-                                  entry.tenantSlug,
-                                  entry.id,
-                                )
-                              }
-                              type="button"
-                            >
-                              {growthActionLoading === `take-case:${entry.id}`
-                                ? 'Tomando...'
-                                : 'Tomar'}
-                            </button>
-                          ) : null}
-                          {entry.status !== 'resolved' ? (
-                            <button
-                              className={styles.ghostButton}
-                              disabled={
-                                growthActionLoading === `resolve-case:${entry.id}`
-                              }
-                              onClick={() =>
-                                void handleResolveGrowthOperationalCase(
-                                  entry.tenantSlug,
-                                  entry.id,
-                                )
-                              }
-                              type="button"
-                            >
-                              {growthActionLoading === `resolve-case:${entry.id}`
-                                ? 'Resolviendo...'
-                                : 'Resolver'}
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-                    ))
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>{entry.title}</strong>
+                                  <span
+                                    className={`${styles.statusPill} ${operationalStatusTone(
+                                      entry.priority,
+                                    )}`}
+                                  >
+                                    {growthOperationalCaseStatusLabel(entry.status)}
+                                  </span>
+                                </div>
+                                <small>
+                                  {entry.tenantName} · {entry.tenantSlug}
+                                </small>
+                                <div className={styles.badgeRow}>
+                                  <span className={styles.badge}>
+                                    {growthOperationalCaseTypeLabel(entry.caseType)}
+                                  </span>
+                                  <span className={styles.badge}>
+                                    {growthOperationalCaseRoutingPolicyLabel(
+                                      entry.routingPolicyKey,
+                                    )}
+                                  </span>
+                                  {entry.caseType === 'follow_up' &&
+                                  entry.followUpState ? (
+                                    <span className={styles.badge}>
+                                      {growthOperationalCaseFollowUpStateLabel(
+                                        entry.followUpState,
+                                      )}
+                                    </span>
+                                  ) : null}
+                                  <span className={styles.badge}>
+                                    {entry.assignedUserEmail ?? 'Sin owner'}
+                                  </span>
+                                  {entry.dueAt ? (
+                                    <span className={styles.badge}>
+                                      Due {formatDate(entry.dueAt)}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <small>{entry.summary}</small>
+                                <small>{entry.nextAction}</small>
+                                <small>
+                                  Lane: {growthOperationalCaseRoutingPolicySummary(entry.routingPolicyKey)}
+                                </small>
+                                <div className={styles.inlineActionRow}>
+                                  {entry.caseType === 'follow_up' &&
+                                  entry.status !== 'resolved' ? (
+                                    <>
+                                      <button
+                                        className={styles.secondaryButton}
+                                        disabled={
+                                          growthActionLoading ===
+                                          `follow-up-case:${entry.id}:pending_team`
+                                        }
+                                        onClick={() =>
+                                          void handleUpdateGrowthOperationalCaseFollowUpState(
+                                            {
+                                              tenantSlug: entry.tenantSlug,
+                                              caseId: entry.id,
+                                              followUpState: 'pending_team',
+                                              dueAt: entry.dueAt,
+                                            },
+                                          )
+                                        }
+                                        type="button"
+                                      >
+                                        {growthActionLoading ===
+                                        `follow-up-case:${entry.id}:pending_team`
+                                          ? 'Actualizando...'
+                                          : 'Pendiente equipo'}
+                                      </button>
+                                      <button
+                                        className={styles.ghostButton}
+                                        disabled={
+                                          growthActionLoading ===
+                                          `follow-up-case:${entry.id}:scheduled`
+                                        }
+                                        onClick={() =>
+                                          void handleUpdateGrowthOperationalCaseFollowUpState(
+                                            {
+                                              tenantSlug: entry.tenantSlug,
+                                              caseId: entry.id,
+                                              followUpState: 'scheduled',
+                                              nextAction:
+                                                entry.nextAction ||
+                                                'Programar el siguiente outreach del equipo.',
+                                              dueAt:
+                                                entry.dueAt ??
+                                                new Date(
+                                                  Date.now() + 24 * 60 * 60 * 1000,
+                                                ).toISOString(),
+                                            },
+                                          )
+                                        }
+                                        type="button"
+                                      >
+                                        {growthActionLoading ===
+                                        `follow-up-case:${entry.id}:scheduled`
+                                          ? 'Actualizando...'
+                                          : 'Programar'}
+                                      </button>
+                                      <button
+                                        className={styles.ghostButton}
+                                        disabled={
+                                          growthActionLoading ===
+                                          `follow-up-case:${entry.id}:waiting_customer`
+                                        }
+                                        onClick={() =>
+                                          void handleUpdateGrowthOperationalCaseFollowUpState(
+                                            {
+                                              tenantSlug: entry.tenantSlug,
+                                              caseId: entry.id,
+                                              followUpState: 'waiting_customer',
+                                              nextAction:
+                                                'Esperar respuesta del cliente antes del siguiente outreach.',
+                                              dueAt: null,
+                                            },
+                                          )
+                                        }
+                                        type="button"
+                                      >
+                                        {growthActionLoading ===
+                                        `follow-up-case:${entry.id}:waiting_customer`
+                                          ? 'Actualizando...'
+                                          : 'Esperando cliente'}
+                                      </button>
+                                    </>
+                                  ) : null}
+                                  {entry.status === 'open' ? (
+                                    <button
+                                      className={styles.secondaryButton}
+                                      disabled={
+                                        growthActionLoading === `take-case:${entry.id}`
+                                      }
+                                      onClick={() =>
+                                        void handleTakeGrowthOperationalCase(
+                                          entry.tenantSlug,
+                                          entry.id,
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      {growthActionLoading === `take-case:${entry.id}`
+                                        ? 'Tomando...'
+                                        : 'Tomar'}
+                                    </button>
+                                  ) : null}
+                                  {entry.status !== 'resolved' ? (
+                                    <button
+                                      className={styles.ghostButton}
+                                      disabled={
+                                        growthActionLoading === `resolve-case:${entry.id}`
+                                      }
+                                      onClick={() =>
+                                        void handleResolveGrowthOperationalCase(
+                                          entry.tenantSlug,
+                                          entry.id,
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      {growthActionLoading === `resolve-case:${entry.id}`
+                                        ? 'Resolviendo...'
+                                        : 'Resolver'}
+                                    </button>
+                                  ) : null}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                    </div>
                   )}
                 </div>
 
@@ -5421,6 +5654,21 @@ export function App() {
                               .readyNowCount
                           }
                         </span>
+                        {selectedGrowthFleetTenantCaseCountsByRoutingPolicy
+                          ? growthOperationalCaseRoutingPolicies.map((policy) => (
+                              <span
+                                className={styles.badge}
+                                key={`selected-tenant-lane-${policy.key}`}
+                              >
+                                {policy.label}{' '}
+                                {
+                                  selectedGrowthFleetTenantCaseCountsByRoutingPolicy[
+                                    policy.key
+                                  ]
+                                }
+                              </span>
+                            ))
+                          : null}
                       </div>
                       <small>
                         Corridas historicas{' '}
@@ -6126,213 +6374,277 @@ export function App() {
                     <span className={styles.label}>Operational cases</span>
                     <h3>Cola compartida del tenant</h3>
                   </div>
-                  {visibleGrowthOperationalCases.length > 0 ? (
+                  {filteredGrowthOperationalCases.length > 0 ? (
                     <small className={styles.muted}>
-                      {visibleGrowthOperationalCases.length} visibles
+                      {filteredGrowthOperationalCases.length} visibles ·{' '}
+                      {growthOperationalCases.filter((entry) => entry.status !== 'resolved').length}{' '}
+                      abiertas
                     </small>
                   ) : null}
                 </div>
 
-                {visibleGrowthOperationalCases.length === 0 ? (
+                <div className={styles.selectorGrid}>
+                  <button
+                    className={`${styles.selectorCard} ${
+                      growthOperationalCaseRoutingFilter === 'all'
+                        ? styles.selectorCardActive
+                        : ''
+                    }`}
+                    onClick={() => setGrowthOperationalCaseRoutingFilter('all')}
+                    type="button"
+                  >
+                    <span>Todos los lanes</span>
+                    <small>
+                      {
+                        growthOperationalCases.filter(
+                          (entry) => entry.status !== 'resolved',
+                        ).length
+                      }{' '}
+                      casos abiertos del tenant
+                    </small>
+                  </button>
+                  {growthOperationalCaseRoutingPolicies.map((policy) => (
+                    <button
+                      className={`${styles.selectorCard} ${
+                        growthOperationalCaseRoutingFilter === policy.key
+                          ? styles.selectorCardActive
+                          : ''
+                      }`}
+                      key={`tenant-lane-${policy.key}`}
+                      onClick={() => setGrowthOperationalCaseRoutingFilter(policy.key)}
+                      type="button"
+                    >
+                      <span>{policy.label}</span>
+                      <small>
+                        {currentTenantOperationalCaseCountsByRoutingPolicy[policy.key]}{' '}
+                        casos · {policy.summary}
+                      </small>
+                    </button>
+                  ))}
+                </div>
+
+                {filteredGrowthOperationalCases.length === 0 ? (
                   <div className={styles.emptyState}>
                     <p>
-                      Todavía no hay casos persistidos. Puedes promover alertas o
-                      colas de ownership para dejarles dueño y estado explícito.
+                      No hay casos abiertos para el lane elegido. Puedes promover
+                      alertas o colas de ownership para dejarles dueño y estado
+                      explícito.
                     </p>
                   </div>
                 ) : (
                   <div className={styles.stack}>
-                    {visibleGrowthOperationalCases.map((entry) => (
-                      <div className={styles.invoiceItemCard} key={entry.id}>
-                        <div className={styles.invoiceCardHeader}>
-                          <strong>{entry.title}</strong>
-                          <span
-                            className={`${styles.statusPill} ${operationalStatusTone(
-                              entry.priority,
-                            )}`}
-                          >
-                            {growthOperationalCaseStatusLabel(entry.status)}
-                          </span>
-                        </div>
-                        <small>{entry.summary}</small>
-                        <div className={styles.badgeRow}>
-                          <span className={styles.badge}>
-                            {growthOperationalCaseTypeLabel(entry.caseType)}
-                          </span>
-                          {entry.caseType === 'follow_up' &&
-                          entry.followUpState ? (
-                            <span className={styles.badge}>
-                              {growthOperationalCaseFollowUpStateLabel(
-                                entry.followUpState,
-                              )}
+                    {visibleGrowthOperationalCaseLanes
+                      .filter((lane) => lane.entries.length > 0)
+                      .map((lane) => (
+                        <div className={styles.stack} key={`tenant-lane-stack-${lane.key}`}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>{lane.label}</strong>
+                            <span className={styles.statusPill}>
+                              {lane.count} casos
                             </span>
-                          ) : null}
-                          <span className={styles.badge}>
-                            {entry.assignedUserEmail ?? 'Sin owner'}
-                          </span>
-                          {entry.dueAt ? (
-                            <span className={styles.badge}>
-                              Due {formatDate(entry.dueAt)}
-                            </span>
-                          ) : null}
+                          </div>
+                          <small>{lane.summary}</small>
+                          {lane.entries.map((entry) => (
+                            <div className={styles.invoiceItemCard} key={entry.id}>
+                              <div className={styles.invoiceCardHeader}>
+                                <strong>{entry.title}</strong>
+                                <span
+                                  className={`${styles.statusPill} ${operationalStatusTone(
+                                    entry.priority,
+                                  )}`}
+                                >
+                                  {growthOperationalCaseStatusLabel(entry.status)}
+                                </span>
+                              </div>
+                              <small>{entry.summary}</small>
+                              <div className={styles.badgeRow}>
+                                <span className={styles.badge}>
+                                  {growthOperationalCaseTypeLabel(entry.caseType)}
+                                </span>
+                                <span className={styles.badge}>
+                                  {growthOperationalCaseRoutingPolicyLabel(
+                                    entry.routingPolicyKey,
+                                  )}
+                                </span>
+                                {entry.caseType === 'follow_up' &&
+                                entry.followUpState ? (
+                                  <span className={styles.badge}>
+                                    {growthOperationalCaseFollowUpStateLabel(
+                                      entry.followUpState,
+                                    )}
+                                  </span>
+                                ) : null}
+                                <span className={styles.badge}>
+                                  {entry.assignedUserEmail ?? 'Sin owner'}
+                                </span>
+                                {entry.dueAt ? (
+                                  <span className={styles.badge}>
+                                    Due {formatDate(entry.dueAt)}
+                                  </span>
+                                ) : null}
+                              </div>
+                              <small>{entry.nextAction}</small>
+                              <small>
+                                Lane: {growthOperationalCaseRoutingPolicySummary(entry.routingPolicyKey)}
+                              </small>
+                              <div className={styles.inlineActionRow}>
+                                {entry.caseType === 'follow_up' &&
+                                entry.status !== 'resolved' ? (
+                                  <>
+                                    <button
+                                      className={styles.secondaryButton}
+                                      disabled={
+                                        growthActionLoading ===
+                                        `follow-up-case:${entry.id}:pending_team`
+                                      }
+                                      onClick={() =>
+                                        currentTenancy
+                                          ? void handleUpdateGrowthOperationalCaseFollowUpState(
+                                              {
+                                                tenantSlug: currentTenancy.tenant.slug,
+                                                caseId: entry.id,
+                                                followUpState: 'pending_team',
+                                                dueAt: entry.dueAt,
+                                              },
+                                            )
+                                          : undefined
+                                      }
+                                      type="button"
+                                    >
+                                      {growthActionLoading ===
+                                      `follow-up-case:${entry.id}:pending_team`
+                                        ? 'Actualizando...'
+                                        : 'Pendiente equipo'}
+                                    </button>
+                                    <button
+                                      className={styles.ghostButton}
+                                      disabled={
+                                        growthActionLoading ===
+                                        `follow-up-case:${entry.id}:scheduled`
+                                      }
+                                      onClick={() =>
+                                        currentTenancy
+                                          ? void handleUpdateGrowthOperationalCaseFollowUpState(
+                                              {
+                                                tenantSlug: currentTenancy.tenant.slug,
+                                                caseId: entry.id,
+                                                followUpState: 'scheduled',
+                                                nextAction:
+                                                  entry.nextAction ||
+                                                  'Programar el siguiente outreach del equipo.',
+                                                dueAt:
+                                                  entry.dueAt ??
+                                                  new Date(
+                                                    Date.now() +
+                                                      24 * 60 * 60 * 1000,
+                                                  ).toISOString(),
+                                              },
+                                            )
+                                          : undefined
+                                      }
+                                      type="button"
+                                    >
+                                      {growthActionLoading ===
+                                      `follow-up-case:${entry.id}:scheduled`
+                                        ? 'Actualizando...'
+                                        : 'Programar'}
+                                    </button>
+                                    <button
+                                      className={styles.ghostButton}
+                                      disabled={
+                                        growthActionLoading ===
+                                        `follow-up-case:${entry.id}:waiting_customer`
+                                      }
+                                      onClick={() =>
+                                        currentTenancy
+                                          ? void handleUpdateGrowthOperationalCaseFollowUpState(
+                                              {
+                                                tenantSlug: currentTenancy.tenant.slug,
+                                                caseId: entry.id,
+                                                followUpState: 'waiting_customer',
+                                                nextAction:
+                                                  'Esperar respuesta del cliente antes del siguiente outreach.',
+                                                dueAt: null,
+                                              },
+                                            )
+                                          : undefined
+                                      }
+                                      type="button"
+                                    >
+                                      {growthActionLoading ===
+                                      `follow-up-case:${entry.id}:waiting_customer`
+                                        ? 'Actualizando...'
+                                        : 'Esperando cliente'}
+                                    </button>
+                                  </>
+                                ) : null}
+                                {entry.status === 'open' ? (
+                                  <button
+                                    className={styles.secondaryButton}
+                                    disabled={
+                                      growthActionLoading === `take-case:${entry.id}`
+                                    }
+                                    onClick={() =>
+                                      currentTenancy
+                                        ? void handleTakeGrowthOperationalCase(
+                                            currentTenancy.tenant.slug,
+                                            entry.id,
+                                          )
+                                        : undefined
+                                    }
+                                    type="button"
+                                  >
+                                    {growthActionLoading === `take-case:${entry.id}`
+                                      ? 'Tomando...'
+                                      : 'Tomar'}
+                                  </button>
+                                ) : null}
+                                {entry.status !== 'resolved' ? (
+                                  <button
+                                    className={styles.ghostButton}
+                                    disabled={
+                                      growthActionLoading === `resolve-case:${entry.id}`
+                                    }
+                                    onClick={() =>
+                                      currentTenancy
+                                        ? void handleResolveGrowthOperationalCase(
+                                            currentTenancy.tenant.slug,
+                                            entry.id,
+                                          )
+                                        : undefined
+                                    }
+                                    type="button"
+                                  >
+                                    {growthActionLoading === `resolve-case:${entry.id}`
+                                      ? 'Resolviendo...'
+                                      : 'Resolver'}
+                                  </button>
+                                ) : (
+                                  <button
+                                    className={styles.ghostButton}
+                                    disabled={
+                                      growthActionLoading === `reopen-case:${entry.id}`
+                                    }
+                                    onClick={() =>
+                                      currentTenancy
+                                        ? void handleReopenGrowthOperationalCase(
+                                            currentTenancy.tenant.slug,
+                                            entry.id,
+                                          )
+                                        : undefined
+                                    }
+                                    type="button"
+                                  >
+                                    {growthActionLoading === `reopen-case:${entry.id}`
+                                      ? 'Reabriendo...'
+                                      : 'Reabrir'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <small>{entry.nextAction}</small>
-                        <div className={styles.inlineActionRow}>
-                          {entry.caseType === 'follow_up' &&
-                          entry.status !== 'resolved' ? (
-                            <>
-                              <button
-                                className={styles.secondaryButton}
-                                disabled={
-                                  growthActionLoading ===
-                                  `follow-up-case:${entry.id}:pending_team`
-                                }
-                                onClick={() =>
-                                  currentTenancy
-                                    ? void handleUpdateGrowthOperationalCaseFollowUpState(
-                                        {
-                                          tenantSlug: currentTenancy.tenant.slug,
-                                          caseId: entry.id,
-                                          followUpState: 'pending_team',
-                                          dueAt: entry.dueAt,
-                                        },
-                                      )
-                                    : undefined
-                                }
-                                type="button"
-                              >
-                                {growthActionLoading ===
-                                `follow-up-case:${entry.id}:pending_team`
-                                  ? 'Actualizando...'
-                                  : 'Pendiente equipo'}
-                              </button>
-                              <button
-                                className={styles.ghostButton}
-                                disabled={
-                                  growthActionLoading ===
-                                  `follow-up-case:${entry.id}:scheduled`
-                                }
-                                onClick={() =>
-                                  currentTenancy
-                                    ? void handleUpdateGrowthOperationalCaseFollowUpState(
-                                        {
-                                          tenantSlug: currentTenancy.tenant.slug,
-                                          caseId: entry.id,
-                                          followUpState: 'scheduled',
-                                          nextAction:
-                                            entry.nextAction ||
-                                            'Programar el siguiente outreach del equipo.',
-                                          dueAt:
-                                            entry.dueAt ??
-                                            new Date(
-                                              Date.now() +
-                                                24 * 60 * 60 * 1000,
-                                            ).toISOString(),
-                                        },
-                                      )
-                                    : undefined
-                                }
-                                type="button"
-                              >
-                                {growthActionLoading ===
-                                `follow-up-case:${entry.id}:scheduled`
-                                  ? 'Actualizando...'
-                                  : 'Programar'}
-                              </button>
-                              <button
-                                className={styles.ghostButton}
-                                disabled={
-                                  growthActionLoading ===
-                                  `follow-up-case:${entry.id}:waiting_customer`
-                                }
-                                onClick={() =>
-                                  currentTenancy
-                                    ? void handleUpdateGrowthOperationalCaseFollowUpState(
-                                        {
-                                          tenantSlug: currentTenancy.tenant.slug,
-                                          caseId: entry.id,
-                                          followUpState: 'waiting_customer',
-                                          nextAction:
-                                            'Esperar respuesta del cliente antes del siguiente outreach.',
-                                          dueAt: null,
-                                        },
-                                      )
-                                    : undefined
-                                }
-                                type="button"
-                              >
-                                {growthActionLoading ===
-                                `follow-up-case:${entry.id}:waiting_customer`
-                                  ? 'Actualizando...'
-                                  : 'Esperando cliente'}
-                              </button>
-                            </>
-                          ) : null}
-                          {entry.status === 'open' ? (
-                            <button
-                              className={styles.secondaryButton}
-                              disabled={
-                                growthActionLoading === `take-case:${entry.id}`
-                              }
-                              onClick={() =>
-                                currentTenancy
-                                  ? void handleTakeGrowthOperationalCase(
-                                      currentTenancy.tenant.slug,
-                                      entry.id,
-                                    )
-                                  : undefined
-                              }
-                              type="button"
-                            >
-                              {growthActionLoading === `take-case:${entry.id}`
-                                ? 'Tomando...'
-                                : 'Tomar'}
-                            </button>
-                          ) : null}
-                          {entry.status !== 'resolved' ? (
-                            <button
-                              className={styles.ghostButton}
-                              disabled={
-                                growthActionLoading === `resolve-case:${entry.id}`
-                              }
-                              onClick={() =>
-                                currentTenancy
-                                  ? void handleResolveGrowthOperationalCase(
-                                      currentTenancy.tenant.slug,
-                                      entry.id,
-                                    )
-                                  : undefined
-                              }
-                              type="button"
-                            >
-                              {growthActionLoading === `resolve-case:${entry.id}`
-                                ? 'Resolviendo...'
-                                : 'Resolver'}
-                            </button>
-                          ) : (
-                            <button
-                              className={styles.ghostButton}
-                              disabled={
-                                growthActionLoading === `reopen-case:${entry.id}`
-                              }
-                              onClick={() =>
-                                currentTenancy
-                                  ? void handleReopenGrowthOperationalCase(
-                                      currentTenancy.tenant.slug,
-                                      entry.id,
-                                    )
-                                  : undefined
-                              }
-                              type="button"
-                            >
-                              {growthActionLoading === `reopen-case:${entry.id}`
-                                ? 'Reabriendo...'
-                                : 'Reabrir'}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 )}
               </div>

@@ -9,6 +9,7 @@ import {
   GrowthOperationalCaseRecord,
   GrowthOperationalCaseRepository,
 } from '../ports/growth-operational-case.repository';
+import { resolveGrowthOperationalCaseRoutingPolicyKey } from '../support/growth-operational-case-routing-policy';
 
 export interface UpdateTenantGrowthOperationalCaseFollowUpStateInput {
   tenantSlug: string;
@@ -53,6 +54,10 @@ export class UpdateTenantGrowthOperationalCaseFollowUpStateUseCase {
     return this.growthOperationalCaseRepository.save({
       ...record,
       followUpState: input.followUpState,
+      routingPolicyKey: resolveGrowthOperationalCaseRoutingPolicyKey({
+        caseType: record.caseType,
+        followUpState: input.followUpState,
+      }),
       nextAction: input.nextAction ?? record.nextAction,
       dueAt: input.dueAt === undefined ? record.dueAt : input.dueAt,
       updatedAt: this.nowProvider(),

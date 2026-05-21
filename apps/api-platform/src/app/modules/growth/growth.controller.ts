@@ -385,12 +385,19 @@ export class GrowthController {
   async listTenantGrowthOperationalCases(
     @Param('slug') slug: string,
     @Query('status') status?: 'open' | 'in_progress' | 'resolved',
+    @Query('routingPolicyKey')
+    routingPolicyKey?:
+      | 'growth_ops'
+      | 'owner_assignment'
+      | 'follow_up_team'
+      | 'follow_up_waiting_customer',
     @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<GrowthOperationalCaseResponseDto[]> {
     try {
       const cases = await this.listTenantGrowthOperationalCasesUseCase.execute(
         tenantAccess?.tenantSlug ?? slug,
         status,
+        routingPolicyKey,
       );
 
       return cases.map((record) => toGrowthOperationalCaseResponseDto(record));

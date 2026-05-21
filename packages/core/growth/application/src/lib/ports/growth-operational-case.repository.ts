@@ -12,6 +12,12 @@ export type GrowthOperationalCaseFollowUpState =
   | 'scheduled'
   | 'waiting_customer';
 
+export type GrowthOperationalCaseRoutingPolicyKey =
+  | 'growth_ops'
+  | 'owner_assignment'
+  | 'follow_up_team'
+  | 'follow_up_waiting_customer';
+
 export interface CreateGrowthOperationalCaseCommand {
   tenantId: string;
   sourceKey: string;
@@ -22,6 +28,7 @@ export interface CreateGrowthOperationalCaseCommand {
   summary: string;
   nextAction: string;
   followUpState: GrowthOperationalCaseFollowUpState | null;
+  routingPolicyKey: GrowthOperationalCaseRoutingPolicyKey;
   threadId: string | null;
   alertKey: string | null;
   dueAt: Date | null;
@@ -48,7 +55,10 @@ export interface GrowthOperationalCaseRepository {
   save(record: GrowthOperationalCaseRecord): Promise<GrowthOperationalCaseRecord>;
   findByTenantId(
     tenantId: string,
-    status?: GrowthOperationalCaseStatus | null,
+    filters?: {
+      status?: GrowthOperationalCaseStatus | null;
+      routingPolicyKey?: GrowthOperationalCaseRoutingPolicyKey | null;
+    },
   ): Promise<GrowthOperationalCaseRecord[]>;
   findByTenantIdAndId(
     tenantId: string,

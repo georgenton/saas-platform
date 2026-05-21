@@ -76,6 +76,7 @@ export * from './lib/use-cases/send-tenant-whatsapp-conversation-message.use-cas
 export * from './lib/use-cases/take-tenant-growth-operational-case.use-case';
 export * from './lib/use-cases/update-tenant-growth-operational-case-follow-up-state.use-case';
 export * from './lib/use-cases/update-tenant-opportunity-stage.use-case';
+export * from './lib/support/growth-operational-case-routing-policy';
 export * from './lib/use-cases/create-tenant-whatsapp-message-template.use-case';
 export * from './lib/use-cases/create-tenant-whatsapp-automation-rule.use-case';
 export * from './lib/use-cases/execute-tenant-whatsapp-automation-actions.use-case';

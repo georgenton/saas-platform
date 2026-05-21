@@ -1,5 +1,13 @@
 # api-platform
 
+## 0.26.0
+
+### Minor Changes
+
+- f4eefcd: Add the first web consumer for Growth operational workbench, WhatsApp alert summaries, provider taxonomy insights, and manual monitor execution from the workspace UI.
+
+  Refine that consumer so Growth visibility follows effective permissions, adds an operator brief, improves workbench filter UX, and surfaces a clearer readout of the latest manual monitor execution.
+
 ## 0.25.0
 
 ### Minor Changes

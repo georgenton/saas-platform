@@ -3,6 +3,7 @@ import {
   AuthenticatedSessionResponse,
   CreditNoteResponse,
   DebitNoteResponse,
+  GrowthConversationWorkbenchResponse,
   RemissionGuideResponse,
   WithholdingResponse,
   CustomerResponse,
@@ -24,6 +25,8 @@ import {
   PlatformPlan,
   PlatformProduct,
   TaxRateResponse,
+  WhatsappOperationalMonitorSummaryResponse,
+  WhatsappOutboundReportingSummaryResponse,
 } from './types';
 
 const API_BASE_URL =
@@ -1090,6 +1093,88 @@ export async function reverseInvoicePayment(
       method: 'POST',
       token,
       body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchGrowthConversationWorkbench(
+  token: string,
+  tenantSlug: string,
+  query?: {
+    assigneeUserId?: string | null;
+    channel?: 'manual' | 'whatsapp' | null;
+    firstResponseSlaHours?: number | null;
+    followUpSlaHours?: number | null;
+    staleThreadHours?: number | null;
+  },
+): Promise<GrowthConversationWorkbenchResponse> {
+  const search = new URLSearchParams();
+
+  if (query?.assigneeUserId?.trim()) {
+    search.set('assigneeUserId', query.assigneeUserId.trim());
+  }
+
+  if (query?.channel) {
+    search.set('channel', query.channel);
+  }
+
+  if (query?.firstResponseSlaHours) {
+    search.set('firstResponseSlaHours', String(query.firstResponseSlaHours));
+  }
+
+  if (query?.followUpSlaHours) {
+    search.set('followUpSlaHours', String(query.followUpSlaHours));
+  }
+
+  if (query?.staleThreadHours) {
+    search.set('staleThreadHours', String(query.staleThreadHours));
+  }
+
+  const queryString = search.toString();
+
+  return request<GrowthConversationWorkbenchResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/workbench${queryString ? `?${queryString}` : ''}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchWhatsappOutboundReportingSummary(
+  token: string,
+  tenantSlug: string,
+): Promise<WhatsappOutboundReportingSummaryResponse> {
+  return request<WhatsappOutboundReportingSummaryResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/whatsapp-reporting/outbound-summary`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function runWhatsappOperationalMonitor(
+  token: string,
+  tenantSlug: string,
+  body?: {
+    occurredAt?: string | null;
+    autoRunReadyRetries?: boolean | null;
+    retryReadyLimit?: number | null;
+  },
+): Promise<WhatsappOperationalMonitorSummaryResponse> {
+  return request<WhatsappOperationalMonitorSummaryResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/whatsapp-reporting/monitor`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body ?? {}),
     },
   );
 }

@@ -1846,6 +1846,28 @@ Qué hace este monitor:
 - si `autoRunReadyRetries=true`, dispara también el runner de retries listos
 - deja un `retryRunnerSummary` listo para que un cron o monitor externo lo persista o lo envíe a logs/observabilidad
 
+Consumer web inicial para este snapshot operativo:
+- levanta el frontend con `pnpm dev:web`
+- carga un Bearer token con acceso al tenant
+- si el usuario expone `growth.conversations.read`, aparece una consola nueva de:
+  - `workbench` SLA de conversaciones
+  - `operational summary`
+  - `operational alerts`
+  - `provider taxonomy`
+  - ejecución manual de `monitor`
+- si el tenant además publica `growth` dentro de `GET /api/tenancy/tenants/:slug/products`, la UI lo refleja como contexto comercial; si ese `product key` todavía no aparece pero el permiso efectivo sí existe, el consumer no se oculta
+- la UX del consumer ahora también deja:
+  - un `operator brief` que resume si la cola está saludable, en warning o crítica
+  - reseteo rápido de la `workbench policy`
+  - empty states con contexto cuando los filtros esconden threads
+  - lectura resumida del último `monitor` manual y de los retries evaluados
+- si además el usuario tiene `growth.conversations.manage`, desde la misma UI puede ejecutar el monitor con `autoRunReadyRetries`
+
+La UI consume:
+- `GET /api/growth/tenants/:slug/conversations/workbench`
+- `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/outbound-summary`
+- `POST /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor`
+
 Scheduler interno del API para este monitor:
 - `GROWTH_WHATSAPP_OPERATIONAL_MONITOR_SCHEDULER_ENABLED=true`
 - `GROWTH_WHATSAPP_OPERATIONAL_MONITOR_TENANT_SLUGS=saas-platform-local`

@@ -943,6 +943,14 @@ export interface GrowthOperationalCaseRoutingReviewResponse {
   cases: GrowthOperationalCaseResponse[];
 }
 
+export interface GrowthOperationalCaseAutoAssignmentResponse {
+  candidateCount: number;
+  reviewedCount: number;
+  assignedCount: number;
+  threadAssignmentCount: number;
+  cases: GrowthOperationalCaseResponse[];
+}
+
 export interface WhatsappOperationalAlertFrequencyResponse {
   alertKey: string;
   title: string;

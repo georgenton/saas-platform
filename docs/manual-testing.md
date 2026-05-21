@@ -1895,11 +1895,21 @@ Consumer web inicial para este snapshot operativo:
         - `POST /api/growth/tenants/:slug/conversations/operational-cases/review-routing`
         - promueve a `escalation_review` los `follow_up` u `ownership_routing` vencidos
         - también endurece prioridad a `critical` cuando el caso ya se atrasó y sigue requiriendo intervención del equipo
+      - además ya existe una primera auto-asignación opinada:
+        - `POST /api/growth/tenants/:slug/conversations/operational-cases/auto-assign`
+        - solo revisa lanes que sí requieren intervención activa del equipo:
+          - `owner_assignment`
+          - `follow_up_team`
+          - `escalation_review`
+        - primero intenta heredar el owner del thread cuando ya exista uno elegible
+        - si el thread todavía no tiene owner, asigna el caso al operador elegible con menor carga abierta
+        - cuando el caso apunta a un thread sin owner, el mismo pass también alinea `ConversationThread.assigneeUserId`
 - el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
   - `GET /api/growth/tenants/:slug/conversations/operational-cases`
     - acepta `status`
     - acepta `routingPolicyKey`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases`
+  - `POST /api/growth/tenants/:slug/conversations/operational-cases/auto-assign`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/take`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/resolve`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/reopen`

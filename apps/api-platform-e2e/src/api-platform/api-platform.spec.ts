@@ -42,6 +42,7 @@ import {
 } from '@saas-platform/feature-flags-application';
 import { FeatureFlag } from '@saas-platform/feature-flags-domain';
 import {
+  AutoAssignTenantGrowthOperationalCasesUseCase,
   AssignTenantConversationThreadUseCase,
   AssignTenantOpportunityUseCase,
   CreateTenantGrowthOperationalCaseUseCase,
@@ -240,6 +241,7 @@ describe('API', () => {
   let receiveTenantMetaWhatsappWebhookUseCase: { execute: jest.Mock };
   let reopenTenantGrowthOperationalCaseUseCase: { execute: jest.Mock };
   let replayTenantWebhookEventEnvelopeUseCase: { execute: jest.Mock };
+  let autoAssignTenantGrowthOperationalCasesUseCase: { execute: jest.Mock };
   let reviewTenantGrowthOperationalCaseRoutingUseCase: { execute: jest.Mock };
   let resolveTenantGrowthOperationalCaseUseCase: { execute: jest.Mock };
   let retryTenantWhatsappFailedConversationMessageUseCase: { execute: jest.Mock };
@@ -2533,6 +2535,37 @@ describe('API', () => {
     runTenantWhatsappReadyRetriesUseCase = {
       execute: jest.fn().mockResolvedValue(whatsappRetryRunnerSummary),
     };
+    autoAssignTenantGrowthOperationalCasesUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        candidateCount: 2,
+        reviewedCount: 2,
+        assignedCount: 2,
+        threadAssignmentCount: 1,
+        cases: [
+          {
+            ...growthOperationalCase,
+            caseType: 'ownership_routing',
+            routingPolicyKey: 'owner_assignment',
+            threadId: 'thread_001',
+            assignedUserId: 'user_456',
+            assignedUserEmail: 'ops@saas-platform.dev',
+            updatedAt: new Date('2026-05-20T10:25:00.000Z'),
+          },
+          {
+            ...growthOperationalCase,
+            id: 'op-case-002',
+            sourceKey: 'thread:thread_002:follow_up',
+            caseType: 'follow_up',
+            followUpState: 'pending_team',
+            routingPolicyKey: 'follow_up_team',
+            threadId: 'thread_002',
+            assignedUserId: 'user_789',
+            assignedUserEmail: 'owner@saas-platform.dev',
+            updatedAt: new Date('2026-05-20T10:25:00.000Z'),
+          },
+        ],
+      }),
+    };
     reviewTenantGrowthOperationalCaseRoutingUseCase = {
       execute: jest.fn().mockResolvedValue({
         reviewedCount: 2,
@@ -3245,6 +3278,8 @@ describe('API', () => {
       .useValue(reopenTenantGrowthOperationalCaseUseCase)
       .overrideProvider(ReplayTenantWebhookEventEnvelopeUseCase)
       .useValue(replayTenantWebhookEventEnvelopeUseCase)
+      .overrideProvider(AutoAssignTenantGrowthOperationalCasesUseCase)
+      .useValue(autoAssignTenantGrowthOperationalCasesUseCase)
       .overrideProvider(ReviewTenantGrowthOperationalCaseRoutingUseCase)
       .useValue(reviewTenantGrowthOperationalCaseRoutingUseCase)
       .overrideProvider(ResolveTenantGrowthOperationalCaseUseCase)
@@ -4739,6 +4774,81 @@ describe('API', () => {
 
     expect(
       reviewTenantGrowthOperationalCaseRoutingUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+    });
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/operational-cases/auto-assign should assign eligible cases to operators', async () => {
+    await request(httpServer)
+      .post(
+        '/api/growth/tenants/saas-platform/conversations/operational-cases/auto-assign',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect({
+        candidateCount: 2,
+        reviewedCount: 2,
+        assignedCount: 2,
+        threadAssignmentCount: 1,
+        cases: [
+          {
+            id: 'op-case-001',
+            sourceKey: 'alert:retry_queue_ready',
+            caseType: 'ownership_routing',
+            status: 'open',
+            priority: 'warning',
+            title: 'Retry queue has ready-now messages',
+            summary:
+              '1 failed outbound messages are ready for retry execution now.',
+            nextAction:
+              'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+            followUpState: null,
+            routingPolicyKey: 'owner_assignment',
+            threadId: 'thread_001',
+            alertKey: 'retry_queue_ready',
+            dueAt: '2026-05-20T11:00:00.000Z',
+            assignedUserId: 'user_456',
+            assignedUserEmail: 'ops@saas-platform.dev',
+            createdByUserId: 'user_123',
+            createdByEmail: 'hello@saas-platform.dev',
+            resolvedAt: null,
+            resolvedByUserId: null,
+            resolvedByEmail: null,
+            createdAt: '2026-05-20T10:05:00.000Z',
+            updatedAt: '2026-05-20T10:25:00.000Z',
+          },
+          {
+            id: 'op-case-002',
+            sourceKey: 'thread:thread_002:follow_up',
+            caseType: 'follow_up',
+            status: 'open',
+            priority: 'warning',
+            title: 'Retry queue has ready-now messages',
+            summary:
+              '1 failed outbound messages are ready for retry execution now.',
+            nextAction:
+              'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+            followUpState: 'pending_team',
+            routingPolicyKey: 'follow_up_team',
+            threadId: 'thread_002',
+            alertKey: 'retry_queue_ready',
+            dueAt: '2026-05-20T11:00:00.000Z',
+            assignedUserId: 'user_789',
+            assignedUserEmail: 'owner@saas-platform.dev',
+            createdByUserId: 'user_123',
+            createdByEmail: 'hello@saas-platform.dev',
+            resolvedAt: null,
+            resolvedByUserId: null,
+            resolvedByEmail: null,
+            createdAt: '2026-05-20T10:05:00.000Z',
+            updatedAt: '2026-05-20T10:25:00.000Z',
+          },
+        ],
+      });
+
+    expect(
+      autoAssignTenantGrowthOperationalCasesUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
     });

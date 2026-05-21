@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.33.0
+
+### Minor Changes
+
+- 409dd6b: Add first auto-assignment policies for Growth operational cases, including manual API/web triggers that inherit eligible thread owners or fall back to the least-loaded Growth operator.
+
 ## 0.32.0
 
 ### Minor Changes

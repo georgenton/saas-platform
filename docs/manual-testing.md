@@ -1861,16 +1861,30 @@ Consumer web inicial para este snapshot operativo:
   - reseteo rápido de la `workbench policy`
   - empty states con contexto cuando los filtros esconden threads
   - lectura resumida del último `monitor` manual y de los retries evaluados
-  - `acknowledgements` locales por alerta para que el operador marque qué ya revisó
   - `drill-down inspector` para alertas, taxonomías, códigos del provider, threads e historial
-  - `alert history` local en el navegador con snapshots recientes del `summary` y del `monitor`
-- por ahora, los `acknowledgements` y el `alert history` viven en `localStorage`; sirven como memoria operativa rápida del tenant, pero todavía no sustituyen persistencia compartida ni auditoría backend
+  - `acknowledgements` compartidos por alerta, persistidos por tenant en backend
+  - `monitor history` compartido, alimentado por corridas manuales y del scheduler
+- el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
+  - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor-runs`
+  - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor-analytics`
+  - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/alert-acknowledgements`
+  - `PUT /api/growth/tenants/:slug/conversations/whatsapp-reporting/alert-acknowledgements/:alertKey`
+  - `DELETE /api/growth/tenants/:slug/conversations/whatsapp-reporting/alert-acknowledgements/:alertKey`
+- esa misma historia compartida ya alimenta una primera lectura de calibración:
+  - frecuencia histórica de alertas
+  - reparto manual vs scheduler
+  - sugerencias de ajuste para thresholds como `immediateSendRejectionRateWarning`, `asynchronousDeliveryFailureRateWarning`, `readyRetryQueueWarningCount` y `cooldownRetryQueueWarningCount`
 - si además el usuario tiene `growth.conversations.manage`, desde la misma UI puede ejecutar el monitor con `autoRunReadyRetries`
 
 La UI consume:
 - `GET /api/growth/tenants/:slug/conversations/workbench`
 - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/outbound-summary`
 - `POST /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor`
+- `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor-runs`
+- `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor-analytics`
+- `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/alert-acknowledgements`
+- `PUT /api/growth/tenants/:slug/conversations/whatsapp-reporting/alert-acknowledgements/:alertKey`
+- `DELETE /api/growth/tenants/:slug/conversations/whatsapp-reporting/alert-acknowledgements/:alertKey`
 
 Scheduler interno del API para este monitor:
 - `GROWTH_WHATSAPP_OPERATIONAL_MONITOR_SCHEDULER_ENABLED=true`

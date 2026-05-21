@@ -16,6 +16,8 @@ export * from './lib/growth/prisma-conversation-message.repository';
 export * from './lib/growth/prisma-conversation-thread.repository';
 export * from './lib/growth/prisma-lead.repository';
 export * from './lib/growth/prisma-opportunity.repository';
+export * from './lib/growth/prisma-whatsapp-operational-alert-acknowledgement.repository';
+export * from './lib/growth/prisma-whatsapp-operational-monitor-run.repository';
 export * from './lib/growth/prisma-whatsapp-automation-rule.repository';
 export * from './lib/growth/prisma-whatsapp-message-template.repository';
 export * from './lib/growth/prisma-webhook-event-envelope.repository';

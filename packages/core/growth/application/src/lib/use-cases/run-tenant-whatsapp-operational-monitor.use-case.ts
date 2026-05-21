@@ -1,4 +1,8 @@
 import {
+  TenantNotFoundError,
+  TenantRepository,
+} from '@saas-platform/tenancy-application';
+import {
   GetTenantWhatsappOutboundReportingSummaryUseCase,
   TenantWhatsappOperationalAlertView,
   TenantWhatsappOperationalDashboardView,
@@ -9,12 +13,17 @@ import {
   RunTenantWhatsappReadyRetriesUseCase,
   TenantWhatsappRetryRunnerSummaryView,
 } from './run-tenant-whatsapp-ready-retries.use-case';
+import {
+  WhatsappOperationalMonitorRunRepository,
+  WhatsappOperationalMonitorRunTriggerSource,
+} from '../ports/whatsapp-operational-monitor-run.repository';
 
 export interface RunTenantWhatsappOperationalMonitorInput {
   tenantSlug: string;
   occurredAt?: Date | null;
   autoRunReadyRetries?: boolean | null;
   retryReadyLimit?: number | null;
+  triggerSource?: WhatsappOperationalMonitorRunTriggerSource | null;
 }
 
 export interface TenantWhatsappOperationalMonitorSummaryView {
@@ -34,14 +43,22 @@ export interface TenantWhatsappOperationalMonitorSummaryView {
 
 export class RunTenantWhatsappOperationalMonitorUseCase {
   constructor(
+    private readonly tenantRepository: TenantRepository,
     private readonly getTenantWhatsappOutboundReportingSummaryUseCase: GetTenantWhatsappOutboundReportingSummaryUseCase,
     private readonly runTenantWhatsappReadyRetriesUseCase: RunTenantWhatsappReadyRetriesUseCase,
+    private readonly whatsappOperationalMonitorRunRepository: WhatsappOperationalMonitorRunRepository,
     private readonly nowProvider: () => Date = () => new Date(),
   ) {}
 
   async execute(
     input: RunTenantWhatsappOperationalMonitorInput,
   ): Promise<TenantWhatsappOperationalMonitorSummaryView> {
+    const tenant = await this.tenantRepository.findBySlug(input.tenantSlug);
+
+    if (!tenant) {
+      throw new TenantNotFoundError(input.tenantSlug);
+    }
+
     const occurredAt = input.occurredAt ?? this.nowProvider();
     const reportingSummary =
       await this.getTenantWhatsappOutboundReportingSummaryUseCase.execute(
@@ -58,13 +75,30 @@ export class RunTenantWhatsappOperationalMonitorUseCase {
           occurredAt,
         })
       : null;
-
-    return this.buildSummaryView(
+    const summary = this.buildSummaryView(
       reportingSummary,
       occurredAt,
       autoRunReadyRetriesEnabled,
       retryRunnerSummary,
     );
+
+    await this.whatsappOperationalMonitorRunRepository.create({
+      tenantId: tenant.id,
+      triggerSource: input.triggerSource ?? 'manual',
+      generatedAt: summary.generatedAt,
+      autoRunReadyRetriesEnabled: summary.autoRunReadyRetriesEnabled,
+      overallStatus: summary.overallStatus,
+      totalAlertCount: summary.totalAlertCount,
+      criticalAlertCount: summary.criticalAlertCount,
+      warningAlertCount: summary.warningAlertCount,
+      operationalThresholds: summary.operationalThresholds,
+      operationalDashboard: summary.operationalDashboard,
+      operationalAlerts: summary.operationalAlerts,
+      retryRunnerExecuted: summary.retryRunnerExecuted,
+      retryRunnerSummary: summary.retryRunnerSummary,
+    });
+
+    return summary;
   }
 
   private buildSummaryView(

@@ -10,6 +10,8 @@ import {
   LEAD_REPOSITORY,
   OPPORTUNITY_ID_GENERATOR,
   OPPORTUNITY_REPOSITORY,
+  WHATSAPP_OPERATIONAL_ALERT_ACKNOWLEDGEMENT_REPOSITORY,
+  WHATSAPP_OPERATIONAL_MONITOR_RUN_REPOSITORY,
   WHATSAPP_AUTOMATION_EXECUTION_ID_GENERATOR,
   WHATSAPP_AUTOMATION_EXECUTION_REPOSITORY,
   WHATSAPP_AUTOMATION_RULE_ID_GENERATOR,
@@ -25,6 +27,8 @@ import { PrismaConversationMessageRepository } from './prisma-conversation-messa
 import { PrismaConversationThreadRepository } from './prisma-conversation-thread.repository';
 import { PrismaLeadRepository } from './prisma-lead.repository';
 import { PrismaOpportunityRepository } from './prisma-opportunity.repository';
+import { PrismaWhatsappOperationalAlertAcknowledgementRepository } from './prisma-whatsapp-operational-alert-acknowledgement.repository';
+import { PrismaWhatsappOperationalMonitorRunRepository } from './prisma-whatsapp-operational-monitor-run.repository';
 import { PrismaWhatsappAutomationExecutionRepository } from './prisma-whatsapp-automation-execution.repository';
 import { PrismaWhatsappAutomationRuleRepository } from './prisma-whatsapp-automation-rule.repository';
 import { PrismaWhatsappMessageTemplateRepository } from './prisma-whatsapp-message-template.repository';
@@ -47,6 +51,8 @@ import { UuidWebhookEventEnvelopeIdGenerator } from './uuid-webhook-event-envelo
     PrismaConversationThreadRepository,
     PrismaLeadRepository,
     PrismaOpportunityRepository,
+    PrismaWhatsappOperationalAlertAcknowledgementRepository,
+    PrismaWhatsappOperationalMonitorRunRepository,
     PrismaWhatsappAutomationExecutionRepository,
     PrismaWhatsappAutomationRuleRepository,
     PrismaWhatsappMessageTemplateRepository,
@@ -101,6 +107,14 @@ import { UuidWebhookEventEnvelopeIdGenerator } from './uuid-webhook-event-envelo
       useExisting: UuidOpportunityIdGenerator,
     },
     {
+      provide: WHATSAPP_OPERATIONAL_MONITOR_RUN_REPOSITORY,
+      useExisting: PrismaWhatsappOperationalMonitorRunRepository,
+    },
+    {
+      provide: WHATSAPP_OPERATIONAL_ALERT_ACKNOWLEDGEMENT_REPOSITORY,
+      useExisting: PrismaWhatsappOperationalAlertAcknowledgementRepository,
+    },
+    {
       provide: WHATSAPP_AUTOMATION_EXECUTION_REPOSITORY,
       useExisting: PrismaWhatsappAutomationExecutionRepository,
     },
@@ -144,6 +158,8 @@ import { UuidWebhookEventEnvelopeIdGenerator } from './uuid-webhook-event-envelo
     LEAD_ID_GENERATOR,
     OPPORTUNITY_REPOSITORY,
     OPPORTUNITY_ID_GENERATOR,
+    WHATSAPP_OPERATIONAL_MONITOR_RUN_REPOSITORY,
+    WHATSAPP_OPERATIONAL_ALERT_ACKNOWLEDGEMENT_REPOSITORY,
     WHATSAPP_AUTOMATION_EXECUTION_REPOSITORY,
     WHATSAPP_AUTOMATION_EXECUTION_ID_GENERATOR,
     WHATSAPP_AUTOMATION_RULE_REPOSITORY,

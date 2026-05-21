@@ -86,6 +86,7 @@ export class GrowthWhatsappOperationalMonitorScheduler
             tenantSlug,
             autoRunReadyRetries: this.isAutoRunReadyRetriesEnabled(),
             retryReadyLimit: this.getRetryReadyLimit(),
+            triggerSource: 'scheduler',
           });
         await this.whatsappOperationalMonitorObservabilitySink.publish({
           summary,

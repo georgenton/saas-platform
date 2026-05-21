@@ -14,8 +14,12 @@ import {
   createInvoiceItem,
   createInvoicePayment,
   createTaxRate,
+  deleteWhatsappOperationalAlertAcknowledgement,
   downloadInvoiceElectronicRideHtml,
   downloadInvoiceElectronicXmlPreview,
+  fetchWhatsappOperationalAlertAcknowledgements,
+  fetchWhatsappOperationalMonitorAnalytics,
+  fetchWhatsappOperationalMonitorRuns,
   fetchGrowthConversationWorkbench,
   fetchElectronicSandboxReadiness,
   fetchElectronicSubmissionSettings,
@@ -44,6 +48,7 @@ import {
   listTenantInvitations,
   reverseInvoicePayment,
   runWhatsappOperationalMonitor,
+  acknowledgeWhatsappOperationalAlert,
   resendInvitation,
   sendInvoiceEmail,
   setCurrentTenancy,
@@ -83,16 +88,16 @@ import {
   SessionPendingInvitation,
   SessionEntitlement,
   SessionTenancy,
+  WhatsappOperationalAlertAcknowledgementResponse,
+  WhatsappOperationalMonitorAnalyticsResponse,
   WhatsappOperationalMonitorSummaryResponse,
+  WhatsappOperationalMonitorRunResponse,
   WhatsappOutboundReportingSummaryResponse,
 } from './types';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:3000/api';
 const TOKEN_STORAGE_KEY = 'saas-platform.web.token';
-const GROWTH_ALERT_ACK_STORAGE_KEY = 'saas-platform.web.growth.alert-acks';
-const GROWTH_MONITOR_HISTORY_STORAGE_KEY =
-  'saas-platform.web.growth.monitor-history';
 
 type GrowthDrilldownTarget =
   | {
@@ -115,39 +120,6 @@ type GrowthDrilldownTarget =
       kind: 'history';
       key: string;
     };
-
-type GrowthAlertAcknowledgement = {
-  tenantSlug: string;
-  alertKey: string;
-  title: string;
-  severity: 'warning' | 'critical';
-  acknowledgedAt: string;
-};
-
-type GrowthMonitorHistoryEntry = {
-  entryKey: string;
-  tenantSlug: string;
-  source: 'summary' | 'monitor';
-  generatedAt: string;
-  overallStatus: 'healthy' | 'warning' | 'critical';
-  totalAlertCount: number;
-  warningAlertCount: number;
-  criticalAlertCount: number;
-  topAlertKey: string | null;
-  topAlertTitle: string | null;
-};
-
-function parseStoredJson<T>(value: string | null, fallback: T): T {
-  if (!value) {
-    return fallback;
-  }
-
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return fallback;
-  }
-}
 
 function formatDate(value: string | null): string {
   if (!value) {
@@ -326,7 +298,14 @@ function humanizeKey(value: string | null): string {
     return 'No definido';
   }
 
-  return value.replaceAll('_', ' ');
+  return value.split('_').join(' ');
+}
+
+function formatThresholdValue(
+  value: number,
+  unit: 'rate' | 'count',
+): string {
+  return unit === 'rate' ? formatRate(value) : String(value);
 }
 
 function operationalStatusTone(
@@ -368,35 +347,6 @@ function retryDispositionLabel(value: string): string {
     default:
       return humanizeKey(value);
   }
-}
-
-function buildGrowthHistoryEntry(
-  source: 'summary' | 'monitor',
-  tenantSlug: string,
-  generatedAt: string,
-  overallStatus: 'healthy' | 'warning' | 'critical',
-  operationalAlerts: WhatsappOutboundReportingSummaryResponse['operationalAlerts'],
-): GrowthMonitorHistoryEntry {
-  const warningAlertCount = operationalAlerts.filter(
-    (alert) => alert.severity === 'warning',
-  ).length;
-  const criticalAlertCount = operationalAlerts.filter(
-    (alert) => alert.severity === 'critical',
-  ).length;
-  const topAlert = operationalAlerts[0] ?? null;
-
-  return {
-    entryKey: `${tenantSlug}:${source}:${generatedAt}`,
-    tenantSlug,
-    source,
-    generatedAt,
-    overallStatus,
-    totalAlertCount: operationalAlerts.length,
-    warningAlertCount,
-    criticalAlertCount,
-    topAlertKey: topAlert?.key ?? null,
-    topAlertTitle: topAlert?.title ?? null,
-  };
 }
 
 function channelLabel(channel: string): string {
@@ -573,6 +523,8 @@ export function App() {
     useState<WhatsappOutboundReportingSummaryResponse | null>(null);
   const [whatsappMonitorSummary, setWhatsappMonitorSummary] =
     useState<WhatsappOperationalMonitorSummaryResponse | null>(null);
+  const [whatsappMonitorAnalytics, setWhatsappMonitorAnalytics] =
+    useState<WhatsappOperationalMonitorAnalyticsResponse | null>(null);
   const [growthLoading, setGrowthLoading] = useState(false);
   const [growthError, setGrowthError] = useState<string | null>(null);
   const [growthActionMessage, setGrowthActionMessage] = useState<string | null>(null);
@@ -588,10 +540,10 @@ export function App() {
     useState(false);
   const [monitorRetryReadyLimit, setMonitorRetryReadyLimit] = useState('10');
   const [growthAlertAcknowledgements, setGrowthAlertAcknowledgements] = useState<
-    GrowthAlertAcknowledgement[]
+    WhatsappOperationalAlertAcknowledgementResponse[]
   >([]);
   const [growthMonitorHistory, setGrowthMonitorHistory] = useState<
-    GrowthMonitorHistoryEntry[]
+    WhatsappOperationalMonitorRunResponse[]
   >([]);
   const [growthDrilldownTarget, setGrowthDrilldownTarget] =
     useState<GrowthDrilldownTarget | null>(null);
@@ -892,33 +844,28 @@ export function App() {
     () => whatsappSummary?.topProviderErrorCodes.slice(0, 4) ?? [],
     [whatsappSummary],
   );
+  const leadingHistoricalAlerts = useMemo(
+    () => whatsappMonitorAnalytics?.alertFrequency.slice(0, 4) ?? [],
+    [whatsappMonitorAnalytics],
+  );
+  const thresholdCalibrationSuggestions = useMemo(
+    () => whatsappMonitorAnalytics?.thresholdCalibration.slice(0, 4) ?? [],
+    [whatsappMonitorAnalytics],
+  );
   const workbenchThreads = useMemo(
     () => growthWorkbench?.threads.slice(0, 6) ?? [],
     [growthWorkbench],
   );
   const currentTenantAlertAcknowledgements = useMemo(() => {
-    if (!currentTenancy) {
-      return new Map<string, GrowthAlertAcknowledgement>();
-    }
-
     return new Map(
       growthAlertAcknowledgements
-        .filter(
-          (acknowledgement) =>
-            acknowledgement.tenantSlug === currentTenancy.tenant.slug,
-        )
         .map((acknowledgement) => [acknowledgement.alertKey, acknowledgement] as const),
     );
-  }, [currentTenancy, growthAlertAcknowledgements]);
-  const visibleAlertHistory = useMemo(() => {
-    if (!currentTenancy) {
-      return [];
-    }
-
-    return growthMonitorHistory
-      .filter((entry) => entry.tenantSlug === currentTenancy.tenant.slug)
-      .slice(0, 6);
-  }, [currentTenancy, growthMonitorHistory]);
+  }, [growthAlertAcknowledgements]);
+  const visibleAlertHistory = useMemo(
+    () => growthMonitorHistory.slice(0, 6),
+    [growthMonitorHistory],
+  );
   const acknowledgedAlertCount = currentTenantAlertAcknowledgements.size;
   const growthFiltersCustomized = useMemo(
     () =>
@@ -1044,7 +991,7 @@ export function App() {
 
     return (
       visibleAlertHistory.find(
-        (entry) => entry.entryKey === growthDrilldownTarget.key,
+        (entry) => entry.id === growthDrilldownTarget.key,
       ) ?? null
     );
   }, [growthDrilldownTarget, visibleAlertHistory]);
@@ -1061,79 +1008,9 @@ export function App() {
     setDeepLinkedInvitationId(url.searchParams.get('invitationId'));
 
     const savedToken = window.localStorage.getItem(TOKEN_STORAGE_KEY) ?? '';
-    const savedGrowthAcknowledgements = parseStoredJson<GrowthAlertAcknowledgement[]>(
-      window.localStorage.getItem(GROWTH_ALERT_ACK_STORAGE_KEY),
-      [],
-    );
-    const savedGrowthMonitorHistory = parseStoredJson<GrowthMonitorHistoryEntry[]>(
-      window.localStorage.getItem(GROWTH_MONITOR_HISTORY_STORAGE_KEY),
-      [],
-    );
     setToken(savedToken);
     setTokenInput(savedToken);
-    setGrowthAlertAcknowledgements(savedGrowthAcknowledgements);
-    setGrowthMonitorHistory(savedGrowthMonitorHistory);
   }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      GROWTH_ALERT_ACK_STORAGE_KEY,
-      JSON.stringify(growthAlertAcknowledgements),
-    );
-  }, [growthAlertAcknowledgements]);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      GROWTH_MONITOR_HISTORY_STORAGE_KEY,
-      JSON.stringify(growthMonitorHistory),
-    );
-  }, [growthMonitorHistory]);
-
-  useEffect(() => {
-    if (!whatsappSummary) {
-      return;
-    }
-
-    const nextEntry = buildGrowthHistoryEntry(
-      'summary',
-      whatsappSummary.tenantSlug,
-      whatsappSummary.generatedAt,
-      whatsappSummary.operationalDashboard.overallStatus,
-      whatsappSummary.operationalAlerts,
-    );
-
-    setGrowthMonitorHistory((currentHistory) => {
-      const deduped = [
-        nextEntry,
-        ...currentHistory.filter((entry) => entry.entryKey !== nextEntry.entryKey),
-      ];
-
-      return deduped.slice(0, 30);
-    });
-  }, [whatsappSummary]);
-
-  useEffect(() => {
-    if (!whatsappMonitorSummary) {
-      return;
-    }
-
-    const nextEntry = buildGrowthHistoryEntry(
-      'monitor',
-      whatsappMonitorSummary.tenantSlug,
-      whatsappMonitorSummary.generatedAt,
-      whatsappMonitorSummary.overallStatus,
-      whatsappMonitorSummary.operationalAlerts,
-    );
-
-    setGrowthMonitorHistory((currentHistory) => {
-      const deduped = [
-        nextEntry,
-        ...currentHistory.filter((entry) => entry.entryKey !== nextEntry.entryKey),
-      ];
-
-      return deduped.slice(0, 30);
-    });
-  }, [whatsappMonitorSummary]);
 
   useEffect(() => {
     if (selectedGrowthAlert) {
@@ -1415,6 +1292,9 @@ export function App() {
       setGrowthWorkbench(null);
       setWhatsappSummary(null);
       setWhatsappMonitorSummary(null);
+      setWhatsappMonitorAnalytics(null);
+      setGrowthAlertAcknowledgements([]);
+      setGrowthMonitorHistory([]);
       setGrowthError(null);
       return;
     }
@@ -1427,7 +1307,14 @@ export function App() {
       setGrowthError(null);
 
       try {
-        const [nextWorkbench, nextSummary] = await Promise.all([
+        const [
+          nextWorkbench,
+          nextSummary,
+          nextMonitorRuns,
+          nextMonitorAnalytics,
+          nextAcknowledgements,
+        ] =
+          await Promise.all([
           fetchGrowthConversationWorkbench(token, tenantSlug, {
             assigneeUserId: growthAssigneeFilter.trim() || null,
             channel:
@@ -1437,6 +1324,9 @@ export function App() {
             staleThreadHours: Number(staleThreadHours) || null,
           }),
           fetchWhatsappOutboundReportingSummary(token, tenantSlug),
+          fetchWhatsappOperationalMonitorRuns(token, tenantSlug),
+          fetchWhatsappOperationalMonitorAnalytics(token, tenantSlug),
+          fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug),
         ]);
 
         if (cancelled) {
@@ -1446,6 +1336,9 @@ export function App() {
         startTransition(() => {
           setGrowthWorkbench(nextWorkbench);
           setWhatsappSummary(nextSummary);
+          setGrowthMonitorHistory(nextMonitorRuns);
+          setWhatsappMonitorAnalytics(nextMonitorAnalytics);
+          setGrowthAlertAcknowledgements(nextAcknowledgements);
         });
       } catch (error) {
         if (cancelled) {
@@ -1455,6 +1348,9 @@ export function App() {
         setGrowthWorkbench(null);
         setWhatsappSummary(null);
         setWhatsappMonitorSummary(null);
+        setWhatsappMonitorAnalytics(null);
+        setGrowthAlertAcknowledgements([]);
+        setGrowthMonitorHistory([]);
         setGrowthError(
           error instanceof Error
             ? error.message
@@ -1969,7 +1865,14 @@ export function App() {
     setGrowthError(null);
 
     try {
-      const [nextWorkbench, nextSummary] = await Promise.all([
+      const [
+        nextWorkbench,
+        nextSummary,
+        nextMonitorRuns,
+        nextMonitorAnalytics,
+        nextAcknowledgements,
+      ] =
+        await Promise.all([
         fetchGrowthConversationWorkbench(token, tenantSlug, {
           assigneeUserId: growthAssigneeFilter.trim() || null,
           channel: growthChannelFilter === 'all' ? null : growthChannelFilter,
@@ -1978,11 +1881,17 @@ export function App() {
           staleThreadHours: Number(staleThreadHours) || null,
         }),
         fetchWhatsappOutboundReportingSummary(token, tenantSlug),
+        fetchWhatsappOperationalMonitorRuns(token, tenantSlug),
+        fetchWhatsappOperationalMonitorAnalytics(token, tenantSlug),
+        fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug),
       ]);
 
       startTransition(() => {
         setGrowthWorkbench(nextWorkbench);
         setWhatsappSummary(nextSummary);
+        setGrowthMonitorHistory(nextMonitorRuns);
+        setWhatsappMonitorAnalytics(nextMonitorAnalytics);
+        setGrowthAlertAcknowledgements(nextAcknowledgements);
       });
     } catch (error) {
       setGrowthError(
@@ -2003,54 +1912,56 @@ export function App() {
     setStaleThreadHours('24');
   }
 
-  function toggleGrowthAlertAcknowledgement(
+  async function toggleGrowthAlertAcknowledgement(
     alert: WhatsappOutboundReportingSummaryResponse['operationalAlerts'][number],
   ) {
-    if (!currentTenancy) {
+    if (!token || !currentTenancy || !canManageGrowthConversations) {
       return;
     }
 
-    setGrowthAlertAcknowledgements((currentAcknowledgements) => {
-      const alreadyAcknowledged = currentAcknowledgements.some(
-        (acknowledgement) =>
-          acknowledgement.tenantSlug === currentTenancy.tenant.slug &&
-          acknowledgement.alertKey === alert.key,
-      );
+    const tenantSlug = currentTenancy.tenant.slug;
+    const alreadyAcknowledged = growthAlertAcknowledgements.some(
+      (acknowledgement) => acknowledgement.alertKey === alert.key,
+    );
 
+    setGrowthActionLoading(`ack-alert:${alert.key}`);
+    setGrowthActionMessage(null);
+    setGrowthError(null);
+
+    try {
       if (alreadyAcknowledged) {
-        return currentAcknowledgements.filter(
-          (acknowledgement) =>
-            !(
-              acknowledgement.tenantSlug === currentTenancy.tenant.slug &&
-              acknowledgement.alertKey === alert.key
-            ),
+        await deleteWhatsappOperationalAlertAcknowledgement(
+          token,
+          tenantSlug,
+          alert.key,
         );
-      }
-
-      return [
-        {
-          tenantSlug: currentTenancy.tenant.slug,
-          alertKey: alert.key,
+      } else {
+        await acknowledgeWhatsappOperationalAlert(token, tenantSlug, alert.key, {
           title: alert.title,
           severity: alert.severity,
-          acknowledgedAt: new Date().toISOString(),
-        },
-        ...currentAcknowledgements,
-      ];
-    });
-  }
+          summary: alert.summary,
+          provider: alert.provider,
+          failureClass: alert.failureClass,
+          providerTaxonomyFamily: alert.providerTaxonomyFamily,
+          providerTaxonomyDetail: alert.providerTaxonomyDetail,
+          affectedMessageCount: alert.affectedMessageCount,
+          recommendedAction: alert.recommendedAction,
+          lastSeenGeneratedAt: whatsappSummary?.generatedAt ?? null,
+        });
+      }
 
-  function clearGrowthHistoryForTenant() {
-    if (!currentTenancy) {
-      return;
+      const nextAcknowledgements =
+        await fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug);
+      setGrowthAlertAcknowledgements(nextAcknowledgements);
+    } catch (error) {
+      setGrowthError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar el acknowledgement operativo.',
+      );
+    } finally {
+      setGrowthActionLoading(null);
     }
-
-    setGrowthMonitorHistory((currentHistory) =>
-      currentHistory.filter(
-        (entry) => entry.tenantSlug !== currentTenancy.tenant.slug,
-      ),
-    );
-    setGrowthDrilldownTarget(null);
   }
 
   async function handleRunGrowthOperationalMonitor() {
@@ -2125,6 +2036,9 @@ export function App() {
     setGrowthWorkbench(null);
     setWhatsappSummary(null);
     setWhatsappMonitorSummary(null);
+    setWhatsappMonitorAnalytics(null);
+    setGrowthAlertAcknowledgements([]);
+    setGrowthMonitorHistory([]);
     setSessionError(null);
   }
 
@@ -4182,7 +4096,130 @@ export function App() {
                   <div className={styles.commercialCard}>
                     <span className={styles.muted}>Reconocidas</span>
                     <strong>{acknowledgedAlertCount}</strong>
-                    <small>historial local {visibleAlertHistory.length}</small>
+                    <small>historial compartido {visibleAlertHistory.length}</small>
+                  </div>
+                </div>
+              ) : null}
+
+              {whatsappMonitorAnalytics ? (
+                <div className={styles.twoColumn}>
+                  <div className={styles.detailCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Historical calibration</span>
+                        <h3>Tendencia real de las corridas del monitor</h3>
+                      </div>
+                      <small className={styles.muted}>
+                        {whatsappMonitorAnalytics.runCount} corridas · ventana{' '}
+                        {formatDate(whatsappMonitorAnalytics.windowStartAt)} a{' '}
+                        {formatDate(whatsappMonitorAnalytics.windowEndAt)}
+                      </small>
+                    </div>
+
+                    <div className={styles.badgeRow}>
+                      <span className={styles.badge}>
+                        Healthy {whatsappMonitorAnalytics.statusCounts.healthy}
+                      </span>
+                      <span className={styles.badge}>
+                        Warning {whatsappMonitorAnalytics.statusCounts.warning}
+                      </span>
+                      <span className={styles.badge}>
+                        Critical {whatsappMonitorAnalytics.statusCounts.critical}
+                      </span>
+                      <span className={styles.badge}>
+                        Manual {whatsappMonitorAnalytics.triggerSourceCounts.manual}
+                      </span>
+                      <span className={styles.badge}>
+                        Scheduler{' '}
+                        {whatsappMonitorAnalytics.triggerSourceCounts.scheduler}
+                      </span>
+                    </div>
+
+                    {thresholdCalibrationSuggestions.length === 0 ? (
+                      <div className={styles.emptyState}>
+                        <p>
+                          Todavia no hay suficiente historia persistida para sugerir
+                          calibracion de thresholds.
+                        </p>
+                      </div>
+                    ) : (
+                      thresholdCalibrationSuggestions.map((suggestion) => (
+                        <div className={styles.invoiceItemCard} key={suggestion.thresholdKey}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>{humanizeKey(suggestion.thresholdKey)}</strong>
+                            <span className={styles.statusPill}>
+                              {humanizeKey(suggestion.direction)}
+                            </span>
+                          </div>
+                          <small>{suggestion.rationale}</small>
+                          <div className={styles.badgeRow}>
+                            <span className={styles.badge}>
+                              Actual{' '}
+                              {formatThresholdValue(
+                                suggestion.currentValue,
+                                suggestion.thresholdUnit,
+                              )}
+                            </span>
+                            <span className={styles.badge}>
+                              Recomendado{' '}
+                              {formatThresholdValue(
+                                suggestion.recommendedValue,
+                                suggestion.thresholdUnit,
+                              )}
+                            </span>
+                            <span className={styles.badge}>
+                              P95{' '}
+                              {formatThresholdValue(
+                                suggestion.p95Observed,
+                                suggestion.thresholdUnit,
+                              )}
+                            </span>
+                            <span className={styles.badge}>
+                              Confianza {humanizeKey(suggestion.confidence)}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className={styles.detailCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Alert recurrence</span>
+                        <h3>Alertas que más se repiten en la bitácora</h3>
+                      </div>
+                    </div>
+
+                    {leadingHistoricalAlerts.length === 0 ? (
+                      <div className={styles.emptyState}>
+                        <p>
+                          La bitácora todavía no muestra alertas repetidas para este
+                          tenant.
+                        </p>
+                      </div>
+                    ) : (
+                      leadingHistoricalAlerts.map((alert) => (
+                        <div className={styles.invoiceItemCard} key={alert.alertKey}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>{alert.title}</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                alert.severity === 'critical'
+                                  ? 'critical'
+                                  : 'warning',
+                              )}`}
+                            >
+                              {alert.occurrenceCount} veces
+                            </span>
+                          </div>
+                          <small>
+                            Ultima vez {formatDate(alert.lastSeenAt)} · severidad{' '}
+                            {humanizeKey(alert.severity)}
+                          </small>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               ) : null}
@@ -4505,6 +4542,9 @@ export function App() {
                         {acknowledgement ? (
                           <small>
                             Reconocida {formatDate(acknowledgement.acknowledgedAt)}
+                            {acknowledgement.acknowledgedByEmail
+                              ? ` por ${acknowledgement.acknowledgedByEmail}`
+                              : ''}
                           </small>
                         ) : null}
                         <small>{alert.summary}</small>
@@ -4544,7 +4584,7 @@ export function App() {
                           </button>
                           <button
                             className={styles.secondaryButton}
-                            onClick={() => toggleGrowthAlertAcknowledgement(alert)}
+                            onClick={() => void toggleGrowthAlertAcknowledgement(alert)}
                             type="button"
                           >
                             {acknowledgement
@@ -4883,7 +4923,10 @@ export function App() {
                   ) : selectedGrowthHistoryEntry ? (
                     <div className={styles.stack}>
                       <div className={styles.invoiceCardHeader}>
-                        <strong>{selectedGrowthHistoryEntry.topAlertTitle ?? 'Snapshot sin alertas activas'}</strong>
+                        <strong>
+                          {selectedGrowthHistoryEntry.operationalAlerts[0]?.title ??
+                            'Corrida sin alertas activas'}
+                        </strong>
                         <span
                           className={`${styles.statusPill} ${operationalStatusTone(
                             selectedGrowthHistoryEntry.overallStatus,
@@ -4893,7 +4936,7 @@ export function App() {
                         </span>
                       </div>
                       <small>
-                        Fuente {selectedGrowthHistoryEntry.source} ·{' '}
+                        Fuente {selectedGrowthHistoryEntry.triggerSource} ·{' '}
                         {formatDate(selectedGrowthHistoryEntry.generatedAt)}
                       </small>
                       <div className={styles.badgeRow}>
@@ -4919,25 +4962,16 @@ export function App() {
                   <div className={styles.sectionHeading}>
                     <div>
                       <span className={styles.label}>Alert history</span>
-                      <h3>Memoria local del monitor y del summary</h3>
+                      <h3>Bitacora compartida del monitor</h3>
                     </div>
-                    {visibleAlertHistory.length > 0 ? (
-                      <button
-                        className={styles.ghostButton}
-                        onClick={clearGrowthHistoryForTenant}
-                        type="button"
-                      >
-                        Limpiar historial
-                      </button>
-                    ) : null}
                   </div>
 
                   {visibleAlertHistory.length === 0 ? (
                     <div className={styles.emptyState}>
                       <p>
-                        Todavia no hay snapshots guardados localmente para este tenant.
-                        Cuando refresques el summary o ejecutes el monitor, la vista
-                        conservara una bitacora corta aqui.
+                        Todavia no hay corridas compartidas del monitor para este tenant.
+                        Cuando un operador o el scheduler lo ejecuten, veremos la
+                        bitacora operativa aqui.
                       </p>
                     </div>
                   ) : (
@@ -4945,14 +4979,16 @@ export function App() {
                       <div
                         className={`${styles.invoiceItemCard} ${
                           growthDrilldownTarget?.kind === 'history' &&
-                          growthDrilldownTarget.key === entry.entryKey
+                          growthDrilldownTarget.key === entry.id
                             ? styles.drilldownCardActive
                             : ''
                         }`}
-                        key={entry.entryKey}
+                        key={entry.id}
                       >
                         <div className={styles.invoiceCardHeader}>
-                          <strong>{entry.topAlertTitle ?? 'Snapshot sin alertas'}</strong>
+                          <strong>
+                            {entry.operationalAlerts[0]?.title ?? 'Corrida sin alertas'}
+                          </strong>
                           <span
                             className={`${styles.statusPill} ${operationalStatusTone(
                               entry.overallStatus,
@@ -4962,7 +4998,7 @@ export function App() {
                           </span>
                         </div>
                         <small>
-                          {entry.source} · {formatDate(entry.generatedAt)}
+                          {entry.triggerSource} · {formatDate(entry.generatedAt)}
                         </small>
                         <small>
                           {entry.totalAlertCount} alerts · {entry.criticalAlertCount}{' '}
@@ -4974,7 +5010,7 @@ export function App() {
                             onClick={() =>
                               setGrowthDrilldownTarget({
                                 kind: 'history',
-                                key: entry.entryKey,
+                                key: entry.id,
                               })
                             }
                             type="button"

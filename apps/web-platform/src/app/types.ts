@@ -868,3 +868,82 @@ export interface WhatsappOperationalMonitorSummaryResponse {
   retryRunnerExecuted: boolean;
   retryRunnerSummary: WhatsappRetryRunnerSummaryResponse | null;
 }
+
+export interface WhatsappOperationalMonitorRunResponse {
+  id: string;
+  triggerSource: 'manual' | 'scheduler';
+  generatedAt: string;
+  autoRunReadyRetriesEnabled: boolean;
+  overallStatus: 'healthy' | 'warning' | 'critical';
+  totalAlertCount: number;
+  criticalAlertCount: number;
+  warningAlertCount: number;
+  operationalThresholds: WhatsappOperationalThresholdsResponse;
+  operationalDashboard: WhatsappOperationalDashboardResponse;
+  operationalAlerts: WhatsappOperationalAlertResponse[];
+  retryRunnerExecuted: boolean;
+  retryRunnerSummary: WhatsappRetryRunnerSummaryResponse | null;
+  createdAt: string;
+}
+
+export interface WhatsappOperationalAlertAcknowledgementResponse {
+  id: string;
+  alertKey: string;
+  title: string;
+  severity: 'warning' | 'critical';
+  summary: string;
+  provider: string | null;
+  failureClass: string | null;
+  providerTaxonomyFamily: string | null;
+  providerTaxonomyDetail: string | null;
+  affectedMessageCount: number;
+  recommendedAction: string;
+  lastSeenGeneratedAt: string | null;
+  acknowledgedAt: string;
+  acknowledgedByUserId: string;
+  acknowledgedByEmail: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WhatsappOperationalAlertFrequencyResponse {
+  alertKey: string;
+  title: string;
+  severity: 'warning' | 'critical';
+  occurrenceCount: number;
+  lastSeenAt: string;
+}
+
+export interface WhatsappOperationalThresholdCalibrationResponse {
+  thresholdKey: string;
+  thresholdUnit: 'rate' | 'count';
+  sampleCount: number;
+  currentValue: number;
+  recommendedValue: number;
+  p50Observed: number;
+  p95Observed: number;
+  maxObserved: number;
+  direction: 'raise' | 'lower' | 'keep';
+  confidence: 'low' | 'medium' | 'high';
+  rationale: string;
+}
+
+export interface WhatsappOperationalMonitorAnalyticsResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  runCount: number;
+  windowStartAt: string | null;
+  windowEndAt: string | null;
+  latestOverallStatus: 'healthy' | 'warning' | 'critical' | null;
+  statusCounts: {
+    healthy: number;
+    warning: number;
+    critical: number;
+  };
+  triggerSourceCounts: {
+    manual: number;
+    scheduler: number;
+  };
+  alertFrequency: WhatsappOperationalAlertFrequencyResponse[];
+  thresholdCalibration: WhatsappOperationalThresholdCalibrationResponse[];
+}

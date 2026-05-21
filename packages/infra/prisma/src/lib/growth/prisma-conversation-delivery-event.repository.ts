@@ -53,6 +53,17 @@ export class PrismaConversationDeliveryEventRepository
     });
   }
 
+  async findByTenantId(tenantId: string): Promise<ConversationDeliveryEvent[]> {
+    const events = await this.conversationDeliveryEventDelegate.findMany({
+      where: {
+        tenantId,
+      },
+      orderBy: [{ occurredAt: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    return events.map((event) => this.toDomain(event as any));
+  }
+
   async findByTenantIdAndProviderAndEventKey(
     tenantId: string,
     provider: string,

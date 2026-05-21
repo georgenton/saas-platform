@@ -1,5 +1,6 @@
 import { GetTenantWhatsappOutboundReportingSummaryUseCase } from '@saas-platform/growth-application';
 import {
+  ConversationDeliveryEvent,
   ConversationMessage,
   ConversationThread,
   WhatsappMessageTemplate,
@@ -20,8 +21,15 @@ describe('Growth WhatsApp outbound reporting use case', () => {
   const conversationMessageRepository = {
     save: jest.fn(),
     findByTenantId: jest.fn(),
+    findByTenantIdAndId: jest.fn(),
     findByTenantIdAndThreadId: jest.fn(),
     findByTenantIdAndExternalMessageId: jest.fn(),
+  };
+  const conversationDeliveryEventRepository = {
+    save: jest.fn(),
+    findByTenantId: jest.fn(),
+    findByTenantIdAndProviderAndEventKey: jest.fn(),
+    findByTenantIdAndMessageId: jest.fn(),
   };
   const whatsappMessageTemplateRepository = {
     save: jest.fn(),
@@ -126,6 +134,44 @@ describe('Growth WhatsApp outbound reporting use case', () => {
         createdAt: new Date('2026-05-18T10:06:00.000Z'),
       }),
     ]);
+    conversationDeliveryEventRepository.findByTenantId.mockResolvedValue([
+      ConversationDeliveryEvent.create({
+        id: 'delivery_event_001',
+        tenantId: 'tenant_123',
+        messageId: 'message_001',
+        provider: 'meta_cloud_api_stub',
+        eventKey: 'outbound:wamid-001:pending',
+        providerEventId: 'wamid-001',
+        externalMessageId: 'wamid-001',
+        deliveryStatus: 'pending',
+        failureReason: null,
+        providerStatusDetail: 'stub_accepted',
+        providerConversationCategory: null,
+        providerPricingCategory: null,
+        providerErrorCode: null,
+        payloadJson: '{"mode":"stub"}',
+        occurredAt: new Date('2026-05-18T10:01:00.000Z'),
+        createdAt: new Date('2026-05-18T10:01:00.000Z'),
+      }),
+      ConversationDeliveryEvent.create({
+        id: 'delivery_event_002',
+        tenantId: 'tenant_123',
+        messageId: 'message_003',
+        provider: 'meta_cloud_api_stub',
+        eventKey: 'outbound:wamid-003:failed',
+        providerEventId: 'wamid-003',
+        externalMessageId: 'wamid-003',
+        deliveryStatus: 'failed',
+        failureReason: 'recipient_unreachable',
+        providerStatusDetail: 'hard_bounce',
+        providerConversationCategory: null,
+        providerPricingCategory: null,
+        providerErrorCode: '131026',
+        payloadJson: '{"mode":"stub"}',
+        occurredAt: new Date('2026-05-18T10:05:00.000Z'),
+        createdAt: new Date('2026-05-18T10:05:00.000Z'),
+      }),
+    ]);
     whatsappMessageTemplateRepository.findByTenantId.mockResolvedValue([
       WhatsappMessageTemplate.create({
         id: 'template_001',
@@ -163,7 +209,9 @@ describe('Growth WhatsApp outbound reporting use case', () => {
       tenantRepository,
       conversationThreadRepository as any,
       conversationMessageRepository as any,
+      conversationDeliveryEventRepository as any,
       whatsappMessageTemplateRepository as any,
+      () => new Date('2026-05-18T11:00:00.000Z'),
     );
 
     const result = await useCase.execute('saas-platform');
@@ -178,6 +226,10 @@ describe('Growth WhatsApp outbound reporting use case', () => {
       deliveredCount: 1,
       readCount: 1,
       failedCount: 1,
+      immediateSendRejectionFailedCount: 1,
+      asynchronousDeliveryFailedCount: 0,
+      retryableFailedCount: 0,
+      permanentFailedCount: 1,
     });
     expect(result.byIntent).toEqual([
       {
@@ -225,6 +277,104 @@ describe('Growth WhatsApp outbound reporting use case', () => {
         deliveredCount: 0,
         readCount: 0,
         failedCount: 1,
+      },
+    ]);
+    expect(result.byProvider).toEqual([
+      {
+        provider: 'meta_cloud_api_stub',
+        messageCount: 3,
+        pendingCount: 0,
+        sentCount: 0,
+        deliveredCount: 1,
+        readCount: 1,
+        failedCount: 1,
+      },
+    ]);
+    expect(result.byFailureClass).toEqual([
+      {
+        provider: 'meta_cloud_api_stub',
+        failureClass: 'recipient_issue',
+        failurePhase: 'immediate_send_rejection',
+        messageCount: 1,
+        retryableCount: 0,
+        permanentCount: 1,
+      },
+    ]);
+    expect(result.byProviderTaxonomy).toEqual([
+      {
+        provider: 'meta_cloud_api_stub',
+        providerTaxonomyFamily: 'recipient_reachability',
+        providerTaxonomyDetail: 'meta_recipient_unreachable',
+        failureClass: 'recipient_issue',
+        failurePhase: 'immediate_send_rejection',
+        messageCount: 1,
+        retryableCount: 0,
+        permanentCount: 1,
+      },
+    ]);
+    expect(result.topProviderErrorCodes).toEqual([
+      {
+        provider: 'meta_cloud_api_stub',
+        providerErrorCode: '131026',
+        failureClass: 'recipient_issue',
+        failurePhase: 'immediate_send_rejection',
+        retryDisposition: 'permanent',
+        providerTaxonomyFamily: 'recipient_reachability',
+        providerTaxonomyDetail: 'meta_recipient_unreachable',
+        occurrenceCount: 1,
+        latestFailureReason: 'recipient_unreachable',
+        latestProviderStatusDetail: 'hard_bounce',
+      },
+    ]);
+    expect(result.retryOperations).toEqual({
+      totalFailedMessageCount: 1,
+      retryableFailedMessageCount: 0,
+      permanentFailedMessageCount: 1,
+      cooldownBlockedCount: 0,
+      readyNowCount: 0,
+      defaultBaseBackoffMinutes: 5,
+      maxBackoffMinutes: 180,
+    });
+    expect(result.operationalThresholds).toEqual({
+      immediateSendRejectionRateWarning: 0.05,
+      asynchronousDeliveryFailureRateWarning: 0.03,
+      readyRetryQueueWarningCount: 1,
+      cooldownRetryQueueWarningCount: 3,
+      authOrConfigurationCriticalCount: 1,
+      policyBlockCriticalCount: 1,
+      rateLimitedWarningCount: 1,
+      unknownFailureWarningCount: 1,
+    });
+    expect(result.operationalDashboard).toEqual({
+      overallStatus: 'warning',
+      immediateSendRejectionRate: 0.3333,
+      asynchronousDeliveryFailureRate: 0,
+      readyRetryQueueCount: 0,
+      cooldownRetryQueueCount: 0,
+      permanentFailureCount: 1,
+      leadingFailureClass: 'recipient_issue',
+      leadingProvider: 'meta_cloud_api_stub',
+      leadingProviderTaxonomyFamily: 'recipient_reachability',
+      leadingProviderTaxonomyDetail: 'meta_recipient_unreachable',
+    });
+    expect(result.operationalAlerts).toEqual([
+      {
+        key: 'immediate_send_rejection_rate',
+        severity: 'warning',
+        title: 'Immediate send rejection rate is elevated',
+        summary:
+          'Immediate outbound rejections reached 33.33% of outbound traffic.',
+        thresholdKey: 'immediateSendRejectionRateWarning',
+        observedValue: 0.3333,
+        thresholdValue: 0.05,
+        thresholdUnit: 'rate',
+        provider: 'meta_cloud_api_stub',
+        failureClass: 'recipient_issue',
+        providerTaxonomyFamily: 'recipient_reachability',
+        providerTaxonomyDetail: 'meta_recipient_unreachable',
+        affectedMessageCount: 1,
+        recommendedAction:
+          'Inspect provider-facing failures before throughput or template automation keeps amplifying the rejection rate.',
       },
     ]);
   });

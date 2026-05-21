@@ -18,6 +18,10 @@ export class MetaCloudApiWhatsappOutboundMessageGateway
         externalMessageId: this.buildStubExternalMessageId(),
         deliveryStatus: 'pending',
         failureReason: null,
+        providerStatusDetail: 'stub_accepted',
+        providerConversationCategory: null,
+        providerPricingCategory: null,
+        providerErrorCode: null,
         providerResponseJson: JSON.stringify({
           mode: 'stub',
           tenantSlug: input.tenantSlug,
@@ -49,6 +53,12 @@ export class MetaCloudApiWhatsappOutboundMessageGateway
         failureReason:
           this.extractFailureReason(responseJson) ??
           `Meta Cloud API outbound request failed with status ${response.status}.`,
+        providerStatusDetail:
+          this.extractProviderStatusDetail(responseJson) ??
+          `http_status:${response.status}`,
+        providerConversationCategory: null,
+        providerPricingCategory: null,
+        providerErrorCode: this.extractFailureCode(responseJson),
         providerResponseJson: responseText || null,
       };
     }
@@ -58,6 +68,11 @@ export class MetaCloudApiWhatsappOutboundMessageGateway
       externalMessageId,
       deliveryStatus: 'sent',
       failureReason: null,
+      providerStatusDetail:
+        this.extractMessageStatus(responseJson) ?? 'accepted_by_provider',
+      providerConversationCategory: null,
+      providerPricingCategory: null,
+      providerErrorCode: null,
       providerResponseJson: responseText || null,
     };
   }
@@ -185,6 +200,75 @@ export class MetaCloudApiWhatsappOutboundMessageGateway
 
     if ('message' in error && typeof error.message === 'string') {
       return error.message.trim() || null;
+    }
+
+    return null;
+  }
+
+  private extractFailureCode(
+    responseJson: Record<string, unknown> | null,
+  ): string | null {
+    const error = responseJson?.error;
+
+    if (!error || typeof error !== 'object') {
+      return null;
+    }
+
+    if ('code' in error && error.code !== undefined && error.code !== null) {
+      const code = String(error.code).trim();
+
+      return code || null;
+    }
+
+    return null;
+  }
+
+  private extractProviderStatusDetail(
+    responseJson: Record<string, unknown> | null,
+  ): string | null {
+    const error = responseJson?.error;
+
+    if (!error || typeof error !== 'object') {
+      return null;
+    }
+
+    if ('error_subcode' in error && error.error_subcode !== undefined && error.error_subcode !== null) {
+      const subcode = String(error.error_subcode).trim();
+
+      if (subcode) {
+        return `error_subcode:${subcode}`;
+      }
+    }
+
+    if ('type' in error && typeof error.type === 'string') {
+      const type = error.type.trim();
+
+      return type || null;
+    }
+
+    return null;
+  }
+
+  private extractMessageStatus(
+    responseJson: Record<string, unknown> | null,
+  ): string | null {
+    const messages = responseJson?.messages;
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return null;
+    }
+
+    const firstMessage = messages[0];
+
+    if (
+      firstMessage &&
+      typeof firstMessage === 'object' &&
+      'message_status' in firstMessage &&
+      typeof firstMessage.message_status === 'string'
+    ) {
+      const status = firstMessage.message_status.trim();
+
+      return status || null;
     }
 
     return null;

@@ -17,7 +17,9 @@ import {
   CreateTenantLeadUseCase,
   CreateTenantOpportunityUseCase,
   CreateTenantWhatsappMessageTemplateUseCase,
+  ExecuteTenantWhatsappAutomationActionsUseCase,
   GetTenantConversationThreadByIdUseCase,
+  GetTenantGrowthConversationWorkbenchUseCase,
   GetTenantGrowthAssignmentWorkloadUseCase,
   GetTenantLeadByIdUseCase,
   GetTenantOpportunityByIdUseCase,
@@ -44,14 +46,20 @@ import {
   ProcessTenantMetaWhatsappWebhookUseCase,
   ReceiveTenantMetaWhatsappWebhookUseCase,
   ReplayTenantWebhookEventEnvelopeUseCase,
+  RetryTenantWhatsappFailedConversationMessageUseCase,
+  RunTenantWhatsappOperationalMonitorUseCase,
+  RunTenantWhatsappReadyRetriesUseCase,
   SendTenantWhatsappConversationMessageUseCase,
   UpdateTenantOpportunityStageUseCase,
   WEBHOOK_EVENT_ENVELOPE_ID_GENERATOR,
   WEBHOOK_EVENT_ENVELOPE_REPOSITORY,
+  WHATSAPP_AUTOMATION_EXECUTION_ID_GENERATOR,
+  WHATSAPP_AUTOMATION_EXECUTION_REPOSITORY,
   WHATSAPP_AUTOMATION_RULE_ID_GENERATOR,
   WHATSAPP_AUTOMATION_RULE_REPOSITORY,
   WHATSAPP_MESSAGE_TEMPLATE_ID_GENERATOR,
   WHATSAPP_MESSAGE_TEMPLATE_REPOSITORY,
+  WHATSAPP_OPERATIONAL_MONITOR_OBSERVABILITY_SINK,
   WHATSAPP_OUTBOUND_MESSAGE_GATEWAY,
 } from '@saas-platform/growth-application';
 import {
@@ -74,6 +82,8 @@ import { MetaWhatsappWebhookController } from './meta-whatsapp-webhook.controlle
 import { MetaWhatsappWebhookSignatureVerifier } from './meta-whatsapp-webhook-signature-verifier';
 import { MetaWhatsappWebhookTenantResolver } from './meta-whatsapp-webhook-tenant-resolver';
 import { MetaWhatsappWebhookVerifier } from './meta-whatsapp-webhook-verifier';
+import { GrowthWhatsappOperationalMonitorScheduler } from './growth-whatsapp-operational-monitor.scheduler';
+import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp-operational-monitor-observability.sink';
 
 @Module({
   imports: [
@@ -85,9 +95,15 @@ import { MetaWhatsappWebhookVerifier } from './meta-whatsapp-webhook-verifier';
   controllers: [GrowthController, MetaWhatsappWebhookController],
   providers: [
     MetaCloudApiWhatsappOutboundMessageGateway,
+    GrowthWhatsappOperationalMonitorScheduler,
+    HttpWhatsappOperationalMonitorObservabilitySink,
     {
       provide: WHATSAPP_OUTBOUND_MESSAGE_GATEWAY,
       useExisting: MetaCloudApiWhatsappOutboundMessageGateway,
+    },
+    {
+      provide: WHATSAPP_OPERATIONAL_MONITOR_OBSERVABILITY_SINK,
+      useExisting: HttpWhatsappOperationalMonitorObservabilitySink,
     },
     {
       provide: ResolveTenantAccessUseCase,
@@ -269,6 +285,24 @@ import { MetaWhatsappWebhookVerifier } from './meta-whatsapp-webhook-verifier';
         ),
     },
     {
+      provide: GetTenantGrowthConversationWorkbenchUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        CONVERSATION_THREAD_REPOSITORY,
+        CONVERSATION_MESSAGE_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        conversationThreadRepository,
+        conversationMessageRepository,
+      ) =>
+        new GetTenantGrowthConversationWorkbenchUseCase(
+          tenantRepository,
+          conversationThreadRepository,
+          conversationMessageRepository,
+        ),
+    },
+    {
       provide: GetTenantGrowthAssignmentWorkloadUseCase,
       inject: [
         TENANT_REPOSITORY,
@@ -340,18 +374,21 @@ import { MetaWhatsappWebhookVerifier } from './meta-whatsapp-webhook-verifier';
         TENANT_REPOSITORY,
         CONVERSATION_THREAD_REPOSITORY,
         CONVERSATION_MESSAGE_REPOSITORY,
+        CONVERSATION_DELIVERY_EVENT_REPOSITORY,
         WHATSAPP_MESSAGE_TEMPLATE_REPOSITORY,
       ],
       useFactory: (
         tenantRepository,
         conversationThreadRepository,
         conversationMessageRepository,
+        conversationDeliveryEventRepository,
         whatsappMessageTemplateRepository,
       ) =>
         new GetTenantWhatsappOutboundReportingSummaryUseCase(
           tenantRepository,
           conversationThreadRepository,
           conversationMessageRepository,
+          conversationDeliveryEventRepository,
           whatsappMessageTemplateRepository,
         ),
     },
@@ -455,6 +492,8 @@ import { MetaWhatsappWebhookVerifier } from './meta-whatsapp-webhook-verifier';
         CONVERSATION_THREAD_REPOSITORY,
         CONVERSATION_MESSAGE_REPOSITORY,
         CONVERSATION_MESSAGE_ID_GENERATOR,
+        CONVERSATION_DELIVERY_EVENT_REPOSITORY,
+        CONVERSATION_DELIVERY_EVENT_ID_GENERATOR,
         WHATSAPP_MESSAGE_TEMPLATE_REPOSITORY,
         WHATSAPP_OUTBOUND_MESSAGE_GATEWAY,
       ],
@@ -463,6 +502,8 @@ import { MetaWhatsappWebhookVerifier } from './meta-whatsapp-webhook-verifier';
         conversationThreadRepository,
         conversationMessageRepository,
         conversationMessageIdGenerator,
+        conversationDeliveryEventRepository,
+        conversationDeliveryEventIdGenerator,
         whatsappMessageTemplateRepository,
         whatsappOutboundMessageGateway,
       ) =>
@@ -471,8 +512,106 @@ import { MetaWhatsappWebhookVerifier } from './meta-whatsapp-webhook-verifier';
           conversationThreadRepository,
           conversationMessageRepository,
           conversationMessageIdGenerator,
+          conversationDeliveryEventRepository,
+          conversationDeliveryEventIdGenerator,
           whatsappMessageTemplateRepository,
           whatsappOutboundMessageGateway,
+        ),
+    },
+    {
+      provide: RetryTenantWhatsappFailedConversationMessageUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        CONVERSATION_THREAD_REPOSITORY,
+        CONVERSATION_MESSAGE_REPOSITORY,
+        CONVERSATION_DELIVERY_EVENT_REPOSITORY,
+        SendTenantWhatsappConversationMessageUseCase,
+      ],
+      useFactory: (
+        tenantRepository,
+        conversationThreadRepository,
+        conversationMessageRepository,
+        conversationDeliveryEventRepository,
+        sendTenantWhatsappConversationMessageUseCase,
+      ) =>
+        new RetryTenantWhatsappFailedConversationMessageUseCase(
+          tenantRepository,
+          conversationThreadRepository,
+          conversationMessageRepository,
+          conversationDeliveryEventRepository,
+          sendTenantWhatsappConversationMessageUseCase,
+        ),
+    },
+    {
+      provide: RunTenantWhatsappReadyRetriesUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        CONVERSATION_MESSAGE_REPOSITORY,
+        CONVERSATION_DELIVERY_EVENT_REPOSITORY,
+        RetryTenantWhatsappFailedConversationMessageUseCase,
+      ],
+      useFactory: (
+        tenantRepository,
+        conversationMessageRepository,
+        conversationDeliveryEventRepository,
+        retryTenantWhatsappFailedConversationMessageUseCase,
+      ) =>
+        new RunTenantWhatsappReadyRetriesUseCase(
+          tenantRepository,
+          conversationMessageRepository,
+          conversationDeliveryEventRepository,
+          retryTenantWhatsappFailedConversationMessageUseCase,
+        ),
+    },
+    {
+      provide: RunTenantWhatsappOperationalMonitorUseCase,
+      inject: [
+        GetTenantWhatsappOutboundReportingSummaryUseCase,
+        RunTenantWhatsappReadyRetriesUseCase,
+      ],
+      useFactory: (
+        getTenantWhatsappOutboundReportingSummaryUseCase,
+        runTenantWhatsappReadyRetriesUseCase,
+      ) =>
+        new RunTenantWhatsappOperationalMonitorUseCase(
+          getTenantWhatsappOutboundReportingSummaryUseCase,
+          runTenantWhatsappReadyRetriesUseCase,
+        ),
+    },
+    {
+      provide: ExecuteTenantWhatsappAutomationActionsUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        LEAD_REPOSITORY,
+        CONVERSATION_THREAD_REPOSITORY,
+        CONVERSATION_MESSAGE_REPOSITORY,
+        WHATSAPP_AUTOMATION_RULE_REPOSITORY,
+        WHATSAPP_MESSAGE_TEMPLATE_REPOSITORY,
+        WHATSAPP_AUTOMATION_EXECUTION_REPOSITORY,
+        WHATSAPP_AUTOMATION_EXECUTION_ID_GENERATOR,
+        SendTenantWhatsappConversationMessageUseCase,
+      ],
+      useFactory: (
+        tenantRepository,
+        leadRepository,
+        conversationThreadRepository,
+        conversationMessageRepository,
+        whatsappAutomationRuleRepository,
+        whatsappMessageTemplateRepository,
+        whatsappAutomationExecutionRepository,
+        whatsappAutomationExecutionIdGenerator,
+        sendTenantWhatsappConversationMessageUseCase,
+      ) =>
+        new ExecuteTenantWhatsappAutomationActionsUseCase(
+          tenantRepository,
+          leadRepository,
+          conversationThreadRepository,
+          conversationMessageRepository,
+          whatsappAutomationRuleRepository,
+          whatsappMessageTemplateRepository,
+          whatsappAutomationExecutionRepository,
+          whatsappAutomationExecutionIdGenerator,
+          sendTenantWhatsappConversationMessageUseCase,
         ),
     },
     {
@@ -480,14 +619,17 @@ import { MetaWhatsappWebhookVerifier } from './meta-whatsapp-webhook-verifier';
       inject: [
         IngestTenantWhatsappConversationMessageUseCase,
         IngestTenantWhatsappDeliveryEventUseCase,
+        ExecuteTenantWhatsappAutomationActionsUseCase,
       ],
       useFactory: (
         ingestTenantWhatsappConversationMessageUseCase,
         ingestTenantWhatsappDeliveryEventUseCase,
+        executeTenantWhatsappAutomationActionsUseCase,
       ) =>
         new ProcessTenantMetaWhatsappWebhookUseCase(
           ingestTenantWhatsappConversationMessageUseCase,
           ingestTenantWhatsappDeliveryEventUseCase,
+          executeTenantWhatsappAutomationActionsUseCase,
         ),
     },
     {

@@ -820,14 +820,37 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
    - first message template plus outbound intent foundation already in place
    - first provider-approved template semantics foundation already in place
    - first outbound reporting by intent/template already in place
+   - outbound reporting by provider/error-code/retry posture now also in place
    - first WhatsApp automation rule plus suggestion foundation already in place
+   - first real WhatsApp automation execution foundation already in place
+   - first conversation SLA/workbench foundation already in place
    - Meta-like webhook verification and intake foundation already in place
    - provider authenticity and tenant routing foundation already in place
    - webhook envelope persistence, inspection, replay, and first idempotent ingestion foundation already in place
    - provider semantics plus durable delivery event persistence already in place
    - first outbound real/stub provider gateway foundation already in place
    - richer provider delivery semantics foundation now also in place
-   - next pressure is real automation execution, SLA/workbench behavior, or deeper provider semantics, not inbox zero-to-one
+   - immediate provider acceptance/rejection event persistence now also in place
+   - first manual retry execution foundation now also in place, sharing the same retry/backoff semantics exposed in reporting
+   - rendered template snapshots are now persisted durably on outbound sends, unlocking faithful template retries
+   - first tenant-scoped ready-now retry runner foundation now also in place and ready to be attached to scheduled execution
+   - deeper provider semantics are now also in place across reporting and operations:
+      - failure classes like rate limiting, recipient issues, policy blocks, and auth/configuration problems
+      - failure phase split between immediate send rejection and asynchronous delivery failure
+      - retry posture derived from those semantics instead of only raw delivery status
+      - dashboard-oriented operational summaries and alerts derived from the same provider semantics
+      - finer Meta-inspired taxonomies like throughput limits, template/policy blocks, quality holds, and configuration failures
+      - calibrated operational thresholds now also live with the summary itself instead of only in consumer logic
+      - tenant-scoped operational monitor execution now also exists and can optionally trigger ready-now retries for a scheduler
+      - a real in-process scheduler hook can now run that monitor periodically from the API runtime when enabled by env
+      - that scheduler can now also emit structured monitor snapshots to external observability via HTTP webhook
+      - a local collector and smoke path now exist so the observability cable can be verified end-to-end before wiring a third-party platform
+    - current explicit limitation is now narrower: legacy template messages sent before snapshot persistence still cannot be retried faithfully
+    - next pressure is now operational hardening on top of these semantics:
+      - calibrating thresholds with production-like traffic instead of only synthetic fixtures
+      - expansion of taxonomy detail as new Meta/provider codes appear in the wild
+      - direct dashboard/UI consumers of the operational summary and alert views
+      - externalizing scheduler state/telemetry beyond process logs once this starts running in shared environments
 5. `Ecommerce` first domain slice
    - catalog plus orders
 

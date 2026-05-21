@@ -44,6 +44,7 @@ describe('WhatsApp idempotency use cases', () => {
     {
       save: jest.fn(),
       findByTenantId: jest.fn(),
+      findByTenantIdAndId: jest.fn(),
       findByTenantIdAndThreadId: jest.fn(),
       findByTenantIdAndExternalMessageId: jest.fn(),
     };
@@ -54,6 +55,7 @@ describe('WhatsApp idempotency use cases', () => {
   const conversationDeliveryEventRepository: jest.Mocked<ConversationDeliveryEventRepository> =
     {
       save: jest.fn(),
+      findByTenantId: jest.fn(),
       findByTenantIdAndProviderAndEventKey: jest.fn(),
       findByTenantIdAndMessageId: jest.fn(),
     };
@@ -85,6 +87,10 @@ describe('WhatsApp idempotency use cases', () => {
       externalMessageId: 'wamid-stub-001',
       deliveryStatus: 'pending',
       failureReason: null,
+      providerStatusDetail: 'stub_accepted',
+      providerConversationCategory: null,
+      providerPricingCategory: null,
+      providerErrorCode: null,
       providerResponseJson: '{"mode":"stub"}',
     });
   });
@@ -222,6 +228,10 @@ describe('WhatsApp idempotency use cases', () => {
       externalMessageId: 'wamid-meta-001',
       deliveryStatus: 'sent',
       failureReason: null,
+      providerStatusDetail: 'accepted_by_provider',
+      providerConversationCategory: null,
+      providerPricingCategory: null,
+      providerErrorCode: null,
       providerResponseJson: '{"messages":[{"id":"wamid-meta-001"}]}',
     });
 
@@ -230,6 +240,8 @@ describe('WhatsApp idempotency use cases', () => {
       conversationThreadRepository,
       conversationMessageRepository,
       conversationMessageIdGenerator,
+      conversationDeliveryEventRepository,
+      conversationDeliveryEventIdGenerator,
       whatsappMessageTemplateRepository,
       whatsappOutboundMessageGateway,
     );
@@ -251,6 +263,7 @@ describe('WhatsApp idempotency use cases', () => {
     expect(result.deliveryStatus).toBe('sent');
     expect(result.externalMessageId).toBe('wamid-meta-001');
     expect(conversationMessageRepository.save).toHaveBeenCalledTimes(1);
+    expect(conversationDeliveryEventRepository.save).toHaveBeenCalledTimes(1);
   });
 
   it('renders a WhatsApp template and stores template plus intent metadata', async () => {
@@ -298,6 +311,10 @@ describe('WhatsApp idempotency use cases', () => {
       externalMessageId: 'wamid-template-001',
       deliveryStatus: 'pending',
       failureReason: null,
+      providerStatusDetail: 'stub_accepted',
+      providerConversationCategory: null,
+      providerPricingCategory: null,
+      providerErrorCode: null,
       providerResponseJson: '{"mode":"stub"}',
     });
 
@@ -306,6 +323,8 @@ describe('WhatsApp idempotency use cases', () => {
       conversationThreadRepository,
       conversationMessageRepository,
       conversationMessageIdGenerator,
+      conversationDeliveryEventRepository,
+      conversationDeliveryEventIdGenerator,
       whatsappMessageTemplateRepository,
       whatsappOutboundMessageGateway,
     );

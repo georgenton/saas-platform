@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   NotFoundException,
   Param,
   Post,
@@ -20,8 +21,11 @@ import {
   CreateTenantLeadUseCase,
   CreateTenantOpportunityUseCase,
   CreateTenantWhatsappMessageTemplateUseCase,
+  ConversationMessageNotFoundError,
+  ExecuteTenantWhatsappAutomationActionsUseCase,
   GROWTH_PERMISSIONS,
   GetTenantConversationThreadByIdUseCase,
+  GetTenantGrowthConversationWorkbenchUseCase,
   GetTenantGrowthAssignmentWorkloadUseCase,
   GetTenantLeadByIdUseCase,
   GetTenantOpportunityByIdUseCase,
@@ -45,12 +49,18 @@ import {
   ListTenantWhatsappMessageTemplatesUseCase,
   OpportunityNotFoundError,
   ReplayTenantWebhookEventEnvelopeUseCase,
+  RetryTenantWhatsappFailedConversationMessageUseCase,
+  RunTenantWhatsappOperationalMonitorUseCase,
+  RunTenantWhatsappReadyRetriesUseCase,
   SendTenantWhatsappConversationMessageUseCase,
   UpdateTenantOpportunityStageUseCase,
   WebhookEventEnvelopeNotFoundError,
+  WHATSAPP_OPERATIONAL_MONITOR_OBSERVABILITY_SINK,
+  WhatsappOperationalMonitorObservabilitySink,
   WhatsappAutomationRuleNotFoundError,
   WhatsappConversationRecipientUnavailableError,
   WhatsappMessageTemplateNotFoundError,
+  WhatsappMessageRetryNotAllowedError,
   WhatsappOutboundMessageContentUnresolvedError,
 } from '@saas-platform/growth-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
@@ -80,6 +90,10 @@ import {
 } from './dto/conversation-thread.response';
 import { IngestWhatsappConversationMessageRequestDto } from './dto/ingest-whatsapp-conversation-message.request';
 import {
+  GrowthConversationWorkbenchResponseDto,
+  toGrowthConversationWorkbenchResponseDto,
+} from './dto/growth-conversation-workbench.response';
+import {
   GrowthAssignmentWorkloadResponseDto,
   toGrowthAssignmentWorkloadResponseDto,
 } from './dto/growth-assignment-workload.response';
@@ -93,7 +107,18 @@ import {
   OpportunityResponseDto,
   toOpportunityResponseDto,
 } from './dto/opportunity.response';
+import { RetryWhatsappConversationMessageRequestDto } from './dto/retry-whatsapp-conversation-message.request';
+import { RunWhatsappOperationalMonitorRequestDto } from './dto/run-whatsapp-operational-monitor.request';
+import { RunWhatsappReadyRetriesRequestDto } from './dto/run-whatsapp-ready-retries.request';
 import { SendWhatsappConversationMessageRequestDto } from './dto/send-whatsapp-conversation-message.request';
+import {
+  WhatsappOperationalMonitorSummaryResponseDto,
+  toWhatsappOperationalMonitorSummaryResponseDto,
+} from './dto/whatsapp-operational-monitor.response';
+import {
+  WhatsappRetryRunnerSummaryResponseDto,
+  toWhatsappRetryRunnerSummaryResponseDto,
+} from './dto/whatsapp-retry-runner.response';
 import { UpdateOpportunityStageRequestDto } from './dto/update-opportunity-stage.request';
 import {
   WebhookEventEnvelopeResponseDto,
@@ -134,9 +159,11 @@ export class GrowthController {
     private readonly createTenantOpportunityUseCase: CreateTenantOpportunityUseCase,
     private readonly createTenantWhatsappAutomationRuleUseCase: CreateTenantWhatsappAutomationRuleUseCase,
     private readonly createTenantWhatsappMessageTemplateUseCase: CreateTenantWhatsappMessageTemplateUseCase,
+    private readonly executeTenantWhatsappAutomationActionsUseCase: ExecuteTenantWhatsappAutomationActionsUseCase,
     private readonly assignTenantConversationThreadUseCase: AssignTenantConversationThreadUseCase,
     private readonly assignTenantOpportunityUseCase: AssignTenantOpportunityUseCase,
     private readonly getTenantConversationThreadByIdUseCase: GetTenantConversationThreadByIdUseCase,
+    private readonly getTenantGrowthConversationWorkbenchUseCase: GetTenantGrowthConversationWorkbenchUseCase,
     private readonly getTenantGrowthAssignmentWorkloadUseCase: GetTenantGrowthAssignmentWorkloadUseCase,
     private readonly getTenantLeadByIdUseCase: GetTenantLeadByIdUseCase,
     private readonly getTenantOpportunityByIdUseCase: GetTenantOpportunityByIdUseCase,
@@ -157,8 +184,13 @@ export class GrowthController {
     private readonly listTenantWhatsappMessageTemplatesUseCase: ListTenantWhatsappMessageTemplatesUseCase,
     private readonly listTenantWhatsappConversationThreadsUseCase: ListTenantWhatsappConversationThreadsUseCase,
     private readonly replayTenantWebhookEventEnvelopeUseCase: ReplayTenantWebhookEventEnvelopeUseCase,
+    private readonly retryTenantWhatsappFailedConversationMessageUseCase: RetryTenantWhatsappFailedConversationMessageUseCase,
+    private readonly runTenantWhatsappOperationalMonitorUseCase: RunTenantWhatsappOperationalMonitorUseCase,
+    private readonly runTenantWhatsappReadyRetriesUseCase: RunTenantWhatsappReadyRetriesUseCase,
     private readonly sendTenantWhatsappConversationMessageUseCase: SendTenantWhatsappConversationMessageUseCase,
     private readonly updateTenantOpportunityStageUseCase: UpdateTenantOpportunityStageUseCase,
+    @Inject(WHATSAPP_OPERATIONAL_MONITOR_OBSERVABILITY_SINK)
+    private readonly whatsappOperationalMonitorObservabilitySink: WhatsappOperationalMonitorObservabilitySink,
   ) {}
 
   @Get(':slug/conversations/whatsapp-inbox/webhook-envelopes')
@@ -267,6 +299,41 @@ export class GrowthController {
     }
   }
 
+  @Get(':slug/conversations/workbench')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
+  async getTenantGrowthConversationWorkbench(
+    @Param('slug') slug: string,
+    @Query('assigneeUserId') assigneeUserId?: string,
+    @Query('channel') channel?: 'manual' | 'whatsapp',
+    @Query('firstResponseSlaHours') firstResponseSlaHours?: string,
+    @Query('followUpSlaHours') followUpSlaHours?: string,
+    @Query('staleThreadHours') staleThreadHours?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<GrowthConversationWorkbenchResponseDto> {
+    try {
+      const workbench =
+        await this.getTenantGrowthConversationWorkbenchUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+          {
+            assigneeUserId,
+            channel,
+            firstResponseSlaHours:
+              this.parsePositiveNumber(firstResponseSlaHours),
+            followUpSlaHours: this.parsePositiveNumber(followUpSlaHours),
+            staleThreadHours: this.parsePositiveNumber(staleThreadHours),
+          },
+        );
+
+      return toGrowthConversationWorkbenchResponseDto(workbench);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Get(':slug/conversations/whatsapp-inbox')
   @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
   async listTenantWhatsappConversationThreads(
@@ -362,6 +429,59 @@ export class GrowthController {
     }
   }
 
+  @Post(':slug/conversations/whatsapp-reporting/retry-ready')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
+  async runTenantWhatsappReadyRetries(
+    @Param('slug') slug: string,
+    @Body() body: RunWhatsappReadyRetriesRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<WhatsappRetryRunnerSummaryResponseDto> {
+    try {
+      const summary = await this.runTenantWhatsappReadyRetriesUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        limit: body.limit ?? null,
+        occurredAt: body.occurredAt ? new Date(body.occurredAt) : null,
+      });
+
+      return toWhatsappRetryRunnerSummaryResponseDto(summary);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/conversations/whatsapp-reporting/monitor')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
+  async runTenantWhatsappOperationalMonitor(
+    @Param('slug') slug: string,
+    @Body() body: RunWhatsappOperationalMonitorRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<WhatsappOperationalMonitorSummaryResponseDto> {
+    try {
+      const summary =
+        await this.runTenantWhatsappOperationalMonitorUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          occurredAt: body.occurredAt ? new Date(body.occurredAt) : null,
+          autoRunReadyRetries: body.autoRunReadyRetries ?? null,
+          retryReadyLimit: body.retryReadyLimit ?? null,
+        });
+      await this.whatsappOperationalMonitorObservabilitySink.publish({
+        summary,
+      });
+
+      return toWhatsappOperationalMonitorSummaryResponseDto(summary);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Get(':slug/conversations/whatsapp-automations/:automationId')
   @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
   async getTenantWhatsappAutomationRuleById(
@@ -434,6 +554,7 @@ export class GrowthController {
           matchDeliveryStatus: body.matchDeliveryStatus,
           matchAssigneeMode: body.matchAssigneeMode,
           templateId: body.templateId,
+          actionType: body.actionType,
           actionOutboundIntentKey: body.actionOutboundIntentKey,
         });
 
@@ -501,6 +622,16 @@ export class GrowthController {
           externalMessageId: body.externalMessageId,
           occurredAt: body.occurredAt ? new Date(body.occurredAt) : null,
         });
+      await this.executeTenantWhatsappAutomationActionsUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        threadId: result.thread.id,
+        triggerEvent: 'inbound_message',
+        triggerMessageId: result.message.id,
+        triggerExternalMessageId: result.message.externalMessageId,
+        executionKey:
+          result.message.externalMessageId ?? result.message.id,
+        occurredAt: result.message.createdAt,
+      });
 
       return toIngestedWhatsappConversationMessageResponseDto(result);
     } catch (error) {
@@ -613,6 +744,23 @@ export class GrowthController {
           occurredAt: body.occurredAt ? new Date(body.occurredAt) : null,
         },
       );
+      await this.executeTenantWhatsappAutomationActionsUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        threadId: message.threadId,
+        triggerEvent: 'delivery_status_changed',
+        triggerMessageId: message.id,
+        triggerExternalMessageId: message.externalMessageId,
+        triggerDeliveryStatus: message.deliveryStatus,
+        executionKey: [
+          body.eventKey?.trim() || null,
+          body.providerEventId?.trim() || null,
+          body.externalMessageId.trim(),
+          body.deliveryStatus,
+        ]
+          .filter((value) => !!value)
+          .join(':'),
+        occurredAt: body.occurredAt ? new Date(body.occurredAt) : null,
+      });
 
       return toConversationMessageResponseDto(message);
     } catch (error) {
@@ -652,6 +800,53 @@ export class GrowthController {
         error instanceof ConversationThreadNotFoundError
       ) {
         throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/conversations/:threadId/messages/:messageId/retry')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
+  async retryTenantWhatsappConversationMessage(
+    @Param('slug') slug: string,
+    @Param('threadId') threadId: string,
+    @Param('messageId') messageId: string,
+    @Body() body: RetryWhatsappConversationMessageRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<ConversationMessageResponseDto> {
+    try {
+      const message =
+        await this.retryTenantWhatsappFailedConversationMessageUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          threadId,
+          messageId,
+          occurredAt: body.occurredAt ? new Date(body.occurredAt) : null,
+        });
+
+      return toConversationMessageResponseDto(message);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof ConversationThreadNotFoundError ||
+        error instanceof ConversationMessageNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (
+        error instanceof WhatsappMessageRetryNotAllowedError ||
+        error instanceof WhatsappConversationRecipientUnavailableError
+      ) {
+        throw new BadRequestException(error.message);
+      }
+
+      if (error instanceof WhatsappMessageTemplateNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof WhatsappOutboundMessageContentUnresolvedError) {
+        throw new BadRequestException(error.message);
       }
 
       throw error;
@@ -854,6 +1049,22 @@ export class GrowthController {
 
       throw error;
     }
+  }
+
+  private parsePositiveNumber(value?: string): number | undefined {
+    if (!value) {
+      return undefined;
+    }
+
+    const parsed = Number(value);
+
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      throw new BadRequestException(
+        'Expected a positive numeric query parameter value.',
+      );
+    }
+
+    return parsed;
   }
 
   @Get(':slug/opportunities/:opportunityId')

@@ -10,6 +10,8 @@ import {
   LEAD_REPOSITORY,
   OPPORTUNITY_ID_GENERATOR,
   OPPORTUNITY_REPOSITORY,
+  WHATSAPP_AUTOMATION_EXECUTION_ID_GENERATOR,
+  WHATSAPP_AUTOMATION_EXECUTION_REPOSITORY,
   WHATSAPP_AUTOMATION_RULE_ID_GENERATOR,
   WHATSAPP_AUTOMATION_RULE_REPOSITORY,
   WHATSAPP_MESSAGE_TEMPLATE_ID_GENERATOR,
@@ -23,6 +25,7 @@ import { PrismaConversationMessageRepository } from './prisma-conversation-messa
 import { PrismaConversationThreadRepository } from './prisma-conversation-thread.repository';
 import { PrismaLeadRepository } from './prisma-lead.repository';
 import { PrismaOpportunityRepository } from './prisma-opportunity.repository';
+import { PrismaWhatsappAutomationExecutionRepository } from './prisma-whatsapp-automation-execution.repository';
 import { PrismaWhatsappAutomationRuleRepository } from './prisma-whatsapp-automation-rule.repository';
 import { PrismaWhatsappMessageTemplateRepository } from './prisma-whatsapp-message-template.repository';
 import { PrismaWebhookEventEnvelopeRepository } from './prisma-webhook-event-envelope.repository';
@@ -31,6 +34,7 @@ import { UuidConversationMessageIdGenerator } from './uuid-conversation-message-
 import { UuidConversationThreadIdGenerator } from './uuid-conversation-thread-id.generator';
 import { UuidLeadIdGenerator } from './uuid-lead-id.generator';
 import { UuidOpportunityIdGenerator } from './uuid-opportunity-id.generator';
+import { UuidWhatsappAutomationExecutionIdGenerator } from './uuid-whatsapp-automation-execution-id.generator';
 import { UuidWhatsappAutomationRuleIdGenerator } from './uuid-whatsapp-automation-rule-id.generator';
 import { UuidWhatsappMessageTemplateIdGenerator } from './uuid-whatsapp-message-template-id.generator';
 import { UuidWebhookEventEnvelopeIdGenerator } from './uuid-webhook-event-envelope-id.generator';
@@ -43,6 +47,7 @@ import { UuidWebhookEventEnvelopeIdGenerator } from './uuid-webhook-event-envelo
     PrismaConversationThreadRepository,
     PrismaLeadRepository,
     PrismaOpportunityRepository,
+    PrismaWhatsappAutomationExecutionRepository,
     PrismaWhatsappAutomationRuleRepository,
     PrismaWhatsappMessageTemplateRepository,
     PrismaWebhookEventEnvelopeRepository,
@@ -51,6 +56,7 @@ import { UuidWebhookEventEnvelopeIdGenerator } from './uuid-webhook-event-envelo
     UuidConversationThreadIdGenerator,
     UuidLeadIdGenerator,
     UuidOpportunityIdGenerator,
+    UuidWhatsappAutomationExecutionIdGenerator,
     UuidWhatsappAutomationRuleIdGenerator,
     UuidWhatsappMessageTemplateIdGenerator,
     UuidWebhookEventEnvelopeIdGenerator,
@@ -95,6 +101,14 @@ import { UuidWebhookEventEnvelopeIdGenerator } from './uuid-webhook-event-envelo
       useExisting: UuidOpportunityIdGenerator,
     },
     {
+      provide: WHATSAPP_AUTOMATION_EXECUTION_REPOSITORY,
+      useExisting: PrismaWhatsappAutomationExecutionRepository,
+    },
+    {
+      provide: WHATSAPP_AUTOMATION_EXECUTION_ID_GENERATOR,
+      useExisting: UuidWhatsappAutomationExecutionIdGenerator,
+    },
+    {
       provide: WHATSAPP_AUTOMATION_RULE_REPOSITORY,
       useExisting: PrismaWhatsappAutomationRuleRepository,
     },
@@ -130,6 +144,8 @@ import { UuidWebhookEventEnvelopeIdGenerator } from './uuid-webhook-event-envelo
     LEAD_ID_GENERATOR,
     OPPORTUNITY_REPOSITORY,
     OPPORTUNITY_ID_GENERATOR,
+    WHATSAPP_AUTOMATION_EXECUTION_REPOSITORY,
+    WHATSAPP_AUTOMATION_EXECUTION_ID_GENERATOR,
     WHATSAPP_AUTOMATION_RULE_REPOSITORY,
     WHATSAPP_AUTOMATION_RULE_ID_GENERATOR,
     WHATSAPP_MESSAGE_TEMPLATE_REPOSITORY,

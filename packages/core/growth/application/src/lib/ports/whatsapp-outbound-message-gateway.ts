@@ -20,6 +20,10 @@ export interface SendWhatsappOutboundMessageResult {
   externalMessageId: string | null;
   deliveryStatus: ConversationMessageDeliveryStatus;
   failureReason: string | null;
+  providerStatusDetail: string | null;
+  providerConversationCategory: string | null;
+  providerPricingCategory: string | null;
+  providerErrorCode: string | null;
   providerResponseJson: string | null;
 }
 

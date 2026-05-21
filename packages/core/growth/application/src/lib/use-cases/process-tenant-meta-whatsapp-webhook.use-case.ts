@@ -1,4 +1,5 @@
 import { IngestTenantWhatsappConversationMessageUseCase } from './ingest-tenant-whatsapp-conversation-message.use-case';
+import { ExecuteTenantWhatsappAutomationActionsUseCase } from './execute-tenant-whatsapp-automation-actions.use-case';
 import { IngestTenantWhatsappDeliveryEventUseCase } from './ingest-tenant-whatsapp-delivery-event.use-case';
 
 export interface MetaWhatsappWebhookContact {
@@ -86,6 +87,7 @@ export class ProcessTenantMetaWhatsappWebhookUseCase {
   constructor(
     private readonly ingestTenantWhatsappConversationMessageUseCase: IngestTenantWhatsappConversationMessageUseCase,
     private readonly ingestTenantWhatsappDeliveryEventUseCase: IngestTenantWhatsappDeliveryEventUseCase,
+    private readonly executeTenantWhatsappAutomationActionsUseCase: ExecuteTenantWhatsappAutomationActionsUseCase,
   ) {}
 
   async execute(
@@ -117,7 +119,8 @@ export class ProcessTenantMetaWhatsappWebhookUseCase {
             continue;
           }
 
-          await this.ingestTenantWhatsappConversationMessageUseCase.execute({
+          const result =
+            await this.ingestTenantWhatsappConversationMessageUseCase.execute({
             tenantSlug: input.tenantSlug,
             externalConversationId: from,
             participantHandle: from,
@@ -127,6 +130,20 @@ export class ProcessTenantMetaWhatsappWebhookUseCase {
             externalMessageId: message.id ?? null,
             provider: input.provider ?? 'meta_cloud_api_stub',
             occurredAt: this.parseMetaTimestamp(message.timestamp),
+          });
+          await this.executeTenantWhatsappAutomationActionsUseCase.execute({
+            tenantSlug: input.tenantSlug,
+            threadId: result.thread.id,
+            triggerEvent: 'inbound_message',
+            triggerMessageId: result.message.id,
+            triggerExternalMessageId: result.message.externalMessageId,
+            executionKey: [
+              input.webhookEventKey,
+              result.message.externalMessageId ?? result.message.id,
+            ]
+              .filter((value) => !!value)
+              .join(':'),
+            occurredAt: result.message.createdAt,
           });
 
           processedInboundMessages += 1;
@@ -140,7 +157,8 @@ export class ProcessTenantMetaWhatsappWebhookUseCase {
             continue;
           }
 
-          await this.ingestTenantWhatsappDeliveryEventUseCase.execute({
+          const messageResult =
+            await this.ingestTenantWhatsappDeliveryEventUseCase.execute({
             tenantSlug: input.tenantSlug,
             externalMessageId,
             deliveryStatus,
@@ -162,6 +180,23 @@ export class ProcessTenantMetaWhatsappWebhookUseCase {
             providerPricingCategory:
               status.pricing?.category?.trim() ?? null,
             providerErrorCode: this.extractProviderErrorCode(status),
+            occurredAt: this.parseMetaTimestamp(status.timestamp),
+          });
+          await this.executeTenantWhatsappAutomationActionsUseCase.execute({
+            tenantSlug: input.tenantSlug,
+            threadId: messageResult.threadId,
+            triggerEvent: 'delivery_status_changed',
+            triggerMessageId: messageResult.id,
+            triggerExternalMessageId: messageResult.externalMessageId,
+            triggerDeliveryStatus: messageResult.deliveryStatus,
+            executionKey: this.buildDeliveryEventKey(
+              input.webhookEventKey,
+              externalMessageId,
+              deliveryStatus,
+              entryIndex,
+              changeIndex,
+              statusIndex,
+            ),
             occurredAt: this.parseMetaTimestamp(status.timestamp),
           });
 

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.32.0
+
+### Minor Changes
+
+- 7ce7be5: Add operational-case escalation review so overdue follow-up and ownership-routing work is promoted into an explicit escalation-review lane.
+
 ## 0.31.0
 
 ### Minor Changes

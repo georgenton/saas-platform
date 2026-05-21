@@ -2,7 +2,9 @@ import {
   GetTenantWhatsappOutboundReportingSummaryUseCase,
   RunTenantWhatsappOperationalMonitorUseCase,
   RunTenantWhatsappReadyRetriesUseCase,
+  WhatsappOperationalMonitorRunRepository,
 } from '@saas-platform/growth-application';
+import { TenantRepository } from '@saas-platform/tenancy-application';
 
 describe('Growth WhatsApp operational monitor use case', () => {
   const reportingSummary = {
@@ -90,9 +92,25 @@ describe('Growth WhatsApp operational monitor use case', () => {
     {
       execute: jest.fn(),
     } as unknown as jest.Mocked<RunTenantWhatsappReadyRetriesUseCase>;
+  const tenantRepository: jest.Mocked<TenantRepository> = {
+    save: jest.fn(),
+    findById: jest.fn(),
+    findBySlug: jest.fn(),
+  };
+  const whatsappOperationalMonitorRunRepository: jest.Mocked<WhatsappOperationalMonitorRunRepository> =
+    {
+      create: jest.fn(),
+      findByTenantId: jest.fn(),
+    };
 
   beforeEach(() => {
     jest.resetAllMocks();
+    tenantRepository.findBySlug.mockResolvedValue({
+      id: 'tenant_123',
+      name: 'SaaS Platform',
+      slug: 'saas-platform',
+      status: 'active',
+    } as any);
     getTenantWhatsappOutboundReportingSummaryUseCase.execute.mockResolvedValue(
       reportingSummary as any,
     );
@@ -109,12 +127,22 @@ describe('Growth WhatsApp operational monitor use case', () => {
       skippedPermanentCount: 0,
       executions: [],
     } as any);
+    whatsappOperationalMonitorRunRepository.create.mockImplementation(
+      async (command) =>
+        ({
+          id: 'run_001',
+          createdAt: new Date('2026-05-20T09:10:00.000Z'),
+          ...command,
+        }) as any,
+    );
   });
 
   it('returns the operational snapshot without running retries by default', async () => {
     const useCase = new RunTenantWhatsappOperationalMonitorUseCase(
+      tenantRepository,
       getTenantWhatsappOutboundReportingSummaryUseCase,
       runTenantWhatsappReadyRetriesUseCase,
+      whatsappOperationalMonitorRunRepository,
       () => new Date('2026-05-20T09:10:00.000Z'),
     );
 
@@ -126,12 +154,21 @@ describe('Growth WhatsApp operational monitor use case', () => {
     expect(result.retryRunnerSummary).toBeNull();
     expect(result.totalAlertCount).toBe(1);
     expect(runTenantWhatsappReadyRetriesUseCase.execute).not.toHaveBeenCalled();
+    expect(whatsappOperationalMonitorRunRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant_123',
+        triggerSource: 'manual',
+        totalAlertCount: 1,
+      }),
+    );
   });
 
   it('runs ready retries when auto mode is enabled and queue is ready', async () => {
     const useCase = new RunTenantWhatsappOperationalMonitorUseCase(
+      tenantRepository,
       getTenantWhatsappOutboundReportingSummaryUseCase,
       runTenantWhatsappReadyRetriesUseCase,
+      whatsappOperationalMonitorRunRepository,
       () => new Date('2026-05-20T09:10:00.000Z'),
     );
 

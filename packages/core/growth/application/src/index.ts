@@ -25,6 +25,8 @@ export * from './lib/ports/webhook-event-envelope-id.generator';
 export * from './lib/ports/webhook-event-envelope.repository';
 export * from './lib/ports/whatsapp-outbound-message-gateway';
 export * from './lib/ports/whatsapp-operational-monitor-observability.sink';
+export * from './lib/ports/whatsapp-operational-monitor-run.repository';
+export * from './lib/ports/whatsapp-operational-alert-acknowledgement.repository';
 export * from './lib/ports/whatsapp-message-template-id.generator';
 export * from './lib/ports/whatsapp-message-template.repository';
 export * from './lib/ports/whatsapp-automation-rule-id.generator';
@@ -69,3 +71,8 @@ export * from './lib/use-cases/create-tenant-whatsapp-message-template.use-case'
 export * from './lib/use-cases/create-tenant-whatsapp-automation-rule.use-case';
 export * from './lib/use-cases/execute-tenant-whatsapp-automation-actions.use-case';
 export * from './lib/use-cases/get-tenant-whatsapp-automation-suggestions.use-case';
+export * from './lib/use-cases/get-tenant-whatsapp-operational-monitor-analytics.use-case';
+export * from './lib/use-cases/acknowledge-tenant-whatsapp-operational-alert.use-case';
+export * from './lib/use-cases/delete-tenant-whatsapp-operational-alert-acknowledgement.use-case';
+export * from './lib/use-cases/list-tenant-whatsapp-operational-alert-acknowledgements.use-case';
+export * from './lib/use-cases/list-tenant-whatsapp-operational-monitor-runs.use-case';

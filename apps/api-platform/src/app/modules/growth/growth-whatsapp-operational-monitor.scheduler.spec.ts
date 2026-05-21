@@ -96,6 +96,7 @@ describe('GrowthWhatsappOperationalMonitorScheduler', () => {
         tenantSlug: 'tenant-a',
         autoRunReadyRetries: true,
         retryReadyLimit: 12,
+        triggerSource: 'scheduler',
       },
     );
     expect(runTenantWhatsappOperationalMonitorUseCase.execute).toHaveBeenNthCalledWith(
@@ -104,6 +105,7 @@ describe('GrowthWhatsappOperationalMonitorScheduler', () => {
         tenantSlug: 'tenant-b',
         autoRunReadyRetries: true,
         retryReadyLimit: 12,
+        triggerSource: 'scheduler',
       },
     );
     expect(
@@ -129,6 +131,7 @@ describe('GrowthWhatsappOperationalMonitorScheduler', () => {
         tenantSlug: 'tenant-a',
         autoRunReadyRetries: false,
         retryReadyLimit: null,
+        triggerSource: 'scheduler',
       },
     );
 

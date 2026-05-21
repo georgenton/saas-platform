@@ -25,7 +25,10 @@ import {
   PlatformPlan,
   PlatformProduct,
   TaxRateResponse,
+  WhatsappOperationalMonitorAnalyticsResponse,
   WhatsappOperationalMonitorSummaryResponse,
+  WhatsappOperationalMonitorRunResponse,
+  WhatsappOperationalAlertAcknowledgementResponse,
   WhatsappOutboundReportingSummaryResponse,
 } from './types';
 
@@ -1175,6 +1178,108 @@ export async function runWhatsappOperationalMonitor(
       method: 'POST',
       token,
       body: JSON.stringify(body ?? {}),
+    },
+  );
+}
+
+export async function fetchWhatsappOperationalMonitorRuns(
+  token: string,
+  tenantSlug: string,
+  limit = 20,
+): Promise<WhatsappOperationalMonitorRunResponse[]> {
+  const search = new URLSearchParams();
+  search.set('limit', String(limit));
+
+  return request<WhatsappOperationalMonitorRunResponse[]>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/whatsapp-reporting/monitor-runs?${search.toString()}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchWhatsappOperationalMonitorAnalytics(
+  token: string,
+  tenantSlug: string,
+  limit = 50,
+): Promise<WhatsappOperationalMonitorAnalyticsResponse> {
+  const search = new URLSearchParams();
+  search.set('limit', String(limit));
+
+  return request<WhatsappOperationalMonitorAnalyticsResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/whatsapp-reporting/monitor-analytics?${search.toString()}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchWhatsappOperationalAlertAcknowledgements(
+  token: string,
+  tenantSlug: string,
+): Promise<WhatsappOperationalAlertAcknowledgementResponse[]> {
+  return request<WhatsappOperationalAlertAcknowledgementResponse[]>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/whatsapp-reporting/alert-acknowledgements`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function acknowledgeWhatsappOperationalAlert(
+  token: string,
+  tenantSlug: string,
+  alertKey: string,
+  body: {
+    title: string;
+    severity: 'warning' | 'critical';
+    summary: string;
+    provider?: string | null;
+    failureClass?: string | null;
+    providerTaxonomyFamily?: string | null;
+    providerTaxonomyDetail?: string | null;
+    affectedMessageCount?: number | null;
+    recommendedAction: string;
+    lastSeenGeneratedAt?: string | null;
+  },
+): Promise<WhatsappOperationalAlertAcknowledgementResponse> {
+  return request<WhatsappOperationalAlertAcknowledgementResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/whatsapp-reporting/alert-acknowledgements/${encodeURIComponent(
+      alertKey,
+    )}`,
+    {
+      method: 'PUT',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function deleteWhatsappOperationalAlertAcknowledgement(
+  token: string,
+  tenantSlug: string,
+  alertKey: string,
+): Promise<void> {
+  await request<void>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/whatsapp-reporting/alert-acknowledgements/${encodeURIComponent(
+      alertKey,
+    )}`,
+    {
+      method: 'DELETE',
+      token,
     },
   );
 }

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   NotFoundException,
@@ -12,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  AcknowledgeTenantWhatsappOperationalAlertUseCase,
   AssignTenantConversationThreadUseCase,
   AssignTenantOpportunityUseCase,
   ConversationThreadNotFoundError,
@@ -21,6 +23,7 @@ import {
   CreateTenantLeadUseCase,
   CreateTenantOpportunityUseCase,
   CreateTenantWhatsappMessageTemplateUseCase,
+  DeleteTenantWhatsappOperationalAlertAcknowledgementUseCase,
   ConversationMessageNotFoundError,
   ExecuteTenantWhatsappAutomationActionsUseCase,
   GROWTH_PERMISSIONS,
@@ -31,6 +34,7 @@ import {
   GetTenantOpportunityByIdUseCase,
   GetTenantWhatsappAutomationRuleByIdUseCase,
   GetTenantWhatsappAutomationSuggestionsUseCase,
+  GetTenantWhatsappOperationalMonitorAnalyticsUseCase,
   GetTenantWhatsappOutboundReportingSummaryUseCase,
   GetTenantWhatsappMessageTemplateByIdUseCase,
   GetTenantWebhookEventEnvelopeByIdUseCase,
@@ -43,6 +47,8 @@ import {
   ListTenantConversationThreadsUseCase,
   ListTenantLeadsUseCase,
   ListTenantOpportunitiesUseCase,
+  ListTenantWhatsappOperationalAlertAcknowledgementsUseCase,
+  ListTenantWhatsappOperationalMonitorRunsUseCase,
   ListTenantWebhookEventEnvelopesUseCase,
   ListTenantWhatsappAutomationRulesUseCase,
   ListTenantWhatsappConversationThreadsUseCase,
@@ -64,6 +70,8 @@ import {
   WhatsappOutboundMessageContentUnresolvedError,
 } from '@saas-platform/growth-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
+import { AuthenticatedUser } from '../auth/authenticated-user.decorator';
+import { AuthenticatedUserContext } from '../auth/authenticated-user-context';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
 import { RequireTenantPermission } from '../tenancy/require-tenant-permission.decorator';
 import { TenantAccess } from '../tenancy/tenant-access.decorator';
@@ -76,6 +84,7 @@ import { CreateOpportunityRequestDto } from './dto/create-opportunity.request';
 import { CreateWhatsappAutomationRuleRequestDto } from './dto/create-whatsapp-automation-rule.request';
 import { CreateWhatsappMessageTemplateRequestDto } from './dto/create-whatsapp-message-template.request';
 import { AssignGrowthOwnerRequestDto } from './dto/assign-growth-owner.request';
+import { AcknowledgeWhatsappOperationalAlertRequestDto } from './dto/acknowledge-whatsapp-operational-alert.request';
 import {
   ConversationDeliveryEventResponseDto,
   toConversationDeliveryEventResponseDto,
@@ -112,9 +121,21 @@ import { RunWhatsappOperationalMonitorRequestDto } from './dto/run-whatsapp-oper
 import { RunWhatsappReadyRetriesRequestDto } from './dto/run-whatsapp-ready-retries.request';
 import { SendWhatsappConversationMessageRequestDto } from './dto/send-whatsapp-conversation-message.request';
 import {
+  toWhatsappOperationalMonitorAnalyticsResponseDto,
+  WhatsappOperationalMonitorAnalyticsResponseDto,
+} from './dto/whatsapp-operational-monitor-analytics.response';
+import {
+  toWhatsappOperationalAlertAcknowledgementResponseDto,
+  WhatsappOperationalAlertAcknowledgementResponseDto,
+} from './dto/whatsapp-operational-alert-acknowledgement.response';
+import {
   WhatsappOperationalMonitorSummaryResponseDto,
   toWhatsappOperationalMonitorSummaryResponseDto,
 } from './dto/whatsapp-operational-monitor.response';
+import {
+  toWhatsappOperationalMonitorRunResponseDto,
+  WhatsappOperationalMonitorRunResponseDto,
+} from './dto/whatsapp-operational-monitor-run.response';
 import {
   WhatsappRetryRunnerSummaryResponseDto,
   toWhatsappRetryRunnerSummaryResponseDto,
@@ -153,12 +174,14 @@ type TenantAccessContext = {
 )
 export class GrowthController {
   constructor(
+    private readonly acknowledgeTenantWhatsappOperationalAlertUseCase: AcknowledgeTenantWhatsappOperationalAlertUseCase,
     private readonly createTenantConversationMessageUseCase: CreateTenantConversationMessageUseCase,
     private readonly createTenantConversationThreadUseCase: CreateTenantConversationThreadUseCase,
     private readonly createTenantLeadUseCase: CreateTenantLeadUseCase,
     private readonly createTenantOpportunityUseCase: CreateTenantOpportunityUseCase,
     private readonly createTenantWhatsappAutomationRuleUseCase: CreateTenantWhatsappAutomationRuleUseCase,
     private readonly createTenantWhatsappMessageTemplateUseCase: CreateTenantWhatsappMessageTemplateUseCase,
+    private readonly deleteTenantWhatsappOperationalAlertAcknowledgementUseCase: DeleteTenantWhatsappOperationalAlertAcknowledgementUseCase,
     private readonly executeTenantWhatsappAutomationActionsUseCase: ExecuteTenantWhatsappAutomationActionsUseCase,
     private readonly assignTenantConversationThreadUseCase: AssignTenantConversationThreadUseCase,
     private readonly assignTenantOpportunityUseCase: AssignTenantOpportunityUseCase,
@@ -169,6 +192,7 @@ export class GrowthController {
     private readonly getTenantOpportunityByIdUseCase: GetTenantOpportunityByIdUseCase,
     private readonly getTenantWhatsappAutomationRuleByIdUseCase: GetTenantWhatsappAutomationRuleByIdUseCase,
     private readonly getTenantWhatsappAutomationSuggestionsUseCase: GetTenantWhatsappAutomationSuggestionsUseCase,
+    private readonly getTenantWhatsappOperationalMonitorAnalyticsUseCase: GetTenantWhatsappOperationalMonitorAnalyticsUseCase,
     private readonly getTenantWhatsappOutboundReportingSummaryUseCase: GetTenantWhatsappOutboundReportingSummaryUseCase,
     private readonly getTenantWhatsappMessageTemplateByIdUseCase: GetTenantWhatsappMessageTemplateByIdUseCase,
     private readonly getTenantWebhookEventEnvelopeByIdUseCase: GetTenantWebhookEventEnvelopeByIdUseCase,
@@ -179,6 +203,8 @@ export class GrowthController {
     private readonly listTenantConversationThreadsUseCase: ListTenantConversationThreadsUseCase,
     private readonly listTenantLeadsUseCase: ListTenantLeadsUseCase,
     private readonly listTenantOpportunitiesUseCase: ListTenantOpportunitiesUseCase,
+    private readonly listTenantWhatsappOperationalAlertAcknowledgementsUseCase: ListTenantWhatsappOperationalAlertAcknowledgementsUseCase,
+    private readonly listTenantWhatsappOperationalMonitorRunsUseCase: ListTenantWhatsappOperationalMonitorRunsUseCase,
     private readonly listTenantWebhookEventEnvelopesUseCase: ListTenantWebhookEventEnvelopesUseCase,
     private readonly listTenantWhatsappAutomationRulesUseCase: ListTenantWhatsappAutomationRulesUseCase,
     private readonly listTenantWhatsappMessageTemplatesUseCase: ListTenantWhatsappMessageTemplatesUseCase,
@@ -467,12 +493,162 @@ export class GrowthController {
           occurredAt: body.occurredAt ? new Date(body.occurredAt) : null,
           autoRunReadyRetries: body.autoRunReadyRetries ?? null,
           retryReadyLimit: body.retryReadyLimit ?? null,
+          triggerSource: 'manual',
         });
       await this.whatsappOperationalMonitorObservabilitySink.publish({
         summary,
       });
 
       return toWhatsappOperationalMonitorSummaryResponseDto(summary);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/conversations/whatsapp-reporting/monitor-runs')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
+  async listTenantWhatsappOperationalMonitorRuns(
+    @Param('slug') slug: string,
+    @Query('limit') limitRaw: string | undefined,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<WhatsappOperationalMonitorRunResponseDto[]> {
+    try {
+      const parsedLimit = limitRaw ? Number(limitRaw) : null;
+      const limit =
+        parsedLimit && Number.isFinite(parsedLimit)
+          ? Math.min(Math.max(Math.trunc(parsedLimit), 1), 50)
+          : null;
+      const runs =
+        await this.listTenantWhatsappOperationalMonitorRunsUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+          limit,
+        );
+
+      return runs.map((run) => toWhatsappOperationalMonitorRunResponseDto(run));
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/conversations/whatsapp-reporting/monitor-analytics')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
+  async getTenantWhatsappOperationalMonitorAnalytics(
+    @Param('slug') slug: string,
+    @Query('limit') limitRaw: string | undefined,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<WhatsappOperationalMonitorAnalyticsResponseDto> {
+    try {
+      const parsedLimit = limitRaw ? Number(limitRaw) : null;
+      const limit =
+        parsedLimit && Number.isFinite(parsedLimit)
+          ? Math.min(Math.max(Math.trunc(parsedLimit), 1), 100)
+          : null;
+      const analytics =
+        await this.getTenantWhatsappOperationalMonitorAnalyticsUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+          limit,
+        );
+
+      return toWhatsappOperationalMonitorAnalyticsResponseDto(analytics);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/conversations/whatsapp-reporting/alert-acknowledgements')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
+  async listTenantWhatsappOperationalAlertAcknowledgements(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<WhatsappOperationalAlertAcknowledgementResponseDto[]> {
+    try {
+      const acknowledgements =
+        await this.listTenantWhatsappOperationalAlertAcknowledgementsUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return acknowledgements.map((acknowledgement) =>
+        toWhatsappOperationalAlertAcknowledgementResponseDto(acknowledgement),
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Put(':slug/conversations/whatsapp-reporting/alert-acknowledgements/:alertKey')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
+  async acknowledgeTenantWhatsappOperationalAlert(
+    @Param('slug') slug: string,
+    @Param('alertKey') alertKey: string,
+    @Body() body: AcknowledgeWhatsappOperationalAlertRequestDto,
+    @AuthenticatedUser() authenticatedUser?: AuthenticatedUserContext,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<WhatsappOperationalAlertAcknowledgementResponseDto> {
+    if (!authenticatedUser) {
+      throw new BadRequestException('Authenticated user context is required.');
+    }
+
+    try {
+      const acknowledgement =
+        await this.acknowledgeTenantWhatsappOperationalAlertUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          alertKey,
+          title: body.title,
+          severity: body.severity,
+          summary: body.summary,
+          provider: body.provider ?? null,
+          failureClass: body.failureClass ?? null,
+          providerTaxonomyFamily: body.providerTaxonomyFamily ?? null,
+          providerTaxonomyDetail: body.providerTaxonomyDetail ?? null,
+          affectedMessageCount: body.affectedMessageCount ?? 0,
+          recommendedAction: body.recommendedAction,
+          lastSeenGeneratedAt: body.lastSeenGeneratedAt
+            ? new Date(body.lastSeenGeneratedAt)
+            : null,
+          acknowledgedByUserId: authenticatedUser.id,
+          acknowledgedByEmail: authenticatedUser.email,
+        });
+
+      return toWhatsappOperationalAlertAcknowledgementResponseDto(
+        acknowledgement,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Delete(':slug/conversations/whatsapp-reporting/alert-acknowledgements/:alertKey')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
+  async deleteTenantWhatsappOperationalAlertAcknowledgement(
+    @Param('slug') slug: string,
+    @Param('alertKey') alertKey: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<void> {
+    try {
+      await this.deleteTenantWhatsappOperationalAlertAcknowledgementUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        alertKey,
+      );
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

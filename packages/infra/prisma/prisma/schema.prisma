@@ -44,6 +44,8 @@ model Tenant {
   whatsappMessageTemplates WhatsappMessageTemplate[]
   whatsappAutomationRules WhatsappAutomationRule[]
   whatsappAutomationExecutions WhatsappAutomationExecution[]
+  whatsappOperationalMonitorRuns WhatsappOperationalMonitorRun[]
+  whatsappOperationalAlertAcknowledgements WhatsappOperationalAlertAcknowledgement[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
@@ -232,6 +234,53 @@ model ConversationDeliveryEvent {
   @@index([tenantId, providerEventId])
   @@index([tenantId, externalMessageId, occurredAt])
   @@index([tenantId, messageId, occurredAt])
+}
+
+model WhatsappOperationalMonitorRun {
+  id                String   @id @default(cuid())
+  tenantId          String
+  triggerSource     String
+  generatedAt       DateTime
+  autoRunReadyRetriesEnabled Boolean
+  overallStatus     String
+  totalAlertCount   Int
+  criticalAlertCount Int
+  warningAlertCount Int
+  operationalThresholdsJson String @db.Text
+  operationalDashboardJson  String @db.Text
+  operationalAlertsJson     String @db.Text
+  retryRunnerExecuted Boolean
+  retryRunnerSummaryJson String? @db.Text
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  @@index([tenantId, generatedAt])
+  @@index([tenantId, createdAt])
+}
+
+model WhatsappOperationalAlertAcknowledgement {
+  id                String   @id @default(cuid())
+  tenantId          String
+  alertKey          String
+  title             String
+  severity          String
+  summary           String
+  provider          String?
+  failureClass      String?
+  providerTaxonomyFamily String?
+  providerTaxonomyDetail String?
+  affectedMessageCount Int
+  recommendedAction String
+  lastSeenGeneratedAt DateTime?
+  acknowledgedAt    DateTime
+  acknowledgedByUserId String
+  acknowledgedByEmail String?
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([tenantId, alertKey])
+  @@index([tenantId, acknowledgedAt])
 }
 
 model WebhookEventEnvelope {

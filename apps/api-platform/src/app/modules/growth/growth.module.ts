@@ -3,6 +3,7 @@ import {
   USER_REPOSITORY,
 } from '@saas-platform/identity-application';
 import {
+  AcknowledgeTenantWhatsappOperationalAlertUseCase,
   AssignTenantConversationThreadUseCase,
   AssignTenantOpportunityUseCase,
   CONVERSATION_DELIVERY_EVENT_ID_GENERATOR,
@@ -17,6 +18,7 @@ import {
   CreateTenantLeadUseCase,
   CreateTenantOpportunityUseCase,
   CreateTenantWhatsappMessageTemplateUseCase,
+  DeleteTenantWhatsappOperationalAlertAcknowledgementUseCase,
   ExecuteTenantWhatsappAutomationActionsUseCase,
   GetTenantConversationThreadByIdUseCase,
   GetTenantGrowthConversationWorkbenchUseCase,
@@ -25,6 +27,7 @@ import {
   GetTenantOpportunityByIdUseCase,
   GetTenantWhatsappAutomationRuleByIdUseCase,
   GetTenantWhatsappAutomationSuggestionsUseCase,
+  GetTenantWhatsappOperationalMonitorAnalyticsUseCase,
   GetTenantWhatsappOutboundReportingSummaryUseCase,
   GetTenantWhatsappMessageTemplateByIdUseCase,
   GetTenantWebhookEventEnvelopeByIdUseCase,
@@ -37,6 +40,8 @@ import {
   ListTenantConversationThreadsUseCase,
   ListTenantLeadsUseCase,
   ListTenantOpportunitiesUseCase,
+  ListTenantWhatsappOperationalAlertAcknowledgementsUseCase,
+  ListTenantWhatsappOperationalMonitorRunsUseCase,
   ListTenantWebhookEventEnvelopesUseCase,
   ListTenantWhatsappAutomationRulesUseCase,
   ListTenantWhatsappConversationThreadsUseCase,
@@ -59,7 +64,9 @@ import {
   WHATSAPP_AUTOMATION_RULE_REPOSITORY,
   WHATSAPP_MESSAGE_TEMPLATE_ID_GENERATOR,
   WHATSAPP_MESSAGE_TEMPLATE_REPOSITORY,
+  WHATSAPP_OPERATIONAL_ALERT_ACKNOWLEDGEMENT_REPOSITORY,
   WHATSAPP_OPERATIONAL_MONITOR_OBSERVABILITY_SINK,
+  WHATSAPP_OPERATIONAL_MONITOR_RUN_REPOSITORY,
   WHATSAPP_OUTBOUND_MESSAGE_GATEWAY,
 } from '@saas-platform/growth-application';
 import {
@@ -566,16 +573,91 @@ import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp
     {
       provide: RunTenantWhatsappOperationalMonitorUseCase,
       inject: [
+        TENANT_REPOSITORY,
         GetTenantWhatsappOutboundReportingSummaryUseCase,
         RunTenantWhatsappReadyRetriesUseCase,
+        WHATSAPP_OPERATIONAL_MONITOR_RUN_REPOSITORY,
       ],
       useFactory: (
+        tenantRepository,
         getTenantWhatsappOutboundReportingSummaryUseCase,
         runTenantWhatsappReadyRetriesUseCase,
+        whatsappOperationalMonitorRunRepository,
       ) =>
         new RunTenantWhatsappOperationalMonitorUseCase(
+          tenantRepository,
           getTenantWhatsappOutboundReportingSummaryUseCase,
           runTenantWhatsappReadyRetriesUseCase,
+          whatsappOperationalMonitorRunRepository,
+        ),
+    },
+    {
+      provide: ListTenantWhatsappOperationalMonitorRunsUseCase,
+      inject: [TENANT_REPOSITORY, WHATSAPP_OPERATIONAL_MONITOR_RUN_REPOSITORY],
+      useFactory: (
+        tenantRepository,
+        whatsappOperationalMonitorRunRepository,
+      ) =>
+        new ListTenantWhatsappOperationalMonitorRunsUseCase(
+          tenantRepository,
+          whatsappOperationalMonitorRunRepository,
+        ),
+    },
+    {
+      provide: GetTenantWhatsappOperationalMonitorAnalyticsUseCase,
+      inject: [TENANT_REPOSITORY, WHATSAPP_OPERATIONAL_MONITOR_RUN_REPOSITORY],
+      useFactory: (
+        tenantRepository,
+        whatsappOperationalMonitorRunRepository,
+      ) =>
+        new GetTenantWhatsappOperationalMonitorAnalyticsUseCase(
+          tenantRepository,
+          whatsappOperationalMonitorRunRepository,
+        ),
+    },
+    {
+      provide: ListTenantWhatsappOperationalAlertAcknowledgementsUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        WHATSAPP_OPERATIONAL_ALERT_ACKNOWLEDGEMENT_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        whatsappOperationalAlertAcknowledgementRepository,
+      ) =>
+        new ListTenantWhatsappOperationalAlertAcknowledgementsUseCase(
+          tenantRepository,
+          whatsappOperationalAlertAcknowledgementRepository,
+        ),
+    },
+    {
+      provide: AcknowledgeTenantWhatsappOperationalAlertUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        WHATSAPP_OPERATIONAL_ALERT_ACKNOWLEDGEMENT_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        whatsappOperationalAlertAcknowledgementRepository,
+      ) =>
+        new AcknowledgeTenantWhatsappOperationalAlertUseCase(
+          tenantRepository,
+          whatsappOperationalAlertAcknowledgementRepository,
+        ),
+    },
+    {
+      provide: DeleteTenantWhatsappOperationalAlertAcknowledgementUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        WHATSAPP_OPERATIONAL_ALERT_ACKNOWLEDGEMENT_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        whatsappOperationalAlertAcknowledgementRepository,
+      ) =>
+        new DeleteTenantWhatsappOperationalAlertAcknowledgementUseCase(
+          tenantRepository,
+          whatsappOperationalAlertAcknowledgementRepository,
         ),
     },
     {

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.30.0
+
+### Minor Changes
+
+- b027b78: Add Growth fleet runbooks and ownership queues to the operational console.
+
 ## 0.29.0
 
 ### Minor Changes

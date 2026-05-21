@@ -1,5 +1,12 @@
 # api-platform
 
+## 0.31.0
+
+### Minor Changes
+
+- b155cc7: Persist shared Growth operational cases for escalations, ownership routing, and follow-up workflow, including explicit follow-up state transitions.
+- e0a6062: Add explicit routing-policy lanes for Growth operational cases, including grouped fleet and tenant queues for follow-up team and waiting-customer paths.
+
 ## 0.30.0
 
 ### Minor Changes

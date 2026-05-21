@@ -1861,6 +1861,10 @@ Consumer web inicial para este snapshot operativo:
   - reseteo rápido de la `workbench policy`
   - empty states con contexto cuando los filtros esconden threads
   - lectura resumida del último `monitor` manual y de los retries evaluados
+  - `acknowledgements` locales por alerta para que el operador marque qué ya revisó
+  - `drill-down inspector` para alertas, taxonomías, códigos del provider, threads e historial
+  - `alert history` local en el navegador con snapshots recientes del `summary` y del `monitor`
+- por ahora, los `acknowledgements` y el `alert history` viven en `localStorage`; sirven como memoria operativa rápida del tenant, pero todavía no sustituyen persistencia compartida ni auditoría backend
 - si además el usuario tiene `growth.conversations.manage`, desde la misma UI puede ejecutar el monitor con `autoRunReadyRetries`
 
 La UI consume:

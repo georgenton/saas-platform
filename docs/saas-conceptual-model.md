@@ -847,12 +847,13 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
       - a local collector and smoke path now exist so the observability cable can be verified end-to-end before wiring a third-party platform
       - a first direct web consumer of the operational summary, alert view, monitor trigger, and conversation workbench now also exists in `web-platform`
       - that consumer now also exposes an operator brief, resettable workbench policy, contextual empty states, and a clearer manual monitor readout for tenant operators
+      - richer dashboard flows now also exist in that consumer, including local alert acknowledgements, drill-down inspection, and browser-local alert history per tenant
     - current explicit limitation is now narrower: legacy template messages sent before snapshot persistence still cannot be retried faithfully
     - next pressure is now operational hardening on top of these semantics:
       - calibrating thresholds with production-like traffic instead of only synthetic fixtures
       - expansion of taxonomy detail as new Meta/provider codes appear in the wild
       - externalizing scheduler state/telemetry beyond process logs once this starts running in shared environments
-      - richer dashboard flows like acknowledgements, drill-down navigation, and alert history
+      - deciding when alert acknowledgements/history should graduate from browser-local memory into shared server-side operational state
 5. `Ecommerce` first domain slice
    - catalog plus orders
 

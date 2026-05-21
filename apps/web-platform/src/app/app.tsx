@@ -90,6 +90,64 @@ import {
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:3000/api';
 const TOKEN_STORAGE_KEY = 'saas-platform.web.token';
+const GROWTH_ALERT_ACK_STORAGE_KEY = 'saas-platform.web.growth.alert-acks';
+const GROWTH_MONITOR_HISTORY_STORAGE_KEY =
+  'saas-platform.web.growth.monitor-history';
+
+type GrowthDrilldownTarget =
+  | {
+      kind: 'alert';
+      key: string;
+    }
+  | {
+      kind: 'taxonomy';
+      key: string;
+    }
+  | {
+      kind: 'error';
+      key: string;
+    }
+  | {
+      kind: 'thread';
+      key: string;
+    }
+  | {
+      kind: 'history';
+      key: string;
+    };
+
+type GrowthAlertAcknowledgement = {
+  tenantSlug: string;
+  alertKey: string;
+  title: string;
+  severity: 'warning' | 'critical';
+  acknowledgedAt: string;
+};
+
+type GrowthMonitorHistoryEntry = {
+  entryKey: string;
+  tenantSlug: string;
+  source: 'summary' | 'monitor';
+  generatedAt: string;
+  overallStatus: 'healthy' | 'warning' | 'critical';
+  totalAlertCount: number;
+  warningAlertCount: number;
+  criticalAlertCount: number;
+  topAlertKey: string | null;
+  topAlertTitle: string | null;
+};
+
+function parseStoredJson<T>(value: string | null, fallback: T): T {
+  if (!value) {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
 
 function formatDate(value: string | null): string {
   if (!value) {
@@ -312,6 +370,35 @@ function retryDispositionLabel(value: string): string {
   }
 }
 
+function buildGrowthHistoryEntry(
+  source: 'summary' | 'monitor',
+  tenantSlug: string,
+  generatedAt: string,
+  overallStatus: 'healthy' | 'warning' | 'critical',
+  operationalAlerts: WhatsappOutboundReportingSummaryResponse['operationalAlerts'],
+): GrowthMonitorHistoryEntry {
+  const warningAlertCount = operationalAlerts.filter(
+    (alert) => alert.severity === 'warning',
+  ).length;
+  const criticalAlertCount = operationalAlerts.filter(
+    (alert) => alert.severity === 'critical',
+  ).length;
+  const topAlert = operationalAlerts[0] ?? null;
+
+  return {
+    entryKey: `${tenantSlug}:${source}:${generatedAt}`,
+    tenantSlug,
+    source,
+    generatedAt,
+    overallStatus,
+    totalAlertCount: operationalAlerts.length,
+    warningAlertCount,
+    criticalAlertCount,
+    topAlertKey: topAlert?.key ?? null,
+    topAlertTitle: topAlert?.title ?? null,
+  };
+}
+
 function channelLabel(channel: string): string {
   switch (channel) {
     case 'whatsapp':
@@ -500,6 +587,14 @@ export function App() {
   const [monitorAutoRunReadyRetries, setMonitorAutoRunReadyRetries] =
     useState(false);
   const [monitorRetryReadyLimit, setMonitorRetryReadyLimit] = useState('10');
+  const [growthAlertAcknowledgements, setGrowthAlertAcknowledgements] = useState<
+    GrowthAlertAcknowledgement[]
+  >([]);
+  const [growthMonitorHistory, setGrowthMonitorHistory] = useState<
+    GrowthMonitorHistoryEntry[]
+  >([]);
+  const [growthDrilldownTarget, setGrowthDrilldownTarget] =
+    useState<GrowthDrilldownTarget | null>(null);
 
   const selectedInvoiceDocumentSupport =
     selectedInvoiceDetail && electronicSandboxReadiness
@@ -801,6 +896,30 @@ export function App() {
     () => growthWorkbench?.threads.slice(0, 6) ?? [],
     [growthWorkbench],
   );
+  const currentTenantAlertAcknowledgements = useMemo(() => {
+    if (!currentTenancy) {
+      return new Map<string, GrowthAlertAcknowledgement>();
+    }
+
+    return new Map(
+      growthAlertAcknowledgements
+        .filter(
+          (acknowledgement) =>
+            acknowledgement.tenantSlug === currentTenancy.tenant.slug,
+        )
+        .map((acknowledgement) => [acknowledgement.alertKey, acknowledgement] as const),
+    );
+  }, [currentTenancy, growthAlertAcknowledgements]);
+  const visibleAlertHistory = useMemo(() => {
+    if (!currentTenancy) {
+      return [];
+    }
+
+    return growthMonitorHistory
+      .filter((entry) => entry.tenantSlug === currentTenancy.tenant.slug)
+      .slice(0, 6);
+  }, [currentTenancy, growthMonitorHistory]);
+  const acknowledgedAlertCount = currentTenantAlertAcknowledgements.size;
   const growthFiltersCustomized = useMemo(
     () =>
       growthChannelFilter !== 'whatsapp' ||
@@ -870,6 +989,65 @@ export function App() {
     () => whatsappMonitorSummary?.retryRunnerSummary?.executions.slice(0, 3) ?? [],
     [whatsappMonitorSummary],
   );
+  const selectedGrowthAlert = useMemo(() => {
+    if (!whatsappSummary || growthDrilldownTarget?.kind !== 'alert') {
+      return null;
+    }
+
+    return (
+      whatsappSummary.operationalAlerts.find(
+        (alert) => alert.key === growthDrilldownTarget.key,
+      ) ?? null
+    );
+  }, [growthDrilldownTarget, whatsappSummary]);
+  const selectedGrowthTaxonomy = useMemo(() => {
+    if (!whatsappSummary || growthDrilldownTarget?.kind !== 'taxonomy') {
+      return null;
+    }
+
+    return (
+      whatsappSummary.byProviderTaxonomy.find(
+        (entry) =>
+          `${entry.provider}-${entry.providerTaxonomyFamily}-${entry.providerTaxonomyDetail}` ===
+          growthDrilldownTarget.key,
+      ) ?? null
+    );
+  }, [growthDrilldownTarget, whatsappSummary]);
+  const selectedGrowthErrorCode = useMemo(() => {
+    if (!whatsappSummary || growthDrilldownTarget?.kind !== 'error') {
+      return null;
+    }
+
+    return (
+      whatsappSummary.topProviderErrorCodes.find(
+        (entry) =>
+          `${entry.provider}-${entry.providerErrorCode}-${entry.providerTaxonomyDetail}` ===
+          growthDrilldownTarget.key,
+      ) ?? null
+    );
+  }, [growthDrilldownTarget, whatsappSummary]);
+  const selectedGrowthThread = useMemo(() => {
+    if (!growthWorkbench || growthDrilldownTarget?.kind !== 'thread') {
+      return null;
+    }
+
+    return (
+      growthWorkbench.threads.find(
+        (thread) => thread.threadId === growthDrilldownTarget.key,
+      ) ?? null
+    );
+  }, [growthDrilldownTarget, growthWorkbench]);
+  const selectedGrowthHistoryEntry = useMemo(() => {
+    if (growthDrilldownTarget?.kind !== 'history') {
+      return null;
+    }
+
+    return (
+      visibleAlertHistory.find(
+        (entry) => entry.entryKey === growthDrilldownTarget.key,
+      ) ?? null
+    );
+  }, [growthDrilldownTarget, visibleAlertHistory]);
 
   const aiEnabled = getBooleanEntitlement(currentEntitlements, 'ai_enabled');
   const maxUsers = getNumberEntitlement(currentEntitlements, 'max_users');
@@ -883,9 +1061,92 @@ export function App() {
     setDeepLinkedInvitationId(url.searchParams.get('invitationId'));
 
     const savedToken = window.localStorage.getItem(TOKEN_STORAGE_KEY) ?? '';
+    const savedGrowthAcknowledgements = parseStoredJson<GrowthAlertAcknowledgement[]>(
+      window.localStorage.getItem(GROWTH_ALERT_ACK_STORAGE_KEY),
+      [],
+    );
+    const savedGrowthMonitorHistory = parseStoredJson<GrowthMonitorHistoryEntry[]>(
+      window.localStorage.getItem(GROWTH_MONITOR_HISTORY_STORAGE_KEY),
+      [],
+    );
     setToken(savedToken);
     setTokenInput(savedToken);
+    setGrowthAlertAcknowledgements(savedGrowthAcknowledgements);
+    setGrowthMonitorHistory(savedGrowthMonitorHistory);
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      GROWTH_ALERT_ACK_STORAGE_KEY,
+      JSON.stringify(growthAlertAcknowledgements),
+    );
+  }, [growthAlertAcknowledgements]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      GROWTH_MONITOR_HISTORY_STORAGE_KEY,
+      JSON.stringify(growthMonitorHistory),
+    );
+  }, [growthMonitorHistory]);
+
+  useEffect(() => {
+    if (!whatsappSummary) {
+      return;
+    }
+
+    const nextEntry = buildGrowthHistoryEntry(
+      'summary',
+      whatsappSummary.tenantSlug,
+      whatsappSummary.generatedAt,
+      whatsappSummary.operationalDashboard.overallStatus,
+      whatsappSummary.operationalAlerts,
+    );
+
+    setGrowthMonitorHistory((currentHistory) => {
+      const deduped = [
+        nextEntry,
+        ...currentHistory.filter((entry) => entry.entryKey !== nextEntry.entryKey),
+      ];
+
+      return deduped.slice(0, 30);
+    });
+  }, [whatsappSummary]);
+
+  useEffect(() => {
+    if (!whatsappMonitorSummary) {
+      return;
+    }
+
+    const nextEntry = buildGrowthHistoryEntry(
+      'monitor',
+      whatsappMonitorSummary.tenantSlug,
+      whatsappMonitorSummary.generatedAt,
+      whatsappMonitorSummary.overallStatus,
+      whatsappMonitorSummary.operationalAlerts,
+    );
+
+    setGrowthMonitorHistory((currentHistory) => {
+      const deduped = [
+        nextEntry,
+        ...currentHistory.filter((entry) => entry.entryKey !== nextEntry.entryKey),
+      ];
+
+      return deduped.slice(0, 30);
+    });
+  }, [whatsappMonitorSummary]);
+
+  useEffect(() => {
+    if (selectedGrowthAlert) {
+      return;
+    }
+
+    if (leadingOperationalAlerts[0]) {
+      setGrowthDrilldownTarget({
+        kind: 'alert',
+        key: leadingOperationalAlerts[0].key,
+      });
+    }
+  }, [leadingOperationalAlerts, selectedGrowthAlert]);
 
   useEffect(() => {
     if (!token) {
@@ -1740,6 +2001,56 @@ export function App() {
     setFirstResponseSlaHours('2');
     setFollowUpSlaHours('6');
     setStaleThreadHours('24');
+  }
+
+  function toggleGrowthAlertAcknowledgement(
+    alert: WhatsappOutboundReportingSummaryResponse['operationalAlerts'][number],
+  ) {
+    if (!currentTenancy) {
+      return;
+    }
+
+    setGrowthAlertAcknowledgements((currentAcknowledgements) => {
+      const alreadyAcknowledged = currentAcknowledgements.some(
+        (acknowledgement) =>
+          acknowledgement.tenantSlug === currentTenancy.tenant.slug &&
+          acknowledgement.alertKey === alert.key,
+      );
+
+      if (alreadyAcknowledged) {
+        return currentAcknowledgements.filter(
+          (acknowledgement) =>
+            !(
+              acknowledgement.tenantSlug === currentTenancy.tenant.slug &&
+              acknowledgement.alertKey === alert.key
+            ),
+        );
+      }
+
+      return [
+        {
+          tenantSlug: currentTenancy.tenant.slug,
+          alertKey: alert.key,
+          title: alert.title,
+          severity: alert.severity,
+          acknowledgedAt: new Date().toISOString(),
+        },
+        ...currentAcknowledgements,
+      ];
+    });
+  }
+
+  function clearGrowthHistoryForTenant() {
+    if (!currentTenancy) {
+      return;
+    }
+
+    setGrowthMonitorHistory((currentHistory) =>
+      currentHistory.filter(
+        (entry) => entry.tenantSlug !== currentTenancy.tenant.slug,
+      ),
+    );
+    setGrowthDrilldownTarget(null);
   }
 
   async function handleRunGrowthOperationalMonitor() {
@@ -3868,6 +4179,11 @@ export function App() {
                       )}
                     </small>
                   </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Reconocidas</span>
+                    <strong>{acknowledgedAlertCount}</strong>
+                    <small>historial local {visibleAlertHistory.length}</small>
+                  </div>
                 </div>
               ) : null}
 
@@ -4150,6 +4466,11 @@ export function App() {
                       <span className={styles.label}>Operational alerts</span>
                       <h3>Lo que hoy pide atencion</h3>
                     </div>
+                    {acknowledgedAlertCount > 0 ? (
+                      <small className={styles.muted}>
+                        {acknowledgedAlertCount} reconocidas
+                      </small>
+                    ) : null}
                   </div>
 
                   {leadingOperationalAlerts.length === 0 ? (
@@ -4157,8 +4478,20 @@ export function App() {
                       <p>No hay alertas activas en el resumen actual.</p>
                     </div>
                   ) : (
-                    leadingOperationalAlerts.map((alert) => (
-                      <div className={styles.invoiceItemCard} key={alert.key}>
+                    leadingOperationalAlerts.map((alert) => {
+                      const acknowledgement =
+                        currentTenantAlertAcknowledgements.get(alert.key) ?? null;
+
+                      return (
+                      <div
+                        className={`${styles.invoiceItemCard} ${
+                          growthDrilldownTarget?.kind === 'alert' &&
+                          growthDrilldownTarget.key === alert.key
+                            ? styles.drilldownCardActive
+                            : ''
+                        }`}
+                        key={alert.key}
+                      >
                         <div className={styles.invoiceCardHeader}>
                           <strong>{alert.title}</strong>
                           <span
@@ -4169,6 +4502,11 @@ export function App() {
                             {alert.severity === 'critical' ? 'Critica' : 'Warning'}
                           </span>
                         </div>
+                        {acknowledgement ? (
+                          <small>
+                            Reconocida {formatDate(acknowledgement.acknowledgedAt)}
+                          </small>
+                        ) : null}
                         <small>{alert.summary}</small>
                         <div className={styles.badgeRow}>
                           {alert.provider ? (
@@ -4191,8 +4529,31 @@ export function App() {
                           {alert.thresholdUnit === 'rate' ? '(rate)' : '(count)'}
                         </small>
                         <small>{alert.recommendedAction}</small>
+                        <div className={styles.inlineActionRow}>
+                          <button
+                            className={styles.ghostButton}
+                            onClick={() =>
+                              setGrowthDrilldownTarget({
+                                kind: 'alert',
+                                key: alert.key,
+                              })
+                            }
+                            type="button"
+                          >
+                            Ver detalle
+                          </button>
+                          <button
+                            className={styles.secondaryButton}
+                            onClick={() => toggleGrowthAlertAcknowledgement(alert)}
+                            type="button"
+                          >
+                            {acknowledgement
+                              ? 'Quitar reconocimiento'
+                              : 'Reconocer alerta'}
+                          </button>
+                        </div>
                       </div>
-                    ))
+                    )})
                   )}
                 </div>
 
@@ -4211,7 +4572,13 @@ export function App() {
                   ) : (
                     leadingProviderTaxonomy.map((entry) => (
                       <div
-                        className={styles.invoiceItemCard}
+                        className={`${styles.invoiceItemCard} ${
+                          growthDrilldownTarget?.kind === 'taxonomy' &&
+                          growthDrilldownTarget.key ===
+                            `${entry.provider}-${entry.providerTaxonomyFamily}-${entry.providerTaxonomyDetail}`
+                            ? styles.drilldownCardActive
+                            : ''
+                        }`}
                         key={`${entry.provider}-${entry.providerTaxonomyFamily}-${entry.providerTaxonomyDetail}`}
                       >
                         <div className={styles.invoiceCardHeader}>
@@ -4229,6 +4596,20 @@ export function App() {
                           {humanizeKey(entry.failureClass)} ·{' '}
                           {humanizeKey(entry.failurePhase)}
                         </small>
+                        <div className={styles.inlineActionRow}>
+                          <button
+                            className={styles.ghostButton}
+                            onClick={() =>
+                              setGrowthDrilldownTarget({
+                                kind: 'taxonomy',
+                                key: `${entry.provider}-${entry.providerTaxonomyFamily}-${entry.providerTaxonomyDetail}`,
+                              })
+                            }
+                            type="button"
+                          >
+                            Ver detalle
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -4251,7 +4632,13 @@ export function App() {
                   ) : (
                     leadingProviderErrors.map((entry) => (
                       <div
-                        className={styles.invoiceItemCard}
+                        className={`${styles.invoiceItemCard} ${
+                          growthDrilldownTarget?.kind === 'error' &&
+                          growthDrilldownTarget.key ===
+                            `${entry.provider}-${entry.providerErrorCode}-${entry.providerTaxonomyDetail}`
+                            ? styles.drilldownCardActive
+                            : ''
+                        }`}
                         key={`${entry.provider}-${entry.providerErrorCode}-${entry.providerTaxonomyDetail}`}
                       >
                         <div className={styles.invoiceCardHeader}>
@@ -4269,6 +4656,20 @@ export function App() {
                             entry.latestFailureReason ??
                             'Sin detalle adicional'}
                         </small>
+                        <div className={styles.inlineActionRow}>
+                          <button
+                            className={styles.ghostButton}
+                            onClick={() =>
+                              setGrowthDrilldownTarget({
+                                kind: 'error',
+                                key: `${entry.provider}-${entry.providerErrorCode}-${entry.providerTaxonomyDetail}`,
+                              })
+                            }
+                            type="button"
+                          >
+                            Ver detalle
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -4288,7 +4689,15 @@ export function App() {
                     </div>
                   ) : (
                     workbenchThreads.map((thread) => (
-                      <div className={styles.invoiceItemCard} key={thread.threadId}>
+                      <div
+                        className={`${styles.invoiceItemCard} ${
+                          growthDrilldownTarget?.kind === 'thread' &&
+                          growthDrilldownTarget.key === thread.threadId
+                            ? styles.drilldownCardActive
+                            : ''
+                        }`}
+                        key={thread.threadId}
+                      >
                         <div className={styles.invoiceCardHeader}>
                           <strong>{thread.subject}</strong>
                           <span className={styles.statusPill}>
@@ -4306,6 +4715,273 @@ export function App() {
                           {thread.hoursSinceLastActivity}h desde ultima actividad ·{' '}
                           {thread.assigneeUserId ?? 'sin owner'}
                         </small>
+                        <div className={styles.inlineActionRow}>
+                          <button
+                            className={styles.ghostButton}
+                            onClick={() =>
+                              setGrowthDrilldownTarget({
+                                kind: 'thread',
+                                key: thread.threadId,
+                              })
+                            }
+                            type="button"
+                          >
+                            Ver detalle
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Drill-down inspector</span>
+                      <h3>Detalle puntual del item seleccionado</h3>
+                    </div>
+                  </div>
+
+                  {!growthDrilldownTarget ? (
+                    <div className={styles.emptyState}>
+                      <p>Selecciona una alerta, taxonomia, error, thread o entrada de historial para inspeccionarla mejor.</p>
+                    </div>
+                  ) : selectedGrowthAlert ? (
+                    <div className={styles.stack}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>{selectedGrowthAlert.title}</strong>
+                        <span
+                          className={`${styles.statusPill} ${operationalStatusTone(
+                            selectedGrowthAlert.severity === 'critical'
+                              ? 'critical'
+                              : 'warning',
+                          )}`}
+                        >
+                          {selectedGrowthAlert.severity === 'critical'
+                            ? 'Critica'
+                            : 'Warning'}
+                        </span>
+                      </div>
+                      <small>{selectedGrowthAlert.summary}</small>
+                      <div className={styles.badgeRow}>
+                        <span className={styles.badge}>
+                          Threshold: {selectedGrowthAlert.thresholdKey}
+                        </span>
+                        <span className={styles.badge}>
+                          Observado: {selectedGrowthAlert.observedValue}
+                        </span>
+                        <span className={styles.badge}>
+                          Threshold value: {selectedGrowthAlert.thresholdValue}
+                        </span>
+                        {selectedGrowthAlert.provider ? (
+                          <span className={styles.badge}>
+                            Provider: {selectedGrowthAlert.provider}
+                          </span>
+                        ) : null}
+                      </div>
+                      <small>{selectedGrowthAlert.recommendedAction}</small>
+                    </div>
+                  ) : selectedGrowthTaxonomy ? (
+                    <div className={styles.stack}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>
+                          {humanizeKey(selectedGrowthTaxonomy.providerTaxonomyDetail)}
+                        </strong>
+                        <span className={styles.statusPill}>
+                          {selectedGrowthTaxonomy.messageCount} msgs
+                        </span>
+                      </div>
+                      <small>
+                        {selectedGrowthTaxonomy.provider} ·{' '}
+                        {humanizeKey(
+                          selectedGrowthTaxonomy.providerTaxonomyFamily,
+                        )}
+                      </small>
+                      <div className={styles.badgeRow}>
+                        <span className={styles.badge}>
+                          Failure class:{' '}
+                          {humanizeKey(selectedGrowthTaxonomy.failureClass)}
+                        </span>
+                        <span className={styles.badge}>
+                          Phase: {humanizeKey(selectedGrowthTaxonomy.failurePhase)}
+                        </span>
+                        <span className={styles.badge}>
+                          Retryable: {selectedGrowthTaxonomy.retryableCount}
+                        </span>
+                        <span className={styles.badge}>
+                          Permanent: {selectedGrowthTaxonomy.permanentCount}
+                        </span>
+                      </div>
+                    </div>
+                  ) : selectedGrowthErrorCode ? (
+                    <div className={styles.stack}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>{selectedGrowthErrorCode.providerErrorCode}</strong>
+                        <span className={styles.statusPill}>
+                          {selectedGrowthErrorCode.occurrenceCount} casos
+                        </span>
+                      </div>
+                      <small>
+                        {selectedGrowthErrorCode.provider} ·{' '}
+                        {humanizeKey(
+                          selectedGrowthErrorCode.providerTaxonomyDetail,
+                        )}
+                      </small>
+                      <div className={styles.badgeRow}>
+                        <span className={styles.badge}>
+                          Retry: {retryDispositionLabel(selectedGrowthErrorCode.retryDisposition)}
+                        </span>
+                        <span className={styles.badge}>
+                          Failure class:{' '}
+                          {humanizeKey(selectedGrowthErrorCode.failureClass)}
+                        </span>
+                        <span className={styles.badge}>
+                          Phase: {humanizeKey(selectedGrowthErrorCode.failurePhase)}
+                        </span>
+                      </div>
+                      <small>
+                        {selectedGrowthErrorCode.latestProviderStatusDetail ??
+                          selectedGrowthErrorCode.latestFailureReason ??
+                          'Sin detalle adicional'}
+                      </small>
+                    </div>
+                  ) : selectedGrowthThread ? (
+                    <div className={styles.stack}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>{selectedGrowthThread.subject}</strong>
+                        <span className={styles.statusPill}>
+                          {humanizeKey(selectedGrowthThread.priority)}
+                        </span>
+                      </div>
+                      <small>
+                        {channelLabel(selectedGrowthThread.channel)} ·{' '}
+                        {humanizeKey(selectedGrowthThread.nextActionOwner)}
+                      </small>
+                      <div className={styles.badgeRow}>
+                        <span className={styles.badge}>
+                          First response:{' '}
+                          {humanizeKey(selectedGrowthThread.firstResponseStatus)}
+                        </span>
+                        <span className={styles.badge}>
+                          Follow-up:{' '}
+                          {humanizeKey(selectedGrowthThread.followUpStatus)}
+                        </span>
+                        <span className={styles.badge}>
+                          Stale: {humanizeKey(selectedGrowthThread.staleStatus)}
+                        </span>
+                        <span className={styles.badge}>
+                          Owner: {selectedGrowthThread.assigneeUserId ?? 'sin owner'}
+                        </span>
+                      </div>
+                      <small>
+                        {selectedGrowthThread.hoursSinceLastActivity}h desde ultima
+                        actividad · {selectedGrowthThread.hoursSinceOpened}h desde apertura
+                      </small>
+                    </div>
+                  ) : selectedGrowthHistoryEntry ? (
+                    <div className={styles.stack}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>{selectedGrowthHistoryEntry.topAlertTitle ?? 'Snapshot sin alertas activas'}</strong>
+                        <span
+                          className={`${styles.statusPill} ${operationalStatusTone(
+                            selectedGrowthHistoryEntry.overallStatus,
+                          )}`}
+                        >
+                          {operationalStatusLabel(selectedGrowthHistoryEntry.overallStatus)}
+                        </span>
+                      </div>
+                      <small>
+                        Fuente {selectedGrowthHistoryEntry.source} ·{' '}
+                        {formatDate(selectedGrowthHistoryEntry.generatedAt)}
+                      </small>
+                      <div className={styles.badgeRow}>
+                        <span className={styles.badge}>
+                          Alerts: {selectedGrowthHistoryEntry.totalAlertCount}
+                        </span>
+                        <span className={styles.badge}>
+                          Critical: {selectedGrowthHistoryEntry.criticalAlertCount}
+                        </span>
+                        <span className={styles.badge}>
+                          Warnings: {selectedGrowthHistoryEntry.warningAlertCount}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>El item seleccionado ya no esta visible con los datos actuales del tenant.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Alert history</span>
+                      <h3>Memoria local del monitor y del summary</h3>
+                    </div>
+                    {visibleAlertHistory.length > 0 ? (
+                      <button
+                        className={styles.ghostButton}
+                        onClick={clearGrowthHistoryForTenant}
+                        type="button"
+                      >
+                        Limpiar historial
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {visibleAlertHistory.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay snapshots guardados localmente para este tenant.
+                        Cuando refresques el summary o ejecutes el monitor, la vista
+                        conservara una bitacora corta aqui.
+                      </p>
+                    </div>
+                  ) : (
+                    visibleAlertHistory.map((entry) => (
+                      <div
+                        className={`${styles.invoiceItemCard} ${
+                          growthDrilldownTarget?.kind === 'history' &&
+                          growthDrilldownTarget.key === entry.entryKey
+                            ? styles.drilldownCardActive
+                            : ''
+                        }`}
+                        key={entry.entryKey}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{entry.topAlertTitle ?? 'Snapshot sin alertas'}</strong>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              entry.overallStatus,
+                            )}`}
+                          >
+                            {operationalStatusLabel(entry.overallStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {entry.source} · {formatDate(entry.generatedAt)}
+                        </small>
+                        <small>
+                          {entry.totalAlertCount} alerts · {entry.criticalAlertCount}{' '}
+                          criticas · {entry.warningAlertCount} warnings
+                        </small>
+                        <div className={styles.inlineActionRow}>
+                          <button
+                            className={styles.ghostButton}
+                            onClick={() =>
+                              setGrowthDrilldownTarget({
+                                kind: 'history',
+                                key: entry.entryKey,
+                              })
+                            }
+                            type="button"
+                          >
+                            Ver detalle
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}

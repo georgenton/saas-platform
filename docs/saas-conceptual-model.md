@@ -869,13 +869,19 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
          - that routing layer turns the shared queue from a generic backlog into a first policy-aware operator surface
          - the consumer now also groups and filters those shared cases by routing lane, so fleet and tenant operators can read each lane as a distinct queue instead of a single flat backlog
          - a first automated `review-routing` pass now also exists, so overdue `follow_up` or `ownership_routing` work can be promoted into `escalation_review` without waiting for a human to manually reshuffle every case
+         - a first explicit `auto-assign` pass now also exists on top of those lanes:
+            - it only reviews cases in team-owned lanes like `owner_assignment`, `follow_up_team`, and `escalation_review`
+            - it first tries to inherit the existing thread owner when that owner is still an eligible Growth operator
+            - otherwise it falls back to the eligible tenant member with the lowest open workload
+            - when the source thread still has no owner, that same pass can also align `ConversationThread.assigneeUserId`
+         - that means the operational queue no longer only escalates and re-routes work; it can now also propose and apply a first shared ownership decision
          - the fleet console and tenant workspace now consume that shared queue so operators can promote derived pressure into explicit shared work
     - current explicit limitation is now narrower: legacy template messages sent before snapshot persistence still cannot be retried faithfully
     - next pressure is now operational hardening on top of these semantics:
       - calibrating thresholds with production-like traffic instead of only synthetic fixtures
       - expansion of taxonomy detail as new Meta/provider codes appear in the wild
       - externalizing scheduler state/telemetry beyond process logs once this starts running in shared environments
-      - deciding when this operational-case review layer should graduate into richer staffing automation, deeper SLA-specific follow-up state machines, or more opinionated auto-assignment policies
+      - deciding when this first auto-assignment layer should graduate into richer staffing automation, deeper SLA-specific follow-up state machines, or more opinionated policy packs
 5. `Ecommerce` first domain slice
    - catalog plus orders
 

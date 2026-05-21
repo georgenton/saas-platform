@@ -36,6 +36,7 @@ export * from './lib/ports/whatsapp-automation-rule-id.generator';
 export * from './lib/ports/whatsapp-automation-rule.repository';
 export * from './lib/ports/whatsapp-automation-execution-id.generator';
 export * from './lib/ports/whatsapp-automation-execution.repository';
+export * from './lib/use-cases/auto-assign-tenant-growth-operational-cases.use-case';
 export * from './lib/use-cases/assign-tenant-conversation-thread.use-case';
 export * from './lib/use-cases/assign-tenant-opportunity.use-case';
 export * from './lib/use-cases/create-tenant-conversation-message.use-case';

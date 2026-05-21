@@ -15,6 +15,7 @@ import {
   createInvoiceItem,
   createInvoicePayment,
   createTaxRate,
+  autoAssignGrowthOperationalCases,
   deleteWhatsappOperationalAlertAcknowledgement,
   downloadInvoiceElectronicRideHtml,
   downloadInvoiceElectronicXmlPreview,
@@ -78,6 +79,7 @@ import {
   ElectronicSubmissionSettingsResponse,
   ElectronicSignatureSettingsResponse,
   GrowthConversationWorkbenchResponse,
+  GrowthOperationalCaseAutoAssignmentResponse,
   GrowthOperationalCaseResponse,
   GrowthOperationalCaseRoutingReviewResponse,
   InvoiceElectronicArtifactsResponse,
@@ -534,6 +536,24 @@ function summarizeGrowthOperationalCaseRoutingReview(
   }
 
   return `Se revisaron ${result.reviewedCount} casos, se actualizaron ${result.updatedCount} y ${result.escalationReviewCount} quedaron en escalation review.`;
+}
+
+function summarizeGrowthOperationalCaseAutoAssignment(
+  result: GrowthOperationalCaseAutoAssignmentResponse,
+): string {
+  if (result.reviewedCount === 0) {
+    return 'No habia casos operativos elegibles para auto-asignacion.';
+  }
+
+  if (result.candidateCount === 0) {
+    return `Se revisaron ${result.reviewedCount} casos, pero no hay operadores elegibles con permisos de Growth para auto-asignarlos.`;
+  }
+
+  if (result.assignedCount === 0) {
+    return `Se revisaron ${result.reviewedCount} casos y no hizo falta auto-asignar ninguno.`;
+  }
+
+  return `Se revisaron ${result.reviewedCount} casos, se auto-asignaron ${result.assignedCount} y ${result.threadAssignmentCount} threads heredaron owner.`;
 }
 
 function getEntitlementValue(
@@ -3157,6 +3177,32 @@ export function App() {
     }
   }
 
+  async function handleAutoAssignGrowthOperationalCases(tenantSlug: string) {
+    if (!token || !canManageGrowthConversations) {
+      return;
+    }
+
+    setGrowthActionLoading(`auto-assign:${tenantSlug}`);
+    setGrowthActionMessage(null);
+    setGrowthError(null);
+
+    try {
+      const result = await autoAssignGrowthOperationalCases(token, tenantSlug);
+      await Promise.all([refreshGrowthWorkspace(), refreshGrowthFleet()]);
+      setGrowthActionMessage(
+        summarizeGrowthOperationalCaseAutoAssignment(result),
+      );
+    } catch (error) {
+      setGrowthError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo ejecutar la auto-asignacion operativa.',
+      );
+    } finally {
+      setGrowthActionLoading(null);
+    }
+  }
+
   async function handleRunGrowthOperationalMonitor() {
     if (
       !token ||
@@ -5277,24 +5323,44 @@ export function App() {
                         {growthFleetOperationalCaseQueue.length} abiertas
                       </small>
                       {selectedGrowthFleetTenant ? (
-                        <button
-                          className={styles.ghostButton}
-                          disabled={
-                            growthActionLoading ===
+                        <>
+                          <button
+                            className={styles.ghostButton}
+                            disabled={
+                              growthActionLoading ===
+                              `auto-assign:${selectedGrowthFleetTenant.tenancy.tenant.slug}`
+                            }
+                            onClick={() =>
+                              void handleAutoAssignGrowthOperationalCases(
+                                selectedGrowthFleetTenant.tenancy.tenant.slug,
+                              )
+                            }
+                            type="button"
+                          >
+                            {growthActionLoading ===
+                            `auto-assign:${selectedGrowthFleetTenant.tenancy.tenant.slug}`
+                              ? 'Auto-asignando...'
+                              : 'Auto-asignar'}
+                          </button>
+                          <button
+                            className={styles.ghostButton}
+                            disabled={
+                              growthActionLoading ===
+                              `review-routing:${selectedGrowthFleetTenant.tenancy.tenant.slug}`
+                            }
+                            onClick={() =>
+                              void handleReviewGrowthOperationalCaseRouting(
+                                selectedGrowthFleetTenant.tenancy.tenant.slug,
+                              )
+                            }
+                            type="button"
+                          >
+                            {growthActionLoading ===
                             `review-routing:${selectedGrowthFleetTenant.tenancy.tenant.slug}`
-                          }
-                          onClick={() =>
-                            void handleReviewGrowthOperationalCaseRouting(
-                              selectedGrowthFleetTenant.tenancy.tenant.slug,
-                            )
-                          }
-                          type="button"
-                        >
-                          {growthActionLoading ===
-                          `review-routing:${selectedGrowthFleetTenant.tenancy.tenant.slug}`
-                            ? 'Revisando...'
-                            : 'Revisar routing'}
-                        </button>
+                              ? 'Revisando...'
+                              : 'Revisar routing'}
+                          </button>
+                        </>
                       ) : null}
                     </div>
                   </div>
@@ -6457,24 +6523,44 @@ export function App() {
                       </small>
                     ) : null}
                     {currentTenancy ? (
-                      <button
-                        className={styles.ghostButton}
-                        disabled={
-                          growthActionLoading ===
+                      <>
+                        <button
+                          className={styles.ghostButton}
+                          disabled={
+                            growthActionLoading ===
+                            `auto-assign:${currentTenancy.tenant.slug}`
+                          }
+                          onClick={() =>
+                            void handleAutoAssignGrowthOperationalCases(
+                              currentTenancy.tenant.slug,
+                            )
+                          }
+                          type="button"
+                        >
+                          {growthActionLoading ===
+                          `auto-assign:${currentTenancy.tenant.slug}`
+                            ? 'Auto-asignando...'
+                            : 'Auto-asignar'}
+                        </button>
+                        <button
+                          className={styles.ghostButton}
+                          disabled={
+                            growthActionLoading ===
+                            `review-routing:${currentTenancy.tenant.slug}`
+                          }
+                          onClick={() =>
+                            void handleReviewGrowthOperationalCaseRouting(
+                              currentTenancy.tenant.slug,
+                            )
+                          }
+                          type="button"
+                        >
+                          {growthActionLoading ===
                           `review-routing:${currentTenancy.tenant.slug}`
-                        }
-                        onClick={() =>
-                          void handleReviewGrowthOperationalCaseRouting(
-                            currentTenancy.tenant.slug,
-                          )
-                        }
-                        type="button"
-                      >
-                        {growthActionLoading ===
-                        `review-routing:${currentTenancy.tenant.slug}`
-                          ? 'Revisando...'
-                          : 'Revisar routing'}
-                      </button>
+                            ? 'Revisando...'
+                            : 'Revisar routing'}
+                        </button>
+                      </>
                     ) : null}
                   </div>
                 </div>

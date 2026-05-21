@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import {
   AcknowledgeTenantWhatsappOperationalAlertUseCase,
+  AutoAssignTenantGrowthOperationalCasesUseCase,
   AssignTenantConversationThreadUseCase,
   AssignTenantOpportunityUseCase,
   ConversationThreadNotFoundError,
@@ -114,6 +115,10 @@ import {
   toGrowthConversationWorkbenchResponseDto,
 } from './dto/growth-conversation-workbench.response';
 import {
+  GrowthOperationalCaseAutoAssignmentResponseDto,
+  toGrowthOperationalCaseAutoAssignmentResponseDto,
+} from './dto/growth-operational-case-auto-assignment.response';
+import {
   GrowthOperationalCaseResponseDto,
   toGrowthOperationalCaseResponseDto,
 } from './dto/growth-operational-case.response';
@@ -205,6 +210,7 @@ export class GrowthController {
     private readonly executeTenantWhatsappAutomationActionsUseCase: ExecuteTenantWhatsappAutomationActionsUseCase,
     private readonly assignTenantConversationThreadUseCase: AssignTenantConversationThreadUseCase,
     private readonly assignTenantOpportunityUseCase: AssignTenantOpportunityUseCase,
+    private readonly autoAssignTenantGrowthOperationalCasesUseCase: AutoAssignTenantGrowthOperationalCasesUseCase,
     private readonly getTenantConversationThreadByIdUseCase: GetTenantConversationThreadByIdUseCase,
     private readonly getTenantGrowthConversationWorkbenchUseCase: GetTenantGrowthConversationWorkbenchUseCase,
     private readonly getTenantGrowthAssignmentWorkloadUseCase: GetTenantGrowthAssignmentWorkloadUseCase,
@@ -469,6 +475,28 @@ export class GrowthController {
         });
 
       return toGrowthOperationalCaseRoutingReviewResponseDto(result);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/conversations/operational-cases/auto-assign')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
+  async autoAssignTenantGrowthOperationalCases(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<GrowthOperationalCaseAutoAssignmentResponseDto> {
+    try {
+      const result =
+        await this.autoAssignTenantGrowthOperationalCasesUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        });
+
+      return toGrowthOperationalCaseAutoAssignmentResponseDto(result);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

@@ -4,6 +4,7 @@ import {
 } from '@saas-platform/identity-application';
 import {
   AcknowledgeTenantWhatsappOperationalAlertUseCase,
+  AutoAssignTenantGrowthOperationalCasesUseCase,
   AssignTenantConversationThreadUseCase,
   AssignTenantOpportunityUseCase,
   CONVERSATION_DELIVERY_EVENT_ID_GENERATOR,
@@ -125,6 +126,36 @@ import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp
       inject: [TENANT_REPOSITORY, TENANT_ACCESS_REPOSITORY],
       useFactory: (tenantRepository, tenantAccessRepository) =>
         new ResolveTenantAccessUseCase(tenantRepository, tenantAccessRepository),
+    },
+    {
+      provide: AutoAssignTenantGrowthOperationalCasesUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        MEMBERSHIP_REPOSITORY,
+        TENANT_ACCESS_REPOSITORY,
+        USER_REPOSITORY,
+        GROWTH_OPERATIONAL_CASE_REPOSITORY,
+        CONVERSATION_THREAD_REPOSITORY,
+        OPPORTUNITY_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        membershipRepository,
+        tenantAccessRepository,
+        userRepository,
+        growthOperationalCaseRepository,
+        conversationThreadRepository,
+        opportunityRepository,
+      ) =>
+        new AutoAssignTenantGrowthOperationalCasesUseCase(
+          tenantRepository,
+          membershipRepository,
+          tenantAccessRepository,
+          userRepository,
+          growthOperationalCaseRepository,
+          conversationThreadRepository,
+          opportunityRepository,
+        ),
     },
     {
       provide: AssignTenantConversationThreadUseCase,

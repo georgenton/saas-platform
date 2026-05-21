@@ -7,6 +7,7 @@ import {
   RemissionGuideResponse,
   WithholdingResponse,
   CustomerResponse,
+  GrowthOperationalCaseAutoAssignmentResponse,
   GrowthOperationalCaseResponse,
   GrowthOperationalCaseRoutingReviewResponse,
   ElectronicSandboxReadinessResponse,
@@ -1379,6 +1380,21 @@ export async function reviewGrowthOperationalCaseRouting(
     `/growth/tenants/${encodeURIComponent(
       tenantSlug,
     )}/conversations/operational-cases/review-routing`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function autoAssignGrowthOperationalCases(
+  token: string,
+  tenantSlug: string,
+): Promise<GrowthOperationalCaseAutoAssignmentResponse> {
+  return request<GrowthOperationalCaseAutoAssignmentResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/operational-cases/auto-assign`,
     {
       method: 'POST',
       token,

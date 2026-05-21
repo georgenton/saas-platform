@@ -153,6 +153,8 @@ type GrowthFleetRunbook = {
 
 type GrowthOperationalCaseRoutingPolicyKey =
   GrowthOperationalCaseResponse['routingPolicyKey'];
+type GrowthOperationalCaseAutoAssignmentPolicyKey =
+  GrowthOperationalCaseAutoAssignmentResponse['policyKey'];
 
 const growthOperationalCaseRoutingPolicies: Array<{
   key: GrowthOperationalCaseRoutingPolicyKey;
@@ -183,6 +185,31 @@ const growthOperationalCaseRoutingPolicies: Array<{
     key: 'follow_up_waiting_customer',
     label: 'Waiting customer',
     summary: 'Seguimientos que quedan a la espera del cliente.',
+  },
+];
+
+const growthOperationalCaseAutoAssignmentPolicies: Array<{
+  key: GrowthOperationalCaseAutoAssignmentPolicyKey;
+  label: string;
+  summary: string;
+}> = [
+  {
+    key: 'balanced',
+    label: 'Balanced',
+    summary:
+      'Prioriza escalaciones primero, luego ownership queue y finalmente follow-up del equipo.',
+  },
+  {
+    key: 'owner_queue_first',
+    label: 'Owner queue first',
+    summary:
+      'Vacía primero los casos sin owner claro antes de seguir con escalaciones y follow-up.',
+  },
+  {
+    key: 'follow_up_first',
+    label: 'Follow-up first',
+    summary:
+      'Empuja antes los seguimientos del equipo y luego reparte ownership pendiente.',
   },
 ];
 
@@ -553,7 +580,12 @@ function summarizeGrowthOperationalCaseAutoAssignment(
     return `Se revisaron ${result.reviewedCount} casos y no hizo falta auto-asignar ninguno.`;
   }
 
-  return `Se revisaron ${result.reviewedCount} casos, se auto-asignaron ${result.assignedCount} y ${result.threadAssignmentCount} threads heredaron owner.`;
+  const policyLabel =
+    growthOperationalCaseAutoAssignmentPolicies.find(
+      (entry) => entry.key === result.policyKey,
+    )?.label ?? result.policyKey;
+
+  return `Policy ${policyLabel}: se revisaron ${result.reviewedCount} casos, se auto-asignaron ${result.assignedCount}, ${result.inheritedOwnerCount} heredaron owner y ${result.fallbackAssignmentCount} cayeron por menor carga.`;
 }
 
 function getEntitlementValue(
@@ -756,6 +788,8 @@ export function App() {
     useState<'all' | GrowthOperationalCaseRoutingPolicyKey>('all');
   const [growthOperationalCaseRoutingFilter, setGrowthOperationalCaseRoutingFilter] =
     useState<'all' | GrowthOperationalCaseRoutingPolicyKey>('all');
+  const [growthOperationalCaseAutoAssignmentPolicy, setGrowthOperationalCaseAutoAssignmentPolicy] =
+    useState<GrowthOperationalCaseAutoAssignmentPolicyKey>('balanced');
   const [selectedGrowthFleetTenantSlug, setSelectedGrowthFleetTenantSlug] =
     useState<string | null>(null);
   const [growthDrilldownTarget, setGrowthDrilldownTarget] =
@@ -3187,7 +3221,9 @@ export function App() {
     setGrowthError(null);
 
     try {
-      const result = await autoAssignGrowthOperationalCases(token, tenantSlug);
+      const result = await autoAssignGrowthOperationalCases(token, tenantSlug, {
+        policyKey: growthOperationalCaseAutoAssignmentPolicy,
+      });
       await Promise.all([refreshGrowthWorkspace(), refreshGrowthFleet()]);
       setGrowthActionMessage(
         summarizeGrowthOperationalCaseAutoAssignment(result),
@@ -5366,6 +5402,26 @@ export function App() {
                   </div>
 
                   <div className={styles.selectorGrid}>
+                    {growthOperationalCaseAutoAssignmentPolicies.map((policy) => (
+                      <button
+                        className={`${styles.selectorCard} ${
+                          growthOperationalCaseAutoAssignmentPolicy === policy.key
+                            ? styles.selectorCardActive
+                            : ''
+                        }`}
+                        key={`fleet-auto-assign-policy-${policy.key}`}
+                        onClick={() =>
+                          setGrowthOperationalCaseAutoAssignmentPolicy(policy.key)
+                        }
+                        type="button"
+                      >
+                        <span>{policy.label}</span>
+                        <small>{policy.summary}</small>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className={styles.selectorGrid}>
                     <button
                       className={`${styles.selectorCard} ${
                         growthFleetOperationalCaseRoutingFilter === 'all'
@@ -6563,6 +6619,26 @@ export function App() {
                       </>
                     ) : null}
                   </div>
+                </div>
+
+                <div className={styles.selectorGrid}>
+                  {growthOperationalCaseAutoAssignmentPolicies.map((policy) => (
+                    <button
+                      className={`${styles.selectorCard} ${
+                        growthOperationalCaseAutoAssignmentPolicy === policy.key
+                          ? styles.selectorCardActive
+                          : ''
+                      }`}
+                      key={`tenant-auto-assign-policy-${policy.key}`}
+                      onClick={() =>
+                        setGrowthOperationalCaseAutoAssignmentPolicy(policy.key)
+                      }
+                      type="button"
+                    >
+                      <span>{policy.label}</span>
+                      <small>{policy.summary}</small>
+                    </button>
+                  ))}
                 </div>
 
                 <div className={styles.selectorGrid}>

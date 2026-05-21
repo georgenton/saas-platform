@@ -1904,6 +1904,14 @@ Consumer web inicial para este snapshot operativo:
         - primero intenta heredar el owner del thread cuando ya exista uno elegible
         - si el thread todavía no tiene owner, asigna el caso al operador elegible con menor carga abierta
         - cuando el caso apunta a un thread sin owner, el mismo pass también alinea `ConversationThread.assigneeUserId`
+        - ahora también acepta `policyKey` para cambiar la estrategia sin tocar código:
+          - `balanced`
+          - `owner_queue_first`
+          - `follow_up_first`
+        - la respuesta ya deja auditado:
+          - qué `policyKey` corrió
+          - cuántos casos heredaron owner existente
+          - cuántos cayeron por fallback de menor carga
 - el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
   - `GET /api/growth/tenants/:slug/conversations/operational-cases`
     - acepta `status`

@@ -1390,6 +1390,9 @@ export async function reviewGrowthOperationalCaseRouting(
 export async function autoAssignGrowthOperationalCases(
   token: string,
   tenantSlug: string,
+  input?: {
+    policyKey?: 'balanced' | 'owner_queue_first' | 'follow_up_first';
+  },
 ): Promise<GrowthOperationalCaseAutoAssignmentResponse> {
   return request<GrowthOperationalCaseAutoAssignmentResponse>(
     `/growth/tenants/${encodeURIComponent(
@@ -1398,6 +1401,7 @@ export async function autoAssignGrowthOperationalCases(
     {
       method: 'POST',
       token,
+      body: JSON.stringify(input ?? {}),
     },
   );
 }

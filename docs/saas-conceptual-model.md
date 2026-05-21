@@ -874,14 +874,18 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
             - it first tries to inherit the existing thread owner when that owner is still an eligible Growth operator
             - otherwise it falls back to the eligible tenant member with the lowest open workload
             - when the source thread still has no owner, that same pass can also align `ConversationThread.assigneeUserId`
-         - that means the operational queue no longer only escalates and re-routes work; it can now also propose and apply a first shared ownership decision
+         - that first pass now also supports explicit policy packs like:
+            - `balanced`
+            - `owner_queue_first`
+            - `follow_up_first`
+         - that means the operational queue no longer only escalates and re-routes work; it can now also propose and apply a first shared ownership decision under multiple operator-facing strategies
          - the fleet console and tenant workspace now consume that shared queue so operators can promote derived pressure into explicit shared work
     - current explicit limitation is now narrower: legacy template messages sent before snapshot persistence still cannot be retried faithfully
     - next pressure is now operational hardening on top of these semantics:
       - calibrating thresholds with production-like traffic instead of only synthetic fixtures
       - expansion of taxonomy detail as new Meta/provider codes appear in the wild
       - externalizing scheduler state/telemetry beyond process logs once this starts running in shared environments
-      - deciding when this first auto-assignment layer should graduate into richer staffing automation, deeper SLA-specific follow-up state machines, or more opinionated policy packs
+      - deciding when these first policy packs should graduate into richer staffing automation, deeper SLA-specific follow-up state machines, or tenant-configurable policy packs
 5. `Ecommerce` first domain slice
    - catalog plus orders
 

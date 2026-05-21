@@ -918,6 +918,7 @@ export interface GrowthOperationalCaseResponse {
   followUpState: 'pending_team' | 'scheduled' | 'waiting_customer' | null;
   routingPolicyKey:
     | 'growth_ops'
+    | 'escalation_review'
     | 'owner_assignment'
     | 'follow_up_team'
     | 'follow_up_waiting_customer';
@@ -933,6 +934,13 @@ export interface GrowthOperationalCaseResponse {
   resolvedByEmail: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface GrowthOperationalCaseRoutingReviewResponse {
+  reviewedCount: number;
+  updatedCount: number;
+  escalationReviewCount: number;
+  cases: GrowthOperationalCaseResponse[];
 }
 
 export interface WhatsappOperationalAlertFrequencyResponse {

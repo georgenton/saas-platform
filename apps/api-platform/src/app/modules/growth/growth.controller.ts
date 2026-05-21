@@ -59,6 +59,7 @@ import {
   ListTenantWhatsappMessageTemplatesUseCase,
   OpportunityNotFoundError,
   ReplayTenantWebhookEventEnvelopeUseCase,
+  ReviewTenantGrowthOperationalCaseRoutingUseCase,
   ReopenTenantGrowthOperationalCaseUseCase,
   ResolveTenantGrowthOperationalCaseUseCase,
   RetryTenantWhatsappFailedConversationMessageUseCase,
@@ -116,6 +117,10 @@ import {
   GrowthOperationalCaseResponseDto,
   toGrowthOperationalCaseResponseDto,
 } from './dto/growth-operational-case.response';
+import {
+  GrowthOperationalCaseRoutingReviewResponseDto,
+  toGrowthOperationalCaseRoutingReviewResponseDto,
+} from './dto/growth-operational-case-routing-review.response';
 import {
   GrowthAssignmentWorkloadResponseDto,
   toGrowthAssignmentWorkloadResponseDto,
@@ -226,6 +231,7 @@ export class GrowthController {
     private readonly listTenantWhatsappMessageTemplatesUseCase: ListTenantWhatsappMessageTemplatesUseCase,
     private readonly listTenantWhatsappConversationThreadsUseCase: ListTenantWhatsappConversationThreadsUseCase,
     private readonly replayTenantWebhookEventEnvelopeUseCase: ReplayTenantWebhookEventEnvelopeUseCase,
+    private readonly reviewTenantGrowthOperationalCaseRoutingUseCase: ReviewTenantGrowthOperationalCaseRoutingUseCase,
     private readonly reopenTenantGrowthOperationalCaseUseCase: ReopenTenantGrowthOperationalCaseUseCase,
     private readonly resolveTenantGrowthOperationalCaseUseCase: ResolveTenantGrowthOperationalCaseUseCase,
     private readonly retryTenantWhatsappFailedConversationMessageUseCase: RetryTenantWhatsappFailedConversationMessageUseCase,
@@ -388,6 +394,7 @@ export class GrowthController {
     @Query('routingPolicyKey')
     routingPolicyKey?:
       | 'growth_ops'
+      | 'escalation_review'
       | 'owner_assignment'
       | 'follow_up_team'
       | 'follow_up_waiting_customer',
@@ -440,6 +447,28 @@ export class GrowthController {
       });
 
       return toGrowthOperationalCaseResponseDto(record);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/conversations/operational-cases/review-routing')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
+  async reviewTenantGrowthOperationalCaseRouting(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<GrowthOperationalCaseRoutingReviewResponseDto> {
+    try {
+      const result =
+        await this.reviewTenantGrowthOperationalCaseRoutingUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        });
+
+      return toGrowthOperationalCaseRoutingReviewResponseDto(result);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

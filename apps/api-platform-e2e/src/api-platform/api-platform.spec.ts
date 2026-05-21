@@ -79,6 +79,7 @@ import {
   ReceiveTenantMetaWhatsappWebhookUseCase,
   ReopenTenantGrowthOperationalCaseUseCase,
   ReplayTenantWebhookEventEnvelopeUseCase,
+  ReviewTenantGrowthOperationalCaseRoutingUseCase,
   ResolveTenantGrowthOperationalCaseUseCase,
   RetryTenantWhatsappFailedConversationMessageUseCase,
   RunTenantWhatsappOperationalMonitorUseCase,
@@ -239,6 +240,7 @@ describe('API', () => {
   let receiveTenantMetaWhatsappWebhookUseCase: { execute: jest.Mock };
   let reopenTenantGrowthOperationalCaseUseCase: { execute: jest.Mock };
   let replayTenantWebhookEventEnvelopeUseCase: { execute: jest.Mock };
+  let reviewTenantGrowthOperationalCaseRoutingUseCase: { execute: jest.Mock };
   let resolveTenantGrowthOperationalCaseUseCase: { execute: jest.Mock };
   let retryTenantWhatsappFailedConversationMessageUseCase: { execute: jest.Mock };
   let runTenantWhatsappOperationalMonitorUseCase: { execute: jest.Mock };
@@ -2531,6 +2533,23 @@ describe('API', () => {
     runTenantWhatsappReadyRetriesUseCase = {
       execute: jest.fn().mockResolvedValue(whatsappRetryRunnerSummary),
     };
+    reviewTenantGrowthOperationalCaseRoutingUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        reviewedCount: 2,
+        updatedCount: 1,
+        escalationReviewCount: 1,
+        cases: [
+          {
+            ...growthOperationalCase,
+            caseType: 'ownership_routing',
+            priority: 'critical',
+            routingPolicyKey: 'escalation_review',
+            dueAt: new Date('2026-05-20T09:45:00.000Z'),
+            updatedAt: new Date('2026-05-20T10:30:00.000Z'),
+          },
+        ],
+      }),
+    };
     resolveTenantGrowthOperationalCaseUseCase = {
       execute: jest.fn().mockResolvedValue({
         ...growthOperationalCase,
@@ -3226,6 +3245,8 @@ describe('API', () => {
       .useValue(reopenTenantGrowthOperationalCaseUseCase)
       .overrideProvider(ReplayTenantWebhookEventEnvelopeUseCase)
       .useValue(replayTenantWebhookEventEnvelopeUseCase)
+      .overrideProvider(ReviewTenantGrowthOperationalCaseRoutingUseCase)
+      .useValue(reviewTenantGrowthOperationalCaseRoutingUseCase)
       .overrideProvider(ResolveTenantGrowthOperationalCaseUseCase)
       .useValue(resolveTenantGrowthOperationalCaseUseCase)
       .overrideProvider(RetryTenantWhatsappFailedConversationMessageUseCase)
@@ -4672,6 +4693,54 @@ describe('API', () => {
       dueAt: new Date('2026-05-20T11:00:00.000Z'),
       createdByUserId: 'user_123',
       createdByEmail: 'hello@saas-platform.dev',
+    });
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/operational-cases/review-routing should review and escalate overdue cases', async () => {
+    await request(httpServer)
+      .post(
+        '/api/growth/tenants/saas-platform/conversations/operational-cases/review-routing',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect({
+        reviewedCount: 2,
+        updatedCount: 1,
+        escalationReviewCount: 1,
+        cases: [
+          {
+            id: 'op-case-001',
+            sourceKey: 'alert:retry_queue_ready',
+            caseType: 'ownership_routing',
+            status: 'open',
+            priority: 'critical',
+            title: 'Retry queue has ready-now messages',
+            summary:
+              '1 failed outbound messages are ready for retry execution now.',
+            nextAction:
+              'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
+            followUpState: null,
+            routingPolicyKey: 'escalation_review',
+            threadId: null,
+            alertKey: 'retry_queue_ready',
+            dueAt: '2026-05-20T09:45:00.000Z',
+            assignedUserId: null,
+            assignedUserEmail: null,
+            createdByUserId: 'user_123',
+            createdByEmail: 'hello@saas-platform.dev',
+            resolvedAt: null,
+            resolvedByUserId: null,
+            resolvedByEmail: null,
+            createdAt: '2026-05-20T10:05:00.000Z',
+            updatedAt: '2026-05-20T10:30:00.000Z',
+          },
+        ],
+      });
+
+    expect(
+      reviewTenantGrowthOperationalCaseRoutingUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
     });
   });
 

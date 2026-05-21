@@ -1,6 +1,7 @@
 import {
   CreateTenantGrowthOperationalCaseUseCase,
   ReopenTenantGrowthOperationalCaseUseCase,
+  ReviewTenantGrowthOperationalCaseRoutingUseCase,
   ResolveTenantGrowthOperationalCaseUseCase,
   TakeTenantGrowthOperationalCaseUseCase,
   UpdateTenantGrowthOperationalCaseFollowUpStateUseCase,
@@ -240,6 +241,126 @@ describe('Growth operational cases use cases', () => {
         nextAction:
           'Esperar respuesta del cliente antes del siguiente outreach.',
         dueAt: null,
+      }),
+    );
+  });
+
+  it('escalates overdue follow-up cases into escalation review when they stay on the team lane', async () => {
+    growthOperationalCaseRepository.findByTenantIdAndSourceKey.mockResolvedValue(null);
+    growthOperationalCaseRepository.create.mockImplementation(async (record) => ({
+      id: 'op-case-003',
+      createdAt: new Date('2026-05-20T10:20:00.000Z'),
+      updatedAt: new Date('2026-05-20T10:20:00.000Z'),
+      ...record,
+    }));
+
+    const useCase = new CreateTenantGrowthOperationalCaseUseCase(
+      tenantRepository,
+      growthOperationalCaseRepository as any,
+      () => new Date('2026-05-20T10:20:00.000Z'),
+    );
+
+    const created = await useCase.execute({
+      tenantSlug: 'saas-platform',
+      sourceKey: 'thread:thread_002:follow_up',
+      caseType: 'follow_up',
+      priority: 'warning',
+      title: 'Escalar follow-up vencido',
+      summary: 'El follow-up ya vencio y sigue sin cerrarse.',
+      nextAction: 'Subir a revision operativa.',
+      followUpState: 'scheduled',
+      dueAt: new Date('2026-05-20T09:45:00.000Z'),
+      threadId: 'thread_002',
+      createdByUserId: 'user_123',
+      createdByEmail: 'owner@saas-platform.dev',
+    });
+
+    expect(created).toEqual(
+      expect.objectContaining({
+        priority: 'critical',
+        routingPolicyKey: 'escalation_review',
+        followUpState: 'scheduled',
+      }),
+    );
+  });
+
+  it('reviews active operational cases and reroutes overdue work into escalation review', async () => {
+    growthOperationalCaseRepository.findByTenantId.mockResolvedValue([
+      {
+        id: 'op-case-010',
+        tenantId: 'tenant_123',
+        sourceKey: 'thread:thread_010:ownership',
+        caseType: 'ownership_routing',
+        status: 'open',
+        priority: 'warning',
+        title: 'Asignar owner',
+        summary: 'Thread sin owner.',
+        nextAction: 'Asignar responsable.',
+        followUpState: null,
+        routingPolicyKey: 'owner_assignment',
+        threadId: 'thread_010',
+        alertKey: null,
+        dueAt: new Date('2026-05-20T09:30:00.000Z'),
+        assignedUserId: null,
+        assignedUserEmail: null,
+        createdByUserId: 'user_123',
+        createdByEmail: 'owner@saas-platform.dev',
+        resolvedAt: null,
+        resolvedByUserId: null,
+        resolvedByEmail: null,
+        createdAt: new Date('2026-05-20T08:00:00.000Z'),
+        updatedAt: new Date('2026-05-20T08:00:00.000Z'),
+      },
+      {
+        id: 'op-case-011',
+        tenantId: 'tenant_123',
+        sourceKey: 'thread:thread_011:follow_up',
+        caseType: 'follow_up',
+        status: 'in_progress',
+        priority: 'warning',
+        title: 'Esperar cliente',
+        summary: 'Caso esperando respuesta.',
+        nextAction: 'Esperar.',
+        followUpState: 'waiting_customer',
+        routingPolicyKey: 'follow_up_waiting_customer',
+        threadId: 'thread_011',
+        alertKey: null,
+        dueAt: null,
+        assignedUserId: 'user_456',
+        assignedUserEmail: 'ops@saas-platform.dev',
+        createdByUserId: 'user_123',
+        createdByEmail: 'owner@saas-platform.dev',
+        resolvedAt: null,
+        resolvedByUserId: null,
+        resolvedByEmail: null,
+        createdAt: new Date('2026-05-20T08:00:00.000Z'),
+        updatedAt: new Date('2026-05-20T08:00:00.000Z'),
+      },
+    ]);
+    growthOperationalCaseRepository.save.mockImplementation(async (record) => record);
+
+    const useCase = new ReviewTenantGrowthOperationalCaseRoutingUseCase(
+      tenantRepository,
+      growthOperationalCaseRepository as any,
+      () => new Date('2026-05-20T10:30:00.000Z'),
+    );
+
+    const reviewed = await useCase.execute({
+      tenantSlug: 'saas-platform',
+    });
+
+    expect(reviewed).toEqual(
+      expect.objectContaining({
+        reviewedCount: 2,
+        updatedCount: 1,
+        escalationReviewCount: 1,
+      }),
+    );
+    expect(reviewed.cases[0]).toEqual(
+      expect.objectContaining({
+        id: 'op-case-010',
+        priority: 'critical',
+        routingPolicyKey: 'escalation_review',
       }),
     );
   });

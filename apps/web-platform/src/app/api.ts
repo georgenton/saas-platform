@@ -8,6 +8,7 @@ import {
   WithholdingResponse,
   CustomerResponse,
   GrowthOperationalCaseResponse,
+  GrowthOperationalCaseRoutingReviewResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSignatureMaterialInspectionResponse,
   ElectronicSubmissionSettingsResponse,
@@ -1242,6 +1243,7 @@ export async function fetchGrowthOperationalCases(
   status?: 'open' | 'in_progress' | 'resolved',
   routingPolicyKey?:
     | 'growth_ops'
+    | 'escalation_review'
     | 'owner_assignment'
     | 'follow_up_team'
     | 'follow_up_waiting_customer',
@@ -1365,6 +1367,21 @@ export async function updateGrowthOperationalCaseFollowUpState(
       method: 'POST',
       token,
       body: JSON.stringify(input),
+    },
+  );
+}
+
+export async function reviewGrowthOperationalCaseRouting(
+  token: string,
+  tenantSlug: string,
+): Promise<GrowthOperationalCaseRoutingReviewResponse> {
+  return request<GrowthOperationalCaseRoutingReviewResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/operational-cases/review-routing`,
+    {
+      method: 'POST',
+      token,
     },
   );
 }

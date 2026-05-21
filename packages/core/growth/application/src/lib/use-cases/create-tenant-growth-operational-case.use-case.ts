@@ -9,7 +9,10 @@ import {
   GrowthOperationalCaseRepository,
   GrowthOperationalCaseType,
 } from '../ports/growth-operational-case.repository';
-import { resolveGrowthOperationalCaseRoutingPolicyKey } from '../support/growth-operational-case-routing-policy';
+import {
+  resolveGrowthOperationalCasePriority,
+  resolveGrowthOperationalCaseRoutingPolicyKey,
+} from '../support/growth-operational-case-routing-policy';
 
 export interface CreateTenantGrowthOperationalCaseInput {
   tenantSlug: string;
@@ -53,9 +56,21 @@ export class CreateTenantGrowthOperationalCaseUseCase {
       input.caseType,
       input.followUpState,
     );
+    const now = this.nowProvider();
+    const priority = resolveGrowthOperationalCasePriority({
+      caseType: input.caseType,
+      status: 'open',
+      currentPriority: input.priority,
+      followUpState,
+      dueAt: input.dueAt ?? null,
+      now,
+    });
     const routingPolicyKey = resolveGrowthOperationalCaseRoutingPolicyKey({
       caseType: input.caseType,
+      status: 'open',
       followUpState,
+      dueAt: input.dueAt ?? null,
+      now,
     });
 
     if (!existing) {
@@ -64,7 +79,7 @@ export class CreateTenantGrowthOperationalCaseUseCase {
         sourceKey: input.sourceKey,
         caseType: input.caseType,
         status: 'open',
-        priority: input.priority,
+        priority,
         title: input.title,
         summary: input.summary,
         nextAction: input.nextAction,
@@ -89,24 +104,39 @@ export class CreateTenantGrowthOperationalCaseUseCase {
           ? 'in_progress'
           : 'open'
         : existing.status;
+    const reopenedPriority = resolveGrowthOperationalCasePriority({
+      caseType: input.caseType,
+      status: reopenedStatus,
+      currentPriority: input.priority,
+      followUpState,
+      dueAt: input.dueAt ?? null,
+      now,
+    });
+    const reopenedRoutingPolicyKey = resolveGrowthOperationalCaseRoutingPolicyKey({
+      caseType: input.caseType,
+      status: reopenedStatus,
+      followUpState,
+      dueAt: input.dueAt ?? null,
+      now,
+    });
 
     return this.growthOperationalCaseRepository.save({
       ...existing,
       caseType: input.caseType,
       status: reopenedStatus,
-      priority: input.priority,
+      priority: reopenedPriority,
       title: input.title,
       summary: input.summary,
       nextAction: input.nextAction,
       followUpState,
-      routingPolicyKey,
+      routingPolicyKey: reopenedRoutingPolicyKey,
       threadId: input.threadId ?? null,
       alertKey: input.alertKey ?? null,
       dueAt: input.dueAt ?? null,
       resolvedAt: null,
       resolvedByUserId: null,
       resolvedByEmail: null,
-      updatedAt: this.nowProvider(),
+      updatedAt: now,
     });
   }
 

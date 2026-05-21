@@ -1869,6 +1869,9 @@ Consumer web inicial para este snapshot operativo:
     - resume hotspots compartidos y taxonomías repetidas entre tenancies
     - permite saltar desde el radar fleet al workspace puntual del tenant elegido
     - ya incluye primeras lecturas de `escalation candidates` y `staffing pressure` usando workbench + monitor history compartidos
+    - ahora también expone:
+      - `runbooks` operativos derivados del estado fleet
+      - una `ownership queue` cross-tenant para threads que piden owner o follow-up más urgente
 - el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
   - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor-runs`
   - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor-analytics`

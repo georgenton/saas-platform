@@ -851,12 +851,13 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
       - that shared run history now also powers first-pass calibration analytics for thresholds, alert recurrence, and manual-vs-scheduler operational mix
       - a first cross-tenant fleet console now also exists on top of that shared state, so operators can rank multiple tenancies, inspect shared hotspots, and jump into the tenant that needs attention first
       - that fleet console now also exposes first escalation and staffing lenses, using monitor + workbench data to highlight which queues likely need intervention or more owner capacity
+      - that fleet console now also exposes first runbooks and a first cross-tenant ownership queue, so the shared state starts turning into explicit operator workflows instead of remaining only descriptive
     - current explicit limitation is now narrower: legacy template messages sent before snapshot persistence still cannot be retried faithfully
     - next pressure is now operational hardening on top of these semantics:
       - calibrating thresholds with production-like traffic instead of only synthetic fixtures
       - expansion of taxonomy detail as new Meta/provider codes appear in the wild
       - externalizing scheduler state/telemetry beyond process logs once this starts running in shared environments
-      - deciding when this fleet-level operational state should graduate into even more opinionated workflows like staffed ownership queues, follow-up runbooks, or explicit escalation state machines
+      - deciding when these operator workflows should graduate into persisted escalation state, staffed ownership routing, or explicit follow-up state machines instead of staying fully derived in the consumer
 5. `Ecommerce` first domain slice
    - catalog plus orders
 

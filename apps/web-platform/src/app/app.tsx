@@ -130,6 +130,15 @@ type GrowthFleetTenantSnapshot = {
   latestRun: WhatsappOperationalMonitorRunResponse | null;
 };
 
+type GrowthFleetRunbook = {
+  key: string;
+  severity: 'healthy' | 'warning' | 'critical';
+  title: string;
+  summary: string;
+  affectedTenants: string[];
+  steps: string[];
+};
+
 function formatDate(value: string | null): string {
   if (!value) {
     return 'No registrado';
@@ -356,6 +365,21 @@ function operationalStatusWeight(
     case 'warning':
       return 2;
     case 'healthy':
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+function workbenchPriorityWeight(priority: string): number {
+  switch (priority) {
+    case 'urgent':
+      return 4;
+    case 'high':
+      return 3;
+    case 'medium':
+      return 2;
+    case 'low':
       return 1;
     default:
       return 0;
@@ -1162,6 +1186,156 @@ export function App() {
       )
       .slice(0, 5);
   }, [growthFleetSnapshots]);
+  const growthFleetOwnershipQueue = useMemo(() => {
+    return growthFleetSnapshots
+      .flatMap((snapshot) =>
+        snapshot.workbench.threads.map((thread) => {
+          const ownershipScore =
+            workbenchPriorityWeight(thread.priority) * 5 +
+            (thread.assigneeUserId ? 0 : 4) +
+            (thread.nextActionOwner === 'team' ? 2 : 0) +
+            (thread.firstResponseStatus === 'overdue' ? 4 : 0) +
+            (thread.followUpStatus === 'overdue' ? 3 : 0) +
+            (thread.staleStatus === 'stale' ? 2 : 0);
+
+          return {
+            tenantSlug: snapshot.tenancy.tenant.slug,
+            tenantName: snapshot.tenancy.tenant.name,
+            threadId: thread.threadId,
+            subject: thread.subject,
+            channel: thread.channel,
+            assigneeUserId: thread.assigneeUserId,
+            nextActionOwner: thread.nextActionOwner,
+            firstResponseStatus: thread.firstResponseStatus,
+            followUpStatus: thread.followUpStatus,
+            staleStatus: thread.staleStatus,
+            priority: thread.priority,
+            hoursSinceLastActivity: thread.hoursSinceLastActivity,
+            ownershipScore,
+          };
+        }),
+      )
+      .filter((thread) => thread.ownershipScore > 0)
+      .sort(
+        (left, right) =>
+          right.ownershipScore - left.ownershipScore ||
+          workbenchPriorityWeight(right.priority) -
+            workbenchPriorityWeight(left.priority) ||
+          right.hoursSinceLastActivity - left.hoursSinceLastActivity,
+      )
+      .slice(0, 8);
+  }, [growthFleetSnapshots]);
+  const growthFleetRunbooks = useMemo(() => {
+    const runbooks: GrowthFleetRunbook[] = [];
+
+    const schedulerGapTenants = growthFleetEscalationCandidates
+      .filter((entry) => entry.staleSchedulerCoverage)
+      .map((entry) => entry.tenantName);
+    if (schedulerGapTenants.length > 0) {
+      runbooks.push({
+        key: 'scheduler-coverage-gap',
+        severity: 'warning',
+        title: 'Recuperar cobertura del scheduler',
+        summary:
+          'Hay tenancies críticas o sensibles sin evidencia reciente de corridas automáticas del monitor.',
+        affectedTenants: schedulerGapTenants,
+        steps: [
+          'Verificar que el scheduler esté habilitado para esos tenants y que la lista de slugs siga vigente.',
+          'Ejecutar el monitor manualmente si hace falta una lectura inmediata antes de corregir el scheduler.',
+          'Confirmar que vuelva a aparecer mezcla scheduler/manual en la analítica histórica del tenant.',
+        ],
+      });
+    }
+
+    const unackCriticalTenants = growthFleetEscalationCandidates
+      .filter((entry) => entry.unacknowledgedCriticalCount > 0)
+      .map((entry) => entry.tenantName);
+    if (unackCriticalTenants.length > 0) {
+      runbooks.push({
+        key: 'critical-alert-triage',
+        severity: 'critical',
+        title: 'Triage de alertas críticas sin acknowledgement',
+        summary:
+          'La flota todavía muestra alertas críticas activas que ningún operador ha reconocido.',
+        affectedTenants: unackCriticalTenants,
+        steps: [
+          'Entrar al tenant más crítico desde la cola fleet y revisar la alerta dominante.',
+          'Confirmar si el bloqueo es de policy, configuración o backlog de retries antes de reconocerlo.',
+          'Dejar acknowledgement solo cuando ya exista dueño claro y acción concreta en curso.',
+        ],
+      });
+    }
+
+    const retryPressureTenants = growthFleetEscalationCandidates
+      .filter((entry) => entry.readyNowCount > 0)
+      .map((entry) => entry.tenantName);
+    if (retryPressureTenants.length > 0) {
+      runbooks.push({
+        key: 'retry-backlog-pressure',
+        severity:
+          growthFleetOverview.totalReadyRetries >= 5 ? 'critical' : 'warning',
+        title: 'Vaciar backlog de ready-now retries',
+        summary:
+          'Hay mensajes fallidos listos para reintento repartidos en varias colas tenant-aware.',
+        affectedTenants: retryPressureTenants,
+        steps: [
+          'Priorizar primero tenants con más ready-now retries y alertas críticas simultáneas.',
+          'Usar el monitor/manual retry posture del tenant para separar fallos reintentables de permanentes.',
+          'Volver al radar fleet y confirmar que el backlog agregado baje después de intervenir.',
+        ],
+      });
+    }
+
+    const staffingTenants = growthFleetStaffingPressure
+      .filter(
+        (entry) =>
+          entry.overdueFirstResponseCount > 0 || entry.unassignedThreadCount > 0,
+      )
+      .map((entry) => entry.tenantName);
+    if (staffingTenants.length > 0) {
+      runbooks.push({
+        key: 'staffing-overload',
+        severity: 'warning',
+        title: 'Rebalancear ownership y capacidad',
+        summary:
+          'El workbench cross-tenant ya muestra colas con señales de falta de owner o follow-up vencido.',
+        affectedTenants: staffingTenants,
+        steps: [
+          'Entrar a los tenants con mayor pressure score y asignar primero threads unassigned u overdue first response.',
+          'Validar si el problema es de capacidad real o de filtros/owners desactualizados en el tenant.',
+          'Revisar luego la queue cross-tenant para confirmar que bajó la presión agregada.',
+        ],
+      });
+    }
+
+    const clusteredTaxonomies = growthFleetTopTaxonomy
+      .filter((entry) => entry.tenantCount > 1)
+      .map((entry) => humanizeKey(entry.providerTaxonomyDetail));
+    if (clusteredTaxonomies.length > 0) {
+      runbooks.push({
+        key: 'provider-pattern-cluster',
+        severity: 'healthy',
+        title: 'Consolidar patrón compartido del provider',
+        summary:
+          'La flota ya deja ver taxonomías repetidas que conviene tratar como incidente compartido y no como casos aislados.',
+        affectedTenants: growthFleetTopTaxonomy
+          .filter((entry) => entry.tenantCount > 1)
+          .map((entry) => `${entry.provider} · ${humanizeKey(entry.providerTaxonomyDetail)}`),
+        steps: [
+          'Agrupar los tenants afectados por la misma taxonomía antes de tomar acciones dispersas.',
+          'Contrastar si el patrón apunta a policy, throughput o configuración para definir un solo frente de trabajo.',
+          'Actualizar thresholds o documentación operativa solo cuando el patrón ya esté suficientemente repetido.',
+        ],
+      });
+    }
+
+    return runbooks.slice(0, 5);
+  }, [
+    growthFleetEscalationCandidates,
+    growthFleetOverview.totalReadyRetries,
+    growthFleetStaffingPressure,
+    growthFleetTopTaxonomy,
+  ]);
   const growthFleetOperatorBrief = useMemo(() => {
     if (!growthWorkspaceFleetAvailable) {
       return null;
@@ -5023,6 +5197,125 @@ export function App() {
                           Unassigned {entry.unassignedThreadCount} · overdue follow-up{' '}
                           {entry.overdueFollowUpCount}
                         </small>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Runbooks</span>
+                      <h3>Playbooks operativos sugeridos por la flota</h3>
+                    </div>
+                  </div>
+
+                  {growthFleetRunbooks.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>
+                        La flota todavía no necesita runbooks explícitos; por ahora
+                        el radar está lo bastante tranquilo.
+                      </p>
+                    </div>
+                  ) : (
+                    growthFleetRunbooks.map((runbook) => (
+                      <div className={styles.invoiceItemCard} key={runbook.key}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{runbook.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              runbook.severity,
+                            )}`}
+                          >
+                            {operationalStatusLabel(runbook.severity)}
+                          </span>
+                        </div>
+                        <small>{runbook.summary}</small>
+                        <div className={styles.badgeRow}>
+                          {runbook.affectedTenants.slice(0, 4).map((entry) => (
+                            <span className={styles.badge} key={`${runbook.key}-${entry}`}>
+                              {entry}
+                            </span>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {runbook.steps.map((step, index) => (
+                            <small key={`${runbook.key}-step-${index + 1}`}>
+                              {index + 1}. {step}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Ownership queue</span>
+                      <h3>Threads cross-tenant que piden owner o seguimiento</h3>
+                    </div>
+                  </div>
+
+                  {growthFleetOwnershipQueue.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <p>
+                        No hay threads cross-tenant con presión suficiente como para
+                        subir a una cola de ownership.
+                      </p>
+                    </div>
+                  ) : (
+                    growthFleetOwnershipQueue.map((thread) => (
+                      <div
+                        className={styles.invoiceItemCard}
+                        key={`${thread.tenantSlug}-${thread.threadId}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{thread.subject}</strong>
+                          <span className={styles.statusPill}>
+                            score {thread.ownershipScore}
+                          </span>
+                        </div>
+                        <small>
+                          {thread.tenantName} · {thread.tenantSlug}
+                        </small>
+                        <div className={styles.badgeRow}>
+                          <span className={styles.badge}>
+                            {channelLabel(thread.channel)}
+                          </span>
+                          <span className={styles.badge}>
+                            {humanizeKey(thread.priority)}
+                          </span>
+                          <span className={styles.badge}>
+                            Owner {thread.assigneeUserId ?? 'sin owner'}
+                          </span>
+                          <span className={styles.badge}>
+                            Next {humanizeKey(thread.nextActionOwner)}
+                          </span>
+                        </div>
+                        <small>
+                          First response {humanizeKey(thread.firstResponseStatus)} ·
+                          Follow-up {humanizeKey(thread.followUpStatus)} · stale{' '}
+                          {humanizeKey(thread.staleStatus)}
+                        </small>
+                        <small>
+                          {thread.hoursSinceLastActivity}h desde última actividad
+                        </small>
+                        <div className={styles.inlineActionRow}>
+                          {currentTenancy?.tenant.slug !== thread.tenantSlug ? (
+                            <button
+                              className={styles.secondaryButton}
+                              disabled={actionLoading !== null}
+                              onClick={() => void handleSelectTenancy(thread.tenantSlug)}
+                              type="button"
+                            >
+                              Abrir tenant
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
                     ))
                   )}

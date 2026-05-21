@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.27.0
+
+### Minor Changes
+
+- 34d7ef0: Expand the Growth operational dashboard consumer with local alert acknowledgements, drill-down inspection, and browser-local alert history for tenant operators.
+
 ## 0.26.0
 
 ### Minor Changes

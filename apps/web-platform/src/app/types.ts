@@ -944,10 +944,13 @@ export interface GrowthOperationalCaseRoutingReviewResponse {
 }
 
 export interface GrowthOperationalCaseAutoAssignmentResponse {
+  policyKey: 'balanced' | 'owner_queue_first' | 'follow_up_first';
   candidateCount: number;
   reviewedCount: number;
   assignedCount: number;
   threadAssignmentCount: number;
+  inheritedOwnerCount: number;
+  fallbackAssignmentCount: number;
   cases: GrowthOperationalCaseResponse[];
 }
 

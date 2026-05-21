@@ -141,6 +141,7 @@ import {
   toOpportunityResponseDto,
 } from './dto/opportunity.response';
 import { RetryWhatsappConversationMessageRequestDto } from './dto/retry-whatsapp-conversation-message.request';
+import { RunGrowthOperationalCaseAutoAssignmentRequestDto } from './dto/run-growth-operational-case-auto-assignment.request';
 import { RunWhatsappOperationalMonitorRequestDto } from './dto/run-whatsapp-operational-monitor.request';
 import { RunWhatsappReadyRetriesRequestDto } from './dto/run-whatsapp-ready-retries.request';
 import { SendWhatsappConversationMessageRequestDto } from './dto/send-whatsapp-conversation-message.request';
@@ -488,12 +489,14 @@ export class GrowthController {
   @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
   async autoAssignTenantGrowthOperationalCases(
     @Param('slug') slug: string,
+    @Body() body?: RunGrowthOperationalCaseAutoAssignmentRequestDto,
     @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<GrowthOperationalCaseAutoAssignmentResponseDto> {
     try {
       const result =
         await this.autoAssignTenantGrowthOperationalCasesUseCase.execute({
           tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          policyKey: body?.policyKey ?? 'balanced',
         });
 
       return toGrowthOperationalCaseAutoAssignmentResponseDto(result);

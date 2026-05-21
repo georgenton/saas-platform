@@ -2537,10 +2537,13 @@ describe('API', () => {
     };
     autoAssignTenantGrowthOperationalCasesUseCase = {
       execute: jest.fn().mockResolvedValue({
+        policyKey: 'owner_queue_first',
         candidateCount: 2,
         reviewedCount: 2,
         assignedCount: 2,
         threadAssignmentCount: 1,
+        inheritedOwnerCount: 1,
+        fallbackAssignmentCount: 1,
         cases: [
           {
             ...growthOperationalCase,
@@ -4785,12 +4788,18 @@ describe('API', () => {
         '/api/growth/tenants/saas-platform/conversations/operational-cases/auto-assign',
       )
       .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        policyKey: 'owner_queue_first',
+      })
       .expect(201)
       .expect({
+        policyKey: 'owner_queue_first',
         candidateCount: 2,
         reviewedCount: 2,
         assignedCount: 2,
         threadAssignmentCount: 1,
+        inheritedOwnerCount: 1,
+        fallbackAssignmentCount: 1,
         cases: [
           {
             id: 'op-case-001',
@@ -4851,6 +4860,7 @@ describe('API', () => {
       autoAssignTenantGrowthOperationalCasesUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
+      policyKey: 'owner_queue_first',
     });
   });
 

@@ -19,6 +19,7 @@ import {
   deleteWhatsappOperationalAlertAcknowledgement,
   downloadInvoiceElectronicRideHtml,
   downloadInvoiceElectronicXmlPreview,
+  fetchGrowthOperationalCaseAutoAssignmentSettings,
   fetchWhatsappOperationalAlertAcknowledgements,
   fetchWhatsappOperationalMonitorAnalytics,
   fetchWhatsappOperationalMonitorRuns,
@@ -65,6 +66,7 @@ import {
   updateGrowthOperationalCaseFollowUpState,
   upsertElectronicSubmissionSettings,
   upsertElectronicSignatureSettings,
+  upsertGrowthOperationalCaseAutoAssignmentSettings,
   upsertInvoiceNumberingSettings,
   upsertIssuerProfile,
   updateInvoiceElectronicStatus,
@@ -78,6 +80,7 @@ import {
   ElectronicSignatureMaterialInspectionResponse,
   ElectronicSubmissionSettingsResponse,
   ElectronicSignatureSettingsResponse,
+  GrowthOperationalCaseAutoAssignmentSettingsResponse,
   GrowthConversationWorkbenchResponse,
   GrowthOperationalCaseAutoAssignmentResponse,
   GrowthOperationalCaseResponse,
@@ -149,6 +152,25 @@ type GrowthFleetRunbook = {
   summary: string;
   affectedTenants: string[];
   steps: string[];
+};
+
+type GrowthAssistTask = {
+  key: string;
+  urgency: 'today' | 'soon' | 'watch';
+  category: 'reply_now' | 'follow_up' | 'assign_owner' | 'channel_risk';
+  title: string;
+  summary: string;
+  actionLabel: string;
+  dueAt: string | null;
+};
+
+type GrowthAssistConversationCue = {
+  key: string;
+  warmth: 'hot' | 'warm' | 'watch';
+  title: string;
+  summary: string;
+  suggestedReply: string;
+  nextMove: string;
 };
 
 type GrowthOperationalCaseRoutingPolicyKey =
@@ -588,6 +610,119 @@ function summarizeGrowthOperationalCaseAutoAssignment(
   return `Policy ${policyLabel}: se revisaron ${result.reviewedCount} casos, se auto-asignaron ${result.assignedCount}, ${result.inheritedOwnerCount} heredaron owner y ${result.fallbackAssignmentCount} cayeron por menor carga.`;
 }
 
+function describeGrowthOperationalCaseAutoAssignmentPolicy(
+  policyKey: GrowthOperationalCaseAutoAssignmentPolicyKey,
+): string {
+  return (
+    growthOperationalCaseAutoAssignmentPolicies.find(
+      (entry) => entry.key === policyKey,
+    )?.label ?? policyKey
+  );
+}
+
+function describeGrowthAssistAutoAssignmentPolicy(
+  policyKey: GrowthOperationalCaseAutoAssignmentPolicyKey,
+): string {
+  switch (policyKey) {
+    case 'follow_up_first':
+      return 'empezar por seguimientos antes de repartir nueva cola';
+    case 'owner_queue_first':
+      return 'vaciar primero trabajo sin owner claro';
+    case 'balanced':
+    default:
+      return 'repartir de forma equilibrada entre urgencias, owners y follow-up';
+  }
+}
+
+function growthAssistUrgencyTone(
+  urgency: GrowthAssistTask['urgency'],
+): string {
+  switch (urgency) {
+    case 'today':
+      return styles.critical;
+    case 'soon':
+      return styles.warning;
+    case 'watch':
+    default:
+      return styles.healthy;
+  }
+}
+
+function growthAssistUrgencyLabel(
+  urgency: GrowthAssistTask['urgency'],
+): string {
+  switch (urgency) {
+    case 'today':
+      return 'Hoy';
+    case 'soon':
+      return 'Pronto';
+    case 'watch':
+    default:
+      return 'En radar';
+  }
+}
+
+function growthAssistTaskCategoryLabel(
+  category: GrowthAssistTask['category'],
+): string {
+  switch (category) {
+    case 'reply_now':
+      return 'Responder';
+    case 'follow_up':
+      return 'Seguimiento';
+    case 'assign_owner':
+      return 'Ordenar cola';
+    case 'channel_risk':
+    default:
+      return 'Canal';
+  }
+}
+
+function growthAssistWarmthTone(
+  warmth: GrowthAssistConversationCue['warmth'],
+): string {
+  switch (warmth) {
+    case 'hot':
+      return styles.critical;
+    case 'warm':
+      return styles.warning;
+    case 'watch':
+    default:
+      return styles.healthy;
+  }
+}
+
+function growthAssistWarmthLabel(
+  warmth: GrowthAssistConversationCue['warmth'],
+): string {
+  switch (warmth) {
+    case 'hot':
+      return 'Lead caliente';
+    case 'warm':
+      return 'En movimiento';
+    case 'watch':
+    default:
+      return 'En radar';
+  }
+}
+
+function formatRelativeHours(value: number | null): string {
+  if (value === null) {
+    return 'sin referencia reciente';
+  }
+
+  if (value < 1) {
+    return 'menos de 1 hora';
+  }
+
+  const rounded = value < 24 ? Math.round(value) : Math.round(value / 24);
+  if (value < 24) {
+    return `${rounded} hora${rounded === 1 ? '' : 's'}`;
+  }
+
+  return `${rounded} dia${rounded === 1 ? '' : 's'}`;
+}
+
 function getEntitlementValue(
   entitlements: SessionEntitlement[],
   key: string,
@@ -773,6 +908,10 @@ export function App() {
   const [growthOperationalCases, setGrowthOperationalCases] = useState<
     GrowthOperationalCaseResponse[]
   >([]);
+  const [
+    growthOperationalCaseAutoAssignmentSettings,
+    setGrowthOperationalCaseAutoAssignmentSettings,
+  ] = useState<GrowthOperationalCaseAutoAssignmentSettingsResponse | null>(null);
   const [growthMonitorHistory, setGrowthMonitorHistory] = useState<
     WhatsappOperationalMonitorRunResponse[]
   >([]);
@@ -1765,6 +1904,304 @@ export function App() {
         'Si cambias filtros o ejecutas el monitor manual, el dashboard te devolvera una lectura fresca del tenant actual.',
     };
   }, [whatsappSummary]);
+  const growthAssistSignals = useMemo(() => {
+    const openCases = growthOperationalCases.filter(
+      (entry) => entry.status !== 'resolved',
+    );
+
+    return {
+      replyNowCount: growthWorkbench?.summary.overdueFirstResponseCount ?? 0,
+      followUpNowCount:
+        (growthWorkbench?.summary.overdueFollowUpCount ?? 0) +
+        openCases.filter((entry) => entry.routingPolicyKey === 'follow_up_team').length,
+      waitingCustomerCount: openCases.filter(
+        (entry) =>
+          entry.routingPolicyKey === 'follow_up_waiting_customer' ||
+          entry.followUpState === 'waiting_customer',
+      ).length,
+      queueToOrganizeCount:
+        (growthWorkbench?.summary.unassignedThreadCount ?? 0) +
+        openCases.filter(
+          (entry) =>
+            entry.routingPolicyKey === 'owner_assignment' ||
+            entry.routingPolicyKey === 'escalation_review',
+        ).length,
+      channelRiskCount: whatsappSummary?.operationalAlerts.length ?? 0,
+    };
+  }, [growthOperationalCases, growthWorkbench, whatsappSummary]);
+  const growthAssistSummary = useMemo(() => {
+    if (!growthWorkbench || !whatsappSummary) {
+      return null;
+    }
+
+    const dashboard = whatsappSummary.operationalDashboard;
+
+    if (growthAssistSignals.replyNowCount > 0) {
+      return {
+        tone: 'critical' as const,
+        headline: 'Hoy ya hay conversaciones que necesitan respuesta inmediata.',
+        detail:
+          'Empieza por las conversaciones sin primera respuesta o con seguimiento vencido antes de abrir campañas nuevas.',
+      };
+    }
+
+    if (growthAssistSignals.followUpNowCount > 0) {
+      return {
+        tone: 'warning' as const,
+        headline: 'La bandeja no esta rota, pero si hay seguimientos que no conviene dejar enfriar.',
+        detail:
+          'Usa esta agenda como recordatorio simple: primero sigue lo que ya esta caliente, luego reparte owner nuevo si hace falta.',
+      };
+    }
+
+    if (dashboard.overallStatus === 'critical') {
+      return {
+        tone: 'critical' as const,
+        headline: 'La conversacion comercial esta ordenada, pero el canal necesita atencion.',
+        detail:
+          'Antes de empujar mas trafico, revisa el estado del canal y los bloqueos operativos que puedan afectar entregas o retries.',
+      };
+    }
+
+    if (dashboard.overallStatus === 'warning') {
+      return {
+        tone: 'warning' as const,
+        headline: 'La agenda esta controlada, aunque el canal ya muestra desgaste ligero.',
+        detail:
+          'Es buen momento para ordenar la cola y mirar alertas antes de que se conviertan en un problema mayor.',
+      };
+    }
+
+    return {
+      tone: 'healthy' as const,
+      headline: 'La operacion esta bajo control; puedes usar Growth como agenda diaria y radar temprano.',
+      detail:
+        'No hay urgencias fuertes ahora mismo. Aprovecha para mantener seguimiento consistente y revisar leads calientes antes de que se enfrien.',
+    };
+  }, [growthAssistSignals, growthWorkbench, whatsappSummary]);
+  const growthAssistTasks = useMemo(() => {
+    const tasks: GrowthAssistTask[] = [];
+
+    if (growthWorkbench) {
+      for (const thread of growthWorkbench.threads) {
+        if (thread.firstResponseStatus === 'overdue' && thread.nextActionOwner === 'team') {
+          tasks.push({
+            key: `reply:${thread.threadId}`,
+            urgency: 'today',
+            category: 'reply_now',
+            title: `Responder a ${thread.subject}`,
+            summary: `${channelLabel(thread.channel)} lleva ${formatRelativeHours(
+              thread.hoursSinceLastInbound ?? thread.hoursSinceOpened,
+            )} esperando una respuesta del equipo.`,
+            actionLabel: thread.assigneeUserId ? 'Responder ahora' : 'Asignar y responder',
+            dueAt: thread.lastInboundAt,
+          });
+        } else if (
+          thread.followUpStatus === 'overdue' &&
+          thread.nextActionOwner === 'team'
+        ) {
+          tasks.push({
+            key: `follow-thread:${thread.threadId}`,
+            urgency: 'soon',
+            category: 'follow_up',
+            title: `Retomar ${thread.subject}`,
+            summary: `El siguiente paso del equipo ya quedo atrasado y la conversacion lleva ${formatRelativeHours(
+              thread.hoursSinceLastActivity,
+            )} sin movimiento.`,
+            actionLabel: 'Hacer follow-up',
+            dueAt: thread.lastActivityAt,
+          });
+        }
+      }
+    }
+
+    for (const entry of growthOperationalCases) {
+      if (entry.status === 'resolved') {
+        continue;
+      }
+
+      if (entry.routingPolicyKey === 'owner_assignment') {
+        tasks.push({
+          key: `case-owner:${entry.id}`,
+          urgency: entry.priority === 'critical' ? 'today' : 'soon',
+          category: 'assign_owner',
+          title: `Definir responsable: ${entry.title}`,
+          summary:
+            entry.assignedUserEmail === null
+              ? 'Nadie lleva este caso todavia; conviene ordenarlo antes de perder contexto.'
+              : entry.nextAction,
+          actionLabel: 'Auto-organizar cola',
+          dueAt: entry.dueAt,
+        });
+      } else if (entry.routingPolicyKey === 'follow_up_team') {
+        tasks.push({
+          key: `case-follow-up:${entry.id}`,
+          urgency: entry.priority === 'critical' ? 'today' : 'soon',
+          category: 'follow_up',
+          title: `No dejar enfriar: ${entry.title}`,
+          summary: entry.nextAction,
+          actionLabel: 'Mover seguimiento',
+          dueAt: entry.dueAt,
+        });
+      } else if (
+        entry.routingPolicyKey === 'escalation_review' ||
+        entry.caseType === 'alert_escalation'
+      ) {
+        tasks.push({
+          key: `case-risk:${entry.id}`,
+          urgency: 'today',
+          category: 'channel_risk',
+          title: `Revisar bloqueo: ${entry.title}`,
+          summary:
+            entry.summary ||
+            'Este caso ya escalo y conviene revisarlo antes de seguir empujando trafico.',
+          actionLabel: 'Revisar routing',
+          dueAt: entry.dueAt,
+        });
+      }
+    }
+
+    const urgencyWeight = {
+      today: 3,
+      soon: 2,
+      watch: 1,
+    } satisfies Record<GrowthAssistTask['urgency'], number>;
+
+    return tasks
+      .sort(
+        (left, right) =>
+          urgencyWeight[right.urgency] - urgencyWeight[left.urgency] ||
+          (left.dueAt ?? '').localeCompare(right.dueAt ?? '') ||
+          left.title.localeCompare(right.title),
+      )
+      .slice(0, 6);
+  }, [growthOperationalCases, growthWorkbench]);
+  const growthAssistWaitingCustomers = useMemo(() => {
+    return growthOperationalCases
+      .filter(
+        (entry) =>
+          entry.status !== 'resolved' &&
+          (entry.routingPolicyKey === 'follow_up_waiting_customer' ||
+            entry.followUpState === 'waiting_customer'),
+      )
+      .sort(
+        (left, right) =>
+          (left.dueAt ?? '').localeCompare(right.dueAt ?? '') ||
+          right.updatedAt.localeCompare(left.updatedAt),
+      )
+      .slice(0, 4);
+  }, [growthOperationalCases]);
+  const growthAssistPlaybooks = useMemo(() => {
+    const playbooks: Array<{ key: string; title: string; detail: string }> = [];
+
+    if (growthAssistSignals.replyNowCount > 0) {
+      playbooks.push({
+        key: 'reply-now',
+        title: 'Responder primero',
+        detail:
+          'Antes de abrir nueva prospeccion, responde lo que ya llego caliente. Esa es la forma mas simple de no perder conversion por demora.',
+      });
+    }
+
+    if (growthAssistSignals.queueToOrganizeCount > 0) {
+      playbooks.push({
+        key: 'queue-organize',
+        title: 'Ordenar responsables',
+        detail: `El negocio ya puede repartir trabajo con el criterio guardado: ${describeGrowthAssistAutoAssignmentPolicy(
+          growthOperationalCaseAutoAssignmentSettings?.defaultPolicyKey ?? 'balanced',
+        )}.`,
+      });
+    }
+
+    if (growthAssistSignals.channelRiskCount > 0) {
+      playbooks.push({
+        key: 'channel-risk',
+        title: 'Cuidar la salud del canal',
+        detail:
+          'Si el canal esta inestable, mas mensajes no siempre ayudan. Revisa alertas y retries antes de empujar volumen nuevo.',
+      });
+    }
+
+    if (growthAssistSignals.waitingCustomerCount > 0) {
+      playbooks.push({
+        key: 'waiting-customer',
+        title: 'Vigilar respuestas pendientes',
+        detail:
+          'No todo requiere accionar hoy; tambien conviene tener a mano lo que ya esta esperando cliente para retomar en el momento justo.',
+      });
+    }
+
+    if (playbooks.length === 0) {
+      playbooks.push({
+        key: 'healthy-routine',
+        title: 'Mantener ritmo comercial',
+        detail:
+          'Sin urgencias visibles, Growth ya funciona como agenda simple: revisa leads nuevos, confirma seguimientos de hoy y deja claro el siguiente paso de cada conversacion.',
+      });
+    }
+
+    return playbooks.slice(0, 4);
+  }, [growthAssistSignals, growthOperationalCaseAutoAssignmentSettings]);
+  const growthAssistConversationCues = useMemo(() => {
+    if (!growthWorkbench) {
+      return [];
+    }
+
+    return growthWorkbench.threads
+      .filter(
+        (thread) =>
+          thread.nextActionOwner === 'team' &&
+          (thread.firstResponseStatus === 'overdue' ||
+            thread.followUpStatus === 'overdue' ||
+            thread.priority === 'urgent' ||
+            thread.priority === 'high'),
+      )
+      .map((thread) => {
+        const warmth: GrowthAssistConversationCue['warmth'] =
+          thread.firstResponseStatus === 'overdue' || thread.priority === 'urgent'
+            ? 'hot'
+            : thread.followUpStatus === 'overdue' || thread.priority === 'high'
+              ? 'warm'
+              : 'watch';
+
+        const suggestedReply =
+          thread.firstResponseStatus === 'overdue'
+            ? `Hola ${thread.subject}, gracias por escribirnos. Quiero retomar esto hoy mismo y dejarte el siguiente paso claro.`
+            : thread.followUpStatus === 'overdue'
+              ? `Hola ${thread.subject}, retomo esta conversacion para no dejarla enfriar. Si te parece, hoy cerramos el siguiente paso.`
+              : `Hola ${thread.subject}, te escribo para mantener el avance y confirmar si seguimos con el siguiente paso.`;
+
+        const nextMove =
+          thread.assigneeUserId === null
+            ? 'Primero deja owner claro y luego responde.'
+            : thread.firstResponseStatus === 'overdue'
+              ? 'Responde hoy y deja siguiente accion acordada.'
+              : 'Haz follow-up y deja la fecha del siguiente toque.';
+
+        return {
+          key: thread.threadId,
+          warmth,
+          title: thread.subject,
+          summary: `${channelLabel(thread.channel)} · ultima actividad hace ${formatRelativeHours(
+            thread.hoursSinceLastActivity,
+          )} · ${thread.latestMessagePreview ?? 'Sin preview reciente.'}`,
+          suggestedReply,
+          nextMove,
+        } satisfies GrowthAssistConversationCue;
+      })
+      .slice(0, 4);
+  }, [growthWorkbench]);
+  const growthAssistLeadWarmthSummary = useMemo(() => {
+    const counts = growthAssistConversationCues.reduce(
+      (summary, cue) => {
+        summary[cue.warmth] += 1;
+        return summary;
+      },
+      { hot: 0, warm: 0, watch: 0 },
+    );
+
+    return counts;
+  }, [growthAssistConversationCues]);
   const workbenchEmptyMessage = useMemo(() => {
     if (!growthWorkbench) {
       return 'Cuando termine la carga veremos el resumen SLA del workbench.';
@@ -2347,6 +2784,8 @@ export function App() {
       setWhatsappMonitorAnalytics(null);
       setGrowthAlertAcknowledgements([]);
       setGrowthOperationalCases([]);
+      setGrowthOperationalCaseAutoAssignmentSettings(null);
+      setGrowthOperationalCaseAutoAssignmentPolicy('balanced');
       setGrowthMonitorHistory([]);
       setGrowthError(null);
       return;
@@ -2367,6 +2806,7 @@ export function App() {
           nextMonitorAnalytics,
           nextAcknowledgements,
           nextOperationalCases,
+          nextAutoAssignmentSettings,
         ] =
         await Promise.all([
           fetchGrowthConversationWorkbench(token, tenantSlug, {
@@ -2382,6 +2822,7 @@ export function App() {
           fetchWhatsappOperationalMonitorAnalytics(token, tenantSlug),
           fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug),
           fetchGrowthOperationalCases(token, tenantSlug),
+          fetchGrowthOperationalCaseAutoAssignmentSettings(token, tenantSlug),
         ]);
 
         if (cancelled) {
@@ -2395,6 +2836,12 @@ export function App() {
           setWhatsappMonitorAnalytics(nextMonitorAnalytics);
           setGrowthAlertAcknowledgements(nextAcknowledgements);
           setGrowthOperationalCases(nextOperationalCases);
+          setGrowthOperationalCaseAutoAssignmentSettings(
+            nextAutoAssignmentSettings,
+          );
+          setGrowthOperationalCaseAutoAssignmentPolicy(
+            nextAutoAssignmentSettings.defaultPolicyKey,
+          );
         });
       } catch (error) {
         if (cancelled) {
@@ -2407,6 +2854,8 @@ export function App() {
         setWhatsappMonitorAnalytics(null);
         setGrowthAlertAcknowledgements([]);
         setGrowthOperationalCases([]);
+        setGrowthOperationalCaseAutoAssignmentSettings(null);
+        setGrowthOperationalCaseAutoAssignmentPolicy('balanced');
         setGrowthMonitorHistory([]);
         setGrowthError(
           error instanceof Error
@@ -2929,6 +3378,7 @@ export function App() {
         nextMonitorAnalytics,
         nextAcknowledgements,
         nextOperationalCases,
+        nextAutoAssignmentSettings,
       ] =
         await Promise.all([
         fetchGrowthConversationWorkbench(token, tenantSlug, {
@@ -2943,6 +3393,7 @@ export function App() {
         fetchWhatsappOperationalMonitorAnalytics(token, tenantSlug),
         fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug),
         fetchGrowthOperationalCases(token, tenantSlug),
+        fetchGrowthOperationalCaseAutoAssignmentSettings(token, tenantSlug),
       ]);
 
       startTransition(() => {
@@ -2952,6 +3403,12 @@ export function App() {
         setWhatsappMonitorAnalytics(nextMonitorAnalytics);
         setGrowthAlertAcknowledgements(nextAcknowledgements);
         setGrowthOperationalCases(nextOperationalCases);
+        setGrowthOperationalCaseAutoAssignmentSettings(
+          nextAutoAssignmentSettings,
+        );
+        setGrowthOperationalCaseAutoAssignmentPolicy(
+          nextAutoAssignmentSettings.defaultPolicyKey,
+        );
       });
     } catch (error) {
       setGrowthError(
@@ -3211,7 +3668,49 @@ export function App() {
     }
   }
 
-  async function handleAutoAssignGrowthOperationalCases(tenantSlug: string) {
+  async function handleSaveGrowthOperationalCaseAutoAssignmentSettings() {
+    if (!token || !currentTenancy || !canManageGrowthConversations) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setGrowthActionLoading(`save-auto-assign-settings:${tenantSlug}`);
+    setGrowthActionMessage(null);
+    setGrowthError(null);
+
+    try {
+      const settings = await upsertGrowthOperationalCaseAutoAssignmentSettings(
+        token,
+        tenantSlug,
+        {
+          defaultPolicyKey: growthOperationalCaseAutoAssignmentPolicy,
+        },
+      );
+      startTransition(() => {
+        setGrowthOperationalCaseAutoAssignmentSettings(settings);
+        setGrowthOperationalCaseAutoAssignmentPolicy(settings.defaultPolicyKey);
+      });
+      await refreshGrowthFleet();
+      setGrowthActionMessage(
+        `Pack por defecto guardado: ${describeGrowthOperationalCaseAutoAssignmentPolicy(
+          settings.defaultPolicyKey,
+        )}.`,
+      );
+    } catch (error) {
+      setGrowthError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo guardar el pack por defecto de auto-asignacion.',
+      );
+    } finally {
+      setGrowthActionLoading(null);
+    }
+  }
+
+  async function handleAutoAssignGrowthOperationalCases(
+    tenantSlug: string,
+    policyKey?: GrowthOperationalCaseAutoAssignmentPolicyKey,
+  ) {
     if (!token || !canManageGrowthConversations) {
       return;
     }
@@ -3221,9 +3720,11 @@ export function App() {
     setGrowthError(null);
 
     try {
-      const result = await autoAssignGrowthOperationalCases(token, tenantSlug, {
-        policyKey: growthOperationalCaseAutoAssignmentPolicy,
-      });
+      const result = await autoAssignGrowthOperationalCases(
+        token,
+        tenantSlug,
+        policyKey ? { policyKey } : undefined,
+      );
       await Promise.all([refreshGrowthWorkspace(), refreshGrowthFleet()]);
       setGrowthActionMessage(
         summarizeGrowthOperationalCaseAutoAssignment(result),
@@ -5285,6 +5786,355 @@ export function App() {
               {growthActionMessage ? (
                 <p className={styles.successBanner}>{growthActionMessage}</p>
               ) : null}
+              {currentTenancy && growthWorkspaceAvailable ? (
+                <div className={styles.stack}>
+                  {growthAssistSummary ? (
+                    <div className={styles.assistBrief}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Growth Assist</span>
+                          <h3>Agenda guiada para el negocio</h3>
+                        </div>
+                        <span
+                          className={`${styles.statusPill} ${operationalStatusTone(
+                            growthAssistSummary.tone,
+                          )}`}
+                        >
+                          {operationalStatusLabel(growthAssistSummary.tone)}
+                        </span>
+                      </div>
+                      <p>{growthAssistSummary.headline}</p>
+                      <small>{growthAssistSummary.detail}</small>
+
+                      <div className={styles.invoiceKpiGrid}>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Responder hoy</span>
+                          <strong>{growthAssistSignals.replyNowCount}</strong>
+                          <small>Conversaciones sin primera respuesta a tiempo</small>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Seguimientos del equipo</span>
+                          <strong>{growthAssistSignals.followUpNowCount}</strong>
+                          <small>Casos o threads que no conviene dejar enfriar</small>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Esperando cliente</span>
+                          <strong>{growthAssistSignals.waitingCustomerCount}</strong>
+                          <small>Seguimientos que solo piden vigilancia y timing</small>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Ordenar cola</span>
+                          <strong>{growthAssistSignals.queueToOrganizeCount}</strong>
+                          <small>
+                            Trabajo sin owner claro o ya escalado para revision
+                          </small>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className={styles.twoColumn}>
+                    <div className={styles.detailCard}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Que hacer ahora</span>
+                          <h3>Lista simple de proximos pasos</h3>
+                        </div>
+                      </div>
+
+                      {growthAssistTasks.length === 0 ? (
+                        <div className={styles.emptyState}>
+                          <p>
+                            Hoy no hay una tarea urgente marcada por el sistema. Puedes
+                            usar Growth como agenda tranquila para revisar leads y
+                            mantener ritmo comercial.
+                          </p>
+                        </div>
+                      ) : (
+                        growthAssistTasks.map((task) => (
+                          <div className={styles.assistTaskCard} key={task.key}>
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{task.title}</strong>
+                              <span
+                                className={`${styles.statusPill} ${growthAssistUrgencyTone(
+                                  task.urgency,
+                                )}`}
+                              >
+                                {growthAssistUrgencyLabel(task.urgency)}
+                              </span>
+                            </div>
+                            <small>{task.summary}</small>
+                            <div className={styles.badgeRow}>
+                              <span className={styles.badge}>
+                                {growthAssistTaskCategoryLabel(task.category)}
+                              </span>
+                              <span className={styles.badge}>{task.actionLabel}</span>
+                              {task.dueAt ? (
+                                <span className={styles.badge}>
+                                  Referencia {formatDate(task.dueAt)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className={styles.detailCard}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Cues comerciales</span>
+                          <h3>Como arrancar la conversacion correcta</h3>
+                        </div>
+                      </div>
+
+                      <div className={styles.badgeRow}>
+                        <span className={styles.badge}>
+                          Calientes {growthAssistLeadWarmthSummary.hot}
+                        </span>
+                        <span className={styles.badge}>
+                          En movimiento {growthAssistLeadWarmthSummary.warm}
+                        </span>
+                        <span className={styles.badge}>
+                          En radar {growthAssistLeadWarmthSummary.watch}
+                        </span>
+                      </div>
+
+                      {growthAssistConversationCues.length === 0 ? (
+                        <div className={styles.emptyState}>
+                          <p>
+                            Cuando el workbench detecte conversaciones calientes o
+                            atrasadas, aqui apareceran sugerencias de arranque en
+                            lenguaje simple.
+                          </p>
+                        </div>
+                      ) : (
+                        growthAssistConversationCues.map((cue) => (
+                          <div className={styles.assistCueCard} key={cue.key}>
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{cue.title}</strong>
+                              <span
+                                className={`${styles.statusPill} ${growthAssistWarmthTone(
+                                  cue.warmth,
+                                )}`}
+                              >
+                                {growthAssistWarmthLabel(cue.warmth)}
+                              </span>
+                            </div>
+                            <small>{cue.summary}</small>
+                            <div className={styles.assistReplyBox}>
+                              <span className={styles.muted}>Sugerencia de arranque</span>
+                              <strong>{cue.suggestedReply}</strong>
+                            </div>
+                            <small>{cue.nextMove}</small>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className={styles.detailCard}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Playbooks guiados</span>
+                          <h3>Traduccion del sistema a lenguaje de negocio</h3>
+                        </div>
+                      </div>
+
+                      <p className={styles.muted}>
+                        El negocio ya tiene guardado este criterio de reparto:
+                        {' '}
+                        <strong>
+                          {describeGrowthOperationalCaseAutoAssignmentPolicy(
+                            growthOperationalCaseAutoAssignmentSettings?.defaultPolicyKey ??
+                              'balanced',
+                          )}
+                        </strong>
+                        . En lenguaje simple, eso significa{' '}
+                        {describeGrowthAssistAutoAssignmentPolicy(
+                          growthOperationalCaseAutoAssignmentSettings?.defaultPolicyKey ??
+                            'balanced',
+                        )}
+                        .
+                      </p>
+
+                      <div className={styles.stack}>
+                        {growthAssistPlaybooks.map((playbook) => (
+                          <div className={styles.invoiceItemCard} key={playbook.key}>
+                            <strong>{playbook.title}</strong>
+                            <small>{playbook.detail}</small>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className={styles.inlineActionRow}>
+                        <button
+                          className={styles.secondaryButton}
+                          disabled={
+                            growthActionLoading ===
+                            `auto-assign:${currentTenancy.tenant.slug}`
+                          }
+                          onClick={() =>
+                            void handleAutoAssignGrowthOperationalCases(
+                              currentTenancy.tenant.slug,
+                            )
+                          }
+                          type="button"
+                        >
+                          {growthActionLoading ===
+                          `auto-assign:${currentTenancy.tenant.slug}`
+                            ? 'Organizando...'
+                            : 'Auto-organizar cola'}
+                        </button>
+                        <button
+                          className={styles.ghostButton}
+                          disabled={
+                            growthActionLoading ===
+                            `review-routing:${currentTenancy.tenant.slug}`
+                          }
+                          onClick={() =>
+                            void handleReviewGrowthOperationalCaseRouting(
+                              currentTenancy.tenant.slug,
+                            )
+                          }
+                          type="button"
+                        >
+                          {growthActionLoading ===
+                          `review-routing:${currentTenancy.tenant.slug}`
+                            ? 'Revisando...'
+                            : 'Revisar vencidos'}
+                        </button>
+                        <button
+                          className={styles.ghostButton}
+                          disabled={growthActionLoading === 'run-monitor'}
+                          onClick={() => void handleRunGrowthOperationalMonitor()}
+                          type="button"
+                        >
+                          {growthActionLoading === 'run-monitor'
+                            ? 'Actualizando...'
+                            : 'Actualizar salud del canal'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.twoColumn}>
+                    <div className={styles.detailCard}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Esperando cliente</span>
+                          <h3>Recordatorios que no piden accion inmediata</h3>
+                        </div>
+                      </div>
+
+                      {growthAssistWaitingCustomers.length === 0 ? (
+                        <div className={styles.emptyState}>
+                          <p>
+                            Por ahora no hay seguimientos claramente en espera del
+                            cliente. Todo lo visible pide accion del equipo o esta bajo
+                            control.
+                          </p>
+                        </div>
+                      ) : (
+                        growthAssistWaitingCustomers.map((entry) => (
+                          <div className={styles.invoiceItemCard} key={entry.id}>
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{entry.title}</strong>
+                              <span className={styles.statusPill}>
+                                {growthOperationalCaseFollowUpStateLabel(
+                                  entry.followUpState,
+                                )}
+                              </span>
+                            </div>
+                            <small>{entry.summary}</small>
+                            <small>{entry.nextAction}</small>
+                            <div className={styles.badgeRow}>
+                              <span className={styles.badge}>
+                                {entry.assignedUserEmail ?? 'Sin owner'}
+                              </span>
+                              {entry.dueAt ? (
+                                <span className={styles.badge}>
+                                  Revisar otra vez {formatDate(entry.dueAt)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className={styles.detailCard}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Salud del canal</span>
+                          <h3>Lectura simple de WhatsApp y delivery</h3>
+                        </div>
+                      </div>
+
+                      {whatsappSummary ? (
+                        <>
+                          <p className={styles.muted}>
+                            Estado actual del canal:{' '}
+                            <strong>
+                              {operationalStatusLabel(
+                                whatsappSummary.operationalDashboard.overallStatus,
+                              )}
+                            </strong>
+                            . Hoy hay{' '}
+                            <strong>
+                              {whatsappSummary.operationalAlerts.length}
+                            </strong>{' '}
+                            alertas activas y{' '}
+                            <strong>
+                              {whatsappSummary.retryOperations.readyNowCount}
+                            </strong>{' '}
+                            mensajes listos para reintento.
+                          </p>
+                          <div className={styles.badgeRow}>
+                            <span className={styles.badge}>
+                              Entregados {whatsappSummary.totals.deliveredCount}
+                            </span>
+                            <span className={styles.badge}>
+                              Leidos {whatsappSummary.totals.readCount}
+                            </span>
+                            <span className={styles.badge}>
+                              Fallidos {whatsappSummary.totals.failedCount}
+                            </span>
+                            <span className={styles.badge}>
+                              Ready retries{' '}
+                              {whatsappSummary.retryOperations.readyNowCount}
+                            </span>
+                          </div>
+                          {whatsappSummary.operationalAlerts[0] ? (
+                            <div className={styles.invoiceItemCard}>
+                              <strong>
+                                Alerta principal: {whatsappSummary.operationalAlerts[0].title}
+                              </strong>
+                              <small>{whatsappSummary.operationalAlerts[0].summary}</small>
+                              <small>
+                                Siguiente paso sugerido:{' '}
+                                {whatsappSummary.operationalAlerts[0].recommendedAction}
+                              </small>
+                            </div>
+                          ) : (
+                            <div className={styles.emptyState}>
+                              <p>
+                                No hay alertas activas; el canal esta respirando bien.
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className={styles.emptyState}>
+                          <p>
+                            Cuando termine de cargar el summary, aqui veremos una
+                            lectura simple del canal y de los retries.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
               {growthFleetOperatorBrief ? (
                 <div className={styles.operatorBrief}>
                   <div className={styles.sectionHeading}>
@@ -5400,26 +6250,11 @@ export function App() {
                       ) : null}
                     </div>
                   </div>
-
-                  <div className={styles.selectorGrid}>
-                    {growthOperationalCaseAutoAssignmentPolicies.map((policy) => (
-                      <button
-                        className={`${styles.selectorCard} ${
-                          growthOperationalCaseAutoAssignmentPolicy === policy.key
-                            ? styles.selectorCardActive
-                            : ''
-                        }`}
-                        key={`fleet-auto-assign-policy-${policy.key}`}
-                        onClick={() =>
-                          setGrowthOperationalCaseAutoAssignmentPolicy(policy.key)
-                        }
-                        type="button"
-                      >
-                        <span>{policy.label}</span>
-                        <small>{policy.summary}</small>
-                      </button>
-                    ))}
-                  </div>
+                  <p className={styles.muted}>
+                    La auto-asignacion fleet corre con el pack por defecto
+                    guardado en cada tenant. Desde el workspace puntual puedes
+                    cambiar y persistir ese pack antes de volver a dispararla.
+                  </p>
 
                   <div className={styles.selectorGrid}>
                     <button
@@ -6640,6 +7475,37 @@ export function App() {
                     </button>
                   ))}
                 </div>
+
+                {currentTenancy ? (
+                  <div className={styles.inlineActionRow}>
+                    <small className={styles.muted}>
+                      Pack por defecto actual:{' '}
+                      {describeGrowthOperationalCaseAutoAssignmentPolicy(
+                        growthOperationalCaseAutoAssignmentSettings?.defaultPolicyKey ??
+                          'balanced',
+                      )}
+                    </small>
+                    <button
+                      className={styles.ghostButton}
+                      disabled={
+                        growthActionLoading ===
+                          `save-auto-assign-settings:${currentTenancy.tenant.slug}` ||
+                        growthOperationalCaseAutoAssignmentPolicy ===
+                          (growthOperationalCaseAutoAssignmentSettings?.defaultPolicyKey ??
+                            'balanced')
+                      }
+                      onClick={() =>
+                        void handleSaveGrowthOperationalCaseAutoAssignmentSettings()
+                      }
+                      type="button"
+                    >
+                      {growthActionLoading ===
+                      `save-auto-assign-settings:${currentTenancy.tenant.slug}`
+                        ? 'Guardando pack...'
+                        : 'Guardar pack por defecto'}
+                    </button>
+                  </div>
+                ) : null}
 
                 <div className={styles.selectorGrid}>
                   <button

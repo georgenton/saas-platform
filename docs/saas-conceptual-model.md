@@ -878,6 +878,10 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
             - `balanced`
             - `owner_queue_first`
             - `follow_up_first`
+         - those packs are no longer only transient UI choices:
+            - each tenant can now persist its default operational auto-assignment pack
+            - `POST /operational-cases/auto-assign` can run without an explicit override and fall back to that tenant-scoped default
+            - the web workspace now lets operators save the default pack before triggering new auto-assignment passes
          - that means the operational queue no longer only escalates and re-routes work; it can now also propose and apply a first shared ownership decision under multiple operator-facing strategies
          - the fleet console and tenant workspace now consume that shared queue so operators can promote derived pressure into explicit shared work
     - current explicit limitation is now narrower: legacy template messages sent before snapshot persistence still cannot be retried faithfully
@@ -885,7 +889,42 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
       - calibrating thresholds with production-like traffic instead of only synthetic fixtures
       - expansion of taxonomy detail as new Meta/provider codes appear in the wild
       - externalizing scheduler state/telemetry beyond process logs once this starts running in shared environments
-      - deciding when these first policy packs should graduate into richer staffing automation, deeper SLA-specific follow-up state machines, or tenant-configurable policy packs
+      - deciding when these tenant-configurable policy packs should graduate into richer staffing automation or deeper SLA-specific follow-up state machines
+      - keeping the core explicitly multi-channel instead of letting it collapse into a WhatsApp-only product:
+         - WhatsApp is the first strong channel, but `Growth` should stay modeled around shared concepts like lead, thread, message, opportunity, operational case, and owner workflow
+         - future channel adapters should be able to plug into that same core for Instagram Messages, Facebook Messenger, and other conversational inboxes without forking the product model
+         - each new channel should ideally pressure the adapter/provider layer more than the core Growth workflow layer
+      - splitting the product experience into two maturity modes on top of the same backend truth:
+         - an expert operator surface for real commercial teams
+         - a simplified or assisted surface for small businesses that need lead capture and follow-up without already knowing Growth operations or marketing mechanics
+         - that means the platform should not assume every tenant wants the full control tower UI all the time
+      - evolving toward an AI-assisted Growth workspace for simple businesses:
+         - suggested next actions
+         - suggested replies
+         - lead warmth / priority hints
+         - follow-up reminders expressed in business language instead of routing jargon
+         - lightweight playbooks that help a non-expert user move leads forward without understanding every operational term
+      - evolving toward AI-assisted assignment and triage, but in staged maturity:
+         - first as recommendations or confidence-scored suggestions
+         - then as guardrailed automation for narrow lanes
+         - only later as broader autonomous ownership decisions if the auditability and historical confidence support it
+         - deterministic rules should remain the safety rail under those AI decisions instead of disappearing completely
+      - deciding when to introduce a dedicated `Growth Assist` style experience:
+         - same backend entities and workflows
+         - different language, fewer controls, and stronger guidance
+         - explicit translation from operator semantics like lanes, monitor state, and routing policy into simpler “who should I reply to now?” guidance
+         - a first guided surface now already exists in the web workspace:
+            - it turns workbench pressure, operational cases, waiting-customer queues, channel health, and saved auto-assignment policy into a simpler daily agenda
+            - it still uses deterministic rules and the same backend truth; the simplification is in language and framing, not in a second product model
+            - it now also includes first opinionated commercial cues:
+               - simple conversation warmth hints
+               - suggested reply openers
+               - lightweight playbooks derived from current queue and channel pressure
+         - next pressure after that first guided surface is no longer “whether” to simplify Growth, but how much of that surface should become:
+            - AI-suggested next actions
+            - AI-suggested replies
+            - lead warmth hints
+            - more explicit `Growth Assist` playbooks for non-expert operators
 5. `Ecommerce` first domain slice
    - catalog plus orders
 

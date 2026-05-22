@@ -34,6 +34,7 @@ import {
   GetTenantConversationThreadByIdUseCase,
   GetTenantGrowthConversationWorkbenchUseCase,
   GetTenantGrowthAssignmentWorkloadUseCase,
+  GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
   GetTenantLeadByIdUseCase,
   GetTenantOpportunityByIdUseCase,
   GetTenantWhatsappAutomationRuleByIdUseCase,
@@ -68,6 +69,7 @@ import {
   RunTenantWhatsappReadyRetriesUseCase,
   SendTenantWhatsappConversationMessageUseCase,
   TakeTenantGrowthOperationalCaseUseCase,
+  UpsertTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
   UpdateTenantGrowthOperationalCaseFollowUpStateUseCase,
   UpdateTenantOpportunityStageUseCase,
   WebhookEventEnvelopeNotFoundError,
@@ -94,6 +96,10 @@ import { CreateLeadRequestDto } from './dto/create-lead.request';
 import { CreateOpportunityRequestDto } from './dto/create-opportunity.request';
 import { CreateWhatsappAutomationRuleRequestDto } from './dto/create-whatsapp-automation-rule.request';
 import { CreateWhatsappMessageTemplateRequestDto } from './dto/create-whatsapp-message-template.request';
+import {
+  GrowthOperationalCaseAutoAssignmentSettingsResponseDto,
+  toGrowthOperationalCaseAutoAssignmentSettingsResponseDto,
+} from './dto/growth-operational-case-auto-assignment-settings.response';
 import { UpdateGrowthOperationalCaseFollowUpStateRequestDto } from './dto/update-growth-operational-case-follow-up-state.request';
 import { AssignGrowthOwnerRequestDto } from './dto/assign-growth-owner.request';
 import { AcknowledgeWhatsappOperationalAlertRequestDto } from './dto/acknowledge-whatsapp-operational-alert.request';
@@ -166,6 +172,7 @@ import {
   toWhatsappRetryRunnerSummaryResponseDto,
 } from './dto/whatsapp-retry-runner.response';
 import { UpdateOpportunityStageRequestDto } from './dto/update-opportunity-stage.request';
+import { UpsertGrowthOperationalCaseAutoAssignmentSettingsRequestDto } from './dto/upsert-growth-operational-case-auto-assignment-settings.request';
 import {
   WebhookEventEnvelopeResponseDto,
   toWebhookEventEnvelopeResponseDto,
@@ -215,6 +222,7 @@ export class GrowthController {
     private readonly getTenantConversationThreadByIdUseCase: GetTenantConversationThreadByIdUseCase,
     private readonly getTenantGrowthConversationWorkbenchUseCase: GetTenantGrowthConversationWorkbenchUseCase,
     private readonly getTenantGrowthAssignmentWorkloadUseCase: GetTenantGrowthAssignmentWorkloadUseCase,
+    private readonly getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase: GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
     private readonly getTenantLeadByIdUseCase: GetTenantLeadByIdUseCase,
     private readonly getTenantOpportunityByIdUseCase: GetTenantOpportunityByIdUseCase,
     private readonly getTenantWhatsappAutomationRuleByIdUseCase: GetTenantWhatsappAutomationRuleByIdUseCase,
@@ -246,6 +254,7 @@ export class GrowthController {
     private readonly runTenantWhatsappReadyRetriesUseCase: RunTenantWhatsappReadyRetriesUseCase,
     private readonly sendTenantWhatsappConversationMessageUseCase: SendTenantWhatsappConversationMessageUseCase,
     private readonly takeTenantGrowthOperationalCaseUseCase: TakeTenantGrowthOperationalCaseUseCase,
+    private readonly upsertTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase: UpsertTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
     private readonly updateTenantGrowthOperationalCaseFollowUpStateUseCase: UpdateTenantGrowthOperationalCaseFollowUpStateUseCase,
     private readonly updateTenantOpportunityStageUseCase: UpdateTenantOpportunityStageUseCase,
     @Inject(WHATSAPP_OPERATIONAL_MONITOR_OBSERVABILITY_SINK)
@@ -424,6 +433,54 @@ export class GrowthController {
     }
   }
 
+  @Get(':slug/conversations/operational-cases/auto-assignment-settings')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
+  async getTenantGrowthOperationalCaseAutoAssignmentSettings(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<GrowthOperationalCaseAutoAssignmentSettingsResponseDto> {
+    try {
+      const settings =
+        await this.getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toGrowthOperationalCaseAutoAssignmentSettingsResponseDto(settings);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Put(':slug/conversations/operational-cases/auto-assignment-settings')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
+  async upsertTenantGrowthOperationalCaseAutoAssignmentSettings(
+    @Param('slug') slug: string,
+    @Body() body: UpsertGrowthOperationalCaseAutoAssignmentSettingsRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<GrowthOperationalCaseAutoAssignmentSettingsResponseDto> {
+    try {
+      const settings =
+        await this.upsertTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            defaultPolicyKey: body.defaultPolicyKey,
+          },
+        );
+
+      return toGrowthOperationalCaseAutoAssignmentSettingsResponseDto(settings);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Post(':slug/conversations/operational-cases')
   @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE)
   async createTenantGrowthOperationalCase(
@@ -496,7 +553,7 @@ export class GrowthController {
       const result =
         await this.autoAssignTenantGrowthOperationalCasesUseCase.execute({
           tenantSlug: tenantAccess?.tenantSlug ?? slug,
-          policyKey: body?.policyKey ?? 'balanced',
+          policyKey: body?.policyKey ?? undefined,
         });
 
       return toGrowthOperationalCaseAutoAssignmentResponseDto(result);

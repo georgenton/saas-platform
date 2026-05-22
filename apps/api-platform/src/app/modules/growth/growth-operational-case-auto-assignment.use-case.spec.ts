@@ -3,7 +3,11 @@ import {
   AutoAssignTenantGrowthOperationalCasesUseCase,
   GROWTH_PERMISSIONS,
 } from '@saas-platform/growth-application';
-import { ConversationThread, Opportunity } from '@saas-platform/growth-domain';
+import {
+  ConversationThread,
+  GrowthOperationalCaseAutoAssignmentSettings,
+  Opportunity,
+} from '@saas-platform/growth-domain';
 import {
   MembershipRepository,
   TenantAccessRepository,
@@ -28,6 +32,10 @@ describe('Growth operational case auto-assignment use case', () => {
     findById: jest.fn(),
   };
   const growthOperationalCaseRepository = {
+    findByTenantId: jest.fn(),
+    save: jest.fn(),
+  };
+  const growthOperationalCaseAutoAssignmentSettingsRepository = {
     findByTenantId: jest.fn(),
     save: jest.fn(),
   };
@@ -83,6 +91,9 @@ describe('Growth operational case auto-assignment use case', () => {
         createdAt: new Date('2026-05-21T09:00:00.000Z'),
         updatedAt: new Date('2026-05-21T09:00:00.000Z'),
       }),
+    );
+    growthOperationalCaseAutoAssignmentSettingsRepository.findByTenantId.mockResolvedValue(
+      null,
     );
     growthOperationalCaseRepository.save.mockImplementation(async (record) => record);
     conversationThreadRepository.save.mockResolvedValue(undefined);
@@ -189,6 +200,7 @@ describe('Growth operational case auto-assignment use case', () => {
       tenantAccessRepository,
       userRepository as any,
       growthOperationalCaseRepository as any,
+      growthOperationalCaseAutoAssignmentSettingsRepository as any,
       conversationThreadRepository as any,
       opportunityRepository as any,
       () => new Date('2026-05-21T10:00:00.000Z'),
@@ -272,6 +284,7 @@ describe('Growth operational case auto-assignment use case', () => {
       tenantAccessRepository,
       userRepository as any,
       growthOperationalCaseRepository as any,
+      growthOperationalCaseAutoAssignmentSettingsRepository as any,
       conversationThreadRepository as any,
       opportunityRepository as any,
       () => new Date('2026-05-21T10:00:00.000Z'),
@@ -361,6 +374,7 @@ describe('Growth operational case auto-assignment use case', () => {
       tenantAccessRepository,
       userRepository as any,
       growthOperationalCaseRepository as any,
+      growthOperationalCaseAutoAssignmentSettingsRepository as any,
       conversationThreadRepository as any,
       opportunityRepository as any,
       () => new Date('2026-05-21T10:00:00.000Z'),
@@ -373,5 +387,63 @@ describe('Growth operational case auto-assignment use case', () => {
 
     expect(result.policyKey).toBe('owner_queue_first');
     expect(saveOrder).toEqual(['case_owner', 'case_escalation']);
+  });
+
+  it('uses the persisted tenant default policy when the request omits one', async () => {
+    growthOperationalCaseAutoAssignmentSettingsRepository.findByTenantId.mockResolvedValue(
+      GrowthOperationalCaseAutoAssignmentSettings.create({
+        id: 'settings_001',
+        tenantId: 'tenant_123',
+        defaultPolicyKey: 'follow_up_first',
+        createdAt: new Date('2026-05-21T09:00:00.000Z'),
+        updatedAt: new Date('2026-05-21T09:00:00.000Z'),
+      }),
+    );
+    growthOperationalCaseRepository.findByTenantId.mockResolvedValue([
+      {
+        id: 'case_follow_up',
+        tenantId: 'tenant_123',
+        sourceKey: 'thread:thread_012:follow_up',
+        caseType: 'follow_up',
+        status: 'open',
+        priority: 'warning',
+        title: 'Follow up first',
+        summary: 'Team follow-up.',
+        nextAction: 'Reach out.',
+        followUpState: 'pending_team',
+        routingPolicyKey: 'follow_up_team',
+        threadId: 'thread_012',
+        alertKey: null,
+        dueAt: new Date('2026-05-21T11:00:00.000Z'),
+        assignedUserId: null,
+        assignedUserEmail: null,
+        createdByUserId: 'user_123',
+        createdByEmail: 'owner@saas-platform.dev',
+        resolvedAt: null,
+        resolvedByUserId: null,
+        resolvedByEmail: null,
+        createdAt: new Date('2026-05-21T08:00:00.000Z'),
+        updatedAt: new Date('2026-05-21T08:00:00.000Z'),
+      },
+    ]);
+    conversationThreadRepository.findByTenantId.mockResolvedValue([]);
+
+    const useCase = new AutoAssignTenantGrowthOperationalCasesUseCase(
+      tenantRepository,
+      membershipRepository,
+      tenantAccessRepository,
+      userRepository as any,
+      growthOperationalCaseRepository as any,
+      growthOperationalCaseAutoAssignmentSettingsRepository as any,
+      conversationThreadRepository as any,
+      opportunityRepository as any,
+      () => new Date('2026-05-21T10:00:00.000Z'),
+    );
+
+    const result = await useCase.execute({
+      tenantSlug: 'saas-platform',
+    });
+
+    expect(result.policyKey).toBe('follow_up_first');
   });
 });

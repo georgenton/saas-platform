@@ -56,6 +56,7 @@ import {
   GetTenantConversationThreadByIdUseCase,
   GetTenantGrowthConversationWorkbenchUseCase,
   GetTenantGrowthAssignmentWorkloadUseCase,
+  GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
   GetTenantLeadByIdUseCase,
   GetTenantOpportunityByIdUseCase,
   GetTenantWhatsappAutomationRuleByIdUseCase,
@@ -87,6 +88,7 @@ import {
   RunTenantWhatsappReadyRetriesUseCase,
   SendTenantWhatsappConversationMessageUseCase,
   TakeTenantGrowthOperationalCaseUseCase,
+  UpsertTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
   UpdateTenantGrowthOperationalCaseFollowUpStateUseCase,
   UpdateTenantOpportunityStageUseCase,
   WebhookEventEnvelopeNotFoundError,
@@ -226,6 +228,9 @@ describe('API', () => {
   let getTenantConversationThreadByIdUseCase: { execute: jest.Mock };
   let getTenantGrowthConversationWorkbenchUseCase: { execute: jest.Mock };
   let getTenantGrowthAssignmentWorkloadUseCase: { execute: jest.Mock };
+  let getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase: {
+    execute: jest.Mock;
+  };
   let getTenantLeadByIdUseCase: { execute: jest.Mock };
   let getTenantOpportunityByIdUseCase: { execute: jest.Mock };
   let getTenantWhatsappAutomationRuleByIdUseCase: { execute: jest.Mock };
@@ -248,6 +253,9 @@ describe('API', () => {
   let runTenantWhatsappOperationalMonitorUseCase: { execute: jest.Mock };
   let runTenantWhatsappReadyRetriesUseCase: { execute: jest.Mock };
   let takeTenantGrowthOperationalCaseUseCase: { execute: jest.Mock };
+  let upsertTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase: {
+    execute: jest.Mock;
+  };
   let updateTenantGrowthOperationalCaseFollowUpStateUseCase: {
     execute: jest.Mock;
   };
@@ -1182,6 +1190,13 @@ describe('API', () => {
     resolvedByEmail: null,
     createdAt: new Date('2026-05-20T10:05:00.000Z'),
     updatedAt: new Date('2026-05-20T10:05:00.000Z'),
+  };
+  const growthOperationalCaseAutoAssignmentSettings = {
+    id: 'tenant_123:growth-operational-case-auto-assignment-settings',
+    tenantId: 'tenant_123',
+    defaultPolicyKey: 'follow_up_first' as const,
+    createdAt: new Date('2026-05-20T10:00:00.000Z'),
+    updatedAt: new Date('2026-05-20T10:32:00.000Z'),
   };
   const whatsappMessageTemplate = WhatsappMessageTemplate.create({
     id: 'template_001',
@@ -2441,6 +2456,11 @@ describe('API', () => {
     getTenantGrowthAssignmentWorkloadUseCase = {
       execute: jest.fn().mockResolvedValue(growthAssignmentWorkload),
     };
+    getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(growthOperationalCaseAutoAssignmentSettings),
+    };
     getTenantWhatsappAutomationRuleByIdUseCase = {
       execute: jest.fn().mockResolvedValue(whatsappAutomationRule),
     };
@@ -2605,6 +2625,13 @@ describe('API', () => {
         assignedUserId: 'user_123',
         assignedUserEmail: 'hello@saas-platform.dev',
         updatedAt: new Date('2026-05-20T10:12:00.000Z'),
+      }),
+    };
+    upsertTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        ...growthOperationalCaseAutoAssignmentSettings,
+        defaultPolicyKey: 'owner_queue_first',
+        updatedAt: new Date('2026-05-20T10:35:00.000Z'),
       }),
     };
     updateTenantGrowthOperationalCaseFollowUpStateUseCase = {
@@ -3255,6 +3282,8 @@ describe('API', () => {
       .useValue(createTenantConversationThreadUseCase)
       .overrideProvider(CreateTenantGrowthOperationalCaseUseCase)
       .useValue(createTenantGrowthOperationalCaseUseCase)
+      .overrideProvider(GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase)
+      .useValue(getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase)
       .overrideProvider(CreateTenantWhatsappAutomationRuleUseCase)
       .useValue(createTenantWhatsappAutomationRuleUseCase)
       .overrideProvider(ExecuteTenantWhatsappAutomationActionsUseCase)
@@ -3295,6 +3324,8 @@ describe('API', () => {
       .useValue(runTenantWhatsappReadyRetriesUseCase)
       .overrideProvider(TakeTenantGrowthOperationalCaseUseCase)
       .useValue(takeTenantGrowthOperationalCaseUseCase)
+      .overrideProvider(UpsertTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase)
+      .useValue(upsertTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase)
       .overrideProvider(UpdateTenantGrowthOperationalCaseFollowUpStateUseCase)
       .useValue(updateTenantGrowthOperationalCaseFollowUpStateUseCase)
       .overrideProvider(MetaWhatsappWebhookSignatureVerifier)
@@ -4782,6 +4813,52 @@ describe('API', () => {
     });
   });
 
+  it('GET /api/growth/tenants/:slug/conversations/operational-cases/auto-assignment-settings should return the tenant default pack', async () => {
+    await request(httpServer)
+      .get(
+        '/api/growth/tenants/saas-platform/conversations/operational-cases/auto-assignment-settings',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        id: 'tenant_123:growth-operational-case-auto-assignment-settings',
+        tenantId: 'tenant_123',
+        defaultPolicyKey: 'follow_up_first',
+        createdAt: '2026-05-20T10:00:00.000Z',
+        updatedAt: '2026-05-20T10:32:00.000Z',
+      });
+
+    expect(
+      getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform');
+  });
+
+  it('PUT /api/growth/tenants/:slug/conversations/operational-cases/auto-assignment-settings should persist the tenant default pack', async () => {
+    await request(httpServer)
+      .put(
+        '/api/growth/tenants/saas-platform/conversations/operational-cases/auto-assignment-settings',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        defaultPolicyKey: 'owner_queue_first',
+      })
+      .expect(200)
+      .expect({
+        id: 'tenant_123:growth-operational-case-auto-assignment-settings',
+        tenantId: 'tenant_123',
+        defaultPolicyKey: 'owner_queue_first',
+        createdAt: '2026-05-20T10:00:00.000Z',
+        updatedAt: '2026-05-20T10:35:00.000Z',
+      });
+
+    expect(
+      upsertTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      defaultPolicyKey: 'owner_queue_first',
+    });
+  });
+
   it('POST /api/growth/tenants/:slug/conversations/operational-cases/auto-assign should assign eligible cases to operators', async () => {
     await request(httpServer)
       .post(
@@ -4861,6 +4938,22 @@ describe('API', () => {
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       policyKey: 'owner_queue_first',
+    });
+  });
+
+  it('POST /api/growth/tenants/:slug/conversations/operational-cases/auto-assign should allow the persisted tenant default when no override is sent', async () => {
+    await request(httpServer)
+      .post(
+        '/api/growth/tenants/saas-platform/conversations/operational-cases/auto-assign',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201);
+
+    expect(
+      autoAssignTenantGrowthOperationalCasesUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      policyKey: undefined,
     });
   });
 

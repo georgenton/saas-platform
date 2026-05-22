@@ -23,9 +23,11 @@ import {
   DeleteTenantWhatsappOperationalAlertAcknowledgementUseCase,
   ExecuteTenantWhatsappAutomationActionsUseCase,
   GROWTH_OPERATIONAL_CASE_REPOSITORY,
+  GROWTH_OPERATIONAL_CASE_AUTO_ASSIGNMENT_SETTINGS_REPOSITORY,
   GetTenantConversationThreadByIdUseCase,
   GetTenantGrowthConversationWorkbenchUseCase,
   GetTenantGrowthAssignmentWorkloadUseCase,
+  GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
   GetTenantLeadByIdUseCase,
   GetTenantOpportunityByIdUseCase,
   GetTenantWhatsappAutomationRuleByIdUseCase,
@@ -63,6 +65,7 @@ import {
   RunTenantWhatsappReadyRetriesUseCase,
   SendTenantWhatsappConversationMessageUseCase,
   TakeTenantGrowthOperationalCaseUseCase,
+  UpsertTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
   UpdateTenantGrowthOperationalCaseFollowUpStateUseCase,
   UpdateTenantOpportunityStageUseCase,
   WEBHOOK_EVENT_ENVELOPE_ID_GENERATOR,
@@ -135,6 +138,7 @@ import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp
         TENANT_ACCESS_REPOSITORY,
         USER_REPOSITORY,
         GROWTH_OPERATIONAL_CASE_REPOSITORY,
+        GROWTH_OPERATIONAL_CASE_AUTO_ASSIGNMENT_SETTINGS_REPOSITORY,
         CONVERSATION_THREAD_REPOSITORY,
         OPPORTUNITY_REPOSITORY,
       ],
@@ -144,6 +148,7 @@ import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp
         tenantAccessRepository,
         userRepository,
         growthOperationalCaseRepository,
+        growthOperationalCaseAutoAssignmentSettingsRepository,
         conversationThreadRepository,
         opportunityRepository,
       ) =>
@@ -153,6 +158,7 @@ import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp
           tenantAccessRepository,
           userRepository,
           growthOperationalCaseRepository,
+          growthOperationalCaseAutoAssignmentSettingsRepository,
           conversationThreadRepository,
           opportunityRepository,
         ),
@@ -382,6 +388,21 @@ import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp
         ),
     },
     {
+      provide: GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        GROWTH_OPERATIONAL_CASE_AUTO_ASSIGNMENT_SETTINGS_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        growthOperationalCaseAutoAssignmentSettingsRepository,
+      ) =>
+        new GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase(
+          tenantRepository,
+          growthOperationalCaseAutoAssignmentSettingsRepository,
+        ),
+    },
+    {
       provide: GetTenantWhatsappAutomationRuleByIdUseCase,
       inject: [TENANT_REPOSITORY, WHATSAPP_AUTOMATION_RULE_REPOSITORY],
       useFactory: (tenantRepository, whatsappAutomationRuleRepository) =>
@@ -583,6 +604,21 @@ import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp
         new ReviewTenantGrowthOperationalCaseRoutingUseCase(
           tenantRepository,
           growthOperationalCaseRepository,
+        ),
+    },
+    {
+      provide: UpsertTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        GROWTH_OPERATIONAL_CASE_AUTO_ASSIGNMENT_SETTINGS_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        growthOperationalCaseAutoAssignmentSettingsRepository,
+      ) =>
+        new UpsertTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase(
+          tenantRepository,
+          growthOperationalCaseAutoAssignmentSettingsRepository,
         ),
     },
     {

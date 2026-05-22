@@ -1993,6 +1993,15 @@ Consumer web inicial para este snapshot operativo:
             - `constraints`
             - `suggestedOutputs`
           - con esto el prompt pack deja de vivir “escondido” dentro del envelope y pasa a ser una pieza versionable y visible de la plataforma AI
+        - además ya existe el `tool access model` transversal:
+          - `GET /api/ai/tools`
+          - `GET /api/ai/agents/:agentKey/tool-access`
+          - con eso queda explícito:
+            - qué tools conoce la plataforma AI
+            - cuáles puede usar cada agente
+            - cuáles siguen bloqueadas
+            - cuáles pasarían por approval en el futuro
+          - el envelope tenant-scoped ahora también refleja esa misma matriz mediante `toolAccess`
         - y ahora también ya existe memoria auditable de esos handoffs:
           - `POST /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs`
           - `GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs`
@@ -2014,7 +2023,9 @@ Consumer web inicial para este snapshot operativo:
   - `GET /api/growth/tenants/:slug/conversations/assist/daily-agenda`
   - `GET /api/ai/agents`
   - `GET /api/ai/prompts`
+  - `GET /api/ai/tools`
   - `GET /api/ai/agents/:agentKey/prompt-pack`
+  - `GET /api/ai/agents/:agentKey/tool-access`
   - `GET /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-envelope`
   - `GET /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-runs`
   - `POST /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-runs`

@@ -767,6 +767,10 @@ Build one transversal AI runtime for domain-specific assistants.
 2. tenant-scoped retrieval
 3. AI-ready domain contract review
 4. tool access model
+   - expose a transversal tool registry
+   - expose per-agent tool access rules
+   - make envelopes explicit about which tools are allowed, which need approval, and which are blocked
+   - keep execution tools blocked until approval and guarded-execution flows exist
 5. audit and approval flows
 6. first agent for invoicing/tax tasks
 7. first suggestion-mode agent for Growth Assist surfaces

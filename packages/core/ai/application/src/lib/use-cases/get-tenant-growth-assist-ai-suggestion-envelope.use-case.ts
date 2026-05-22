@@ -10,6 +10,7 @@ import { AiAgentNotFoundError } from '../errors/ai-agent-not-found.error';
 import {
   findAiAgentByKey,
   findAiPromptRegistryEntryByAgentKey,
+  listAiAgentToolAccessByAgentKey,
 } from '../support/ai-agent-catalog';
 
 const GROWTH_ASSIST_AGENT_KEY = 'growth-assist-coach';
@@ -59,6 +60,11 @@ export class GetTenantGrowthAssistAiSuggestionEnvelopeUseCase {
         constraints: [...promptPack.constraints],
         suggestedOutputs: promptPack.suggestedOutputs.map((entry) => ({ ...entry })),
       },
+      toolAccess: listAiAgentToolAccessByAgentKey(agentKey).map((entry) => ({
+        tool: { ...entry.tool },
+        accessLevel: entry.accessLevel,
+        rationale: entry.rationale,
+      })),
       contextBlocks: this.buildContextBlocks(agenda),
     };
   }

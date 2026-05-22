@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import {
   AI_SUGGESTION_RUN_REPOSITORY,
+  GetAiAgentToolAccessByAgentKeyUseCase,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
   ListTenantAiSuggestionRunsUseCase,
   ListAiAgentCatalogUseCase,
   ListAiPromptRegistryUseCase,
+  ListAiToolRegistryUseCase,
   PrepareTenantAiSuggestionRunUseCase,
 } from '@saas-platform/ai-application';
 import {
@@ -46,8 +48,16 @@ import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-a
       useFactory: () => new ListAiPromptRegistryUseCase(),
     },
     {
+      provide: ListAiToolRegistryUseCase,
+      useFactory: () => new ListAiToolRegistryUseCase(),
+    },
+    {
       provide: GetAiPromptRegistryEntryByAgentKeyUseCase,
       useFactory: () => new GetAiPromptRegistryEntryByAgentKeyUseCase(),
+    },
+    {
+      provide: GetAiAgentToolAccessByAgentKeyUseCase,
+      useFactory: () => new GetAiAgentToolAccessByAgentKeyUseCase(),
     },
     {
       provide: GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,

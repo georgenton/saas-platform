@@ -11,11 +11,13 @@ import {
 } from '@nestjs/common';
 import {
   GetAiPromptRegistryEntryByAgentKeyUseCase,
+  GetAiAgentToolAccessByAgentKeyUseCase,
   AiAgentNotFoundError,
   GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
   ListTenantAiSuggestionRunsUseCase,
   ListAiAgentCatalogUseCase,
   ListAiPromptRegistryUseCase,
+  ListAiToolRegistryUseCase,
   PrepareTenantAiSuggestionRunUseCase,
 } from '@saas-platform/ai-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
@@ -36,6 +38,12 @@ import {
   toAiPromptRegistryResponseDto,
 } from './dto/ai-prompt-registry.response';
 import {
+  AiAgentToolAccessResponseDto,
+  AiToolRegistryResponseDto,
+  toAiAgentToolAccessResponseDto,
+  toAiToolRegistryResponseDto,
+} from './dto/ai-tool-registry.response';
+import {
   AiSuggestionEnvelopeResponseDto,
   toAiSuggestionEnvelopeResponseDto,
 } from './dto/ai-suggestion-envelope.response';
@@ -49,7 +57,9 @@ export class AiController {
   constructor(
     private readonly listAiAgentCatalogUseCase: ListAiAgentCatalogUseCase,
     private readonly listAiPromptRegistryUseCase: ListAiPromptRegistryUseCase,
+    private readonly listAiToolRegistryUseCase: ListAiToolRegistryUseCase,
     private readonly getAiPromptRegistryEntryByAgentKeyUseCase: GetAiPromptRegistryEntryByAgentKeyUseCase,
+    private readonly getAiAgentToolAccessByAgentKeyUseCase: GetAiAgentToolAccessByAgentKeyUseCase,
     private readonly getTenantGrowthAssistAiSuggestionEnvelopeUseCase: GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
     private readonly listTenantAiSuggestionRunsUseCase: ListTenantAiSuggestionRunsUseCase,
     private readonly prepareTenantAiSuggestionRunUseCase: PrepareTenantAiSuggestionRunUseCase,
@@ -71,6 +81,14 @@ export class AiController {
       .map((entry) => toAiPromptRegistryResponseDto(entry));
   }
 
+  @Get('tools')
+  @UseGuards(JwtAuthenticationGuard)
+  listAiTools(): AiToolRegistryResponseDto[] {
+    return this.listAiToolRegistryUseCase
+      .execute()
+      .map((entry) => toAiToolRegistryResponseDto(entry));
+  }
+
   @Get('agents/:agentKey/prompt-pack')
   @UseGuards(JwtAuthenticationGuard)
   getAiPromptPack(
@@ -80,6 +98,24 @@ export class AiController {
       return toAiPromptRegistryResponseDto(
         this.getAiPromptRegistryEntryByAgentKeyUseCase.execute(agentKey),
       );
+    } catch (error) {
+      if (error instanceof AiAgentNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('agents/:agentKey/tool-access')
+  @UseGuards(JwtAuthenticationGuard)
+  getAiAgentToolAccess(
+    @Param('agentKey') agentKey: string,
+  ): AiAgentToolAccessResponseDto[] {
+    try {
+      return this.getAiAgentToolAccessByAgentKeyUseCase
+        .execute(agentKey)
+        .map((entry) => toAiAgentToolAccessResponseDto(entry));
     } catch (error) {
       if (error instanceof AiAgentNotFoundError) {
         throw new NotFoundException(error.message);

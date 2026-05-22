@@ -3,6 +3,10 @@ export type AiDomainKey = 'growth' | 'invoicing' | 'ecommerce';
 export type AiAgentAvailability = 'ready' | 'planned';
 
 export type AiAgentMode = 'suggestion' | 'guarded_execution';
+export type AiToolAvailability = 'ready' | 'planned';
+export type AiToolRiskLevel = 'low' | 'medium' | 'high';
+export type AiToolActionKind = 'read' | 'draft' | 'propose' | 'execute';
+export type AiToolAccessLevel = 'allowed' | 'approval_required' | 'blocked';
 
 export interface AiAgentCatalogEntry {
   key: string;
@@ -19,6 +23,24 @@ export interface AiSuggestionOutputDescriptor {
   key: string;
   label: string;
   description: string;
+}
+
+export interface AiToolDefinition {
+  key: string;
+  title: string;
+  summary: string;
+  domainKey: AiDomainKey;
+  availability: AiToolAvailability;
+  riskLevel: AiToolRiskLevel;
+  actionKind: AiToolActionKind;
+  requiresApproval: boolean;
+}
+
+export interface AiAgentToolAccessEntry {
+  agentKey: string;
+  toolKey: string;
+  accessLevel: AiToolAccessLevel;
+  rationale: string;
 }
 
 export interface AiPromptRegistryEntry {
@@ -53,6 +75,11 @@ export interface TenantAiSuggestionEnvelope {
     sourceGeneratedAt: Date;
   };
   promptPack: AiPromptRegistryEntry;
+  toolAccess: {
+    tool: AiToolDefinition;
+    accessLevel: AiToolAccessLevel;
+    rationale: string;
+  }[];
   contextBlocks: AiSuggestionContextBlock[];
 }
 

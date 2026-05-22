@@ -1,6 +1,8 @@
 import {
+  AiAgentToolAccessEntry,
   AiAgentCatalogEntry,
   AiPromptRegistryEntry,
+  AiToolDefinition,
 } from '@saas-platform/ai-domain';
 
 export const AI_AGENT_CATALOG: AiAgentCatalogEntry[] = [
@@ -44,6 +46,64 @@ export function findAiAgentByKey(
 ): AiAgentCatalogEntry | null {
   return AI_AGENT_CATALOG.find((entry) => entry.key === agentKey) ?? null;
 }
+
+export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
+  {
+    key: 'growth_assist_reply_drafting',
+    title: 'Growth Assist reply drafting',
+    summary:
+      'Drafts customer-facing reply suggestions grounded in the deterministic Growth Assist agenda.',
+    domainKey: 'growth',
+    availability: 'ready',
+    riskLevel: 'low',
+    actionKind: 'draft',
+    requiresApproval: false,
+  },
+  {
+    key: 'growth_assist_follow_up_planning',
+    title: 'Growth Assist follow-up planning',
+    summary:
+      'Proposes follow-up plans and next-action briefs without mutating Growth workflow state.',
+    domainKey: 'growth',
+    availability: 'ready',
+    riskLevel: 'low',
+    actionKind: 'propose',
+    requiresApproval: false,
+  },
+  {
+    key: 'growth_case_assignment_execution',
+    title: 'Growth case assignment execution',
+    summary:
+      'Would execute operational-case assignment or routing changes once guarded execution exists.',
+    domainKey: 'growth',
+    availability: 'planned',
+    riskLevel: 'high',
+    actionKind: 'execute',
+    requiresApproval: true,
+  },
+  {
+    key: 'invoice_document_drafting',
+    title: 'Invoice document drafting',
+    summary:
+      'Will help prepare deterministic drafting and review suggestions for invoicing document workflows.',
+    domainKey: 'invoicing',
+    availability: 'planned',
+    riskLevel: 'medium',
+    actionKind: 'draft',
+    requiresApproval: false,
+  },
+  {
+    key: 'ecommerce_launch_briefing',
+    title: 'Ecommerce launch briefing',
+    summary:
+      'Will suggest landing, catalog, and campaign structure once ecommerce deterministic surfaces exist.',
+    domainKey: 'ecommerce',
+    availability: 'planned',
+    riskLevel: 'medium',
+    actionKind: 'propose',
+    requiresApproval: false,
+  },
+];
 
 export const AI_PROMPT_REGISTRY: AiPromptRegistryEntry[] = [
   {
@@ -148,4 +208,66 @@ export function findAiPromptRegistryEntryByAgentKey(
   agentKey: string,
 ): AiPromptRegistryEntry | null {
   return AI_PROMPT_REGISTRY.find((entry) => entry.agentKey === agentKey) ?? null;
+}
+
+export const AI_AGENT_TOOL_ACCESS: AiAgentToolAccessEntry[] = [
+  {
+    agentKey: 'growth-assist-coach',
+    toolKey: 'growth_assist_reply_drafting',
+    accessLevel: 'allowed',
+    rationale:
+      'The agent can safely prepare reply drafts because Growth remains the source of truth and no message is sent automatically.',
+  },
+  {
+    agentKey: 'growth-assist-coach',
+    toolKey: 'growth_assist_follow_up_planning',
+    accessLevel: 'allowed',
+    rationale:
+      'The agent can suggest follow-up sequencing and next actions while staying inside suggestion mode.',
+  },
+  {
+    agentKey: 'growth-assist-coach',
+    toolKey: 'growth_case_assignment_execution',
+    accessLevel: 'blocked',
+    rationale:
+      'Direct assignment or workflow mutation remains blocked until approval flows and guarded execution are in place.',
+  },
+  {
+    agentKey: 'invoice-document-assistant',
+    toolKey: 'invoice_document_drafting',
+    accessLevel: 'approval_required',
+    rationale:
+      'Invoice drafting suggestions are planned, but they should stay behind explicit operator review before use.',
+  },
+  {
+    agentKey: 'ecommerce-launch-assistant',
+    toolKey: 'ecommerce_launch_briefing',
+    accessLevel: 'approval_required',
+    rationale:
+      'Launch suggestions are expected to be reviewed by an operator before they influence storefront work.',
+  },
+];
+
+export function listAiToolRegistry(): AiToolDefinition[] {
+  return AI_TOOL_REGISTRY.map((entry) => ({ ...entry }));
+}
+
+export function listAiAgentToolAccessByAgentKey(
+  agentKey: string,
+): { tool: AiToolDefinition; accessLevel: AiAgentToolAccessEntry['accessLevel']; rationale: string }[] {
+  return AI_AGENT_TOOL_ACCESS.filter((entry) => entry.agentKey === agentKey)
+    .map((entry) => {
+      const tool = AI_TOOL_REGISTRY.find((candidate) => candidate.key === entry.toolKey);
+
+      if (!tool) {
+        return null;
+      }
+
+      return {
+        tool: { ...tool },
+        accessLevel: entry.accessLevel,
+        rationale: entry.rationale,
+      };
+    })
+    .filter((entry): entry is { tool: AiToolDefinition; accessLevel: AiAgentToolAccessEntry['accessLevel']; rationale: string } => entry !== null);
 }

@@ -36,6 +36,20 @@ export interface AiSuggestionEnvelopeResponseDto {
       description: string;
     }[];
   };
+  toolAccess: {
+    tool: {
+      key: string;
+      title: string;
+      summary: string;
+      domainKey: 'growth' | 'invoicing' | 'ecommerce';
+      availability: 'ready' | 'planned';
+      riskLevel: 'low' | 'medium' | 'high';
+      actionKind: 'read' | 'draft' | 'propose' | 'execute';
+      requiresApproval: boolean;
+    };
+    accessLevel: 'allowed' | 'approval_required' | 'blocked';
+    rationale: string;
+  }[];
   contextBlocks: {
     key: string;
     title: string;
@@ -66,6 +80,13 @@ export const toAiSuggestionEnvelopeResponseDto = (
       ...entry,
     })),
   },
+  toolAccess: envelope.toolAccess.map((entry) => ({
+    tool: {
+      ...entry.tool,
+    },
+    accessLevel: entry.accessLevel,
+    rationale: entry.rationale,
+  })),
   contextBlocks: envelope.contextBlocks.map((entry) => ({
     ...entry,
     bullets: [...entry.bullets],

@@ -48,6 +48,18 @@ export interface TenantGrowthAssistReplySuggestionView {
   threadId: string;
 }
 
+export interface TenantGrowthAssistNextActionView {
+  key: string;
+  emphasis: 'do_now' | 'today' | 'stabilize';
+  actionType: 'reply_now' | 'follow_up' | 'assign_owner' | 'channel_risk';
+  title: string;
+  whyNow: string;
+  recommendedAction: string;
+  businessImpact: string;
+  threadId: string | null;
+  operationalCaseId: string | null;
+}
+
 export interface TenantGrowthAssistPlaybookView {
   key: string;
   title: string;
@@ -82,6 +94,7 @@ export interface TenantGrowthAssistDailyAgendaView {
   tasks: TenantGrowthAssistTaskView[];
   conversationCues: TenantGrowthAssistConversationCueView[];
   replySuggestions: TenantGrowthAssistReplySuggestionView[];
+  nextActions: TenantGrowthAssistNextActionView[];
   playbooks: TenantGrowthAssistPlaybookView[];
   waitingCustomerQueue: TenantGrowthAssistWaitingCustomerView[];
   channelHealth: {
@@ -124,13 +137,16 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
       autoAssignmentSettings.defaultPolicyKey,
     );
 
+    const tasks = this.buildTasks(workbench, openCases);
+
     return {
       tenantSlug,
       generatedAt: this.nowProvider(),
       summary: summarySignals,
-      tasks: this.buildTasks(workbench, openCases),
+      tasks,
       conversationCues: this.buildConversationCues(workbench),
       replySuggestions: this.buildReplySuggestions(workbench),
+      nextActions: this.buildNextActions(summarySignals, tasks, outboundSummary),
       playbooks: this.buildPlaybooks(
         summarySignals,
         autoAssignmentSettings.defaultPolicyKey,
@@ -561,6 +577,75 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
       .slice(0, 4);
   }
 
+  private buildNextActions(
+    summary: TenantGrowthAssistDailyAgendaView['summary'],
+    tasks: TenantGrowthAssistTaskView[],
+    outboundSummary: TenantWhatsappOutboundReportingSummaryView,
+  ): TenantGrowthAssistNextActionView[] {
+    const nextActions = tasks.slice(0, 3).map(
+      (task) =>
+        ({
+          key: `next-action:${task.key}`,
+          emphasis:
+            task.urgency === 'today'
+              ? 'do_now'
+              : task.category === 'channel_risk'
+                ? 'stabilize'
+                : 'today',
+          actionType: task.category,
+          title: task.title,
+          whyNow: task.summary,
+          recommendedAction: this.describeRecommendedAction(task),
+          businessImpact: this.describeBusinessImpact(task),
+          threadId: task.threadId,
+          operationalCaseId: task.operationalCaseId,
+        }) satisfies TenantGrowthAssistNextActionView,
+    );
+
+    if (
+      nextActions.length < 3 &&
+      outboundSummary.operationalDashboard.overallStatus !== 'healthy'
+    ) {
+      nextActions.push({
+        key: 'next-action:channel-health',
+        emphasis:
+          outboundSummary.operationalDashboard.overallStatus === 'critical'
+            ? 'stabilize'
+            : 'today',
+        actionType: 'channel_risk',
+        title: 'Revisar salud del canal antes de empujar mas actividad',
+        whyNow:
+          outboundSummary.operationalAlerts[0]?.summary ??
+          'El canal ya muestra señales que conviene ordenar antes de seguir empujando mensajes.',
+        recommendedAction:
+          outboundSummary.operationalAlerts[0]?.recommendedAction ??
+          'Actualiza el monitor, revisa alertas y confirma si hay retries o bloqueos activos.',
+        businessImpact:
+          'Si el canal esta inestable, puedes perder timing comercial aunque la cola este ordenada.',
+        threadId: null,
+        operationalCaseId: null,
+      });
+    }
+
+    if (nextActions.length === 0) {
+      nextActions.push({
+        key: 'next-action:healthy-routine',
+        emphasis: 'today',
+        actionType: 'follow_up',
+        title: 'Mantener ritmo comercial sin sobre-operar',
+        whyNow: summary.detail,
+        recommendedAction:
+          'Revisa leads tibios, confirma proximo paso en conversaciones activas y evita abrir complejidad nueva si no hace falta.',
+        businessImpact:
+          'La constancia suele mover mas negocio que reaccionar tarde solo cuando algo ya esta vencido.',
+        threadId: null,
+        operationalCaseId: null,
+      });
+    }
+
+    return nextActions.slice(0, 3);
+  }
+
   private buildWaitingCustomerQueue(
     openCases: GrowthOperationalCaseRecord[],
   ): TenantGrowthAssistWaitingCustomerView[] {
@@ -598,6 +683,36 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
       case 'balanced':
       default:
         return 'repartir de forma equilibrada entre urgencias, owners y follow-up';
+    }
+  }
+
+  private describeRecommendedAction(task: TenantGrowthAssistTaskView): string {
+    switch (task.category) {
+      case 'reply_now':
+        return 'Responder hoy mismo y cerrar con un siguiente paso concreto.';
+      case 'follow_up':
+        return 'Retomar el hilo con contexto corto y acordar fecha o siguiente movimiento.';
+      case 'assign_owner':
+        return 'Dejar owner claro antes de que el caso pierda contexto o prioridad.';
+      case 'channel_risk':
+        return 'Mirar monitor, alertas y retries antes de empujar mas trafico.';
+      default:
+        return task.actionLabel;
+    }
+  }
+
+  private describeBusinessImpact(task: TenantGrowthAssistTaskView): string {
+    switch (task.category) {
+      case 'reply_now':
+        return 'Responder tarde enfria conversaciones que ya llegaron con intencion activa.';
+      case 'follow_up':
+        return 'Un follow-up a tiempo mantiene movimiento sin obligarte a reabrir contexto mas tarde.';
+      case 'assign_owner':
+        return 'Sin owner claro, el trabajo parece existir pero nadie lo termina de mover.';
+      case 'channel_risk':
+        return 'Un canal inestable puede romper entregas y arruinar timing comercial aunque el equipo responda bien.';
+      default:
+        return 'Mover esto hoy ayuda a sostener ritmo comercial y claridad operativa.';
     }
   }
 

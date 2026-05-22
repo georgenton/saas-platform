@@ -1261,6 +1261,21 @@ describe('API', () => {
         threadId: 'thread_001',
       },
     ],
+    nextActions: [
+      {
+        key: 'next-action:reply:thread_001',
+        emphasis: 'do_now' as const,
+        actionType: 'reply_now' as const,
+        title: 'Responder a WhatsApp Maria Perez',
+        whyNow: 'WhatsApp lleva 2 horas esperando una respuesta del equipo.',
+        recommendedAction:
+          'Responder hoy mismo y cerrar con un siguiente paso concreto.',
+        businessImpact:
+          'Responder tarde enfria conversaciones que ya llegaron con intencion activa.',
+        threadId: 'thread_001',
+        operationalCaseId: null,
+      },
+    ],
     playbooks: [
       {
         key: 'reply-now',
@@ -4821,6 +4836,21 @@ describe('API', () => {
               'Cierra con una pregunta simple que facilite responder rápido.',
             ],
             threadId: 'thread_001',
+          },
+        ],
+        nextActions: [
+          {
+            key: 'next-action:reply:thread_001',
+            emphasis: 'do_now',
+            actionType: 'reply_now',
+            title: 'Responder a WhatsApp Maria Perez',
+            whyNow: 'WhatsApp lleva 2 horas esperando una respuesta del equipo.',
+            recommendedAction:
+              'Responder hoy mismo y cerrar con un siguiente paso concreto.',
+            businessImpact:
+              'Responder tarde enfria conversaciones que ya llegaron con intencion activa.',
+            threadId: 'thread_001',
+            operationalCaseId: null,
           },
         ],
         playbooks: [

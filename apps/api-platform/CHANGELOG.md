@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.36.0
+
+### Minor Changes
+
+- fa73cc2: Add a backend daily agenda contract for Growth Assist and wire the web workspace to consume assisted tasks, cues, and playbooks from that shared source.
+
 ## 0.35.0
 
 ### Minor Changes

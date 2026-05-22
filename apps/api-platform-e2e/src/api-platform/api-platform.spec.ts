@@ -5517,16 +5517,18 @@ describe('API', () => {
       .post('/api/ai/tenants/saas-platform/agents/growth-assist-coach/suggestion-runs')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(201)
-      .expect(
-        expect.objectContaining({
-          id: 'ai-run-001',
-          agentKey: 'growth-assist-coach',
-          status: 'prepared',
-          promptPackKey: 'growth-assist-coach-core',
-          requestedByUserId: user.id,
-          requestedByEmail: user.email,
-        }),
-      );
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            id: 'ai-run-001',
+            agentKey: 'growth-assist-coach',
+            status: 'prepared',
+            promptPackKey: 'growth-assist-coach-core',
+            requestedByUserId: user.id,
+            requestedByEmail: user.email,
+          }),
+        );
+      });
 
     expect(prepareTenantAiSuggestionRunUseCase.execute).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',

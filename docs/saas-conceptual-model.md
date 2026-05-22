@@ -755,6 +755,11 @@ Build one transversal AI runtime for domain-specific assistants.
   - it does not become the new source of truth for Growth
   - it does not send messages or mutate workflow state automatically
   - it prepares a constrained, auditable handoff for future model-backed suggestions
+- the next grounded step after envelopes and prompt packs is an auditable run history:
+  - `POST /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs`
+  - `GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs`
+  - this gives the transversal AI platform memory of who prepared a suggestion handoff, when, for which tenant, and with which prompt-pack version
+  - that history should exist before any guarded execution path is introduced
 
 ### Recommended slices
 

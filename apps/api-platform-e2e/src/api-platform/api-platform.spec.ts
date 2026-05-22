@@ -42,6 +42,10 @@ import {
 } from '@saas-platform/feature-flags-application';
 import { FeatureFlag } from '@saas-platform/feature-flags-domain';
 import {
+  ListTenantAiSuggestionRunsUseCase,
+  PrepareTenantAiSuggestionRunUseCase,
+} from '@saas-platform/ai-application';
+import {
   AutoAssignTenantGrowthOperationalCasesUseCase,
   AssignTenantConversationThreadUseCase,
   AssignTenantOpportunityUseCase,
@@ -228,6 +232,8 @@ describe('API', () => {
   let getTenantPartyByIdUseCase: { execute: jest.Mock };
   let getTenantConversationThreadByIdUseCase: { execute: jest.Mock };
   let getTenantGrowthAssistDailyAgendaUseCase: { execute: jest.Mock };
+  let listTenantAiSuggestionRunsUseCase: { execute: jest.Mock };
+  let prepareTenantAiSuggestionRunUseCase: { execute: jest.Mock };
   let getTenantGrowthConversationWorkbenchUseCase: { execute: jest.Mock };
   let getTenantGrowthAssignmentWorkloadUseCase: { execute: jest.Mock };
   let getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase: {
@@ -1381,6 +1387,106 @@ describe('API', () => {
           'Hola {{firstName}}, retomamos la demo de {{product}}.',
       },
     ],
+  };
+  const growthAssistSuggestionRun = {
+    id: 'ai-run-001',
+    tenantId: 'tenant_123',
+    tenantSlug: 'saas-platform',
+    agentKey: 'growth-assist-coach',
+    mode: 'suggestion' as const,
+    status: 'prepared' as const,
+    surfaceKey: 'growth_assist_daily_agenda',
+    sourceContractKey: 'growth.assist.daily_agenda',
+    sourceGeneratedAt: new Date('2026-05-20T10:36:00.000Z'),
+    promptPackKey: 'growth-assist-coach-core',
+    promptPackVersion: 'v1',
+    generatedAt: new Date('2026-05-20T10:36:00.000Z'),
+    requestedByUserId: user.id,
+    requestedByEmail: user.email,
+    summary:
+      'Growth Assist Coach prepared a suggestion-mode handoff for Growth Assist daily agenda using prompt pack growth-assist-coach-core@v1.',
+    suggestedOutputKeys: ['reply_draft', 'next_action_brief', 'follow_up_plan'],
+    envelope: {
+      tenantSlug: 'saas-platform',
+      generatedAt: new Date('2026-05-20T10:36:00.000Z'),
+      mode: 'suggestion' as const,
+      agent: {
+        key: 'growth-assist-coach',
+        title: 'Growth Assist Coach',
+        summary:
+          'Turns deterministic Growth Assist signals into tenant-scoped commercial suggestions without executing actions automatically.',
+        domainKey: 'growth' as const,
+        productKey: 'growth',
+        availability: 'ready' as const,
+        defaultMode: 'suggestion' as const,
+        supportedSurfaceKeys: ['growth_assist_daily_agenda'],
+      },
+      surface: {
+        key: 'growth_assist_daily_agenda',
+        title: 'Growth Assist daily agenda',
+        sourceContractKey: 'growth.assist.daily_agenda',
+        sourceGeneratedAt: new Date('2026-05-20T10:36:00.000Z'),
+      },
+      promptPack: {
+        key: 'growth-assist-coach-core',
+        version: 'v1',
+        agentKey: 'growth-assist-coach',
+        mode: 'suggestion' as const,
+        title: 'Growth Assist Coach Core',
+        summary:
+          'Prompt pack for turning deterministic Growth Assist agenda signals into commercial suggestions for non-expert operators.',
+        objective:
+          'Propose clear commercial suggestions for a non-expert operator using the deterministic Growth Assist agenda as the source of truth.',
+        styleGuidance: [
+          'Prefer short, direct, Spanish-first suggestions.',
+          'Explain business impact in simple operator language instead of internal queue jargon.',
+          'Keep outputs practical and oriented to what the business should do today.',
+        ],
+        constraints: [
+          'Stay in suggestion mode only. Do not assume messages are sent or cases are mutated automatically.',
+          'Use only the tenant-scoped Growth Assist agenda and its embedded operational signals.',
+          'Prefer short, direct, Spanish-first suggestions that help a small business operator move today.',
+          'Respect domain boundaries: business rules, approvals, and workflow state still belong to Growth.',
+        ],
+        suggestedOutputs: [
+          {
+            key: 'reply_draft',
+            label: 'Reply draft',
+            description:
+              'Draft a customer-facing WhatsApp reply using the hottest conversation cues and reply suggestions.',
+          },
+          {
+            key: 'next_action_brief',
+            label: 'Next action brief',
+            description:
+              'Explain the top commercial action to take now and why it matters today.',
+          },
+          {
+            key: 'follow_up_plan',
+            label: 'Follow-up plan',
+            description:
+              'Suggest a short follow-up sequence grounded in playbooks and waiting-customer timing.',
+          },
+        ],
+      },
+      contextBlocks: [
+        {
+          key: 'agenda_summary',
+          title: 'Agenda summary',
+          detail:
+            'La bandeja no esta rota, pero si hay seguimientos que no conviene dejar enfriar. Usa esta agenda como recordatorio simple: primero sigue lo que ya esta caliente, luego reparte owner nuevo si hace falta.',
+          bullets: [
+            'Reply now count: 1',
+            'Follow-up now count: 2',
+            'Waiting customer count: 0',
+            'Queue to organize count: 1',
+            'Channel risk count: 0',
+            'Saved auto-assignment policy: follow_up_first',
+          ],
+        },
+      ],
+    },
+    createdAt: new Date('2026-05-20T10:37:00.000Z'),
   };
   const whatsappWebhookEnvelope = WebhookEventEnvelope.create({
     id: 'webhook-envelope-001',
@@ -2584,6 +2690,12 @@ describe('API', () => {
     getTenantGrowthAssistDailyAgendaUseCase = {
       execute: jest.fn().mockResolvedValue(growthAssistDailyAgenda),
     };
+    listTenantAiSuggestionRunsUseCase = {
+      execute: jest.fn().mockResolvedValue([growthAssistSuggestionRun]),
+    };
+    prepareTenantAiSuggestionRunUseCase = {
+      execute: jest.fn().mockResolvedValue(growthAssistSuggestionRun),
+    };
     getTenantGrowthConversationWorkbenchUseCase = {
       execute: jest.fn().mockResolvedValue(growthConversationWorkbench),
     };
@@ -3418,6 +3530,10 @@ describe('API', () => {
       .useValue(createTenantGrowthOperationalCaseUseCase)
       .overrideProvider(GetTenantGrowthAssistDailyAgendaUseCase)
       .useValue(getTenantGrowthAssistDailyAgendaUseCase)
+      .overrideProvider(ListTenantAiSuggestionRunsUseCase)
+      .useValue(listTenantAiSuggestionRunsUseCase)
+      .overrideProvider(PrepareTenantAiSuggestionRunUseCase)
+      .useValue(prepareTenantAiSuggestionRunUseCase)
       .overrideProvider(GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase)
       .useValue(getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase)
       .overrideProvider(CreateTenantWhatsappAutomationRuleUseCase)
@@ -5274,6 +5390,152 @@ describe('API', () => {
     expect(getTenantGrowthAssistDailyAgendaUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
     );
+  });
+
+  it('GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs should return suggestion-mode run history', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ai/tenants/saas-platform/agents/growth-assist-coach/suggestion-runs?limit=5',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'ai-run-001',
+          tenantSlug: 'saas-platform',
+          agentKey: 'growth-assist-coach',
+          mode: 'suggestion',
+          status: 'prepared',
+          surfaceKey: 'growth_assist_daily_agenda',
+          sourceContractKey: 'growth.assist.daily_agenda',
+          sourceGeneratedAt: '2026-05-20T10:36:00.000Z',
+          promptPackKey: 'growth-assist-coach-core',
+          promptPackVersion: 'v1',
+          generatedAt: '2026-05-20T10:36:00.000Z',
+          requestedByUserId: user.id,
+          requestedByEmail: user.email,
+          summary:
+            'Growth Assist Coach prepared a suggestion-mode handoff for Growth Assist daily agenda using prompt pack growth-assist-coach-core@v1.',
+          suggestedOutputKeys: [
+            'reply_draft',
+            'next_action_brief',
+            'follow_up_plan',
+          ],
+          envelope: {
+            tenantSlug: 'saas-platform',
+            generatedAt: '2026-05-20T10:36:00.000Z',
+            mode: 'suggestion',
+            agent: {
+              key: 'growth-assist-coach',
+              title: 'Growth Assist Coach',
+              summary:
+                'Turns deterministic Growth Assist signals into tenant-scoped commercial suggestions without executing actions automatically.',
+              domainKey: 'growth',
+              productKey: 'growth',
+              availability: 'ready',
+              defaultMode: 'suggestion',
+              supportedSurfaceKeys: ['growth_assist_daily_agenda'],
+            },
+            surface: {
+              key: 'growth_assist_daily_agenda',
+              title: 'Growth Assist daily agenda',
+              sourceContractKey: 'growth.assist.daily_agenda',
+              sourceGeneratedAt: '2026-05-20T10:36:00.000Z',
+            },
+            promptPack: {
+              key: 'growth-assist-coach-core',
+              version: 'v1',
+              agentKey: 'growth-assist-coach',
+              mode: 'suggestion',
+              title: 'Growth Assist Coach Core',
+              summary:
+                'Prompt pack for turning deterministic Growth Assist agenda signals into commercial suggestions for non-expert operators.',
+              objective:
+                'Propose clear commercial suggestions for a non-expert operator using the deterministic Growth Assist agenda as the source of truth.',
+              styleGuidance: [
+                'Prefer short, direct, Spanish-first suggestions.',
+                'Explain business impact in simple operator language instead of internal queue jargon.',
+                'Keep outputs practical and oriented to what the business should do today.',
+              ],
+              constraints: [
+                'Stay in suggestion mode only. Do not assume messages are sent or cases are mutated automatically.',
+                'Use only the tenant-scoped Growth Assist agenda and its embedded operational signals.',
+                'Prefer short, direct, Spanish-first suggestions that help a small business operator move today.',
+                'Respect domain boundaries: business rules, approvals, and workflow state still belong to Growth.',
+              ],
+              suggestedOutputs: [
+                {
+                  key: 'reply_draft',
+                  label: 'Reply draft',
+                  description:
+                    'Draft a customer-facing WhatsApp reply using the hottest conversation cues and reply suggestions.',
+                },
+                {
+                  key: 'next_action_brief',
+                  label: 'Next action brief',
+                  description:
+                    'Explain the top commercial action to take now and why it matters today.',
+                },
+                {
+                  key: 'follow_up_plan',
+                  label: 'Follow-up plan',
+                  description:
+                    'Suggest a short follow-up sequence grounded in playbooks and waiting-customer timing.',
+                },
+              ],
+            },
+            contextBlocks: [
+              {
+                key: 'agenda_summary',
+                title: 'Agenda summary',
+                detail:
+                  'La bandeja no esta rota, pero si hay seguimientos que no conviene dejar enfriar. Usa esta agenda como recordatorio simple: primero sigue lo que ya esta caliente, luego reparte owner nuevo si hace falta.',
+                bullets: [
+                  'Reply now count: 1',
+                  'Follow-up now count: 2',
+                  'Waiting customer count: 0',
+                  'Queue to organize count: 1',
+                  'Channel risk count: 0',
+                  'Saved auto-assignment policy: follow_up_first',
+                ],
+              },
+            ],
+          },
+          createdAt: '2026-05-20T10:37:00.000Z',
+        },
+      ]);
+
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'growth-assist-coach',
+      5,
+    );
+  });
+
+  it('POST /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs should prepare an auditable suggestion handoff', async () => {
+    await request(httpServer)
+      .post('/api/ai/tenants/saas-platform/agents/growth-assist-coach/suggestion-runs')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            id: 'ai-run-001',
+            agentKey: 'growth-assist-coach',
+            status: 'prepared',
+            promptPackKey: 'growth-assist-coach-core',
+            requestedByUserId: user.id,
+            requestedByEmail: user.email,
+          }),
+        );
+      });
+
+    expect(prepareTenantAiSuggestionRunUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      agentKey: 'growth-assist-coach',
+      requestedByUserId: user.id,
+      requestedByEmail: user.email,
+    });
   });
 
   it('GET /api/growth/tenants/:slug/conversations/operational-cases should return persisted operational cases', async () => {

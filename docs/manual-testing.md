@@ -1993,6 +1993,20 @@ Consumer web inicial para este snapshot operativo:
             - `constraints`
             - `suggestedOutputs`
           - con esto el prompt pack deja de vivir “escondido” dentro del envelope y pasa a ser una pieza versionable y visible de la plataforma AI
+        - y ahora también ya existe memoria auditable de esos handoffs:
+          - `POST /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs`
+          - `GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs`
+          - al preparar una corrida se guarda:
+            - `requestedByUserId`
+            - `requestedByEmail`
+            - `promptPackKey`
+            - `promptPackVersion`
+            - `suggestedOutputKeys`
+            - snapshot completo del `suggestion-envelope`
+          - esto sigue en `suggestion mode`:
+            - no llama modelos todavía
+            - no muta el dominio
+            - deja trazabilidad para approval flows futuros
 - el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
   - `GET /api/growth/tenants/:slug/conversations/operational-cases`
     - acepta `status`
@@ -2002,6 +2016,8 @@ Consumer web inicial para este snapshot operativo:
   - `GET /api/ai/prompts`
   - `GET /api/ai/agents/:agentKey/prompt-pack`
   - `GET /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-envelope`
+  - `GET /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-runs`
+  - `POST /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-runs`
   - `GET /api/growth/tenants/:slug/conversations/operational-cases/auto-assignment-settings`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases/auto-assign`

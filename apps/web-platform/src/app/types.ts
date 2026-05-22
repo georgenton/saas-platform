@@ -1140,6 +1140,26 @@ export interface AiSuggestionEnvelopeResponse {
   }[];
 }
 
+export interface AiSuggestionRunResponse {
+  id: string;
+  tenantSlug: string;
+  agentKey: string;
+  mode: 'suggestion';
+  status: 'prepared';
+  surfaceKey: string;
+  sourceContractKey: string;
+  sourceGeneratedAt: string;
+  promptPackKey: string;
+  promptPackVersion: string;
+  generatedAt: string;
+  requestedByUserId: string;
+  requestedByEmail: string | null;
+  summary: string;
+  suggestedOutputKeys: string[];
+  envelope: AiSuggestionEnvelopeResponse;
+  createdAt: string;
+}
+
 export interface WhatsappOperationalAlertFrequencyResponse {
   alertKey: string;
   title: string;

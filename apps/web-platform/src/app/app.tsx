@@ -4,6 +4,7 @@ import {
   fetchAiAgentCatalog,
   fetchAiPromptRegistry,
   fetchTenantAiSuggestionEnvelope,
+  fetchTenantAiSuggestionRuns,
   acceptInvitation,
   cancelInvitation,
   checkInvoiceElectronicAuthorization,
@@ -53,6 +54,7 @@ import {
   listProducts,
   listTaxRates,
   listTenantEnabledProducts,
+  prepareTenantAiSuggestionRun,
   listTenantInvitations,
   reverseInvoicePayment,
   runWhatsappOperationalMonitor,
@@ -80,6 +82,7 @@ import {
   AiAgentCatalogResponse,
   AiPromptRegistryResponse,
   AiSuggestionEnvelopeResponse,
+  AiSuggestionRunResponse,
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CustomerResponse,
@@ -994,6 +997,8 @@ export function App() {
   >([]);
   const [growthAssistAiEnvelope, setGrowthAssistAiEnvelope] =
     useState<AiSuggestionEnvelopeResponse | null>(null);
+  const [growthAssistAiSuggestionRuns, setGrowthAssistAiSuggestionRuns] =
+    useState<AiSuggestionRunResponse[]>([]);
   const [whatsappSummary, setWhatsappSummary] =
     useState<WhatsappOutboundReportingSummaryResponse | null>(null);
   const [whatsappMonitorSummary, setWhatsappMonitorSummary] =
@@ -3257,6 +3262,7 @@ export function App() {
           nextAiAgentCatalog,
           nextAiPromptRegistry,
           nextAiSuggestionEnvelope,
+          nextAiSuggestionRuns,
         ] =
         await Promise.all([
           fetchGrowthConversationWorkbench(token, tenantSlug, {
@@ -3281,6 +3287,11 @@ export function App() {
             tenantSlug,
             'growth-assist-coach',
           ).catch(() => null),
+          fetchTenantAiSuggestionRuns(
+            token,
+            tenantSlug,
+            'growth-assist-coach',
+          ).catch(() => []),
         ]);
 
         if (cancelled) {
@@ -3293,6 +3304,7 @@ export function App() {
           setAiAgentCatalog(nextAiAgentCatalog);
           setAiPromptRegistry(nextAiPromptRegistry);
           setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
+          setGrowthAssistAiSuggestionRuns(nextAiSuggestionRuns);
           setWhatsappSummary(nextSummary);
           setGrowthMonitorHistory(nextMonitorRuns);
           setWhatsappMonitorAnalytics(nextMonitorAnalytics);
@@ -3315,6 +3327,7 @@ export function App() {
         setAiAgentCatalog([]);
         setAiPromptRegistry([]);
         setGrowthAssistAiEnvelope(null);
+        setGrowthAssistAiSuggestionRuns([]);
         setWhatsappSummary(null);
         setWhatsappMonitorSummary(null);
         setWhatsappMonitorAnalytics(null);
@@ -3849,6 +3862,7 @@ export function App() {
         nextAiAgentCatalog,
         nextAiPromptRegistry,
         nextAiSuggestionEnvelope,
+        nextAiSuggestionRuns,
       ] =
         await Promise.all([
         fetchGrowthConversationWorkbench(token, tenantSlug, {
@@ -3872,6 +3886,11 @@ export function App() {
           tenantSlug,
           'growth-assist-coach',
         ).catch(() => null),
+        fetchTenantAiSuggestionRuns(
+          token,
+          tenantSlug,
+          'growth-assist-coach',
+        ).catch(() => []),
       ]);
 
       startTransition(() => {
@@ -3880,6 +3899,7 @@ export function App() {
         setAiAgentCatalog(nextAiAgentCatalog);
         setAiPromptRegistry(nextAiPromptRegistry);
         setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
+        setGrowthAssistAiSuggestionRuns(nextAiSuggestionRuns);
         setWhatsappSummary(nextSummary);
         setGrowthMonitorHistory(nextMonitorRuns);
         setWhatsappMonitorAnalytics(nextMonitorAnalytics);
@@ -4268,6 +4288,44 @@ export function App() {
     }
   }
 
+  async function handlePrepareAiSuggestionRun() {
+    if (!token || !currentTenancy || !canReadGrowthConversations) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setGrowthActionLoading('prepare-ai-suggestion-run');
+    setGrowthActionMessage(null);
+    setGrowthError(null);
+
+    try {
+      const record = await prepareTenantAiSuggestionRun(
+        token,
+        tenantSlug,
+        'growth-assist-coach',
+      );
+
+      startTransition(() => {
+        setGrowthAssistAiSuggestionRuns((current) => [
+          record,
+          ...current.filter((entry) => entry.id !== record.id),
+        ]);
+      });
+
+      setGrowthActionMessage(
+        `Handoff auditable preparado con ${record.promptPackKey}@${record.promptPackVersion}.`,
+      );
+    } catch (error) {
+      setGrowthError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo preparar el handoff auditable de AI.',
+      );
+    } finally {
+      setGrowthActionLoading(null);
+    }
+  }
+
   async function handleTokenSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -4297,6 +4355,7 @@ export function App() {
     setAiAgentCatalog([]);
     setAiPromptRegistry([]);
     setGrowthAssistAiEnvelope(null);
+    setGrowthAssistAiSuggestionRuns([]);
     setWhatsappSummary(null);
     setWhatsappMonitorSummary(null);
     setWhatsappMonitorAnalytics(null);
@@ -6387,6 +6446,22 @@ export function App() {
                               ),
                             )}
                           </div>
+                          <div className={styles.inlineActions}>
+                            <button
+                              className={styles.secondaryButton}
+                              type="button"
+                              onClick={() => {
+                                void handlePrepareAiSuggestionRun();
+                              }}
+                              disabled={
+                                growthActionLoading === 'prepare-ai-suggestion-run'
+                              }
+                            >
+                              {growthActionLoading === 'prepare-ai-suggestion-run'
+                                ? 'Preparando handoff...'
+                                : 'Registrar handoff auditable'}
+                            </button>
+                          </div>
                           <div className={styles.stack}>
                             {growthAssistAiEnvelope.contextBlocks
                               .slice(0, 3)
@@ -6404,6 +6479,44 @@ export function App() {
                                 </div>
                               ))}
                           </div>
+                          {growthAssistAiSuggestionRuns.length > 0 ? (
+                            <div className={styles.stack}>
+                              <span className={styles.muted}>
+                                Historial auditable reciente
+                              </span>
+                              {growthAssistAiSuggestionRuns
+                                .slice(0, 3)
+                                .map((entry) => (
+                                  <div
+                                    className={styles.assistCueCard}
+                                    key={entry.id}
+                                  >
+                                    <strong>{entry.summary}</strong>
+                                    <small>
+                                      {formatDate(entry.createdAt)} ·{' '}
+                                      {entry.requestedByEmail ??
+                                        entry.requestedByUserId}
+                                    </small>
+                                    <div className={styles.assistChecklist}>
+                                      <span className={styles.badge}>
+                                        {entry.status}
+                                      </span>
+                                      <span className={styles.badge}>
+                                        {entry.promptPackKey}@{entry.promptPackVersion}
+                                      </span>
+                                      {entry.suggestedOutputKeys.map((outputKey) => (
+                                        <span
+                                          className={styles.badge}
+                                          key={outputKey}
+                                        >
+                                          {outputKey}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          ) : null}
                           <small className={styles.muted}>
                             Guardrails:{' '}
                             {growthAssistAiEnvelope.promptPack.constraints.join(' ')}

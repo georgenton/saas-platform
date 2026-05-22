@@ -1908,16 +1908,31 @@ Consumer web inicial para este snapshot operativo:
           - `balanced`
           - `owner_queue_first`
           - `follow_up_first`
+        - además cada tenant ya puede guardar su pack por defecto:
+          - `GET /api/growth/tenants/:slug/conversations/operational-cases/auto-assignment-settings`
+          - `PUT /api/growth/tenants/:slug/conversations/operational-cases/auto-assignment-settings`
+        - cuando `POST /api/growth/tenants/:slug/conversations/operational-cases/auto-assign` corre sin `policyKey`, usa ese default persistido del tenant
         - la respuesta ya deja auditado:
           - qué `policyKey` corrió
           - cuántos casos heredaron owner existente
           - cuántos cayeron por fallback de menor carga
+      - el consumer web ahora también expone una primera capa `Growth Assist` sobre ese mismo core:
+        - traduce la cola operativa en una agenda simple tipo “qué hacer ahora”
+        - resume en lenguaje de negocio cuántas conversaciones requieren respuesta, seguimiento o reordenar owner
+        - muestra recordatorios de `waiting_customer` sin obligar al usuario a entender primero los lanes técnicos
+        - además ya muestra cues más opinados para negocio:
+          - calor simple de conversaciones (`lead caliente`, `en movimiento`, `en radar`)
+          - sugerencias de arranque de respuesta en lenguaje comercial sencillo
+          - playbooks cortos según el estado del workbench, los casos operativos y la salud del canal
+        - reutiliza el mismo `workbench`, `operational cases`, `outbound-summary` y `auto-assignment-settings`; no abre un segundo backend paralelo
 - el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
   - `GET /api/growth/tenants/:slug/conversations/operational-cases`
     - acepta `status`
     - acepta `routingPolicyKey`
+  - `GET /api/growth/tenants/:slug/conversations/operational-cases/auto-assignment-settings`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases/auto-assign`
+  - `PUT /api/growth/tenants/:slug/conversations/operational-cases/auto-assignment-settings`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/take`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/resolve`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/reopen`
@@ -1936,11 +1951,13 @@ Consumer web inicial para este snapshot operativo:
 La UI consume:
 - `GET /api/growth/tenants/:slug/conversations/workbench`
 - `GET /api/growth/tenants/:slug/conversations/operational-cases`
+- `GET /api/growth/tenants/:slug/conversations/operational-cases/auto-assignment-settings`
 - `POST /api/growth/tenants/:slug/conversations/operational-cases`
 - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/take`
 - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/resolve`
 - `POST /api/growth/tenants/:slug/conversations/operational-cases/:caseId/reopen`
 - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/outbound-summary`
+- `PUT /api/growth/tenants/:slug/conversations/operational-cases/auto-assignment-settings`
 - `POST /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor`
 - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor-runs`
 - `GET /api/growth/tenants/:slug/conversations/whatsapp-reporting/monitor-analytics`

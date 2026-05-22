@@ -8,6 +8,7 @@ import {
   WithholdingResponse,
   CustomerResponse,
   GrowthOperationalCaseAutoAssignmentResponse,
+  GrowthOperationalCaseAutoAssignmentSettingsResponse,
   GrowthOperationalCaseResponse,
   GrowthOperationalCaseRoutingReviewResponse,
   ElectronicSandboxReadinessResponse,
@@ -1387,6 +1388,40 @@ export async function reviewGrowthOperationalCaseRouting(
   );
 }
 
+export async function fetchGrowthOperationalCaseAutoAssignmentSettings(
+  token: string,
+  tenantSlug: string,
+): Promise<GrowthOperationalCaseAutoAssignmentSettingsResponse> {
+  return request<GrowthOperationalCaseAutoAssignmentSettingsResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/operational-cases/auto-assignment-settings`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function upsertGrowthOperationalCaseAutoAssignmentSettings(
+  token: string,
+  tenantSlug: string,
+  input: {
+    defaultPolicyKey: 'balanced' | 'owner_queue_first' | 'follow_up_first';
+  },
+): Promise<GrowthOperationalCaseAutoAssignmentSettingsResponse> {
+  return request<GrowthOperationalCaseAutoAssignmentSettingsResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/operational-cases/auto-assignment-settings`,
+    {
+      method: 'PUT',
+      token,
+      body: JSON.stringify(input),
+    },
+  );
+}
+
 export async function autoAssignGrowthOperationalCases(
   token: string,
   tenantSlug: string,
@@ -1401,7 +1436,7 @@ export async function autoAssignGrowthOperationalCases(
     {
       method: 'POST',
       token,
-      body: JSON.stringify(input ?? {}),
+      body: input ? JSON.stringify(input) : undefined,
     },
   );
 }

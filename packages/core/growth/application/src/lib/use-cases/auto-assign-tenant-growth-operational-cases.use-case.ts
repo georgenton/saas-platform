@@ -9,6 +9,7 @@ import { MembershipStatus } from '@saas-platform/tenancy-domain';
 import { ConversationThread } from '@saas-platform/growth-domain';
 import { GROWTH_PERMISSIONS } from '../permissions/growth-permissions';
 import { ConversationThreadRepository } from '../ports/conversation-thread.repository';
+import { GrowthOperationalCaseAutoAssignmentSettingsRepository } from '../ports/growth-operational-case-auto-assignment-settings.repository';
 import {
   GrowthOperationalCaseRecord,
   GrowthOperationalCaseRepository,
@@ -71,6 +72,7 @@ export class AutoAssignTenantGrowthOperationalCasesUseCase {
     private readonly tenantAccessRepository: TenantAccessRepository,
     private readonly userRepository: UserRepository,
     private readonly growthOperationalCaseRepository: GrowthOperationalCaseRepository,
+    private readonly settingsRepository: GrowthOperationalCaseAutoAssignmentSettingsRepository,
     private readonly conversationThreadRepository: ConversationThreadRepository,
     private readonly opportunityRepository: OpportunityRepository,
     private readonly nowProvider: () => Date = () => new Date(),
@@ -85,9 +87,10 @@ export class AutoAssignTenantGrowthOperationalCasesUseCase {
       throw new TenantNotFoundError(input.tenantSlug);
     }
 
-    const [memberships, cases, threads, opportunities] = await Promise.all([
+    const [memberships, cases, settings, threads, opportunities] = await Promise.all([
       this.membershipRepository.findByTenantId(tenant.id),
       this.growthOperationalCaseRepository.findByTenantId(tenant.id),
+      this.settingsRepository.findByTenantId(tenant.id),
       this.conversationThreadRepository.findByTenantId(tenant.id),
       this.opportunityRepository.findByTenantId(tenant.id),
     ]);
@@ -151,7 +154,7 @@ export class AutoAssignTenantGrowthOperationalCasesUseCase {
       });
     }
 
-    const policyKey = input.policyKey ?? 'balanced';
+    const policyKey = input.policyKey ?? settings?.defaultPolicyKey ?? 'balanced';
     const assignableCases = this.orderCasesForPolicy(
       cases.filter(
         (entry) =>

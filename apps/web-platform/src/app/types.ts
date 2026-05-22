@@ -954,6 +954,14 @@ export interface GrowthOperationalCaseAutoAssignmentResponse {
   cases: GrowthOperationalCaseResponse[];
 }
 
+export interface GrowthOperationalCaseAutoAssignmentSettingsResponse {
+  id: string;
+  tenantId: string;
+  defaultPolicyKey: 'balanced' | 'owner_queue_first' | 'follow_up_first';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface WhatsappOperationalAlertFrequencyResponse {
   alertKey: string;
   title: string;

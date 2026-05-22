@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.41.0
+
+### Minor Changes
+
+- d4e5cc6: Add the first transversal AI platform slice with a shared agent catalog, a tenant-scoped suggestion envelope for Growth Assist, and web wiring that exposes the AI handoff as a separate capability layer.
+
 ## 0.40.0
 
 ### Minor Changes

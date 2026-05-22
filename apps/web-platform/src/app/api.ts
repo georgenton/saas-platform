@@ -1,4 +1,6 @@
 import {
+  AiAgentCatalogResponse,
+  AiSuggestionEnvelopeResponse,
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CreditNoteResponse,
@@ -1159,6 +1161,31 @@ export async function fetchGrowthAssistDailyAgenda(
     `/growth/tenants/${encodeURIComponent(
       tenantSlug,
     )}/conversations/assist/daily-agenda`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAiAgentCatalog(
+  token: string,
+): Promise<AiAgentCatalogResponse[]> {
+  return request<AiAgentCatalogResponse[]>('/ai/agents', {
+    method: 'GET',
+    token,
+  });
+}
+
+export async function fetchTenantAiSuggestionEnvelope(
+  token: string,
+  tenantSlug: string,
+  agentKey: string,
+): Promise<AiSuggestionEnvelopeResponse> {
+  return request<AiSuggestionEnvelopeResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/agents/${encodeURIComponent(agentKey)}/suggestion-envelope`,
     {
       method: 'GET',
       token,

@@ -1,0 +1,7 @@
+{
+  "name": "ai-domain",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/ai/domain/src",
+  "projectType": "library",
+  "tags": ["scope:core", "domain:ai", "type:domain", "layer:domain"]
+}

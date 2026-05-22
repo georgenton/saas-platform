@@ -237,12 +237,30 @@ This is also transversal and should not be implemented as isolated logic inside 
 - model orchestration
 - prompt registry and versioning
 - retrieval and context loading
+- AI-ready context contracts exposed by each domain before model logic is added
 - tool calling
 - permissions and data access boundaries
 - audit trails of AI actions
 - approval workflows for high-risk actions
 - evaluation and observability
 - memory scoped by tenant and domain
+- suggestion mode versus execution mode, with explicit guardrails between them
+
+### Required platform pattern
+
+Every product should expose deterministic, domain-owned surfaces first, and the AI platform should consume those surfaces rather than bypass them.
+
+Examples:
+
+- `Growth` can expose a guided agenda contract with tasks, reply suggestions, next actions, warmth hints, and playbooks
+- `Electronic Invoicing EC` can expose drafting, review, and checklist surfaces for tax documents
+- `Ecommerce` can expose product, catalog, landing, and campaign context surfaces
+
+That means:
+
+- prompts should not become the hidden source of truth for domain logic
+- the domain still owns business rules, approvals, and workflow state
+- the AI platform sits above those contracts to suggest, explain, draft, or automate within explicit boundaries
 
 ### Agent families on top of it
 
@@ -257,6 +275,14 @@ This is also transversal and should not be implemented as isolated logic inside 
 ### Important rule
 
 There should be one `AI Platform`, many specialized agents, and strict domain-scoped access.
+
+The AI platform is not the same thing as a product-specific guided UI.
+
+For example:
+
+- `Growth Assist` is a product/workspace surface
+- future `Growth AI` capabilities should plug into that surface through the transversal AI platform
+- the same pattern should hold for invoicing, ecommerce, and future vertical products
 
 ## Product domains
 
@@ -710,13 +736,38 @@ The healthiest sequence is:
 
 Build one transversal AI runtime for domain-specific assistants.
 
+### First slice now grounded in the repo
+
+- the first transversal slice should not begin with direct model execution
+- it should begin by making the platform explicit and auditable:
+  - a transversal `AI` module
+  - an agent catalog
+  - tenant/domain-scoped suggestion envelopes
+  - a first consumer that still stays in `suggestion` mode
+- that first slice now has a natural starting point in the repository:
+  - `GET /api/ai/agents`
+  - `GET /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-envelope`
+- the first real consumer should be `Growth Assist`, but only as a surface:
+  - the AI layer consumes `growth.assist.daily_agenda`
+  - it does not become the new source of truth for Growth
+  - it does not send messages or mutate workflow state automatically
+  - it prepares a constrained, auditable handoff for future model-backed suggestions
+
 ### Recommended slices
 
 1. AI runtime and prompt registry
 2. tenant-scoped retrieval
-3. tool access model
-4. audit and approval flows
-5. first agent for invoicing/tax tasks
+3. AI-ready domain contract review
+4. tool access model
+5. audit and approval flows
+6. first agent for invoicing/tax tasks
+7. first suggestion-mode agent for Growth Assist surfaces
+
+### Suggested delivery discipline
+
+- first expose deterministic domain contracts that AI can consume
+- then add AI suggestion mode on top of those contracts
+- only after observability and approval flows exist should the platform move from suggestions into guarded execution
 
 ## Stage 6: Ecommerce
 
@@ -935,6 +986,10 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
             - AI-suggested replies
             - lead warmth hints
             - more explicit `Growth Assist` playbooks for non-expert operators
+         - important architectural clarification:
+            - those future AI suggestions should be implemented as agents on top of the transversal AI platform
+            - `Growth Assist` itself should remain a domain/workspace surface, not a second AI runtime hidden inside the product
+            - the existing deterministic agenda contract is valuable precisely because it gives the future AI layer a stable surface to consume and enhance
 5. `Ecommerce` first domain slice
    - catalog plus orders
 

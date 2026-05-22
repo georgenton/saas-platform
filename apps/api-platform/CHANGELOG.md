@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.37.0
+
+### Minor Changes
+
+- b95a93b: Enrich the Growth Assist daily agenda with explicit reply suggestions, follow-up prompts, and step-based playbooks for non-expert operators.
+
 ## 0.36.0
 
 ### Minor Changes

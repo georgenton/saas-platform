@@ -75,6 +75,9 @@ export interface TenantGrowthAssistPlaybookView {
   key: string;
   title: string;
   detail: string;
+  goal: string;
+  avoid: string;
+  successSignal: string;
   whenToUse: string;
   steps: string[];
 }
@@ -439,6 +442,12 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
         title: 'Responder primero',
         detail:
           'Antes de abrir nueva prospeccion, responde lo que ya llego caliente. Esa es la forma mas simple de no perder conversion por demora.',
+        goal:
+          'Recuperar velocidad de respuesta y dejar un siguiente paso claro sin sonar robotico.',
+        avoid:
+          'No contestes con un texto generico que ignore el contexto ni dejes la conversacion abierta sin siguiente paso.',
+        successSignal:
+          'El lead responde o acepta el siguiente paso dentro de la misma ventana de seguimiento.',
         whenToUse: 'Cuando hay conversaciones sin primera respuesta o follow-up vencido.',
         steps: [
           'Agradece el contacto y retoma el contexto en una frase simple.',
@@ -455,6 +464,12 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
         detail: `El negocio ya puede repartir trabajo con el criterio guardado: ${this.describePolicy(
           savedPolicyKey,
         )}.`,
+        goal:
+          'Evitar que conversaciones vivas se queden sin dueño o se repartan tarde.',
+        avoid:
+          'No dejes casos criticos flotando ni asumas que alguien mas los va a tomar despues.',
+        successSignal:
+          'Cada conversacion prioritaria queda con owner claro y proxima accion visible.',
         whenToUse: 'Cuando ves conversaciones o casos sin owner claro.',
         steps: [
           'Auto-organiza la cola con el pack guardado.',
@@ -470,6 +485,12 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
         title: 'Cuidar la salud del canal',
         detail:
           'Si el canal esta inestable, mas mensajes no siempre ayudan. Revisa alertas y retries antes de empujar volumen nuevo.',
+        goal:
+          'Proteger el timing comercial evitando que el canal falle en silencio.',
+        avoid:
+          'No aumentes volumen si el monitor ya esta advirtiendo fallos o retries bloqueados.',
+        successSignal:
+          'Las alertas bajan, los retries se ordenan y el canal vuelve a estado saludable o controlado.',
         whenToUse: 'Cuando el monitor muestra alertas o retries listos.',
         steps: [
           'Actualiza la salud del canal antes de lanzar mas actividad.',
@@ -485,6 +506,12 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
         title: 'Vigilar respuestas pendientes',
         detail:
           'No todo requiere accionar hoy; tambien conviene tener a mano lo que ya esta esperando cliente para retomar en el momento justo.',
+        goal:
+          'Mantener presencia comercial sin sobre-insistir cuando el siguiente turno depende del cliente.',
+        avoid:
+          'No empujes demasiado pronto ni dejes que el caso desaparezca del radar por completo.',
+        successSignal:
+          'El caso sigue visible con fecha clara de retoma y contexto suficiente para volver sin friccion.',
         whenToUse: 'Cuando la cola tiene seguimientos esperando respuesta del cliente.',
         steps: [
           'Agrupa los casos que estan esperando al cliente.',
@@ -500,6 +527,12 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
         title: 'Mantener ritmo comercial',
         detail:
           'Sin urgencias visibles, Growth ya funciona como agenda simple: revisa leads nuevos, confirma seguimientos de hoy y deja claro el siguiente paso de cada conversacion.',
+        goal:
+          'Sostener consistencia comercial antes de que aparezcan urgencias de verdad.',
+        avoid:
+          'No confundas calma con abandono; una agenda sin urgencias igual necesita ritmo y siguiente paso claro.',
+        successSignal:
+          'Las conversaciones activas mantienen movimiento y las nuevas no se enfrían por falta de rutina.',
         whenToUse: 'Cuando no hay urgencias y el canal esta sano.',
         steps: [
           'Revisa si entraron leads nuevos o conversaciones tibias.',

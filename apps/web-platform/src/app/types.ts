@@ -1023,6 +1023,9 @@ export interface GrowthAssistPlaybookResponse {
   key: string;
   title: string;
   detail: string;
+  goal: string;
+  avoid: string;
+  successSignal: string;
   whenToUse: string;
   steps: string[];
 }

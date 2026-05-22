@@ -229,6 +229,12 @@ describe('Growth assist daily agenda use case', () => {
     expect(result.playbooks[0]).toEqual(
       expect.objectContaining({
         key: 'reply-now',
+        goal:
+          'Recuperar velocidad de respuesta y dejar un siguiente paso claro sin sonar robotico.',
+        avoid:
+          'No contestes con un texto generico que ignore el contexto ni dejes la conversacion abierta sin siguiente paso.',
+        successSignal:
+          'El lead responde o acepta el siguiente paso dentro de la misma ventana de seguimiento.',
         whenToUse: 'Cuando hay conversaciones sin primera respuesta o follow-up vencido.',
         steps: expect.arrayContaining([
           'Agradece el contacto y retoma el contexto en una frase simple.',

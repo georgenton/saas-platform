@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.40.0
+
+### Minor Changes
+
+- 6c97969: Enrich Growth Assist playbooks with clearer goals, anti-patterns to avoid, and success signals so non-expert operators get more explicit business guidance.
+
 ## 0.39.0
 
 ### Minor Changes

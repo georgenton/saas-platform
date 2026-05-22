@@ -80,7 +80,7 @@ export const toAiSuggestionEnvelopeResponseDto = (
       ...entry,
     })),
   },
-  toolAccess: envelope.toolAccess.map((entry) => ({
+  toolAccess: (envelope.toolAccess ?? []).map((entry) => ({
     tool: {
       ...entry.tool,
     },

@@ -25,6 +25,7 @@ import {
   GROWTH_OPERATIONAL_CASE_REPOSITORY,
   GROWTH_OPERATIONAL_CASE_AUTO_ASSIGNMENT_SETTINGS_REPOSITORY,
   GetTenantConversationThreadByIdUseCase,
+  GetTenantGrowthAssistDailyAgendaUseCase,
   GetTenantGrowthConversationWorkbenchUseCase,
   GetTenantGrowthAssignmentWorkloadUseCase,
   GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
@@ -161,6 +162,27 @@ import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp
           growthOperationalCaseAutoAssignmentSettingsRepository,
           conversationThreadRepository,
           opportunityRepository,
+        ),
+    },
+    {
+      provide: GetTenantGrowthAssistDailyAgendaUseCase,
+      inject: [
+        GetTenantGrowthConversationWorkbenchUseCase,
+        GetTenantWhatsappOutboundReportingSummaryUseCase,
+        ListTenantGrowthOperationalCasesUseCase,
+        GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
+      ],
+      useFactory: (
+        getTenantGrowthConversationWorkbenchUseCase,
+        getTenantWhatsappOutboundReportingSummaryUseCase,
+        listTenantGrowthOperationalCasesUseCase,
+        getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
+      ) =>
+        new GetTenantGrowthAssistDailyAgendaUseCase(
+          getTenantGrowthConversationWorkbenchUseCase,
+          getTenantWhatsappOutboundReportingSummaryUseCase,
+          listTenantGrowthOperationalCasesUseCase,
+          getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
         ),
     },
     {

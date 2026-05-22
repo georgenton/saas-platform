@@ -19,6 +19,7 @@ import {
   deleteWhatsappOperationalAlertAcknowledgement,
   downloadInvoiceElectronicRideHtml,
   downloadInvoiceElectronicXmlPreview,
+  fetchGrowthAssistDailyAgenda,
   fetchGrowthOperationalCaseAutoAssignmentSettings,
   fetchWhatsappOperationalAlertAcknowledgements,
   fetchWhatsappOperationalMonitorAnalytics,
@@ -80,6 +81,7 @@ import {
   ElectronicSignatureMaterialInspectionResponse,
   ElectronicSubmissionSettingsResponse,
   ElectronicSignatureSettingsResponse,
+  GrowthAssistDailyAgendaResponse,
   GrowthOperationalCaseAutoAssignmentSettingsResponse,
   GrowthConversationWorkbenchResponse,
   GrowthOperationalCaseAutoAssignmentResponse,
@@ -469,10 +471,12 @@ function operationalStatusWeight(
 
 function workbenchPriorityWeight(priority: string): number {
   switch (priority) {
+    case 'critical':
     case 'urgent':
       return 4;
     case 'high':
       return 3;
+    case 'normal':
     case 'medium':
       return 2;
     case 'low':
@@ -882,6 +886,8 @@ export function App() {
   >(null);
   const [growthWorkbench, setGrowthWorkbench] =
     useState<GrowthConversationWorkbenchResponse | null>(null);
+  const [growthAssistAgenda, setGrowthAssistAgenda] =
+    useState<GrowthAssistDailyAgendaResponse | null>(null);
   const [whatsappSummary, setWhatsappSummary] =
     useState<WhatsappOutboundReportingSummaryResponse | null>(null);
   const [whatsappMonitorSummary, setWhatsappMonitorSummary] =
@@ -1929,15 +1935,26 @@ export function App() {
       channelRiskCount: whatsappSummary?.operationalAlerts.length ?? 0,
     };
   }, [growthOperationalCases, growthWorkbench, whatsappSummary]);
-  const growthAssistSummary = useMemo(() => {
+  const growthAssistSummary = useMemo<GrowthAssistDailyAgendaResponse['summary'] | null>(() => {
     if (!growthWorkbench || !whatsappSummary) {
       return null;
     }
 
     const dashboard = whatsappSummary.operationalDashboard;
+    const baseSummary = {
+      replyNowCount: growthAssistSignals.replyNowCount,
+      followUpNowCount: growthAssistSignals.followUpNowCount,
+      waitingCustomerCount: growthAssistSignals.waitingCustomerCount,
+      queueToOrganizeCount: growthAssistSignals.queueToOrganizeCount,
+      channelRiskCount: growthAssistSignals.channelRiskCount,
+      savedPolicyKey:
+        (growthOperationalCaseAutoAssignmentSettings?.defaultPolicyKey ?? 'balanced') as
+          GrowthAssistDailyAgendaResponse['summary']['savedPolicyKey'],
+    };
 
     if (growthAssistSignals.replyNowCount > 0) {
       return {
+        ...baseSummary,
         tone: 'critical' as const,
         headline: 'Hoy ya hay conversaciones que necesitan respuesta inmediata.',
         detail:
@@ -1947,6 +1964,7 @@ export function App() {
 
     if (growthAssistSignals.followUpNowCount > 0) {
       return {
+        ...baseSummary,
         tone: 'warning' as const,
         headline: 'La bandeja no esta rota, pero si hay seguimientos que no conviene dejar enfriar.',
         detail:
@@ -1956,6 +1974,7 @@ export function App() {
 
     if (dashboard.overallStatus === 'critical') {
       return {
+        ...baseSummary,
         tone: 'critical' as const,
         headline: 'La conversacion comercial esta ordenada, pero el canal necesita atencion.',
         detail:
@@ -1965,6 +1984,7 @@ export function App() {
 
     if (dashboard.overallStatus === 'warning') {
       return {
+        ...baseSummary,
         tone: 'warning' as const,
         headline: 'La agenda esta controlada, aunque el canal ya muestra desgaste ligero.',
         detail:
@@ -1973,12 +1993,18 @@ export function App() {
     }
 
     return {
+      ...baseSummary,
       tone: 'healthy' as const,
       headline: 'La operacion esta bajo control; puedes usar Growth como agenda diaria y radar temprano.',
       detail:
         'No hay urgencias fuertes ahora mismo. Aprovecha para mantener seguimiento consistente y revisar leads calientes antes de que se enfrien.',
     };
-  }, [growthAssistSignals, growthWorkbench, whatsappSummary]);
+  }, [
+    growthAssistSignals,
+    growthOperationalCaseAutoAssignmentSettings?.defaultPolicyKey,
+    growthWorkbench,
+    whatsappSummary,
+  ]);
   const growthAssistTasks = useMemo(() => {
     const tasks: GrowthAssistTask[] = [];
 
@@ -2202,6 +2228,40 @@ export function App() {
 
     return counts;
   }, [growthAssistConversationCues]);
+  const effectiveGrowthAssistSummary =
+    growthAssistAgenda?.summary ?? growthAssistSummary;
+  const effectiveGrowthAssistTasks =
+    growthAssistAgenda?.tasks ?? growthAssistTasks;
+  const effectiveGrowthAssistConversationCues =
+    growthAssistAgenda?.conversationCues ?? growthAssistConversationCues;
+  const effectiveGrowthAssistPlaybooks =
+    growthAssistAgenda?.playbooks ?? growthAssistPlaybooks;
+  const effectiveGrowthAssistWaitingCustomers =
+    growthAssistAgenda?.waitingCustomerQueue ?? growthAssistWaitingCustomers;
+  const effectiveGrowthAssistWaitingCustomerCards = useMemo(
+    () =>
+      effectiveGrowthAssistWaitingCustomers.map((entry) => ({
+        id: 'caseId' in entry ? entry.caseId : entry.id,
+        title: entry.title,
+        summary: entry.summary,
+        nextAction: entry.nextAction,
+        assignedUserEmail: entry.assignedUserEmail,
+        dueAt: entry.dueAt,
+        followUpState:
+          'followUpState' in entry ? entry.followUpState : ('waiting_customer' as const),
+      })),
+    [effectiveGrowthAssistWaitingCustomers],
+  );
+  const effectiveGrowthAssistLeadWarmthSummary = growthAssistAgenda
+    ? growthAssistAgenda.conversationCues.reduce(
+        (summary, cue) => {
+          summary[cue.warmth] += 1;
+          return summary;
+        },
+        { hot: 0, warm: 0, watch: 0 },
+      )
+    : growthAssistLeadWarmthSummary;
+  const effectiveGrowthAssistChannelHealth = growthAssistAgenda?.channelHealth ?? null;
   const workbenchEmptyMessage = useMemo(() => {
     if (!growthWorkbench) {
       return 'Cuando termine la carga veremos el resumen SLA del workbench.';
@@ -2779,6 +2839,7 @@ export function App() {
       !growthWorkspaceAvailable
     ) {
       setGrowthWorkbench(null);
+      setGrowthAssistAgenda(null);
       setWhatsappSummary(null);
       setWhatsappMonitorSummary(null);
       setWhatsappMonitorAnalytics(null);
@@ -2801,6 +2862,7 @@ export function App() {
       try {
         const [
           nextWorkbench,
+          nextAssistAgenda,
           nextSummary,
           nextMonitorRuns,
           nextMonitorAnalytics,
@@ -2817,6 +2879,7 @@ export function App() {
             followUpSlaHours: Number(followUpSlaHours) || null,
             staleThreadHours: Number(staleThreadHours) || null,
           }),
+          fetchGrowthAssistDailyAgenda(token, tenantSlug),
           fetchWhatsappOutboundReportingSummary(token, tenantSlug),
           fetchWhatsappOperationalMonitorRuns(token, tenantSlug),
           fetchWhatsappOperationalMonitorAnalytics(token, tenantSlug),
@@ -2831,6 +2894,7 @@ export function App() {
 
         startTransition(() => {
           setGrowthWorkbench(nextWorkbench);
+          setGrowthAssistAgenda(nextAssistAgenda);
           setWhatsappSummary(nextSummary);
           setGrowthMonitorHistory(nextMonitorRuns);
           setWhatsappMonitorAnalytics(nextMonitorAnalytics);
@@ -2849,6 +2913,7 @@ export function App() {
         }
 
         setGrowthWorkbench(null);
+        setGrowthAssistAgenda(null);
         setWhatsappSummary(null);
         setWhatsappMonitorSummary(null);
         setWhatsappMonitorAnalytics(null);
@@ -3373,6 +3438,7 @@ export function App() {
     try {
       const [
         nextWorkbench,
+        nextAssistAgenda,
         nextSummary,
         nextMonitorRuns,
         nextMonitorAnalytics,
@@ -3388,6 +3454,7 @@ export function App() {
           followUpSlaHours: Number(followUpSlaHours) || null,
           staleThreadHours: Number(staleThreadHours) || null,
         }),
+        fetchGrowthAssistDailyAgenda(token, tenantSlug),
         fetchWhatsappOutboundReportingSummary(token, tenantSlug),
         fetchWhatsappOperationalMonitorRuns(token, tenantSlug),
         fetchWhatsappOperationalMonitorAnalytics(token, tenantSlug),
@@ -3398,6 +3465,7 @@ export function App() {
 
       startTransition(() => {
         setGrowthWorkbench(nextWorkbench);
+        setGrowthAssistAgenda(nextAssistAgenda);
         setWhatsappSummary(nextSummary);
         setGrowthMonitorHistory(nextMonitorRuns);
         setWhatsappMonitorAnalytics(nextMonitorAnalytics);
@@ -3811,6 +3879,7 @@ export function App() {
     setGrowthActionMessage(null);
     setGrowthError(null);
     setGrowthWorkbench(null);
+    setGrowthAssistAgenda(null);
     setWhatsappSummary(null);
     setWhatsappMonitorSummary(null);
     setWhatsappMonitorAnalytics(null);
@@ -5788,7 +5857,7 @@ export function App() {
               ) : null}
               {currentTenancy && growthWorkspaceAvailable ? (
                 <div className={styles.stack}>
-                  {growthAssistSummary ? (
+                  {effectiveGrowthAssistSummary ? (
                     <div className={styles.assistBrief}>
                       <div className={styles.sectionHeading}>
                         <div>
@@ -5797,34 +5866,34 @@ export function App() {
                         </div>
                         <span
                           className={`${styles.statusPill} ${operationalStatusTone(
-                            growthAssistSummary.tone,
+                            effectiveGrowthAssistSummary.tone,
                           )}`}
                         >
-                          {operationalStatusLabel(growthAssistSummary.tone)}
+                          {operationalStatusLabel(effectiveGrowthAssistSummary.tone)}
                         </span>
                       </div>
-                      <p>{growthAssistSummary.headline}</p>
-                      <small>{growthAssistSummary.detail}</small>
+                      <p>{effectiveGrowthAssistSummary.headline}</p>
+                      <small>{effectiveGrowthAssistSummary.detail}</small>
 
                       <div className={styles.invoiceKpiGrid}>
                         <div className={styles.commercialCard}>
                           <span className={styles.muted}>Responder hoy</span>
-                          <strong>{growthAssistSignals.replyNowCount}</strong>
+                          <strong>{effectiveGrowthAssistSummary.replyNowCount}</strong>
                           <small>Conversaciones sin primera respuesta a tiempo</small>
                         </div>
                         <div className={styles.commercialCard}>
                           <span className={styles.muted}>Seguimientos del equipo</span>
-                          <strong>{growthAssistSignals.followUpNowCount}</strong>
+                          <strong>{effectiveGrowthAssistSummary.followUpNowCount}</strong>
                           <small>Casos o threads que no conviene dejar enfriar</small>
                         </div>
                         <div className={styles.commercialCard}>
                           <span className={styles.muted}>Esperando cliente</span>
-                          <strong>{growthAssistSignals.waitingCustomerCount}</strong>
+                          <strong>{effectiveGrowthAssistSummary.waitingCustomerCount}</strong>
                           <small>Seguimientos que solo piden vigilancia y timing</small>
                         </div>
                         <div className={styles.commercialCard}>
                           <span className={styles.muted}>Ordenar cola</span>
-                          <strong>{growthAssistSignals.queueToOrganizeCount}</strong>
+                          <strong>{effectiveGrowthAssistSummary.queueToOrganizeCount}</strong>
                           <small>
                             Trabajo sin owner claro o ya escalado para revision
                           </small>
@@ -5842,7 +5911,7 @@ export function App() {
                         </div>
                       </div>
 
-                      {growthAssistTasks.length === 0 ? (
+                      {effectiveGrowthAssistTasks.length === 0 ? (
                         <div className={styles.emptyState}>
                           <p>
                             Hoy no hay una tarea urgente marcada por el sistema. Puedes
@@ -5851,7 +5920,7 @@ export function App() {
                           </p>
                         </div>
                       ) : (
-                        growthAssistTasks.map((task) => (
+                        effectiveGrowthAssistTasks.map((task) => (
                           <div className={styles.assistTaskCard} key={task.key}>
                             <div className={styles.invoiceCardHeader}>
                               <strong>{task.title}</strong>
@@ -5890,17 +5959,17 @@ export function App() {
 
                       <div className={styles.badgeRow}>
                         <span className={styles.badge}>
-                          Calientes {growthAssistLeadWarmthSummary.hot}
+                          Calientes {effectiveGrowthAssistLeadWarmthSummary.hot}
                         </span>
                         <span className={styles.badge}>
-                          En movimiento {growthAssistLeadWarmthSummary.warm}
+                          En movimiento {effectiveGrowthAssistLeadWarmthSummary.warm}
                         </span>
                         <span className={styles.badge}>
-                          En radar {growthAssistLeadWarmthSummary.watch}
+                          En radar {effectiveGrowthAssistLeadWarmthSummary.watch}
                         </span>
                       </div>
 
-                      {growthAssistConversationCues.length === 0 ? (
+                      {effectiveGrowthAssistConversationCues.length === 0 ? (
                         <div className={styles.emptyState}>
                           <p>
                             Cuando el workbench detecte conversaciones calientes o
@@ -5909,7 +5978,7 @@ export function App() {
                           </p>
                         </div>
                       ) : (
-                        growthAssistConversationCues.map((cue) => (
+                        effectiveGrowthAssistConversationCues.map((cue) => (
                           <div className={styles.assistCueCard} key={cue.key}>
                             <div className={styles.invoiceCardHeader}>
                               <strong>{cue.title}</strong>
@@ -5945,20 +6014,22 @@ export function App() {
                         {' '}
                         <strong>
                           {describeGrowthOperationalCaseAutoAssignmentPolicy(
-                            growthOperationalCaseAutoAssignmentSettings?.defaultPolicyKey ??
+                            effectiveGrowthAssistSummary?.savedPolicyKey ??
+                              growthOperationalCaseAutoAssignmentSettings?.defaultPolicyKey ??
                               'balanced',
                           )}
                         </strong>
                         . En lenguaje simple, eso significa{' '}
                         {describeGrowthAssistAutoAssignmentPolicy(
-                          growthOperationalCaseAutoAssignmentSettings?.defaultPolicyKey ??
+                          effectiveGrowthAssistSummary?.savedPolicyKey ??
+                            growthOperationalCaseAutoAssignmentSettings?.defaultPolicyKey ??
                             'balanced',
                         )}
                         .
                       </p>
 
                       <div className={styles.stack}>
-                        {growthAssistPlaybooks.map((playbook) => (
+                        {effectiveGrowthAssistPlaybooks.map((playbook) => (
                           <div className={styles.invoiceItemCard} key={playbook.key}>
                             <strong>{playbook.title}</strong>
                             <small>{playbook.detail}</small>
@@ -6026,7 +6097,7 @@ export function App() {
                         </div>
                       </div>
 
-                      {growthAssistWaitingCustomers.length === 0 ? (
+                      {effectiveGrowthAssistWaitingCustomerCards.length === 0 ? (
                         <div className={styles.emptyState}>
                           <p>
                             Por ahora no hay seguimientos claramente en espera del
@@ -6035,7 +6106,7 @@ export function App() {
                           </p>
                         </div>
                       ) : (
-                        growthAssistWaitingCustomers.map((entry) => (
+                        effectiveGrowthAssistWaitingCustomerCards.map((entry) => (
                           <div className={styles.invoiceItemCard} key={entry.id}>
                             <div className={styles.invoiceCardHeader}>
                               <strong>{entry.title}</strong>
@@ -6070,49 +6141,62 @@ export function App() {
                         </div>
                       </div>
 
-                      {whatsappSummary ? (
+                      {effectiveGrowthAssistChannelHealth || whatsappSummary ? (
                         <>
                           <p className={styles.muted}>
                             Estado actual del canal:{' '}
                             <strong>
                               {operationalStatusLabel(
-                                whatsappSummary.operationalDashboard.overallStatus,
+                                effectiveGrowthAssistChannelHealth?.overallStatus ??
+                                  whatsappSummary?.operationalDashboard.overallStatus ??
+                                  'healthy',
                               )}
                             </strong>
                             . Hoy hay{' '}
                             <strong>
-                              {whatsappSummary.operationalAlerts.length}
+                              {effectiveGrowthAssistChannelHealth?.totalAlertCount ??
+                                whatsappSummary?.operationalAlerts.length ??
+                                0}
                             </strong>{' '}
                             alertas activas y{' '}
                             <strong>
-                              {whatsappSummary.retryOperations.readyNowCount}
+                              {effectiveGrowthAssistChannelHealth?.readyRetryCount ??
+                                whatsappSummary?.retryOperations.readyNowCount ??
+                                0}
                             </strong>{' '}
                             mensajes listos para reintento.
                           </p>
                           <div className={styles.badgeRow}>
                             <span className={styles.badge}>
-                              Entregados {whatsappSummary.totals.deliveredCount}
+                              Entregados {whatsappSummary?.totals.deliveredCount ?? 0}
                             </span>
                             <span className={styles.badge}>
-                              Leidos {whatsappSummary.totals.readCount}
+                              Leidos {whatsappSummary?.totals.readCount ?? 0}
                             </span>
                             <span className={styles.badge}>
-                              Fallidos {whatsappSummary.totals.failedCount}
+                              Fallidos {whatsappSummary?.totals.failedCount ?? 0}
                             </span>
                             <span className={styles.badge}>
                               Ready retries{' '}
-                              {whatsappSummary.retryOperations.readyNowCount}
+                              {whatsappSummary?.retryOperations.readyNowCount ?? 0}
                             </span>
                           </div>
-                          {whatsappSummary.operationalAlerts[0] ? (
+                          {effectiveGrowthAssistChannelHealth?.topAlertTitle ||
+                          whatsappSummary?.operationalAlerts[0] ? (
                             <div className={styles.invoiceItemCard}>
                               <strong>
-                                Alerta principal: {whatsappSummary.operationalAlerts[0].title}
+                                Alerta principal:{' '}
+                                {effectiveGrowthAssistChannelHealth?.topAlertTitle ??
+                                  whatsappSummary?.operationalAlerts[0]?.title}
                               </strong>
-                              <small>{whatsappSummary.operationalAlerts[0].summary}</small>
+                              <small>
+                                {effectiveGrowthAssistChannelHealth?.topAlertSummary ??
+                                  whatsappSummary?.operationalAlerts[0]?.summary}
+                              </small>
                               <small>
                                 Siguiente paso sugerido:{' '}
-                                {whatsappSummary.operationalAlerts[0].recommendedAction}
+                                {effectiveGrowthAssistChannelHealth?.topAlertRecommendedAction ??
+                                  whatsappSummary?.operationalAlerts[0]?.recommendedAction}
                               </small>
                             </div>
                           ) : (

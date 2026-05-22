@@ -1925,10 +1925,21 @@ Consumer web inicial para este snapshot operativo:
           - sugerencias de arranque de respuesta en lenguaje comercial sencillo
           - playbooks cortos según el estado del workbench, los casos operativos y la salud del canal
         - reutiliza el mismo `workbench`, `operational cases`, `outbound-summary` y `auto-assignment-settings`; no abre un segundo backend paralelo
+      - ese modo asistido ya tiene su propio contrato backend:
+        - `GET /api/growth/tenants/:slug/conversations/assist/daily-agenda`
+        - resume:
+          - `summary`
+          - `tasks`
+          - `conversationCues`
+          - `playbooks`
+          - `waitingCustomerQueue`
+          - `channelHealth`
+        - con eso la web ya no depende solo de heurísticas locales para explicar “qué hacer hoy”
 - el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
   - `GET /api/growth/tenants/:slug/conversations/operational-cases`
     - acepta `status`
     - acepta `routingPolicyKey`
+  - `GET /api/growth/tenants/:slug/conversations/assist/daily-agenda`
   - `GET /api/growth/tenants/:slug/conversations/operational-cases/auto-assignment-settings`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases/auto-assign`

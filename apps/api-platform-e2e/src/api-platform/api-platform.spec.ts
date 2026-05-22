@@ -54,6 +54,7 @@ import {
   CreateTenantWhatsappMessageTemplateUseCase,
   ExecuteTenantWhatsappAutomationActionsUseCase,
   GetTenantConversationThreadByIdUseCase,
+  GetTenantGrowthAssistDailyAgendaUseCase,
   GetTenantGrowthConversationWorkbenchUseCase,
   GetTenantGrowthAssignmentWorkloadUseCase,
   GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
@@ -226,6 +227,7 @@ describe('API', () => {
   let getTenantIssuerProfileUseCase: { execute: jest.Mock };
   let getTenantPartyByIdUseCase: { execute: jest.Mock };
   let getTenantConversationThreadByIdUseCase: { execute: jest.Mock };
+  let getTenantGrowthAssistDailyAgendaUseCase: { execute: jest.Mock };
   let getTenantGrowthConversationWorkbenchUseCase: { execute: jest.Mock };
   let getTenantGrowthAssignmentWorkloadUseCase: { execute: jest.Mock };
   let getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase: {
@@ -1197,6 +1199,64 @@ describe('API', () => {
     defaultPolicyKey: 'follow_up_first' as const,
     createdAt: new Date('2026-05-20T10:00:00.000Z'),
     updatedAt: new Date('2026-05-20T10:32:00.000Z'),
+  };
+  const growthAssistDailyAgenda = {
+    tenantSlug: 'saas-platform',
+    generatedAt: new Date('2026-05-20T10:36:00.000Z'),
+    summary: {
+      tone: 'warning' as const,
+      headline: 'La bandeja no esta rota, pero si hay seguimientos que no conviene dejar enfriar.',
+      detail:
+        'Usa esta agenda como recordatorio simple: primero sigue lo que ya esta caliente, luego reparte owner nuevo si hace falta.',
+      replyNowCount: 1,
+      followUpNowCount: 2,
+      waitingCustomerCount: 0,
+      queueToOrganizeCount: 1,
+      channelRiskCount: 0,
+      savedPolicyKey: 'follow_up_first' as const,
+    },
+    tasks: [
+      {
+        key: 'reply:thread_001',
+        urgency: 'today' as const,
+        category: 'reply_now' as const,
+        title: 'Responder a WhatsApp Maria Perez',
+        summary: 'WhatsApp lleva 2 horas esperando una respuesta del equipo.',
+        actionLabel: 'Asignar y responder',
+        dueAt: new Date('2026-05-20T08:00:00.000Z'),
+        threadId: 'thread_001',
+        operationalCaseId: null,
+      },
+    ],
+    conversationCues: [
+      {
+        key: 'thread_001',
+        warmth: 'hot' as const,
+        title: 'WhatsApp Maria Perez',
+        summary: 'WhatsApp · ultima actividad hace 2 horas · Hola, quisiera una demo.',
+        suggestedReply:
+          'Hola WhatsApp Maria Perez, gracias por escribirnos. Quiero retomar esto hoy mismo y dejarte el siguiente paso claro.',
+        nextMove: 'Primero deja owner claro y luego responde.',
+        threadId: 'thread_001',
+      },
+    ],
+    playbooks: [
+      {
+        key: 'reply-now',
+        title: 'Responder primero',
+        detail:
+          'Antes de abrir nueva prospeccion, responde lo que ya llego caliente. Esa es la forma mas simple de no perder conversion por demora.',
+      },
+    ],
+    waitingCustomerQueue: [],
+    channelHealth: {
+      overallStatus: 'healthy' as const,
+      totalAlertCount: 0,
+      readyRetryCount: 0,
+      topAlertTitle: null,
+      topAlertSummary: null,
+      topAlertRecommendedAction: null,
+    },
   };
   const whatsappMessageTemplate = WhatsappMessageTemplate.create({
     id: 'template_001',
@@ -2450,6 +2510,9 @@ describe('API', () => {
     getTenantConversationThreadByIdUseCase = {
       execute: jest.fn().mockResolvedValue(conversationThread),
     };
+    getTenantGrowthAssistDailyAgendaUseCase = {
+      execute: jest.fn().mockResolvedValue(growthAssistDailyAgenda),
+    };
     getTenantGrowthConversationWorkbenchUseCase = {
       execute: jest.fn().mockResolvedValue(growthConversationWorkbench),
     };
@@ -3282,6 +3345,8 @@ describe('API', () => {
       .useValue(createTenantConversationThreadUseCase)
       .overrideProvider(CreateTenantGrowthOperationalCaseUseCase)
       .useValue(createTenantGrowthOperationalCaseUseCase)
+      .overrideProvider(GetTenantGrowthAssistDailyAgendaUseCase)
+      .useValue(getTenantGrowthAssistDailyAgendaUseCase)
       .overrideProvider(GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase)
       .useValue(getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase)
       .overrideProvider(CreateTenantWhatsappAutomationRuleUseCase)
@@ -4659,6 +4724,77 @@ describe('API', () => {
         followUpSlaHours: 6,
         staleThreadHours: 24,
       },
+    );
+  });
+
+  it('GET /api/growth/tenants/:slug/conversations/assist/daily-agenda should return the simplified Growth Assist agenda', async () => {
+    await request(httpServer)
+      .get('/api/growth/tenants/saas-platform/conversations/assist/daily-agenda')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        tenantSlug: 'saas-platform',
+        generatedAt: '2026-05-20T10:36:00.000Z',
+        summary: {
+          tone: 'warning',
+          headline:
+            'La bandeja no esta rota, pero si hay seguimientos que no conviene dejar enfriar.',
+          detail:
+            'Usa esta agenda como recordatorio simple: primero sigue lo que ya esta caliente, luego reparte owner nuevo si hace falta.',
+          replyNowCount: 1,
+          followUpNowCount: 2,
+          waitingCustomerCount: 0,
+          queueToOrganizeCount: 1,
+          channelRiskCount: 0,
+          savedPolicyKey: 'follow_up_first',
+        },
+        tasks: [
+          {
+            key: 'reply:thread_001',
+            urgency: 'today',
+            category: 'reply_now',
+            title: 'Responder a WhatsApp Maria Perez',
+            summary: 'WhatsApp lleva 2 horas esperando una respuesta del equipo.',
+            actionLabel: 'Asignar y responder',
+            dueAt: '2026-05-20T08:00:00.000Z',
+            threadId: 'thread_001',
+            operationalCaseId: null,
+          },
+        ],
+        conversationCues: [
+          {
+            key: 'thread_001',
+            warmth: 'hot',
+            title: 'WhatsApp Maria Perez',
+            summary:
+              'WhatsApp · ultima actividad hace 2 horas · Hola, quisiera una demo.',
+            suggestedReply:
+              'Hola WhatsApp Maria Perez, gracias por escribirnos. Quiero retomar esto hoy mismo y dejarte el siguiente paso claro.',
+            nextMove: 'Primero deja owner claro y luego responde.',
+            threadId: 'thread_001',
+          },
+        ],
+        playbooks: [
+          {
+            key: 'reply-now',
+            title: 'Responder primero',
+            detail:
+              'Antes de abrir nueva prospeccion, responde lo que ya llego caliente. Esa es la forma mas simple de no perder conversion por demora.',
+          },
+        ],
+        waitingCustomerQueue: [],
+        channelHealth: {
+          overallStatus: 'healthy',
+          totalAlertCount: 0,
+          readyRetryCount: 0,
+          topAlertTitle: null,
+          topAlertSummary: null,
+          topAlertRecommendedAction: null,
+        },
+      });
+
+    expect(getTenantGrowthAssistDailyAgendaUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
     );
   });
 

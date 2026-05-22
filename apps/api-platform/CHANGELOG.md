@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.42.0
+
+### Minor Changes
+
+- 7894589: Add explicit transversal AI prompt-registry endpoints and wire Growth Assist suggestion envelopes to consume versioned prompt packs instead of hardcoded prompt metadata.
+
 ## 0.41.0
 
 ### Minor Changes

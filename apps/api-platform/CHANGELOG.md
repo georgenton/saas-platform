@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.39.0
+
+### Minor Changes
+
+- e4e82ef: Add explicit Growth Assist lead-warmth summaries and hints so the guided workspace can explain commercial heat, cadence, and risk in simpler business language.
+
 ## 0.38.0
 
 ### Minor Changes

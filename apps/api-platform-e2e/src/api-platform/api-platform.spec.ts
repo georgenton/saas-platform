@@ -1304,6 +1304,12 @@ describe('API', () => {
         title: 'Responder primero',
         detail:
           'Antes de abrir nueva prospeccion, responde lo que ya llego caliente. Esa es la forma mas simple de no perder conversion por demora.',
+        goal:
+          'Recuperar velocidad de respuesta y dejar un siguiente paso claro sin sonar robotico.',
+        avoid:
+          'No contestes con un texto generico que ignore el contexto ni dejes la conversacion abierta sin siguiente paso.',
+        successSignal:
+          'El lead responde o acepta el siguiente paso dentro de la misma ventana de seguimiento.',
         whenToUse:
           'Cuando hay conversaciones sin primera respuesta o follow-up vencido.',
         steps: [
@@ -4903,6 +4909,12 @@ describe('API', () => {
             title: 'Responder primero',
             detail:
               'Antes de abrir nueva prospeccion, responde lo que ya llego caliente. Esa es la forma mas simple de no perder conversion por demora.',
+            goal:
+              'Recuperar velocidad de respuesta y dejar un siguiente paso claro sin sonar robotico.',
+            avoid:
+              'No contestes con un texto generico que ignore el contexto ni dejes la conversacion abierta sin siguiente paso.',
+            successSignal:
+              'El lead responde o acepta el siguiente paso dentro de la misma ventana de seguimiento.',
             whenToUse:
               'Cuando hay conversaciones sin primera respuesta o follow-up vencido.',
             steps: [

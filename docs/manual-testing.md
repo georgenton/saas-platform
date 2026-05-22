@@ -1938,6 +1938,11 @@ Consumer web inicial para este snapshot operativo:
           - `leadWarmthSummary`
           - `leadWarmthHints`
           - eso permite explicar cuántos leads se ven `hot`, `warm` o `watch`, por qué se ven así y con qué cadencia conviene moverlos
+        - los `playbooks` ya no son solo “qué hacer”:
+          - ahora también dicen `goal`
+          - `avoid`
+          - `successSignal`
+          - con eso un operador no experto entiende mejor qué está tratando de lograr y cómo se ve una buena ejecución
         - los playbooks también ya aterrizan a `whenToUse` y `steps`, para que un negocio pequeño no tenga que traducir la consola operativa por su cuenta
         - reutiliza el mismo `workbench`, `operational cases`, `outbound-summary` y `auto-assignment-settings`; no abre un segundo backend paralelo
       - ese modo asistido ya tiene su propio contrato backend:

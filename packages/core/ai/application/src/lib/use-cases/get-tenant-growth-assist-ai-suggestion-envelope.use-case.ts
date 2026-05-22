@@ -1,6 +1,5 @@
 import {
   AiSuggestionContextBlock,
-  AiSuggestionOutputDescriptor,
   TenantAiSuggestionEnvelope,
 } from '@saas-platform/ai-domain';
 import {
@@ -8,7 +7,10 @@ import {
   TenantGrowthAssistDailyAgendaView,
 } from '@saas-platform/growth-application';
 import { AiAgentNotFoundError } from '../errors/ai-agent-not-found.error';
-import { findAiAgentByKey } from '../support/ai-agent-catalog';
+import {
+  findAiAgentByKey,
+  findAiPromptRegistryEntryByAgentKey,
+} from '../support/ai-agent-catalog';
 
 const GROWTH_ASSIST_AGENT_KEY = 'growth-assist-coach';
 const GROWTH_ASSIST_SURFACE_KEY = 'growth_assist_daily_agenda';
@@ -25,6 +27,12 @@ export class GetTenantGrowthAssistAiSuggestionEnvelopeUseCase {
     const agent = findAiAgentByKey(agentKey);
 
     if (!agent || agent.key !== GROWTH_ASSIST_AGENT_KEY) {
+      throw new AiAgentNotFoundError(agentKey);
+    }
+
+    const promptPack = findAiPromptRegistryEntryByAgentKey(agentKey);
+
+    if (!promptPack) {
       throw new AiAgentNotFoundError(agentKey);
     }
 
@@ -46,43 +54,13 @@ export class GetTenantGrowthAssistAiSuggestionEnvelopeUseCase {
         sourceGeneratedAt: agenda.generatedAt,
       },
       promptPack: {
-        key: 'growth-assist-coach-core',
-        version: 'v1',
+        ...promptPack,
+        styleGuidance: [...promptPack.styleGuidance],
+        constraints: [...promptPack.constraints],
+        suggestedOutputs: promptPack.suggestedOutputs.map((entry) => ({ ...entry })),
       },
-      objective:
-        'Propose clear commercial suggestions for a non-expert operator using the deterministic Growth Assist agenda as the source of truth.',
-      constraints: [
-        'Stay in suggestion mode only. Do not assume messages are sent or cases are mutated automatically.',
-        'Use only the tenant-scoped Growth Assist agenda and its embedded operational signals.',
-        'Prefer short, direct, Spanish-first suggestions that help a small business operator move today.',
-        'Respect domain boundaries: business rules, approvals, and workflow state still belong to Growth.',
-      ],
-      suggestedOutputs: this.buildSuggestedOutputs(),
       contextBlocks: this.buildContextBlocks(agenda),
     };
-  }
-
-  private buildSuggestedOutputs(): AiSuggestionOutputDescriptor[] {
-    return [
-      {
-        key: 'reply_draft',
-        label: 'Reply draft',
-        description:
-          'Draft a customer-facing WhatsApp reply using the hottest conversation cues and reply suggestions.',
-      },
-      {
-        key: 'next_action_brief',
-        label: 'Next action brief',
-        description:
-          'Explain the top commercial action to take now and why it matters today.',
-      },
-      {
-        key: 'follow_up_plan',
-        label: 'Follow-up plan',
-        description:
-          'Suggest a short follow-up sequence grounded in playbooks and waiting-customer timing.',
-      },
-    ];
   }
 
   private buildContextBlocks(

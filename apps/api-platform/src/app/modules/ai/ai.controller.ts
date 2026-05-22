@@ -6,9 +6,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  GetAiPromptRegistryEntryByAgentKeyUseCase,
   AiAgentNotFoundError,
   GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
   ListAiAgentCatalogUseCase,
+  ListAiPromptRegistryUseCase,
 } from '@saas-platform/ai-application';
 import { GROWTH_PERMISSIONS } from '@saas-platform/growth-application';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
@@ -21,6 +23,10 @@ import {
   toAiAgentCatalogResponseDto,
 } from './dto/ai-agent-catalog.response';
 import {
+  AiPromptRegistryResponseDto,
+  toAiPromptRegistryResponseDto,
+} from './dto/ai-prompt-registry.response';
+import {
   AiSuggestionEnvelopeResponseDto,
   toAiSuggestionEnvelopeResponseDto,
 } from './dto/ai-suggestion-envelope.response';
@@ -29,6 +35,8 @@ import {
 export class AiController {
   constructor(
     private readonly listAiAgentCatalogUseCase: ListAiAgentCatalogUseCase,
+    private readonly listAiPromptRegistryUseCase: ListAiPromptRegistryUseCase,
+    private readonly getAiPromptRegistryEntryByAgentKeyUseCase: GetAiPromptRegistryEntryByAgentKeyUseCase,
     private readonly getTenantGrowthAssistAiSuggestionEnvelopeUseCase: GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
   ) {}
 
@@ -38,6 +46,32 @@ export class AiController {
     return this.listAiAgentCatalogUseCase
       .execute()
       .map((entry) => toAiAgentCatalogResponseDto(entry));
+  }
+
+  @Get('prompts')
+  @UseGuards(JwtAuthenticationGuard)
+  listAiPromptRegistry(): AiPromptRegistryResponseDto[] {
+    return this.listAiPromptRegistryUseCase
+      .execute()
+      .map((entry) => toAiPromptRegistryResponseDto(entry));
+  }
+
+  @Get('agents/:agentKey/prompt-pack')
+  @UseGuards(JwtAuthenticationGuard)
+  getAiPromptPack(
+    @Param('agentKey') agentKey: string,
+  ): AiPromptRegistryResponseDto {
+    try {
+      return toAiPromptRegistryResponseDto(
+        this.getAiPromptRegistryEntryByAgentKeyUseCase.execute(agentKey),
+      );
+    } catch (error) {
+      if (error instanceof AiAgentNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
   }
 
   @Get('tenants/:slug/agents/:agentKey/suggestion-envelope')

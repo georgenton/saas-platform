@@ -1088,6 +1088,23 @@ export interface AiAgentCatalogResponse {
   supportedSurfaceKeys: string[];
 }
 
+export interface AiPromptRegistryResponse {
+  key: string;
+  version: string;
+  agentKey: string;
+  mode: 'suggestion' | 'guarded_execution';
+  title: string;
+  summary: string;
+  objective: string;
+  styleGuidance: string[];
+  constraints: string[];
+  suggestedOutputs: {
+    key: string;
+    label: string;
+    description: string;
+  }[];
+}
+
 export interface AiSuggestionEnvelopeResponse {
   tenantSlug: string;
   generatedAt: string;
@@ -1102,14 +1119,19 @@ export interface AiSuggestionEnvelopeResponse {
   promptPack: {
     key: string;
     version: string;
+    agentKey: string;
+    mode: 'suggestion' | 'guarded_execution';
+    title: string;
+    summary: string;
+    objective: string;
+    styleGuidance: string[];
+    constraints: string[];
+    suggestedOutputs: {
+      key: string;
+      label: string;
+      description: string;
+    }[];
   };
-  objective: string;
-  constraints: string[];
-  suggestedOutputs: {
-    key: string;
-    label: string;
-    description: string;
-  }[];
   contextBlocks: {
     key: string;
     title: string;

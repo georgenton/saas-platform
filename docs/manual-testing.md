@@ -1982,12 +1982,25 @@ Consumer web inicial para este snapshot operativo:
             - no envía mensajes
             - no reemplaza reglas del dominio
             - solo prepara el handoff auditable para una futura capa de modelo
+        - ese mismo corte ahora ya expone un `prompt registry` transversal:
+          - `GET /api/ai/prompts`
+          - `GET /api/ai/agents/:agentKey/prompt-pack`
+          - eso deja explícito por agente:
+            - `key`
+            - `version`
+            - `objective`
+            - `styleGuidance`
+            - `constraints`
+            - `suggestedOutputs`
+          - con esto el prompt pack deja de vivir “escondido” dentro del envelope y pasa a ser una pieza versionable y visible de la plataforma AI
 - el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
   - `GET /api/growth/tenants/:slug/conversations/operational-cases`
     - acepta `status`
     - acepta `routingPolicyKey`
   - `GET /api/growth/tenants/:slug/conversations/assist/daily-agenda`
   - `GET /api/ai/agents`
+  - `GET /api/ai/prompts`
+  - `GET /api/ai/agents/:agentKey/prompt-pack`
   - `GET /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-envelope`
   - `GET /api/growth/tenants/:slug/conversations/operational-cases/auto-assignment-settings`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases`

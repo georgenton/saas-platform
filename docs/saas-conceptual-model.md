@@ -742,10 +742,13 @@ Build one transversal AI runtime for domain-specific assistants.
 - it should begin by making the platform explicit and auditable:
   - a transversal `AI` module
   - an agent catalog
+  - a prompt registry with visible versioning
   - tenant/domain-scoped suggestion envelopes
   - a first consumer that still stays in `suggestion` mode
 - that first slice now has a natural starting point in the repository:
   - `GET /api/ai/agents`
+  - `GET /api/ai/prompts`
+  - `GET /api/ai/agents/:agentKey/prompt-pack`
   - `GET /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-envelope`
 - the first real consumer should be `Growth Assist`, but only as a surface:
   - the AI layer consumes `growth.assist.daily_agenda`

@@ -1215,6 +1215,14 @@ describe('API', () => {
       channelRiskCount: 0,
       savedPolicyKey: 'follow_up_first' as const,
     },
+    leadWarmthSummary: {
+      hotCount: 1,
+      warmCount: 0,
+      watchCount: 0,
+      dominantWarmth: 'hot' as const,
+      recommendedFocus:
+        'Prioriza respuestas o seguimientos que ya estan pidiendo movimiento hoy.',
+    },
     tasks: [
       {
         key: 'reply:thread_001',
@@ -1274,6 +1282,20 @@ describe('API', () => {
           'Responder tarde enfria conversaciones que ya llegaron con intencion activa.',
         threadId: 'thread_001',
         operationalCaseId: null,
+      },
+    ],
+    leadWarmthHints: [
+      {
+        key: 'warmth:thread_001',
+        warmth: 'hot' as const,
+        title: 'WhatsApp Maria Perez',
+        signalSummary:
+          'WhatsApp · ultima actividad hace 2 horas · Hola, quisiera una demo.',
+        whyWarmth:
+          'Se ve caliente porque ya pide respuesta o seguimiento del equipo y puede enfriarse rapido.',
+        recommendedCadence: 'Muévelo hoy mismo.',
+        riskNote: 'Si se demora, puedes perder la intención más fuerte.',
+        threadId: 'thread_001',
       },
     ],
     playbooks: [
@@ -4791,6 +4813,14 @@ describe('API', () => {
           channelRiskCount: 0,
           savedPolicyKey: 'follow_up_first',
         },
+        leadWarmthSummary: {
+          hotCount: 1,
+          warmCount: 0,
+          watchCount: 0,
+          dominantWarmth: 'hot',
+          recommendedFocus:
+            'Prioriza respuestas o seguimientos que ya estan pidiendo movimiento hoy.',
+        },
         tasks: [
           {
             key: 'reply:thread_001',
@@ -4851,6 +4881,20 @@ describe('API', () => {
               'Responder tarde enfria conversaciones que ya llegaron con intencion activa.',
             threadId: 'thread_001',
             operationalCaseId: null,
+          },
+        ],
+        leadWarmthHints: [
+          {
+            key: 'warmth:thread_001',
+            warmth: 'hot',
+            title: 'WhatsApp Maria Perez',
+            signalSummary:
+              'WhatsApp · ultima actividad hace 2 horas · Hola, quisiera una demo.',
+            whyWarmth:
+              'Se ve caliente porque ya pide respuesta o seguimiento del equipo y puede enfriarse rapido.',
+            recommendedCadence: 'Muévelo hoy mismo.',
+            riskNote: 'Si se demora, puedes perder la intención más fuerte.',
+            threadId: 'thread_001',
           },
         ],
         playbooks: [

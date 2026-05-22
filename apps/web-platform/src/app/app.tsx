@@ -196,6 +196,16 @@ type GrowthAssistNextAction = {
   businessImpact: string;
 };
 
+type GrowthAssistLeadWarmthHint = {
+  key: string;
+  warmth: 'hot' | 'warm' | 'watch';
+  title: string;
+  signalSummary: string;
+  whyWarmth: string;
+  recommendedCadence: string;
+  riskNote: string;
+};
+
 type GrowthAssistPlaybook = {
   key: string;
   title: string;
@@ -737,6 +747,16 @@ function growthAssistWarmthLabel(
     default:
       return 'En radar';
   }
+}
+
+function growthAssistDominantWarmthLabel(
+  warmth: 'hot' | 'warm' | 'watch' | 'none',
+): string {
+  if (warmth === 'none') {
+    return 'Sin señales fuertes';
+  }
+
+  return growthAssistWarmthLabel(warmth);
 }
 
 function growthAssistNextActionTone(
@@ -2432,8 +2452,57 @@ export function App() {
 
     return counts;
   }, [growthAssistConversationCues]);
+  const growthAssistLeadWarmthHints = useMemo(() => {
+    return growthAssistConversationCues.map((cue) => ({
+      key: `warmth:${cue.key}`,
+      warmth: cue.warmth,
+      title: cue.title,
+      signalSummary: cue.summary,
+      whyWarmth:
+        cue.warmth === 'hot'
+          ? 'Se ve caliente porque ya pide movimiento del equipo y puede enfriarse rapido.'
+          : cue.warmth === 'warm'
+            ? 'Sigue con movimiento real y conviene sostener el ritmo.'
+            : 'No es urgente todavia, pero vale la pena mantenerla en radar.',
+      recommendedCadence:
+        cue.warmth === 'hot'
+          ? 'Muévelo hoy mismo.'
+          : cue.warmth === 'warm'
+            ? 'Revísalo hoy o deja siguiente toque claro.'
+            : 'Déjalo visible y retómalo en el momento acordado.',
+      riskNote:
+        cue.warmth === 'hot'
+          ? 'Si se demora, puedes perder la intención más fuerte.'
+          : cue.warmth === 'warm'
+            ? 'Si nadie lo toca, puede pasar de interés activo a conversación tibia.'
+            : 'Si desaparece del radar, luego cuesta más reabrirlo con contexto.',
+    }) satisfies GrowthAssistLeadWarmthHint);
+  }, [growthAssistConversationCues]);
   const effectiveGrowthAssistSummary =
     growthAssistAgenda?.summary ?? growthAssistSummary;
+  const effectiveGrowthAssistLeadWarmthSummary = growthAssistAgenda
+    ? growthAssistAgenda.leadWarmthSummary
+    : {
+        hotCount: growthAssistLeadWarmthSummary.hot,
+        warmCount: growthAssistLeadWarmthSummary.warm,
+        watchCount: growthAssistLeadWarmthSummary.watch,
+        dominantWarmth:
+          growthAssistLeadWarmthSummary.hot > 0
+            ? ('hot' as const)
+            : growthAssistLeadWarmthSummary.warm > 0
+              ? ('warm' as const)
+              : growthAssistLeadWarmthSummary.watch > 0
+                ? ('watch' as const)
+                : ('none' as const),
+        recommendedFocus:
+          growthAssistLeadWarmthSummary.hot > 0
+            ? 'Prioriza respuestas o seguimientos que ya estan pidiendo movimiento hoy.'
+            : growthAssistLeadWarmthSummary.warm > 0
+              ? 'Mantén el ritmo de conversaciones que siguen vivas antes de que se enfrien.'
+              : growthAssistLeadWarmthSummary.watch > 0
+                ? 'Usa el radar para no perder timing en conversaciones que todavia no son urgentes.'
+                : 'Todavia no hay señales fuertes; puedes usar Growth como una agenda comercial tranquila.',
+      };
   const effectiveGrowthAssistTasks =
     growthAssistAgenda?.tasks ?? growthAssistTasks;
   const effectiveGrowthAssistConversationCues =
@@ -2442,6 +2511,8 @@ export function App() {
     growthAssistAgenda?.replySuggestions ?? growthAssistReplySuggestions;
   const effectiveGrowthAssistNextActions =
     growthAssistAgenda?.nextActions ?? growthAssistNextActions;
+  const effectiveGrowthAssistLeadWarmthHints =
+    growthAssistAgenda?.leadWarmthHints ?? growthAssistLeadWarmthHints;
   const effectiveGrowthAssistPlaybooks =
     growthAssistAgenda?.playbooks ?? growthAssistPlaybooks;
   const effectiveGrowthAssistWaitingCustomers =
@@ -2460,15 +2531,6 @@ export function App() {
       })),
     [effectiveGrowthAssistWaitingCustomers],
   );
-  const effectiveGrowthAssistLeadWarmthSummary = growthAssistAgenda
-    ? growthAssistAgenda.conversationCues.reduce(
-        (summary, cue) => {
-          summary[cue.warmth] += 1;
-          return summary;
-        },
-        { hot: 0, warm: 0, watch: 0 },
-      )
-    : growthAssistLeadWarmthSummary;
   const effectiveGrowthAssistChannelHealth = growthAssistAgenda?.channelHealth ?? null;
 
   async function copyGrowthAssistReplySuggestion(
@@ -6239,15 +6301,19 @@ export function App() {
 
                       <div className={styles.badgeRow}>
                         <span className={styles.badge}>
-                          Calientes {effectiveGrowthAssistLeadWarmthSummary.hot}
+                          Calientes {effectiveGrowthAssistLeadWarmthSummary.hotCount}
                         </span>
                         <span className={styles.badge}>
-                          En movimiento {effectiveGrowthAssistLeadWarmthSummary.warm}
+                          En movimiento {effectiveGrowthAssistLeadWarmthSummary.warmCount}
                         </span>
                         <span className={styles.badge}>
-                          En radar {effectiveGrowthAssistLeadWarmthSummary.watch}
+                          En radar {effectiveGrowthAssistLeadWarmthSummary.watchCount}
                         </span>
                       </div>
+
+                      <p className={styles.muted}>
+                        {effectiveGrowthAssistLeadWarmthSummary.recommendedFocus}
+                      </p>
 
                       {effectiveGrowthAssistConversationCues.length === 0 ? (
                         <div className={styles.emptyState}>
@@ -6278,6 +6344,62 @@ export function App() {
                             <small>{cue.nextMove}</small>
                           </div>
                         ))
+                      )}
+                    </div>
+
+                    <div className={styles.detailCard}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Radar de calor</span>
+                          <h3>Por que cada lead se ve asi</h3>
+                        </div>
+                      </div>
+
+                      <div className={styles.badgeRow}>
+                        <span className={styles.badge}>
+                          Dominante{' '}
+                          {growthAssistDominantWarmthLabel(
+                            effectiveGrowthAssistLeadWarmthSummary.dominantWarmth,
+                          )}
+                        </span>
+                      </div>
+
+                      {effectiveGrowthAssistLeadWarmthHints.length === 0 ? (
+                        <div className={styles.emptyState}>
+                          <p>
+                            Cuando haya señales de calor comercial mas claras, aqui
+                            veras por que cada conversacion merece atencion y con que
+                            ritmo conviene moverla.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className={styles.stack}>
+                          {effectiveGrowthAssistLeadWarmthHints.map((hint) => (
+                            <div className={styles.assistCueCard} key={hint.key}>
+                              <div className={styles.invoiceCardHeader}>
+                                <strong>{hint.title}</strong>
+                                <span
+                                  className={`${styles.statusPill} ${growthAssistWarmthTone(
+                                    hint.warmth,
+                                  )}`}
+                                >
+                                  {growthAssistWarmthLabel(hint.warmth)}
+                                </span>
+                              </div>
+                              <small>{hint.signalSummary}</small>
+                              <div className={styles.assistReplyBox}>
+                                <span className={styles.muted}>Por que se ve asi</span>
+                                <strong>{hint.whyWarmth}</strong>
+                              </div>
+                              <small>
+                                <strong>Cadencia sugerida:</strong> {hint.recommendedCadence}
+                              </small>
+                              <small>
+                                <strong>Riesgo si se enfria:</strong> {hint.riskNote}
+                              </small>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
 

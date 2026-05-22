@@ -1008,6 +1008,17 @@ export interface GrowthAssistNextActionResponse {
   operationalCaseId: string | null;
 }
 
+export interface GrowthAssistLeadWarmthHintResponse {
+  key: string;
+  warmth: 'hot' | 'warm' | 'watch';
+  title: string;
+  signalSummary: string;
+  whyWarmth: string;
+  recommendedCadence: string;
+  riskNote: string;
+  threadId: string;
+}
+
 export interface GrowthAssistPlaybookResponse {
   key: string;
   title: string;
@@ -1039,10 +1050,18 @@ export interface GrowthAssistDailyAgendaResponse {
     channelRiskCount: number;
     savedPolicyKey: 'balanced' | 'owner_queue_first' | 'follow_up_first';
   };
+  leadWarmthSummary: {
+    hotCount: number;
+    warmCount: number;
+    watchCount: number;
+    dominantWarmth: 'hot' | 'warm' | 'watch' | 'none';
+    recommendedFocus: string;
+  };
   tasks: GrowthAssistTaskResponse[];
   conversationCues: GrowthAssistConversationCueResponse[];
   replySuggestions: GrowthAssistReplySuggestionResponse[];
   nextActions: GrowthAssistNextActionResponse[];
+  leadWarmthHints: GrowthAssistLeadWarmthHintResponse[];
   playbooks: GrowthAssistPlaybookResponse[];
   waitingCustomerQueue: GrowthAssistWaitingCustomerResponse[];
   channelHealth: {

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.35.0
+
+### Minor Changes
+
+- e3f7f14: Persist tenant-scoped default policy pack settings for Growth operational case auto-assignment and add a first guided Growth Assist workspace on top of the shared operational queue.
+
 ## 0.34.0
 
 ### Minor Changes

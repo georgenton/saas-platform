@@ -175,6 +175,25 @@ type GrowthAssistConversationCue = {
   nextMove: string;
 };
 
+type GrowthAssistReplySuggestion = {
+  key: string;
+  warmth: 'hot' | 'warm' | 'watch';
+  title: string;
+  reason: string;
+  goal: string;
+  suggestedReply: string;
+  followUpPrompt: string;
+  checklist: string[];
+};
+
+type GrowthAssistPlaybook = {
+  key: string;
+  title: string;
+  detail: string;
+  whenToUse: string;
+  steps: string[];
+};
+
 type GrowthOperationalCaseRoutingPolicyKey =
   GrowthOperationalCaseResponse['routingPolicyKey'];
 type GrowthOperationalCaseAutoAssignmentPolicyKey =
@@ -897,6 +916,9 @@ export function App() {
   const [growthLoading, setGrowthLoading] = useState(false);
   const [growthError, setGrowthError] = useState<string | null>(null);
   const [growthActionMessage, setGrowthActionMessage] = useState<string | null>(null);
+  const [copiedGrowthAssistReplyKey, setCopiedGrowthAssistReplyKey] = useState<
+    string | null
+  >(null);
   const [growthActionLoading, setGrowthActionLoading] = useState<string | null>(null);
   const [growthChannelFilter, setGrowthChannelFilter] = useState<
     'all' | 'manual' | 'whatsapp'
@@ -2118,7 +2140,7 @@ export function App() {
       .slice(0, 4);
   }, [growthOperationalCases]);
   const growthAssistPlaybooks = useMemo(() => {
-    const playbooks: Array<{ key: string; title: string; detail: string }> = [];
+    const playbooks: GrowthAssistPlaybook[] = [];
 
     if (growthAssistSignals.replyNowCount > 0) {
       playbooks.push({
@@ -2126,6 +2148,12 @@ export function App() {
         title: 'Responder primero',
         detail:
           'Antes de abrir nueva prospeccion, responde lo que ya llego caliente. Esa es la forma mas simple de no perder conversion por demora.',
+        whenToUse: 'Cuando hay conversaciones sin primera respuesta o follow-up vencido.',
+        steps: [
+          'Agradece el contacto y retoma el contexto en una frase simple.',
+          'Propón un siguiente paso concreto para hoy.',
+          'Cierra con una pregunta breve que invite a responder.',
+        ],
       });
     }
 
@@ -2136,6 +2164,12 @@ export function App() {
         detail: `El negocio ya puede repartir trabajo con el criterio guardado: ${describeGrowthAssistAutoAssignmentPolicy(
           growthOperationalCaseAutoAssignmentSettings?.defaultPolicyKey ?? 'balanced',
         )}.`,
+        whenToUse: 'Cuando hay trabajo sin owner claro o la cola se siente desordenada.',
+        steps: [
+          'Auto-organiza la cola con el pack guardado.',
+          'Revisa si quedó algún caso crítico sin owner.',
+          'Confirma quién responde y quién da seguimiento.',
+        ],
       });
     }
 
@@ -2145,6 +2179,12 @@ export function App() {
         title: 'Cuidar la salud del canal',
         detail:
           'Si el canal esta inestable, mas mensajes no siempre ayudan. Revisa alertas y retries antes de empujar volumen nuevo.',
+        whenToUse: 'Cuando el canal muestra alertas, fallos o retries listos.',
+        steps: [
+          'Actualiza la salud del canal antes de empujar más volumen.',
+          'Revisa alertas y retries dominantes.',
+          'Retoma campañas cuando el canal vuelva a estar estable.',
+        ],
       });
     }
 
@@ -2154,6 +2194,12 @@ export function App() {
         title: 'Vigilar respuestas pendientes',
         detail:
           'No todo requiere accionar hoy; tambien conviene tener a mano lo que ya esta esperando cliente para retomar en el momento justo.',
+        whenToUse: 'Cuando hay seguimientos que dependen del cliente y no del equipo.',
+        steps: [
+          'Mantén visibles los casos esperando cliente.',
+          'Define cuándo conviene retomar si no responden.',
+          'Evita sobre-escribir cuando todavía están dentro del tiempo esperado.',
+        ],
       });
     }
 
@@ -2163,6 +2209,12 @@ export function App() {
         title: 'Mantener ritmo comercial',
         detail:
           'Sin urgencias visibles, Growth ya funciona como agenda simple: revisa leads nuevos, confirma seguimientos de hoy y deja claro el siguiente paso de cada conversacion.',
+        whenToUse: 'Cuando no hay urgencias fuertes y el canal está sano.',
+        steps: [
+          'Revisa leads nuevos y conversaciones tibias.',
+          'Deja siguiente paso claro en cada hilo activo.',
+          'Usa la agenda como radar para que nada se enfríe.',
+        ],
       });
     }
 
@@ -2179,12 +2231,12 @@ export function App() {
           thread.nextActionOwner === 'team' &&
           (thread.firstResponseStatus === 'overdue' ||
             thread.followUpStatus === 'overdue' ||
-            thread.priority === 'urgent' ||
+            thread.priority === 'critical' ||
             thread.priority === 'high'),
       )
       .map((thread) => {
         const warmth: GrowthAssistConversationCue['warmth'] =
-          thread.firstResponseStatus === 'overdue' || thread.priority === 'urgent'
+          thread.firstResponseStatus === 'overdue' || thread.priority === 'critical'
             ? 'hot'
             : thread.followUpStatus === 'overdue' || thread.priority === 'high'
               ? 'warm'
@@ -2217,6 +2269,72 @@ export function App() {
       })
       .slice(0, 4);
   }, [growthWorkbench]);
+  const growthAssistReplySuggestions = useMemo(() => {
+    if (!growthWorkbench) {
+      return [];
+    }
+
+    return growthWorkbench.threads
+      .filter(
+        (thread) =>
+          thread.nextActionOwner === 'team' &&
+          (thread.firstResponseStatus === 'overdue' ||
+            thread.followUpStatus === 'overdue' ||
+            thread.priority === 'critical' ||
+            thread.priority === 'high'),
+      )
+      .map((thread) => {
+        const warmth: GrowthAssistReplySuggestion['warmth'] =
+          thread.firstResponseStatus === 'overdue' || thread.priority === 'critical'
+            ? 'hot'
+            : thread.followUpStatus === 'overdue' || thread.priority === 'high'
+              ? 'warm'
+              : 'watch';
+
+        return {
+          key: `reply-suggestion:${thread.threadId}`,
+          warmth,
+          title: thread.subject,
+          reason:
+            thread.firstResponseStatus === 'overdue'
+              ? `La conversacion sigue sin primera respuesta despues de ${formatRelativeHours(
+                  thread.hoursSinceLastInbound ?? thread.hoursSinceOpened,
+                )}.`
+              : thread.followUpStatus === 'overdue'
+                ? `El follow-up ya se paso y el hilo lleva ${formatRelativeHours(
+                    thread.hoursSinceLastActivity,
+                  )} sin movimiento.`
+                : 'La conversacion sigue con prioridad alta y conviene mantener el ritmo hoy.',
+          goal:
+            thread.firstResponseStatus === 'overdue'
+              ? 'Retomar confianza y dejar un siguiente paso concreto.'
+              : thread.followUpStatus === 'overdue'
+                ? 'Reactivar el hilo sin sonar invasivo.'
+                : 'Confirmar interés real y dejar acordado el próximo movimiento.',
+          suggestedReply:
+            thread.firstResponseStatus === 'overdue'
+              ? `Hola ${thread.subject}, gracias por escribirnos. Retomo esto hoy para ayudarte sin dejarlo enfriar. Si te parece, te comparto el siguiente paso y lo dejamos encaminado ahora mismo.`
+              : thread.followUpStatus === 'overdue'
+                ? `Hola ${thread.subject}, retomo esta conversacion para no dejarla enfriar. Quiero confirmar si seguimos con el siguiente paso y ayudarte a cerrarlo hoy de la forma mas simple posible.`
+                : `Hola ${thread.subject}, te escribo para retomar el avance y confirmar si seguimos con el siguiente paso. Si te sirve, hoy mismo lo dejamos encaminado.`,
+          followUpPrompt:
+            thread.firstResponseStatus === 'overdue'
+              ? 'Pregunta si prefiere demo, cotizacion o una respuesta puntual para destrabar la conversacion.'
+              : 'Pregunta si le hace sentido seguir hoy o que dia conviene retomar.',
+          checklist: [
+            thread.assigneeUserId === null
+              ? 'Deja un owner claro antes de cerrar el siguiente paso.'
+              : 'Mantén el seguimiento desde el owner actual para conservar contexto.',
+            thread.firstResponseStatus === 'overdue'
+              ? 'Agradece el contacto y reconoce la espera si aplica.'
+              : 'Retoma el contexto en una frase corta.',
+            'Propón un siguiente paso concreto, no una pregunta abierta genérica.',
+            'Cierra con una pregunta simple que facilite responder rápido.',
+          ],
+        } satisfies GrowthAssistReplySuggestion;
+      })
+      .slice(0, 4);
+  }, [growthWorkbench]);
   const growthAssistLeadWarmthSummary = useMemo(() => {
     const counts = growthAssistConversationCues.reduce(
       (summary, cue) => {
@@ -2234,6 +2352,8 @@ export function App() {
     growthAssistAgenda?.tasks ?? growthAssistTasks;
   const effectiveGrowthAssistConversationCues =
     growthAssistAgenda?.conversationCues ?? growthAssistConversationCues;
+  const effectiveGrowthAssistReplySuggestions =
+    growthAssistAgenda?.replySuggestions ?? growthAssistReplySuggestions;
   const effectiveGrowthAssistPlaybooks =
     growthAssistAgenda?.playbooks ?? growthAssistPlaybooks;
   const effectiveGrowthAssistWaitingCustomers =
@@ -2262,6 +2382,41 @@ export function App() {
       )
     : growthAssistLeadWarmthSummary;
   const effectiveGrowthAssistChannelHealth = growthAssistAgenda?.channelHealth ?? null;
+
+  async function copyGrowthAssistReplySuggestion(
+    key: string,
+    suggestedReply: string,
+    followUpPrompt: string,
+  ) {
+    const nextText = `${suggestedReply}\n\n${followUpPrompt}`;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(nextText);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = nextText;
+        textArea.setAttribute('readonly', 'true');
+        textArea.style.position = 'absolute';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+
+      setCopiedGrowthAssistReplyKey(key);
+      window.setTimeout(() => {
+        setCopiedGrowthAssistReplyKey((current) => (current === key ? null : current));
+      }, 1800);
+    } catch (error) {
+      setGrowthActionMessage(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo copiar la sugerencia de reply.',
+      );
+    }
+  }
   const workbenchEmptyMessage = useMemo(() => {
     if (!growthWorkbench) {
       return 'Cuando termine la carga veremos el resumen SLA del workbench.';
@@ -6004,6 +6159,78 @@ export function App() {
                     <div className={styles.detailCard}>
                       <div className={styles.sectionHeading}>
                         <div>
+                          <span className={styles.label}>Reply suggestions</span>
+                          <h3>Mensajes listos para adaptar</h3>
+                        </div>
+                      </div>
+
+                      {effectiveGrowthAssistReplySuggestions.length === 0 ? (
+                        <div className={styles.emptyState}>
+                          <p>
+                            Cuando el sistema detecte conversaciones que piden
+                            movimiento, aqui veras borradores simples para responder
+                            sin pensar desde cero.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className={styles.stack}>
+                          {effectiveGrowthAssistReplySuggestions.map((suggestion) => (
+                            <div className={styles.assistCueCard} key={suggestion.key}>
+                              <div className={styles.invoiceCardHeader}>
+                                <strong>{suggestion.title}</strong>
+                                <span
+                                  className={`${styles.statusPill} ${growthAssistWarmthTone(
+                                    suggestion.warmth,
+                                  )}`}
+                                >
+                                  {growthAssistWarmthLabel(suggestion.warmth)}
+                                </span>
+                              </div>
+                              <small>{suggestion.reason}</small>
+                              <div className={styles.assistReplyBox}>
+                                <span className={styles.muted}>Objetivo del mensaje</span>
+                                <strong>{suggestion.goal}</strong>
+                              </div>
+                              <div className={styles.assistReplyBox}>
+                                <span className={styles.muted}>
+                                  Borrador sugerido
+                                </span>
+                                <strong>{suggestion.suggestedReply}</strong>
+                              </div>
+                              <small>{suggestion.followUpPrompt}</small>
+                              <div className={styles.assistChecklist}>
+                                {suggestion.checklist.map((item) => (
+                                  <span className={styles.badge} key={item}>
+                                    {item}
+                                  </span>
+                                ))}
+                              </div>
+                              <div className={styles.inlineActionRow}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  onClick={() =>
+                                    void copyGrowthAssistReplySuggestion(
+                                      suggestion.key,
+                                      suggestion.suggestedReply,
+                                      suggestion.followUpPrompt,
+                                    )
+                                  }
+                                  type="button"
+                                >
+                                  {copiedGrowthAssistReplyKey === suggestion.key
+                                    ? 'Copiado'
+                                    : 'Copiar sugerencia'}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className={styles.detailCard}>
+                      <div className={styles.sectionHeading}>
+                        <div>
                           <span className={styles.label}>Playbooks guiados</span>
                           <h3>Traduccion del sistema a lenguaje de negocio</h3>
                         </div>
@@ -6033,6 +6260,16 @@ export function App() {
                           <div className={styles.invoiceItemCard} key={playbook.key}>
                             <strong>{playbook.title}</strong>
                             <small>{playbook.detail}</small>
+                            <small>
+                              <strong>Cuando usarlo:</strong> {playbook.whenToUse}
+                            </small>
+                            <div className={styles.assistChecklist}>
+                              {playbook.steps.map((step) => (
+                                <span className={styles.badge} key={step}>
+                                  {step}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         ))}
                       </div>

@@ -1240,12 +1240,40 @@ describe('API', () => {
         threadId: 'thread_001',
       },
     ],
+    replySuggestions: [
+      {
+        key: 'reply-suggestion:thread_001',
+        warmth: 'hot' as const,
+        title: 'WhatsApp Maria Perez',
+        reason: 'La conversacion sigue sin primera respuesta despues de 2 horas.',
+        goal:
+          'Reconocer el contacto, retomar confianza y proponer el siguiente paso.',
+        suggestedReply:
+          'Hola WhatsApp Maria Perez, gracias por escribirnos. Retomo esto hoy para ayudarte sin dejarlo enfriar. Si te parece, te comparto el siguiente paso y lo dejamos encaminado ahora mismo.',
+        followUpPrompt:
+          'Pregunta si prefiere demo, cotizacion o una respuesta puntual para destrabar la conversacion.',
+        checklist: [
+          'Deja un owner claro antes de cerrar el siguiente paso.',
+          'Agradece el contacto y reconoce la espera si aplica.',
+          'Propón un siguiente paso concreto en lugar de una pregunta abierta genérica.',
+          'Cierra con una pregunta simple que facilite responder rápido.',
+        ],
+        threadId: 'thread_001',
+      },
+    ],
     playbooks: [
       {
         key: 'reply-now',
         title: 'Responder primero',
         detail:
           'Antes de abrir nueva prospeccion, responde lo que ya llego caliente. Esa es la forma mas simple de no perder conversion por demora.',
+        whenToUse:
+          'Cuando hay conversaciones sin primera respuesta o follow-up vencido.',
+        steps: [
+          'Agradece el contacto y retoma el contexto en una frase simple.',
+          'Propone un siguiente paso concreto para hoy.',
+          'Cierra con una pregunta que facilite una respuesta corta.',
+        ],
       },
     ],
     waitingCustomerQueue: [],
@@ -4774,12 +4802,40 @@ describe('API', () => {
             threadId: 'thread_001',
           },
         ],
+        replySuggestions: [
+          {
+            key: 'reply-suggestion:thread_001',
+            warmth: 'hot',
+            title: 'WhatsApp Maria Perez',
+            reason: 'La conversacion sigue sin primera respuesta despues de 2 horas.',
+            goal:
+              'Reconocer el contacto, retomar confianza y proponer el siguiente paso.',
+            suggestedReply:
+              'Hola WhatsApp Maria Perez, gracias por escribirnos. Retomo esto hoy para ayudarte sin dejarlo enfriar. Si te parece, te comparto el siguiente paso y lo dejamos encaminado ahora mismo.',
+            followUpPrompt:
+              'Pregunta si prefiere demo, cotizacion o una respuesta puntual para destrabar la conversacion.',
+            checklist: [
+              'Deja un owner claro antes de cerrar el siguiente paso.',
+              'Agradece el contacto y reconoce la espera si aplica.',
+              'Propón un siguiente paso concreto en lugar de una pregunta abierta genérica.',
+              'Cierra con una pregunta simple que facilite responder rápido.',
+            ],
+            threadId: 'thread_001',
+          },
+        ],
         playbooks: [
           {
             key: 'reply-now',
             title: 'Responder primero',
             detail:
               'Antes de abrir nueva prospeccion, responde lo que ya llego caliente. Esa es la forma mas simple de no perder conversion por demora.',
+            whenToUse:
+              'Cuando hay conversaciones sin primera respuesta o follow-up vencido.',
+            steps: [
+              'Agradece el contacto y retoma el contexto en una frase simple.',
+              'Propone un siguiente paso concreto para hoy.',
+              'Cierra con una pregunta que facilite una respuesta corta.',
+            ],
           },
         ],
         waitingCustomerQueue: [],

@@ -36,10 +36,24 @@ export interface TenantGrowthAssistConversationCueView {
   threadId: string;
 }
 
+export interface TenantGrowthAssistReplySuggestionView {
+  key: string;
+  warmth: 'hot' | 'warm' | 'watch';
+  title: string;
+  reason: string;
+  goal: string;
+  suggestedReply: string;
+  followUpPrompt: string;
+  checklist: string[];
+  threadId: string;
+}
+
 export interface TenantGrowthAssistPlaybookView {
   key: string;
   title: string;
   detail: string;
+  whenToUse: string;
+  steps: string[];
 }
 
 export interface TenantGrowthAssistWaitingCustomerView {
@@ -67,6 +81,7 @@ export interface TenantGrowthAssistDailyAgendaView {
   };
   tasks: TenantGrowthAssistTaskView[];
   conversationCues: TenantGrowthAssistConversationCueView[];
+  replySuggestions: TenantGrowthAssistReplySuggestionView[];
   playbooks: TenantGrowthAssistPlaybookView[];
   waitingCustomerQueue: TenantGrowthAssistWaitingCustomerView[];
   channelHealth: {
@@ -115,6 +130,7 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
       summary: summarySignals,
       tasks: this.buildTasks(workbench, openCases),
       conversationCues: this.buildConversationCues(workbench),
+      replySuggestions: this.buildReplySuggestions(workbench),
       playbooks: this.buildPlaybooks(
         summarySignals,
         autoAssignmentSettings.defaultPolicyKey,
@@ -398,6 +414,12 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
         title: 'Responder primero',
         detail:
           'Antes de abrir nueva prospeccion, responde lo que ya llego caliente. Esa es la forma mas simple de no perder conversion por demora.',
+        whenToUse: 'Cuando hay conversaciones sin primera respuesta o follow-up vencido.',
+        steps: [
+          'Agradece el contacto y retoma el contexto en una frase simple.',
+          'Propone un siguiente paso concreto para hoy.',
+          'Cierra con una pregunta que facilite una respuesta corta.',
+        ],
       });
     }
 
@@ -408,6 +430,12 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
         detail: `El negocio ya puede repartir trabajo con el criterio guardado: ${this.describePolicy(
           savedPolicyKey,
         )}.`,
+        whenToUse: 'Cuando ves conversaciones o casos sin owner claro.',
+        steps: [
+          'Auto-organiza la cola con el pack guardado.',
+          'Revisa si quedo algun caso critico sin owner.',
+          'Deja claro quien responde y quien da seguimiento.',
+        ],
       });
     }
 
@@ -417,6 +445,12 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
         title: 'Cuidar la salud del canal',
         detail:
           'Si el canal esta inestable, mas mensajes no siempre ayudan. Revisa alertas y retries antes de empujar volumen nuevo.',
+        whenToUse: 'Cuando el monitor muestra alertas o retries listos.',
+        steps: [
+          'Actualiza la salud del canal antes de lanzar mas actividad.',
+          'Revisa bloqueos, retries y alertas dominantes.',
+          'Retoma el volumen solo cuando el canal vuelva a estar estable.',
+        ],
       });
     }
 
@@ -426,6 +460,12 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
         title: 'Vigilar respuestas pendientes',
         detail:
           'No todo requiere accionar hoy; tambien conviene tener a mano lo que ya esta esperando cliente para retomar en el momento justo.',
+        whenToUse: 'Cuando la cola tiene seguimientos esperando respuesta del cliente.',
+        steps: [
+          'Agrupa los casos que estan esperando al cliente.',
+          'Marca una fecha clara para retomar si no responden.',
+          'Evita empujar de mas cuando el siguiente turno depende del cliente.',
+        ],
       });
     }
 
@@ -435,10 +475,90 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
         title: 'Mantener ritmo comercial',
         detail:
           'Sin urgencias visibles, Growth ya funciona como agenda simple: revisa leads nuevos, confirma seguimientos de hoy y deja claro el siguiente paso de cada conversacion.',
+        whenToUse: 'Cuando no hay urgencias y el canal esta sano.',
+        steps: [
+          'Revisa si entraron leads nuevos o conversaciones tibias.',
+          'Deja proximo paso claro en cada conversacion activa.',
+          'Usa la agenda como radar temprano para que nada se enfrie.',
+        ],
       });
     }
 
     return playbooks.slice(0, 4);
+  }
+
+  private buildReplySuggestions(
+    workbench: TenantGrowthConversationWorkbenchView,
+  ): TenantGrowthAssistReplySuggestionView[] {
+    return workbench.threads
+      .filter(
+        (thread) =>
+          thread.nextActionOwner === 'team' &&
+          (thread.firstResponseStatus === 'overdue' ||
+            thread.followUpStatus === 'overdue' ||
+            thread.priority === 'critical' ||
+            thread.priority === 'high'),
+      )
+      .map((thread) => {
+        const warmth: TenantGrowthAssistReplySuggestionView['warmth'] =
+          thread.firstResponseStatus === 'overdue' || thread.priority === 'critical'
+            ? 'hot'
+            : thread.followUpStatus === 'overdue' || thread.priority === 'high'
+              ? 'warm'
+              : 'watch';
+
+        const reason =
+          thread.firstResponseStatus === 'overdue'
+            ? `La conversacion sigue sin primera respuesta despues de ${this.formatRelativeHours(
+                thread.hoursSinceLastInbound ?? thread.hoursSinceOpened,
+              )}.`
+            : thread.followUpStatus === 'overdue'
+              ? `El follow-up del equipo ya se paso y la conversacion lleva ${this.formatRelativeHours(
+                  thread.hoursSinceLastActivity,
+                )} sin moverse.`
+              : `La conversacion sigue priorizada y conviene mantenerla en movimiento hoy.`;
+
+        const goal =
+          thread.firstResponseStatus === 'overdue'
+            ? 'Reconocer el contacto, retomar confianza y proponer el siguiente paso.'
+            : thread.followUpStatus === 'overdue'
+              ? 'Reactivar la conversacion sin sonar invasivo y dejar un siguiente paso claro.'
+              : 'Confirmar interes real y dejar acordado el proximo movimiento.';
+
+        const suggestedReply =
+          thread.firstResponseStatus === 'overdue'
+            ? `Hola ${thread.subject}, gracias por escribirnos. Retomo esto hoy para ayudarte sin dejarlo enfriar. Si te parece, te comparto el siguiente paso y lo dejamos encaminado ahora mismo.`
+            : thread.followUpStatus === 'overdue'
+              ? `Hola ${thread.subject}, retomo esta conversacion para no dejarla enfriar. Quiero confirmar si seguimos con el siguiente paso y ayudarte a cerrarlo hoy de la forma mas simple posible.`
+              : `Hola ${thread.subject}, te escribo para retomar el avance y confirmar si seguimos con el siguiente paso. Si te sirve, hoy mismo lo dejamos encaminado.`;
+
+        const checklist = [
+          thread.assigneeUserId === null
+            ? 'Deja un owner claro antes de cerrar el siguiente paso.'
+            : 'Mantén la respuesta desde el owner actual para conservar contexto.',
+          thread.firstResponseStatus === 'overdue'
+            ? 'Agradece el contacto y reconoce la espera si aplica.'
+            : 'Retoma el hilo con una frase corta que recuerde el contexto.',
+          'Propón un siguiente paso concreto en lugar de una pregunta abierta genérica.',
+          'Cierra con una pregunta simple que facilite responder rápido.',
+        ];
+
+        return {
+          key: `reply-suggestion:${thread.threadId}`,
+          warmth,
+          title: thread.subject,
+          reason,
+          goal,
+          suggestedReply,
+          followUpPrompt:
+            thread.firstResponseStatus === 'overdue'
+              ? 'Pregunta si prefiere demo, cotizacion o una respuesta puntual para destrabar la conversacion.'
+              : 'Pregunta si le hace sentido seguir hoy o que dia conviene retomar.',
+          checklist,
+          threadId: thread.threadId,
+        };
+      })
+      .slice(0, 4);
   }
 
   private buildWaitingCustomerQueue(

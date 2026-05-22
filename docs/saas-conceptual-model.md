@@ -924,6 +924,10 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
             - `GET /conversations/assist/daily-agenda`
             - the API now publishes a simplified agenda made of tasks, conversation cues, playbooks, waiting-customer reminders, and channel-health guidance
             - this is important because future AI assistance can now grow on top of an explicit assisted contract instead of staying trapped in frontend-only heuristics
+            - that contract now also started to graduate from “light cues” into more explicit coaching primitives:
+               - `replySuggestions` with reason, goal, draft, follow-up prompt, and checklist
+               - playbooks with clearer `whenToUse` guidance and concrete `steps`
+            - that matters because a future AI layer can now replace or enhance explicit coaching fields instead of inventing a second response model from scratch
          - next pressure after that first guided surface is no longer “whether” to simplify Growth, but how much of that surface should become:
             - AI-suggested next actions
             - AI-suggested replies

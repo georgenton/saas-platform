@@ -32,6 +32,7 @@ import {
   GrowthOperationalCaseFollowUpStateNotAllowedError,
   GrowthOperationalCaseNotFoundError,
   GetTenantConversationThreadByIdUseCase,
+  GetTenantGrowthAssistDailyAgendaUseCase,
   GetTenantGrowthConversationWorkbenchUseCase,
   GetTenantGrowthAssignmentWorkloadUseCase,
   GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
@@ -96,6 +97,10 @@ import { CreateLeadRequestDto } from './dto/create-lead.request';
 import { CreateOpportunityRequestDto } from './dto/create-opportunity.request';
 import { CreateWhatsappAutomationRuleRequestDto } from './dto/create-whatsapp-automation-rule.request';
 import { CreateWhatsappMessageTemplateRequestDto } from './dto/create-whatsapp-message-template.request';
+import {
+  GrowthAssistDailyAgendaResponseDto,
+  toGrowthAssistDailyAgendaResponseDto,
+} from './dto/growth-assist-daily-agenda.response';
 import {
   GrowthOperationalCaseAutoAssignmentSettingsResponseDto,
   toGrowthOperationalCaseAutoAssignmentSettingsResponseDto,
@@ -220,6 +225,7 @@ export class GrowthController {
     private readonly assignTenantOpportunityUseCase: AssignTenantOpportunityUseCase,
     private readonly autoAssignTenantGrowthOperationalCasesUseCase: AutoAssignTenantGrowthOperationalCasesUseCase,
     private readonly getTenantConversationThreadByIdUseCase: GetTenantConversationThreadByIdUseCase,
+    private readonly getTenantGrowthAssistDailyAgendaUseCase: GetTenantGrowthAssistDailyAgendaUseCase,
     private readonly getTenantGrowthConversationWorkbenchUseCase: GetTenantGrowthConversationWorkbenchUseCase,
     private readonly getTenantGrowthAssignmentWorkloadUseCase: GetTenantGrowthAssignmentWorkloadUseCase,
     private readonly getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase: GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase,
@@ -393,6 +399,27 @@ export class GrowthController {
         );
 
       return toGrowthConversationWorkbenchResponseDto(workbench);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/conversations/assist/daily-agenda')
+  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
+  async getTenantGrowthAssistDailyAgenda(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<GrowthAssistDailyAgendaResponseDto> {
+    try {
+      const agenda = await this.getTenantGrowthAssistDailyAgendaUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+      );
+
+      return toGrowthAssistDailyAgendaResponseDto(agenda);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

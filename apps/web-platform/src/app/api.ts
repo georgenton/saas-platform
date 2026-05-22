@@ -3,6 +3,7 @@ import {
   AuthenticatedSessionResponse,
   CreditNoteResponse,
   DebitNoteResponse,
+  GrowthAssistDailyAgendaResponse,
   GrowthConversationWorkbenchResponse,
   RemissionGuideResponse,
   WithholdingResponse,
@@ -1143,6 +1144,21 @@ export async function fetchGrowthConversationWorkbench(
     `/growth/tenants/${encodeURIComponent(
       tenantSlug,
     )}/conversations/workbench${queryString ? `?${queryString}` : ''}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchGrowthAssistDailyAgenda(
+  token: string,
+  tenantSlug: string,
+): Promise<GrowthAssistDailyAgendaResponse> {
+  return request<GrowthAssistDailyAgendaResponse>(
+    `/growth/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/conversations/assist/daily-agenda`,
     {
       method: 'GET',
       token,

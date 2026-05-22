@@ -920,6 +920,10 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
                - simple conversation warmth hints
                - suggested reply openers
                - lightweight playbooks derived from current queue and channel pressure
+         - that guided surface now also started to consolidate into a dedicated backend contract:
+            - `GET /conversations/assist/daily-agenda`
+            - the API now publishes a simplified agenda made of tasks, conversation cues, playbooks, waiting-customer reminders, and channel-health guidance
+            - this is important because future AI assistance can now grow on top of an explicit assisted contract instead of staying trapped in frontend-only heuristics
          - next pressure after that first guided surface is no longer “whether” to simplify Growth, but how much of that surface should become:
             - AI-suggested next actions
             - AI-suggested replies

@@ -47,6 +47,7 @@ export * from './lib/use-cases/create-tenant-lead.use-case';
 export * from './lib/use-cases/create-tenant-opportunity.use-case';
 export * from './lib/use-cases/get-tenant-conversation-thread-by-id.use-case';
 export * from './lib/use-cases/get-tenant-growth-conversation-workbench.use-case';
+export * from './lib/use-cases/get-tenant-growth-assist-daily-agenda.use-case';
 export * from './lib/use-cases/get-tenant-growth-assignment-workload.use-case';
 export * from './lib/use-cases/get-tenant-growth-operational-case-auto-assignment-settings.use-case';
 export * from './lib/use-cases/get-tenant-lead-by-id.use-case';

@@ -55,3 +55,29 @@ export interface TenantAiSuggestionEnvelope {
   promptPack: AiPromptRegistryEntry;
   contextBlocks: AiSuggestionContextBlock[];
 }
+
+export type AiSuggestionRunStatus = 'prepared';
+
+export interface CreateAiSuggestionRunCommand {
+  tenantId: string;
+  tenantSlug: string;
+  agentKey: string;
+  mode: 'suggestion';
+  status: AiSuggestionRunStatus;
+  surfaceKey: string;
+  sourceContractKey: string;
+  sourceGeneratedAt: Date;
+  promptPackKey: string;
+  promptPackVersion: string;
+  generatedAt: Date;
+  requestedByUserId: string;
+  requestedByEmail: string | null;
+  summary: string;
+  suggestedOutputKeys: string[];
+  envelope: TenantAiSuggestionEnvelope;
+}
+
+export interface AiSuggestionRunRecord extends CreateAiSuggestionRunCommand {
+  id: string;
+  createdAt: Date;
+}

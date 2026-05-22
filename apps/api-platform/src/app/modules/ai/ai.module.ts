@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
 import {
+  AI_SUGGESTION_RUN_REPOSITORY,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+  ListTenantAiSuggestionRunsUseCase,
   ListAiAgentCatalogUseCase,
   ListAiPromptRegistryUseCase,
+  PrepareTenantAiSuggestionRunUseCase,
 } from '@saas-platform/ai-application';
 import {
+  AiPersistenceModule,
   GrowthPersistenceModule,
   IdentityPersistenceModule,
   TenancyPersistenceModule,
@@ -25,6 +29,7 @@ import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-a
 @Module({
   imports: [
     AuthModule,
+    AiPersistenceModule,
     GrowthModule,
     GrowthPersistenceModule,
     IdentityPersistenceModule,
@@ -50,6 +55,33 @@ import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-a
       useFactory: (getTenantGrowthAssistDailyAgendaUseCase) =>
         new GetTenantGrowthAssistAiSuggestionEnvelopeUseCase(
           getTenantGrowthAssistDailyAgendaUseCase,
+        ),
+    },
+    {
+      provide: ListTenantAiSuggestionRunsUseCase,
+      inject: [TENANT_REPOSITORY, AI_SUGGESTION_RUN_REPOSITORY],
+      useFactory: (tenantRepository, aiSuggestionRunRepository) =>
+        new ListTenantAiSuggestionRunsUseCase(
+          tenantRepository,
+          aiSuggestionRunRepository,
+        ),
+    },
+    {
+      provide: PrepareTenantAiSuggestionRunUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        AI_SUGGESTION_RUN_REPOSITORY,
+        GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+      ],
+      useFactory: (
+        tenantRepository,
+        aiSuggestionRunRepository,
+        getTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+      ) =>
+        new PrepareTenantAiSuggestionRunUseCase(
+          tenantRepository,
+          aiSuggestionRunRepository,
+          getTenantGrowthAssistAiSuggestionEnvelopeUseCase,
         ),
     },
     {

@@ -48,6 +48,7 @@ model Tenant {
   whatsappOperationalAlertAcknowledgements WhatsappOperationalAlertAcknowledgement[]
   growthOperationalCases GrowthOperationalCase[]
   growthOperationalCaseAutoAssignmentSettings GrowthOperationalCaseAutoAssignmentSettings?
+  aiSuggestionRuns AiSuggestionRun[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
@@ -325,6 +326,31 @@ model GrowthOperationalCaseAutoAssignmentSettings {
   tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+}
+
+model AiSuggestionRun {
+  id                 String   @id @default(cuid())
+  tenantId           String
+  tenantSlug         String
+  agentKey           String
+  mode               String
+  status             String
+  surfaceKey         String
+  sourceContractKey  String
+  sourceGeneratedAt  DateTime
+  promptPackKey      String
+  promptPackVersion  String
+  generatedAt        DateTime
+  requestedByUserId  String
+  requestedByEmail   String?
+  summary            String
+  suggestedOutputKeysJson String @db.Text
+  envelopeJson       String @db.Text
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+
+  @@index([tenantId, agentKey, createdAt])
+  @@index([tenantId, surfaceKey, createdAt])
 }
 
 model WebhookEventEnvelope {

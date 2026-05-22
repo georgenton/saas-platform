@@ -2,6 +2,7 @@ import {
   AiAgentCatalogResponse,
   AiPromptRegistryResponse,
   AiSuggestionEnvelopeResponse,
+  AiSuggestionRunResponse,
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CreditNoteResponse,
@@ -1198,6 +1199,41 @@ export async function fetchTenantAiSuggestionEnvelope(
     )}/agents/${encodeURIComponent(agentKey)}/suggestion-envelope`,
     {
       method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiSuggestionRuns(
+  token: string,
+  tenantSlug: string,
+  agentKey: string,
+  limit = 10,
+): Promise<AiSuggestionRunResponse[]> {
+  return request<AiSuggestionRunResponse[]>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/agents/${encodeURIComponent(agentKey)}/suggestion-runs?limit=${encodeURIComponent(
+      String(limit),
+    )}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function prepareTenantAiSuggestionRun(
+  token: string,
+  tenantSlug: string,
+  agentKey: string,
+): Promise<AiSuggestionRunResponse> {
+  return request<AiSuggestionRunResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/agents/${encodeURIComponent(agentKey)}/suggestion-runs`,
+    {
+      method: 'POST',
       token,
     },
   );

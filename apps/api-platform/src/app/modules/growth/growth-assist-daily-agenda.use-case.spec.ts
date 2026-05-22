@@ -211,6 +211,21 @@ describe('Growth assist daily agenda use case', () => {
         title: 'Responder a Maria Perez',
       }),
     );
+    expect(result.leadWarmthSummary).toEqual(
+      expect.objectContaining({
+        hotCount: 1,
+        warmCount: 0,
+        watchCount: 0,
+        dominantWarmth: 'hot',
+      }),
+    );
+    expect(result.leadWarmthHints[0]).toEqual(
+      expect.objectContaining({
+        key: 'warmth:thread_001',
+        warmth: 'hot',
+        title: 'Maria Perez',
+      }),
+    );
     expect(result.playbooks[0]).toEqual(
       expect.objectContaining({
         key: 'reply-now',

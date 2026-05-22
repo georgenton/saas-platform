@@ -1934,6 +1934,10 @@ Consumer web inicial para este snapshot operativo:
           - `nextActions`
           - la idea es responder a “si solo haces 3 cosas hoy, ¿cuáles son?”
           - con porqué conviene hacerlas ahora, qué acción recomienda el sistema y qué impacto comercial evita
+        - y ahora también publica un radar de calor más explícito:
+          - `leadWarmthSummary`
+          - `leadWarmthHints`
+          - eso permite explicar cuántos leads se ven `hot`, `warm` o `watch`, por qué se ven así y con qué cadencia conviene moverlos
         - los playbooks también ya aterrizan a `whenToUse` y `steps`, para que un negocio pequeño no tenga que traducir la consola operativa por su cuenta
         - reutiliza el mismo `workbench`, `operational cases`, `outbound-summary` y `auto-assignment-settings`; no abre un segundo backend paralelo
       - ese modo asistido ya tiene su propio contrato backend:
@@ -1944,6 +1948,8 @@ Consumer web inicial para este snapshot operativo:
           - `conversationCues`
           - `replySuggestions`
           - `nextActions`
+          - `leadWarmthSummary`
+          - `leadWarmthHints`
           - `playbooks`
           - `waitingCustomerQueue`
           - `channelHealth`

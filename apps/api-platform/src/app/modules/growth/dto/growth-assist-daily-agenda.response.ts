@@ -46,6 +46,17 @@ export interface GrowthAssistNextActionResponseDto {
   operationalCaseId: string | null;
 }
 
+export interface GrowthAssistLeadWarmthHintResponseDto {
+  key: string;
+  warmth: 'hot' | 'warm' | 'watch';
+  title: string;
+  signalSummary: string;
+  whyWarmth: string;
+  recommendedCadence: string;
+  riskNote: string;
+  threadId: string;
+}
+
 export interface GrowthAssistPlaybookResponseDto {
   key: string;
   title: string;
@@ -77,10 +88,18 @@ export interface GrowthAssistDailyAgendaResponseDto {
     channelRiskCount: number;
     savedPolicyKey: 'balanced' | 'owner_queue_first' | 'follow_up_first';
   };
+  leadWarmthSummary: {
+    hotCount: number;
+    warmCount: number;
+    watchCount: number;
+    dominantWarmth: 'hot' | 'warm' | 'watch' | 'none';
+    recommendedFocus: string;
+  };
   tasks: GrowthAssistTaskResponseDto[];
   conversationCues: GrowthAssistConversationCueResponseDto[];
   replySuggestions: GrowthAssistReplySuggestionResponseDto[];
   nextActions: GrowthAssistNextActionResponseDto[];
+  leadWarmthHints: GrowthAssistLeadWarmthHintResponseDto[];
   playbooks: GrowthAssistPlaybookResponseDto[];
   waitingCustomerQueue: GrowthAssistWaitingCustomerResponseDto[];
   channelHealth: {
@@ -99,6 +118,7 @@ export const toGrowthAssistDailyAgendaResponseDto = (
   tenantSlug: view.tenantSlug,
   generatedAt: view.generatedAt.toISOString(),
   summary: { ...view.summary },
+  leadWarmthSummary: { ...view.leadWarmthSummary },
   tasks: view.tasks.map((task) => ({
     ...task,
     dueAt: task.dueAt?.toISOString() ?? null,
@@ -109,6 +129,7 @@ export const toGrowthAssistDailyAgendaResponseDto = (
     checklist: [...entry.checklist],
   })),
   nextActions: view.nextActions.map((entry) => ({ ...entry })),
+  leadWarmthHints: view.leadWarmthHints.map((entry) => ({ ...entry })),
   playbooks: view.playbooks.map((playbook) => ({ ...playbook })),
   waitingCustomerQueue: view.waitingCustomerQueue.map((entry) => ({
     ...entry,

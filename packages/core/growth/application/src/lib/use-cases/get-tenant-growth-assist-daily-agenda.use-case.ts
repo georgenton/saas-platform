@@ -60,6 +60,17 @@ export interface TenantGrowthAssistNextActionView {
   operationalCaseId: string | null;
 }
 
+export interface TenantGrowthAssistLeadWarmthHintView {
+  key: string;
+  warmth: 'hot' | 'warm' | 'watch';
+  title: string;
+  signalSummary: string;
+  whyWarmth: string;
+  recommendedCadence: string;
+  riskNote: string;
+  threadId: string;
+}
+
 export interface TenantGrowthAssistPlaybookView {
   key: string;
   title: string;
@@ -91,10 +102,18 @@ export interface TenantGrowthAssistDailyAgendaView {
     channelRiskCount: number;
     savedPolicyKey: 'balanced' | 'owner_queue_first' | 'follow_up_first';
   };
+  leadWarmthSummary: {
+    hotCount: number;
+    warmCount: number;
+    watchCount: number;
+    dominantWarmth: 'hot' | 'warm' | 'watch' | 'none';
+    recommendedFocus: string;
+  };
   tasks: TenantGrowthAssistTaskView[];
   conversationCues: TenantGrowthAssistConversationCueView[];
   replySuggestions: TenantGrowthAssistReplySuggestionView[];
   nextActions: TenantGrowthAssistNextActionView[];
+  leadWarmthHints: TenantGrowthAssistLeadWarmthHintView[];
   playbooks: TenantGrowthAssistPlaybookView[];
   waitingCustomerQueue: TenantGrowthAssistWaitingCustomerView[];
   channelHealth: {
@@ -138,15 +157,18 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
     );
 
     const tasks = this.buildTasks(workbench, openCases);
+    const leadWarmthSummary = this.buildLeadWarmthSummary(workbench);
 
     return {
       tenantSlug,
       generatedAt: this.nowProvider(),
       summary: summarySignals,
+      leadWarmthSummary,
       tasks,
       conversationCues: this.buildConversationCues(workbench),
       replySuggestions: this.buildReplySuggestions(workbench),
       nextActions: this.buildNextActions(summarySignals, tasks, outboundSummary),
+      leadWarmthHints: this.buildLeadWarmthHints(workbench),
       playbooks: this.buildPlaybooks(
         summarySignals,
         autoAssignmentSettings.defaultPolicyKey,
@@ -376,22 +398,9 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
   private buildConversationCues(
     workbench: TenantGrowthConversationWorkbenchView,
   ): TenantGrowthAssistConversationCueView[] {
-    return workbench.threads
-      .filter(
-        (thread) =>
-          thread.nextActionOwner === 'team' &&
-          (thread.firstResponseStatus === 'overdue' ||
-            thread.followUpStatus === 'overdue' ||
-            thread.priority === 'critical' ||
-            thread.priority === 'high'),
-      )
+    return this.getAssistRelevantThreads(workbench)
       .map((thread) => {
-        const warmth: TenantGrowthAssistConversationCueView['warmth'] =
-          thread.firstResponseStatus === 'overdue' || thread.priority === 'critical'
-            ? 'hot'
-            : thread.followUpStatus === 'overdue' || thread.priority === 'high'
-              ? 'warm'
-              : 'watch';
+        const warmth = this.getThreadWarmth(thread);
 
         return {
           key: thread.threadId,
@@ -506,22 +515,9 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
   private buildReplySuggestions(
     workbench: TenantGrowthConversationWorkbenchView,
   ): TenantGrowthAssistReplySuggestionView[] {
-    return workbench.threads
-      .filter(
-        (thread) =>
-          thread.nextActionOwner === 'team' &&
-          (thread.firstResponseStatus === 'overdue' ||
-            thread.followUpStatus === 'overdue' ||
-            thread.priority === 'critical' ||
-            thread.priority === 'high'),
-      )
+    return this.getAssistRelevantThreads(workbench)
       .map((thread) => {
-        const warmth: TenantGrowthAssistReplySuggestionView['warmth'] =
-          thread.firstResponseStatus === 'overdue' || thread.priority === 'critical'
-            ? 'hot'
-            : thread.followUpStatus === 'overdue' || thread.priority === 'high'
-              ? 'warm'
-              : 'watch';
+        const warmth = this.getThreadWarmth(thread);
 
         const reason =
           thread.firstResponseStatus === 'overdue'
@@ -575,6 +571,87 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
         };
       })
       .slice(0, 4);
+  }
+
+  private buildLeadWarmthSummary(
+    workbench: TenantGrowthConversationWorkbenchView,
+  ): TenantGrowthAssistDailyAgendaView['leadWarmthSummary'] {
+    const counts = workbench.threads.reduce(
+      (summary, thread) => {
+        summary[this.getThreadWarmth(thread)] += 1;
+        return summary;
+      },
+      { hot: 0, warm: 0, watch: 0 },
+    );
+
+    const dominantWarmth =
+      counts.hot > 0
+        ? 'hot'
+        : counts.warm > 0
+          ? 'warm'
+          : counts.watch > 0
+            ? 'watch'
+            : 'none';
+
+    return {
+      hotCount: counts.hot,
+      warmCount: counts.warm,
+      watchCount: counts.watch,
+      dominantWarmth,
+      recommendedFocus:
+        dominantWarmth === 'hot'
+          ? 'Prioriza respuestas o seguimientos que ya estan pidiendo movimiento hoy.'
+          : dominantWarmth === 'warm'
+            ? 'Mantén el ritmo de conversaciones que siguen vivas antes de que se enfrien.'
+            : dominantWarmth === 'watch'
+              ? 'Usa el radar para no perder timing en conversaciones que todavia no son urgentes.'
+              : 'Todavia no hay señales fuertes; puedes usar Growth como una agenda comercial tranquila.',
+    };
+  }
+
+  private buildLeadWarmthHints(
+    workbench: TenantGrowthConversationWorkbenchView,
+  ): TenantGrowthAssistLeadWarmthHintView[] {
+    return workbench.threads
+      .slice()
+      .sort(
+        (left, right) =>
+          this.threadWarmthWeight(this.getThreadWarmth(right)) -
+            this.threadWarmthWeight(this.getThreadWarmth(left)) ||
+          (right.hoursSinceLastInbound ?? right.hoursSinceLastActivity) -
+            (left.hoursSinceLastInbound ?? left.hoursSinceLastActivity),
+      )
+      .slice(0, 4)
+      .map((thread) => {
+        const warmth = this.getThreadWarmth(thread);
+        return {
+          key: `warmth:${thread.threadId}`,
+          warmth,
+          title: thread.subject,
+          signalSummary: `${this.channelLabel(thread.channel)} · ultima actividad hace ${this.formatRelativeHours(
+            thread.hoursSinceLastActivity,
+          )} · ${thread.latestMessagePreview ?? 'Sin preview reciente.'}`,
+          whyWarmth:
+            warmth === 'hot'
+              ? 'Se ve caliente porque ya pide respuesta o seguimiento del equipo y puede enfriarse rapido.'
+              : warmth === 'warm'
+                ? 'Sigue con movimiento real y conviene sostener el ritmo antes de que pierda traccion.'
+                : 'No es urgente todavia, pero vale la pena mantenerla en radar para no perder timing.',
+          recommendedCadence:
+            warmth === 'hot'
+              ? 'Muévelo hoy mismo.'
+              : warmth === 'warm'
+                ? 'Revísalo hoy o deja próximo toque claro.'
+                : 'Déjalo visible y retómalo en el momento acordado.',
+          riskNote:
+            warmth === 'hot'
+              ? 'Si se demora, puedes perder la intención más fuerte.'
+              : warmth === 'warm'
+                ? 'Si nadie lo toca, puede pasar de interés activo a conversación tibia.'
+                : 'Si desaparece del radar, luego cuesta más reabrirlo con contexto.',
+          threadId: thread.threadId,
+        };
+      });
   }
 
   private buildNextActions(
@@ -713,6 +790,52 @@ export class GetTenantGrowthAssistDailyAgendaUseCase {
         return 'Un canal inestable puede romper entregas y arruinar timing comercial aunque el equipo responda bien.';
       default:
         return 'Mover esto hoy ayuda a sostener ritmo comercial y claridad operativa.';
+    }
+  }
+
+  private getAssistRelevantThreads(
+    workbench: TenantGrowthConversationWorkbenchView,
+  ): TenantGrowthConversationWorkbenchView['threads'] {
+    return workbench.threads.filter(
+      (thread) =>
+        thread.nextActionOwner === 'team' &&
+        (thread.firstResponseStatus === 'overdue' ||
+          thread.followUpStatus === 'overdue' ||
+          thread.priority === 'critical' ||
+          thread.priority === 'high'),
+    );
+  }
+
+  private getThreadWarmth(
+    thread: TenantGrowthConversationWorkbenchView['threads'][number],
+  ): 'hot' | 'warm' | 'watch' {
+    if (
+      thread.firstResponseStatus === 'overdue' ||
+      thread.priority === 'critical'
+    ) {
+      return 'hot';
+    }
+
+    if (
+      thread.followUpStatus === 'overdue' ||
+      thread.priority === 'high' ||
+      thread.nextActionOwner === 'team'
+    ) {
+      return 'warm';
+    }
+
+    return 'watch';
+  }
+
+  private threadWarmthWeight(warmth: 'hot' | 'warm' | 'watch'): number {
+    switch (warmth) {
+      case 'hot':
+        return 3;
+      case 'warm':
+        return 2;
+      case 'watch':
+      default:
+        return 1;
     }
   }
 

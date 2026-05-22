@@ -14,6 +14,12 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@saas-platform/ai-application": [
+        "packages/core/ai/application/src/index.ts"
+      ],
+      "@saas-platform/ai-domain": [
+        "packages/core/ai/domain/src/index.ts"
+      ],
       "@saas-platform/catalog-application": [
         "packages/core/catalog/application/src/index.ts"
       ],

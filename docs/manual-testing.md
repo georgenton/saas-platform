@@ -1959,11 +1959,36 @@ Consumer web inicial para este snapshot operativo:
           - `waitingCustomerQueue`
           - `channelHealth`
         - con eso la web ya no depende solo de heurísticas locales para explicar “qué hacer hoy”
+      - además ya existe el primer corte transversal de la `AI Capability Platform`:
+        - `GET /api/ai/agents`
+          - devuelve el catálogo transversal de agentes
+          - hoy expone:
+            - `growth-assist-coach` como `ready`
+            - `invoice-document-assistant` como `planned`
+            - `ecommerce-launch-assistant` como `planned`
+        - `GET /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-envelope`
+          - prepara un envelope `tenant-scoped` en modo `suggestion`
+          - toma como fuente el contrato determinístico `growth.assist.daily_agenda`
+          - devuelve:
+            - `agent`
+            - `surface`
+            - `promptPack`
+            - `objective`
+            - `constraints`
+            - `suggestedOutputs`
+            - `contextBlocks`
+          - importante:
+            - no ejecuta acciones
+            - no envía mensajes
+            - no reemplaza reglas del dominio
+            - solo prepara el handoff auditable para una futura capa de modelo
 - el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
   - `GET /api/growth/tenants/:slug/conversations/operational-cases`
     - acepta `status`
     - acepta `routingPolicyKey`
   - `GET /api/growth/tenants/:slug/conversations/assist/daily-agenda`
+  - `GET /api/ai/agents`
+  - `GET /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-envelope`
   - `GET /api/growth/tenants/:slug/conversations/operational-cases/auto-assignment-settings`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases/auto-assign`

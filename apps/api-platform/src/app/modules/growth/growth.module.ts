@@ -989,5 +989,6 @@ import { HttpWhatsappOperationalMonitorObservabilitySink } from './http-whatsapp
     TenantMembershipGuard,
     TenantPermissionGuard,
   ],
+  exports: [GetTenantGrowthAssistDailyAgendaUseCase],
 })
 export class GrowthModule {}

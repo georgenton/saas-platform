@@ -1,6 +1,8 @@
 import { FormEvent, startTransition, useEffect, useMemo, useState } from 'react';
 import styles from './app.module.css';
 import {
+  fetchAiAgentCatalog,
+  fetchTenantAiSuggestionEnvelope,
   acceptInvitation,
   cancelInvitation,
   checkInvoiceElectronicAuthorization,
@@ -74,6 +76,8 @@ import {
   updateInvoiceStatus,
 } from './api';
 import {
+  AiAgentCatalogResponse,
+  AiSuggestionEnvelopeResponse,
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CustomerResponse,
@@ -790,6 +794,18 @@ function growthAssistNextActionLabel(
   }
 }
 
+function aiAgentAvailabilityTone(
+  availability: AiAgentCatalogResponse['availability'],
+): string {
+  return availability === 'ready' ? styles.healthy : styles.warning;
+}
+
+function aiAgentAvailabilityLabel(
+  availability: AiAgentCatalogResponse['availability'],
+): string {
+  return availability === 'ready' ? 'Ready' : 'Planned';
+}
+
 function formatRelativeHours(value: number | null): string {
   if (value === null) {
     return 'sin referencia reciente';
@@ -968,6 +984,11 @@ export function App() {
     useState<GrowthConversationWorkbenchResponse | null>(null);
   const [growthAssistAgenda, setGrowthAssistAgenda] =
     useState<GrowthAssistDailyAgendaResponse | null>(null);
+  const [aiAgentCatalog, setAiAgentCatalog] = useState<AiAgentCatalogResponse[]>(
+    [],
+  );
+  const [growthAssistAiEnvelope, setGrowthAssistAiEnvelope] =
+    useState<AiSuggestionEnvelopeResponse | null>(null);
   const [whatsappSummary, setWhatsappSummary] =
     useState<WhatsappOutboundReportingSummaryResponse | null>(null);
   const [whatsappMonitorSummary, setWhatsappMonitorSummary] =
@@ -2565,6 +2586,17 @@ export function App() {
     [effectiveGrowthAssistWaitingCustomers],
   );
   const effectiveGrowthAssistChannelHealth = growthAssistAgenda?.channelHealth ?? null;
+  const activeGrowthAiAgent = useMemo(
+    () =>
+      growthAssistAiEnvelope?.agent ??
+      aiAgentCatalog.find((entry) => entry.key === 'growth-assist-coach') ??
+      null,
+    [aiAgentCatalog, growthAssistAiEnvelope],
+  );
+  const plannedAiAgents = useMemo(
+    () => aiAgentCatalog.filter((entry) => entry.key !== 'growth-assist-coach'),
+    [aiAgentCatalog],
+  );
 
   async function copyGrowthAssistReplySuggestion(
     key: string,
@@ -3178,6 +3210,8 @@ export function App() {
     ) {
       setGrowthWorkbench(null);
       setGrowthAssistAgenda(null);
+      setAiAgentCatalog([]);
+      setGrowthAssistAiEnvelope(null);
       setWhatsappSummary(null);
       setWhatsappMonitorSummary(null);
       setWhatsappMonitorAnalytics(null);
@@ -3207,6 +3241,8 @@ export function App() {
           nextAcknowledgements,
           nextOperationalCases,
           nextAutoAssignmentSettings,
+          nextAiAgentCatalog,
+          nextAiSuggestionEnvelope,
         ] =
         await Promise.all([
           fetchGrowthConversationWorkbench(token, tenantSlug, {
@@ -3224,6 +3260,12 @@ export function App() {
           fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug),
           fetchGrowthOperationalCases(token, tenantSlug),
           fetchGrowthOperationalCaseAutoAssignmentSettings(token, tenantSlug),
+          fetchAiAgentCatalog(token).catch(() => []),
+          fetchTenantAiSuggestionEnvelope(
+            token,
+            tenantSlug,
+            'growth-assist-coach',
+          ).catch(() => null),
         ]);
 
         if (cancelled) {
@@ -3233,6 +3275,8 @@ export function App() {
         startTransition(() => {
           setGrowthWorkbench(nextWorkbench);
           setGrowthAssistAgenda(nextAssistAgenda);
+          setAiAgentCatalog(nextAiAgentCatalog);
+          setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
           setWhatsappSummary(nextSummary);
           setGrowthMonitorHistory(nextMonitorRuns);
           setWhatsappMonitorAnalytics(nextMonitorAnalytics);
@@ -3252,6 +3296,8 @@ export function App() {
 
         setGrowthWorkbench(null);
         setGrowthAssistAgenda(null);
+        setAiAgentCatalog([]);
+        setGrowthAssistAiEnvelope(null);
         setWhatsappSummary(null);
         setWhatsappMonitorSummary(null);
         setWhatsappMonitorAnalytics(null);
@@ -3783,6 +3829,8 @@ export function App() {
         nextAcknowledgements,
         nextOperationalCases,
         nextAutoAssignmentSettings,
+        nextAiAgentCatalog,
+        nextAiSuggestionEnvelope,
       ] =
         await Promise.all([
         fetchGrowthConversationWorkbench(token, tenantSlug, {
@@ -3799,11 +3847,19 @@ export function App() {
         fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug),
         fetchGrowthOperationalCases(token, tenantSlug),
         fetchGrowthOperationalCaseAutoAssignmentSettings(token, tenantSlug),
+        fetchAiAgentCatalog(token).catch(() => []),
+        fetchTenantAiSuggestionEnvelope(
+          token,
+          tenantSlug,
+          'growth-assist-coach',
+        ).catch(() => null),
       ]);
 
       startTransition(() => {
         setGrowthWorkbench(nextWorkbench);
         setGrowthAssistAgenda(nextAssistAgenda);
+        setAiAgentCatalog(nextAiAgentCatalog);
+        setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
         setWhatsappSummary(nextSummary);
         setGrowthMonitorHistory(nextMonitorRuns);
         setWhatsappMonitorAnalytics(nextMonitorAnalytics);
@@ -4218,6 +4274,8 @@ export function App() {
     setGrowthError(null);
     setGrowthWorkbench(null);
     setGrowthAssistAgenda(null);
+    setAiAgentCatalog([]);
+    setGrowthAssistAiEnvelope(null);
     setWhatsappSummary(null);
     setWhatsappMonitorSummary(null);
     setWhatsappMonitorAnalytics(null);
@@ -6241,6 +6299,90 @@ export function App() {
                   ) : null}
 
                   <div className={styles.twoColumn}>
+                    <div className={styles.detailCard}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>AI Capability Platform</span>
+                          <h3>Handoff transversal listo para suggestion mode</h3>
+                        </div>
+                        {activeGrowthAiAgent ? (
+                          <span
+                            className={`${styles.statusPill} ${aiAgentAvailabilityTone(
+                              activeGrowthAiAgent.availability,
+                            )}`}
+                          >
+                            {aiAgentAvailabilityLabel(activeGrowthAiAgent.availability)}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {growthAssistAiEnvelope ? (
+                        <div className={styles.stack}>
+                          <p className={styles.muted}>
+                            <strong>{growthAssistAiEnvelope.agent.title}</strong> ya
+                            vive como capa transversal separada de Growth. El
+                            workspace solo le entrega un contrato determinístico y el
+                            agente queda restringido a modo sugerencia.
+                          </p>
+                          <div className={styles.badgeRow}>
+                            <span className={styles.badge}>
+                              Surface {growthAssistAiEnvelope.surface.key}
+                            </span>
+                            <span className={styles.badge}>
+                              Prompt pack {growthAssistAiEnvelope.promptPack.key}
+                            </span>
+                            <span className={styles.badge}>
+                              Mode {growthAssistAiEnvelope.mode}
+                            </span>
+                          </div>
+                          <div className={styles.assistReplyBox}>
+                            <span className={styles.muted}>Objetivo del agente</span>
+                            <strong>{growthAssistAiEnvelope.objective}</strong>
+                          </div>
+                          <div className={styles.assistChecklist}>
+                            {growthAssistAiEnvelope.suggestedOutputs.map((entry) => (
+                              <span className={styles.badge} key={entry.key}>
+                                {entry.label}
+                              </span>
+                            ))}
+                          </div>
+                          <div className={styles.stack}>
+                            {growthAssistAiEnvelope.contextBlocks
+                              .slice(0, 3)
+                              .map((block) => (
+                                <div className={styles.assistCueCard} key={block.key}>
+                                  <strong>{block.title}</strong>
+                                  <small>{block.detail}</small>
+                                  <div className={styles.assistChecklist}>
+                                    {block.bullets.map((bullet) => (
+                                      <span className={styles.badge} key={bullet}>
+                                        {bullet}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                          <small className={styles.muted}>
+                            Guardrails: {growthAssistAiEnvelope.constraints.join(' ')}
+                          </small>
+                          {plannedAiAgents.length > 0 ? (
+                            <small className={styles.muted}>
+                              Próximos agentes transversales:{' '}
+                              {plannedAiAgents.map((entry) => entry.title).join(' · ')}
+                            </small>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div className={styles.emptyState}>
+                          <p>
+                            El tenant ya tiene Growth Assist, pero todavía no se pudo
+                            cargar el envelope transversal preparado para IA.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
                     <div className={styles.detailCard}>
                       <div className={styles.sectionHeading}>
                         <div>

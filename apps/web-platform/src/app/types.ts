@@ -1077,6 +1077,47 @@ export interface GrowthAssistDailyAgendaResponse {
   };
 }
 
+export interface AiAgentCatalogResponse {
+  key: string;
+  title: string;
+  summary: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  availability: 'ready' | 'planned';
+  defaultMode: 'suggestion' | 'guarded_execution';
+  supportedSurfaceKeys: string[];
+}
+
+export interface AiSuggestionEnvelopeResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  mode: 'suggestion';
+  agent: AiAgentCatalogResponse;
+  surface: {
+    key: string;
+    title: string;
+    sourceContractKey: string;
+    sourceGeneratedAt: string;
+  };
+  promptPack: {
+    key: string;
+    version: string;
+  };
+  objective: string;
+  constraints: string[];
+  suggestedOutputs: {
+    key: string;
+    label: string;
+    description: string;
+  }[];
+  contextBlocks: {
+    key: string;
+    title: string;
+    detail: string;
+    bullets: string[];
+  }[];
+}
+
 export interface WhatsappOperationalAlertFrequencyResponse {
   alertKey: string;
   title: string;

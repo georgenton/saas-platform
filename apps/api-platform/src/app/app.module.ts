@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '@saas-platform/infra-prisma';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AiModule } from './modules/ai/ai.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { CommercialModule } from './modules/commercial/commercial.module';
@@ -15,6 +16,7 @@ import { TenancyModule } from './modules/tenancy/tenancy.module';
 @Module({
   imports: [
     PrismaModule,
+    AiModule,
     AuthModule,
     CatalogModule,
     CommercialModule,

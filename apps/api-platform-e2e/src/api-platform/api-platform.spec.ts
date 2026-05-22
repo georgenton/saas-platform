@@ -4940,6 +4940,178 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/ai/agents should return the transversal AI agent catalog', async () => {
+    await request(httpServer)
+      .get('/api/ai/agents')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          key: 'growth-assist-coach',
+          title: 'Growth Assist Coach',
+          summary:
+            'Turns deterministic Growth Assist signals into tenant-scoped commercial suggestions without executing actions automatically.',
+          domainKey: 'growth',
+          productKey: 'growth',
+          availability: 'ready',
+          defaultMode: 'suggestion',
+          supportedSurfaceKeys: ['growth_assist_daily_agenda'],
+        },
+        {
+          key: 'invoice-document-assistant',
+          title: 'Invoice Document Assistant',
+          summary:
+            'Will help draft, review, and explain invoicing document workflows once AI-ready invoicing surfaces are exposed.',
+          domainKey: 'invoicing',
+          productKey: 'invoicing',
+          availability: 'planned',
+          defaultMode: 'suggestion',
+          supportedSurfaceKeys: ['invoice_document_drafting'],
+        },
+        {
+          key: 'ecommerce-launch-assistant',
+          title: 'Ecommerce Launch Assistant',
+          summary:
+            'Will help shape product, catalog, landing, and campaign suggestions once the ecommerce domain is active.',
+          domainKey: 'ecommerce',
+          productKey: 'ecommerce',
+          availability: 'planned',
+          defaultMode: 'suggestion',
+          supportedSurfaceKeys: ['ecommerce_launch_workspace'],
+        },
+      ]);
+  });
+
+  it('GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-envelope should return a tenant-scoped Growth Assist suggestion envelope', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ai/tenants/saas-platform/agents/growth-assist-coach/suggestion-envelope',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        tenantSlug: 'saas-platform',
+        generatedAt: '2026-05-20T10:36:00.000Z',
+        mode: 'suggestion',
+        agent: {
+          key: 'growth-assist-coach',
+          title: 'Growth Assist Coach',
+          summary:
+            'Turns deterministic Growth Assist signals into tenant-scoped commercial suggestions without executing actions automatically.',
+          domainKey: 'growth',
+          productKey: 'growth',
+          availability: 'ready',
+          defaultMode: 'suggestion',
+          supportedSurfaceKeys: ['growth_assist_daily_agenda'],
+        },
+        surface: {
+          key: 'growth_assist_daily_agenda',
+          title: 'Growth Assist daily agenda',
+          sourceContractKey: 'growth.assist.daily_agenda',
+          sourceGeneratedAt: '2026-05-20T10:36:00.000Z',
+        },
+        promptPack: {
+          key: 'growth-assist-coach-core',
+          version: 'v1',
+        },
+        objective:
+          'Propose clear commercial suggestions for a non-expert operator using the deterministic Growth Assist agenda as the source of truth.',
+        constraints: [
+          'Stay in suggestion mode only. Do not assume messages are sent or cases are mutated automatically.',
+          'Use only the tenant-scoped Growth Assist agenda and its embedded operational signals.',
+          'Prefer short, direct, Spanish-first suggestions that help a small business operator move today.',
+          'Respect domain boundaries: business rules, approvals, and workflow state still belong to Growth.',
+        ],
+        suggestedOutputs: [
+          {
+            key: 'reply_draft',
+            label: 'Reply draft',
+            description:
+              'Draft a customer-facing WhatsApp reply using the hottest conversation cues and reply suggestions.',
+          },
+          {
+            key: 'next_action_brief',
+            label: 'Next action brief',
+            description:
+              'Explain the top commercial action to take now and why it matters today.',
+          },
+          {
+            key: 'follow_up_plan',
+            label: 'Follow-up plan',
+            description:
+              'Suggest a short follow-up sequence grounded in playbooks and waiting-customer timing.',
+          },
+        ],
+        contextBlocks: [
+          {
+            key: 'agenda_summary',
+            title: 'Agenda summary',
+            detail:
+              'La bandeja no esta rota, pero si hay seguimientos que no conviene dejar enfriar. Usa esta agenda como recordatorio simple: primero sigue lo que ya esta caliente, luego reparte owner nuevo si hace falta.',
+            bullets: [
+              'Reply now count: 1',
+              'Follow-up now count: 2',
+              'Waiting customer count: 0',
+              'Queue to organize count: 1',
+              'Channel risk count: 0',
+              'Saved auto-assignment policy: follow_up_first',
+            ],
+          },
+          {
+            key: 'top_next_actions',
+            title: 'Top next actions',
+            detail:
+              'These are the clearest business actions the deterministic Growth Assist contract already recommends today.',
+            bullets: [
+              'Responder a WhatsApp Maria Perez: Responder hoy mismo y cerrar con un siguiente paso concreto. (Responder tarde enfria conversaciones que ya llegaron con intencion activa.)',
+            ],
+          },
+          {
+            key: 'reply_suggestions',
+            title: 'Reply suggestions',
+            detail:
+              'These drafts and goals are safe starting points for suggestion-mode coaching.',
+            bullets: [
+              'WhatsApp Maria Perez: goal=Reconocer el contacto, retomar confianza y proponer el siguiente paso.; draft=Hola WhatsApp Maria Perez, gracias por escribirnos. Retomo esto hoy para ayudarte sin dejarlo enfriar. Si te parece, te comparto el siguiente paso y lo dejamos encaminado ahora mismo.',
+            ],
+          },
+          {
+            key: 'lead_warmth',
+            title: 'Lead warmth radar',
+            detail:
+              'Prioriza respuestas o seguimientos que ya estan pidiendo movimiento hoy.',
+            bullets: [
+              'WhatsApp Maria Perez: Se ve caliente porque ya pide respuesta o seguimiento del equipo y puede enfriarse rapido.; cadence=Muévelo hoy mismo.',
+            ],
+          },
+          {
+            key: 'playbooks',
+            title: 'Operator playbooks',
+            detail:
+              'These playbooks describe the deterministic operating guidance the AI layer must respect and explain.',
+            bullets: [
+              'Responder primero: goal=Recuperar velocidad de respuesta y dejar un siguiente paso claro sin sonar robotico.; avoid=No contestes con un texto generico que ignore el contexto ni dejes la conversacion abierta sin siguiente paso.; success=El lead responde o acepta el siguiente paso dentro de la misma ventana de seguimiento.',
+            ],
+          },
+          {
+            key: 'channel_health',
+            title: 'Channel health',
+            detail: 'No top alert summary is active right now.',
+            bullets: [
+              'Overall status: healthy',
+              'Total alerts: 0',
+              'Ready retries: 0',
+              'Top action: No action required',
+            ],
+          },
+        ],
+      });
+
+    expect(getTenantGrowthAssistDailyAgendaUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
   it('GET /api/growth/tenants/:slug/conversations/operational-cases should return persisted operational cases', async () => {
     await request(httpServer)
       .get(

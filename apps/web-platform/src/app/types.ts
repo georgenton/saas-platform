@@ -984,10 +984,24 @@ export interface GrowthAssistConversationCueResponse {
   threadId: string;
 }
 
+export interface GrowthAssistReplySuggestionResponse {
+  key: string;
+  warmth: 'hot' | 'warm' | 'watch';
+  title: string;
+  reason: string;
+  goal: string;
+  suggestedReply: string;
+  followUpPrompt: string;
+  checklist: string[];
+  threadId: string;
+}
+
 export interface GrowthAssistPlaybookResponse {
   key: string;
   title: string;
   detail: string;
+  whenToUse: string;
+  steps: string[];
 }
 
 export interface GrowthAssistWaitingCustomerResponse {
@@ -1015,6 +1029,7 @@ export interface GrowthAssistDailyAgendaResponse {
   };
   tasks: GrowthAssistTaskResponse[];
   conversationCues: GrowthAssistConversationCueResponse[];
+  replySuggestions: GrowthAssistReplySuggestionResponse[];
   playbooks: GrowthAssistPlaybookResponse[];
   waitingCustomerQueue: GrowthAssistWaitingCustomerResponse[];
   channelHealth: {

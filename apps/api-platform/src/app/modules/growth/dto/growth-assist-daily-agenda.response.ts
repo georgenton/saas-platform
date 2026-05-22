@@ -22,10 +22,24 @@ export interface GrowthAssistConversationCueResponseDto {
   threadId: string;
 }
 
+export interface GrowthAssistReplySuggestionResponseDto {
+  key: string;
+  warmth: 'hot' | 'warm' | 'watch';
+  title: string;
+  reason: string;
+  goal: string;
+  suggestedReply: string;
+  followUpPrompt: string;
+  checklist: string[];
+  threadId: string;
+}
+
 export interface GrowthAssistPlaybookResponseDto {
   key: string;
   title: string;
   detail: string;
+  whenToUse: string;
+  steps: string[];
 }
 
 export interface GrowthAssistWaitingCustomerResponseDto {
@@ -53,6 +67,7 @@ export interface GrowthAssistDailyAgendaResponseDto {
   };
   tasks: GrowthAssistTaskResponseDto[];
   conversationCues: GrowthAssistConversationCueResponseDto[];
+  replySuggestions: GrowthAssistReplySuggestionResponseDto[];
   playbooks: GrowthAssistPlaybookResponseDto[];
   waitingCustomerQueue: GrowthAssistWaitingCustomerResponseDto[];
   channelHealth: {
@@ -76,6 +91,10 @@ export const toGrowthAssistDailyAgendaResponseDto = (
     dueAt: task.dueAt?.toISOString() ?? null,
   })),
   conversationCues: view.conversationCues.map((cue) => ({ ...cue })),
+  replySuggestions: view.replySuggestions.map((entry) => ({
+    ...entry,
+    checklist: [...entry.checklist],
+  })),
   playbooks: view.playbooks.map((playbook) => ({ ...playbook })),
   waitingCustomerQueue: view.waitingCustomerQueue.map((entry) => ({
     ...entry,

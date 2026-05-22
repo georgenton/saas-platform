@@ -192,9 +192,24 @@ describe('Growth assist daily agenda use case', () => {
         warmth: 'hot',
       }),
     );
+    expect(result.replySuggestions[0]).toEqual(
+      expect.objectContaining({
+        key: 'reply-suggestion:thread_001',
+        title: 'Maria Perez',
+        goal: 'Reconocer el contacto, retomar confianza y proponer el siguiente paso.',
+        checklist: expect.arrayContaining([
+          'Deja un owner claro antes de cerrar el siguiente paso.',
+          'Agradece el contacto y reconoce la espera si aplica.',
+        ]),
+      }),
+    );
     expect(result.playbooks[0]).toEqual(
       expect.objectContaining({
         key: 'reply-now',
+        whenToUse: 'Cuando hay conversaciones sin primera respuesta o follow-up vencido.',
+        steps: expect.arrayContaining([
+          'Agradece el contacto y retoma el contexto en una frase simple.',
+        ]),
       }),
     );
   });

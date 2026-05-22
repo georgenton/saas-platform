@@ -1924,6 +1924,13 @@ Consumer web inicial para este snapshot operativo:
           - calor simple de conversaciones (`lead caliente`, `en movimiento`, `en radar`)
           - sugerencias de arranque de respuesta en lenguaje comercial sencillo
           - playbooks cortos según el estado del workbench, los casos operativos y la salud del canal
+        - esa misma capa ahora también trae sugerencias de reply más accionables:
+          - motivo de por qué conviene responder
+          - objetivo del mensaje
+          - borrador listo para adaptar
+          - prompt corto para destrabar la respuesta
+          - checklist simple para no olvidar el siguiente paso
+        - los playbooks también ya aterrizan a `whenToUse` y `steps`, para que un negocio pequeño no tenga que traducir la consola operativa por su cuenta
         - reutiliza el mismo `workbench`, `operational cases`, `outbound-summary` y `auto-assignment-settings`; no abre un segundo backend paralelo
       - ese modo asistido ya tiene su propio contrato backend:
         - `GET /api/growth/tenants/:slug/conversations/assist/daily-agenda`
@@ -1931,6 +1938,7 @@ Consumer web inicial para este snapshot operativo:
           - `summary`
           - `tasks`
           - `conversationCues`
+          - `replySuggestions`
           - `playbooks`
           - `waitingCustomerQueue`
           - `channelHealth`

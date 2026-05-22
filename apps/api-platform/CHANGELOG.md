@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.43.0
+
+### Minor Changes
+
+- a78a7b4: add auditable transversal AI suggestion run history for tenant-scoped Growth Assist handoffs
+
 ## 0.42.0
 
 ### Minor Changes

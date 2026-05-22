@@ -2,6 +2,7 @@ import { FormEvent, startTransition, useEffect, useMemo, useState } from 'react'
 import styles from './app.module.css';
 import {
   fetchAiAgentCatalog,
+  fetchAiPromptRegistry,
   fetchTenantAiSuggestionEnvelope,
   acceptInvitation,
   cancelInvitation,
@@ -77,6 +78,7 @@ import {
 } from './api';
 import {
   AiAgentCatalogResponse,
+  AiPromptRegistryResponse,
   AiSuggestionEnvelopeResponse,
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
@@ -987,6 +989,9 @@ export function App() {
   const [aiAgentCatalog, setAiAgentCatalog] = useState<AiAgentCatalogResponse[]>(
     [],
   );
+  const [aiPromptRegistry, setAiPromptRegistry] = useState<
+    AiPromptRegistryResponse[]
+  >([]);
   const [growthAssistAiEnvelope, setGrowthAssistAiEnvelope] =
     useState<AiSuggestionEnvelopeResponse | null>(null);
   const [whatsappSummary, setWhatsappSummary] =
@@ -2597,6 +2602,13 @@ export function App() {
     () => aiAgentCatalog.filter((entry) => entry.key !== 'growth-assist-coach'),
     [aiAgentCatalog],
   );
+  const activeGrowthAiPromptPack = useMemo(
+    () =>
+      growthAssistAiEnvelope?.promptPack ??
+      aiPromptRegistry.find((entry) => entry.agentKey === 'growth-assist-coach') ??
+      null,
+    [aiPromptRegistry, growthAssistAiEnvelope],
+  );
 
   async function copyGrowthAssistReplySuggestion(
     key: string,
@@ -3211,6 +3223,7 @@ export function App() {
       setGrowthWorkbench(null);
       setGrowthAssistAgenda(null);
       setAiAgentCatalog([]);
+      setAiPromptRegistry([]);
       setGrowthAssistAiEnvelope(null);
       setWhatsappSummary(null);
       setWhatsappMonitorSummary(null);
@@ -3242,6 +3255,7 @@ export function App() {
           nextOperationalCases,
           nextAutoAssignmentSettings,
           nextAiAgentCatalog,
+          nextAiPromptRegistry,
           nextAiSuggestionEnvelope,
         ] =
         await Promise.all([
@@ -3261,6 +3275,7 @@ export function App() {
           fetchGrowthOperationalCases(token, tenantSlug),
           fetchGrowthOperationalCaseAutoAssignmentSettings(token, tenantSlug),
           fetchAiAgentCatalog(token).catch(() => []),
+          fetchAiPromptRegistry(token).catch(() => []),
           fetchTenantAiSuggestionEnvelope(
             token,
             tenantSlug,
@@ -3276,6 +3291,7 @@ export function App() {
           setGrowthWorkbench(nextWorkbench);
           setGrowthAssistAgenda(nextAssistAgenda);
           setAiAgentCatalog(nextAiAgentCatalog);
+          setAiPromptRegistry(nextAiPromptRegistry);
           setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
           setWhatsappSummary(nextSummary);
           setGrowthMonitorHistory(nextMonitorRuns);
@@ -3297,6 +3313,7 @@ export function App() {
         setGrowthWorkbench(null);
         setGrowthAssistAgenda(null);
         setAiAgentCatalog([]);
+        setAiPromptRegistry([]);
         setGrowthAssistAiEnvelope(null);
         setWhatsappSummary(null);
         setWhatsappMonitorSummary(null);
@@ -3830,6 +3847,7 @@ export function App() {
         nextOperationalCases,
         nextAutoAssignmentSettings,
         nextAiAgentCatalog,
+        nextAiPromptRegistry,
         nextAiSuggestionEnvelope,
       ] =
         await Promise.all([
@@ -3848,6 +3866,7 @@ export function App() {
         fetchGrowthOperationalCases(token, tenantSlug),
         fetchGrowthOperationalCaseAutoAssignmentSettings(token, tenantSlug),
         fetchAiAgentCatalog(token).catch(() => []),
+        fetchAiPromptRegistry(token).catch(() => []),
         fetchTenantAiSuggestionEnvelope(
           token,
           tenantSlug,
@@ -3859,6 +3878,7 @@ export function App() {
         setGrowthWorkbench(nextWorkbench);
         setGrowthAssistAgenda(nextAssistAgenda);
         setAiAgentCatalog(nextAiAgentCatalog);
+        setAiPromptRegistry(nextAiPromptRegistry);
         setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
         setWhatsappSummary(nextSummary);
         setGrowthMonitorHistory(nextMonitorRuns);
@@ -4275,6 +4295,7 @@ export function App() {
     setGrowthWorkbench(null);
     setGrowthAssistAgenda(null);
     setAiAgentCatalog([]);
+    setAiPromptRegistry([]);
     setGrowthAssistAiEnvelope(null);
     setWhatsappSummary(null);
     setWhatsappMonitorSummary(null);
@@ -6337,14 +6358,34 @@ export function App() {
                           </div>
                           <div className={styles.assistReplyBox}>
                             <span className={styles.muted}>Objetivo del agente</span>
-                            <strong>{growthAssistAiEnvelope.objective}</strong>
+                            <strong>{growthAssistAiEnvelope.promptPack.objective}</strong>
+                          </div>
+                          {activeGrowthAiPromptPack ? (
+                            <div className={styles.assistReplyBox}>
+                              <span className={styles.muted}>Prompt pack transversal</span>
+                              <strong>
+                                {activeGrowthAiPromptPack.title} ·{' '}
+                                {activeGrowthAiPromptPack.version}
+                              </strong>
+                            </div>
+                          ) : null}
+                          <div className={styles.assistChecklist}>
+                            {growthAssistAiEnvelope.promptPack.suggestedOutputs.map(
+                              (entry) => (
+                                <span className={styles.badge} key={entry.key}>
+                                  {entry.label}
+                                </span>
+                              ),
+                            )}
                           </div>
                           <div className={styles.assistChecklist}>
-                            {growthAssistAiEnvelope.suggestedOutputs.map((entry) => (
-                              <span className={styles.badge} key={entry.key}>
-                                {entry.label}
-                              </span>
-                            ))}
+                            {growthAssistAiEnvelope.promptPack.styleGuidance.map(
+                              (entry) => (
+                                <span className={styles.badge} key={entry}>
+                                  {entry}
+                                </span>
+                              ),
+                            )}
                           </div>
                           <div className={styles.stack}>
                             {growthAssistAiEnvelope.contextBlocks
@@ -6364,7 +6405,8 @@ export function App() {
                               ))}
                           </div>
                           <small className={styles.muted}>
-                            Guardrails: {growthAssistAiEnvelope.constraints.join(' ')}
+                            Guardrails:{' '}
+                            {growthAssistAiEnvelope.promptPack.constraints.join(' ')}
                           </small>
                           {plannedAiAgents.length > 0 ? (
                             <small className={styles.muted}>

@@ -107,6 +107,14 @@ describe('AI suggestion envelope use case', () => {
         defaultMode: 'suggestion',
       }),
     );
+    expect(result.promptPack).toEqual(
+      expect.objectContaining({
+        key: 'growth-assist-coach-core',
+        version: 'v1',
+        agentKey: 'growth-assist-coach',
+        title: 'Growth Assist Coach Core',
+      }),
+    );
     expect(result.surface).toEqual(
       expect.objectContaining({
         key: 'growth_assist_daily_agenda',
@@ -114,7 +122,7 @@ describe('AI suggestion envelope use case', () => {
         sourceGeneratedAt: new Date('2026-05-22T11:00:00.000Z'),
       }),
     );
-    expect(result.suggestedOutputs).toEqual(
+    expect(result.promptPack.suggestedOutputs).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ key: 'reply_draft' }),
         expect.objectContaining({ key: 'next_action_brief' }),

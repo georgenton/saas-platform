@@ -23,14 +23,19 @@ export interface AiSuggestionEnvelopeResponseDto {
   promptPack: {
     key: string;
     version: string;
+    agentKey: string;
+    mode: 'suggestion' | 'guarded_execution';
+    title: string;
+    summary: string;
+    objective: string;
+    styleGuidance: string[];
+    constraints: string[];
+    suggestedOutputs: {
+      key: string;
+      label: string;
+      description: string;
+    }[];
   };
-  objective: string;
-  constraints: string[];
-  suggestedOutputs: {
-    key: string;
-    label: string;
-    description: string;
-  }[];
   contextBlocks: {
     key: string;
     title: string;
@@ -53,10 +58,14 @@ export const toAiSuggestionEnvelopeResponseDto = (
     ...envelope.surface,
     sourceGeneratedAt: envelope.surface.sourceGeneratedAt.toISOString(),
   },
-  promptPack: { ...envelope.promptPack },
-  objective: envelope.objective,
-  constraints: [...envelope.constraints],
-  suggestedOutputs: envelope.suggestedOutputs.map((entry) => ({ ...entry })),
+  promptPack: {
+    ...envelope.promptPack,
+    styleGuidance: [...envelope.promptPack.styleGuidance],
+    constraints: [...envelope.promptPack.constraints],
+    suggestedOutputs: envelope.promptPack.suggestedOutputs.map((entry) => ({
+      ...entry,
+    })),
+  },
   contextBlocks: envelope.contextBlocks.map((entry) => ({
     ...entry,
     bullets: [...entry.bullets],

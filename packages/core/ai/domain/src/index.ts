@@ -21,6 +21,19 @@ export interface AiSuggestionOutputDescriptor {
   description: string;
 }
 
+export interface AiPromptRegistryEntry {
+  key: string;
+  version: string;
+  agentKey: string;
+  mode: 'suggestion' | 'guarded_execution';
+  title: string;
+  summary: string;
+  objective: string;
+  styleGuidance: string[];
+  constraints: string[];
+  suggestedOutputs: AiSuggestionOutputDescriptor[];
+}
+
 export interface AiSuggestionContextBlock {
   key: string;
   title: string;
@@ -39,12 +52,6 @@ export interface TenantAiSuggestionEnvelope {
     sourceContractKey: string;
     sourceGeneratedAt: Date;
   };
-  promptPack: {
-    key: string;
-    version: string;
-  };
-  objective: string;
-  constraints: string[];
-  suggestedOutputs: AiSuggestionOutputDescriptor[];
+  promptPack: AiPromptRegistryEntry;
   contextBlocks: AiSuggestionContextBlock[];
 }

@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import {
+  GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
   ListAiAgentCatalogUseCase,
+  ListAiPromptRegistryUseCase,
 } from '@saas-platform/ai-application';
 import {
   GrowthPersistenceModule,
@@ -33,6 +35,14 @@ import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-a
     {
       provide: ListAiAgentCatalogUseCase,
       useFactory: () => new ListAiAgentCatalogUseCase(),
+    },
+    {
+      provide: ListAiPromptRegistryUseCase,
+      useFactory: () => new ListAiPromptRegistryUseCase(),
+    },
+    {
+      provide: GetAiPromptRegistryEntryByAgentKeyUseCase,
+      useFactory: () => new GetAiPromptRegistryEntryByAgentKeyUseCase(),
     },
     {
       provide: GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,

@@ -1,5 +1,6 @@
 import {
   AiAgentCatalogResponse,
+  AiPromptRegistryResponse,
   AiSuggestionEnvelopeResponse,
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
@@ -1172,6 +1173,15 @@ export async function fetchAiAgentCatalog(
   token: string,
 ): Promise<AiAgentCatalogResponse[]> {
   return request<AiAgentCatalogResponse[]>('/ai/agents', {
+    method: 'GET',
+    token,
+  });
+}
+
+export async function fetchAiPromptRegistry(
+  token: string,
+): Promise<AiPromptRegistryResponse[]> {
+  return request<AiPromptRegistryResponse[]>('/ai/prompts', {
     method: 'GET',
     token,
   });

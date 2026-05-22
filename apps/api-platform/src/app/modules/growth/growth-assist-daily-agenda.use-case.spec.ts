@@ -203,6 +203,14 @@ describe('Growth assist daily agenda use case', () => {
         ]),
       }),
     );
+    expect(result.nextActions[0]).toEqual(
+      expect.objectContaining({
+        key: 'next-action:reply:thread_001',
+        emphasis: 'do_now',
+        actionType: 'reply_now',
+        title: 'Responder a Maria Perez',
+      }),
+    );
     expect(result.playbooks[0]).toEqual(
       expect.objectContaining({
         key: 'reply-now',

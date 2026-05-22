@@ -34,6 +34,18 @@ export interface GrowthAssistReplySuggestionResponseDto {
   threadId: string;
 }
 
+export interface GrowthAssistNextActionResponseDto {
+  key: string;
+  emphasis: 'do_now' | 'today' | 'stabilize';
+  actionType: 'reply_now' | 'follow_up' | 'assign_owner' | 'channel_risk';
+  title: string;
+  whyNow: string;
+  recommendedAction: string;
+  businessImpact: string;
+  threadId: string | null;
+  operationalCaseId: string | null;
+}
+
 export interface GrowthAssistPlaybookResponseDto {
   key: string;
   title: string;
@@ -68,6 +80,7 @@ export interface GrowthAssistDailyAgendaResponseDto {
   tasks: GrowthAssistTaskResponseDto[];
   conversationCues: GrowthAssistConversationCueResponseDto[];
   replySuggestions: GrowthAssistReplySuggestionResponseDto[];
+  nextActions: GrowthAssistNextActionResponseDto[];
   playbooks: GrowthAssistPlaybookResponseDto[];
   waitingCustomerQueue: GrowthAssistWaitingCustomerResponseDto[];
   channelHealth: {
@@ -95,6 +108,7 @@ export const toGrowthAssistDailyAgendaResponseDto = (
     ...entry,
     checklist: [...entry.checklist],
   })),
+  nextActions: view.nextActions.map((entry) => ({ ...entry })),
   playbooks: view.playbooks.map((playbook) => ({ ...playbook })),
   waitingCustomerQueue: view.waitingCustomerQueue.map((entry) => ({
     ...entry,

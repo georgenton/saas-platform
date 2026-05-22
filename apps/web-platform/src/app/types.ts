@@ -996,6 +996,18 @@ export interface GrowthAssistReplySuggestionResponse {
   threadId: string;
 }
 
+export interface GrowthAssistNextActionResponse {
+  key: string;
+  emphasis: 'do_now' | 'today' | 'stabilize';
+  actionType: 'reply_now' | 'follow_up' | 'assign_owner' | 'channel_risk';
+  title: string;
+  whyNow: string;
+  recommendedAction: string;
+  businessImpact: string;
+  threadId: string | null;
+  operationalCaseId: string | null;
+}
+
 export interface GrowthAssistPlaybookResponse {
   key: string;
   title: string;
@@ -1030,6 +1042,7 @@ export interface GrowthAssistDailyAgendaResponse {
   tasks: GrowthAssistTaskResponse[];
   conversationCues: GrowthAssistConversationCueResponse[];
   replySuggestions: GrowthAssistReplySuggestionResponse[];
+  nextActions: GrowthAssistNextActionResponse[];
   playbooks: GrowthAssistPlaybookResponse[];
   waitingCustomerQueue: GrowthAssistWaitingCustomerResponse[];
   channelHealth: {

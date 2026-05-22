@@ -186,6 +186,16 @@ type GrowthAssistReplySuggestion = {
   checklist: string[];
 };
 
+type GrowthAssistNextAction = {
+  key: string;
+  emphasis: 'do_now' | 'today' | 'stabilize';
+  actionType: 'reply_now' | 'follow_up' | 'assign_owner' | 'channel_risk';
+  title: string;
+  whyNow: string;
+  recommendedAction: string;
+  businessImpact: string;
+};
+
 type GrowthAssistPlaybook = {
   key: string;
   title: string;
@@ -726,6 +736,34 @@ function growthAssistWarmthLabel(
     case 'watch':
     default:
       return 'En radar';
+  }
+}
+
+function growthAssistNextActionTone(
+  emphasis: GrowthAssistNextAction['emphasis'],
+): string {
+  switch (emphasis) {
+    case 'do_now':
+      return styles.critical;
+    case 'stabilize':
+      return styles.warning;
+    case 'today':
+    default:
+      return styles.healthy;
+  }
+}
+
+function growthAssistNextActionLabel(
+  emphasis: GrowthAssistNextAction['emphasis'],
+): string {
+  switch (emphasis) {
+    case 'do_now':
+      return 'Haz esto ya';
+    case 'stabilize':
+      return 'Estabiliza primero';
+    case 'today':
+    default:
+      return 'Hazlo hoy';
   }
 }
 
@@ -2335,6 +2373,54 @@ export function App() {
       })
       .slice(0, 4);
   }, [growthWorkbench]);
+  const growthAssistNextActions = useMemo(() => {
+    const fromTasks = growthAssistTasks.slice(0, 3).map((task) => ({
+      key: `next-action:${task.key}`,
+      emphasis:
+        task.urgency === 'today'
+          ? 'do_now'
+          : task.category === 'channel_risk'
+            ? 'stabilize'
+            : 'today',
+      actionType: task.category,
+      title: task.title,
+      whyNow: task.summary,
+      recommendedAction:
+        task.category === 'reply_now'
+          ? 'Responder hoy mismo y cerrar con un siguiente paso concreto.'
+          : task.category === 'follow_up'
+            ? 'Retomar el hilo con contexto corto y acordar fecha o siguiente movimiento.'
+            : task.category === 'assign_owner'
+              ? 'Dejar owner claro antes de que el caso pierda contexto o prioridad.'
+              : 'Mirar monitor, alertas y retries antes de empujar mas trafico.',
+      businessImpact:
+        task.category === 'reply_now'
+          ? 'Responder tarde enfria conversaciones que ya llegaron con intencion activa.'
+          : task.category === 'follow_up'
+            ? 'Un follow-up a tiempo mantiene movimiento sin obligarte a reabrir contexto mas tarde.'
+            : task.category === 'assign_owner'
+              ? 'Sin owner claro, el trabajo parece existir pero nadie lo termina de mover.'
+              : 'Un canal inestable puede romper entregas y arruinar timing comercial aunque el equipo responda bien.',
+    }) satisfies GrowthAssistNextAction);
+
+    if (fromTasks.length === 0 && growthAssistSummary) {
+      return [
+        {
+          key: 'next-action:healthy-routine',
+          emphasis: 'today',
+          actionType: 'follow_up',
+          title: 'Mantener ritmo comercial sin sobre-operar',
+          whyNow: growthAssistSummary.detail,
+          recommendedAction:
+            'Revisa leads tibios, confirma proximo paso en conversaciones activas y evita abrir complejidad nueva si no hace falta.',
+          businessImpact:
+            'La constancia suele mover mas negocio que reaccionar tarde solo cuando algo ya esta vencido.',
+        } satisfies GrowthAssistNextAction,
+      ];
+    }
+
+    return fromTasks;
+  }, [growthAssistSummary, growthAssistTasks]);
   const growthAssistLeadWarmthSummary = useMemo(() => {
     const counts = growthAssistConversationCues.reduce(
       (summary, cue) => {
@@ -2354,6 +2440,8 @@ export function App() {
     growthAssistAgenda?.conversationCues ?? growthAssistConversationCues;
   const effectiveGrowthAssistReplySuggestions =
     growthAssistAgenda?.replySuggestions ?? growthAssistReplySuggestions;
+  const effectiveGrowthAssistNextActions =
+    growthAssistAgenda?.nextActions ?? growthAssistNextActions;
   const effectiveGrowthAssistPlaybooks =
     growthAssistAgenda?.playbooks ?? growthAssistPlaybooks;
   const effectiveGrowthAssistWaitingCustomers =
@@ -6058,6 +6146,43 @@ export function App() {
                   ) : null}
 
                   <div className={styles.twoColumn}>
+                    <div className={styles.detailCard}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Top 3 del dia</span>
+                          <h3>Si solo haces 3 cosas hoy</h3>
+                        </div>
+                      </div>
+
+                      <div className={styles.stack}>
+                        {effectiveGrowthAssistNextActions.map((action) => (
+                          <div className={styles.assistTaskCard} key={action.key}>
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{action.title}</strong>
+                              <span
+                                className={`${styles.statusPill} ${growthAssistNextActionTone(
+                                  action.emphasis,
+                                )}`}
+                              >
+                                {growthAssistNextActionLabel(action.emphasis)}
+                              </span>
+                            </div>
+                            <small>{action.whyNow}</small>
+                            <div className={styles.assistReplyBox}>
+                              <span className={styles.muted}>Que haria ahora</span>
+                              <strong>{action.recommendedAction}</strong>
+                            </div>
+                            <small>{action.businessImpact}</small>
+                            <div className={styles.badgeRow}>
+                              <span className={styles.badge}>
+                                {growthAssistTaskCategoryLabel(action.actionType)}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className={styles.detailCard}>
                       <div className={styles.sectionHeading}>
                         <div>

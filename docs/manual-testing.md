@@ -1930,6 +1930,10 @@ Consumer web inicial para este snapshot operativo:
           - borrador listo para adaptar
           - prompt corto para destrabar la respuesta
           - checklist simple para no olvidar el siguiente paso
+        - y ahora además resume el día en un bloque todavía más simple:
+          - `nextActions`
+          - la idea es responder a “si solo haces 3 cosas hoy, ¿cuáles son?”
+          - con porqué conviene hacerlas ahora, qué acción recomienda el sistema y qué impacto comercial evita
         - los playbooks también ya aterrizan a `whenToUse` y `steps`, para que un negocio pequeño no tenga que traducir la consola operativa por su cuenta
         - reutiliza el mismo `workbench`, `operational cases`, `outbound-summary` y `auto-assignment-settings`; no abre un segundo backend paralelo
       - ese modo asistido ya tiene su propio contrato backend:
@@ -1939,6 +1943,7 @@ Consumer web inicial para este snapshot operativo:
           - `tasks`
           - `conversationCues`
           - `replySuggestions`
+          - `nextActions`
           - `playbooks`
           - `waitingCustomerQueue`
           - `channelHealth`

@@ -7,4 +7,9 @@ export interface AiSuggestionRunRepository {
     agentKey: string,
     limit?: number | null,
   ): Promise<AiSuggestionRunRecord[]>;
+  findByIdAndTenantIdAndAgentKey(
+    suggestionRunId: string,
+    tenantId: string,
+    agentKey: string,
+  ): Promise<AiSuggestionRunRecord | null>;
 }

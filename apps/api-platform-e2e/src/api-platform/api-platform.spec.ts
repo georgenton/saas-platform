@@ -42,8 +42,11 @@ import {
 } from '@saas-platform/feature-flags-application';
 import { FeatureFlag } from '@saas-platform/feature-flags-domain';
 import {
+  ListTenantAiApprovalRequestsUseCase,
   ListTenantAiSuggestionRunsUseCase,
   PrepareTenantAiSuggestionRunUseCase,
+  RequestTenantAiSuggestionRunApprovalUseCase,
+  ReviewTenantAiApprovalRequestUseCase,
 } from '@saas-platform/ai-application';
 import {
   AutoAssignTenantGrowthOperationalCasesUseCase,
@@ -232,8 +235,11 @@ describe('API', () => {
   let getTenantPartyByIdUseCase: { execute: jest.Mock };
   let getTenantConversationThreadByIdUseCase: { execute: jest.Mock };
   let getTenantGrowthAssistDailyAgendaUseCase: { execute: jest.Mock };
+  let listTenantAiApprovalRequestsUseCase: { execute: jest.Mock };
   let listTenantAiSuggestionRunsUseCase: { execute: jest.Mock };
   let prepareTenantAiSuggestionRunUseCase: { execute: jest.Mock };
+  let requestTenantAiSuggestionRunApprovalUseCase: { execute: jest.Mock };
+  let reviewTenantAiApprovalRequestUseCase: { execute: jest.Mock };
   let getTenantGrowthConversationWorkbenchUseCase: { execute: jest.Mock };
   let getTenantGrowthAssignmentWorkloadUseCase: { execute: jest.Mock };
   let getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase: {
@@ -1488,6 +1494,27 @@ describe('API', () => {
     },
     createdAt: new Date('2026-05-20T10:37:00.000Z'),
   };
+  const growthAssistApprovalRequest = {
+    id: 'ai-approval-001',
+    tenantId: 'tenant_123',
+    tenantSlug: 'saas-platform',
+    agentKey: 'growth-assist-coach',
+    policyKey: 'growth-assist-suggestion-review',
+    scope: 'suggestion_review' as const,
+    suggestionRunId: 'ai-run-001',
+    requestedByUserId: user.id,
+    requestedByEmail: user.email,
+    rationale: 'Quiero dejar trazable la revisión humana.',
+    summary:
+      'Growth Assist Coach requested human review for suggestion handoff ai-run-001 under policy growth-assist-suggestion-review.',
+    status: 'pending' as const,
+    reviewedAt: null,
+    reviewedByUserId: null,
+    reviewedByEmail: null,
+    reviewNote: null,
+    createdAt: new Date('2026-05-20T10:38:00.000Z'),
+    updatedAt: new Date('2026-05-20T10:38:00.000Z'),
+  };
   const whatsappWebhookEnvelope = WebhookEventEnvelope.create({
     id: 'webhook-envelope-001',
     tenantId: 'tenant_123',
@@ -2690,11 +2717,28 @@ describe('API', () => {
     getTenantGrowthAssistDailyAgendaUseCase = {
       execute: jest.fn().mockResolvedValue(growthAssistDailyAgenda),
     };
+    listTenantAiApprovalRequestsUseCase = {
+      execute: jest.fn().mockResolvedValue([growthAssistApprovalRequest]),
+    };
     listTenantAiSuggestionRunsUseCase = {
       execute: jest.fn().mockResolvedValue([growthAssistSuggestionRun]),
     };
     prepareTenantAiSuggestionRunUseCase = {
       execute: jest.fn().mockResolvedValue(growthAssistSuggestionRun),
+    };
+    requestTenantAiSuggestionRunApprovalUseCase = {
+      execute: jest.fn().mockResolvedValue(growthAssistApprovalRequest),
+    };
+    reviewTenantAiApprovalRequestUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        ...growthAssistApprovalRequest,
+        status: 'approved',
+        reviewedAt: new Date('2026-05-20T10:39:00.000Z'),
+        reviewedByUserId: user.id,
+        reviewedByEmail: user.email,
+        reviewNote: 'Se ve segura para uso guiado.',
+        updatedAt: new Date('2026-05-20T10:39:00.000Z'),
+      }),
     };
     getTenantGrowthConversationWorkbenchUseCase = {
       execute: jest.fn().mockResolvedValue(growthConversationWorkbench),
@@ -3530,10 +3574,16 @@ describe('API', () => {
       .useValue(createTenantGrowthOperationalCaseUseCase)
       .overrideProvider(GetTenantGrowthAssistDailyAgendaUseCase)
       .useValue(getTenantGrowthAssistDailyAgendaUseCase)
+      .overrideProvider(ListTenantAiApprovalRequestsUseCase)
+      .useValue(listTenantAiApprovalRequestsUseCase)
       .overrideProvider(ListTenantAiSuggestionRunsUseCase)
       .useValue(listTenantAiSuggestionRunsUseCase)
       .overrideProvider(PrepareTenantAiSuggestionRunUseCase)
       .useValue(prepareTenantAiSuggestionRunUseCase)
+      .overrideProvider(RequestTenantAiSuggestionRunApprovalUseCase)
+      .useValue(requestTenantAiSuggestionRunApprovalUseCase)
+      .overrideProvider(ReviewTenantAiApprovalRequestUseCase)
+      .useValue(reviewTenantAiApprovalRequestUseCase)
       .overrideProvider(GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase)
       .useValue(getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase)
       .overrideProvider(CreateTenantWhatsappAutomationRuleUseCase)
@@ -5267,6 +5317,68 @@ describe('API', () => {
       ]);
   });
 
+  it('GET /api/ai/approval-policies should return the transversal AI approval policy registry', async () => {
+    await request(httpServer)
+      .get('/api/ai/approval-policies')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          policyKey: 'growth-assist-suggestion-review',
+          agentKey: 'growth-assist-coach',
+          scope: 'suggestion_review',
+          title: 'Growth Assist suggestion review',
+          summary:
+            'Requests human review before a Growth Assist suggestion handoff is treated as approved for operator use.',
+          reviewGuidance:
+            'Verify that the suggestion stays grounded in deterministic Growth signals, does not overreach beyond the tenant context, and still sounds safe for a human operator to adapt.',
+          approvalRequired: true,
+        },
+        {
+          policyKey: 'invoice-document-assistant-suggestion-review',
+          agentKey: 'invoice-document-assistant',
+          scope: 'suggestion_review',
+          title: 'Invoice suggestion review',
+          summary:
+            'Keeps document-drafting suggestions behind explicit operator review before they influence invoicing work.',
+          reviewGuidance:
+            'Confirm that the suggestion is only advisory, matches the fiscal document context, and does not replace domain validation or tax compliance checks.',
+          approvalRequired: true,
+        },
+        {
+          policyKey: 'ecommerce-launch-assistant-suggestion-review',
+          agentKey: 'ecommerce-launch-assistant',
+          scope: 'suggestion_review',
+          title: 'Ecommerce launch suggestion review',
+          summary:
+            'Keeps launch and campaign suggestions behind operator review before they influence storefront work.',
+          reviewGuidance:
+            'Check that the suggestion stays grounded in product context, does not invent catalog facts, and is safe to translate into real launch work.',
+          approvalRequired: true,
+        },
+      ]);
+  });
+
+  it('GET /api/ai/agents/:agentKey/approval-policies should return approval policies for one agent', async () => {
+    await request(httpServer)
+      .get('/api/ai/agents/growth-assist-coach/approval-policies')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          policyKey: 'growth-assist-suggestion-review',
+          agentKey: 'growth-assist-coach',
+          scope: 'suggestion_review',
+          title: 'Growth Assist suggestion review',
+          summary:
+            'Requests human review before a Growth Assist suggestion handoff is treated as approved for operator use.',
+          reviewGuidance:
+            'Verify that the suggestion stays grounded in deterministic Growth signals, does not overreach beyond the tenant context, and still sounds safe for a human operator to adapt.',
+          approvalRequired: true,
+        },
+      ]);
+  });
+
   it('GET /api/ai/agents/:agentKey/prompt-pack should return one prompt pack', async () => {
     await request(httpServer)
       .get('/api/ai/agents/growth-assist-coach/prompt-pack')
@@ -5684,6 +5796,43 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/ai/tenants/:slug/agents/:agentKey/approval-requests should return approval request history', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ai/tenants/saas-platform/agents/growth-assist-coach/approval-requests?limit=5',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'ai-approval-001',
+          tenantSlug: 'saas-platform',
+          agentKey: 'growth-assist-coach',
+          policyKey: 'growth-assist-suggestion-review',
+          scope: 'suggestion_review',
+          suggestionRunId: 'ai-run-001',
+          requestedByUserId: user.id,
+          requestedByEmail: user.email,
+          rationale: 'Quiero dejar trazable la revisión humana.',
+          summary:
+            'Growth Assist Coach requested human review for suggestion handoff ai-run-001 under policy growth-assist-suggestion-review.',
+          status: 'pending',
+          reviewedAt: null,
+          reviewedByUserId: null,
+          reviewedByEmail: null,
+          reviewNote: null,
+          createdAt: '2026-05-20T10:38:00.000Z',
+          updatedAt: '2026-05-20T10:38:00.000Z',
+        },
+      ]);
+
+    expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'growth-assist-coach',
+      5,
+    );
+  });
+
   it('POST /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs should prepare an auditable suggestion handoff', async () => {
     await request(httpServer)
       .post('/api/ai/tenants/saas-platform/agents/growth-assist-coach/suggestion-runs')
@@ -5707,6 +5856,92 @@ describe('API', () => {
       agentKey: 'growth-assist-coach',
       requestedByUserId: user.id,
       requestedByEmail: user.email,
+    });
+  });
+
+  it('POST /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs/:runId/approval-requests should request human review for a suggestion handoff', async () => {
+    await request(httpServer)
+      .post(
+        '/api/ai/tenants/saas-platform/agents/growth-assist-coach/suggestion-runs/ai-run-001/approval-requests',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        rationale: 'Quiero dejar trazable la revisión humana.',
+      })
+      .expect(201)
+      .expect({
+        id: 'ai-approval-001',
+        tenantSlug: 'saas-platform',
+        agentKey: 'growth-assist-coach',
+        policyKey: 'growth-assist-suggestion-review',
+        scope: 'suggestion_review',
+        suggestionRunId: 'ai-run-001',
+        requestedByUserId: user.id,
+        requestedByEmail: user.email,
+        rationale: 'Quiero dejar trazable la revisión humana.',
+        summary:
+          'Growth Assist Coach requested human review for suggestion handoff ai-run-001 under policy growth-assist-suggestion-review.',
+        status: 'pending',
+        reviewedAt: null,
+        reviewedByUserId: null,
+        reviewedByEmail: null,
+        reviewNote: null,
+        createdAt: '2026-05-20T10:38:00.000Z',
+        updatedAt: '2026-05-20T10:38:00.000Z',
+      });
+
+    expect(
+      requestTenantAiSuggestionRunApprovalUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      agentKey: 'growth-assist-coach',
+      suggestionRunId: 'ai-run-001',
+      requestedByUserId: user.id,
+      requestedByEmail: user.email,
+      rationale: 'Quiero dejar trazable la revisión humana.',
+    });
+  });
+
+  it('POST /api/ai/tenants/:slug/agents/:agentKey/approval-requests/:requestId/review should approve an approval request', async () => {
+    await request(httpServer)
+      .post(
+        '/api/ai/tenants/saas-platform/agents/growth-assist-coach/approval-requests/ai-approval-001/review',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        status: 'approved',
+        reviewNote: 'Se ve segura para uso guiado.',
+      })
+      .expect(200)
+      .expect({
+        id: 'ai-approval-001',
+        tenantSlug: 'saas-platform',
+        agentKey: 'growth-assist-coach',
+        policyKey: 'growth-assist-suggestion-review',
+        scope: 'suggestion_review',
+        suggestionRunId: 'ai-run-001',
+        requestedByUserId: user.id,
+        requestedByEmail: user.email,
+        rationale: 'Quiero dejar trazable la revisión humana.',
+        summary:
+          'Growth Assist Coach requested human review for suggestion handoff ai-run-001 under policy growth-assist-suggestion-review.',
+        status: 'approved',
+        reviewedAt: '2026-05-20T10:39:00.000Z',
+        reviewedByUserId: user.id,
+        reviewedByEmail: user.email,
+        reviewNote: 'Se ve segura para uso guiado.',
+        createdAt: '2026-05-20T10:38:00.000Z',
+        updatedAt: '2026-05-20T10:39:00.000Z',
+      });
+
+    expect(reviewTenantAiApprovalRequestUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      agentKey: 'growth-assist-coach',
+      requestId: 'ai-approval-001',
+      status: 'approved',
+      reviewedByUserId: user.id,
+      reviewedByEmail: user.email,
+      reviewNote: 'Se ve segura para uso guiado.',
     });
   });
 

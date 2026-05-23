@@ -2016,6 +2016,20 @@ Consumer web inicial para este snapshot operativo:
             - no llama modelos todavía
             - no muta el dominio
             - deja trazabilidad para approval flows futuros
+        - el siguiente corte ya abre esos `approval flows` sin saltar todavía a ejecución:
+          - `GET /api/ai/approval-policies`
+          - `GET /api/ai/agents/:agentKey/approval-policies`
+          - `GET /api/ai/tenants/:slug/agents/:agentKey/approval-requests`
+          - `POST /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs/:runId/approval-requests`
+          - `POST /api/ai/tenants/:slug/agents/:agentKey/approval-requests/:requestId/review`
+          - este primer approval flow trabaja sobre `suggestion handoffs` ya persistidos:
+            - deja constancia de quién pidió revisión humana
+            - quién aprobó o rechazó
+            - bajo qué política transversal se revisó
+          - importante:
+            - sigue sin desbloquear ejecución automática
+            - sigue sin mutar el dominio por sí solo
+            - prepara la base para guarded execution futuro
 - el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
   - `GET /api/growth/tenants/:slug/conversations/operational-cases`
     - acepta `status`
@@ -2026,9 +2040,14 @@ Consumer web inicial para este snapshot operativo:
   - `GET /api/ai/tools`
   - `GET /api/ai/agents/:agentKey/prompt-pack`
   - `GET /api/ai/agents/:agentKey/tool-access`
+  - `GET /api/ai/approval-policies`
+  - `GET /api/ai/agents/:agentKey/approval-policies`
   - `GET /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-envelope`
   - `GET /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-runs`
+  - `GET /api/ai/tenants/:slug/agents/growth-assist-coach/approval-requests`
   - `POST /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-runs`
+  - `POST /api/ai/tenants/:slug/agents/growth-assist-coach/suggestion-runs/:runId/approval-requests`
+  - `POST /api/ai/tenants/:slug/agents/growth-assist-coach/approval-requests/:requestId/review`
   - `GET /api/growth/tenants/:slug/conversations/operational-cases/auto-assignment-settings`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases`
   - `POST /api/growth/tenants/:slug/conversations/operational-cases/auto-assign`

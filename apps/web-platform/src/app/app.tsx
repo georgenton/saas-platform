@@ -1,10 +1,13 @@
 import { FormEvent, startTransition, useEffect, useMemo, useState } from 'react';
 import styles from './app.module.css';
 import {
+  fetchAiAgentApprovalPolicies,
   fetchAiAgentCatalog,
+  fetchAiApprovalPolicies,
   fetchAiAgentToolAccess,
   fetchAiPromptRegistry,
   fetchAiToolRegistry,
+  fetchTenantAiApprovalRequests,
   fetchTenantAiSuggestionEnvelope,
   fetchTenantAiSuggestionRuns,
   acceptInvitation,
@@ -57,8 +60,10 @@ import {
   listTaxRates,
   listTenantEnabledProducts,
   prepareTenantAiSuggestionRun,
+  requestTenantAiSuggestionRunApproval,
   listTenantInvitations,
   reverseInvoicePayment,
+  reviewTenantAiApprovalRequest,
   runWhatsappOperationalMonitor,
   acknowledgeWhatsappOperationalAlert,
   reopenGrowthOperationalCase,
@@ -81,6 +86,8 @@ import {
   updateInvoiceStatus,
 } from './api';
 import {
+  AiApprovalPolicyResponse,
+  AiApprovalRequestResponse,
   AiAgentCatalogResponse,
   AiAgentToolAccessResponse,
   AiPromptRegistryResponse,
@@ -993,6 +1000,9 @@ export function App() {
     useState<GrowthConversationWorkbenchResponse | null>(null);
   const [growthAssistAgenda, setGrowthAssistAgenda] =
     useState<GrowthAssistDailyAgendaResponse | null>(null);
+  const [aiApprovalPolicyRegistry, setAiApprovalPolicyRegistry] = useState<
+    AiApprovalPolicyResponse[]
+  >([]);
   const [aiAgentCatalog, setAiAgentCatalog] = useState<AiAgentCatalogResponse[]>(
     [],
   );
@@ -1007,6 +1017,10 @@ export function App() {
   const [growthAssistAiToolAccess, setGrowthAssistAiToolAccess] = useState<
     AiAgentToolAccessResponse[]
   >([]);
+  const [growthAssistAiApprovalPolicies, setGrowthAssistAiApprovalPolicies] =
+    useState<AiApprovalPolicyResponse[]>([]);
+  const [growthAssistAiApprovalRequests, setGrowthAssistAiApprovalRequests] =
+    useState<AiApprovalRequestResponse[]>([]);
   const [growthAssistAiSuggestionRuns, setGrowthAssistAiSuggestionRuns] =
     useState<AiSuggestionRunResponse[]>([]);
   const [whatsappSummary, setWhatsappSummary] =
@@ -2630,6 +2644,26 @@ export function App() {
       growthAssistAiToolAccess,
     [growthAssistAiEnvelope, growthAssistAiToolAccess],
   );
+  const activeGrowthAiApprovalPolicies = useMemo(
+    () =>
+      growthAssistAiApprovalPolicies.length > 0
+        ? growthAssistAiApprovalPolicies
+        : aiApprovalPolicyRegistry.filter(
+            (entry) => entry.agentKey === 'growth-assist-coach',
+          ),
+    [aiApprovalPolicyRegistry, growthAssistAiApprovalPolicies],
+  );
+  const growthAiApprovalRequestsByRunId = useMemo(() => {
+    const next = new Map<string, AiApprovalRequestResponse[]>();
+
+    for (const entry of growthAssistAiApprovalRequests) {
+      const current = next.get(entry.suggestionRunId) ?? [];
+      current.push(entry);
+      next.set(entry.suggestionRunId, current);
+    }
+
+    return next;
+  }, [growthAssistAiApprovalRequests]);
 
   async function copyGrowthAssistReplySuggestion(
     key: string,
@@ -3245,7 +3279,10 @@ export function App() {
       setGrowthAssistAgenda(null);
       setAiAgentCatalog([]);
       setAiPromptRegistry([]);
+      setAiApprovalPolicyRegistry([]);
       setAiToolRegistry([]);
+      setGrowthAssistAiApprovalPolicies([]);
+      setGrowthAssistAiApprovalRequests([]);
       setGrowthAssistAiToolAccess([]);
       setGrowthAssistAiEnvelope(null);
       setWhatsappSummary(null);
@@ -3277,9 +3314,12 @@ export function App() {
           nextAcknowledgements,
           nextOperationalCases,
           nextAutoAssignmentSettings,
+          nextAiApprovalPolicyRegistry,
           nextAiAgentCatalog,
           nextAiPromptRegistry,
           nextAiToolRegistry,
+          nextAiApprovalPolicies,
+          nextAiApprovalRequests,
           nextAiToolAccess,
           nextAiSuggestionEnvelope,
           nextAiSuggestionRuns,
@@ -3300,9 +3340,18 @@ export function App() {
           fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug),
           fetchGrowthOperationalCases(token, tenantSlug),
           fetchGrowthOperationalCaseAutoAssignmentSettings(token, tenantSlug),
+          fetchAiApprovalPolicies(token).catch(() => []),
           fetchAiAgentCatalog(token).catch(() => []),
           fetchAiPromptRegistry(token).catch(() => []),
           fetchAiToolRegistry(token).catch(() => []),
+          fetchAiAgentApprovalPolicies(token, 'growth-assist-coach').catch(
+            () => [],
+          ),
+          fetchTenantAiApprovalRequests(
+            token,
+            tenantSlug,
+            'growth-assist-coach',
+          ).catch(() => []),
           fetchAiAgentToolAccess(token, 'growth-assist-coach').catch(() => []),
           fetchTenantAiSuggestionEnvelope(
             token,
@@ -3323,9 +3372,12 @@ export function App() {
         startTransition(() => {
           setGrowthWorkbench(nextWorkbench);
           setGrowthAssistAgenda(nextAssistAgenda);
+          setAiApprovalPolicyRegistry(nextAiApprovalPolicyRegistry);
           setAiAgentCatalog(nextAiAgentCatalog);
           setAiPromptRegistry(nextAiPromptRegistry);
           setAiToolRegistry(nextAiToolRegistry);
+          setGrowthAssistAiApprovalPolicies(nextAiApprovalPolicies);
+          setGrowthAssistAiApprovalRequests(nextAiApprovalRequests);
           setGrowthAssistAiToolAccess(nextAiToolAccess);
           setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
           setGrowthAssistAiSuggestionRuns(nextAiSuggestionRuns);
@@ -3350,7 +3402,10 @@ export function App() {
         setGrowthAssistAgenda(null);
         setAiAgentCatalog([]);
         setAiPromptRegistry([]);
+        setAiApprovalPolicyRegistry([]);
         setAiToolRegistry([]);
+        setGrowthAssistAiApprovalPolicies([]);
+        setGrowthAssistAiApprovalRequests([]);
         setGrowthAssistAiToolAccess([]);
         setGrowthAssistAiEnvelope(null);
         setGrowthAssistAiSuggestionRuns([]);
@@ -3885,9 +3940,12 @@ export function App() {
         nextAcknowledgements,
         nextOperationalCases,
         nextAutoAssignmentSettings,
+        nextAiApprovalPolicyRegistry,
         nextAiAgentCatalog,
         nextAiPromptRegistry,
         nextAiToolRegistry,
+        nextAiApprovalPolicies,
+        nextAiApprovalRequests,
         nextAiToolAccess,
         nextAiSuggestionEnvelope,
         nextAiSuggestionRuns,
@@ -3907,9 +3965,18 @@ export function App() {
         fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug),
         fetchGrowthOperationalCases(token, tenantSlug),
         fetchGrowthOperationalCaseAutoAssignmentSettings(token, tenantSlug),
+        fetchAiApprovalPolicies(token).catch(() => []),
         fetchAiAgentCatalog(token).catch(() => []),
         fetchAiPromptRegistry(token).catch(() => []),
         fetchAiToolRegistry(token).catch(() => []),
+        fetchAiAgentApprovalPolicies(token, 'growth-assist-coach').catch(
+          () => [],
+        ),
+        fetchTenantAiApprovalRequests(
+          token,
+          tenantSlug,
+          'growth-assist-coach',
+        ).catch(() => []),
         fetchAiAgentToolAccess(token, 'growth-assist-coach').catch(() => []),
         fetchTenantAiSuggestionEnvelope(
           token,
@@ -3926,9 +3993,12 @@ export function App() {
       startTransition(() => {
         setGrowthWorkbench(nextWorkbench);
         setGrowthAssistAgenda(nextAssistAgenda);
+        setAiApprovalPolicyRegistry(nextAiApprovalPolicyRegistry);
         setAiAgentCatalog(nextAiAgentCatalog);
         setAiPromptRegistry(nextAiPromptRegistry);
         setAiToolRegistry(nextAiToolRegistry);
+        setGrowthAssistAiApprovalPolicies(nextAiApprovalPolicies);
+        setGrowthAssistAiApprovalRequests(nextAiApprovalRequests);
         setGrowthAssistAiToolAccess(nextAiToolAccess);
         setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
         setGrowthAssistAiSuggestionRuns(nextAiSuggestionRuns);
@@ -4358,6 +4428,102 @@ export function App() {
     }
   }
 
+  async function handleRequestAiSuggestionRunApproval(suggestionRunId: string) {
+    if (!token || !currentTenancy || !canReadGrowthConversations) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const actionKey = `request-ai-approval:${suggestionRunId}`;
+    setGrowthActionLoading(actionKey);
+    setGrowthActionMessage(null);
+    setGrowthError(null);
+
+    try {
+      const record = await requestTenantAiSuggestionRunApproval(
+        token,
+        tenantSlug,
+        'growth-assist-coach',
+        suggestionRunId,
+        {
+          rationale:
+            'Solicitar revision humana antes de tratar el handoff como aprobado.',
+        },
+      );
+
+      startTransition(() => {
+        setGrowthAssistAiApprovalRequests((current) => [
+          record,
+          ...current.filter((entry) => entry.id !== record.id),
+        ]);
+      });
+
+      setGrowthActionMessage(
+        `Solicitud de aprobacion registrada bajo ${record.policyKey}.`,
+      );
+    } catch (error) {
+      setGrowthError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo pedir la aprobación del handoff de AI.',
+      );
+    } finally {
+      setGrowthActionLoading(null);
+    }
+  }
+
+  async function handleReviewAiApprovalRequest(
+    requestId: string,
+    status: 'approved' | 'rejected',
+  ) {
+    if (!token || !currentTenancy || !canReadGrowthConversations) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const actionKey = `review-ai-approval:${requestId}`;
+    setGrowthActionLoading(actionKey);
+    setGrowthActionMessage(null);
+    setGrowthError(null);
+
+    try {
+      const record = await reviewTenantAiApprovalRequest(
+        token,
+        tenantSlug,
+        'growth-assist-coach',
+        requestId,
+        {
+          status,
+          reviewNote:
+            status === 'approved'
+              ? 'Aprobado desde la consola transversal de AI.'
+              : 'Rechazado desde la consola transversal de AI.',
+        },
+      );
+
+      startTransition(() => {
+        setGrowthAssistAiApprovalRequests((current) => [
+          record,
+          ...current.filter((entry) => entry.id !== record.id),
+        ]);
+      });
+
+      setGrowthActionMessage(
+        status === 'approved'
+          ? 'Solicitud de aprobación marcada como aprobada.'
+          : 'Solicitud de aprobación marcada como rechazada.',
+      );
+    } catch (error) {
+      setGrowthError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo revisar la solicitud de aprobación de AI.',
+      );
+    } finally {
+      setGrowthActionLoading(null);
+    }
+  }
+
   async function handleTokenSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -4386,7 +4552,10 @@ export function App() {
     setGrowthAssistAgenda(null);
     setAiAgentCatalog([]);
     setAiPromptRegistry([]);
+    setAiApprovalPolicyRegistry([]);
     setAiToolRegistry([]);
+    setGrowthAssistAiApprovalPolicies([]);
+    setGrowthAssistAiApprovalRequests([]);
     setGrowthAssistAiToolAccess([]);
     setGrowthAssistAiEnvelope(null);
     setGrowthAssistAiSuggestionRuns([]);
@@ -6480,6 +6649,48 @@ export function App() {
                               ),
                             )}
                           </div>
+                          {activeGrowthAiApprovalPolicies.length > 0 ? (
+                            <div className={styles.stack}>
+                              <span className={styles.muted}>
+                                Approval flow · {activeGrowthAiApprovalPolicies.length}{' '}
+                                política
+                                {activeGrowthAiApprovalPolicies.length === 1
+                                  ? ''
+                                  : 's'}{' '}
+                                activa
+                                {activeGrowthAiApprovalPolicies.length === 1
+                                  ? ''
+                                  : 's'}
+                              </span>
+                              {activeGrowthAiApprovalPolicies.map((entry) => (
+                                <div
+                                  className={styles.assistCueCard}
+                                  key={entry.policyKey}
+                                >
+                                  <div className={styles.invoiceCardHeader}>
+                                    <strong>{entry.title}</strong>
+                                    <span
+                                      className={`${styles.statusPill} ${styles.statusWarning}`}
+                                    >
+                                      {entry.scope}
+                                    </span>
+                                  </div>
+                                  <small>{entry.summary}</small>
+                                  <div className={styles.assistChecklist}>
+                                    <span className={styles.badge}>
+                                      {entry.policyKey}
+                                    </span>
+                                    <span className={styles.badge}>
+                                      {entry.approvalRequired
+                                        ? 'human approval required'
+                                        : 'no approval required'}
+                                    </span>
+                                  </div>
+                                  <small>{entry.reviewGuidance}</small>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
                           {activeGrowthAiToolAccess.length > 0 ? (
                             <div className={styles.stack}>
                               <span className={styles.muted}>
@@ -6574,33 +6785,159 @@ export function App() {
                               </span>
                               {growthAssistAiSuggestionRuns
                                 .slice(0, 3)
+                                .map((entry) => {
+                                  const approvalRequests =
+                                    growthAiApprovalRequestsByRunId.get(entry.id) ?? [];
+                                  const latestApprovalRequest =
+                                    approvalRequests[0] ?? null;
+
+                                  return (
+                                    <div
+                                      className={styles.assistCueCard}
+                                      key={entry.id}
+                                    >
+                                      <strong>{entry.summary}</strong>
+                                      <small>
+                                        {formatDate(entry.createdAt)} ·{' '}
+                                        {entry.requestedByEmail ??
+                                          entry.requestedByUserId}
+                                      </small>
+                                      <div className={styles.assistChecklist}>
+                                        <span className={styles.badge}>
+                                          {entry.status}
+                                        </span>
+                                        <span className={styles.badge}>
+                                          {entry.promptPackKey}@{entry.promptPackVersion}
+                                        </span>
+                                        {entry.suggestedOutputKeys.map((outputKey) => (
+                                          <span
+                                            className={styles.badge}
+                                            key={outputKey}
+                                          >
+                                            {outputKey}
+                                          </span>
+                                        ))}
+                                      </div>
+                                      {latestApprovalRequest ? (
+                                        <small>
+                                          Approval más reciente:{' '}
+                                          {humanizeKey(latestApprovalRequest.status)} ·{' '}
+                                          {formatDate(latestApprovalRequest.createdAt)}
+                                        </small>
+                                      ) : (
+                                        <small className={styles.muted}>
+                                          Todavía no hay revisión humana pedida para este
+                                          handoff.
+                                        </small>
+                                      )}
+                                      {!latestApprovalRequest ||
+                                      latestApprovalRequest.status === 'rejected' ? (
+                                        <div className={styles.inlineActions}>
+                                          <button
+                                            className={styles.secondaryButton}
+                                            type="button"
+                                            onClick={() => {
+                                              void handleRequestAiSuggestionRunApproval(
+                                                entry.id,
+                                              );
+                                            }}
+                                            disabled={
+                                              growthActionLoading ===
+                                              `request-ai-approval:${entry.id}`
+                                            }
+                                          >
+                                            {growthActionLoading ===
+                                            `request-ai-approval:${entry.id}`
+                                              ? 'Pidiendo aprobación...'
+                                              : 'Pedir revisión humana'}
+                                          </button>
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          ) : null}
+                          {growthAssistAiApprovalRequests.length > 0 ? (
+                            <div className={styles.stack}>
+                              <span className={styles.muted}>
+                                Cola de aprobaciones reciente
+                              </span>
+                              {growthAssistAiApprovalRequests
+                                .slice(0, 3)
                                 .map((entry) => (
                                   <div
                                     className={styles.assistCueCard}
                                     key={entry.id}
                                   >
-                                    <strong>{entry.summary}</strong>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>{entry.summary}</strong>
+                                      <span
+                                        className={`${styles.statusPill} ${
+                                          entry.status === 'approved'
+                                            ? styles.statusHealthy
+                                            : entry.status === 'rejected'
+                                              ? styles.statusCritical
+                                              : styles.statusWarning
+                                        }`}
+                                      >
+                                        {humanizeKey(entry.status)}
+                                      </span>
+                                    </div>
                                     <small>
                                       {formatDate(entry.createdAt)} ·{' '}
                                       {entry.requestedByEmail ??
                                         entry.requestedByUserId}
                                     </small>
-                                    <div className={styles.assistChecklist}>
-                                      <span className={styles.badge}>
-                                        {entry.status}
-                                      </span>
-                                      <span className={styles.badge}>
-                                        {entry.promptPackKey}@{entry.promptPackVersion}
-                                      </span>
-                                      {entry.suggestedOutputKeys.map((outputKey) => (
-                                        <span
-                                          className={styles.badge}
-                                          key={outputKey}
+                                    {entry.rationale ? (
+                                      <small>{entry.rationale}</small>
+                                    ) : null}
+                                    {entry.status === 'pending' ? (
+                                      <div className={styles.inlineActions}>
+                                        <button
+                                          className={styles.secondaryButton}
+                                          type="button"
+                                          onClick={() => {
+                                            void handleReviewAiApprovalRequest(
+                                              entry.id,
+                                              'approved',
+                                            );
+                                          }}
+                                          disabled={
+                                            growthActionLoading ===
+                                            `review-ai-approval:${entry.id}`
+                                          }
                                         >
-                                          {outputKey}
-                                        </span>
-                                      ))}
-                                    </div>
+                                          {growthActionLoading ===
+                                          `review-ai-approval:${entry.id}`
+                                            ? 'Guardando...'
+                                            : 'Aprobar'}
+                                        </button>
+                                        <button
+                                          className={styles.ghostButton}
+                                          type="button"
+                                          onClick={() => {
+                                            void handleReviewAiApprovalRequest(
+                                              entry.id,
+                                              'rejected',
+                                            );
+                                          }}
+                                          disabled={
+                                            growthActionLoading ===
+                                            `review-ai-approval:${entry.id}`
+                                          }
+                                        >
+                                          Rechazar
+                                        </button>
+                                      </div>
+                                    ) : entry.reviewedAt ? (
+                                      <small>
+                                        Revisada el {formatDate(entry.reviewedAt)} por{' '}
+                                        {entry.reviewedByEmail ??
+                                          entry.reviewedByUserId ??
+                                          'sin reviewer'}
+                                      </small>
+                                    ) : null}
                                   </div>
                                 ))}
                             </div>

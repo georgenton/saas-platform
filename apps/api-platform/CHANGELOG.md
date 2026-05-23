@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.44.0
+
+### Minor Changes
+
+- c5600ea: add transversal AI tool access registry and per-agent access model for suggestion envelopes
+
 ## 0.43.0
 
 ### Minor Changes

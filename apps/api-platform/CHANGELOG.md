@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.45.0
+
+### Minor Changes
+
+- d8aeefb: Add transversal AI approval flows for auditable suggestion handoffs
+
 ## 0.44.0
 
 ### Minor Changes

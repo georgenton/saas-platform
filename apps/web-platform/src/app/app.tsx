@@ -2,7 +2,9 @@ import { FormEvent, startTransition, useEffect, useMemo, useState } from 'react'
 import styles from './app.module.css';
 import {
   fetchAiAgentCatalog,
+  fetchAiAgentToolAccess,
   fetchAiPromptRegistry,
+  fetchAiToolRegistry,
   fetchTenantAiSuggestionEnvelope,
   fetchTenantAiSuggestionRuns,
   acceptInvitation,
@@ -80,9 +82,11 @@ import {
 } from './api';
 import {
   AiAgentCatalogResponse,
+  AiAgentToolAccessResponse,
   AiPromptRegistryResponse,
   AiSuggestionEnvelopeResponse,
   AiSuggestionRunResponse,
+  AiToolRegistryResponse,
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CustomerResponse,
@@ -995,8 +999,14 @@ export function App() {
   const [aiPromptRegistry, setAiPromptRegistry] = useState<
     AiPromptRegistryResponse[]
   >([]);
+  const [aiToolRegistry, setAiToolRegistry] = useState<AiToolRegistryResponse[]>(
+    [],
+  );
   const [growthAssistAiEnvelope, setGrowthAssistAiEnvelope] =
     useState<AiSuggestionEnvelopeResponse | null>(null);
+  const [growthAssistAiToolAccess, setGrowthAssistAiToolAccess] = useState<
+    AiAgentToolAccessResponse[]
+  >([]);
   const [growthAssistAiSuggestionRuns, setGrowthAssistAiSuggestionRuns] =
     useState<AiSuggestionRunResponse[]>([]);
   const [whatsappSummary, setWhatsappSummary] =
@@ -2614,6 +2624,12 @@ export function App() {
       null,
     [aiPromptRegistry, growthAssistAiEnvelope],
   );
+  const activeGrowthAiToolAccess = useMemo(
+    () =>
+      growthAssistAiEnvelope?.toolAccess ??
+      growthAssistAiToolAccess,
+    [growthAssistAiEnvelope, growthAssistAiToolAccess],
+  );
 
   async function copyGrowthAssistReplySuggestion(
     key: string,
@@ -3229,6 +3245,8 @@ export function App() {
       setGrowthAssistAgenda(null);
       setAiAgentCatalog([]);
       setAiPromptRegistry([]);
+      setAiToolRegistry([]);
+      setGrowthAssistAiToolAccess([]);
       setGrowthAssistAiEnvelope(null);
       setWhatsappSummary(null);
       setWhatsappMonitorSummary(null);
@@ -3261,6 +3279,8 @@ export function App() {
           nextAutoAssignmentSettings,
           nextAiAgentCatalog,
           nextAiPromptRegistry,
+          nextAiToolRegistry,
+          nextAiToolAccess,
           nextAiSuggestionEnvelope,
           nextAiSuggestionRuns,
         ] =
@@ -3282,6 +3302,8 @@ export function App() {
           fetchGrowthOperationalCaseAutoAssignmentSettings(token, tenantSlug),
           fetchAiAgentCatalog(token).catch(() => []),
           fetchAiPromptRegistry(token).catch(() => []),
+          fetchAiToolRegistry(token).catch(() => []),
+          fetchAiAgentToolAccess(token, 'growth-assist-coach').catch(() => []),
           fetchTenantAiSuggestionEnvelope(
             token,
             tenantSlug,
@@ -3303,6 +3325,8 @@ export function App() {
           setGrowthAssistAgenda(nextAssistAgenda);
           setAiAgentCatalog(nextAiAgentCatalog);
           setAiPromptRegistry(nextAiPromptRegistry);
+          setAiToolRegistry(nextAiToolRegistry);
+          setGrowthAssistAiToolAccess(nextAiToolAccess);
           setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
           setGrowthAssistAiSuggestionRuns(nextAiSuggestionRuns);
           setWhatsappSummary(nextSummary);
@@ -3326,6 +3350,8 @@ export function App() {
         setGrowthAssistAgenda(null);
         setAiAgentCatalog([]);
         setAiPromptRegistry([]);
+        setAiToolRegistry([]);
+        setGrowthAssistAiToolAccess([]);
         setGrowthAssistAiEnvelope(null);
         setGrowthAssistAiSuggestionRuns([]);
         setWhatsappSummary(null);
@@ -3861,6 +3887,8 @@ export function App() {
         nextAutoAssignmentSettings,
         nextAiAgentCatalog,
         nextAiPromptRegistry,
+        nextAiToolRegistry,
+        nextAiToolAccess,
         nextAiSuggestionEnvelope,
         nextAiSuggestionRuns,
       ] =
@@ -3881,6 +3909,8 @@ export function App() {
         fetchGrowthOperationalCaseAutoAssignmentSettings(token, tenantSlug),
         fetchAiAgentCatalog(token).catch(() => []),
         fetchAiPromptRegistry(token).catch(() => []),
+        fetchAiToolRegistry(token).catch(() => []),
+        fetchAiAgentToolAccess(token, 'growth-assist-coach').catch(() => []),
         fetchTenantAiSuggestionEnvelope(
           token,
           tenantSlug,
@@ -3898,6 +3928,8 @@ export function App() {
         setGrowthAssistAgenda(nextAssistAgenda);
         setAiAgentCatalog(nextAiAgentCatalog);
         setAiPromptRegistry(nextAiPromptRegistry);
+        setAiToolRegistry(nextAiToolRegistry);
+        setGrowthAssistAiToolAccess(nextAiToolAccess);
         setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
         setGrowthAssistAiSuggestionRuns(nextAiSuggestionRuns);
         setWhatsappSummary(nextSummary);
@@ -4354,6 +4386,8 @@ export function App() {
     setGrowthAssistAgenda(null);
     setAiAgentCatalog([]);
     setAiPromptRegistry([]);
+    setAiToolRegistry([]);
+    setGrowthAssistAiToolAccess([]);
     setGrowthAssistAiEnvelope(null);
     setGrowthAssistAiSuggestionRuns([]);
     setWhatsappSummary(null);
@@ -6446,6 +6480,60 @@ export function App() {
                               ),
                             )}
                           </div>
+                          {activeGrowthAiToolAccess.length > 0 ? (
+                            <div className={styles.stack}>
+                              <span className={styles.muted}>
+                                Tool access model · {activeGrowthAiToolAccess.length}{' '}
+                                tools declaradas
+                              </span>
+                              {activeGrowthAiToolAccess.map((entry) => (
+                                <div
+                                  className={styles.assistCueCard}
+                                  key={entry.tool.key}
+                                >
+                                  <div className={styles.invoiceCardHeader}>
+                                    <strong>{entry.tool.title}</strong>
+                                    <span
+                                      className={`${styles.statusPill} ${
+                                        entry.accessLevel === 'allowed'
+                                          ? styles.statusHealthy
+                                          : entry.accessLevel ===
+                                              'approval_required'
+                                            ? styles.statusWarning
+                                            : styles.statusCritical
+                                      }`}
+                                    >
+                                      {humanizeKey(entry.accessLevel)}
+                                    </span>
+                                  </div>
+                                  <small>{entry.tool.summary}</small>
+                                  <div className={styles.assistChecklist}>
+                                    <span className={styles.badge}>
+                                      {entry.tool.actionKind}
+                                    </span>
+                                    <span className={styles.badge}>
+                                      risk {entry.tool.riskLevel}
+                                    </span>
+                                    <span className={styles.badge}>
+                                      {entry.tool.availability}
+                                    </span>
+                                    <span className={styles.badge}>
+                                      {entry.tool.requiresApproval
+                                        ? 'requires approval'
+                                        : 'no approval'}
+                                    </span>
+                                  </div>
+                                  <small>{entry.rationale}</small>
+                                </div>
+                              ))}
+                              {aiToolRegistry.length > 0 ? (
+                                <small className={styles.muted}>
+                                  Registro transversal disponible: {aiToolRegistry.length}{' '}
+                                  tools en total.
+                                </small>
+                              ) : null}
+                            </div>
+                          ) : null}
                           <div className={styles.inlineActions}>
                             <button
                               className={styles.secondaryButton}

@@ -128,6 +128,22 @@ describe('AI suggestion envelope use case', () => {
         expect.objectContaining({ key: 'next_action_brief' }),
       ]),
     );
+    expect(result.toolAccess).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          accessLevel: 'allowed',
+          tool: expect.objectContaining({
+            key: 'growth_assist_reply_drafting',
+          }),
+        }),
+        expect.objectContaining({
+          accessLevel: 'blocked',
+          tool: expect.objectContaining({
+            key: 'growth_case_assignment_execution',
+          }),
+        }),
+      ]),
+    );
     expect(result.contextBlocks).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

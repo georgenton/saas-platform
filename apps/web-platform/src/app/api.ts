@@ -1,8 +1,10 @@
 import {
   AiAgentCatalogResponse,
+  AiAgentToolAccessResponse,
   AiPromptRegistryResponse,
   AiSuggestionEnvelopeResponse,
   AiSuggestionRunResponse,
+  AiToolRegistryResponse,
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CreditNoteResponse,
@@ -1186,6 +1188,28 @@ export async function fetchAiPromptRegistry(
     method: 'GET',
     token,
   });
+}
+
+export async function fetchAiToolRegistry(
+  token: string,
+): Promise<AiToolRegistryResponse[]> {
+  return request<AiToolRegistryResponse[]>('/ai/tools', {
+    method: 'GET',
+    token,
+  });
+}
+
+export async function fetchAiAgentToolAccess(
+  token: string,
+  agentKey: string,
+): Promise<AiAgentToolAccessResponse[]> {
+  return request<AiAgentToolAccessResponse[]>(
+    `/ai/agents/${encodeURIComponent(agentKey)}/tool-access`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
 }
 
 export async function fetchTenantAiSuggestionEnvelope(

@@ -1105,6 +1105,23 @@ export interface AiPromptRegistryResponse {
   }[];
 }
 
+export interface AiToolRegistryResponse {
+  key: string;
+  title: string;
+  summary: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  availability: 'ready' | 'planned';
+  riskLevel: 'low' | 'medium' | 'high';
+  actionKind: 'read' | 'draft' | 'propose' | 'execute';
+  requiresApproval: boolean;
+}
+
+export interface AiAgentToolAccessResponse {
+  tool: AiToolRegistryResponse;
+  accessLevel: 'allowed' | 'approval_required' | 'blocked';
+  rationale: string;
+}
+
 export interface AiSuggestionEnvelopeResponse {
   tenantSlug: string;
   generatedAt: string;
@@ -1132,6 +1149,7 @@ export interface AiSuggestionEnvelopeResponse {
       description: string;
     }[];
   };
+  toolAccess: AiAgentToolAccessResponse[];
   contextBlocks: {
     key: string;
     title: string;

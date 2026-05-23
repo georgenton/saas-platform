@@ -5203,6 +5203,70 @@ describe('API', () => {
       ]);
   });
 
+  it('GET /api/ai/tools should return the transversal AI tool registry', async () => {
+    await request(httpServer)
+      .get('/api/ai/tools')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          key: 'growth_assist_reply_drafting',
+          title: 'Growth Assist reply drafting',
+          summary:
+            'Drafts customer-facing reply suggestions grounded in the deterministic Growth Assist agenda.',
+          domainKey: 'growth',
+          availability: 'ready',
+          riskLevel: 'low',
+          actionKind: 'draft',
+          requiresApproval: false,
+        },
+        {
+          key: 'growth_assist_follow_up_planning',
+          title: 'Growth Assist follow-up planning',
+          summary:
+            'Proposes follow-up plans and next-action briefs without mutating Growth workflow state.',
+          domainKey: 'growth',
+          availability: 'ready',
+          riskLevel: 'low',
+          actionKind: 'propose',
+          requiresApproval: false,
+        },
+        {
+          key: 'growth_case_assignment_execution',
+          title: 'Growth case assignment execution',
+          summary:
+            'Would execute operational-case assignment or routing changes once guarded execution exists.',
+          domainKey: 'growth',
+          availability: 'planned',
+          riskLevel: 'high',
+          actionKind: 'execute',
+          requiresApproval: true,
+        },
+        {
+          key: 'invoice_document_drafting',
+          title: 'Invoice document drafting',
+          summary:
+            'Will help prepare deterministic drafting and review suggestions for invoicing document workflows.',
+          domainKey: 'invoicing',
+          availability: 'planned',
+          riskLevel: 'medium',
+          actionKind: 'draft',
+          requiresApproval: false,
+        },
+        {
+          key: 'ecommerce_launch_briefing',
+          title: 'Ecommerce launch briefing',
+          summary:
+            'Will suggest landing, catalog, and campaign structure once ecommerce deterministic surfaces exist.',
+          domainKey: 'ecommerce',
+          availability: 'planned',
+          riskLevel: 'medium',
+          actionKind: 'propose',
+          requiresApproval: false,
+        },
+      ]);
+  });
+
   it('GET /api/ai/agents/:agentKey/prompt-pack should return one prompt pack', async () => {
     await request(httpServer)
       .get('/api/ai/agents/growth-assist-coach/prompt-pack')
@@ -5250,6 +5314,63 @@ describe('API', () => {
           },
         ],
       });
+  });
+
+  it('GET /api/ai/agents/:agentKey/tool-access should return tool access rules for one agent', async () => {
+    await request(httpServer)
+      .get('/api/ai/agents/growth-assist-coach/tool-access')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          tool: {
+            key: 'growth_assist_reply_drafting',
+            title: 'Growth Assist reply drafting',
+            summary:
+              'Drafts customer-facing reply suggestions grounded in the deterministic Growth Assist agenda.',
+            domainKey: 'growth',
+            availability: 'ready',
+            riskLevel: 'low',
+            actionKind: 'draft',
+            requiresApproval: false,
+          },
+          accessLevel: 'allowed',
+          rationale:
+            'The agent can safely prepare reply drafts because Growth remains the source of truth and no message is sent automatically.',
+        },
+        {
+          tool: {
+            key: 'growth_assist_follow_up_planning',
+            title: 'Growth Assist follow-up planning',
+            summary:
+              'Proposes follow-up plans and next-action briefs without mutating Growth workflow state.',
+            domainKey: 'growth',
+            availability: 'ready',
+            riskLevel: 'low',
+            actionKind: 'propose',
+            requiresApproval: false,
+          },
+          accessLevel: 'allowed',
+          rationale:
+            'The agent can suggest follow-up sequencing and next actions while staying inside suggestion mode.',
+        },
+        {
+          tool: {
+            key: 'growth_case_assignment_execution',
+            title: 'Growth case assignment execution',
+            summary:
+              'Would execute operational-case assignment or routing changes once guarded execution exists.',
+            domainKey: 'growth',
+            availability: 'planned',
+            riskLevel: 'high',
+            actionKind: 'execute',
+            requiresApproval: true,
+          },
+          accessLevel: 'blocked',
+          rationale:
+            'Direct assignment or workflow mutation remains blocked until approval flows and guarded execution are in place.',
+        },
+      ]);
   });
 
   it('GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-envelope should return a tenant-scoped Growth Assist suggestion envelope', async () => {
@@ -5322,6 +5443,56 @@ describe('API', () => {
             },
           ],
         },
+        toolAccess: [
+          {
+            tool: {
+              key: 'growth_assist_reply_drafting',
+              title: 'Growth Assist reply drafting',
+              summary:
+                'Drafts customer-facing reply suggestions grounded in the deterministic Growth Assist agenda.',
+              domainKey: 'growth',
+              availability: 'ready',
+              riskLevel: 'low',
+              actionKind: 'draft',
+              requiresApproval: false,
+            },
+            accessLevel: 'allowed',
+            rationale:
+              'The agent can safely prepare reply drafts because Growth remains the source of truth and no message is sent automatically.',
+          },
+          {
+            tool: {
+              key: 'growth_assist_follow_up_planning',
+              title: 'Growth Assist follow-up planning',
+              summary:
+                'Proposes follow-up plans and next-action briefs without mutating Growth workflow state.',
+              domainKey: 'growth',
+              availability: 'ready',
+              riskLevel: 'low',
+              actionKind: 'propose',
+              requiresApproval: false,
+            },
+            accessLevel: 'allowed',
+            rationale:
+              'The agent can suggest follow-up sequencing and next actions while staying inside suggestion mode.',
+          },
+          {
+            tool: {
+              key: 'growth_case_assignment_execution',
+              title: 'Growth case assignment execution',
+              summary:
+                'Would execute operational-case assignment or routing changes once guarded execution exists.',
+              domainKey: 'growth',
+              availability: 'planned',
+              riskLevel: 'high',
+              actionKind: 'execute',
+              requiresApproval: true,
+            },
+            accessLevel: 'blocked',
+            rationale:
+              'Direct assignment or workflow mutation remains blocked until approval flows and guarded execution are in place.',
+          },
+        ],
         contextBlocks: [
           {
             key: 'agenda_summary',
@@ -5484,6 +5655,7 @@ describe('API', () => {
                 },
               ],
             },
+            toolAccess: [],
             contextBlocks: [
               {
                 key: 'agenda_summary',

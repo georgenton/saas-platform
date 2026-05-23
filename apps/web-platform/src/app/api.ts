@@ -1,4 +1,6 @@
 import {
+  AiApprovalPolicyResponse,
+  AiApprovalRequestResponse,
   AiAgentCatalogResponse,
   AiAgentToolAccessResponse,
   AiPromptRegistryResponse,
@@ -1181,6 +1183,15 @@ export async function fetchAiAgentCatalog(
   });
 }
 
+export async function fetchAiApprovalPolicies(
+  token: string,
+): Promise<AiApprovalPolicyResponse[]> {
+  return request<AiApprovalPolicyResponse[]>('/ai/approval-policies', {
+    method: 'GET',
+    token,
+  });
+}
+
 export async function fetchAiPromptRegistry(
   token: string,
 ): Promise<AiPromptRegistryResponse[]> {
@@ -1197,6 +1208,19 @@ export async function fetchAiToolRegistry(
     method: 'GET',
     token,
   });
+}
+
+export async function fetchAiAgentApprovalPolicies(
+  token: string,
+  agentKey: string,
+): Promise<AiApprovalPolicyResponse[]> {
+  return request<AiApprovalPolicyResponse[]>(
+    `/ai/agents/${encodeURIComponent(agentKey)}/approval-policies`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
 }
 
 export async function fetchAiAgentToolAccess(
@@ -1247,6 +1271,25 @@ export async function fetchTenantAiSuggestionRuns(
   );
 }
 
+export async function fetchTenantAiApprovalRequests(
+  token: string,
+  tenantSlug: string,
+  agentKey: string,
+  limit = 10,
+): Promise<AiApprovalRequestResponse[]> {
+  return request<AiApprovalRequestResponse[]>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/agents/${encodeURIComponent(agentKey)}/approval-requests?limit=${encodeURIComponent(
+      String(limit),
+    )}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function prepareTenantAiSuggestionRun(
   token: string,
   tenantSlug: string,
@@ -1259,6 +1302,53 @@ export async function prepareTenantAiSuggestionRun(
     {
       method: 'POST',
       token,
+    },
+  );
+}
+
+export async function requestTenantAiSuggestionRunApproval(
+  token: string,
+  tenantSlug: string,
+  agentKey: string,
+  suggestionRunId: string,
+  body?: {
+    rationale?: string | null;
+  },
+): Promise<AiApprovalRequestResponse> {
+  return request<AiApprovalRequestResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/agents/${encodeURIComponent(
+      agentKey,
+    )}/suggestion-runs/${encodeURIComponent(suggestionRunId)}/approval-requests`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body ?? {}),
+    },
+  );
+}
+
+export async function reviewTenantAiApprovalRequest(
+  token: string,
+  tenantSlug: string,
+  agentKey: string,
+  requestId: string,
+  body: {
+    status: 'approved' | 'rejected';
+    reviewNote?: string | null;
+  },
+): Promise<AiApprovalRequestResponse> {
+  return request<AiApprovalRequestResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/agents/${encodeURIComponent(
+      agentKey,
+    )}/approval-requests/${encodeURIComponent(requestId)}/review`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
     },
   );
 }

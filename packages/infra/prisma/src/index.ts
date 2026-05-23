@@ -1,4 +1,5 @@
 export * from './lib/ai/ai-persistence.module';
+export * from './lib/ai/prisma-ai-approval-request.repository';
 export * from './lib/ai/prisma-ai-suggestion-run.repository';
 export * from './lib/catalog/catalog-persistence.module';
 export * from './lib/catalog/prisma-platform-module.repository';

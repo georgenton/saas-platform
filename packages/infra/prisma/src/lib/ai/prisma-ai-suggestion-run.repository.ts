@@ -80,6 +80,26 @@ export class PrismaAiSuggestionRunRepository
     return records.map((record) => this.toRecord(record as AiSuggestionRunRow));
   }
 
+  async findByIdAndTenantIdAndAgentKey(
+    suggestionRunId: string,
+    tenantId: string,
+    agentKey: string,
+  ): Promise<AiSuggestionRunRecord | null> {
+    const record = await this.delegate.findFirst({
+      where: {
+        id: suggestionRunId,
+        tenantId,
+        agentKey,
+      },
+    });
+
+    if (!record) {
+      return null;
+    }
+
+    return this.toRecord(record as AiSuggestionRunRow);
+  }
+
   private toRecord(record: AiSuggestionRunRow): AiSuggestionRunRecord {
     const envelope = JSON.parse(record.envelopeJson) as TenantAiSuggestionEnvelope & {
       generatedAt: string;

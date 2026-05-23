@@ -1,14 +1,20 @@
 import { Module } from '@nestjs/common';
 import {
+  AI_APPROVAL_REQUEST_REPOSITORY,
   AI_SUGGESTION_RUN_REPOSITORY,
+  GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+  ListTenantAiApprovalRequestsUseCase,
   ListTenantAiSuggestionRunsUseCase,
+  ListAiApprovalPoliciesUseCase,
   ListAiAgentCatalogUseCase,
   ListAiPromptRegistryUseCase,
   ListAiToolRegistryUseCase,
   PrepareTenantAiSuggestionRunUseCase,
+  RequestTenantAiSuggestionRunApprovalUseCase,
+  ReviewTenantAiApprovalRequestUseCase,
 } from '@saas-platform/ai-application';
 import {
   AiPersistenceModule,
@@ -44,12 +50,20 @@ import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-a
       useFactory: () => new ListAiAgentCatalogUseCase(),
     },
     {
+      provide: ListAiApprovalPoliciesUseCase,
+      useFactory: () => new ListAiApprovalPoliciesUseCase(),
+    },
+    {
       provide: ListAiPromptRegistryUseCase,
       useFactory: () => new ListAiPromptRegistryUseCase(),
     },
     {
       provide: ListAiToolRegistryUseCase,
       useFactory: () => new ListAiToolRegistryUseCase(),
+    },
+    {
+      provide: GetAiApprovalPoliciesByAgentKeyUseCase,
+      useFactory: () => new GetAiApprovalPoliciesByAgentKeyUseCase(),
     },
     {
       provide: GetAiPromptRegistryEntryByAgentKeyUseCase,
@@ -65,6 +79,15 @@ import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-a
       useFactory: (getTenantGrowthAssistDailyAgendaUseCase) =>
         new GetTenantGrowthAssistAiSuggestionEnvelopeUseCase(
           getTenantGrowthAssistDailyAgendaUseCase,
+        ),
+    },
+    {
+      provide: ListTenantAiApprovalRequestsUseCase,
+      inject: [TENANT_REPOSITORY, AI_APPROVAL_REQUEST_REPOSITORY],
+      useFactory: (tenantRepository, aiApprovalRequestRepository) =>
+        new ListTenantAiApprovalRequestsUseCase(
+          tenantRepository,
+          aiApprovalRequestRepository,
         ),
     },
     {
@@ -92,6 +115,33 @@ import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-a
           tenantRepository,
           aiSuggestionRunRepository,
           getTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAiSuggestionRunApprovalUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        AI_SUGGESTION_RUN_REPOSITORY,
+        AI_APPROVAL_REQUEST_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        aiSuggestionRunRepository,
+        aiApprovalRequestRepository,
+      ) =>
+        new RequestTenantAiSuggestionRunApprovalUseCase(
+          tenantRepository,
+          aiSuggestionRunRepository,
+          aiApprovalRequestRepository,
+        ),
+    },
+    {
+      provide: ReviewTenantAiApprovalRequestUseCase,
+      inject: [TENANT_REPOSITORY, AI_APPROVAL_REQUEST_REPOSITORY],
+      useFactory: (tenantRepository, aiApprovalRequestRepository) =>
+        new ReviewTenantAiApprovalRequestUseCase(
+          tenantRepository,
+          aiApprovalRequestRepository,
         ),
     },
     {

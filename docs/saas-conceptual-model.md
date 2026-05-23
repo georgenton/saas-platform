@@ -772,6 +772,10 @@ Build one transversal AI runtime for domain-specific assistants.
    - make envelopes explicit about which tools are allowed, which need approval, and which are blocked
    - keep execution tools blocked until approval and guarded-execution flows exist
 5. audit and approval flows
+   - the first approval slice can stay in `suggestion mode`
+   - it should approve or reject auditable suggestion handoffs before any guarded execution path exists
+   - approval memory should be tenant-scoped, agent-scoped, and attached to concrete run history
+   - that keeps the human review loop explicit before the platform starts unlocking higher-risk execution tools
 6. first agent for invoicing/tax tasks
 7. first suggestion-mode agent for Growth Assist surfaces
 
@@ -779,6 +783,7 @@ Build one transversal AI runtime for domain-specific assistants.
 
 - first expose deterministic domain contracts that AI can consume
 - then add AI suggestion mode on top of those contracts
+- then add human approval loops on top of auditable suggestion runs
 - only after observability and approval flows exist should the platform move from suggestions into guarded execution
 
 ## Stage 6: Ecommerce

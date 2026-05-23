@@ -1,4 +1,5 @@
 import {
+  AiApprovalPolicyEntry,
   AiAgentToolAccessEntry,
   AiAgentCatalogEntry,
   AiPromptRegistryEntry,
@@ -270,4 +271,52 @@ export function listAiAgentToolAccessByAgentKey(
       };
     })
     .filter((entry): entry is { tool: AiToolDefinition; accessLevel: AiAgentToolAccessEntry['accessLevel']; rationale: string } => entry !== null);
+}
+
+export const AI_APPROVAL_POLICY_REGISTRY: AiApprovalPolicyEntry[] = [
+  {
+    policyKey: 'growth-assist-suggestion-review',
+    agentKey: 'growth-assist-coach',
+    scope: 'suggestion_review',
+    title: 'Growth Assist suggestion review',
+    summary:
+      'Requests human review before a Growth Assist suggestion handoff is treated as approved for operator use.',
+    reviewGuidance:
+      'Verify that the suggestion stays grounded in deterministic Growth signals, does not overreach beyond the tenant context, and still sounds safe for a human operator to adapt.',
+    approvalRequired: true,
+  },
+  {
+    policyKey: 'invoice-document-assistant-suggestion-review',
+    agentKey: 'invoice-document-assistant',
+    scope: 'suggestion_review',
+    title: 'Invoice suggestion review',
+    summary:
+      'Keeps document-drafting suggestions behind explicit operator review before they influence invoicing work.',
+    reviewGuidance:
+      'Confirm that the suggestion is only advisory, matches the fiscal document context, and does not replace domain validation or tax compliance checks.',
+    approvalRequired: true,
+  },
+  {
+    policyKey: 'ecommerce-launch-assistant-suggestion-review',
+    agentKey: 'ecommerce-launch-assistant',
+    scope: 'suggestion_review',
+    title: 'Ecommerce launch suggestion review',
+    summary:
+      'Keeps launch and campaign suggestions behind operator review before they influence storefront work.',
+    reviewGuidance:
+      'Check that the suggestion stays grounded in product context, does not invent catalog facts, and is safe to translate into real launch work.',
+    approvalRequired: true,
+  },
+];
+
+export function listAiApprovalPolicies(): AiApprovalPolicyEntry[] {
+  return AI_APPROVAL_POLICY_REGISTRY.map((entry) => ({ ...entry }));
+}
+
+export function listAiApprovalPoliciesByAgentKey(
+  agentKey: string,
+): AiApprovalPolicyEntry[] {
+  return AI_APPROVAL_POLICY_REGISTRY.filter(
+    (entry) => entry.agentKey === agentKey,
+  ).map((entry) => ({ ...entry }));
 }

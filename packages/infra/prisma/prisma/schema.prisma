@@ -48,6 +48,7 @@ model Tenant {
   whatsappOperationalAlertAcknowledgements WhatsappOperationalAlertAcknowledgement[]
   growthOperationalCases GrowthOperationalCase[]
   growthOperationalCaseAutoAssignmentSettings GrowthOperationalCaseAutoAssignmentSettings?
+  aiApprovalRequests AiApprovalRequest[]
   aiSuggestionRuns AiSuggestionRun[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
@@ -346,11 +347,39 @@ model AiSuggestionRun {
   summary            String
   suggestedOutputKeysJson String @db.Text
   envelopeJson       String @db.Text
+  approvalRequests   AiApprovalRequest[]
   tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt          DateTime @default(now())
 
   @@index([tenantId, agentKey, createdAt])
   @@index([tenantId, surfaceKey, createdAt])
+}
+
+model AiApprovalRequest {
+  id               String   @id @default(cuid())
+  tenantId         String
+  tenantSlug       String
+  agentKey         String
+  policyKey        String
+  scope            String
+  suggestionRunId  String
+  requestedByUserId String
+  requestedByEmail String?
+  rationale        String?  @db.Text
+  summary          String
+  status           String
+  reviewedAt       DateTime?
+  reviewedByUserId String?
+  reviewedByEmail  String?
+  reviewNote       String?  @db.Text
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  suggestionRun    AiSuggestionRun @relation(fields: [suggestionRunId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([tenantId, agentKey, createdAt])
+  @@index([tenantId, status, createdAt])
+  @@index([suggestionRunId, createdAt])
 }
 
 model WebhookEventEnvelope {

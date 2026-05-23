@@ -1122,6 +1122,16 @@ export interface AiAgentToolAccessResponse {
   rationale: string;
 }
 
+export interface AiApprovalPolicyResponse {
+  policyKey: string;
+  agentKey: string;
+  scope: 'suggestion_review';
+  title: string;
+  summary: string;
+  reviewGuidance: string;
+  approvalRequired: boolean;
+}
+
 export interface AiSuggestionEnvelopeResponse {
   tenantSlug: string;
   generatedAt: string;
@@ -1176,6 +1186,26 @@ export interface AiSuggestionRunResponse {
   suggestedOutputKeys: string[];
   envelope: AiSuggestionEnvelopeResponse;
   createdAt: string;
+}
+
+export interface AiApprovalRequestResponse {
+  id: string;
+  tenantSlug: string;
+  agentKey: string;
+  policyKey: string;
+  scope: 'suggestion_review';
+  suggestionRunId: string;
+  requestedByUserId: string;
+  requestedByEmail: string | null;
+  rationale: string | null;
+  summary: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewedAt: string | null;
+  reviewedByUserId: string | null;
+  reviewedByEmail: string | null;
+  reviewNote: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface WhatsappOperationalAlertFrequencyResponse {

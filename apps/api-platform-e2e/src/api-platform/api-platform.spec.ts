@@ -5655,56 +5655,7 @@ describe('API', () => {
                 },
               ],
             },
-            toolAccess: [
-              {
-                tool: {
-                  key: 'growth_assist_reply_drafting',
-                  title: 'Growth Assist reply drafting',
-                  summary:
-                    'Drafts customer-facing reply suggestions grounded in the deterministic Growth Assist agenda.',
-                  domainKey: 'growth',
-                  availability: 'ready',
-                  riskLevel: 'low',
-                  actionKind: 'draft',
-                  requiresApproval: false,
-                },
-                accessLevel: 'allowed',
-                rationale:
-                  'The agent can safely prepare reply drafts because Growth remains the source of truth and no message is sent automatically.',
-              },
-              {
-                tool: {
-                  key: 'growth_assist_follow_up_planning',
-                  title: 'Growth Assist follow-up planning',
-                  summary:
-                    'Proposes follow-up plans and next-action briefs without mutating Growth workflow state.',
-                  domainKey: 'growth',
-                  availability: 'ready',
-                  riskLevel: 'low',
-                  actionKind: 'propose',
-                  requiresApproval: false,
-                },
-                accessLevel: 'allowed',
-                rationale:
-                  'The agent can suggest follow-up sequencing and next actions while staying inside suggestion mode.',
-              },
-              {
-                tool: {
-                  key: 'growth_case_assignment_execution',
-                  title: 'Growth case assignment execution',
-                  summary:
-                    'Would execute operational-case assignment or routing changes once guarded execution exists.',
-                  domainKey: 'growth',
-                  availability: 'planned',
-                  riskLevel: 'high',
-                  actionKind: 'execute',
-                  requiresApproval: true,
-                },
-                accessLevel: 'blocked',
-                rationale:
-                  'Direct assignment or workflow mutation remains blocked until approval flows and guarded execution are in place.',
-              },
-            ],
+            toolAccess: [],
             contextBlocks: [
               {
                 key: 'agenda_summary',

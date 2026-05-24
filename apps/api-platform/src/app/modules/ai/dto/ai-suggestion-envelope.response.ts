@@ -1,5 +1,9 @@
 import { TenantAiSuggestionEnvelope } from '@saas-platform/ai-domain';
 
+function toIsoString(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value;
+}
+
 export interface AiSuggestionEnvelopeResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -62,7 +66,7 @@ export const toAiSuggestionEnvelopeResponseDto = (
   envelope: TenantAiSuggestionEnvelope,
 ): AiSuggestionEnvelopeResponseDto => ({
   tenantSlug: envelope.tenantSlug,
-  generatedAt: envelope.generatedAt.toISOString(),
+  generatedAt: toIsoString(envelope.generatedAt),
   mode: envelope.mode,
   agent: {
     ...envelope.agent,
@@ -70,7 +74,7 @@ export const toAiSuggestionEnvelopeResponseDto = (
   },
   surface: {
     ...envelope.surface,
-    sourceGeneratedAt: envelope.surface.sourceGeneratedAt.toISOString(),
+    sourceGeneratedAt: toIsoString(envelope.surface.sourceGeneratedAt),
   },
   promptPack: {
     ...envelope.promptPack,

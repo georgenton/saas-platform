@@ -8,6 +8,18 @@ import {
   toAiSuggestionEnvelopeResponseDto,
 } from './ai-suggestion-envelope.response';
 
+function toIsoString(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : value;
+}
+
+function toNullableIsoString(value: Date | string | null | undefined): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  return toIsoString(value);
+}
+
 export interface AiSuggestionRunResponseDto {
   id: string;
   tenantSlug: string;
@@ -60,10 +72,10 @@ export const toAiSuggestionRunResponseDto = (
   status: record.status,
   surfaceKey: record.surfaceKey,
   sourceContractKey: record.sourceContractKey,
-  sourceGeneratedAt: record.sourceGeneratedAt.toISOString(),
+  sourceGeneratedAt: toIsoString(record.sourceGeneratedAt),
   promptPackKey: record.promptPackKey,
   promptPackVersion: record.promptPackVersion,
-  generatedAt: record.generatedAt.toISOString(),
+  generatedAt: toIsoString(record.generatedAt),
   requestedByUserId: record.requestedByUserId,
   requestedByEmail: record.requestedByEmail,
   summary: record.summary,
@@ -73,10 +85,10 @@ export const toAiSuggestionRunResponseDto = (
     totalRequests: approvalSummary.totalRequests,
     latestRequestId: approvalSummary.latestRequestId,
     latestPolicyKey: approvalSummary.latestPolicyKey,
-    latestRequestedAt: approvalSummary.latestRequestedAt?.toISOString() ?? null,
-    latestReviewedAt: approvalSummary.latestReviewedAt?.toISOString() ?? null,
+    latestRequestedAt: toNullableIsoString(approvalSummary.latestRequestedAt),
+    latestReviewedAt: toNullableIsoString(approvalSummary.latestReviewedAt),
   },
   envelope: toAiSuggestionEnvelopeResponseDto(record.envelope),
-  createdAt: record.createdAt.toISOString(),
+  createdAt: toIsoString(record.createdAt),
   };
 };

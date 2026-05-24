@@ -953,5 +953,6 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
     TenantPermissionGuard,
     TenantProductAccessGuard,
   ],
+  exports: [GetTenantInvoiceDocumentDraftingAssistUseCase],
 })
 export class InvoicingModule {}

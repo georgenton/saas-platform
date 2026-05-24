@@ -3,6 +3,7 @@ import {
   ConflictException,
   Controller,
   DefaultValuePipe,
+  ForbiddenException,
   Get,
   HttpCode,
   NotFoundException,
@@ -21,7 +22,7 @@ import {
   GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
   AiAgentNotFoundError,
-  GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+  GetTenantAiSuggestionEnvelopeUseCase,
   ListTenantAiApprovalRequestsUseCase,
   ListTenantAiSuggestionRunsUseCase,
   ListAiApprovalPoliciesUseCase,
@@ -35,10 +36,10 @@ import {
 } from '@saas-platform/ai-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
 import { GROWTH_PERMISSIONS } from '@saas-platform/growth-application';
+import { INVOICING_PERMISSIONS } from '@saas-platform/invoicing-application';
 import { AuthenticatedUser } from '../auth/authenticated-user.decorator';
 import { AuthenticatedUserContext } from '../auth/authenticated-user-context';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
-import { RequireTenantPermission } from '../tenancy/require-tenant-permission.decorator';
 import { TenantAccess } from '../tenancy/tenant-access.decorator';
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
@@ -85,7 +86,7 @@ export class AiController {
     private readonly getAiApprovalPoliciesByAgentKeyUseCase: GetAiApprovalPoliciesByAgentKeyUseCase,
     private readonly getAiPromptRegistryEntryByAgentKeyUseCase: GetAiPromptRegistryEntryByAgentKeyUseCase,
     private readonly getAiAgentToolAccessByAgentKeyUseCase: GetAiAgentToolAccessByAgentKeyUseCase,
-    private readonly getTenantGrowthAssistAiSuggestionEnvelopeUseCase: GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+    private readonly getTenantAiSuggestionEnvelopeUseCase: GetTenantAiSuggestionEnvelopeUseCase,
     private readonly listTenantAiApprovalRequestsUseCase: ListTenantAiApprovalRequestsUseCase,
     private readonly listTenantAiSuggestionRunsUseCase: ListTenantAiSuggestionRunsUseCase,
     private readonly prepareTenantAiSuggestionRunUseCase: PrepareTenantAiSuggestionRunUseCase,
@@ -185,18 +186,18 @@ export class AiController {
     TenantMembershipGuard,
     TenantPermissionGuard,
   )
-  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
   async getTenantAiSuggestionEnvelope(
     @Param('slug') slug: string,
     @Param('agentKey') agentKey: string,
-    @TenantAccess() tenantAccess?: { tenantSlug?: string },
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
   ): Promise<AiSuggestionEnvelopeResponseDto> {
     try {
-      const envelope =
-        await this.getTenantGrowthAssistAiSuggestionEnvelopeUseCase.execute(
-          tenantAccess?.tenantSlug ?? slug,
-          agentKey,
-        );
+      this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
+
+      const envelope = await this.getTenantAiSuggestionEnvelopeUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        agentKey,
+      );
 
       return toAiSuggestionEnvelopeResponseDto(envelope);
     } catch (error) {
@@ -214,14 +215,15 @@ export class AiController {
     TenantMembershipGuard,
     TenantPermissionGuard,
   )
-  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
   async listTenantAiApprovalRequests(
     @Param('slug') slug: string,
     @Param('agentKey') agentKey: string,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-    @TenantAccess() tenantAccess?: { tenantSlug?: string },
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
   ): Promise<AiApprovalRequestResponseDto[]> {
     try {
+      this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
+
       const records = await this.listTenantAiApprovalRequestsUseCase.execute(
         tenantAccess?.tenantSlug ?? slug,
         agentKey,
@@ -247,14 +249,15 @@ export class AiController {
     TenantMembershipGuard,
     TenantPermissionGuard,
   )
-  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
   async listTenantAiSuggestionRuns(
     @Param('slug') slug: string,
     @Param('agentKey') agentKey: string,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-    @TenantAccess() tenantAccess?: { tenantSlug?: string },
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
   ): Promise<AiSuggestionRunResponseDto[]> {
     try {
+      this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
+
       const records = await this.listTenantAiSuggestionRunsUseCase.execute(
         tenantAccess?.tenantSlug ?? slug,
         agentKey,
@@ -280,18 +283,19 @@ export class AiController {
     TenantMembershipGuard,
     TenantPermissionGuard,
   )
-  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
   async prepareTenantAiSuggestionRun(
     @Param('slug') slug: string,
     @Param('agentKey') agentKey: string,
     @AuthenticatedUser() authenticatedUser: AuthenticatedUserContext | undefined,
-    @TenantAccess() tenantAccess?: { tenantSlug?: string },
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
   ): Promise<AiSuggestionRunResponseDto> {
     if (!authenticatedUser) {
       throw new NotFoundException('Authenticated user context is required.');
     }
 
     try {
+      this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
+
       const record = await this.prepareTenantAiSuggestionRunUseCase.execute({
         tenantSlug: tenantAccess?.tenantSlug ?? slug,
         agentKey,
@@ -318,20 +322,21 @@ export class AiController {
     TenantMembershipGuard,
     TenantPermissionGuard,
   )
-  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
   async requestTenantAiSuggestionRunApproval(
     @Param('slug') slug: string,
     @Param('agentKey') agentKey: string,
     @Param('runId') runId: string,
     @Body() body: CreateAiApprovalRequestRequestDto,
     @AuthenticatedUser() authenticatedUser: AuthenticatedUserContext | undefined,
-    @TenantAccess() tenantAccess?: { tenantSlug?: string },
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
   ): Promise<AiApprovalRequestResponseDto> {
     if (!authenticatedUser) {
       throw new NotFoundException('Authenticated user context is required.');
     }
 
     try {
+      this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
+
       const record =
         await this.requestTenantAiSuggestionRunApprovalUseCase.execute({
           tenantSlug: tenantAccess?.tenantSlug ?? slug,
@@ -368,20 +373,21 @@ export class AiController {
     TenantMembershipGuard,
     TenantPermissionGuard,
   )
-  @RequireTenantPermission(GROWTH_PERMISSIONS.CONVERSATIONS_READ)
   async reviewTenantAiApprovalRequest(
     @Param('slug') slug: string,
     @Param('agentKey') agentKey: string,
     @Param('requestId') requestId: string,
     @Body() body: ReviewAiApprovalRequestRequestDto,
     @AuthenticatedUser() authenticatedUser: AuthenticatedUserContext | undefined,
-    @TenantAccess() tenantAccess?: { tenantSlug?: string },
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
   ): Promise<AiApprovalRequestResponseDto> {
     if (!authenticatedUser) {
       throw new NotFoundException('Authenticated user context is required.');
     }
 
     try {
+      this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
+
       const record = await this.reviewTenantAiApprovalRequestUseCase.execute({
         tenantSlug: tenantAccess?.tenantSlug ?? slug,
         agentKey,
@@ -406,6 +412,22 @@ export class AiController {
       }
 
       throw error;
+    }
+  }
+
+  private assertAgentPermission(
+    agentKey: string,
+    permissionKeys: string[] | undefined,
+  ): void {
+    const requiredPermission =
+      agentKey === 'invoice-document-assistant'
+        ? INVOICING_PERMISSIONS.REPORTS_READ
+        : GROWTH_PERMISSIONS.CONVERSATIONS_READ;
+
+    if (!permissionKeys?.includes(requiredPermission)) {
+      throw new ForbiddenException(
+        `Permission "${requiredPermission}" is required for AI agent ${agentKey}.`,
+      );
     }
   }
 }

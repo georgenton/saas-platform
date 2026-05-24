@@ -36,6 +36,7 @@ import {
   GetTenantInvoiceNumberingSettingsUseCase,
   GetTenantInvoiceDetailUseCase,
   GetTenantInvoiceDocumentUseCase,
+  GetTenantInvoiceDocumentDraftingAssistUseCase,
   GetTenantInvoiceElectronicXmlPreviewUseCase,
   GetTenantInvoicingReportSummaryUseCase,
   GetTenantInvoiceItemByIdUseCase,
@@ -183,6 +184,10 @@ import {
   toInvoicingReportSummaryResponseDto,
 } from './dto/invoicing-report.response';
 import {
+  InvoiceDocumentDraftingAssistResponseDto,
+  toInvoiceDocumentDraftingAssistResponseDto,
+} from './dto/invoice-document-drafting-assist.response';
+import {
   InvoiceDocumentResponseDto,
   toInvoiceDocumentResponseDto,
 } from './dto/invoice-document.response';
@@ -241,6 +246,7 @@ export class InvoicingController {
     private readonly getTenantInvoiceNumberingSettingsUseCase: GetTenantInvoiceNumberingSettingsUseCase,
     private readonly getTenantInvoiceDetailUseCase: GetTenantInvoiceDetailUseCase,
     private readonly getTenantInvoiceDocumentUseCase: GetTenantInvoiceDocumentUseCase,
+    private readonly getTenantInvoiceDocumentDraftingAssistUseCase: GetTenantInvoiceDocumentDraftingAssistUseCase,
     private readonly getTenantInvoiceElectronicXmlPreviewUseCase: GetTenantInvoiceElectronicXmlPreviewUseCase,
     private readonly getTenantInvoicingReportSummaryUseCase: GetTenantInvoicingReportSummaryUseCase,
     private readonly getTenantInvoiceItemByIdUseCase: GetTenantInvoiceItemByIdUseCase,
@@ -903,6 +909,28 @@ export class InvoicingController {
       );
 
       return toInvoicingReportSummaryResponseDto(report);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/assist/document-drafting')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.REPORTS_READ)
+  async getTenantInvoiceDocumentDraftingAssist(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<InvoiceDocumentDraftingAssistResponseDto> {
+    try {
+      const view =
+        await this.getTenantInvoiceDocumentDraftingAssistUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toInvoiceDocumentDraftingAssistResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

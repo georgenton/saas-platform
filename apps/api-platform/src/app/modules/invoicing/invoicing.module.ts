@@ -34,6 +34,7 @@ import {
   GetTenantInvoiceNumberingSettingsUseCase,
   GetTenantInvoiceDetailUseCase,
   GetTenantInvoiceDocumentUseCase,
+  GetTenantInvoiceDocumentDraftingAssistUseCase,
   GetTenantInvoiceElectronicXmlPreviewUseCase,
   GetTenantInvoicingReportSummaryUseCase,
   GetTenantInvoiceByIdUseCase,
@@ -760,6 +761,21 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
         ),
     },
     {
+      provide: GetTenantInvoiceDocumentDraftingAssistUseCase,
+      inject: [
+        GetTenantElectronicSandboxReadinessUseCase,
+        GetTenantInvoicingReportSummaryUseCase,
+      ],
+      useFactory: (
+        getTenantElectronicSandboxReadinessUseCase,
+        getTenantInvoicingReportSummaryUseCase,
+      ) =>
+        new GetTenantInvoiceDocumentDraftingAssistUseCase(
+          getTenantElectronicSandboxReadinessUseCase,
+          getTenantInvoicingReportSummaryUseCase,
+        ),
+    },
+    {
       provide: GetTenantInvoiceItemByIdUseCase,
       inject: [TENANT_REPOSITORY, INVOICE_REPOSITORY, INVOICE_ITEM_REPOSITORY],
       useFactory: (
@@ -937,5 +953,6 @@ import { XmllintSriInvoiceXmlSchemaValidator } from './xmllint-sri-invoice-xml-s
     TenantPermissionGuard,
     TenantProductAccessGuard,
   ],
+  exports: [GetTenantInvoiceDocumentDraftingAssistUseCase],
 })
 export class InvoicingModule {}

@@ -132,6 +132,7 @@ import {
   GetTenantCustomerByIdUseCase,
   GetTenantInvoiceDetailUseCase,
   GetTenantInvoiceDocumentUseCase,
+  GetTenantInvoiceDocumentDraftingAssistUseCase,
   GetTenantInvoiceElectronicXmlPreviewUseCase,
   GetTenantInvoicingReportSummaryUseCase,
   GetTenantInvoiceByIdUseCase,
@@ -226,6 +227,7 @@ describe('API', () => {
   let getTenantElectronicSignatureSettingsUseCase: { execute: jest.Mock };
   let getTenantInvoiceDetailUseCase: { execute: jest.Mock };
   let getTenantInvoiceDocumentUseCase: { execute: jest.Mock };
+  let getTenantInvoiceDocumentDraftingAssistUseCase: { execute: jest.Mock };
   let getTenantInvoiceElectronicXmlPreviewUseCase: { execute: jest.Mock };
   let getTenantInvoiceNumberingSettingsUseCase: { execute: jest.Mock };
   let getTenantInvoicingReportSummaryUseCase: { execute: jest.Mock };
@@ -1340,6 +1342,76 @@ describe('API', () => {
       topAlertSummary: null,
       topAlertRecommendedAction: null,
     },
+  };
+  const invoiceDocumentDraftingAssist = {
+    tenantSlug: 'saas-platform',
+    generatedAt: new Date('2026-05-23T10:30:00.000Z'),
+    summary: {
+      tone: 'warning' as const,
+      readinessStatus: 'needs_attention' as const,
+      headline:
+        'El tenant ya puede apoyarse en sugerencias, aunque conviene revisar detalles antes de empujar documentos.',
+      detail:
+        'Usa esta superficie para ordenar checklist, documentar riesgos y preparar mejor la revision humana.',
+      suggestedFocus:
+        'Conviene revisar vigencia del certificado antes de empujar mas documentos.',
+    },
+    checklist: [
+      {
+        key: 'issuer_profile',
+        label: 'Perfil fiscal',
+        status: 'ready' as const,
+        detail: 'Configurado para pruebas con RUC 1790012345001.',
+      },
+      {
+        key: 'signature_material',
+        label: 'Material de firma',
+        status: 'warning' as const,
+        detail: 'Conviene revisar vigencia del certificado.',
+      },
+    ],
+    documentGuidance: [
+      {
+        documentCode: '01' as const,
+        label: 'Factura',
+        status: 'ready' as const,
+        detail: 'Documento listo para trabajar.',
+        recommendedUse:
+          'Usalo para preparar facturas nuevas y revisar si el tenant ya tiene base suficiente para emitirlas sin improvisar.',
+      },
+      {
+        documentCode: '04' as const,
+        label: 'Nota de credito',
+        status: 'blocked' as const,
+        detail: 'Falta numeracion.',
+        recommendedUse:
+          'Usalo cuando haya que corregir o anular una factura previa con criterio documentado.',
+      },
+    ],
+    reportSnapshot: {
+      customerCount: 3,
+      invoiceCount: 9,
+      outstandingTotalInCents: 145000,
+      dominantStatus: 'issued',
+      busiestMonth: '2026-05',
+    },
+    draftingHints: [
+      {
+        key: 'drafting-brief',
+        title: 'Brief de preparacion',
+        objective:
+          'Explicar que piezas conviene completar antes de redactar o revisar un comprobante.',
+        whenToUse:
+          'Cuando el operador necesita una guia corta para entender si el tenant esta listo o todavia tiene huecos.',
+        recommendedInputs: ['Resumen del checklist formal', 'Estado de numeracion y firma'],
+        caution:
+          'Toma la sugerencia como checklist guiado y no como validacion fiscal final.',
+      },
+    ],
+    safeActions: ['Explicar checklist'],
+    blockedActions: [
+      'Firmar electronicamente el documento sin aprobacion humana.',
+    ],
   };
   const whatsappMessageTemplate = WhatsappMessageTemplate.create({
     id: 'template_001',
@@ -2664,6 +2736,9 @@ describe('API', () => {
         },
       }),
     };
+    getTenantInvoiceDocumentDraftingAssistUseCase = {
+      execute: jest.fn().mockResolvedValue(invoiceDocumentDraftingAssist),
+    };
     getTenantInvoiceElectronicXmlPreviewUseCase = {
       execute: jest.fn().mockResolvedValue(`<?xml version="1.0" encoding="UTF-8"?>
 <factura id="comprobante" version="2.1.0">
@@ -3462,6 +3537,8 @@ describe('API', () => {
       .useValue(getTenantInvoiceDetailUseCase)
       .overrideProvider(GetTenantInvoiceDocumentUseCase)
       .useValue(getTenantInvoiceDocumentUseCase)
+      .overrideProvider(GetTenantInvoiceDocumentDraftingAssistUseCase)
+      .useValue(getTenantInvoiceDocumentDraftingAssistUseCase)
       .overrideProvider(GetTenantInvoiceElectronicXmlPreviewUseCase)
       .useValue(getTenantInvoiceElectronicXmlPreviewUseCase)
       .overrideProvider(GetTenantInvoicingReportSummaryUseCase)
@@ -5106,6 +5183,90 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/invoicing/tenants/:slug/assist/document-drafting should return the deterministic invoicing drafting surface', async () => {
+    await request(httpServer)
+      .get('/api/invoicing/tenants/saas-platform/assist/document-drafting')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        tenantSlug: 'saas-platform',
+        generatedAt: '2026-05-23T10:30:00.000Z',
+        summary: {
+          tone: 'warning',
+          readinessStatus: 'needs_attention',
+          headline:
+            'El tenant ya puede apoyarse en sugerencias, aunque conviene revisar detalles antes de empujar documentos.',
+          detail:
+            'Usa esta superficie para ordenar checklist, documentar riesgos y preparar mejor la revision humana.',
+          suggestedFocus:
+            'Conviene revisar vigencia del certificado antes de empujar mas documentos.',
+        },
+        checklist: [
+          {
+            key: 'issuer_profile',
+            label: 'Perfil fiscal',
+            status: 'ready',
+            detail: 'Configurado para pruebas con RUC 1790012345001.',
+          },
+          {
+            key: 'signature_material',
+            label: 'Material de firma',
+            status: 'warning',
+            detail: 'Conviene revisar vigencia del certificado.',
+          },
+        ],
+        documentGuidance: [
+          {
+            documentCode: '01',
+            label: 'Factura',
+            status: 'ready',
+            detail: 'Documento listo para trabajar.',
+            recommendedUse:
+              'Usalo para preparar facturas nuevas y revisar si el tenant ya tiene base suficiente para emitirlas sin improvisar.',
+          },
+          {
+            documentCode: '04',
+            label: 'Nota de credito',
+            status: 'blocked',
+            detail: 'Falta numeracion.',
+            recommendedUse:
+              'Usalo cuando haya que corregir o anular una factura previa con criterio documentado.',
+          },
+        ],
+        reportSnapshot: {
+          customerCount: 3,
+          invoiceCount: 9,
+          outstandingTotalInCents: 145000,
+          dominantStatus: 'issued',
+          busiestMonth: '2026-05',
+        },
+        draftingHints: [
+          {
+            key: 'drafting-brief',
+            title: 'Brief de preparacion',
+            objective:
+              'Explicar que piezas conviene completar antes de redactar o revisar un comprobante.',
+            whenToUse:
+              'Cuando el operador necesita una guia corta para entender si el tenant esta listo o todavia tiene huecos.',
+            recommendedInputs: [
+              'Resumen del checklist formal',
+              'Estado de numeracion y firma',
+            ],
+            caution:
+              'Toma la sugerencia como checklist guiado y no como validacion fiscal final.',
+          },
+        ],
+        safeActions: ['Explicar checklist'],
+        blockedActions: [
+          'Firmar electronicamente el documento sin aprobacion humana.',
+        ],
+      });
+
+    expect(getTenantInvoiceDocumentDraftingAssistUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
   it('GET /api/ai/agents should return the transversal AI agent catalog', async () => {
     await request(httpServer)
       .get('/api/ai/agents')
@@ -5127,10 +5288,10 @@ describe('API', () => {
           key: 'invoice-document-assistant',
           title: 'Invoice Document Assistant',
           summary:
-            'Will help draft, review, and explain invoicing document workflows once AI-ready invoicing surfaces are exposed.',
+            'Turns deterministic invoicing drafting and readiness signals into tenant-scoped document guidance without executing fiscal actions automatically.',
           domainKey: 'invoicing',
           productKey: 'invoicing',
-          availability: 'planned',
+          availability: 'ready',
           defaultMode: 'suggestion',
           supportedSurfaceKeys: ['invoice_document_drafting'],
         },
@@ -5198,21 +5359,24 @@ describe('API', () => {
         },
         {
           key: 'invoice-document-assistant-core',
-          version: 'planned-v1',
+          version: 'v1',
           agentKey: 'invoice-document-assistant',
           mode: 'suggestion',
           title: 'Invoice Document Assistant Core',
           summary:
-            'Planned prompt pack for document drafting, review, and checklist suggestions in Ecuador electronic invoicing.',
+            'Prompt pack for document drafting, review, and checklist suggestions in Ecuador electronic invoicing.',
           objective:
             'Help operators draft and review tax document workflows without replacing fiscal validation owned by the invoicing domain.',
           styleGuidance: [
             'Explain tax-document steps in concrete operator language.',
+            'Prefer checklist-driven wording over abstract tax jargon.',
             'Surface checklist gaps before proposing any draft output.',
           ],
           constraints: [
             'Do not treat prompt output as fiscal validation.',
             'Do not approve, sign, or submit tax documents automatically.',
+            'Use only the tenant-scoped invoicing drafting surface and its embedded readiness/report signals.',
+            'Keep the suggestion explicitly advisory and suitable for human review.',
           ],
           suggestedOutputs: [
             {
@@ -5220,6 +5384,18 @@ describe('API', () => {
               label: 'Drafting brief',
               description:
                 'Summarize what needs to be drafted or reviewed before the document can move forward.',
+            },
+            {
+              key: 'review_checklist',
+              label: 'Review checklist',
+              description:
+                'Explain the human review checklist that should be completed before the document advances.',
+            },
+            {
+              key: 'blocker_explanation',
+              label: 'Blocker explanation',
+              description:
+                'Translate current blockers or warnings into simple operator language and next steps.',
             },
           ],
         },
@@ -5296,9 +5472,9 @@ describe('API', () => {
           key: 'invoice_document_drafting',
           title: 'Invoice document drafting',
           summary:
-            'Will help prepare deterministic drafting and review suggestions for invoicing document workflows.',
+            'Prepares deterministic drafting, checklist, and review suggestions for invoicing document workflows.',
           domainKey: 'invoicing',
-          availability: 'planned',
+          availability: 'ready',
           riskLevel: 'medium',
           actionKind: 'draft',
           requiresApproval: false,
@@ -5671,6 +5847,154 @@ describe('API', () => {
       });
 
     expect(getTenantGrowthAssistDailyAgendaUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-envelope should return a tenant-scoped Invoice Document Assistant suggestion envelope', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ai/tenants/saas-platform/agents/invoice-document-assistant/suggestion-envelope',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        tenantSlug: 'saas-platform',
+        generatedAt: '2026-05-23T10:30:00.000Z',
+        mode: 'suggestion',
+        agent: {
+          key: 'invoice-document-assistant',
+          title: 'Invoice Document Assistant',
+          summary:
+            'Turns deterministic invoicing drafting and readiness signals into tenant-scoped document guidance without executing fiscal actions automatically.',
+          domainKey: 'invoicing',
+          productKey: 'invoicing',
+          availability: 'ready',
+          defaultMode: 'suggestion',
+          supportedSurfaceKeys: ['invoice_document_drafting'],
+        },
+        surface: {
+          key: 'invoice_document_drafting',
+          title: 'Invoice document drafting',
+          sourceContractKey: 'invoicing.assist.document_drafting',
+          sourceGeneratedAt: '2026-05-23T10:30:00.000Z',
+        },
+        promptPack: {
+          key: 'invoice-document-assistant-core',
+          version: 'v1',
+          agentKey: 'invoice-document-assistant',
+          mode: 'suggestion',
+          title: 'Invoice Document Assistant Core',
+          summary:
+            'Prompt pack for document drafting, review, and checklist suggestions in Ecuador electronic invoicing.',
+          objective:
+            'Help operators draft and review tax document workflows without replacing fiscal validation owned by the invoicing domain.',
+          styleGuidance: [
+            'Explain tax-document steps in concrete operator language.',
+            'Prefer checklist-driven wording over abstract tax jargon.',
+            'Surface checklist gaps before proposing any draft output.',
+          ],
+          constraints: [
+            'Do not treat prompt output as fiscal validation.',
+            'Do not approve, sign, or submit tax documents automatically.',
+            'Use only the tenant-scoped invoicing drafting surface and its embedded readiness/report signals.',
+            'Keep the suggestion explicitly advisory and suitable for human review.',
+          ],
+          suggestedOutputs: [
+            {
+              key: 'drafting_brief',
+              label: 'Drafting brief',
+              description:
+                'Summarize what needs to be drafted or reviewed before the document can move forward.',
+            },
+            {
+              key: 'review_checklist',
+              label: 'Review checklist',
+              description:
+                'Explain the human review checklist that should be completed before the document advances.',
+            },
+            {
+              key: 'blocker_explanation',
+              label: 'Blocker explanation',
+              description:
+                'Translate current blockers or warnings into simple operator language and next steps.',
+            },
+          ],
+        },
+        toolAccess: [
+          {
+            tool: {
+              key: 'invoice_document_drafting',
+              title: 'Invoice document drafting',
+              summary:
+                'Prepares deterministic drafting, checklist, and review suggestions for invoicing document workflows.',
+              domainKey: 'invoicing',
+              availability: 'ready',
+              riskLevel: 'medium',
+              actionKind: 'draft',
+              requiresApproval: false,
+            },
+            accessLevel: 'approval_required',
+            rationale:
+              'Invoice drafting suggestions are available, but they should stay behind explicit operator review before influencing invoicing work.',
+          },
+        ],
+        contextBlocks: [
+          {
+            key: 'drafting_summary',
+            title: 'Drafting summary',
+            detail:
+              'El tenant ya puede apoyarse en sugerencias, aunque conviene revisar detalles antes de empujar documentos. Usa esta superficie para ordenar checklist, documentar riesgos y preparar mejor la revision humana.',
+            bullets: [
+              'Readiness status: needs_attention',
+              'Suggested focus: Conviene revisar vigencia del certificado antes de empujar mas documentos.',
+              'Outstanding amount in cents: 145000',
+              'Invoice count: 9',
+              'Customer count: 3',
+            ],
+          },
+          {
+            key: 'formal_checklist',
+            title: 'Formal checklist',
+            detail:
+              'These are the deterministic controls the assistant must explain before it suggests any drafting or review help.',
+            bullets: [
+              'Perfil fiscal: status=ready; Configurado para pruebas con RUC 1790012345001.',
+              'Material de firma: status=warning; Conviene revisar vigencia del certificado.',
+            ],
+          },
+          {
+            key: 'document_guidance',
+            title: 'Document guidance',
+            detail:
+              'This tells the assistant which Ecuador document lanes are more usable today and how they should be framed.',
+            bullets: [
+              'Factura: status=ready; use=Usalo para preparar facturas nuevas y revisar si el tenant ya tiene base suficiente para emitirlas sin improvisar.',
+              'Nota de credito: status=blocked; use=Usalo cuando haya que corregir o anular una factura previa con criterio documentado.',
+            ],
+          },
+          {
+            key: 'drafting_hints',
+            title: 'Drafting hints',
+            detail:
+              'These deterministic hints shape what kind of help the assistant may offer in suggestion mode.',
+            bullets: [
+              'Brief de preparacion: objective=Explicar que piezas conviene completar antes de redactar o revisar un comprobante.; caution=Toma la sugerencia como checklist guiado y no como validacion fiscal final.',
+            ],
+          },
+          {
+            key: 'safety_boundaries',
+            title: 'Safety boundaries',
+            detail:
+              'These actions stay blocked even if the assistant can already help with drafting or review guidance.',
+            bullets: [
+              'Firmar electronicamente el documento sin aprobacion humana.',
+            ],
+          },
+        ],
+      });
+
+    expect(getTenantInvoiceDocumentDraftingAssistUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
     );
   });

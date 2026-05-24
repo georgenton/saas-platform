@@ -11,7 +11,7 @@ describe('AI suggestion run use cases', () => {
     create: jest.fn(),
     findByTenantIdAndAgentKey: jest.fn(),
   };
-  const getTenantGrowthAssistAiSuggestionEnvelopeUseCase = {
+  const getTenantAiSuggestionEnvelopeUseCase = {
     execute: jest.fn(),
   };
 
@@ -68,9 +68,7 @@ describe('AI suggestion run use cases', () => {
         },
       ],
     };
-    getTenantGrowthAssistAiSuggestionEnvelopeUseCase.execute.mockResolvedValue(
-      envelope,
-    );
+    getTenantAiSuggestionEnvelopeUseCase.execute.mockResolvedValue(envelope);
     aiSuggestionRunRepository.create.mockImplementation(async (command) => ({
       id: 'ai-run-001',
       ...command,
@@ -105,7 +103,7 @@ describe('AI suggestion run use cases', () => {
     const useCase = new PrepareTenantAiSuggestionRunUseCase(
       tenantRepository as any,
       aiSuggestionRunRepository as any,
-      getTenantGrowthAssistAiSuggestionEnvelopeUseCase as any,
+      getTenantAiSuggestionEnvelopeUseCase as any,
     );
 
     const result = await useCase.execute({
@@ -115,7 +113,7 @@ describe('AI suggestion run use cases', () => {
       requestedByEmail: 'owner@saas-platform.dev',
     });
 
-    expect(getTenantGrowthAssistAiSuggestionEnvelopeUseCase.execute).toHaveBeenCalledWith(
+    expect(getTenantAiSuggestionEnvelopeUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'growth-assist-coach',
     );

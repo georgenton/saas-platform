@@ -82,6 +82,7 @@ export * from './lib/use-cases/get-tenant-customer-by-id.use-case';
 export * from './lib/use-cases/get-tenant-issuer-profile.use-case';
 export * from './lib/use-cases/get-tenant-invoice-detail.use-case';
 export * from './lib/use-cases/get-tenant-invoice-document.use-case';
+export * from './lib/use-cases/get-tenant-invoice-document-drafting-assist.use-case';
 export * from './lib/use-cases/get-tenant-invoice-electronic-xml-preview.use-case';
 export * from './lib/use-cases/get-tenant-invoicing-report-summary.use-case';
 export * from './lib/use-cases/get-tenant-invoice-by-id.use-case';

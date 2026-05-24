@@ -777,6 +777,11 @@ Build one transversal AI runtime for domain-specific assistants.
    - approval memory should be tenant-scoped, agent-scoped, and attached to concrete run history
    - that keeps the human review loop explicit before the platform starts unlocking higher-risk execution tools
 6. first agent for invoicing/tax tasks
+   - expose an AI-ready deterministic surface from invoicing first:
+     - `GET /api/invoicing/tenants/:slug/assist/document-drafting`
+   - then let `invoice-document-assistant` become the second `ready` agent in suggestion mode
+   - the agent should explain checklist gaps, drafting order, and blocked actions
+   - it must not sign, submit, authorize, or claim fiscal validity automatically
 7. first suggestion-mode agent for Growth Assist surfaces
 
 ### Suggested delivery discipline

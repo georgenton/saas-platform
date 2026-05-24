@@ -25,6 +25,7 @@ import {
   ElectronicSubmissionSettingsResponse,
   ElectronicSignatureSettingsResponse,
   InvoiceElectronicArtifactsResponse,
+  InvoiceDocumentDraftingAssistResponse,
   InvoiceNumberingSettingsResponse,
   InvoiceDetailResponse,
   InvoiceDocumentResponse,
@@ -783,6 +784,21 @@ export async function fetchInvoicingReportSummary(
 ): Promise<InvoicingReportSummaryResponse> {
   return request<InvoicingReportSummaryResponse>(
     `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/reports/summary`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchInvoiceDocumentDraftingAssist(
+  token: string,
+  tenantSlug: string,
+): Promise<InvoiceDocumentDraftingAssistResponse> {
+  return request<InvoiceDocumentDraftingAssistResponse>(
+    `/invoicing/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/assist/document-drafting`,
     {
       method: 'GET',
       token,

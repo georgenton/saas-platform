@@ -22,10 +22,10 @@ export const AI_AGENT_CATALOG: AiAgentCatalogEntry[] = [
     key: 'invoice-document-assistant',
     title: 'Invoice Document Assistant',
     summary:
-      'Will help draft, review, and explain invoicing document workflows once AI-ready invoicing surfaces are exposed.',
+      'Turns deterministic invoicing drafting and readiness signals into tenant-scoped document guidance without executing fiscal actions automatically.',
     domainKey: 'invoicing',
     productKey: 'invoicing',
-    availability: 'planned',
+    availability: 'ready',
     defaultMode: 'suggestion',
     supportedSurfaceKeys: ['invoice_document_drafting'],
   },
@@ -86,9 +86,9 @@ export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
     key: 'invoice_document_drafting',
     title: 'Invoice document drafting',
     summary:
-      'Will help prepare deterministic drafting and review suggestions for invoicing document workflows.',
+      'Prepares deterministic drafting, checklist, and review suggestions for invoicing document workflows.',
     domainKey: 'invoicing',
-    availability: 'planned',
+    availability: 'ready',
     riskLevel: 'medium',
     actionKind: 'draft',
     requiresApproval: false,
@@ -151,21 +151,24 @@ export const AI_PROMPT_REGISTRY: AiPromptRegistryEntry[] = [
   },
   {
     key: 'invoice-document-assistant-core',
-    version: 'planned-v1',
+    version: 'v1',
     agentKey: 'invoice-document-assistant',
     mode: 'suggestion',
     title: 'Invoice Document Assistant Core',
     summary:
-      'Planned prompt pack for document drafting, review, and checklist suggestions in Ecuador electronic invoicing.',
+      'Prompt pack for document drafting, review, and checklist suggestions in Ecuador electronic invoicing.',
     objective:
       'Help operators draft and review tax document workflows without replacing fiscal validation owned by the invoicing domain.',
     styleGuidance: [
       'Explain tax-document steps in concrete operator language.',
+      'Prefer checklist-driven wording over abstract tax jargon.',
       'Surface checklist gaps before proposing any draft output.',
     ],
     constraints: [
       'Do not treat prompt output as fiscal validation.',
       'Do not approve, sign, or submit tax documents automatically.',
+      'Use only the tenant-scoped invoicing drafting surface and its embedded readiness/report signals.',
+      'Keep the suggestion explicitly advisory and suitable for human review.',
     ],
     suggestedOutputs: [
       {
@@ -173,6 +176,18 @@ export const AI_PROMPT_REGISTRY: AiPromptRegistryEntry[] = [
         label: 'Drafting brief',
         description:
           'Summarize what needs to be drafted or reviewed before the document can move forward.',
+      },
+      {
+        key: 'review_checklist',
+        label: 'Review checklist',
+        description:
+          'Explain the human review checklist that should be completed before the document advances.',
+      },
+      {
+        key: 'blocker_explanation',
+        label: 'Blocker explanation',
+        description:
+          'Translate current blockers or warnings into simple operator language and next steps.',
       },
     ],
   },
@@ -238,7 +253,7 @@ export const AI_AGENT_TOOL_ACCESS: AiAgentToolAccessEntry[] = [
     toolKey: 'invoice_document_drafting',
     accessLevel: 'approval_required',
     rationale:
-      'Invoice drafting suggestions are planned, but they should stay behind explicit operator review before use.',
+      'Invoice drafting suggestions are available, but they should stay behind explicit operator review before influencing invoicing work.',
   },
   {
     agentKey: 'ecommerce-launch-assistant',

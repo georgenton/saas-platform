@@ -5,7 +5,9 @@ import {
   GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
+  GetTenantAiSuggestionEnvelopeUseCase,
   GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+  GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
   ListTenantAiApprovalRequestsUseCase,
   ListTenantAiSuggestionRunsUseCase,
   ListAiApprovalPoliciesUseCase,
@@ -17,9 +19,13 @@ import {
   ReviewTenantAiApprovalRequestUseCase,
 } from '@saas-platform/ai-application';
 import {
+  GetTenantInvoiceDocumentDraftingAssistUseCase,
+} from '@saas-platform/invoicing-application';
+import {
   AiPersistenceModule,
   GrowthPersistenceModule,
   IdentityPersistenceModule,
+  InvoicingPersistenceModule,
   TenancyPersistenceModule,
 } from '@saas-platform/infra-prisma';
 import {
@@ -29,6 +35,7 @@ import {
 } from '@saas-platform/tenancy-application';
 import { AuthModule } from '../auth/auth.module';
 import { GrowthModule } from '../growth/growth.module';
+import { InvoicingModule } from '../invoicing/invoicing.module';
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { AiController } from './ai.controller';
@@ -41,6 +48,8 @@ import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-a
     GrowthModule,
     GrowthPersistenceModule,
     IdentityPersistenceModule,
+    InvoicingModule,
+    InvoicingPersistenceModule,
     TenancyPersistenceModule,
   ],
   controllers: [AiController],
@@ -82,6 +91,29 @@ import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-a
         ),
     },
     {
+      provide: GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
+      inject: [GetTenantInvoiceDocumentDraftingAssistUseCase],
+      useFactory: (getTenantInvoiceDocumentDraftingAssistUseCase) =>
+        new GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase(
+          getTenantInvoiceDocumentDraftingAssistUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAiSuggestionEnvelopeUseCase,
+      inject: [
+        GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+        GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
+      ],
+      useFactory: (
+        getTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+        getTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
+      ) =>
+        new GetTenantAiSuggestionEnvelopeUseCase(
+          getTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+          getTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
+        ),
+    },
+    {
       provide: ListTenantAiApprovalRequestsUseCase,
       inject: [TENANT_REPOSITORY, AI_APPROVAL_REQUEST_REPOSITORY],
       useFactory: (tenantRepository, aiApprovalRequestRepository) =>
@@ -104,17 +136,17 @@ import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-a
       inject: [
         TENANT_REPOSITORY,
         AI_SUGGESTION_RUN_REPOSITORY,
-        GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+        GetTenantAiSuggestionEnvelopeUseCase,
       ],
       useFactory: (
         tenantRepository,
         aiSuggestionRunRepository,
-        getTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+        getTenantAiSuggestionEnvelopeUseCase,
       ) =>
         new PrepareTenantAiSuggestionRunUseCase(
           tenantRepository,
           aiSuggestionRunRepository,
-          getTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+          getTenantAiSuggestionEnvelopeUseCase,
         ),
     },
     {

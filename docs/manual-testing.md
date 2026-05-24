@@ -2030,6 +2030,27 @@ Consumer web inicial para este snapshot operativo:
             - sigue sin desbloquear ejecución automática
             - sigue sin mutar el dominio por sí solo
             - prepara la base para guarded execution futuro
+        - el corte siguiente ya abre el primer carril transversal fuera de Growth:
+          - `GET /api/invoicing/tenants/:slug/assist/document-drafting`
+            - expone una superficie determinística para `invoice-document-assistant`
+            - resume:
+              - `summary`
+              - `checklist`
+              - `documentGuidance`
+              - `reportSnapshot`
+              - `draftingHints`
+              - `safeActions`
+              - `blockedActions`
+          - además `invoice-document-assistant` ya pasa a `ready`
+            - `GET /api/ai/agents`
+            - `GET /api/ai/tenants/:slug/agents/invoice-document-assistant/suggestion-envelope`
+          - ese envelope ya trabaja sobre `invoicing.assist.document_drafting`
+            - ayuda a explicar drafting, checklist y bloqueos
+            - sigue en `suggestion mode`
+            - no firma
+            - no envía
+            - no autoriza
+            - no reemplaza validación tributaria
 - el consumer ya no depende solo de `localStorage` para esa memoria operativa; ahora lee y escribe:
   - `GET /api/growth/tenants/:slug/conversations/operational-cases`
     - acepta `status`

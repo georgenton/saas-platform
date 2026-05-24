@@ -41,6 +41,7 @@ import {
   fetchElectronicSignatureSettings,
   fetchInvitationForInvitee,
   fetchInvoiceDetail,
+  fetchInvoiceDocumentDraftingAssist,
   fetchInvoiceDocument,
   fetchInvoiceElectronicArtifacts,
   fetchInvoiceDocumentHtml,
@@ -108,6 +109,7 @@ import {
   GrowthOperationalCaseResponse,
   GrowthOperationalCaseRoutingReviewResponse,
   InvoiceElectronicArtifactsResponse,
+  InvoiceDocumentDraftingAssistResponse,
   InvoiceNumberingSettingsResponse,
   InvoiceDetailResponse,
   InvoiceDocumentResponse,
@@ -990,6 +992,18 @@ export function App() {
   >(null);
   const [invoicingReport, setInvoicingReport] =
     useState<InvoicingReportSummaryResponse | null>(null);
+  const [invoiceDocumentDraftingAssist, setInvoiceDocumentDraftingAssist] =
+    useState<InvoiceDocumentDraftingAssistResponse | null>(null);
+  const [invoiceAssistantAiEnvelope, setInvoiceAssistantAiEnvelope] =
+    useState<AiSuggestionEnvelopeResponse | null>(null);
+  const [invoiceAssistantAiToolAccess, setInvoiceAssistantAiToolAccess] =
+    useState<AiAgentToolAccessResponse[]>([]);
+  const [invoiceAssistantAiApprovalPolicies, setInvoiceAssistantAiApprovalPolicies] =
+    useState<AiApprovalPolicyResponse[]>([]);
+  const [invoiceAssistantAiApprovalRequests, setInvoiceAssistantAiApprovalRequests] =
+    useState<AiApprovalRequestResponse[]>([]);
+  const [invoiceAssistantAiSuggestionRuns, setInvoiceAssistantAiSuggestionRuns] =
+    useState<AiSuggestionRunResponse[]>([]);
   const [invoicingLoading, setInvoicingLoading] = useState(false);
   const [invoiceDetailLoading, setInvoiceDetailLoading] = useState(false);
   const [invoicingError, setInvoicingError] = useState<string | null>(null);
@@ -1273,6 +1287,9 @@ export function App() {
   );
   const canSendInvoiceNotifications = Boolean(
     currentTenancy?.permissionKeys.includes('invoicing.notifications.send'),
+  );
+  const canReadInvoicingReports = Boolean(
+    currentTenancy?.permissionKeys.includes('invoicing.reports.read'),
   );
   const canReadGrowthConversations = Boolean(
     currentTenancy?.permissionKeys.includes('growth.conversations.read'),
@@ -2664,6 +2681,27 @@ export function App() {
 
     return next;
   }, [growthAssistAiApprovalRequests]);
+  const activeInvoiceAiAgent = useMemo(
+    () => invoiceAssistantAiEnvelope?.agent ?? null,
+    [invoiceAssistantAiEnvelope],
+  );
+  const activeInvoiceAiToolAccess = useMemo(
+    () =>
+      invoiceAssistantAiEnvelope?.toolAccess ??
+      invoiceAssistantAiToolAccess,
+    [invoiceAssistantAiEnvelope, invoiceAssistantAiToolAccess],
+  );
+  const invoiceAiApprovalRequestsByRunId = useMemo(() => {
+    const next = new Map<string, AiApprovalRequestResponse[]>();
+
+    for (const entry of invoiceAssistantAiApprovalRequests) {
+      const current = next.get(entry.suggestionRunId) ?? [];
+      current.push(entry);
+      next.set(entry.suggestionRunId, current);
+    }
+
+    return next;
+  }, [invoiceAssistantAiApprovalRequests]);
 
   async function copyGrowthAssistReplySuggestion(
     key: string,
@@ -3059,6 +3097,12 @@ export function App() {
       setIssuerProfile(null);
       setInvoiceNumberingSettings(null);
       setInvoicingReport(null);
+      setInvoiceDocumentDraftingAssist(null);
+      setInvoiceAssistantAiEnvelope(null);
+      setInvoiceAssistantAiToolAccess([]);
+      setInvoiceAssistantAiApprovalPolicies([]);
+      setInvoiceAssistantAiApprovalRequests([]);
+      setInvoiceAssistantAiSuggestionRuns([]);
       setSelectedInvoiceId(null);
       setSelectedInvoiceDetail(null);
       setSelectedInvoiceDocument(null);
@@ -3083,6 +3127,12 @@ export function App() {
           nextInvoices,
           nextReport,
           nextSettings,
+          nextDraftingAssist,
+          nextAiApprovalPolicies,
+          nextAiApprovalRequests,
+          nextAiToolAccess,
+          nextAiSuggestionEnvelope,
+          nextAiSuggestionRuns,
         ] =
           await Promise.all([
           listCustomers(token, tenantSlug),
@@ -3090,6 +3140,30 @@ export function App() {
           listInvoices(token, tenantSlug),
           fetchInvoicingReportSummary(token, tenantSlug),
           loadOptionalInvoicingSettings(token, tenantSlug),
+          fetchInvoiceDocumentDraftingAssist(token, tenantSlug).catch(() => null),
+          fetchAiAgentApprovalPolicies(
+            token,
+            'invoice-document-assistant',
+          ).catch(() => []),
+          fetchTenantAiApprovalRequests(
+            token,
+            tenantSlug,
+            'invoice-document-assistant',
+          ).catch(() => []),
+          fetchAiAgentToolAccess(
+            token,
+            'invoice-document-assistant',
+          ).catch(() => []),
+          fetchTenantAiSuggestionEnvelope(
+            token,
+            tenantSlug,
+            'invoice-document-assistant',
+          ).catch(() => null),
+          fetchTenantAiSuggestionRuns(
+            token,
+            tenantSlug,
+            'invoice-document-assistant',
+          ).catch(() => []),
         ]);
 
         if (cancelled) {
@@ -3113,6 +3187,12 @@ export function App() {
           setIssuerProfile(nextSettings.issuerProfile);
           setInvoiceNumberingSettings(nextSettings.invoiceNumberingSettings);
           setInvoicingReport(nextReport);
+          setInvoiceDocumentDraftingAssist(nextDraftingAssist);
+          setInvoiceAssistantAiApprovalPolicies(nextAiApprovalPolicies);
+          setInvoiceAssistantAiApprovalRequests(nextAiApprovalRequests);
+          setInvoiceAssistantAiToolAccess(nextAiToolAccess);
+          setInvoiceAssistantAiEnvelope(nextAiSuggestionEnvelope);
+          setInvoiceAssistantAiSuggestionRuns(nextAiSuggestionRuns);
           setSelectedInvoiceId((currentSelection) =>
             nextInvoices.some((invoice) => invoice.id === currentSelection)
               ? currentSelection
@@ -3131,6 +3211,12 @@ export function App() {
         setIssuerProfile(null);
         setInvoiceNumberingSettings(null);
         setInvoicingReport(null);
+        setInvoiceDocumentDraftingAssist(null);
+        setInvoiceAssistantAiEnvelope(null);
+        setInvoiceAssistantAiToolAccess([]);
+        setInvoiceAssistantAiApprovalPolicies([]);
+        setInvoiceAssistantAiApprovalRequests([]);
+        setInvoiceAssistantAiSuggestionRuns([]);
         setInvoices([]);
         setSelectedInvoiceId(null);
         setSelectedInvoiceDetail(null);
@@ -3869,6 +3955,12 @@ export function App() {
         nextInvoices,
         nextReport,
         nextSettings,
+        nextDraftingAssist,
+        nextAiApprovalPolicies,
+        nextAiApprovalRequests,
+        nextAiToolAccess,
+        nextAiSuggestionEnvelope,
+        nextAiSuggestionRuns,
       ] =
         await Promise.all([
         listTaxRates(token, tenantSlug),
@@ -3876,6 +3968,29 @@ export function App() {
         listInvoices(token, tenantSlug),
         fetchInvoicingReportSummary(token, tenantSlug),
         loadOptionalInvoicingSettings(token, tenantSlug),
+        fetchInvoiceDocumentDraftingAssist(token, tenantSlug).catch(() => null),
+        fetchAiAgentApprovalPolicies(
+          token,
+          'invoice-document-assistant',
+        ).catch(() => []),
+        fetchTenantAiApprovalRequests(
+          token,
+          tenantSlug,
+          'invoice-document-assistant',
+        ).catch(() => []),
+        fetchAiAgentToolAccess(token, 'invoice-document-assistant').catch(
+          () => [],
+        ),
+        fetchTenantAiSuggestionEnvelope(
+          token,
+          tenantSlug,
+          'invoice-document-assistant',
+        ).catch(() => null),
+        fetchTenantAiSuggestionRuns(
+          token,
+          tenantSlug,
+          'invoice-document-assistant',
+        ).catch(() => []),
       ]);
 
       startTransition(() => {
@@ -3891,6 +4006,12 @@ export function App() {
         setIssuerProfile(nextSettings.issuerProfile);
         setInvoiceNumberingSettings(nextSettings.invoiceNumberingSettings);
         setInvoicingReport(nextReport);
+        setInvoiceDocumentDraftingAssist(nextDraftingAssist);
+        setInvoiceAssistantAiApprovalPolicies(nextAiApprovalPolicies);
+        setInvoiceAssistantAiApprovalRequests(nextAiApprovalRequests);
+        setInvoiceAssistantAiToolAccess(nextAiToolAccess);
+        setInvoiceAssistantAiEnvelope(nextAiSuggestionEnvelope);
+        setInvoiceAssistantAiSuggestionRuns(nextAiSuggestionRuns);
         const preferredInvoiceId = options?.selectInvoiceId;
         if (
           preferredInvoiceId &&
@@ -4521,6 +4642,142 @@ export function App() {
       );
     } finally {
       setGrowthActionLoading(null);
+    }
+  }
+
+  async function handlePrepareInvoiceAiSuggestionRun() {
+    if (!token || !currentTenancy || !canReadInvoicingReports) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setActionLoading('prepare-invoice-ai-suggestion-run');
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const record = await prepareTenantAiSuggestionRun(
+        token,
+        tenantSlug,
+        'invoice-document-assistant',
+      );
+
+      startTransition(() => {
+        setInvoiceAssistantAiSuggestionRuns((current) => [
+          record,
+          ...current.filter((entry) => entry.id !== record.id),
+        ]);
+      });
+
+      setInvoicingActionMessage(
+        `Handoff auditable preparado con ${record.promptPackKey}@${record.promptPackVersion}.`,
+      );
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo preparar el handoff auditable de AI para invoicing.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleRequestInvoiceAiSuggestionRunApproval(
+    suggestionRunId: string,
+  ) {
+    if (!token || !currentTenancy || !canReadInvoicingReports) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const actionKey = `request-invoice-ai-approval:${suggestionRunId}`;
+    setActionLoading(actionKey);
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const record = await requestTenantAiSuggestionRunApproval(
+        token,
+        tenantSlug,
+        'invoice-document-assistant',
+        suggestionRunId,
+        {
+          rationale:
+            'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
+        },
+      );
+
+      startTransition(() => {
+        setInvoiceAssistantAiApprovalRequests((current) => [
+          record,
+          ...current.filter((entry) => entry.id !== record.id),
+        ]);
+      });
+
+      setInvoicingActionMessage(
+        `Solicitud de aprobacion registrada bajo ${record.policyKey}.`,
+      );
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo pedir la aprobación del handoff de AI para invoicing.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleReviewInvoiceAiApprovalRequest(
+    requestId: string,
+    status: 'approved' | 'rejected',
+  ) {
+    if (!token || !currentTenancy || !canReadInvoicingReports) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const actionKey = `review-invoice-ai-approval:${requestId}`;
+    setActionLoading(actionKey);
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const record = await reviewTenantAiApprovalRequest(
+        token,
+        tenantSlug,
+        'invoice-document-assistant',
+        requestId,
+        {
+          status,
+          reviewNote:
+            status === 'approved'
+              ? 'Aprobado desde la consola transversal de AI para invoicing.'
+              : 'Rechazado desde la consola transversal de AI para invoicing.',
+        },
+      );
+
+      startTransition(() => {
+        setInvoiceAssistantAiApprovalRequests((current) => [
+          record,
+          ...current.filter((entry) => entry.id !== record.id),
+        ]);
+      });
+
+      setInvoicingActionMessage(
+        status === 'approved'
+          ? 'Solicitud de aprobación de invoicing marcada como aprobada.'
+          : 'Solicitud de aprobación de invoicing marcada como rechazada.',
+      );
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo revisar la aprobación del handoff de AI para invoicing.',
+      );
+    } finally {
+      setActionLoading(null);
     }
   }
 
@@ -10157,6 +10414,330 @@ export function App() {
                             </small>
                           </div>
                         ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
+              {invoiceDocumentDraftingAssist ? (
+                <div className={styles.twoColumn}>
+                  <div className={styles.detailCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Invoicing Assist</span>
+                        <h3>Surface determinística para drafting documental</h3>
+                      </div>
+                      <span
+                        className={`${styles.statusPill} ${operationalStatusTone(
+                          invoiceDocumentDraftingAssist.summary.tone,
+                        )}`}
+                      >
+                        {operationalStatusLabel(
+                          invoiceDocumentDraftingAssist.summary.tone,
+                        )}
+                      </span>
+                    </div>
+
+                    <p>{invoiceDocumentDraftingAssist.summary.headline}</p>
+                    <small>{invoiceDocumentDraftingAssist.summary.detail}</small>
+
+                    <div className={styles.invoiceKpiGrid}>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Readiness</span>
+                        <strong>
+                          {invoiceDocumentDraftingAssist.summary.readinessStatus}
+                        </strong>
+                        <small>Estado base del carril tributario</small>
+                      </div>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Outstanding</span>
+                        <strong>
+                          {formatMoney(
+                            invoiceDocumentDraftingAssist.reportSnapshot
+                              .outstandingTotalInCents,
+                            invoicePortfolioCurrency,
+                          )}
+                        </strong>
+                        <small>Saldo pendiente agregado del tenant</small>
+                      </div>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Invoices</span>
+                        <strong>
+                          {invoiceDocumentDraftingAssist.reportSnapshot.invoiceCount}
+                        </strong>
+                        <small>Base documental ya registrada</small>
+                      </div>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Customers</span>
+                        <strong>
+                          {invoiceDocumentDraftingAssist.reportSnapshot.customerCount}
+                        </strong>
+                        <small>Contexto comercial disponible</small>
+                      </div>
+                    </div>
+
+                    <div className={styles.stack}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Checklist</span>
+                          <h3>Controles formales que la IA debe respetar</h3>
+                        </div>
+                      </div>
+                      {invoiceDocumentDraftingAssist.checklist.map((entry) => (
+                        <div className={styles.invoiceItemCard} key={entry.key}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>{entry.label}</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                entry.status === 'blocked'
+                                  ? 'critical'
+                                  : entry.status === 'warning'
+                                    ? 'warning'
+                                    : 'healthy',
+                              )}`}
+                            >
+                              {entry.status}
+                            </span>
+                          </div>
+                          <small>{entry.detail}</small>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className={styles.detailCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>AI Capability Platform</span>
+                        <h3>Invoice Document Assistant</h3>
+                      </div>
+                      {activeInvoiceAiAgent ? (
+                        <span
+                          className={`${styles.statusPill} ${aiAgentAvailabilityTone(
+                            activeInvoiceAiAgent.availability,
+                          )}`}
+                        >
+                          {aiAgentAvailabilityLabel(activeInvoiceAiAgent.availability)}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {invoiceAssistantAiEnvelope ? (
+                      <div className={styles.stack}>
+                        <p className={styles.muted}>
+                          <strong>{invoiceAssistantAiEnvelope.agent.title}</strong>{' '}
+                          recibe este contrato determinístico y se mantiene en modo
+                          sugerencia. Ayuda a explicar, revisar y ordenar, pero no
+                          firma ni envía documentos.
+                        </p>
+                        <div className={styles.badgeRow}>
+                          <span className={styles.badge}>
+                            Surface {invoiceAssistantAiEnvelope.surface.key}
+                          </span>
+                          <span className={styles.badge}>
+                            Prompt pack {invoiceAssistantAiEnvelope.promptPack.key}
+                          </span>
+                          <span className={styles.badge}>
+                            Mode {invoiceAssistantAiEnvelope.mode}
+                          </span>
+                        </div>
+                        <p className={styles.muted}>
+                          <strong>
+                            {invoiceAssistantAiEnvelope.promptPack.objective}
+                          </strong>
+                        </p>
+
+                        <div className={styles.actionRow}>
+                          <button
+                            className={styles.primaryButton}
+                            disabled={
+                              !canReadInvoicingReports ||
+                              actionLoading === 'prepare-invoice-ai-suggestion-run'
+                            }
+                            onClick={() => void handlePrepareInvoiceAiSuggestionRun()}
+                            type="button"
+                          >
+                            {actionLoading === 'prepare-invoice-ai-suggestion-run'
+                              ? 'Preparando...'
+                              : 'Preparar handoff AI'}
+                          </button>
+                        </div>
+
+                        <div className={styles.stack}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Tool access</span>
+                              <h3>Herramientas permitidas y bloqueadas</h3>
+                            </div>
+                          </div>
+                          {activeInvoiceAiToolAccess.map((entry) => (
+                            <div className={styles.invoiceItemCard} key={entry.tool.key}>
+                              <div className={styles.invoiceCardHeader}>
+                                <strong>{entry.tool.title}</strong>
+                                <span className={styles.statusPill}>
+                                  {entry.accessLevel}
+                                </span>
+                              </div>
+                              <small>{entry.rationale}</small>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className={styles.stack}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Suggestion runs</span>
+                              <h3>Historial auditable reciente</h3>
+                            </div>
+                          </div>
+                          {invoiceAssistantAiSuggestionRuns.length === 0 ? (
+                            <div className={styles.emptyState}>
+                              <p>Todavia no hay handoffs auditables para este agente.</p>
+                            </div>
+                          ) : (
+                            invoiceAssistantAiSuggestionRuns.slice(0, 3).map((entry) => {
+                              const requests =
+                                invoiceAiApprovalRequestsByRunId.get(entry.id) ?? [];
+                              const hasPendingApproval = requests.some(
+                                (request) => request.status === 'pending',
+                              );
+
+                              return (
+                                <div className={styles.invoiceItemCard} key={entry.id}>
+                                  <div className={styles.invoiceCardHeader}>
+                                    <strong>{entry.promptPackKey}</strong>
+                                    <span className={styles.statusPill}>
+                                      {entry.status}
+                                    </span>
+                                  </div>
+                                  <small>{entry.summary}</small>
+                                  <small>
+                                    Outputs: {entry.suggestedOutputKeys.join(', ')}
+                                  </small>
+                                  <div className={styles.actionRow}>
+                                    <button
+                                      className={styles.secondaryButton}
+                                      disabled={
+                                        hasPendingApproval ||
+                                        actionLoading ===
+                                          `request-invoice-ai-approval:${entry.id}`
+                                      }
+                                      onClick={() =>
+                                        void handleRequestInvoiceAiSuggestionRunApproval(
+                                          entry.id,
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      {actionLoading ===
+                                      `request-invoice-ai-approval:${entry.id}`
+                                        ? 'Solicitando...'
+                                        : hasPendingApproval
+                                          ? 'Revision pendiente'
+                                          : 'Pedir revision'}
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        <div className={styles.stack}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Approval policy</span>
+                              <h3>Guardrails vigentes</h3>
+                            </div>
+                          </div>
+                          {invoiceAssistantAiApprovalPolicies.length === 0 ? (
+                            <div className={styles.emptyState}>
+                              <p>Este agente todavía no expone políticas de revisión.</p>
+                            </div>
+                          ) : (
+                            invoiceAssistantAiApprovalPolicies.map((entry) => (
+                              <div className={styles.invoiceItemCard} key={entry.policyKey}>
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>{entry.title}</strong>
+                                  <span className={styles.statusPill}>
+                                    {entry.scope}
+                                  </span>
+                                </div>
+                                <small>{entry.reviewGuidance}</small>
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        <div className={styles.stack}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Approval queue</span>
+                              <h3>Revisión humana obligatoria</h3>
+                            </div>
+                          </div>
+                          {invoiceAssistantAiApprovalRequests.length === 0 ? (
+                            <div className={styles.emptyState}>
+                              <p>No hay approvals registrados para este agente todavia.</p>
+                            </div>
+                          ) : (
+                            invoiceAssistantAiApprovalRequests.slice(0, 3).map((entry) => (
+                              <div className={styles.invoiceItemCard} key={entry.id}>
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>{entry.policyKey}</strong>
+                                  <span className={styles.statusPill}>
+                                    {entry.status}
+                                  </span>
+                                </div>
+                                <small>{entry.summary}</small>
+                                {entry.status === 'pending' ? (
+                                  <div className={styles.actionRow}>
+                                    <button
+                                      className={styles.secondaryButton}
+                                      disabled={
+                                        actionLoading ===
+                                        `review-invoice-ai-approval:${entry.id}`
+                                      }
+                                      onClick={() =>
+                                        void handleReviewInvoiceAiApprovalRequest(
+                                          entry.id,
+                                          'approved',
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      Aprobar
+                                    </button>
+                                    <button
+                                      className={styles.dangerButton}
+                                      disabled={
+                                        actionLoading ===
+                                        `review-invoice-ai-approval:${entry.id}`
+                                      }
+                                      onClick={() =>
+                                        void handleReviewInvoiceAiApprovalRequest(
+                                          entry.id,
+                                          'rejected',
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      Rechazar
+                                    </button>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={styles.emptyState}>
+                        <p>
+                          Cuando el envelope AI esté disponible, aquí veremos el
+                          handoff auditable del agente documental.
+                        </p>
                       </div>
                     )}
                   </div>

@@ -7,7 +7,7 @@ import {
   TenantRepository,
 } from '@saas-platform/tenancy-application';
 import { AiSuggestionRunRepository } from '../ports/ai-suggestion-run.repository';
-import { GetTenantGrowthAssistAiSuggestionEnvelopeUseCase } from './get-tenant-growth-assist-ai-suggestion-envelope.use-case';
+import { GetTenantAiSuggestionEnvelopeUseCase } from './get-tenant-ai-suggestion-envelope.use-case';
 
 export interface PrepareTenantAiSuggestionRunCommand {
   tenantSlug: string;
@@ -20,7 +20,7 @@ export class PrepareTenantAiSuggestionRunUseCase {
   constructor(
     private readonly tenantRepository: TenantRepository,
     private readonly aiSuggestionRunRepository: AiSuggestionRunRepository,
-    private readonly getTenantGrowthAssistAiSuggestionEnvelopeUseCase: GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
+    private readonly getTenantAiSuggestionEnvelopeUseCase: GetTenantAiSuggestionEnvelopeUseCase,
   ) {}
 
   async execute(
@@ -32,11 +32,10 @@ export class PrepareTenantAiSuggestionRunUseCase {
       throw new TenantNotFoundError(command.tenantSlug);
     }
 
-    const envelope =
-      await this.getTenantGrowthAssistAiSuggestionEnvelopeUseCase.execute(
-        command.tenantSlug,
-        command.agentKey,
-      );
+    const envelope = await this.getTenantAiSuggestionEnvelopeUseCase.execute(
+      command.tenantSlug,
+      command.agentKey,
+    );
 
     return this.aiSuggestionRunRepository.create({
       tenantId: tenant.id,

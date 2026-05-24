@@ -1282,6 +1282,95 @@ export interface AiApprovalRequestResponse {
   updatedAt: string;
 }
 
+export interface AiActionCenterResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    pendingApprovalRequests: number;
+    reviewableSuggestionRuns: number;
+    reviewedApprovalRequests: number;
+  };
+  featuredPendingApprovalRequest: AiApprovalRequestResponse | null;
+  featuredReviewableSuggestionRun: AiSuggestionRunResponse | null;
+  latestReviewedApprovalRequest: AiApprovalRequestResponse | null;
+}
+
+export interface AiApprovalWorkspaceAgentSummaryResponse {
+  agentKey: string;
+  title: string;
+  totalApprovalRequests: number;
+  pendingApprovalRequests: number;
+  approvedApprovalRequests: number;
+  rejectedApprovalRequests: number;
+  latestRequestedAt: string | null;
+  latestReviewedAt: string | null;
+}
+
+export interface AiApprovalWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalApprovalRequests: number;
+    pendingApprovalRequests: number;
+    approvedApprovalRequests: number;
+    rejectedApprovalRequests: number;
+  };
+  agentBreakdown: AiApprovalWorkspaceAgentSummaryResponse[];
+  oldestPendingApprovalRequest: AiApprovalRequestResponse | null;
+  latestReviewedApprovalRequest: AiApprovalRequestResponse | null;
+  recentApprovalRequests: AiApprovalRequestResponse[];
+}
+
+export interface AiOperationsSummaryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  actionCenter: AiActionCenterResponse;
+  handoffWorkspace: {
+    counts: {
+      totalSuggestionRuns: number;
+      reviewableSuggestionRuns: number;
+      pendingApprovalSuggestionRuns: number;
+      approvedSuggestionRuns: number;
+    };
+    agentBreakdown: AiHandoffWorkspaceAgentSummaryResponse[];
+    latestSuggestionRun: AiSuggestionRunResponse | null;
+  };
+  approvalWorkspace: {
+    counts: {
+      totalApprovalRequests: number;
+      pendingApprovalRequests: number;
+      approvedApprovalRequests: number;
+      rejectedApprovalRequests: number;
+    };
+    agentBreakdown: AiApprovalWorkspaceAgentSummaryResponse[];
+    oldestPendingApprovalRequest: AiApprovalRequestResponse | null;
+    latestReviewedApprovalRequest: AiApprovalRequestResponse | null;
+  };
+}
+
+export interface AiHandoffWorkspaceAgentSummaryResponse {
+  agentKey: string;
+  title: string;
+  totalSuggestionRuns: number;
+  reviewableSuggestionRuns: number;
+  pendingApprovalSuggestionRuns: number;
+  approvedSuggestionRuns: number;
+  latestGeneratedAt: string | null;
+}
+
+export interface AiHandoffWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalSuggestionRuns: number;
+    reviewableSuggestionRuns: number;
+    pendingApprovalSuggestionRuns: number;
+    approvedSuggestionRuns: number;
+  };
+  agentBreakdown: AiHandoffWorkspaceAgentSummaryResponse[];
+  recentSuggestionRuns: AiSuggestionRunResponse[];
+}
+
 export interface WhatsappOperationalAlertFrequencyResponse {
   alertKey: string;
   title: string;

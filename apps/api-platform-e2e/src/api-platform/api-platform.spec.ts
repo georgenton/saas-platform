@@ -43,6 +43,7 @@ import {
 import { FeatureFlag } from '@saas-platform/feature-flags-domain';
 import {
   GetTenantAiSuggestionRunDetailUseCase,
+  AiSuggestionRunNotFoundError,
   ListTenantAiApprovalRequestsUseCase,
   ListTenantAiSuggestionRunsUseCase,
   PrepareTenantAiSuggestionRunUseCase,
@@ -6556,6 +6557,557 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/ai/tenants/:slug/suggestion-runs should return the tenant-scoped transversal handoff workspace', async () => {
+    const invoiceSuggestionRun = {
+      ...growthAssistSuggestionRun,
+      id: 'ai-run-002',
+      agentKey: 'invoice-document-assistant',
+      surfaceKey: 'invoice_document_drafting_assist',
+      sourceContractKey: 'invoicing.assist.document_drafting',
+      promptPackKey: 'invoice-document-assistant-core',
+      summary:
+        'Invoice Document Assistant prepared a suggestion-mode handoff for invoice document drafting using prompt pack invoice-document-assistant-core@v1.',
+      suggestedOutputKeys: ['document_draft_brief', 'risk_checklist'],
+      approvalSummary: {
+        status: 'not_requested' as const,
+        totalRequests: 0,
+        latestRequestId: null,
+        latestPolicyKey: null,
+        latestRequestedAt: null,
+        latestReviewedAt: null,
+      },
+      envelope: {
+        ...growthAssistSuggestionRun.envelope,
+        agent: {
+          key: 'invoice-document-assistant',
+          title: 'Invoice Document Assistant',
+          summary:
+            'Explains and drafts deterministic invoice-document suggestions without mutating fiscal workflow.',
+          domainKey: 'invoicing',
+          productKey: 'electronic_invoicing_ec',
+          availability: 'ready' as const,
+          defaultMode: 'suggestion' as const,
+          supportedSurfaceKeys: ['invoice_document_drafting_assist'],
+        },
+        surface: {
+          key: 'invoice_document_drafting_assist',
+          title: 'Invoice document drafting assist',
+          sourceContractKey: 'invoicing.assist.document_drafting',
+          sourceGeneratedAt: '2026-05-20T10:36:00.000Z',
+        },
+        promptPack: {
+          key: 'invoice-document-assistant-core',
+          version: 'v1',
+          agentKey: 'invoice-document-assistant',
+          mode: 'suggestion' as const,
+          title: 'Invoice Document Assistant Core',
+          summary:
+            'Prompt pack for tenant-scoped invoice drafting suggestions that stay advisory.',
+          objective:
+            'Draft safe invoice-document suggestions without replacing deterministic compliance checks.',
+          styleGuidance: [
+            'Keep recommendations short and grounded in the document context.',
+          ],
+          constraints: [
+            'Stay in suggestion mode only.',
+          ],
+          suggestedOutputs: [
+            {
+              key: 'document_draft_brief',
+              label: 'Document draft brief',
+              description: 'Summarize the suggested drafting move.',
+            },
+          ],
+        },
+        toolAccess: [],
+        contextBlocks: [],
+      },
+      createdAt: new Date('2026-05-20T10:40:00.000Z'),
+    };
+
+    listTenantAiSuggestionRunsUseCase.execute.mockImplementation(
+      async (_tenantSlug: string, agentKey: string) => {
+        if (agentKey === 'invoice-document-assistant') {
+          return [invoiceSuggestionRun];
+        }
+
+        if (agentKey === 'growth-assist-coach') {
+          return [growthAssistSuggestionRun];
+        }
+
+        return [];
+      },
+    );
+
+    await request(httpServer)
+      .get('/api/ai/tenants/saas-platform/suggestion-runs?limit=5')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual([
+          expect.objectContaining({
+            id: 'ai-run-002',
+            agentKey: 'invoice-document-assistant',
+            promptPackKey: 'invoice-document-assistant-core',
+            summary:
+              'Invoice Document Assistant prepared a suggestion-mode handoff for invoice document drafting using prompt pack invoice-document-assistant-core@v1.',
+            approvalSummary: {
+              status: 'not_requested',
+              totalRequests: 0,
+              latestRequestId: null,
+              latestPolicyKey: null,
+              latestRequestedAt: null,
+              latestReviewedAt: null,
+            },
+          }),
+          expect.objectContaining({
+            id: 'ai-run-001',
+            agentKey: 'growth-assist-coach',
+            promptPackKey: 'growth-assist-coach-core',
+            approvalSummary: {
+              status: 'pending',
+              totalRequests: 1,
+              latestRequestId: 'ai-approval-001',
+              latestPolicyKey: 'growth-assist-suggestion-review',
+              latestRequestedAt: '2026-05-20T10:38:00.000Z',
+              latestReviewedAt: null,
+            },
+          }),
+        ]);
+      });
+
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'growth-assist-coach',
+      5,
+    );
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice-document-assistant',
+      5,
+    );
+  });
+
+  it('GET /api/ai/tenants/:slug/action-center should return the tenant-scoped transversal AI action center summary', async () => {
+    const invoiceSuggestionRun = {
+      ...growthAssistSuggestionRun,
+      id: 'ai-run-002',
+      agentKey: 'invoice-document-assistant',
+      surfaceKey: 'invoice_document_drafting_assist',
+      sourceContractKey: 'invoicing.assist.document_drafting',
+      promptPackKey: 'invoice-document-assistant-core',
+      summary:
+        'Invoice Document Assistant prepared a suggestion-mode handoff for invoice document drafting using prompt pack invoice-document-assistant-core@v1.',
+      suggestedOutputKeys: ['document_draft_brief', 'risk_checklist'],
+      approvalSummary: {
+        status: 'not_requested' as const,
+        totalRequests: 0,
+        latestRequestId: null,
+        latestPolicyKey: null,
+        latestRequestedAt: null,
+        latestReviewedAt: null,
+      },
+      envelope: {
+        ...growthAssistSuggestionRun.envelope,
+        agent: {
+          key: 'invoice-document-assistant',
+          title: 'Invoice Document Assistant',
+          summary:
+            'Explains and drafts deterministic invoice-document suggestions without mutating fiscal workflow.',
+          domainKey: 'invoicing',
+          productKey: 'electronic_invoicing_ec',
+          availability: 'ready' as const,
+          defaultMode: 'suggestion' as const,
+          supportedSurfaceKeys: ['invoice_document_drafting_assist'],
+        },
+        surface: {
+          key: 'invoice_document_drafting_assist',
+          title: 'Invoice document drafting assist',
+          sourceContractKey: 'invoicing.assist.document_drafting',
+          sourceGeneratedAt: '2026-05-20T10:36:00.000Z',
+        },
+        promptPack: {
+          key: 'invoice-document-assistant-core',
+          version: 'v1',
+          agentKey: 'invoice-document-assistant',
+          mode: 'suggestion' as const,
+          title: 'Invoice Document Assistant Core',
+          summary:
+            'Prompt pack for tenant-scoped invoice drafting suggestions that stay advisory.',
+          objective:
+            'Draft safe invoice-document suggestions without replacing deterministic compliance checks.',
+          styleGuidance: [
+            'Keep recommendations short and grounded in the document context.',
+          ],
+          constraints: ['Stay in suggestion mode only.'],
+          suggestedOutputs: [
+            {
+              key: 'document_draft_brief',
+              label: 'Document draft brief',
+              description: 'Summarize the suggested drafting move.',
+            },
+          ],
+        },
+        toolAccess: [],
+        contextBlocks: [],
+      },
+      createdAt: new Date('2026-05-20T10:40:00.000Z'),
+    };
+    const invoiceReviewedApprovalRequest = {
+      id: 'ai-approval-002',
+      tenantId: tenant.id,
+      tenantSlug: tenant.slug,
+      agentKey: 'invoice-document-assistant',
+      policyKey: 'invoice-document-assistant-suggestion-review',
+      scope: 'suggestion_review' as const,
+      suggestionRunId: 'ai-run-002',
+      requestedByUserId: user.id,
+      requestedByEmail: user.email,
+      rationale: 'Necesito revisión antes de usar esta sugerencia documental.',
+      summary:
+        'Invoice Document Assistant requested human review for suggestion handoff ai-run-002 under policy invoice-document-assistant-suggestion-review.',
+      status: 'approved' as const,
+      reviewedAt: new Date('2026-05-20T10:41:00.000Z'),
+      reviewedByUserId: user.id,
+      reviewedByEmail: user.email,
+      reviewNote: 'Se puede usar como guía.',
+      createdAt: new Date('2026-05-20T10:40:00.000Z'),
+      updatedAt: new Date('2026-05-20T10:41:00.000Z'),
+    };
+
+    listTenantAiApprovalRequestsUseCase.execute.mockImplementation(
+      async (_tenantSlug: string, agentKey: string) => {
+        if (agentKey === 'invoice-document-assistant') {
+          return [invoiceReviewedApprovalRequest];
+        }
+
+        if (agentKey === 'growth-assist-coach') {
+          return [growthAssistApprovalRequest];
+        }
+
+        return [];
+      },
+    );
+    listTenantAiSuggestionRunsUseCase.execute.mockImplementation(
+      async (_tenantSlug: string, agentKey: string) => {
+        if (agentKey === 'invoice-document-assistant') {
+          return [invoiceSuggestionRun];
+        }
+
+        if (agentKey === 'growth-assist-coach') {
+          return [growthAssistSuggestionRun];
+        }
+
+        return [];
+      },
+    );
+
+    await request(httpServer)
+      .get('/api/ai/tenants/saas-platform/action-center')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          tenantSlug: 'saas-platform',
+          generatedAt: expect.any(String),
+          counts: {
+            pendingApprovalRequests: 1,
+            reviewableSuggestionRuns: 1,
+            reviewedApprovalRequests: 1,
+          },
+          featuredPendingApprovalRequest: {
+            id: 'ai-approval-001',
+            tenantSlug: 'saas-platform',
+            agentKey: 'growth-assist-coach',
+            policyKey: 'growth-assist-suggestion-review',
+            scope: 'suggestion_review',
+            suggestionRunId: 'ai-run-001',
+            requestedByUserId: user.id,
+            requestedByEmail: user.email,
+            rationale: 'Quiero dejar trazable la revisión humana.',
+            summary:
+              'Growth Assist Coach requested human review for suggestion handoff ai-run-001 under policy growth-assist-suggestion-review.',
+            status: 'pending',
+            reviewedAt: null,
+            reviewedByUserId: null,
+            reviewedByEmail: null,
+            reviewNote: null,
+            createdAt: '2026-05-20T10:38:00.000Z',
+            updatedAt: '2026-05-20T10:38:00.000Z',
+          },
+          featuredReviewableSuggestionRun: expect.objectContaining({
+            id: 'ai-run-002',
+            agentKey: 'invoice-document-assistant',
+            promptPackKey: 'invoice-document-assistant-core',
+            approvalSummary: {
+              status: 'not_requested',
+              totalRequests: 0,
+              latestRequestId: null,
+              latestPolicyKey: null,
+              latestRequestedAt: null,
+              latestReviewedAt: null,
+            },
+          }),
+          latestReviewedApprovalRequest: {
+            id: 'ai-approval-002',
+            tenantSlug: 'saas-platform',
+            agentKey: 'invoice-document-assistant',
+            policyKey: 'invoice-document-assistant-suggestion-review',
+            scope: 'suggestion_review',
+            suggestionRunId: 'ai-run-002',
+            requestedByUserId: user.id,
+            requestedByEmail: user.email,
+            rationale: 'Necesito revisión antes de usar esta sugerencia documental.',
+            summary:
+              'Invoice Document Assistant requested human review for suggestion handoff ai-run-002 under policy invoice-document-assistant-suggestion-review.',
+            status: 'approved',
+            reviewedAt: '2026-05-20T10:41:00.000Z',
+            reviewedByUserId: user.id,
+            reviewedByEmail: user.email,
+            reviewNote: 'Se puede usar como guía.',
+            createdAt: '2026-05-20T10:40:00.000Z',
+            updatedAt: '2026-05-20T10:41:00.000Z',
+          },
+        });
+      });
+
+    expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'growth-assist-coach',
+      {
+        limit: null,
+        status: null,
+      },
+    );
+    expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice-document-assistant',
+      {
+        limit: null,
+        status: null,
+      },
+    );
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'growth-assist-coach',
+      null,
+    );
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice-document-assistant',
+      null,
+    );
+  });
+
+  it('GET /api/ai/tenants/:slug/handoff-workspace should return the tenant-scoped transversal AI handoff workspace summary', async () => {
+    const invoiceSuggestionRun = {
+      ...growthAssistSuggestionRun,
+      id: 'ai-run-002',
+      agentKey: 'invoice-document-assistant',
+      surfaceKey: 'invoice_document_drafting_assist',
+      sourceContractKey: 'invoicing.assist.document_drafting',
+      promptPackKey: 'invoice-document-assistant-core',
+      summary:
+        'Invoice Document Assistant prepared a suggestion-mode handoff for invoice document drafting using prompt pack invoice-document-assistant-core@v1.',
+      suggestedOutputKeys: ['document_draft_brief', 'risk_checklist'],
+      approvalSummary: {
+        status: 'not_requested' as const,
+        totalRequests: 0,
+        latestRequestId: null,
+        latestPolicyKey: null,
+        latestRequestedAt: null,
+        latestReviewedAt: null,
+      },
+      envelope: {
+        ...growthAssistSuggestionRun.envelope,
+        agent: {
+          key: 'invoice-document-assistant',
+          title: 'Invoice Document Assistant',
+          summary:
+            'Explains and drafts deterministic invoice-document suggestions without mutating fiscal workflow.',
+          domainKey: 'invoicing',
+          productKey: 'electronic_invoicing_ec',
+          availability: 'ready' as const,
+          defaultMode: 'suggestion' as const,
+          supportedSurfaceKeys: ['invoice_document_drafting_assist'],
+        },
+        surface: {
+          key: 'invoice_document_drafting_assist',
+          title: 'Invoice document drafting assist',
+          sourceContractKey: 'invoicing.assist.document_drafting',
+          sourceGeneratedAt: '2026-05-20T10:36:00.000Z',
+        },
+        promptPack: {
+          key: 'invoice-document-assistant-core',
+          version: 'v1',
+          agentKey: 'invoice-document-assistant',
+          mode: 'suggestion' as const,
+          title: 'Invoice Document Assistant Core',
+          summary:
+            'Prompt pack for tenant-scoped invoice drafting suggestions that stay advisory.',
+          objective:
+            'Draft safe invoice-document suggestions without replacing deterministic compliance checks.',
+          styleGuidance: [
+            'Keep recommendations short and grounded in the document context.',
+          ],
+          constraints: ['Stay in suggestion mode only.'],
+          suggestedOutputs: [
+            {
+              key: 'document_draft_brief',
+              label: 'Document draft brief',
+              description: 'Summarize the suggested drafting move.',
+            },
+          ],
+        },
+        toolAccess: [],
+        contextBlocks: [],
+      },
+      createdAt: new Date('2026-05-20T10:40:00.000Z'),
+    };
+
+    listTenantAiSuggestionRunsUseCase.execute.mockImplementation(
+      async (_tenantSlug: string, agentKey: string) => {
+        if (agentKey === 'invoice-document-assistant') {
+          return [invoiceSuggestionRun];
+        }
+
+        if (agentKey === 'growth-assist-coach') {
+          return [growthAssistSuggestionRun];
+        }
+
+        return [];
+      },
+    );
+
+    await request(httpServer)
+      .get('/api/ai/tenants/saas-platform/handoff-workspace')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          tenantSlug: 'saas-platform',
+          generatedAt: expect.any(String),
+          counts: {
+            totalSuggestionRuns: 2,
+            reviewableSuggestionRuns: 1,
+            pendingApprovalSuggestionRuns: 1,
+            approvedSuggestionRuns: 0,
+          },
+          agentBreakdown: [
+            {
+              agentKey: 'growth-assist-coach',
+              title: 'Growth Assist Coach',
+              totalSuggestionRuns: 1,
+              reviewableSuggestionRuns: 0,
+              pendingApprovalSuggestionRuns: 1,
+              approvedSuggestionRuns: 0,
+              latestGeneratedAt: '2026-05-20T10:36:00.000Z',
+            },
+            {
+              agentKey: 'invoice-document-assistant',
+              title: 'Invoice Document Assistant',
+              totalSuggestionRuns: 1,
+              reviewableSuggestionRuns: 1,
+              pendingApprovalSuggestionRuns: 0,
+              approvedSuggestionRuns: 0,
+              latestGeneratedAt: '2026-05-20T10:36:00.000Z',
+            },
+          ],
+          recentSuggestionRuns: [
+            expect.objectContaining({
+              id: 'ai-run-002',
+              agentKey: 'invoice-document-assistant',
+              promptPackKey: 'invoice-document-assistant-core',
+              approvalSummary: {
+                status: 'not_requested',
+                totalRequests: 0,
+                latestRequestId: null,
+                latestPolicyKey: null,
+                latestRequestedAt: null,
+                latestReviewedAt: null,
+              },
+            }),
+            expect.objectContaining({
+              id: 'ai-run-001',
+              agentKey: 'growth-assist-coach',
+              promptPackKey: 'growth-assist-coach-core',
+              approvalSummary: {
+                status: 'pending',
+                totalRequests: 1,
+                latestRequestId: 'ai-approval-001',
+                latestPolicyKey: 'growth-assist-suggestion-review',
+                latestRequestedAt: '2026-05-20T10:38:00.000Z',
+                latestReviewedAt: null,
+              },
+            }),
+          ],
+        });
+      });
+
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'growth-assist-coach',
+      null,
+    );
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice-document-assistant',
+      null,
+    );
+  });
+
+  it('GET /api/ai/tenants/:slug/suggestion-runs/:runId should return one transversal handoff detail for the tenant workspace', async () => {
+    getTenantAiSuggestionRunDetailUseCase.execute.mockImplementation(
+      async (_tenantSlug: string, agentKey: string, runId: string) => {
+        if (
+          agentKey === 'growth-assist-coach' &&
+          runId === 'ai-run-001'
+        ) {
+          return {
+            ...growthAssistSuggestionRun,
+            approvalRequests: [growthAssistApprovalRequest],
+          };
+        }
+
+        throw new AiSuggestionRunNotFoundError(runId);
+      },
+    );
+
+    await request(httpServer)
+      .get('/api/ai/tenants/saas-platform/suggestion-runs/ai-run-001')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            id: 'ai-run-001',
+            agentKey: 'growth-assist-coach',
+            approvalSummary: {
+              status: 'pending',
+              totalRequests: 1,
+              latestRequestId: 'ai-approval-001',
+              latestPolicyKey: 'growth-assist-suggestion-review',
+              latestRequestedAt: '2026-05-20T10:38:00.000Z',
+              latestReviewedAt: null,
+            },
+            approvalRequests: [
+              expect.objectContaining({
+                id: 'ai-approval-001',
+                suggestionRunId: 'ai-run-001',
+                status: 'pending',
+              }),
+            ],
+          }),
+        );
+      });
+
+    expect(getTenantAiSuggestionRunDetailUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'growth-assist-coach',
+      'ai-run-001',
+    );
+  });
+
   it('GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs/:runId should return one suggestion run detail with approval timeline', async () => {
     await request(httpServer)
       .get(
@@ -6631,6 +7183,505 @@ describe('API', () => {
         limit: 5,
         status: 'pending',
       },
+    );
+  });
+
+  it('GET /api/ai/tenants/:slug/approval-requests should return the tenant-scoped transversal approval workspace', async () => {
+    const invoiceApprovalRequest = {
+      id: 'ai-approval-002',
+      tenantId: tenant.id,
+      tenantSlug: tenant.slug,
+      agentKey: 'invoice-document-assistant',
+      policyKey: 'invoice-document-assistant-suggestion-review',
+      scope: 'suggestion_review' as const,
+      suggestionRunId: 'ai-run-002',
+      requestedByUserId: user.id,
+      requestedByEmail: user.email,
+      rationale: 'Necesito revisión antes de usar esta sugerencia documental.',
+      summary:
+        'Invoice Document Assistant requested human review for suggestion handoff ai-run-002 under policy invoice-document-assistant-suggestion-review.',
+      status: 'pending' as const,
+      reviewedAt: null,
+      reviewedByUserId: null,
+      reviewedByEmail: null,
+      reviewNote: null,
+      createdAt: new Date('2026-05-20T10:40:00.000Z'),
+      updatedAt: new Date('2026-05-20T10:40:00.000Z'),
+    };
+
+    listTenantAiApprovalRequestsUseCase.execute.mockImplementation(
+      async (_tenantSlug: string, agentKey: string) => {
+        if (agentKey === 'invoice-document-assistant') {
+          return [invoiceApprovalRequest];
+        }
+
+        if (agentKey === 'growth-assist-coach') {
+          return [growthAssistApprovalRequest];
+        }
+
+        return [];
+      },
+    );
+
+    await request(httpServer)
+      .get('/api/ai/tenants/saas-platform/approval-requests?limit=5&status=pending')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect([
+        {
+          id: 'ai-approval-002',
+          tenantSlug: 'saas-platform',
+          agentKey: 'invoice-document-assistant',
+          policyKey: 'invoice-document-assistant-suggestion-review',
+          scope: 'suggestion_review',
+          suggestionRunId: 'ai-run-002',
+          requestedByUserId: user.id,
+          requestedByEmail: user.email,
+          rationale: 'Necesito revisión antes de usar esta sugerencia documental.',
+          summary:
+            'Invoice Document Assistant requested human review for suggestion handoff ai-run-002 under policy invoice-document-assistant-suggestion-review.',
+          status: 'pending',
+          reviewedAt: null,
+          reviewedByUserId: null,
+          reviewedByEmail: null,
+          reviewNote: null,
+          createdAt: '2026-05-20T10:40:00.000Z',
+          updatedAt: '2026-05-20T10:40:00.000Z',
+        },
+        {
+          id: 'ai-approval-001',
+          tenantSlug: 'saas-platform',
+          agentKey: 'growth-assist-coach',
+          policyKey: 'growth-assist-suggestion-review',
+          scope: 'suggestion_review',
+          suggestionRunId: 'ai-run-001',
+          requestedByUserId: user.id,
+          requestedByEmail: user.email,
+          rationale: 'Quiero dejar trazable la revisión humana.',
+          summary:
+            'Growth Assist Coach requested human review for suggestion handoff ai-run-001 under policy growth-assist-suggestion-review.',
+          status: 'pending',
+          reviewedAt: null,
+          reviewedByUserId: null,
+          reviewedByEmail: null,
+          reviewNote: null,
+          createdAt: '2026-05-20T10:38:00.000Z',
+          updatedAt: '2026-05-20T10:38:00.000Z',
+        },
+      ]);
+
+    expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'growth-assist-coach',
+      {
+        limit: 5,
+        status: 'pending',
+      },
+    );
+    expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice-document-assistant',
+      {
+        limit: 5,
+        status: 'pending',
+      },
+    );
+  });
+
+  it('GET /api/ai/tenants/:slug/approval-workspace should return the tenant-scoped transversal approval workspace summary', async () => {
+    const invoicePendingApprovalRequest = {
+      id: 'ai-approval-002',
+      tenantId: tenant.id,
+      tenantSlug: tenant.slug,
+      agentKey: 'invoice-document-assistant',
+      policyKey: 'invoice-document-assistant-suggestion-review',
+      scope: 'suggestion_review' as const,
+      suggestionRunId: 'ai-run-002',
+      requestedByUserId: user.id,
+      requestedByEmail: user.email,
+      rationale: 'Necesito revisión antes de usar esta sugerencia documental.',
+      summary:
+        'Invoice Document Assistant requested human review for suggestion handoff ai-run-002 under policy invoice-document-assistant-suggestion-review.',
+      status: 'pending' as const,
+      reviewedAt: null,
+      reviewedByUserId: null,
+      reviewedByEmail: null,
+      reviewNote: null,
+      createdAt: new Date('2026-05-20T10:40:00.000Z'),
+      updatedAt: new Date('2026-05-20T10:40:00.000Z'),
+    };
+    const invoiceReviewedApprovalRequest = {
+      id: 'ai-approval-003',
+      tenantId: tenant.id,
+      tenantSlug: tenant.slug,
+      agentKey: 'invoice-document-assistant',
+      policyKey: 'invoice-document-assistant-suggestion-review',
+      scope: 'suggestion_review' as const,
+      suggestionRunId: 'ai-run-003',
+      requestedByUserId: user.id,
+      requestedByEmail: user.email,
+      rationale: 'Se revisó una segunda sugerencia documental.',
+      summary:
+        'Invoice Document Assistant requested human review for suggestion handoff ai-run-003 under policy invoice-document-assistant-suggestion-review.',
+      status: 'approved' as const,
+      reviewedAt: new Date('2026-05-20T10:41:00.000Z'),
+      reviewedByUserId: user.id,
+      reviewedByEmail: user.email,
+      reviewNote: 'Se puede usar como guía.',
+      createdAt: new Date('2026-05-20T10:39:00.000Z'),
+      updatedAt: new Date('2026-05-20T10:41:00.000Z'),
+    };
+
+    listTenantAiApprovalRequestsUseCase.execute.mockImplementation(
+      async (_tenantSlug: string, agentKey: string) => {
+        if (agentKey === 'invoice-document-assistant') {
+          return [invoicePendingApprovalRequest, invoiceReviewedApprovalRequest];
+        }
+
+        if (agentKey === 'growth-assist-coach') {
+          return [growthAssistApprovalRequest];
+        }
+
+        return [];
+      },
+    );
+
+    await request(httpServer)
+      .get('/api/ai/tenants/saas-platform/approval-workspace?limit=5&status=pending')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          tenantSlug: 'saas-platform',
+          generatedAt: expect.any(String),
+          counts: {
+            totalApprovalRequests: 3,
+            pendingApprovalRequests: 2,
+            approvedApprovalRequests: 1,
+            rejectedApprovalRequests: 0,
+          },
+          agentBreakdown: [
+            {
+              agentKey: 'growth-assist-coach',
+              title: 'Growth Assist Coach',
+              totalApprovalRequests: 1,
+              pendingApprovalRequests: 1,
+              approvedApprovalRequests: 0,
+              rejectedApprovalRequests: 0,
+              latestRequestedAt: '2026-05-20T10:38:00.000Z',
+              latestReviewedAt: null,
+            },
+            {
+              agentKey: 'invoice-document-assistant',
+              title: 'Invoice Document Assistant',
+              totalApprovalRequests: 2,
+              pendingApprovalRequests: 1,
+              approvedApprovalRequests: 1,
+              rejectedApprovalRequests: 0,
+              latestRequestedAt: '2026-05-20T10:40:00.000Z',
+              latestReviewedAt: '2026-05-20T10:41:00.000Z',
+            },
+          ],
+          oldestPendingApprovalRequest: {
+            id: 'ai-approval-001',
+            tenantSlug: 'saas-platform',
+            agentKey: 'growth-assist-coach',
+            policyKey: 'growth-assist-suggestion-review',
+            scope: 'suggestion_review',
+            suggestionRunId: 'ai-run-001',
+            requestedByUserId: user.id,
+            requestedByEmail: user.email,
+            rationale: 'Quiero dejar trazable la revisión humana.',
+            summary:
+              'Growth Assist Coach requested human review for suggestion handoff ai-run-001 under policy growth-assist-suggestion-review.',
+            status: 'pending',
+            reviewedAt: null,
+            reviewedByUserId: null,
+            reviewedByEmail: null,
+            reviewNote: null,
+            createdAt: '2026-05-20T10:38:00.000Z',
+            updatedAt: '2026-05-20T10:38:00.000Z',
+          },
+          latestReviewedApprovalRequest: {
+            id: 'ai-approval-003',
+            tenantSlug: 'saas-platform',
+            agentKey: 'invoice-document-assistant',
+            policyKey: 'invoice-document-assistant-suggestion-review',
+            scope: 'suggestion_review',
+            suggestionRunId: 'ai-run-003',
+            requestedByUserId: user.id,
+            requestedByEmail: user.email,
+            rationale: 'Se revisó una segunda sugerencia documental.',
+            summary:
+              'Invoice Document Assistant requested human review for suggestion handoff ai-run-003 under policy invoice-document-assistant-suggestion-review.',
+            status: 'approved',
+            reviewedAt: '2026-05-20T10:41:00.000Z',
+            reviewedByUserId: user.id,
+            reviewedByEmail: user.email,
+            reviewNote: 'Se puede usar como guía.',
+            createdAt: '2026-05-20T10:39:00.000Z',
+            updatedAt: '2026-05-20T10:41:00.000Z',
+          },
+          recentApprovalRequests: [
+            {
+              id: 'ai-approval-002',
+              tenantSlug: 'saas-platform',
+              agentKey: 'invoice-document-assistant',
+              policyKey: 'invoice-document-assistant-suggestion-review',
+              scope: 'suggestion_review',
+              suggestionRunId: 'ai-run-002',
+              requestedByUserId: user.id,
+              requestedByEmail: user.email,
+              rationale: 'Necesito revisión antes de usar esta sugerencia documental.',
+              summary:
+                'Invoice Document Assistant requested human review for suggestion handoff ai-run-002 under policy invoice-document-assistant-suggestion-review.',
+              status: 'pending',
+              reviewedAt: null,
+              reviewedByUserId: null,
+              reviewedByEmail: null,
+              reviewNote: null,
+              createdAt: '2026-05-20T10:40:00.000Z',
+              updatedAt: '2026-05-20T10:40:00.000Z',
+            },
+            {
+              id: 'ai-approval-001',
+              tenantSlug: 'saas-platform',
+              agentKey: 'growth-assist-coach',
+              policyKey: 'growth-assist-suggestion-review',
+              scope: 'suggestion_review',
+              suggestionRunId: 'ai-run-001',
+              requestedByUserId: user.id,
+              requestedByEmail: user.email,
+              rationale: 'Quiero dejar trazable la revisión humana.',
+              summary:
+                'Growth Assist Coach requested human review for suggestion handoff ai-run-001 under policy growth-assist-suggestion-review.',
+              status: 'pending',
+              reviewedAt: null,
+              reviewedByUserId: null,
+              reviewedByEmail: null,
+              reviewNote: null,
+              createdAt: '2026-05-20T10:38:00.000Z',
+              updatedAt: '2026-05-20T10:38:00.000Z',
+            },
+          ],
+        });
+      });
+
+    expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'growth-assist-coach',
+      {
+        limit: null,
+        status: null,
+      },
+    );
+    expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice-document-assistant',
+      {
+        limit: null,
+        status: null,
+      },
+    );
+  });
+
+  it('GET /api/ai/tenants/:slug/operations-summary should return the tenant-scoped transversal AI operations summary', async () => {
+    const invoiceSuggestionRun = {
+      ...growthAssistSuggestionRun,
+      id: 'ai-run-002',
+      agentKey: 'invoice-document-assistant',
+      surfaceKey: 'invoice_document_drafting_assist',
+      sourceContractKey: 'invoicing.assist.document_drafting',
+      promptPackKey: 'invoice-document-assistant-core',
+      summary:
+        'Invoice Document Assistant prepared a suggestion-mode handoff for invoice document drafting using prompt pack invoice-document-assistant-core@v1.',
+      suggestedOutputKeys: ['document_draft_brief', 'risk_checklist'],
+      approvalSummary: {
+        status: 'not_requested' as const,
+        totalRequests: 0,
+        latestRequestId: null,
+        latestPolicyKey: null,
+        latestRequestedAt: null,
+        latestReviewedAt: null,
+      },
+      createdAt: new Date('2026-05-20T10:40:00.000Z'),
+    };
+    const invoiceReviewedApprovalRequest = {
+      id: 'ai-approval-003',
+      tenantId: tenant.id,
+      tenantSlug: tenant.slug,
+      agentKey: 'invoice-document-assistant',
+      policyKey: 'invoice-document-assistant-suggestion-review',
+      scope: 'suggestion_review' as const,
+      suggestionRunId: 'ai-run-003',
+      requestedByUserId: user.id,
+      requestedByEmail: user.email,
+      rationale: 'Se revisó una segunda sugerencia documental.',
+      summary:
+        'Invoice Document Assistant requested human review for suggestion handoff ai-run-003 under policy invoice-document-assistant-suggestion-review.',
+      status: 'approved' as const,
+      reviewedAt: new Date('2026-05-20T10:41:00.000Z'),
+      reviewedByUserId: user.id,
+      reviewedByEmail: user.email,
+      reviewNote: 'Se puede usar como guía.',
+      createdAt: new Date('2026-05-20T10:39:00.000Z'),
+      updatedAt: new Date('2026-05-20T10:41:00.000Z'),
+    };
+
+    listTenantAiApprovalRequestsUseCase.execute.mockImplementation(
+      async (_tenantSlug: string, agentKey: string) => {
+        if (agentKey === 'invoice-document-assistant') {
+          return [invoiceReviewedApprovalRequest, growthAssistApprovalRequest];
+        }
+
+        if (agentKey === 'growth-assist-coach') {
+          return [growthAssistApprovalRequest];
+        }
+
+        return [];
+      },
+    );
+    listTenantAiSuggestionRunsUseCase.execute.mockImplementation(
+      async (_tenantSlug: string, agentKey: string) => {
+        if (agentKey === 'invoice-document-assistant') {
+          return [invoiceSuggestionRun];
+        }
+
+        if (agentKey === 'growth-assist-coach') {
+          return [growthAssistSuggestionRun];
+        }
+
+        return [];
+      },
+    );
+
+    await request(httpServer)
+      .get('/api/ai/tenants/saas-platform/operations-summary')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          tenantSlug: 'saas-platform',
+          generatedAt: expect.any(String),
+          actionCenter: {
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              pendingApprovalRequests: 2,
+              reviewableSuggestionRuns: 1,
+              reviewedApprovalRequests: 1,
+            },
+            featuredPendingApprovalRequest: expect.objectContaining({
+              id: 'ai-approval-001',
+              agentKey: 'growth-assist-coach',
+            }),
+            featuredReviewableSuggestionRun: expect.objectContaining({
+              id: 'ai-run-002',
+              agentKey: 'invoice-document-assistant',
+            }),
+            latestReviewedApprovalRequest: expect.objectContaining({
+              id: 'ai-approval-003',
+              status: 'approved',
+            }),
+          },
+          handoffWorkspace: {
+            counts: {
+              totalSuggestionRuns: 2,
+              reviewableSuggestionRuns: 1,
+              pendingApprovalSuggestionRuns: 1,
+              approvedSuggestionRuns: 0,
+            },
+            agentBreakdown: [
+              {
+                agentKey: 'growth-assist-coach',
+                title: 'Growth Assist Coach',
+                totalSuggestionRuns: 1,
+                reviewableSuggestionRuns: 0,
+                pendingApprovalSuggestionRuns: 1,
+                approvedSuggestionRuns: 0,
+                latestGeneratedAt: '2026-05-20T10:36:00.000Z',
+              },
+              {
+                agentKey: 'invoice-document-assistant',
+                title: 'Invoice Document Assistant',
+                totalSuggestionRuns: 1,
+                reviewableSuggestionRuns: 1,
+                pendingApprovalSuggestionRuns: 0,
+                approvedSuggestionRuns: 0,
+                latestGeneratedAt: '2026-05-20T10:36:00.000Z',
+              },
+            ],
+            latestSuggestionRun: expect.objectContaining({
+              id: 'ai-run-002',
+              agentKey: 'invoice-document-assistant',
+            }),
+          },
+          approvalWorkspace: {
+            counts: {
+              totalApprovalRequests: 3,
+              pendingApprovalRequests: 2,
+              approvedApprovalRequests: 1,
+              rejectedApprovalRequests: 0,
+            },
+            agentBreakdown: [
+              {
+                agentKey: 'growth-assist-coach',
+                title: 'Growth Assist Coach',
+                totalApprovalRequests: 1,
+                pendingApprovalRequests: 1,
+                approvedApprovalRequests: 0,
+                rejectedApprovalRequests: 0,
+                latestRequestedAt: '2026-05-20T10:38:00.000Z',
+                latestReviewedAt: null,
+              },
+              {
+                agentKey: 'invoice-document-assistant',
+                title: 'Invoice Document Assistant',
+                totalApprovalRequests: 2,
+                pendingApprovalRequests: 1,
+                approvedApprovalRequests: 1,
+                rejectedApprovalRequests: 0,
+                latestRequestedAt: '2026-05-20T10:39:00.000Z',
+                latestReviewedAt: '2026-05-20T10:41:00.000Z',
+              },
+            ],
+            oldestPendingApprovalRequest: expect.objectContaining({
+              id: 'ai-approval-001',
+              agentKey: 'growth-assist-coach',
+            }),
+            latestReviewedApprovalRequest: expect.objectContaining({
+              id: 'ai-approval-003',
+              agentKey: 'invoice-document-assistant',
+            }),
+          },
+        });
+      });
+
+    expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'growth-assist-coach',
+      {
+        limit: null,
+        status: null,
+      },
+    );
+    expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice-document-assistant',
+      {
+        limit: null,
+        status: null,
+      },
+    );
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'growth-assist-coach',
+      null,
+    );
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoice-document-assistant',
+      null,
     );
   });
 

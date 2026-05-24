@@ -1,9 +1,13 @@
 import {
+  AiActionCenterResponse,
+  AiApprovalWorkspaceResponse,
+  AiOperationsSummaryResponse,
   AiApprovalPolicyResponse,
   AiApprovalRequestResponse,
   AiApprovalRequestStatusFilter,
   AiAgentCatalogResponse,
   AiAgentToolAccessResponse,
+  AiHandoffWorkspaceResponse,
   AiPromptRegistryResponse,
   AiSuggestionEnvelopeResponse,
   AiSuggestionRunDetailResponse,
@@ -1289,6 +1293,80 @@ export async function fetchTenantAiSuggestionRuns(
   );
 }
 
+export async function fetchTenantAiActionCenter(
+  token: string,
+  tenantSlug: string,
+): Promise<AiActionCenterResponse> {
+  return request<AiActionCenterResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/action-center`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiOperationsSummary(
+  token: string,
+  tenantSlug: string,
+): Promise<AiOperationsSummaryResponse> {
+  return request<AiOperationsSummaryResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/operations-summary`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiHandoffWorkspace(
+  token: string,
+  tenantSlug: string,
+  limit = 10,
+): Promise<AiHandoffWorkspaceResponse> {
+  return request<AiHandoffWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/handoff-workspace?limit=${encodeURIComponent(String(limit))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiSuggestionWorkspace(
+  token: string,
+  tenantSlug: string,
+  limit = 10,
+): Promise<AiSuggestionRunResponse[]> {
+  return request<AiSuggestionRunResponse[]>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/suggestion-runs?limit=${encodeURIComponent(String(limit))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiSuggestionWorkspaceDetail(
+  token: string,
+  tenantSlug: string,
+  suggestionRunId: string,
+): Promise<AiSuggestionRunDetailResponse> {
+  return request<AiSuggestionRunDetailResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/suggestion-runs/${encodeURIComponent(suggestionRunId)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function fetchTenantAiSuggestionRunDetail(
   token: string,
   tenantSlug: string,
@@ -1328,6 +1406,58 @@ export async function fetchTenantAiApprovalRequests(
     `/ai/tenants/${encodeURIComponent(
       tenantSlug,
     )}/agents/${encodeURIComponent(agentKey)}/approval-requests?${searchParams.toString()}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiApprovalWorkspace(
+  token: string,
+  tenantSlug: string,
+  options?: {
+    limit?: number;
+    status?: AiApprovalRequestStatusFilter | null;
+  },
+): Promise<AiApprovalRequestResponse[]> {
+  const searchParams = new URLSearchParams();
+  searchParams.set('limit', String(options?.limit ?? 10));
+
+  if (options?.status && options.status !== 'all') {
+    searchParams.set('status', options.status);
+  }
+
+  return request<AiApprovalRequestResponse[]>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/approval-requests?${searchParams.toString()}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiApprovalWorkspaceSummary(
+  token: string,
+  tenantSlug: string,
+  options?: {
+    limit?: number;
+    status?: AiApprovalRequestStatusFilter | null;
+  },
+): Promise<AiApprovalWorkspaceResponse> {
+  const searchParams = new URLSearchParams();
+  searchParams.set('limit', String(options?.limit ?? 10));
+
+  if (options?.status && options.status !== 'all') {
+    searchParams.set('status', options.status);
+  }
+
+  return request<AiApprovalWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/approval-workspace?${searchParams.toString()}`,
     {
       method: 'GET',
       token,

@@ -5,10 +5,14 @@ import {
   fetchAiAgentCatalog,
   fetchAiApprovalPolicies,
   fetchAiAgentToolAccess,
+  fetchTenantAiOperationsSummary,
   fetchAiPromptRegistry,
+  fetchTenantAiHandoffWorkspace,
+  fetchTenantAiSuggestionWorkspaceDetail,
   fetchTenantAiSuggestionRunDetail,
   fetchAiToolRegistry,
   fetchTenantAiApprovalRequests,
+  fetchTenantAiApprovalWorkspaceSummary,
   fetchTenantAiSuggestionEnvelope,
   fetchTenantAiSuggestionRuns,
   acceptInvitation,
@@ -89,10 +93,13 @@ import {
 } from './api';
 import {
   AiApprovalPolicyResponse,
+  AiApprovalWorkspaceResponse,
   AiApprovalRequestResponse,
   AiApprovalRequestStatusFilter,
   AiAgentCatalogResponse,
   AiAgentToolAccessResponse,
+  AiHandoffWorkspaceResponse,
+  AiOperationsSummaryResponse,
   AiPromptRegistryResponse,
   AiSuggestionRunDetailResponse,
   AiSuggestionEnvelopeResponse,
@@ -484,6 +491,17 @@ function humanizeKey(value: string | null): string {
   return value.split('_').join(' ');
 }
 
+function fallbackAiAgentTitle(agentKey: string): string {
+  switch (agentKey) {
+    case 'growth-assist-coach':
+      return 'Growth Assist Coach';
+    case 'invoice-document-assistant':
+      return 'Invoice Document Assistant';
+    default:
+      return humanizeKey(agentKey);
+  }
+}
+
 function matchesAiApprovalRequestStatusFilter(
   approvalRequest: AiApprovalRequestResponse,
   filter: AiApprovalRequestStatusFilter,
@@ -556,6 +574,13 @@ function syncApprovalRequestsWithFilter(
   }
 
   return prependOrReplaceApprovalRequest(approvalRequests, nextApprovalRequest);
+}
+
+function prependOrReplaceSuggestionRun(
+  runs: AiSuggestionRunResponse[],
+  nextRun: AiSuggestionRunResponse,
+): AiSuggestionRunResponse[] {
+  return [nextRun, ...runs.filter((entry) => entry.id !== nextRun.id)];
 }
 
 function formatThresholdValue(
@@ -1118,6 +1143,30 @@ export function App() {
     useState<AiApprovalRequestResponse[]>([]);
   const [growthAiApprovalStatusFilter, setGrowthAiApprovalStatusFilter] =
     useState<AiApprovalRequestStatusFilter>('all');
+  const [tenantAiApprovalWorkspace, setTenantAiApprovalWorkspace] = useState<
+    AiApprovalRequestResponse[]
+  >([]);
+  const [tenantAiApprovalWorkspaceStatusFilter, setTenantAiApprovalWorkspaceStatusFilter] =
+    useState<AiApprovalRequestStatusFilter>('all');
+  const [tenantAiApprovalWorkspaceSummary, setTenantAiApprovalWorkspaceSummary] =
+    useState<AiApprovalWorkspaceResponse | null>(null);
+  const [tenantAiApprovalWorkspaceLoading, setTenantAiApprovalWorkspaceLoading] =
+    useState(false);
+  const [tenantAiOperationsSummary, setTenantAiOperationsSummary] =
+    useState<AiOperationsSummaryResponse | null>(null);
+  const [tenantAiOperationsSummaryLoading, setTenantAiOperationsSummaryLoading] =
+    useState(false);
+  const [tenantAiHandoffWorkspaceSummary, setTenantAiHandoffWorkspaceSummary] =
+    useState<AiHandoffWorkspaceResponse | null>(null);
+  const [tenantAiSuggestionWorkspace, setTenantAiSuggestionWorkspace] = useState<
+    AiSuggestionRunResponse[]
+  >([]);
+  const [tenantAiSuggestionWorkspaceAgentFilter, setTenantAiSuggestionWorkspaceAgentFilter] =
+    useState<'all' | 'growth-assist-coach' | 'invoice-document-assistant'>('all');
+  const [tenantAiSuggestionWorkspaceLoading, setTenantAiSuggestionWorkspaceLoading] =
+    useState(false);
+  const [selectedTenantAiSuggestionWorkspaceDetail, setSelectedTenantAiSuggestionWorkspaceDetail] =
+    useState<AiSuggestionRunDetailResponse | null>(null);
   const [growthAssistAiSuggestionRuns, setGrowthAssistAiSuggestionRuns] =
     useState<AiSuggestionRunResponse[]>([]);
   const [selectedGrowthAiSuggestionRunDetail, setSelectedGrowthAiSuggestionRunDetail] =
@@ -2722,6 +2771,15 @@ export function App() {
     [effectiveGrowthAssistWaitingCustomers],
   );
   const effectiveGrowthAssistChannelHealth = growthAssistAgenda?.channelHealth ?? null;
+  const aiAgentCatalogByKey = useMemo(() => {
+    const entries = [
+      ...aiAgentCatalog,
+      growthAssistAiEnvelope?.agent,
+      invoiceAssistantAiEnvelope?.agent,
+    ].filter((entry): entry is AiAgentCatalogResponse => entry !== null && entry !== undefined);
+
+    return new Map(entries.map((entry) => [entry.key, entry] as const));
+  }, [aiAgentCatalog, growthAssistAiEnvelope, invoiceAssistantAiEnvelope]);
   const activeGrowthAiAgent = useMemo(
     () =>
       growthAssistAiEnvelope?.agent ??
@@ -2765,6 +2823,88 @@ export function App() {
       invoiceAssistantAiToolAccess,
     [invoiceAssistantAiEnvelope, invoiceAssistantAiToolAccess],
   );
+  const visibleTenantAiSuggestionWorkspace = useMemo(() => {
+    return tenantAiSuggestionWorkspace.filter((entry) =>
+      tenantAiSuggestionWorkspaceAgentFilter === 'all'
+        ? true
+        : entry.agentKey === tenantAiSuggestionWorkspaceAgentFilter,
+    );
+  }, [tenantAiSuggestionWorkspace, tenantAiSuggestionWorkspaceAgentFilter]);
+  const tenantAiSuggestionWorkspaceAgentOptions = useMemo(() => {
+    const options = [
+      {
+        key: 'all' as const,
+        label: 'Todas',
+        count: tenantAiHandoffWorkspaceSummary?.counts.totalSuggestionRuns ?? 0,
+        visible:
+          (tenantAiHandoffWorkspaceSummary?.counts.totalSuggestionRuns ?? 0) > 0 ||
+          canReadGrowthConversations ||
+          canReadInvoicingReports,
+      },
+      {
+        key: 'growth-assist-coach' as const,
+        label: 'Growth',
+        count:
+          tenantAiHandoffWorkspaceSummary?.agentBreakdown.find(
+            (entry) => entry.agentKey === 'growth-assist-coach',
+          )?.totalSuggestionRuns ?? 0,
+        visible: canReadGrowthConversations,
+      },
+      {
+        key: 'invoice-document-assistant' as const,
+        label: 'Invoice',
+        count:
+          tenantAiHandoffWorkspaceSummary?.agentBreakdown.find(
+            (entry) => entry.agentKey === 'invoice-document-assistant',
+          )?.totalSuggestionRuns ?? 0,
+        visible: canReadInvoicingReports,
+      },
+    ];
+
+    return options.filter((entry) => entry.visible);
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    tenantAiHandoffWorkspaceSummary,
+  ]);
+  const tenantAiApprovalWorkspaceStatusOptions = useMemo(() => {
+    return [
+      {
+        key: 'all' as const,
+        label: 'Todas',
+        count:
+          tenantAiApprovalWorkspaceSummary?.counts.totalApprovalRequests ?? 0,
+      },
+      {
+        key: 'pending' as const,
+        label: 'Pending',
+        count:
+          tenantAiApprovalWorkspaceSummary?.counts.pendingApprovalRequests ?? 0,
+      },
+      {
+        key: 'approved' as const,
+        label: 'Approved',
+        count:
+          tenantAiApprovalWorkspaceSummary?.counts.approvedApprovalRequests ?? 0,
+      },
+      {
+        key: 'rejected' as const,
+        label: 'Rejected',
+        count:
+          tenantAiApprovalWorkspaceSummary?.counts.rejectedApprovalRequests ?? 0,
+      },
+    ];
+  }, [tenantAiApprovalWorkspaceSummary]);
+  const featuredTenantAiPendingApproval =
+    tenantAiOperationsSummary?.actionCenter.featuredPendingApprovalRequest ?? null;
+  const featuredTenantAiReviewableSuggestionRun =
+    tenantAiOperationsSummary?.actionCenter.featuredReviewableSuggestionRun ?? null;
+  const latestTenantAiReviewedApproval =
+    tenantAiOperationsSummary?.actionCenter.latestReviewedApprovalRequest ?? null;
+  const oldestTenantAiPendingWorkspaceApproval =
+    tenantAiApprovalWorkspaceSummary?.oldestPendingApprovalRequest ?? null;
+  const latestTenantAiReviewedWorkspaceApproval =
+    tenantAiApprovalWorkspaceSummary?.latestReviewedApprovalRequest ?? null;
 
   async function copyGrowthAssistReplySuggestion(
     key: string,
@@ -3699,6 +3839,213 @@ export function App() {
   }, [currentTenancy, growthAiApprovalStatusFilter, growthWorkspaceAvailable, token]);
 
   useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalWorkspaceSummary(null);
+      setTenantAiApprovalWorkspace([]);
+      setTenantAiApprovalWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiApprovalWorkspace() {
+      setTenantAiApprovalWorkspaceLoading(true);
+
+      try {
+        const summary = await fetchTenantAiApprovalWorkspaceSummary(
+          token,
+          tenantSlug,
+          {
+            status: tenantAiApprovalWorkspaceStatusFilter,
+          },
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiApprovalWorkspaceSummary(summary);
+          setTenantAiApprovalWorkspace(summary.recentApprovalRequests);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el workspace transversal de aprobaciones AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiApprovalWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiApprovalWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    tenantAiApprovalWorkspaceStatusFilter,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiOperationsSummary(null);
+      setTenantAiOperationsSummaryLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiOperationsSummary() {
+      setTenantAiOperationsSummaryLoading(true);
+
+      try {
+        const summary = await fetchTenantAiOperationsSummary(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiOperationsSummary(summary);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el operations summary transversal de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiOperationsSummaryLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiOperationsSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiHandoffWorkspaceSummary(null);
+      setTenantAiSuggestionWorkspace([]);
+      setTenantAiSuggestionWorkspaceLoading(false);
+      setSelectedTenantAiSuggestionWorkspaceDetail(null);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiSuggestionWorkspace() {
+      setTenantAiSuggestionWorkspaceLoading(true);
+
+      try {
+        const summary = await fetchTenantAiHandoffWorkspace(
+          token,
+          tenantSlug,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiHandoffWorkspaceSummary(summary);
+          setTenantAiSuggestionWorkspace(summary.recentSuggestionRuns);
+          setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
+            current &&
+            summary.recentSuggestionRuns.some((entry) => entry.id === current.id)
+              ? current
+              : null,
+          );
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el workspace transversal de handoffs AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiSuggestionWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiSuggestionWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
     if (!token || !currentTenancy || !selectedInvoiceId || !invoicingEnabled) {
       setSelectedInvoiceDetail(null);
       setSelectedInvoiceDocument(null);
@@ -4102,6 +4449,135 @@ export function App() {
     } finally {
       setSessionLoading(false);
     }
+  }
+
+  async function refreshTenantAiOperationsSummary() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiOperationsSummary(null);
+      setTenantAiOperationsSummaryLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiOperationsSummaryLoading(true);
+
+    try {
+      const summary = await fetchTenantAiOperationsSummary(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiOperationsSummary(summary);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el operations summary transversal de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiOperationsSummaryLoading(false);
+    }
+  }
+
+  async function refreshTenantAiApprovalWorkspaceSummary() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalWorkspaceSummary(null);
+      setTenantAiApprovalWorkspace([]);
+      setTenantAiApprovalWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiApprovalWorkspaceLoading(true);
+
+    try {
+      const summary = await fetchTenantAiApprovalWorkspaceSummary(
+        token,
+        tenantSlug,
+        {
+          status: tenantAiApprovalWorkspaceStatusFilter,
+        },
+      );
+
+      startTransition(() => {
+        setTenantAiApprovalWorkspaceSummary(summary);
+        setTenantAiApprovalWorkspace(summary.recentApprovalRequests);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el workspace transversal de aprobaciones AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiApprovalWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiHandoffWorkspaceSummary() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiHandoffWorkspaceSummary(null);
+      setTenantAiSuggestionWorkspace([]);
+      setTenantAiSuggestionWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiSuggestionWorkspaceLoading(true);
+
+    try {
+      const summary = await fetchTenantAiHandoffWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiHandoffWorkspaceSummary(summary);
+        setTenantAiSuggestionWorkspace(summary.recentSuggestionRuns);
+        setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
+          current && summary.recentSuggestionRuns.some((entry) => entry.id === current.id)
+            ? current
+            : null,
+        );
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el workspace transversal de handoffs AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiSuggestionWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiOperationsConsole() {
+    await refreshTenantAiOperationsSummary();
+    await refreshTenantAiApprovalWorkspaceSummary();
+    await refreshTenantAiHandoffWorkspaceSummary();
   }
 
   async function refreshInvoicingWorkspace(options?: {
@@ -4708,7 +5184,14 @@ export function App() {
           record,
           ...current.filter((entry) => entry.id !== record.id),
         ]);
+        setTenantAiSuggestionWorkspace((current) =>
+          prependOrReplaceSuggestionRun(current, record),
+        );
       });
+
+      await refreshTenantAiApprovalWorkspaceSummary();
+      await refreshTenantAiHandoffWorkspaceSummary();
+      await refreshTenantAiOperationsSummary();
 
       setGrowthActionMessage(
         `Handoff auditable preparado con ${record.promptPackKey}@${record.promptPackVersion}.`,
@@ -4755,8 +5238,37 @@ export function App() {
             growthAiApprovalStatusFilter,
           ),
         );
+        setTenantAiApprovalWorkspace((current) =>
+          syncApprovalRequestsWithFilter(
+            current,
+            record,
+            tenantAiApprovalWorkspaceStatusFilter,
+          ),
+        );
         setGrowthAssistAiSuggestionRuns((current) =>
           bumpSuggestionRunApprovalToPending(current, record),
+        );
+        setTenantAiSuggestionWorkspace((current) =>
+          bumpSuggestionRunApprovalToPending(current, record),
+        );
+        setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
+          current && current.id === record.suggestionRunId
+            ? {
+                ...current,
+                approvalSummary: {
+                  status: 'pending',
+                  totalRequests: current.approvalSummary.totalRequests + 1,
+                  latestRequestId: record.id,
+                  latestPolicyKey: record.policyKey,
+                  latestRequestedAt: record.createdAt,
+                  latestReviewedAt: record.reviewedAt,
+                },
+                approvalRequests: prependOrReplaceApprovalRequest(
+                  current.approvalRequests,
+                  record,
+                ),
+              }
+            : current,
         );
         setSelectedGrowthAiSuggestionRunDetail((current) =>
           current && current.id === record.suggestionRunId
@@ -4778,6 +5290,10 @@ export function App() {
             : current,
         );
       });
+
+      await refreshTenantAiApprovalWorkspaceSummary();
+      await refreshTenantAiHandoffWorkspaceSummary();
+      await refreshTenantAiOperationsSummary();
 
       setGrowthActionMessage(
         `Solicitud de aprobacion registrada bajo ${record.policyKey}.`,
@@ -4830,8 +5346,34 @@ export function App() {
             growthAiApprovalStatusFilter,
           ),
         );
+        setTenantAiApprovalWorkspace((current) =>
+          syncApprovalRequestsWithFilter(
+            current,
+            record,
+            tenantAiApprovalWorkspaceStatusFilter,
+          ),
+        );
         setGrowthAssistAiSuggestionRuns((current) =>
           applyReviewedApprovalToSuggestionRuns(current, record),
+        );
+        setTenantAiSuggestionWorkspace((current) =>
+          applyReviewedApprovalToSuggestionRuns(current, record),
+        );
+        setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
+          current && current.id === record.suggestionRunId
+            ? {
+                ...current,
+                approvalSummary: {
+                  ...current.approvalSummary,
+                  status: record.status,
+                  latestReviewedAt: record.reviewedAt,
+                },
+                approvalRequests: prependOrReplaceApprovalRequest(
+                  current.approvalRequests,
+                  record,
+                ),
+              }
+            : current,
         );
         setSelectedGrowthAiSuggestionRunDetail((current) =>
           current && current.id === record.suggestionRunId
@@ -4850,6 +5392,10 @@ export function App() {
             : current,
         );
       });
+
+      await refreshTenantAiApprovalWorkspaceSummary();
+      await refreshTenantAiHandoffWorkspaceSummary();
+      await refreshTenantAiOperationsSummary();
 
       setGrowthActionMessage(
         status === 'approved'
@@ -4889,7 +5435,14 @@ export function App() {
           record,
           ...current.filter((entry) => entry.id !== record.id),
         ]);
+        setTenantAiSuggestionWorkspace((current) =>
+          prependOrReplaceSuggestionRun(current, record),
+        );
       });
+
+      await refreshTenantAiApprovalWorkspaceSummary();
+      await refreshTenantAiHandoffWorkspaceSummary();
+      await refreshTenantAiOperationsSummary();
 
       setInvoicingActionMessage(
         `Handoff auditable preparado con ${record.promptPackKey}@${record.promptPackVersion}.`,
@@ -4938,8 +5491,37 @@ export function App() {
             invoiceAiApprovalStatusFilter,
           ),
         );
+        setTenantAiApprovalWorkspace((current) =>
+          syncApprovalRequestsWithFilter(
+            current,
+            record,
+            tenantAiApprovalWorkspaceStatusFilter,
+          ),
+        );
         setInvoiceAssistantAiSuggestionRuns((current) =>
           bumpSuggestionRunApprovalToPending(current, record),
+        );
+        setTenantAiSuggestionWorkspace((current) =>
+          bumpSuggestionRunApprovalToPending(current, record),
+        );
+        setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
+          current && current.id === record.suggestionRunId
+            ? {
+                ...current,
+                approvalSummary: {
+                  status: 'pending',
+                  totalRequests: current.approvalSummary.totalRequests + 1,
+                  latestRequestId: record.id,
+                  latestPolicyKey: record.policyKey,
+                  latestRequestedAt: record.createdAt,
+                  latestReviewedAt: record.reviewedAt,
+                },
+                approvalRequests: prependOrReplaceApprovalRequest(
+                  current.approvalRequests,
+                  record,
+                ),
+              }
+            : current,
         );
         setSelectedInvoiceAiSuggestionRunDetail((current) =>
           current && current.id === record.suggestionRunId
@@ -4961,6 +5543,9 @@ export function App() {
             : current,
         );
       });
+
+      await refreshTenantAiHandoffWorkspaceSummary();
+      await refreshTenantAiOperationsSummary();
 
       setInvoicingActionMessage(
         `Solicitud de aprobacion registrada bajo ${record.policyKey}.`,
@@ -5013,8 +5598,34 @@ export function App() {
             invoiceAiApprovalStatusFilter,
           ),
         );
+        setTenantAiApprovalWorkspace((current) =>
+          syncApprovalRequestsWithFilter(
+            current,
+            record,
+            tenantAiApprovalWorkspaceStatusFilter,
+          ),
+        );
         setInvoiceAssistantAiSuggestionRuns((current) =>
           applyReviewedApprovalToSuggestionRuns(current, record),
+        );
+        setTenantAiSuggestionWorkspace((current) =>
+          applyReviewedApprovalToSuggestionRuns(current, record),
+        );
+        setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
+          current && current.id === record.suggestionRunId
+            ? {
+                ...current,
+                approvalSummary: {
+                  ...current.approvalSummary,
+                  status: record.status,
+                  latestReviewedAt: record.reviewedAt,
+                },
+                approvalRequests: prependOrReplaceApprovalRequest(
+                  current.approvalRequests,
+                  record,
+                ),
+              }
+            : current,
         );
         setSelectedInvoiceAiSuggestionRunDetail((current) =>
           current && current.id === record.suggestionRunId
@@ -5033,6 +5644,9 @@ export function App() {
             : current,
         );
       });
+
+      await refreshTenantAiHandoffWorkspaceSummary();
+      await refreshTenantAiOperationsSummary();
 
       setInvoicingActionMessage(
         status === 'approved'
@@ -5114,6 +5728,72 @@ export function App() {
     } finally {
       setActionLoading(null);
     }
+  }
+
+  async function handleOpenTenantAiWorkspaceSuggestionRunDetail(
+    suggestionRunId: string,
+  ) {
+    if (!token || !currentTenancy) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const actionKey = `load-tenant-ai-run-detail:${suggestionRunId}`;
+    setGrowthActionMessage(null);
+    setInvoicingActionMessage(null);
+    setGrowthError(null);
+    setInvoicingError(null);
+    setGrowthActionLoading(actionKey);
+
+    try {
+      const detail = await fetchTenantAiSuggestionWorkspaceDetail(
+        token,
+        tenantSlug,
+        suggestionRunId,
+      );
+
+      startTransition(() => {
+        setSelectedTenantAiSuggestionWorkspaceDetail(detail);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el detalle transversal del handoff de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setGrowthActionLoading(null);
+    }
+  }
+
+  async function handleReviewTenantAiApprovalWorkspaceRequest(
+    agentKey: string,
+    requestId: string,
+    status: 'approved' | 'rejected',
+  ) {
+    if (agentKey === 'invoice-document-assistant') {
+      await handleReviewInvoiceAiApprovalRequest(requestId, status);
+      return;
+    }
+
+    await handleReviewAiApprovalRequest(requestId, status);
+  }
+
+  async function handleRequestTenantAiWorkspaceSuggestionRunApproval(
+    agentKey: string,
+    suggestionRunId: string,
+  ) {
+    if (agentKey === 'invoice-document-assistant') {
+      await handleRequestInvoiceAiSuggestionRunApproval(suggestionRunId);
+      return;
+    }
+
+    await handleRequestAiSuggestionRunApproval(suggestionRunId);
   }
 
   async function handleTokenSubmit(event: FormEvent<HTMLFormElement>) {
@@ -7412,6 +8092,652 @@ export function App() {
                             </button>
                           </div>
                           <div className={styles.stack}>
+                            <span className={styles.muted}>
+                              AI operations summary
+                            </span>
+                            <div className={styles.commercialMetricsGrid}>
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>
+                                  Approvals totales
+                                </span>
+                                <strong>
+                                  {tenantAiOperationsSummary?.approvalWorkspace
+                                    .counts.totalApprovalRequests ?? 0}
+                                </strong>
+                                <small>
+                                  Solicitudes humanas acumuladas en los agentes AI
+                                  disponibles.
+                                </small>
+                              </div>
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>
+                                  Handoffs totales
+                                </span>
+                                <strong>
+                                  {tenantAiOperationsSummary?.handoffWorkspace
+                                    .counts.totalSuggestionRuns ?? 0}
+                                </strong>
+                                <small>
+                                  Runs auditable preparados para Growth e
+                                  Invoicing.
+                                </small>
+                              </div>
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>
+                                  Pendientes de review
+                                </span>
+                                <strong>
+                                  {tenantAiOperationsSummary?.actionCenter.counts
+                                    .pendingApprovalRequests ?? 0}
+                                </strong>
+                                <small>
+                                  Aprobaciones humanas esperando una decision.
+                                </small>
+                              </div>
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>
+                                  Listos para escalar
+                                </span>
+                                <strong>
+                                  {tenantAiOperationsSummary?.actionCenter.counts
+                                    .reviewableSuggestionRuns ?? 0}
+                                </strong>
+                                <small>
+                                  Handoffs listos para pedir revision humana.
+                                </small>
+                              </div>
+                            </div>
+                            {tenantAiOperationsSummary?.approvalWorkspace
+                              .oldestPendingApprovalRequest ? (
+                              <div className={styles.assistCueCard}>
+                                <strong>Cola prioritaria</strong>
+                                <small>
+                                  {
+                                    tenantAiOperationsSummary.approvalWorkspace
+                                      .oldestPendingApprovalRequest.summary
+                                  }
+                                </small>
+                                <small>
+                                  Pendiente desde{' '}
+                                  {formatDate(
+                                    tenantAiOperationsSummary.approvalWorkspace
+                                      .oldestPendingApprovalRequest.createdAt,
+                                  )}
+                                </small>
+                              </div>
+                            ) : null}
+                            {tenantAiOperationsSummary?.handoffWorkspace
+                              .latestSuggestionRun ? (
+                              <div className={styles.assistCueCard}>
+                                <strong>Ultimo handoff generado</strong>
+                                <small>
+                                  {
+                                    tenantAiOperationsSummary.handoffWorkspace
+                                      .latestSuggestionRun.summary
+                                  }
+                                </small>
+                                <small>
+                                  Generado{' '}
+                                  {formatDate(
+                                    tenantAiOperationsSummary.handoffWorkspace
+                                      .latestSuggestionRun.createdAt,
+                                  )}{' '}
+                                  ·{' '}
+                                  {aiAgentCatalogByKey.get(
+                                    tenantAiOperationsSummary.handoffWorkspace
+                                      .latestSuggestionRun.agentKey,
+                                  )?.title ??
+                                    fallbackAiAgentTitle(
+                                      tenantAiOperationsSummary.handoffWorkspace
+                                        .latestSuggestionRun.agentKey,
+                                    )}
+                                </small>
+                              </div>
+                            ) : null}
+                            {tenantAiOperationsSummaryLoading &&
+                            !tenantAiOperationsSummary ? (
+                              <small className={styles.muted}>
+                                Cargando operations summary transversal...
+                              </small>
+                            ) : null}
+                          </div>
+                          <div className={styles.stack}>
+                            <span className={styles.muted}>
+                              AI action center
+                            </span>
+                            <div className={styles.commercialMetricsGrid}>
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>
+                                  Pendientes de review
+                                </span>
+                                <strong>
+                                  {tenantAiOperationsSummary?.actionCenter.counts
+                                    .pendingApprovalRequests ?? 0}
+                                </strong>
+                                <small>
+                                  Approvals humanas que todavía piden decisión.
+                                </small>
+                              </div>
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>
+                                  Listos para pedir review
+                                </span>
+                                <strong>
+                                  {tenantAiOperationsSummary?.actionCenter.counts
+                                    .reviewableSuggestionRuns ?? 0}
+                                </strong>
+                                <small>
+                                  Handoffs preparados que aún no escalan a
+                                  revisión humana.
+                                </small>
+                              </div>
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>
+                                  Decisiones recientes
+                                </span>
+                                <strong>
+                                  {tenantAiOperationsSummary?.actionCenter.counts
+                                    .reviewedApprovalRequests ?? 0}
+                                </strong>
+                                <small>
+                                  Reviews ya resueltas para cerrar el loop
+                                  operativo.
+                                </small>
+                              </div>
+                            </div>
+                            {featuredTenantAiPendingApproval ? (
+                              <div className={styles.assistCueCard}>
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>Atender ahora</strong>
+                                  <span
+                                    className={`${styles.statusPill} ${styles.statusWarning}`}
+                                  >
+                                    {
+                                      aiAgentCatalogByKey.get(
+                                        featuredTenantAiPendingApproval.agentKey,
+                                      )?.title ??
+                                        fallbackAiAgentTitle(
+                                          featuredTenantAiPendingApproval.agentKey,
+                                        )
+                                    }
+                                  </span>
+                                </div>
+                                <small>
+                                  {featuredTenantAiPendingApproval.summary}
+                                </small>
+                                <small>
+                                  Solicitada{' '}
+                                  {formatDate(
+                                    featuredTenantAiPendingApproval.createdAt,
+                                  )}
+                                </small>
+                                <div className={styles.inlineActions}>
+                                  <button
+                                    className={styles.ghostButton}
+                                    type="button"
+                                    onClick={() => {
+                                      void handleOpenTenantAiWorkspaceSuggestionRunDetail(
+                                        featuredTenantAiPendingApproval.suggestionRunId,
+                                      );
+                                    }}
+                                    disabled={
+                                      growthActionLoading ===
+                                      `load-tenant-ai-run-detail:${featuredTenantAiPendingApproval.suggestionRunId}`
+                                    }
+                                  >
+                                    {growthActionLoading ===
+                                    `load-tenant-ai-run-detail:${featuredTenantAiPendingApproval.suggestionRunId}`
+                                      ? 'Cargando detalle...'
+                                      : 'Abrir handoff'}
+                                  </button>
+                                  <button
+                                    className={styles.secondaryButton}
+                                    type="button"
+                                    onClick={() => {
+                                      void handleReviewTenantAiApprovalWorkspaceRequest(
+                                        featuredTenantAiPendingApproval.agentKey,
+                                        featuredTenantAiPendingApproval.id,
+                                        'approved',
+                                      );
+                                    }}
+                                    disabled={
+                                      (featuredTenantAiPendingApproval.agentKey ===
+                                      'invoice-document-assistant'
+                                        ? actionLoading
+                                        : growthActionLoading) ===
+                                      (featuredTenantAiPendingApproval.agentKey ===
+                                      'invoice-document-assistant'
+                                        ? `review-invoice-ai-approval:${featuredTenantAiPendingApproval.id}`
+                                        : `review-ai-approval:${featuredTenantAiPendingApproval.id}`)
+                                    }
+                                  >
+                                    Aprobar
+                                  </button>
+                                  <button
+                                    className={styles.ghostButton}
+                                    type="button"
+                                    onClick={() => {
+                                      void handleReviewTenantAiApprovalWorkspaceRequest(
+                                        featuredTenantAiPendingApproval.agentKey,
+                                        featuredTenantAiPendingApproval.id,
+                                        'rejected',
+                                      );
+                                    }}
+                                    disabled={
+                                      (featuredTenantAiPendingApproval.agentKey ===
+                                      'invoice-document-assistant'
+                                        ? actionLoading
+                                        : growthActionLoading) ===
+                                      (featuredTenantAiPendingApproval.agentKey ===
+                                      'invoice-document-assistant'
+                                        ? `review-invoice-ai-approval:${featuredTenantAiPendingApproval.id}`
+                                        : `review-ai-approval:${featuredTenantAiPendingApproval.id}`)
+                                    }
+                                  >
+                                    Rechazar
+                                  </button>
+                                </div>
+                              </div>
+                            ) : null}
+                            {featuredTenantAiReviewableSuggestionRun ? (
+                              <div className={styles.assistCueCard}>
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>Siguiente handoff para escalar</strong>
+                                  <span className={styles.statusPill}>
+                                    {
+                                      aiAgentCatalogByKey.get(
+                                        featuredTenantAiReviewableSuggestionRun.agentKey,
+                                      )?.title ??
+                                        fallbackAiAgentTitle(
+                                          featuredTenantAiReviewableSuggestionRun.agentKey,
+                                        )
+                                    }
+                                  </span>
+                                </div>
+                                <small>
+                                  {featuredTenantAiReviewableSuggestionRun.summary}
+                                </small>
+                                <small>
+                                  Estado actual:{' '}
+                                  {humanizeKey(
+                                    featuredTenantAiReviewableSuggestionRun
+                                      .approvalSummary.status,
+                                  )}
+                                </small>
+                                <div className={styles.inlineActions}>
+                                  <button
+                                    className={styles.ghostButton}
+                                    type="button"
+                                    onClick={() => {
+                                      void handleOpenTenantAiWorkspaceSuggestionRunDetail(
+                                        featuredTenantAiReviewableSuggestionRun.id,
+                                      );
+                                    }}
+                                    disabled={
+                                      growthActionLoading ===
+                                      `load-tenant-ai-run-detail:${featuredTenantAiReviewableSuggestionRun.id}`
+                                    }
+                                  >
+                                    {growthActionLoading ===
+                                    `load-tenant-ai-run-detail:${featuredTenantAiReviewableSuggestionRun.id}`
+                                      ? 'Cargando detalle...'
+                                      : 'Abrir handoff'}
+                                  </button>
+                                  <button
+                                    className={styles.secondaryButton}
+                                    type="button"
+                                    onClick={() => {
+                                      void handleRequestTenantAiWorkspaceSuggestionRunApproval(
+                                        featuredTenantAiReviewableSuggestionRun.agentKey,
+                                        featuredTenantAiReviewableSuggestionRun.id,
+                                      );
+                                    }}
+                                    disabled={
+                                      (featuredTenantAiReviewableSuggestionRun.agentKey ===
+                                      'invoice-document-assistant'
+                                        ? actionLoading
+                                        : growthActionLoading) ===
+                                      (featuredTenantAiReviewableSuggestionRun.agentKey ===
+                                      'invoice-document-assistant'
+                                        ? `request-invoice-ai-approval:${featuredTenantAiReviewableSuggestionRun.id}`
+                                        : `request-ai-approval:${featuredTenantAiReviewableSuggestionRun.id}`)
+                                    }
+                                  >
+                                    Pedir revisión humana
+                                  </button>
+                                </div>
+                              </div>
+                            ) : null}
+                            {latestTenantAiReviewedApproval ? (
+                              <div className={styles.assistCueCard}>
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>Última decisión registrada</strong>
+                                  <span
+                                    className={`${styles.statusPill} ${
+                                      latestTenantAiReviewedApproval.status ===
+                                      'approved'
+                                        ? styles.statusHealthy
+                                        : styles.statusCritical
+                                    }`}
+                                  >
+                                    {humanizeKey(
+                                      latestTenantAiReviewedApproval.status,
+                                    )}
+                                  </span>
+                                </div>
+                                <small>
+                                  {latestTenantAiReviewedApproval.summary}
+                                </small>
+                                <small>
+                                  Revisada{' '}
+                                  {formatDate(
+                                    latestTenantAiReviewedApproval.reviewedAt,
+                                  )}{' '}
+                                  por{' '}
+                                  {latestTenantAiReviewedApproval.reviewedByEmail ??
+                                    latestTenantAiReviewedApproval.reviewedByUserId ??
+                                    'sin reviewer'}
+                                </small>
+                              </div>
+                            ) : null}
+                            {tenantAiOperationsSummaryLoading &&
+                            !tenantAiOperationsSummary ? (
+                              <small className={styles.muted}>
+                                Cargando action center transversal...
+                              </small>
+                            ) : null}
+                          </div>
+                          <div className={styles.stack}>
+                            <span className={styles.muted}>
+                              Handoff workspace transversal
+                            </span>
+                            <div className={styles.commercialMetricsGrid}>
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>
+                                  Handoffs recientes
+                                </span>
+                                <strong>
+                                  {tenantAiHandoffWorkspaceSummary?.counts
+                                    .totalSuggestionRuns ?? 0}
+                                </strong>
+                                <small>
+                                  Runs sugeridos visibles en el workspace
+                                  transversal.
+                                </small>
+                              </div>
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>
+                                  Listos para escalar
+                                </span>
+                                <strong>
+                                  {tenantAiHandoffWorkspaceSummary?.counts
+                                    .reviewableSuggestionRuns ?? 0}
+                                </strong>
+                                <small>
+                                  Handoffs que todavia pueden pedir revision
+                                  humana.
+                                </small>
+                              </div>
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>
+                                  Pendientes de aprobacion
+                                </span>
+                                <strong>
+                                  {tenantAiHandoffWorkspaceSummary?.counts
+                                    .pendingApprovalSuggestionRuns ?? 0}
+                                </strong>
+                                <small>
+                                  Runs que ya fueron escalados y siguen esperando
+                                  decision.
+                                </small>
+                              </div>
+                            </div>
+                            <div className={styles.inlineActions}>
+                              {tenantAiSuggestionWorkspaceAgentOptions.map(
+                                ({ key, label, count }) => (
+                                  <button
+                                    key={key}
+                                    className={
+                                      tenantAiSuggestionWorkspaceAgentFilter === key
+                                        ? styles.secondaryButton
+                                        : styles.ghostButton
+                                    }
+                                    type="button"
+                                    onClick={() => {
+                                      setTenantAiSuggestionWorkspaceAgentFilter(key);
+                                    }}
+                                  >
+                                    {label} ({count})
+                                  </button>
+                                ),
+                              )}
+                            </div>
+                            {tenantAiHandoffWorkspaceSummary?.agentBreakdown.length ? (
+                              <div className={styles.assistChecklist}>
+                                {tenantAiHandoffWorkspaceSummary.agentBreakdown.map(
+                                  (entry) => (
+                                    <span
+                                      className={styles.badge}
+                                      key={entry.agentKey}
+                                    >
+                                      {entry.title}: {entry.totalSuggestionRuns}{' '}
+                                      total / {entry.reviewableSuggestionRuns}{' '}
+                                      listos /{' '}
+                                      {entry.pendingApprovalSuggestionRuns}{' '}
+                                      pendientes
+                                    </span>
+                                  ),
+                                )}
+                              </div>
+                            ) : null}
+                            {visibleTenantAiSuggestionWorkspace.length > 0 ? (
+                              visibleTenantAiSuggestionWorkspace
+                                .slice(0, 4)
+                                .map((entry) => {
+                                  const agentTitle =
+                                    aiAgentCatalogByKey.get(entry.agentKey)?.title ??
+                                    fallbackAiAgentTitle(entry.agentKey);
+                                  const isInvoiceAgent =
+                                    entry.agentKey === 'invoice-document-assistant';
+                                  const actionKey = isInvoiceAgent
+                                    ? `request-invoice-ai-approval:${entry.id}`
+                                    : `request-ai-approval:${entry.id}`;
+                                  const loadActionKey =
+                                    `load-tenant-ai-run-detail:${entry.id}`;
+                                  const canRequestHumanReview =
+                                    entry.approvalSummary.status ===
+                                      'not_requested' ||
+                                    entry.approvalSummary.status === 'rejected';
+
+                                  return (
+                                    <div
+                                      className={styles.assistCueCard}
+                                      key={entry.id}
+                                    >
+                                      <div className={styles.invoiceCardHeader}>
+                                        <strong>{entry.summary}</strong>
+                                        <span className={styles.statusPill}>
+                                          {agentTitle}
+                                        </span>
+                                      </div>
+                                      <small>
+                                        {formatDate(entry.createdAt)} ·{' '}
+                                        {entry.requestedByEmail ??
+                                          entry.requestedByUserId}
+                                      </small>
+                                      <div className={styles.assistChecklist}>
+                                        <span className={styles.badge}>
+                                          {entry.promptPackKey}@
+                                          {entry.promptPackVersion}
+                                        </span>
+                                        <span className={styles.badge}>
+                                          approval{' '}
+                                          {humanizeKey(
+                                            entry.approvalSummary.status,
+                                          )}
+                                        </span>
+                                        {entry.suggestedOutputKeys.map((outputKey) => (
+                                          <span
+                                            className={styles.badge}
+                                            key={`${entry.id}:${outputKey}`}
+                                          >
+                                            {outputKey}
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <div className={styles.inlineActions}>
+                                        <button
+                                          className={styles.ghostButton}
+                                          type="button"
+                                          onClick={() => {
+                                            void handleOpenTenantAiWorkspaceSuggestionRunDetail(
+                                              entry.id,
+                                            );
+                                          }}
+                                          disabled={
+                                            growthActionLoading === loadActionKey
+                                          }
+                                        >
+                                          {growthActionLoading === loadActionKey
+                                            ? 'Cargando detalle...'
+                                            : 'Ver detalle'}
+                                        </button>
+                                        {canRequestHumanReview ? (
+                                          <button
+                                            className={styles.secondaryButton}
+                                            type="button"
+                                            onClick={() => {
+                                              void handleRequestTenantAiWorkspaceSuggestionRunApproval(
+                                                entry.agentKey,
+                                                entry.id,
+                                              );
+                                            }}
+                                            disabled={
+                                              (isInvoiceAgent
+                                                ? actionLoading
+                                                : growthActionLoading) ===
+                                              actionKey
+                                            }
+                                          >
+                                            {(isInvoiceAgent
+                                              ? actionLoading
+                                              : growthActionLoading) === actionKey
+                                              ? 'Pidiendo aprobación...'
+                                              : 'Pedir revisión humana'}
+                                          </button>
+                                        ) : null}
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                            ) : tenantAiSuggestionWorkspaceLoading ? (
+                              <small className={styles.muted}>
+                                Cargando handoffs transversales...
+                              </small>
+                            ) : (
+                              <small className={styles.muted}>
+                                No hay handoffs visibles para este filtro.
+                              </small>
+                            )}
+                          </div>
+                          {selectedTenantAiSuggestionWorkspaceDetail ? (
+                            <div className={styles.stack}>
+                              <span className={styles.muted}>
+                                Detalle transversal del handoff seleccionado
+                              </span>
+                              <div className={styles.assistCueCard}>
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>
+                                    {
+                                      aiAgentCatalogByKey.get(
+                                        selectedTenantAiSuggestionWorkspaceDetail.agentKey,
+                                      )?.title ??
+                                        fallbackAiAgentTitle(
+                                          selectedTenantAiSuggestionWorkspaceDetail.agentKey,
+                                        )
+                                    }
+                                  </strong>
+                                  <span className={styles.statusPill}>
+                                    {humanizeKey(
+                                      selectedTenantAiSuggestionWorkspaceDetail
+                                        .approvalSummary.status,
+                                    )}
+                                  </span>
+                                </div>
+                                <small>
+                                  {selectedTenantAiSuggestionWorkspaceDetail.summary}
+                                </small>
+                                <small>
+                                  {selectedTenantAiSuggestionWorkspaceDetail.promptPackKey}@
+                                  {
+                                    selectedTenantAiSuggestionWorkspaceDetail
+                                      .promptPackVersion
+                                  }{' '}
+                                  · {formatDate(
+                                    selectedTenantAiSuggestionWorkspaceDetail.createdAt,
+                                  )}
+                                </small>
+                                <div className={styles.assistChecklist}>
+                                  {selectedTenantAiSuggestionWorkspaceDetail.suggestedOutputKeys.map(
+                                    (outputKey) => (
+                                      <span
+                                        className={styles.badge}
+                                        key={`tenant-selected:${outputKey}`}
+                                      >
+                                        {outputKey}
+                                      </span>
+                                    ),
+                                  )}
+                                </div>
+                                {selectedTenantAiSuggestionWorkspaceDetail.approvalRequests
+                                  .length === 0 ? (
+                                  <small className={styles.muted}>
+                                    Todavía no hay approval requests para este
+                                    handoff.
+                                  </small>
+                                ) : (
+                                  selectedTenantAiSuggestionWorkspaceDetail.approvalRequests.map(
+                                    (entry) => (
+                                      <div
+                                        className={styles.assistCueCard}
+                                        key={`tenant-selected:${entry.id}`}
+                                      >
+                                        <div className={styles.invoiceCardHeader}>
+                                          <strong>{entry.policyKey}</strong>
+                                          <span
+                                            className={`${styles.statusPill} ${
+                                              entry.status === 'approved'
+                                                ? styles.statusHealthy
+                                                : entry.status === 'rejected'
+                                                  ? styles.statusCritical
+                                                  : styles.statusWarning
+                                            }`}
+                                          >
+                                            {humanizeKey(entry.status)}
+                                          </span>
+                                        </div>
+                                        <small>
+                                          Solicitada {formatDate(entry.createdAt)}
+                                          {entry.reviewedAt
+                                            ? ` · revisada ${formatDate(
+                                                entry.reviewedAt,
+                                              )}`
+                                            : ''}
+                                        </small>
+                                        {entry.rationale ? (
+                                          <small>{entry.rationale}</small>
+                                        ) : null}
+                                        {entry.reviewNote ? (
+                                          <small>{entry.reviewNote}</small>
+                                        ) : null}
+                                      </div>
+                                    ),
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          ) : null}
+                          <div className={styles.stack}>
                             {growthAssistAiEnvelope.contextBlocks
                               .slice(0, 3)
                               .map((block) => (
@@ -7621,175 +8947,327 @@ export function App() {
                               </div>
                             </div>
                           ) : null}
-                          {growthAssistAiApprovalRequests.length > 0 ? (
+                          {tenantAiApprovalWorkspace.length > 0 ? (
                             <div className={styles.stack}>
                               <span className={styles.muted}>
-                                Cola de aprobaciones reciente
+                                Approval workspace transversal
                               </span>
+                              <div className={styles.commercialMetricsGrid}>
+                                <div className={styles.commercialCard}>
+                                  <span className={styles.muted}>
+                                    Solicitudes totales
+                                  </span>
+                                  <strong>
+                                    {tenantAiApprovalWorkspaceSummary?.counts
+                                      .totalApprovalRequests ?? 0}
+                                  </strong>
+                                  <small>
+                                    Approval requests visibles para el tenant en
+                                    todos los agentes AI habilitados.
+                                  </small>
+                                </div>
+                                <div className={styles.commercialCard}>
+                                  <span className={styles.muted}>
+                                    Pendientes
+                                  </span>
+                                  <strong>
+                                    {tenantAiApprovalWorkspaceSummary?.counts
+                                      .pendingApprovalRequests ?? 0}
+                                  </strong>
+                                  <small>
+                                    Revisiones humanas que todavia necesitan una
+                                    decision.
+                                  </small>
+                                </div>
+                                <div className={styles.commercialCard}>
+                                  <span className={styles.muted}>
+                                    Decisiones cerradas
+                                  </span>
+                                  <strong>
+                                    {(tenantAiApprovalWorkspaceSummary?.counts
+                                      .approvedApprovalRequests ?? 0) +
+                                      (tenantAiApprovalWorkspaceSummary?.counts
+                                        .rejectedApprovalRequests ?? 0)}
+                                  </strong>
+                                  <small>
+                                    Approvals ya resueltas para cerrar el loop
+                                    operativo.
+                                  </small>
+                                </div>
+                              </div>
+                              {oldestTenantAiPendingWorkspaceApproval ? (
+                                <div className={styles.assistCueCard}>
+                                  <strong>SLA sugerido: atender pendiente mas antiguo</strong>
+                                  <small>
+                                    {
+                                      oldestTenantAiPendingWorkspaceApproval.summary
+                                    }
+                                  </small>
+                                  <small>
+                                    Solicitada{' '}
+                                    {formatDate(
+                                      oldestTenantAiPendingWorkspaceApproval.createdAt,
+                                    )}{' '}
+                                    por{' '}
+                                    {oldestTenantAiPendingWorkspaceApproval.requestedByEmail ??
+                                      oldestTenantAiPendingWorkspaceApproval.requestedByUserId}
+                                  </small>
+                                </div>
+                              ) : null}
+                              {latestTenantAiReviewedWorkspaceApproval ? (
+                                <div className={styles.assistCueCard}>
+                                  <strong>Ultima decision registrada</strong>
+                                  <small>
+                                    {
+                                      latestTenantAiReviewedWorkspaceApproval.summary
+                                    }
+                                  </small>
+                                  <small>
+                                    Revisada{' '}
+                                    {formatDate(
+                                      latestTenantAiReviewedWorkspaceApproval.reviewedAt,
+                                    )}{' '}
+                                    por{' '}
+                                    {latestTenantAiReviewedWorkspaceApproval.reviewedByEmail ??
+                                      latestTenantAiReviewedWorkspaceApproval.reviewedByUserId ??
+                                      'sin reviewer'}
+                                  </small>
+                                </div>
+                              ) : null}
                               <div className={styles.inlineActions}>
-                                {(
-                                  [
-                                    'all',
-                                    'pending',
-                                    'approved',
-                                    'rejected',
-                                  ] as const
-                                ).map((filter) => (
+                                {tenantAiApprovalWorkspaceStatusOptions.map(
+                                  ({ key, label, count }) => (
                                   <button
-                                    key={filter}
+                                    key={key}
                                     className={
-                                      growthAiApprovalStatusFilter === filter
+                                      tenantAiApprovalWorkspaceStatusFilter === key
                                         ? styles.secondaryButton
                                         : styles.ghostButton
                                     }
                                     type="button"
                                     onClick={() => {
-                                      setGrowthAiApprovalStatusFilter(filter);
+                                      setTenantAiApprovalWorkspaceStatusFilter(key);
                                     }}
                                   >
-                                    {filter === 'all'
-                                      ? 'Todas'
-                                      : humanizeKey(filter)}
+                                    {key === 'all' ? label : humanizeKey(key)} ({count})
                                   </button>
-                                ))}
+                                  ),
+                                )}
                               </div>
-                              {growthAssistAiApprovalRequests
-                                .slice(0, 3)
-                                .map((entry) => (
-                                  <div
-                                    className={styles.assistCueCard}
-                                    key={entry.id}
-                                  >
-                                    <div className={styles.invoiceCardHeader}>
-                                      <strong>{entry.summary}</strong>
+                              {tenantAiApprovalWorkspaceSummary?.agentBreakdown.length ? (
+                                <div className={styles.assistChecklist}>
+                                  {tenantAiApprovalWorkspaceSummary.agentBreakdown.map(
+                                    (entry) => (
                                       <span
-                                        className={`${styles.statusPill} ${
-                                          entry.status === 'approved'
-                                            ? styles.statusHealthy
-                                            : entry.status === 'rejected'
-                                              ? styles.statusCritical
-                                              : styles.statusWarning
-                                        }`}
+                                        className={styles.badge}
+                                        key={`approval-workspace:${entry.agentKey}`}
                                       >
-                                        {humanizeKey(entry.status)}
+                                        {entry.title}: {entry.pendingApprovalRequests}{' '}
+                                        pending / {entry.approvedApprovalRequests}{' '}
+                                        approved / {entry.rejectedApprovalRequests}{' '}
+                                        rejected
                                       </span>
-                                    </div>
-                                    <small>
-                                      {formatDate(entry.createdAt)} ·{' '}
-                                      {entry.requestedByEmail ??
-                                        entry.requestedByUserId}
-                                    </small>
-                                    {entry.rationale ? (
-                                      <small>{entry.rationale}</small>
-                                    ) : null}
-                                    <div className={styles.inlineActions}>
-                                      <button
-                                        className={styles.ghostButton}
-                                        type="button"
-                                        onClick={() => {
-                                          void handleOpenGrowthAiSuggestionRunDetail(
-                                            entry.suggestionRunId,
-                                          );
-                                        }}
-                                        disabled={
-                                          growthActionLoading ===
-                                          `load-ai-run-detail:${entry.suggestionRunId}`
-                                        }
-                                      >
-                                        {growthActionLoading ===
-                                        `load-ai-run-detail:${entry.suggestionRunId}`
-                                          ? 'Cargando handoff...'
-                                          : 'Ver handoff'}
-                                      </button>
-                                    </div>
-                                    {entry.status === 'pending' ? (
-                                      <div className={styles.inlineActions}>
-                                        <button
-                                          className={styles.secondaryButton}
-                                          type="button"
-                                          onClick={() => {
-                                            void handleReviewAiApprovalRequest(
-                                              entry.id,
-                                              'approved',
-                                            );
-                                          }}
-                                          disabled={
-                                            growthActionLoading ===
-                                            `review-ai-approval:${entry.id}`
-                                          }
+                                    ),
+                                  )}
+                                </div>
+                              ) : null}
+                              {tenantAiApprovalWorkspace
+                                .slice(0, 3)
+                                .map((entry) => {
+                                  const isInvoiceAgent =
+                                    entry.agentKey === 'invoice-document-assistant';
+                                  const agentTitle =
+                                    aiAgentCatalogByKey.get(entry.agentKey)?.title ??
+                                    fallbackAiAgentTitle(entry.agentKey);
+                                  const loadActionKey =
+                                    `load-tenant-ai-run-detail:${entry.suggestionRunId}`;
+                                  const reviewActionKey = isInvoiceAgent
+                                    ? `review-invoice-ai-approval:${entry.id}`
+                                    : `review-ai-approval:${entry.id}`;
+                                  const handoffLoading =
+                                    growthActionLoading === loadActionKey;
+                                  const reviewLoading =
+                                    (isInvoiceAgent
+                                      ? actionLoading
+                                      : growthActionLoading) === reviewActionKey;
+
+                                  return (
+                                    <div
+                                      className={styles.assistCueCard}
+                                      key={entry.id}
+                                    >
+                                      <div className={styles.invoiceCardHeader}>
+                                        <strong>{entry.summary}</strong>
+                                        <span
+                                          className={`${styles.statusPill} ${
+                                            entry.status === 'approved'
+                                              ? styles.statusHealthy
+                                              : entry.status === 'rejected'
+                                                ? styles.statusCritical
+                                                : styles.statusWarning
+                                          }`}
                                         >
-                                          {growthActionLoading ===
-                                          `review-ai-approval:${entry.id}`
-                                            ? 'Guardando...'
-                                            : 'Aprobar'}
-                                        </button>
+                                          {humanizeKey(entry.status)}
+                                        </span>
+                                      </div>
+                                      <div className={styles.assistChecklist}>
+                                        <span className={styles.badge}>
+                                          {agentTitle}
+                                        </span>
+                                        <span className={styles.badge}>
+                                          {entry.policyKey}
+                                        </span>
+                                      </div>
+                                      <small>
+                                        {formatDate(entry.createdAt)} ·{' '}
+                                        {entry.requestedByEmail ??
+                                          entry.requestedByUserId}
+                                      </small>
+                                      {entry.rationale ? (
+                                        <small>{entry.rationale}</small>
+                                      ) : null}
+                                      <div className={styles.inlineActions}>
                                         <button
                                           className={styles.ghostButton}
                                           type="button"
                                           onClick={() => {
-                                            void handleReviewAiApprovalRequest(
-                                              entry.id,
-                                              'rejected',
+                                            void handleOpenTenantAiWorkspaceSuggestionRunDetail(
+                                              entry.suggestionRunId,
                                             );
                                           }}
-                                          disabled={
-                                            growthActionLoading ===
-                                            `review-ai-approval:${entry.id}`
-                                          }
+                                          disabled={handoffLoading}
                                         >
-                                          Rechazar
+                                          {handoffLoading
+                                            ? 'Cargando handoff...'
+                                            : 'Ver handoff'}
                                         </button>
                                       </div>
-                                    ) : entry.reviewedAt ? (
-                                      <small>
-                                        Revisada el {formatDate(entry.reviewedAt)} por{' '}
-                                        {entry.reviewedByEmail ??
-                                          entry.reviewedByUserId ??
-                                          'sin reviewer'}
-                                      </small>
-                                    ) : null}
-                                  </div>
-                                ))}
+                                      {entry.status === 'pending' ? (
+                                        <div className={styles.inlineActions}>
+                                          <button
+                                            className={styles.secondaryButton}
+                                            type="button"
+                                            onClick={() => {
+                                              void handleReviewTenantAiApprovalWorkspaceRequest(
+                                                entry.agentKey,
+                                                entry.id,
+                                                'approved',
+                                              );
+                                            }}
+                                            disabled={reviewLoading}
+                                          >
+                                            {reviewLoading ? 'Guardando...' : 'Aprobar'}
+                                          </button>
+                                          <button
+                                            className={styles.ghostButton}
+                                            type="button"
+                                            onClick={() => {
+                                              void handleReviewTenantAiApprovalWorkspaceRequest(
+                                                entry.agentKey,
+                                                entry.id,
+                                                'rejected',
+                                              );
+                                            }}
+                                            disabled={reviewLoading}
+                                          >
+                                            Rechazar
+                                          </button>
+                                        </div>
+                                      ) : entry.reviewedAt ? (
+                                        <small>
+                                          Revisada el {formatDate(entry.reviewedAt)} por{' '}
+                                          {entry.reviewedByEmail ??
+                                            entry.reviewedByUserId ??
+                                            'sin reviewer'}
+                                        </small>
+                                      ) : null}
+                                    </div>
+                                  );
+                                })}
                             </div>
                           ) : (
                             <div className={styles.stack}>
                               <span className={styles.muted}>
-                                Cola de aprobaciones reciente
+                                Approval workspace transversal
                               </span>
+                              <div className={styles.commercialMetricsGrid}>
+                                <div className={styles.commercialCard}>
+                                  <span className={styles.muted}>
+                                    Solicitudes totales
+                                  </span>
+                                  <strong>
+                                    {tenantAiApprovalWorkspaceSummary?.counts
+                                      .totalApprovalRequests ?? 0}
+                                  </strong>
+                                  <small>
+                                    Approval requests visibles para el tenant en
+                                    todos los agentes AI habilitados.
+                                  </small>
+                                </div>
+                                <div className={styles.commercialCard}>
+                                  <span className={styles.muted}>
+                                    Pendientes
+                                  </span>
+                                  <strong>
+                                    {tenantAiApprovalWorkspaceSummary?.counts
+                                      .pendingApprovalRequests ?? 0}
+                                  </strong>
+                                  <small>
+                                    Revisiones humanas que todavia necesitan una
+                                    decision.
+                                  </small>
+                                </div>
+                                <div className={styles.commercialCard}>
+                                  <span className={styles.muted}>
+                                    Decisiones cerradas
+                                  </span>
+                                  <strong>
+                                    {(tenantAiApprovalWorkspaceSummary?.counts
+                                      .approvedApprovalRequests ?? 0) +
+                                      (tenantAiApprovalWorkspaceSummary?.counts
+                                        .rejectedApprovalRequests ?? 0)}
+                                  </strong>
+                                  <small>
+                                    Approvals ya resueltas para cerrar el loop
+                                    operativo.
+                                  </small>
+                                </div>
+                              </div>
                               <div className={styles.inlineActions}>
-                                {(
-                                  [
-                                    'all',
-                                    'pending',
-                                    'approved',
-                                    'rejected',
-                                  ] as const
-                                ).map((filter) => (
+                                {tenantAiApprovalWorkspaceStatusOptions.map(
+                                  ({ key, label, count }) => (
                                   <button
-                                    key={filter}
+                                    key={key}
                                     className={
-                                      growthAiApprovalStatusFilter === filter
+                                      tenantAiApprovalWorkspaceStatusFilter === key
                                         ? styles.secondaryButton
                                         : styles.ghostButton
                                     }
                                     type="button"
                                     onClick={() => {
-                                      setGrowthAiApprovalStatusFilter(filter);
+                                      setTenantAiApprovalWorkspaceStatusFilter(key);
                                     }}
                                   >
-                                    {filter === 'all'
-                                      ? 'Todas'
-                                      : humanizeKey(filter)}
+                                    {key === 'all' ? label : humanizeKey(key)} ({count})
                                   </button>
-                                ))}
+                                  ),
+                                )}
                               </div>
-                              <small className={styles.muted}>
-                                No hay approvals en estado{' '}
-                                {growthAiApprovalStatusFilter === 'all'
+                              {tenantAiApprovalWorkspaceLoading ? (
+                                <small className={styles.muted}>
+                                  Cargando approvals transversales...
+                                </small>
+                              ) : (
+                                <small className={styles.muted}>
+                                  No hay approvals en estado{' '}
+                                  {tenantAiApprovalWorkspaceStatusFilter === 'all'
                                   ? 'visible'
-                                  : humanizeKey(growthAiApprovalStatusFilter)}
-                                .
-                              </small>
+                                  : humanizeKey(
+                                      tenantAiApprovalWorkspaceStatusFilter,
+                                    )}
+                                  .
+                                </small>
+                              )}
                             </div>
                           )}
                           <small className={styles.muted}>
@@ -10820,6 +12298,306 @@ export function App() {
               </div>
                 </>
               )}
+            </div>
+          )}
+        </section>
+
+        <section className={styles.adminPanel}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.label}>AI Operations Console</span>
+              <h2>Superficie transversal del tenant para handoffs y approvals</h2>
+            </div>
+            {session &&
+            currentTenancy &&
+            (canReadGrowthConversations || canReadInvoicingReports) ? (
+              <div className={styles.inlineActionRow}>
+                <button
+                  className={styles.ghostButton}
+                  disabled={
+                    tenantAiOperationsSummaryLoading ||
+                    tenantAiSuggestionWorkspaceLoading ||
+                    tenantAiApprovalWorkspaceLoading
+                  }
+                  onClick={() => {
+                    void refreshTenantAiOperationsConsole();
+                  }}
+                  type="button"
+                >
+                  {tenantAiOperationsSummaryLoading ||
+                  tenantAiSuggestionWorkspaceLoading ||
+                  tenantAiApprovalWorkspaceLoading
+                    ? 'Refrescando AI ops...'
+                    : 'Refrescar AI ops'}
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          {!session ? (
+            <div className={styles.emptyState}>
+              <p>Primero carguemos la sesión para abrir la consola transversal de AI.</p>
+            </div>
+          ) : !currentTenancy ? (
+            <div className={styles.emptyState}>
+              <p>Selecciona un tenant actual para habilitar la superficie operativa de AI.</p>
+            </div>
+          ) : !canReadGrowthConversations && !canReadInvoicingReports ? (
+            <div className={styles.emptyState}>
+              <p>
+                Este tenant todavía no expone permisos de lectura para los agentes AI
+                listos, así que la consola transversal queda bloqueada.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.twoColumn}>
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>Operations snapshot</span>
+                    <h3>Estado consolidado del tenant</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiOperationsSummary
+                      ? formatDate(tenantAiOperationsSummary.generatedAt)
+                      : 'sin snapshot'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Approvals totales</span>
+                    <strong>
+                      {tenantAiOperationsSummary?.approvalWorkspace.counts
+                        .totalApprovalRequests ?? 0}
+                    </strong>
+                    <small>Solicitudes humanas acumuladas en los agentes AI.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Handoffs totales</span>
+                    <strong>
+                      {tenantAiOperationsSummary?.handoffWorkspace.counts
+                        .totalSuggestionRuns ?? 0}
+                    </strong>
+                    <small>Runs auditable preparados en el tenant.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Pendientes de review</span>
+                    <strong>
+                      {tenantAiOperationsSummary?.actionCenter.counts
+                        .pendingApprovalRequests ?? 0}
+                    </strong>
+                    <small>Aprobaciones esperando una decisión humana.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Listos para escalar</span>
+                    <strong>
+                      {tenantAiOperationsSummary?.actionCenter.counts
+                        .reviewableSuggestionRuns ?? 0}
+                    </strong>
+                    <small>Handoffs listos para pedir revisión humana.</small>
+                  </div>
+                </div>
+
+                {tenantAiOperationsSummary?.approvalWorkspace
+                  .oldestPendingApprovalRequest ? (
+                  <div className={styles.assistCueCard}>
+                    <strong>Cola prioritaria</strong>
+                    <small>
+                      {
+                        tenantAiOperationsSummary.approvalWorkspace
+                          .oldestPendingApprovalRequest.summary
+                      }
+                    </small>
+                    <small>
+                      Pendiente desde{' '}
+                      {formatDate(
+                        tenantAiOperationsSummary.approvalWorkspace
+                          .oldestPendingApprovalRequest.createdAt,
+                      )}
+                    </small>
+                  </div>
+                ) : null}
+
+                {tenantAiOperationsSummary?.handoffWorkspace.latestSuggestionRun ? (
+                  <div className={styles.assistCueCard}>
+                    <strong>Último handoff generado</strong>
+                    <small>
+                      {
+                        tenantAiOperationsSummary.handoffWorkspace
+                          .latestSuggestionRun.summary
+                      }
+                    </small>
+                    <small>
+                      Generado{' '}
+                      {formatDate(
+                        tenantAiOperationsSummary.handoffWorkspace
+                          .latestSuggestionRun.createdAt,
+                      )}{' '}
+                      ·{' '}
+                      {aiAgentCatalogByKey.get(
+                        tenantAiOperationsSummary.handoffWorkspace
+                          .latestSuggestionRun.agentKey,
+                      )?.title ??
+                        fallbackAiAgentTitle(
+                          tenantAiOperationsSummary.handoffWorkspace
+                            .latestSuggestionRun.agentKey,
+                        )}
+                    </small>
+                  </div>
+                ) : null}
+
+                {tenantAiOperationsSummaryLoading && !tenantAiOperationsSummary ? (
+                  <small className={styles.muted}>
+                    Cargando snapshot transversal de AI...
+                  </small>
+                ) : null}
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>Quick actions</span>
+                    <h3>Operar sin entrar al workspace embebido</h3>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  <span className={styles.muted}>Handoffs recientes</span>
+                  {tenantAiHandoffWorkspaceSummary?.recentSuggestionRuns
+                    .slice(0, 2)
+                    .map((entry) => {
+                      const isInvoiceAgent =
+                        entry.agentKey === 'invoice-document-assistant';
+                      const actionKey = isInvoiceAgent
+                        ? `request-invoice-ai-approval:${entry.id}`
+                        : `request-ai-approval:${entry.id}`;
+                      const canRequestHumanReview =
+                        entry.approvalSummary.status === 'not_requested' ||
+                        entry.approvalSummary.status === 'rejected';
+
+                      return (
+                        <div className={styles.assistCueCard} key={`ops-run:${entry.id}`}>
+                          <strong>{entry.summary}</strong>
+                          <small>
+                            {formatDate(entry.createdAt)} ·{' '}
+                            {aiAgentCatalogByKey.get(entry.agentKey)?.title ??
+                              fallbackAiAgentTitle(entry.agentKey)}
+                          </small>
+                          <div className={styles.inlineActions}>
+                            <button
+                              className={styles.ghostButton}
+                              type="button"
+                              onClick={() => {
+                                void handleOpenTenantAiWorkspaceSuggestionRunDetail(
+                                  entry.id,
+                                );
+                              }}
+                              disabled={
+                                growthActionLoading ===
+                                `load-tenant-ai-run-detail:${entry.id}`
+                              }
+                            >
+                              Ver detalle
+                            </button>
+                            {canRequestHumanReview ? (
+                              <button
+                                className={styles.secondaryButton}
+                                type="button"
+                                onClick={() => {
+                                  void handleRequestTenantAiWorkspaceSuggestionRunApproval(
+                                    entry.agentKey,
+                                    entry.id,
+                                  );
+                                }}
+                                disabled={
+                                  (isInvoiceAgent
+                                    ? actionLoading
+                                    : growthActionLoading) === actionKey
+                                }
+                              >
+                                Pedir revisión
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                  {tenantAiApprovalWorkspaceSummary?.recentApprovalRequests.length ? (
+                    <>
+                      <span className={styles.muted}>Approvals recientes</span>
+                      {tenantAiApprovalWorkspaceSummary.recentApprovalRequests
+                        .slice(0, 2)
+                        .map((entry) => {
+                          const isInvoiceAgent =
+                            entry.agentKey === 'invoice-document-assistant';
+                          const reviewActionKey = isInvoiceAgent
+                            ? `review-invoice-ai-approval:${entry.id}`
+                            : `review-ai-approval:${entry.id}`;
+                          const reviewLoading =
+                            (isInvoiceAgent ? actionLoading : growthActionLoading) ===
+                            reviewActionKey;
+
+                          return (
+                            <div
+                              className={styles.assistCueCard}
+                              key={`ops-approval:${entry.id}`}
+                            >
+                              <strong>{entry.summary}</strong>
+                              <small>
+                                {formatDate(entry.createdAt)} ·{' '}
+                                {humanizeKey(entry.status)}
+                              </small>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.ghostButton}
+                                  type="button"
+                                  onClick={() => {
+                                    void handleOpenTenantAiWorkspaceSuggestionRunDetail(
+                                      entry.suggestionRunId,
+                                    );
+                                  }}
+                                  disabled={
+                                    growthActionLoading ===
+                                    `load-tenant-ai-run-detail:${entry.suggestionRunId}`
+                                  }
+                                >
+                                  Ver handoff
+                                </button>
+                                {entry.status === 'pending' ? (
+                                  <button
+                                    className={styles.secondaryButton}
+                                    type="button"
+                                    onClick={() => {
+                                      void handleReviewTenantAiApprovalWorkspaceRequest(
+                                        entry.agentKey,
+                                        entry.id,
+                                        'approved',
+                                      );
+                                    }}
+                                    disabled={reviewLoading}
+                                  >
+                                    Aprobar
+                                  </button>
+                                ) : null}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </>
+                  ) : null}
+
+                  {tenantAiSuggestionWorkspaceLoading &&
+                  tenantAiApprovalWorkspaceLoading &&
+                  !tenantAiHandoffWorkspaceSummary &&
+                  !tenantAiApprovalWorkspaceSummary ? (
+                    <small className={styles.muted}>
+                      Cargando cola operacional de AI...
+                    </small>
+                  ) : null}
+                </div>
+              </div>
             </div>
           )}
         </section>

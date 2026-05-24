@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.46.0
+
+### Minor Changes
+
+- 2aee142: Add the first invoicing AI-ready drafting surface and connect `invoice-document-assistant` in suggestion mode.
+
 ## 0.45.0
 
 ### Minor Changes

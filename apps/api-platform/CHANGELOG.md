@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.48.0
+
+### Minor Changes
+
+- ad88500: Add tenant-scoped AI operations summaries and dedicated transversal console surfaces for approvals and handoffs.
+
 ## 0.47.0
 
 ### Minor Changes

@@ -14,6 +14,7 @@ describe('AI approval request use cases', () => {
   const aiApprovalRequestRepository = {
     create: jest.fn(),
     findByTenantIdAndAgentKey: jest.fn(),
+    findBySuggestionRunIds: jest.fn(),
     findByIdAndTenantIdAndAgentKey: jest.fn(),
     findPendingBySuggestionRunId: jest.fn(),
     review: jest.fn(),
@@ -160,13 +161,19 @@ describe('AI approval request use cases', () => {
     const result = await useCase.execute(
       'saas-platform',
       'growth-assist-coach',
-      5,
+      {
+        limit: 5,
+        status: 'pending',
+      },
     );
 
     expect(aiApprovalRequestRepository.findByTenantIdAndAgentKey).toHaveBeenCalledWith(
       'tenant_123',
       'growth-assist-coach',
-      5,
+      {
+        limit: 5,
+        status: 'pending',
+      },
     );
     expect(result).toHaveLength(1);
   });

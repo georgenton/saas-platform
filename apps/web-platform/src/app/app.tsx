@@ -6,6 +6,7 @@ import {
   fetchAiApprovalPolicies,
   fetchAiAgentToolAccess,
   fetchAiPromptRegistry,
+  fetchTenantAiSuggestionRunDetail,
   fetchAiToolRegistry,
   fetchTenantAiApprovalRequests,
   fetchTenantAiSuggestionEnvelope,
@@ -89,9 +90,11 @@ import {
 import {
   AiApprovalPolicyResponse,
   AiApprovalRequestResponse,
+  AiApprovalRequestStatusFilter,
   AiAgentCatalogResponse,
   AiAgentToolAccessResponse,
   AiPromptRegistryResponse,
+  AiSuggestionRunDetailResponse,
   AiSuggestionEnvelopeResponse,
   AiSuggestionRunResponse,
   AiToolRegistryResponse,
@@ -479,6 +482,80 @@ function humanizeKey(value: string | null): string {
   }
 
   return value.split('_').join(' ');
+}
+
+function matchesAiApprovalRequestStatusFilter(
+  approvalRequest: AiApprovalRequestResponse,
+  filter: AiApprovalRequestStatusFilter,
+): boolean {
+  return filter === 'all' || approvalRequest.status === filter;
+}
+
+function bumpSuggestionRunApprovalToPending(
+  runs: AiSuggestionRunResponse[],
+  approvalRequest: AiApprovalRequestResponse,
+): AiSuggestionRunResponse[] {
+  return runs.map((entry) =>
+    entry.id === approvalRequest.suggestionRunId
+      ? {
+          ...entry,
+          approvalSummary: {
+            status: 'pending',
+            totalRequests: entry.approvalSummary.totalRequests + 1,
+            latestRequestId: approvalRequest.id,
+            latestPolicyKey: approvalRequest.policyKey,
+            latestRequestedAt: approvalRequest.createdAt,
+            latestReviewedAt: approvalRequest.reviewedAt,
+          },
+        }
+      : entry,
+  );
+}
+
+function applyReviewedApprovalToSuggestionRuns(
+  runs: AiSuggestionRunResponse[],
+  approvalRequest: AiApprovalRequestResponse,
+): AiSuggestionRunResponse[] {
+  return runs.map((entry) =>
+    entry.id === approvalRequest.suggestionRunId
+      ? {
+          ...entry,
+          approvalSummary: {
+            ...entry.approvalSummary,
+            status: approvalRequest.status,
+            latestRequestId:
+              entry.approvalSummary.latestRequestId ?? approvalRequest.id,
+            latestPolicyKey:
+              entry.approvalSummary.latestPolicyKey ?? approvalRequest.policyKey,
+            latestRequestedAt:
+              entry.approvalSummary.latestRequestedAt ?? approvalRequest.createdAt,
+            latestReviewedAt: approvalRequest.reviewedAt,
+          },
+        }
+      : entry,
+  );
+}
+
+function prependOrReplaceApprovalRequest(
+  approvalRequests: AiApprovalRequestResponse[],
+  nextApprovalRequest: AiApprovalRequestResponse,
+): AiApprovalRequestResponse[] {
+  return [
+    nextApprovalRequest,
+    ...approvalRequests.filter((entry) => entry.id !== nextApprovalRequest.id),
+  ];
+}
+
+function syncApprovalRequestsWithFilter(
+  approvalRequests: AiApprovalRequestResponse[],
+  nextApprovalRequest: AiApprovalRequestResponse,
+  filter: AiApprovalRequestStatusFilter,
+): AiApprovalRequestResponse[] {
+  if (!matchesAiApprovalRequestStatusFilter(nextApprovalRequest, filter)) {
+    return approvalRequests.filter((entry) => entry.id !== nextApprovalRequest.id);
+  }
+
+  return prependOrReplaceApprovalRequest(approvalRequests, nextApprovalRequest);
 }
 
 function formatThresholdValue(
@@ -1002,8 +1079,12 @@ export function App() {
     useState<AiApprovalPolicyResponse[]>([]);
   const [invoiceAssistantAiApprovalRequests, setInvoiceAssistantAiApprovalRequests] =
     useState<AiApprovalRequestResponse[]>([]);
+  const [invoiceAiApprovalStatusFilter, setInvoiceAiApprovalStatusFilter] =
+    useState<AiApprovalRequestStatusFilter>('all');
   const [invoiceAssistantAiSuggestionRuns, setInvoiceAssistantAiSuggestionRuns] =
     useState<AiSuggestionRunResponse[]>([]);
+  const [selectedInvoiceAiSuggestionRunDetail, setSelectedInvoiceAiSuggestionRunDetail] =
+    useState<AiSuggestionRunDetailResponse | null>(null);
   const [invoicingLoading, setInvoicingLoading] = useState(false);
   const [invoiceDetailLoading, setInvoiceDetailLoading] = useState(false);
   const [invoicingError, setInvoicingError] = useState<string | null>(null);
@@ -1035,8 +1116,12 @@ export function App() {
     useState<AiApprovalPolicyResponse[]>([]);
   const [growthAssistAiApprovalRequests, setGrowthAssistAiApprovalRequests] =
     useState<AiApprovalRequestResponse[]>([]);
+  const [growthAiApprovalStatusFilter, setGrowthAiApprovalStatusFilter] =
+    useState<AiApprovalRequestStatusFilter>('all');
   const [growthAssistAiSuggestionRuns, setGrowthAssistAiSuggestionRuns] =
     useState<AiSuggestionRunResponse[]>([]);
+  const [selectedGrowthAiSuggestionRunDetail, setSelectedGrowthAiSuggestionRunDetail] =
+    useState<AiSuggestionRunDetailResponse | null>(null);
   const [whatsappSummary, setWhatsappSummary] =
     useState<WhatsappOutboundReportingSummaryResponse | null>(null);
   const [whatsappMonitorSummary, setWhatsappMonitorSummary] =
@@ -2670,17 +2755,6 @@ export function App() {
           ),
     [aiApprovalPolicyRegistry, growthAssistAiApprovalPolicies],
   );
-  const growthAiApprovalRequestsByRunId = useMemo(() => {
-    const next = new Map<string, AiApprovalRequestResponse[]>();
-
-    for (const entry of growthAssistAiApprovalRequests) {
-      const current = next.get(entry.suggestionRunId) ?? [];
-      current.push(entry);
-      next.set(entry.suggestionRunId, current);
-    }
-
-    return next;
-  }, [growthAssistAiApprovalRequests]);
   const activeInvoiceAiAgent = useMemo(
     () => invoiceAssistantAiEnvelope?.agent ?? null,
     [invoiceAssistantAiEnvelope],
@@ -2691,17 +2765,6 @@ export function App() {
       invoiceAssistantAiToolAccess,
     [invoiceAssistantAiEnvelope, invoiceAssistantAiToolAccess],
   );
-  const invoiceAiApprovalRequestsByRunId = useMemo(() => {
-    const next = new Map<string, AiApprovalRequestResponse[]>();
-
-    for (const entry of invoiceAssistantAiApprovalRequests) {
-      const current = next.get(entry.suggestionRunId) ?? [];
-      current.push(entry);
-      next.set(entry.suggestionRunId, current);
-    }
-
-    return next;
-  }, [invoiceAssistantAiApprovalRequests]);
 
   async function copyGrowthAssistReplySuggestion(
     key: string,
@@ -3149,6 +3212,9 @@ export function App() {
             token,
             tenantSlug,
             'invoice-document-assistant',
+            {
+              status: invoiceAiApprovalStatusFilter,
+            },
           ).catch(() => []),
           fetchAiAgentToolAccess(
             token,
@@ -3193,6 +3259,7 @@ export function App() {
           setInvoiceAssistantAiToolAccess(nextAiToolAccess);
           setInvoiceAssistantAiEnvelope(nextAiSuggestionEnvelope);
           setInvoiceAssistantAiSuggestionRuns(nextAiSuggestionRuns);
+          setSelectedInvoiceAiSuggestionRunDetail(null);
           setSelectedInvoiceId((currentSelection) =>
             nextInvoices.some((invoice) => invoice.id === currentSelection)
               ? currentSelection
@@ -3217,6 +3284,7 @@ export function App() {
         setInvoiceAssistantAiApprovalPolicies([]);
         setInvoiceAssistantAiApprovalRequests([]);
         setInvoiceAssistantAiSuggestionRuns([]);
+        setSelectedInvoiceAiSuggestionRunDetail(null);
         setInvoices([]);
         setSelectedInvoiceId(null);
         setSelectedInvoiceDetail(null);
@@ -3241,6 +3309,53 @@ export function App() {
       cancelled = true;
     };
   }, [currentTenancy, invoicingEnabled, token]);
+
+  useEffect(() => {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      setInvoiceAssistantAiApprovalRequests([]);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadInvoiceApprovalQueue() {
+      try {
+        const approvalRequests = await fetchTenantAiApprovalRequests(
+          token,
+          tenantSlug,
+          'invoice-document-assistant',
+          {
+            status: invoiceAiApprovalStatusFilter,
+          },
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setInvoiceAssistantAiApprovalRequests(approvalRequests);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setInvoicingError(
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar la cola de aprobaciones de invoicing.',
+        );
+      }
+    }
+
+    void loadInvoiceApprovalQueue();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentTenancy, invoiceAiApprovalStatusFilter, invoicingEnabled, token]);
 
   useEffect(() => {
     if (!token || growthAccessibleTenancies.length === 0) {
@@ -3437,6 +3552,9 @@ export function App() {
             token,
             tenantSlug,
             'growth-assist-coach',
+            {
+              status: growthAiApprovalStatusFilter,
+            },
           ).catch(() => []),
           fetchAiAgentToolAccess(token, 'growth-assist-coach').catch(() => []),
           fetchTenantAiSuggestionEnvelope(
@@ -3467,6 +3585,7 @@ export function App() {
           setGrowthAssistAiToolAccess(nextAiToolAccess);
           setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
           setGrowthAssistAiSuggestionRuns(nextAiSuggestionRuns);
+          setSelectedGrowthAiSuggestionRunDetail(null);
           setWhatsappSummary(nextSummary);
           setGrowthMonitorHistory(nextMonitorRuns);
           setWhatsappMonitorAnalytics(nextMonitorAnalytics);
@@ -3495,6 +3614,7 @@ export function App() {
         setGrowthAssistAiToolAccess([]);
         setGrowthAssistAiEnvelope(null);
         setGrowthAssistAiSuggestionRuns([]);
+        setSelectedGrowthAiSuggestionRunDetail(null);
         setWhatsappSummary(null);
         setWhatsappMonitorSummary(null);
         setWhatsappMonitorAnalytics(null);
@@ -3530,6 +3650,53 @@ export function App() {
     staleThreadHours,
     token,
   ]);
+
+  useEffect(() => {
+    if (!token || !currentTenancy || !growthWorkspaceAvailable) {
+      setGrowthAssistAiApprovalRequests([]);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadGrowthApprovalQueue() {
+      try {
+        const approvalRequests = await fetchTenantAiApprovalRequests(
+          token,
+          tenantSlug,
+          'growth-assist-coach',
+          {
+            status: growthAiApprovalStatusFilter,
+          },
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setGrowthAssistAiApprovalRequests(approvalRequests);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setGrowthError(
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar la cola de aprobaciones de Growth.',
+        );
+      }
+    }
+
+    void loadGrowthApprovalQueue();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentTenancy, growthAiApprovalStatusFilter, growthWorkspaceAvailable, token]);
 
   useEffect(() => {
     if (!token || !currentTenancy || !selectedInvoiceId || !invoicingEnabled) {
@@ -3977,6 +4144,9 @@ export function App() {
           token,
           tenantSlug,
           'invoice-document-assistant',
+          {
+            status: invoiceAiApprovalStatusFilter,
+          },
         ).catch(() => []),
         fetchAiAgentToolAccess(token, 'invoice-document-assistant').catch(
           () => [],
@@ -4012,6 +4182,7 @@ export function App() {
         setInvoiceAssistantAiToolAccess(nextAiToolAccess);
         setInvoiceAssistantAiEnvelope(nextAiSuggestionEnvelope);
         setInvoiceAssistantAiSuggestionRuns(nextAiSuggestionRuns);
+        setSelectedInvoiceAiSuggestionRunDetail(null);
         const preferredInvoiceId = options?.selectInvoiceId;
         if (
           preferredInvoiceId &&
@@ -4097,6 +4268,9 @@ export function App() {
           token,
           tenantSlug,
           'growth-assist-coach',
+          {
+            status: growthAiApprovalStatusFilter,
+          },
         ).catch(() => []),
         fetchAiAgentToolAccess(token, 'growth-assist-coach').catch(() => []),
         fetchTenantAiSuggestionEnvelope(
@@ -4123,6 +4297,7 @@ export function App() {
         setGrowthAssistAiToolAccess(nextAiToolAccess);
         setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
         setGrowthAssistAiSuggestionRuns(nextAiSuggestionRuns);
+        setSelectedGrowthAiSuggestionRunDetail(null);
         setWhatsappSummary(nextSummary);
         setGrowthMonitorHistory(nextMonitorRuns);
         setWhatsappMonitorAnalytics(nextMonitorAnalytics);
@@ -4573,10 +4748,35 @@ export function App() {
       );
 
       startTransition(() => {
-        setGrowthAssistAiApprovalRequests((current) => [
-          record,
-          ...current.filter((entry) => entry.id !== record.id),
-        ]);
+        setGrowthAssistAiApprovalRequests((current) =>
+          syncApprovalRequestsWithFilter(
+            current,
+            record,
+            growthAiApprovalStatusFilter,
+          ),
+        );
+        setGrowthAssistAiSuggestionRuns((current) =>
+          bumpSuggestionRunApprovalToPending(current, record),
+        );
+        setSelectedGrowthAiSuggestionRunDetail((current) =>
+          current && current.id === record.suggestionRunId
+            ? {
+                ...current,
+                approvalSummary: {
+                  status: 'pending',
+                  totalRequests: current.approvalSummary.totalRequests + 1,
+                  latestRequestId: record.id,
+                  latestPolicyKey: record.policyKey,
+                  latestRequestedAt: record.createdAt,
+                  latestReviewedAt: record.reviewedAt,
+                },
+                approvalRequests: prependOrReplaceApprovalRequest(
+                  current.approvalRequests,
+                  record,
+                ),
+              }
+            : current,
+        );
       });
 
       setGrowthActionMessage(
@@ -4623,10 +4823,32 @@ export function App() {
       );
 
       startTransition(() => {
-        setGrowthAssistAiApprovalRequests((current) => [
-          record,
-          ...current.filter((entry) => entry.id !== record.id),
-        ]);
+        setGrowthAssistAiApprovalRequests((current) =>
+          syncApprovalRequestsWithFilter(
+            current,
+            record,
+            growthAiApprovalStatusFilter,
+          ),
+        );
+        setGrowthAssistAiSuggestionRuns((current) =>
+          applyReviewedApprovalToSuggestionRuns(current, record),
+        );
+        setSelectedGrowthAiSuggestionRunDetail((current) =>
+          current && current.id === record.suggestionRunId
+            ? {
+                ...current,
+                approvalSummary: {
+                  ...current.approvalSummary,
+                  status: record.status,
+                  latestReviewedAt: record.reviewedAt,
+                },
+                approvalRequests: prependOrReplaceApprovalRequest(
+                  current.approvalRequests,
+                  record,
+                ),
+              }
+            : current,
+        );
       });
 
       setGrowthActionMessage(
@@ -4709,10 +4931,35 @@ export function App() {
       );
 
       startTransition(() => {
-        setInvoiceAssistantAiApprovalRequests((current) => [
-          record,
-          ...current.filter((entry) => entry.id !== record.id),
-        ]);
+        setInvoiceAssistantAiApprovalRequests((current) =>
+          syncApprovalRequestsWithFilter(
+            current,
+            record,
+            invoiceAiApprovalStatusFilter,
+          ),
+        );
+        setInvoiceAssistantAiSuggestionRuns((current) =>
+          bumpSuggestionRunApprovalToPending(current, record),
+        );
+        setSelectedInvoiceAiSuggestionRunDetail((current) =>
+          current && current.id === record.suggestionRunId
+            ? {
+                ...current,
+                approvalSummary: {
+                  status: 'pending',
+                  totalRequests: current.approvalSummary.totalRequests + 1,
+                  latestRequestId: record.id,
+                  latestPolicyKey: record.policyKey,
+                  latestRequestedAt: record.createdAt,
+                  latestReviewedAt: record.reviewedAt,
+                },
+                approvalRequests: prependOrReplaceApprovalRequest(
+                  current.approvalRequests,
+                  record,
+                ),
+              }
+            : current,
+        );
       });
 
       setInvoicingActionMessage(
@@ -4759,10 +5006,32 @@ export function App() {
       );
 
       startTransition(() => {
-        setInvoiceAssistantAiApprovalRequests((current) => [
-          record,
-          ...current.filter((entry) => entry.id !== record.id),
-        ]);
+        setInvoiceAssistantAiApprovalRequests((current) =>
+          syncApprovalRequestsWithFilter(
+            current,
+            record,
+            invoiceAiApprovalStatusFilter,
+          ),
+        );
+        setInvoiceAssistantAiSuggestionRuns((current) =>
+          applyReviewedApprovalToSuggestionRuns(current, record),
+        );
+        setSelectedInvoiceAiSuggestionRunDetail((current) =>
+          current && current.id === record.suggestionRunId
+            ? {
+                ...current,
+                approvalSummary: {
+                  ...current.approvalSummary,
+                  status: record.status,
+                  latestReviewedAt: record.reviewedAt,
+                },
+                approvalRequests: prependOrReplaceApprovalRequest(
+                  current.approvalRequests,
+                  record,
+                ),
+              }
+            : current,
+        );
       });
 
       setInvoicingActionMessage(
@@ -4775,6 +5044,72 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo revisar la aprobación del handoff de AI para invoicing.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleOpenGrowthAiSuggestionRunDetail(suggestionRunId: string) {
+    if (!token || !currentTenancy || !canReadGrowthConversations) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const actionKey = `load-ai-run-detail:${suggestionRunId}`;
+    setGrowthActionLoading(actionKey);
+    setGrowthActionMessage(null);
+    setGrowthError(null);
+
+    try {
+      const detail = await fetchTenantAiSuggestionRunDetail(
+        token,
+        tenantSlug,
+        'growth-assist-coach',
+        suggestionRunId,
+      );
+
+      startTransition(() => {
+        setSelectedGrowthAiSuggestionRunDetail(detail);
+      });
+    } catch (error) {
+      setGrowthError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el detalle del handoff de AI.',
+      );
+    } finally {
+      setGrowthActionLoading(null);
+    }
+  }
+
+  async function handleOpenInvoiceAiSuggestionRunDetail(suggestionRunId: string) {
+    if (!token || !currentTenancy || !canReadInvoicingReports) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const actionKey = `load-invoice-ai-run-detail:${suggestionRunId}`;
+    setActionLoading(actionKey);
+    setInvoicingActionMessage(null);
+    setInvoicingError(null);
+
+    try {
+      const detail = await fetchTenantAiSuggestionRunDetail(
+        token,
+        tenantSlug,
+        'invoice-document-assistant',
+        suggestionRunId,
+      );
+
+      startTransition(() => {
+        setSelectedInvoiceAiSuggestionRunDetail(detail);
+      });
+    } catch (error) {
+      setInvoicingError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el detalle del handoff de AI para invoicing.',
       );
     } finally {
       setActionLoading(null);
@@ -4816,6 +5151,8 @@ export function App() {
     setGrowthAssistAiToolAccess([]);
     setGrowthAssistAiEnvelope(null);
     setGrowthAssistAiSuggestionRuns([]);
+    setSelectedGrowthAiSuggestionRunDetail(null);
+    setSelectedInvoiceAiSuggestionRunDetail(null);
     setWhatsappSummary(null);
     setWhatsappMonitorSummary(null);
     setWhatsappMonitorAnalytics(null);
@@ -6990,7 +7327,63 @@ export function App() {
                                         ? 'requires approval'
                                         : 'no approval'}
                                     </span>
+                                    <span className={styles.badge}>
+                                      {humanizeKey(
+                                        entry.tool.executionBoundary.executionMode,
+                                      )}
+                                    </span>
                                   </div>
+                                  <small>
+                                    <strong>Entrada:</strong>{' '}
+                                    {entry.tool.inputContract.primaryPayload}
+                                  </small>
+                                  <div className={styles.assistChecklist}>
+                                    {entry.tool.inputContract.sourceSurfaceKeys.map(
+                                      (surfaceKey) => (
+                                        <span
+                                          className={styles.badge}
+                                          key={`${entry.tool.key}:${surfaceKey}`}
+                                        >
+                                          {surfaceKey}
+                                        </span>
+                                      ),
+                                    )}
+                                  </div>
+                                  <small>
+                                    <strong>Salida:</strong>{' '}
+                                    {entry.tool.outputContract.primaryArtifact}
+                                  </small>
+                                  <div className={styles.assistChecklist}>
+                                    {entry.tool.outputContract.suggestedOutputKeys.map(
+                                      (outputKey) => (
+                                        <span
+                                          className={styles.badge}
+                                          key={`${entry.tool.key}:${outputKey}`}
+                                        >
+                                          {outputKey}
+                                        </span>
+                                      ),
+                                    )}
+                                  </div>
+                                  <small>
+                                    <strong>Boundary:</strong>{' '}
+                                    {entry.tool.executionBoundary.reviewRequirement}
+                                  </small>
+                                  {entry.tool.executionBoundary.blockedCapabilities
+                                    .length > 0 ? (
+                                    <div className={styles.assistChecklist}>
+                                      {entry.tool.executionBoundary.blockedCapabilities.map(
+                                        (capability) => (
+                                          <span
+                                            className={styles.badge}
+                                            key={`${entry.tool.key}:${capability}`}
+                                          >
+                                            blocked: {capability}
+                                          </span>
+                                        ),
+                                      )}
+                                    </div>
+                                  ) : null}
                                   <small>{entry.rationale}</small>
                                 </div>
                               ))}
@@ -7043,10 +7436,10 @@ export function App() {
                               {growthAssistAiSuggestionRuns
                                 .slice(0, 3)
                                 .map((entry) => {
-                                  const approvalRequests =
-                                    growthAiApprovalRequestsByRunId.get(entry.id) ?? [];
-                                  const latestApprovalRequest =
-                                    approvalRequests[0] ?? null;
+                                  const canRequestHumanReview =
+                                    entry.approvalSummary.status ===
+                                      'not_requested' ||
+                                    entry.approvalSummary.status === 'rejected';
 
                                   return (
                                     <div
@@ -7066,6 +7459,12 @@ export function App() {
                                         <span className={styles.badge}>
                                           {entry.promptPackKey}@{entry.promptPackVersion}
                                         </span>
+                                        <span className={styles.badge}>
+                                          approval{' '}
+                                          {humanizeKey(
+                                            entry.approvalSummary.status,
+                                          )}
+                                        </span>
                                         {entry.suggestedOutputKeys.map((outputKey) => (
                                           <span
                                             className={styles.badge}
@@ -7075,11 +7474,20 @@ export function App() {
                                           </span>
                                         ))}
                                       </div>
-                                      {latestApprovalRequest ? (
+                                      {entry.approvalSummary.status !==
+                                      'not_requested' ? (
                                         <small>
                                           Approval más reciente:{' '}
-                                          {humanizeKey(latestApprovalRequest.status)} ·{' '}
-                                          {formatDate(latestApprovalRequest.createdAt)}
+                                          {humanizeKey(
+                                            entry.approvalSummary.status,
+                                          )}{' '}
+                                          ·{' '}
+                                          {formatDate(
+                                            entry.approvalSummary
+                                              .latestReviewedAt ??
+                                              entry.approvalSummary
+                                                .latestRequestedAt,
+                                          )}
                                         </small>
                                       ) : (
                                         <small className={styles.muted}>
@@ -7087,9 +7495,26 @@ export function App() {
                                           handoff.
                                         </small>
                                       )}
-                                      {!latestApprovalRequest ||
-                                      latestApprovalRequest.status === 'rejected' ? (
-                                        <div className={styles.inlineActions}>
+                                      <div className={styles.inlineActions}>
+                                        <button
+                                          className={styles.ghostButton}
+                                          type="button"
+                                          onClick={() => {
+                                            void handleOpenGrowthAiSuggestionRunDetail(
+                                              entry.id,
+                                            );
+                                          }}
+                                          disabled={
+                                            growthActionLoading ===
+                                            `load-ai-run-detail:${entry.id}`
+                                          }
+                                        >
+                                          {growthActionLoading ===
+                                          `load-ai-run-detail:${entry.id}`
+                                            ? 'Cargando detalle...'
+                                            : 'Ver detalle'}
+                                        </button>
+                                        {canRequestHumanReview ? (
                                           <button
                                             className={styles.secondaryButton}
                                             type="button"
@@ -7108,11 +7533,92 @@ export function App() {
                                               ? 'Pidiendo aprobación...'
                                               : 'Pedir revisión humana'}
                                           </button>
-                                        </div>
-                                      ) : null}
+                                        ) : null}
+                                      </div>
                                     </div>
                                   );
                                 })}
+                            </div>
+                          ) : null}
+                          {selectedGrowthAiSuggestionRunDetail ? (
+                            <div className={styles.stack}>
+                              <span className={styles.muted}>
+                                Detalle del handoff seleccionado
+                              </span>
+                              <div className={styles.assistCueCard}>
+                                <strong>
+                                  {selectedGrowthAiSuggestionRunDetail.summary}
+                                </strong>
+                                <small>
+                                  {selectedGrowthAiSuggestionRunDetail.promptPackKey}@
+                                  {
+                                    selectedGrowthAiSuggestionRunDetail
+                                      .promptPackVersion
+                                  }{' '}
+                                  · approval{' '}
+                                  {humanizeKey(
+                                    selectedGrowthAiSuggestionRunDetail
+                                      .approvalSummary.status,
+                                  )}
+                                </small>
+                                <div className={styles.assistChecklist}>
+                                  {selectedGrowthAiSuggestionRunDetail.suggestedOutputKeys.map(
+                                    (outputKey) => (
+                                      <span
+                                        className={styles.badge}
+                                        key={outputKey}
+                                      >
+                                        {outputKey}
+                                      </span>
+                                    ),
+                                  )}
+                                </div>
+                                {selectedGrowthAiSuggestionRunDetail.approvalRequests
+                                  .length === 0 ? (
+                                  <small className={styles.muted}>
+                                    Todavía no hay approval requests para este
+                                    handoff.
+                                  </small>
+                                ) : (
+                                  selectedGrowthAiSuggestionRunDetail.approvalRequests.map(
+                                    (entry) => (
+                                      <div
+                                        className={styles.assistCueCard}
+                                        key={entry.id}
+                                      >
+                                        <div className={styles.invoiceCardHeader}>
+                                          <strong>{entry.policyKey}</strong>
+                                          <span
+                                            className={`${styles.statusPill} ${
+                                              entry.status === 'approved'
+                                                ? styles.statusHealthy
+                                                : entry.status === 'rejected'
+                                                  ? styles.statusCritical
+                                                  : styles.statusWarning
+                                            }`}
+                                          >
+                                            {humanizeKey(entry.status)}
+                                          </span>
+                                        </div>
+                                        <small>
+                                          Solicitada {formatDate(entry.createdAt)}
+                                          {entry.reviewedAt
+                                            ? ` · revisada ${formatDate(
+                                                entry.reviewedAt,
+                                              )}`
+                                            : ''}
+                                        </small>
+                                        {entry.rationale ? (
+                                          <small>{entry.rationale}</small>
+                                        ) : null}
+                                        {entry.reviewNote ? (
+                                          <small>{entry.reviewNote}</small>
+                                        ) : null}
+                                      </div>
+                                    ),
+                                  )
+                                )}
+                              </div>
                             </div>
                           ) : null}
                           {growthAssistAiApprovalRequests.length > 0 ? (
@@ -7120,6 +7626,33 @@ export function App() {
                               <span className={styles.muted}>
                                 Cola de aprobaciones reciente
                               </span>
+                              <div className={styles.inlineActions}>
+                                {(
+                                  [
+                                    'all',
+                                    'pending',
+                                    'approved',
+                                    'rejected',
+                                  ] as const
+                                ).map((filter) => (
+                                  <button
+                                    key={filter}
+                                    className={
+                                      growthAiApprovalStatusFilter === filter
+                                        ? styles.secondaryButton
+                                        : styles.ghostButton
+                                    }
+                                    type="button"
+                                    onClick={() => {
+                                      setGrowthAiApprovalStatusFilter(filter);
+                                    }}
+                                  >
+                                    {filter === 'all'
+                                      ? 'Todas'
+                                      : humanizeKey(filter)}
+                                  </button>
+                                ))}
+                              </div>
                               {growthAssistAiApprovalRequests
                                 .slice(0, 3)
                                 .map((entry) => (
@@ -7149,6 +7682,26 @@ export function App() {
                                     {entry.rationale ? (
                                       <small>{entry.rationale}</small>
                                     ) : null}
+                                    <div className={styles.inlineActions}>
+                                      <button
+                                        className={styles.ghostButton}
+                                        type="button"
+                                        onClick={() => {
+                                          void handleOpenGrowthAiSuggestionRunDetail(
+                                            entry.suggestionRunId,
+                                          );
+                                        }}
+                                        disabled={
+                                          growthActionLoading ===
+                                          `load-ai-run-detail:${entry.suggestionRunId}`
+                                        }
+                                      >
+                                        {growthActionLoading ===
+                                        `load-ai-run-detail:${entry.suggestionRunId}`
+                                          ? 'Cargando handoff...'
+                                          : 'Ver handoff'}
+                                      </button>
+                                    </div>
                                     {entry.status === 'pending' ? (
                                       <div className={styles.inlineActions}>
                                         <button
@@ -7198,7 +7751,47 @@ export function App() {
                                   </div>
                                 ))}
                             </div>
-                          ) : null}
+                          ) : (
+                            <div className={styles.stack}>
+                              <span className={styles.muted}>
+                                Cola de aprobaciones reciente
+                              </span>
+                              <div className={styles.inlineActions}>
+                                {(
+                                  [
+                                    'all',
+                                    'pending',
+                                    'approved',
+                                    'rejected',
+                                  ] as const
+                                ).map((filter) => (
+                                  <button
+                                    key={filter}
+                                    className={
+                                      growthAiApprovalStatusFilter === filter
+                                        ? styles.secondaryButton
+                                        : styles.ghostButton
+                                    }
+                                    type="button"
+                                    onClick={() => {
+                                      setGrowthAiApprovalStatusFilter(filter);
+                                    }}
+                                  >
+                                    {filter === 'all'
+                                      ? 'Todas'
+                                      : humanizeKey(filter)}
+                                  </button>
+                                ))}
+                              </div>
+                              <small className={styles.muted}>
+                                No hay approvals en estado{' '}
+                                {growthAiApprovalStatusFilter === 'all'
+                                  ? 'visible'
+                                  : humanizeKey(growthAiApprovalStatusFilter)}
+                                .
+                              </small>
+                            </div>
+                          )}
                           <small className={styles.muted}>
                             Guardrails:{' '}
                             {growthAssistAiEnvelope.promptPack.constraints.join(' ')}
@@ -10597,11 +11190,10 @@ export function App() {
                             </div>
                           ) : (
                             invoiceAssistantAiSuggestionRuns.slice(0, 3).map((entry) => {
-                              const requests =
-                                invoiceAiApprovalRequestsByRunId.get(entry.id) ?? [];
-                              const hasPendingApproval = requests.some(
-                                (request) => request.status === 'pending',
-                              );
+                              const hasPendingApproval =
+                                entry.approvalSummary.status === 'pending';
+                              const hasApprovedApproval =
+                                entry.approvalSummary.status === 'approved';
 
                               return (
                                 <div className={styles.invoiceItemCard} key={entry.id}>
@@ -10615,11 +11207,40 @@ export function App() {
                                   <small>
                                     Outputs: {entry.suggestedOutputKeys.join(', ')}
                                   </small>
+                                  <small>
+                                    Approval: {humanizeKey(entry.approvalSummary.status)}
+                                    {entry.approvalSummary.latestRequestedAt
+                                      ? ` · ${formatDate(
+                                          entry.approvalSummary.latestReviewedAt ??
+                                            entry.approvalSummary
+                                              .latestRequestedAt,
+                                        )}`
+                                      : ''}
+                                  </small>
                                   <div className={styles.actionRow}>
+                                    <button
+                                      className={styles.ghostButton}
+                                      disabled={
+                                        actionLoading ===
+                                        `load-invoice-ai-run-detail:${entry.id}`
+                                      }
+                                      onClick={() =>
+                                        void handleOpenInvoiceAiSuggestionRunDetail(
+                                          entry.id,
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      {actionLoading ===
+                                      `load-invoice-ai-run-detail:${entry.id}`
+                                        ? 'Cargando detalle...'
+                                        : 'Ver detalle'}
+                                    </button>
                                     <button
                                       className={styles.secondaryButton}
                                       disabled={
                                         hasPendingApproval ||
+                                        hasApprovedApproval ||
                                         actionLoading ===
                                           `request-invoice-ai-approval:${entry.id}`
                                       }
@@ -10635,6 +11256,8 @@ export function App() {
                                         ? 'Solicitando...'
                                         : hasPendingApproval
                                           ? 'Revision pendiente'
+                                          : hasApprovedApproval
+                                            ? 'Revision aprobada'
                                           : 'Pedir revision'}
                                     </button>
                                   </div>
@@ -10643,6 +11266,77 @@ export function App() {
                             })
                           )}
                         </div>
+                        {selectedInvoiceAiSuggestionRunDetail ? (
+                          <div className={styles.stack}>
+                            <div className={styles.sectionHeading}>
+                              <div>
+                                <span className={styles.label}>
+                                  Selected handoff
+                                </span>
+                                <h3>Timeline de aprobación</h3>
+                              </div>
+                            </div>
+                            <div className={styles.invoiceItemCard}>
+                              <div className={styles.invoiceCardHeader}>
+                                <strong>
+                                  {selectedInvoiceAiSuggestionRunDetail.promptPackKey}
+                                </strong>
+                                <span className={styles.statusPill}>
+                                  {humanizeKey(
+                                    selectedInvoiceAiSuggestionRunDetail
+                                      .approvalSummary.status,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                {selectedInvoiceAiSuggestionRunDetail.summary}
+                              </small>
+                              <small>
+                                Outputs:{' '}
+                                {selectedInvoiceAiSuggestionRunDetail.suggestedOutputKeys.join(
+                                  ', ',
+                                )}
+                              </small>
+                              {selectedInvoiceAiSuggestionRunDetail.approvalRequests
+                                .length === 0 ? (
+                                <small className={styles.muted}>
+                                  Todavía no hay approval requests para este
+                                  handoff.
+                                </small>
+                              ) : (
+                                selectedInvoiceAiSuggestionRunDetail.approvalRequests.map(
+                                  (entry) => (
+                                    <div
+                                      className={styles.invoiceItemCard}
+                                      key={entry.id}
+                                    >
+                                      <div className={styles.invoiceCardHeader}>
+                                        <strong>{entry.policyKey}</strong>
+                                        <span className={styles.statusPill}>
+                                          {humanizeKey(entry.status)}
+                                        </span>
+                                      </div>
+                                      <small>
+                                        Solicitada {formatDate(entry.createdAt)}
+                                        {entry.reviewedAt
+                                          ? ` · revisada ${formatDate(
+                                              entry.reviewedAt,
+                                            )}`
+                                          : ''}
+                                      </small>
+                                      {entry.rationale ? (
+                                        <small>{entry.rationale}</small>
+                                      ) : null}
+                                      {entry.reviewNote ? (
+                                        <small>{entry.reviewNote}</small>
+                                      ) : null}
+                                    </div>
+                                  ),
+                                )
+                              )}
+                            </div>
+                          </div>
+                        ) : null}
 
                         <div className={styles.stack}>
                           <div className={styles.sectionHeading}>
@@ -10677,9 +11371,40 @@ export function App() {
                               <h3>Revisión humana obligatoria</h3>
                             </div>
                           </div>
+                          <div className={styles.actionRow}>
+                            {(
+                              [
+                                'all',
+                                'pending',
+                                'approved',
+                                'rejected',
+                              ] as const
+                            ).map((filter) => (
+                              <button
+                                key={filter}
+                                className={
+                                  invoiceAiApprovalStatusFilter === filter
+                                    ? styles.secondaryButton
+                                    : styles.ghostButton
+                                }
+                                onClick={() => {
+                                  setInvoiceAiApprovalStatusFilter(filter);
+                                }}
+                                type="button"
+                              >
+                                {filter === 'all' ? 'Todas' : humanizeKey(filter)}
+                              </button>
+                            ))}
+                          </div>
                           {invoiceAssistantAiApprovalRequests.length === 0 ? (
                             <div className={styles.emptyState}>
-                              <p>No hay approvals registrados para este agente todavia.</p>
+                              <p>
+                                No hay approvals en estado{' '}
+                                {invoiceAiApprovalStatusFilter === 'all'
+                                  ? 'visible'
+                                  : humanizeKey(invoiceAiApprovalStatusFilter)}
+                                .
+                              </p>
                             </div>
                           ) : (
                             invoiceAssistantAiApprovalRequests.slice(0, 3).map((entry) => (
@@ -10691,6 +11416,32 @@ export function App() {
                                   </span>
                                 </div>
                                 <small>{entry.summary}</small>
+                                <small>
+                                  Solicitada {formatDate(entry.createdAt)}
+                                  {entry.reviewedAt
+                                    ? ` · revisada ${formatDate(entry.reviewedAt)}`
+                                    : ''}
+                                </small>
+                                <div className={styles.actionRow}>
+                                  <button
+                                    className={styles.ghostButton}
+                                    disabled={
+                                      actionLoading ===
+                                      `load-invoice-ai-run-detail:${entry.suggestionRunId}`
+                                    }
+                                    onClick={() =>
+                                      void handleOpenInvoiceAiSuggestionRunDetail(
+                                        entry.suggestionRunId,
+                                      )
+                                    }
+                                    type="button"
+                                  >
+                                    {actionLoading ===
+                                    `load-invoice-ai-run-detail:${entry.suggestionRunId}`
+                                      ? 'Cargando handoff...'
+                                      : 'Ver handoff'}
+                                  </button>
+                                </div>
                                 {entry.status === 'pending' ? (
                                   <div className={styles.actionRow}>
                                     <button

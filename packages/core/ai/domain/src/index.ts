@@ -7,8 +7,16 @@ export type AiToolAvailability = 'ready' | 'planned';
 export type AiToolRiskLevel = 'low' | 'medium' | 'high';
 export type AiToolActionKind = 'read' | 'draft' | 'propose' | 'execute';
 export type AiToolAccessLevel = 'allowed' | 'approval_required' | 'blocked';
+export type AiToolExecutionMode =
+  | 'suggestion_only'
+  | 'guarded_execution_planned';
+export type AiToolStateMutation = 'none' | 'planned';
+export type AiToolExternalSideEffects = 'none' | 'planned';
 export type AiApprovalScope = 'suggestion_review';
 export type AiApprovalRequestStatus = 'pending' | 'approved' | 'rejected';
+export type AiSuggestionRunApprovalStatus =
+  | 'not_requested'
+  | AiApprovalRequestStatus;
 
 export interface AiAgentCatalogEntry {
   key: string;
@@ -27,6 +35,26 @@ export interface AiSuggestionOutputDescriptor {
   description: string;
 }
 
+export interface AiToolInputContract {
+  sourceSurfaceKeys: string[];
+  primaryPayload: string;
+  requiredContext: string[];
+}
+
+export interface AiToolOutputContract {
+  primaryArtifact: string;
+  suggestedOutputKeys: string[];
+  humanReviewFocus: string[];
+}
+
+export interface AiToolExecutionBoundary {
+  executionMode: AiToolExecutionMode;
+  stateMutation: AiToolStateMutation;
+  externalSideEffects: AiToolExternalSideEffects;
+  reviewRequirement: string;
+  blockedCapabilities: string[];
+}
+
 export interface AiToolDefinition {
   key: string;
   title: string;
@@ -36,6 +64,9 @@ export interface AiToolDefinition {
   riskLevel: AiToolRiskLevel;
   actionKind: AiToolActionKind;
   requiresApproval: boolean;
+  inputContract: AiToolInputContract;
+  outputContract: AiToolOutputContract;
+  executionBoundary: AiToolExecutionBoundary;
 }
 
 export interface AiAgentToolAccessEntry {
@@ -119,6 +150,23 @@ export interface CreateAiSuggestionRunCommand {
 export interface AiSuggestionRunRecord extends CreateAiSuggestionRunCommand {
   id: string;
   createdAt: Date;
+}
+
+export interface AiSuggestionRunApprovalSummary {
+  status: AiSuggestionRunApprovalStatus;
+  totalRequests: number;
+  latestRequestId: string | null;
+  latestPolicyKey: string | null;
+  latestRequestedAt: Date | null;
+  latestReviewedAt: Date | null;
+}
+
+export interface AiSuggestionRunHistoryEntry extends AiSuggestionRunRecord {
+  approvalSummary: AiSuggestionRunApprovalSummary;
+}
+
+export interface AiSuggestionRunDetailView extends AiSuggestionRunHistoryEntry {
+  approvalRequests: AiApprovalRequestRecord[];
 }
 
 export interface CreateAiApprovalRequestCommand {

@@ -5,6 +5,8 @@ import {
   GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
+  GetAiToolRegistryEntryByKeyUseCase,
+  GetTenantAiSuggestionRunDetailUseCase,
   GetTenantAiSuggestionEnvelopeUseCase,
   GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
   GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
@@ -79,6 +81,10 @@ import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-a
       useFactory: () => new GetAiPromptRegistryEntryByAgentKeyUseCase(),
     },
     {
+      provide: GetAiToolRegistryEntryByKeyUseCase,
+      useFactory: () => new GetAiToolRegistryEntryByKeyUseCase(),
+    },
+    {
       provide: GetAiAgentToolAccessByAgentKeyUseCase,
       useFactory: () => new GetAiAgentToolAccessByAgentKeyUseCase(),
     },
@@ -124,11 +130,38 @@ import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-a
     },
     {
       provide: ListTenantAiSuggestionRunsUseCase,
-      inject: [TENANT_REPOSITORY, AI_SUGGESTION_RUN_REPOSITORY],
-      useFactory: (tenantRepository, aiSuggestionRunRepository) =>
+      inject: [
+        TENANT_REPOSITORY,
+        AI_SUGGESTION_RUN_REPOSITORY,
+        AI_APPROVAL_REQUEST_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        aiSuggestionRunRepository,
+        aiApprovalRequestRepository,
+      ) =>
         new ListTenantAiSuggestionRunsUseCase(
           tenantRepository,
           aiSuggestionRunRepository,
+          aiApprovalRequestRepository,
+        ),
+    },
+    {
+      provide: GetTenantAiSuggestionRunDetailUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        AI_SUGGESTION_RUN_REPOSITORY,
+        AI_APPROVAL_REQUEST_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        aiSuggestionRunRepository,
+        aiApprovalRequestRepository,
+      ) =>
+        new GetTenantAiSuggestionRunDetailUseCase(
+          tenantRepository,
+          aiSuggestionRunRepository,
+          aiApprovalRequestRepository,
         ),
     },
     {

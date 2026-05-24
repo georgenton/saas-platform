@@ -42,6 +42,7 @@ import {
 } from '@saas-platform/feature-flags-application';
 import { FeatureFlag } from '@saas-platform/feature-flags-domain';
 import {
+  GetTenantAiSuggestionRunDetailUseCase,
   ListTenantAiApprovalRequestsUseCase,
   ListTenantAiSuggestionRunsUseCase,
   PrepareTenantAiSuggestionRunUseCase,
@@ -238,6 +239,7 @@ describe('API', () => {
   let getTenantConversationThreadByIdUseCase: { execute: jest.Mock };
   let getTenantGrowthAssistDailyAgendaUseCase: { execute: jest.Mock };
   let listTenantAiApprovalRequestsUseCase: { execute: jest.Mock };
+  let getTenantAiSuggestionRunDetailUseCase: { execute: jest.Mock };
   let listTenantAiSuggestionRunsUseCase: { execute: jest.Mock };
   let prepareTenantAiSuggestionRunUseCase: { execute: jest.Mock };
   let requestTenantAiSuggestionRunApprovalUseCase: { execute: jest.Mock };
@@ -1484,6 +1486,14 @@ describe('API', () => {
     summary:
       'Growth Assist Coach prepared a suggestion-mode handoff for Growth Assist daily agenda using prompt pack growth-assist-coach-core@v1.',
     suggestedOutputKeys: ['reply_draft', 'next_action_brief', 'follow_up_plan'],
+    approvalSummary: {
+      status: 'pending' as const,
+      totalRequests: 1,
+      latestRequestId: 'ai-approval-001',
+      latestPolicyKey: 'growth-assist-suggestion-review',
+      latestRequestedAt: new Date('2026-05-20T10:38:00.000Z'),
+      latestReviewedAt: null,
+    },
     envelope: {
       tenantSlug: 'saas-platform',
       generatedAt: new Date('2026-05-20T10:36:00.000Z'),
@@ -2795,6 +2805,12 @@ describe('API', () => {
     listTenantAiApprovalRequestsUseCase = {
       execute: jest.fn().mockResolvedValue([growthAssistApprovalRequest]),
     };
+    getTenantAiSuggestionRunDetailUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        ...growthAssistSuggestionRun,
+        approvalRequests: [growthAssistApprovalRequest],
+      }),
+    };
     listTenantAiSuggestionRunsUseCase = {
       execute: jest.fn().mockResolvedValue([growthAssistSuggestionRun]),
     };
@@ -3653,6 +3669,8 @@ describe('API', () => {
       .useValue(getTenantGrowthAssistDailyAgendaUseCase)
       .overrideProvider(ListTenantAiApprovalRequestsUseCase)
       .useValue(listTenantAiApprovalRequestsUseCase)
+      .overrideProvider(GetTenantAiSuggestionRunDetailUseCase)
+      .useValue(getTenantAiSuggestionRunDetailUseCase)
       .overrideProvider(ListTenantAiSuggestionRunsUseCase)
       .useValue(listTenantAiSuggestionRunsUseCase)
       .overrideProvider(PrepareTenantAiSuggestionRunUseCase)
@@ -5445,6 +5463,35 @@ describe('API', () => {
           riskLevel: 'low',
           actionKind: 'draft',
           requiresApproval: false,
+          inputContract: {
+            sourceSurfaceKeys: ['growth_assist_daily_agenda'],
+            primaryPayload:
+              'Tenant-scoped Growth Assist agenda with hottest conversation cues and deterministic reply suggestions.',
+            requiredContext: [
+              'conversation heat',
+              'reply recommendation',
+              'playbook hints',
+            ],
+          },
+          outputContract: {
+            primaryArtifact: 'Customer-facing reply draft.',
+            suggestedOutputKeys: ['reply_draft'],
+            humanReviewFocus: [
+              'Confirm tone still fits the customer context.',
+              'Verify no promise, discount, or operational commitment was invented.',
+            ],
+          },
+          executionBoundary: {
+            executionMode: 'suggestion_only',
+            stateMutation: 'none',
+            externalSideEffects: 'none',
+            reviewRequirement:
+              'An operator should review the draft before sending it through any real channel.',
+            blockedCapabilities: [
+              'send_whatsapp_message',
+              'mutate_conversation_state',
+            ],
+          },
         },
         {
           key: 'growth_assist_follow_up_planning',
@@ -5456,6 +5503,35 @@ describe('API', () => {
           riskLevel: 'low',
           actionKind: 'propose',
           requiresApproval: false,
+          inputContract: {
+            sourceSurfaceKeys: ['growth_assist_daily_agenda'],
+            primaryPayload:
+              'Tenant-scoped Growth Assist agenda with waiting-customer timing, playbooks, and hottest commercial opportunities.',
+            requiredContext: [
+              'follow-up timing',
+              'playbook guidance',
+              'next-action recommendation',
+            ],
+          },
+          outputContract: {
+            primaryArtifact: 'Follow-up plan and next-action brief.',
+            suggestedOutputKeys: ['follow_up_plan', 'next_action_brief'],
+            humanReviewFocus: [
+              'Confirm the sequence matches the operator capacity and business context.',
+              'Check that escalation or discount ideas stay within policy.',
+            ],
+          },
+          executionBoundary: {
+            executionMode: 'suggestion_only',
+            stateMutation: 'none',
+            externalSideEffects: 'none',
+            reviewRequirement:
+              'The operator should translate the plan into real CRM or messaging actions manually.',
+            blockedCapabilities: [
+              'schedule_message_send',
+              'update_case_follow_up_state',
+            ],
+          },
         },
         {
           key: 'growth_case_assignment_execution',
@@ -5467,6 +5543,35 @@ describe('API', () => {
           riskLevel: 'high',
           actionKind: 'execute',
           requiresApproval: true,
+          inputContract: {
+            sourceSurfaceKeys: ['growth_assist_daily_agenda'],
+            primaryPayload:
+              'Tenant-scoped operational routing signals and deterministic assignment recommendations.',
+            requiredContext: [
+              'assignment recommendation',
+              'queue pressure',
+              'assignee availability',
+            ],
+          },
+          outputContract: {
+            primaryArtifact: 'Assignment or routing change intent.',
+            suggestedOutputKeys: ['assignment_change_intent'],
+            humanReviewFocus: [
+              'Validate the assignee or queue target still makes operational sense.',
+              'Confirm any routing mutation is explicitly approved before execution.',
+            ],
+          },
+          executionBoundary: {
+            executionMode: 'guarded_execution_planned',
+            stateMutation: 'planned',
+            externalSideEffects: 'planned',
+            reviewRequirement:
+              'This tool stays blocked until approval memory and guarded execution flows are operational.',
+            blockedCapabilities: [
+              'assign_operational_case',
+              'reroute_queue_membership',
+            ],
+          },
         },
         {
           key: 'invoice_document_drafting',
@@ -5478,6 +5583,40 @@ describe('API', () => {
           riskLevel: 'medium',
           actionKind: 'draft',
           requiresApproval: false,
+          inputContract: {
+            sourceSurfaceKeys: ['invoice_document_drafting'],
+            primaryPayload:
+              'Tenant-scoped invoicing drafting surface with deterministic readiness, checklist, and blocker signals.',
+            requiredContext: [
+              'readiness summary',
+              'drafting checklist',
+              'fiscal blocker explanation',
+            ],
+          },
+          outputContract: {
+            primaryArtifact: 'Document drafting brief and review checklist.',
+            suggestedOutputKeys: [
+              'drafting_brief',
+              'review_checklist',
+              'blocker_explanation',
+            ],
+            humanReviewFocus: [
+              'Verify the suggestion does not replace fiscal validation.',
+              'Confirm tax-document facts still match the deterministic invoicing surface.',
+            ],
+          },
+          executionBoundary: {
+            executionMode: 'suggestion_only',
+            stateMutation: 'none',
+            externalSideEffects: 'none',
+            reviewRequirement:
+              'Document guidance must stay advisory and be reviewed before any operator uses it in fiscal work.',
+            blockedCapabilities: [
+              'sign_tax_document',
+              'submit_tax_document',
+              'mark_document_authorized',
+            ],
+          },
         },
         {
           key: 'ecommerce_launch_briefing',
@@ -5489,8 +5628,89 @@ describe('API', () => {
           riskLevel: 'medium',
           actionKind: 'propose',
           requiresApproval: false,
+          inputContract: {
+            sourceSurfaceKeys: ['ecommerce_launch_workspace'],
+            primaryPayload:
+              'Planned ecommerce launch workspace with deterministic catalog, landing, and campaign context once available.',
+            requiredContext: [
+              'catalog facts',
+              'landing structure',
+              'campaign scope',
+            ],
+          },
+          outputContract: {
+            primaryArtifact: 'Launch brief and structured launch proposal.',
+            suggestedOutputKeys: ['launch_brief'],
+            humanReviewFocus: [
+              'Check that launch claims stay grounded in real catalog data.',
+              'Review that campaign structure fits the operator plan before publication.',
+            ],
+          },
+          executionBoundary: {
+            executionMode: 'guarded_execution_planned',
+            stateMutation: 'planned',
+            externalSideEffects: 'planned',
+            reviewRequirement:
+              'Suggestions should be reviewed by an operator before they influence storefront or campaign work.',
+            blockedCapabilities: [
+              'publish_storefront_content',
+              'launch_campaign',
+            ],
+          },
         },
       ]);
+  });
+
+  it('GET /api/ai/tools/:toolKey should return one explicit AI tool contract', async () => {
+    await request(httpServer)
+      .get('/api/ai/tools/invoice_document_drafting')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        key: 'invoice_document_drafting',
+        title: 'Invoice document drafting',
+        summary:
+          'Prepares deterministic drafting, checklist, and review suggestions for invoicing document workflows.',
+        domainKey: 'invoicing',
+        availability: 'ready',
+        riskLevel: 'medium',
+        actionKind: 'draft',
+        requiresApproval: false,
+        inputContract: {
+          sourceSurfaceKeys: ['invoice_document_drafting'],
+          primaryPayload:
+            'Tenant-scoped invoicing drafting surface with deterministic readiness, checklist, and blocker signals.',
+          requiredContext: [
+            'readiness summary',
+            'drafting checklist',
+            'fiscal blocker explanation',
+          ],
+        },
+        outputContract: {
+          primaryArtifact: 'Document drafting brief and review checklist.',
+          suggestedOutputKeys: [
+            'drafting_brief',
+            'review_checklist',
+            'blocker_explanation',
+          ],
+          humanReviewFocus: [
+            'Verify the suggestion does not replace fiscal validation.',
+            'Confirm tax-document facts still match the deterministic invoicing surface.',
+          ],
+        },
+        executionBoundary: {
+          executionMode: 'suggestion_only',
+          stateMutation: 'none',
+          externalSideEffects: 'none',
+          reviewRequirement:
+            'Document guidance must stay advisory and be reviewed before any operator uses it in fiscal work.',
+          blockedCapabilities: [
+            'sign_tax_document',
+            'submit_tax_document',
+            'mark_document_authorized',
+          ],
+        },
+      });
   });
 
   it('GET /api/ai/approval-policies should return the transversal AI approval policy registry', async () => {
@@ -5621,6 +5841,35 @@ describe('API', () => {
             riskLevel: 'low',
             actionKind: 'draft',
             requiresApproval: false,
+            inputContract: {
+              sourceSurfaceKeys: ['growth_assist_daily_agenda'],
+              primaryPayload:
+                'Tenant-scoped Growth Assist agenda with hottest conversation cues and deterministic reply suggestions.',
+              requiredContext: [
+                'conversation heat',
+                'reply recommendation',
+                'playbook hints',
+              ],
+            },
+            outputContract: {
+              primaryArtifact: 'Customer-facing reply draft.',
+              suggestedOutputKeys: ['reply_draft'],
+              humanReviewFocus: [
+                'Confirm tone still fits the customer context.',
+                'Verify no promise, discount, or operational commitment was invented.',
+              ],
+            },
+            executionBoundary: {
+              executionMode: 'suggestion_only',
+              stateMutation: 'none',
+              externalSideEffects: 'none',
+              reviewRequirement:
+                'An operator should review the draft before sending it through any real channel.',
+              blockedCapabilities: [
+                'send_whatsapp_message',
+                'mutate_conversation_state',
+              ],
+            },
           },
           accessLevel: 'allowed',
           rationale:
@@ -5637,6 +5886,35 @@ describe('API', () => {
             riskLevel: 'low',
             actionKind: 'propose',
             requiresApproval: false,
+            inputContract: {
+              sourceSurfaceKeys: ['growth_assist_daily_agenda'],
+              primaryPayload:
+                'Tenant-scoped Growth Assist agenda with waiting-customer timing, playbooks, and hottest commercial opportunities.',
+              requiredContext: [
+                'follow-up timing',
+                'playbook guidance',
+                'next-action recommendation',
+              ],
+            },
+            outputContract: {
+              primaryArtifact: 'Follow-up plan and next-action brief.',
+              suggestedOutputKeys: ['follow_up_plan', 'next_action_brief'],
+              humanReviewFocus: [
+                'Confirm the sequence matches the operator capacity and business context.',
+                'Check that escalation or discount ideas stay within policy.',
+              ],
+            },
+            executionBoundary: {
+              executionMode: 'suggestion_only',
+              stateMutation: 'none',
+              externalSideEffects: 'none',
+              reviewRequirement:
+                'The operator should translate the plan into real CRM or messaging actions manually.',
+              blockedCapabilities: [
+                'schedule_message_send',
+                'update_case_follow_up_state',
+              ],
+            },
           },
           accessLevel: 'allowed',
           rationale:
@@ -5653,6 +5931,35 @@ describe('API', () => {
             riskLevel: 'high',
             actionKind: 'execute',
             requiresApproval: true,
+            inputContract: {
+              sourceSurfaceKeys: ['growth_assist_daily_agenda'],
+              primaryPayload:
+                'Tenant-scoped operational routing signals and deterministic assignment recommendations.',
+              requiredContext: [
+                'assignment recommendation',
+                'queue pressure',
+                'assignee availability',
+              ],
+            },
+            outputContract: {
+              primaryArtifact: 'Assignment or routing change intent.',
+              suggestedOutputKeys: ['assignment_change_intent'],
+              humanReviewFocus: [
+                'Validate the assignee or queue target still makes operational sense.',
+                'Confirm any routing mutation is explicitly approved before execution.',
+              ],
+            },
+            executionBoundary: {
+              executionMode: 'guarded_execution_planned',
+              stateMutation: 'planned',
+              externalSideEffects: 'planned',
+              reviewRequirement:
+                'This tool stays blocked until approval memory and guarded execution flows are operational.',
+              blockedCapabilities: [
+                'assign_operational_case',
+                'reroute_queue_membership',
+              ],
+            },
           },
           accessLevel: 'blocked',
           rationale:
@@ -5743,6 +6050,35 @@ describe('API', () => {
               riskLevel: 'low',
               actionKind: 'draft',
               requiresApproval: false,
+              inputContract: {
+                sourceSurfaceKeys: ['growth_assist_daily_agenda'],
+                primaryPayload:
+                  'Tenant-scoped Growth Assist agenda with hottest conversation cues and deterministic reply suggestions.',
+                requiredContext: [
+                  'conversation heat',
+                  'reply recommendation',
+                  'playbook hints',
+                ],
+              },
+              outputContract: {
+                primaryArtifact: 'Customer-facing reply draft.',
+                suggestedOutputKeys: ['reply_draft'],
+                humanReviewFocus: [
+                  'Confirm tone still fits the customer context.',
+                  'Verify no promise, discount, or operational commitment was invented.',
+                ],
+              },
+              executionBoundary: {
+                executionMode: 'suggestion_only',
+                stateMutation: 'none',
+                externalSideEffects: 'none',
+                reviewRequirement:
+                  'An operator should review the draft before sending it through any real channel.',
+                blockedCapabilities: [
+                  'send_whatsapp_message',
+                  'mutate_conversation_state',
+                ],
+              },
             },
             accessLevel: 'allowed',
             rationale:
@@ -5759,6 +6095,35 @@ describe('API', () => {
               riskLevel: 'low',
               actionKind: 'propose',
               requiresApproval: false,
+              inputContract: {
+                sourceSurfaceKeys: ['growth_assist_daily_agenda'],
+                primaryPayload:
+                  'Tenant-scoped Growth Assist agenda with waiting-customer timing, playbooks, and hottest commercial opportunities.',
+                requiredContext: [
+                  'follow-up timing',
+                  'playbook guidance',
+                  'next-action recommendation',
+                ],
+              },
+              outputContract: {
+                primaryArtifact: 'Follow-up plan and next-action brief.',
+                suggestedOutputKeys: ['follow_up_plan', 'next_action_brief'],
+                humanReviewFocus: [
+                  'Confirm the sequence matches the operator capacity and business context.',
+                  'Check that escalation or discount ideas stay within policy.',
+                ],
+              },
+              executionBoundary: {
+                executionMode: 'suggestion_only',
+                stateMutation: 'none',
+                externalSideEffects: 'none',
+                reviewRequirement:
+                  'The operator should translate the plan into real CRM or messaging actions manually.',
+                blockedCapabilities: [
+                  'schedule_message_send',
+                  'update_case_follow_up_state',
+                ],
+              },
             },
             accessLevel: 'allowed',
             rationale:
@@ -5933,6 +6298,40 @@ describe('API', () => {
               riskLevel: 'medium',
               actionKind: 'draft',
               requiresApproval: false,
+              inputContract: {
+                sourceSurfaceKeys: ['invoice_document_drafting'],
+                primaryPayload:
+                  'Tenant-scoped invoicing drafting surface with deterministic readiness, checklist, and blocker signals.',
+                requiredContext: [
+                  'readiness summary',
+                  'drafting checklist',
+                  'fiscal blocker explanation',
+                ],
+              },
+              outputContract: {
+                primaryArtifact: 'Document drafting brief and review checklist.',
+                suggestedOutputKeys: [
+                  'drafting_brief',
+                  'review_checklist',
+                  'blocker_explanation',
+                ],
+                humanReviewFocus: [
+                  'Verify the suggestion does not replace fiscal validation.',
+                  'Confirm tax-document facts still match the deterministic invoicing surface.',
+                ],
+              },
+              executionBoundary: {
+                executionMode: 'suggestion_only',
+                stateMutation: 'none',
+                externalSideEffects: 'none',
+                reviewRequirement:
+                  'Document guidance must stay advisory and be reviewed before any operator uses it in fiscal work.',
+                blockedCapabilities: [
+                  'sign_tax_document',
+                  'submit_tax_document',
+                  'mark_document_authorized',
+                ],
+              },
             },
             accessLevel: 'approval_required',
             rationale:
@@ -6028,6 +6427,14 @@ describe('API', () => {
             'next_action_brief',
             'follow_up_plan',
           ],
+          approvalSummary: {
+            status: 'pending',
+            totalRequests: 1,
+            latestRequestId: 'ai-approval-001',
+            latestPolicyKey: 'growth-assist-suggestion-review',
+            latestRequestedAt: '2026-05-20T10:38:00.000Z',
+            latestReviewedAt: null,
+          },
           envelope: {
             tenantSlug: 'saas-platform',
             generatedAt: '2026-05-20T10:36:00.000Z',
@@ -6120,10 +6527,48 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs/:runId should return one suggestion run detail with approval timeline', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ai/tenants/saas-platform/agents/growth-assist-coach/suggestion-runs/ai-run-001',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            id: 'ai-run-001',
+            agentKey: 'growth-assist-coach',
+            approvalSummary: {
+              status: 'pending',
+              totalRequests: 1,
+              latestRequestId: 'ai-approval-001',
+              latestPolicyKey: 'growth-assist-suggestion-review',
+              latestRequestedAt: '2026-05-20T10:38:00.000Z',
+              latestReviewedAt: null,
+            },
+            approvalRequests: [
+              expect.objectContaining({
+                id: 'ai-approval-001',
+                suggestionRunId: 'ai-run-001',
+                status: 'pending',
+              }),
+            ],
+          }),
+        );
+      });
+
+    expect(getTenantAiSuggestionRunDetailUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'growth-assist-coach',
+      'ai-run-001',
+    );
+  });
+
   it('GET /api/ai/tenants/:slug/agents/:agentKey/approval-requests should return approval request history', async () => {
     await request(httpServer)
       .get(
-        '/api/ai/tenants/saas-platform/agents/growth-assist-coach/approval-requests?limit=5',
+        '/api/ai/tenants/saas-platform/agents/growth-assist-coach/approval-requests?limit=5&status=pending',
       )
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
@@ -6153,7 +6598,10 @@ describe('API', () => {
     expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'growth-assist-coach',
-      5,
+      {
+        limit: 5,
+        status: 'pending',
+      },
     );
   });
 
@@ -6171,6 +6619,14 @@ describe('API', () => {
             promptPackKey: 'growth-assist-coach-core',
             requestedByUserId: user.id,
             requestedByEmail: user.email,
+            approvalSummary: {
+              status: 'not_requested',
+              totalRequests: 0,
+              latestRequestId: null,
+              latestPolicyKey: null,
+              latestRequestedAt: null,
+              latestReviewedAt: null,
+            },
           }),
         );
       });

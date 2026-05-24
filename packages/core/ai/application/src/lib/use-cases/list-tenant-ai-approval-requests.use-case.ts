@@ -1,4 +1,7 @@
-import { AiApprovalRequestRecord } from '@saas-platform/ai-domain';
+import {
+  AiApprovalRequestRecord,
+  AiApprovalRequestStatus,
+} from '@saas-platform/ai-domain';
 import {
   TenantNotFoundError,
   TenantRepository,
@@ -14,7 +17,10 @@ export class ListTenantAiApprovalRequestsUseCase {
   async execute(
     tenantSlug: string,
     agentKey: string,
-    limit?: number | null,
+    options?: {
+      limit?: number | null;
+      status?: AiApprovalRequestStatus | null;
+    },
   ): Promise<AiApprovalRequestRecord[]> {
     const tenant = await this.tenantRepository.findBySlug(tenantSlug);
 
@@ -25,7 +31,7 @@ export class ListTenantAiApprovalRequestsUseCase {
     return this.aiApprovalRequestRepository.findByTenantIdAndAgentKey(
       tenant.id,
       agentKey,
-      limit,
+      options,
     );
   }
 }

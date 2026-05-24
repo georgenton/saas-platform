@@ -59,6 +59,35 @@ export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
     riskLevel: 'low',
     actionKind: 'draft',
     requiresApproval: false,
+    inputContract: {
+      sourceSurfaceKeys: ['growth_assist_daily_agenda'],
+      primaryPayload:
+        'Tenant-scoped Growth Assist agenda with hottest conversation cues and deterministic reply suggestions.',
+      requiredContext: [
+        'conversation heat',
+        'reply recommendation',
+        'playbook hints',
+      ],
+    },
+    outputContract: {
+      primaryArtifact: 'Customer-facing reply draft.',
+      suggestedOutputKeys: ['reply_draft'],
+      humanReviewFocus: [
+        'Confirm tone still fits the customer context.',
+        'Verify no promise, discount, or operational commitment was invented.',
+      ],
+    },
+    executionBoundary: {
+      executionMode: 'suggestion_only',
+      stateMutation: 'none',
+      externalSideEffects: 'none',
+      reviewRequirement:
+        'An operator should review the draft before sending it through any real channel.',
+      blockedCapabilities: [
+        'send_whatsapp_message',
+        'mutate_conversation_state',
+      ],
+    },
   },
   {
     key: 'growth_assist_follow_up_planning',
@@ -70,6 +99,35 @@ export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
     riskLevel: 'low',
     actionKind: 'propose',
     requiresApproval: false,
+    inputContract: {
+      sourceSurfaceKeys: ['growth_assist_daily_agenda'],
+      primaryPayload:
+        'Tenant-scoped Growth Assist agenda with waiting-customer timing, playbooks, and hottest commercial opportunities.',
+      requiredContext: [
+        'follow-up timing',
+        'playbook guidance',
+        'next-action recommendation',
+      ],
+    },
+    outputContract: {
+      primaryArtifact: 'Follow-up plan and next-action brief.',
+      suggestedOutputKeys: ['follow_up_plan', 'next_action_brief'],
+      humanReviewFocus: [
+        'Confirm the sequence matches the operator capacity and business context.',
+        'Check that escalation or discount ideas stay within policy.',
+      ],
+    },
+    executionBoundary: {
+      executionMode: 'suggestion_only',
+      stateMutation: 'none',
+      externalSideEffects: 'none',
+      reviewRequirement:
+        'The operator should translate the plan into real CRM or messaging actions manually.',
+      blockedCapabilities: [
+        'schedule_message_send',
+        'update_case_follow_up_state',
+      ],
+    },
   },
   {
     key: 'growth_case_assignment_execution',
@@ -81,6 +139,35 @@ export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
     riskLevel: 'high',
     actionKind: 'execute',
     requiresApproval: true,
+    inputContract: {
+      sourceSurfaceKeys: ['growth_assist_daily_agenda'],
+      primaryPayload:
+        'Tenant-scoped operational routing signals and deterministic assignment recommendations.',
+      requiredContext: [
+        'assignment recommendation',
+        'queue pressure',
+        'assignee availability',
+      ],
+    },
+    outputContract: {
+      primaryArtifact: 'Assignment or routing change intent.',
+      suggestedOutputKeys: ['assignment_change_intent'],
+      humanReviewFocus: [
+        'Validate the assignee or queue target still makes operational sense.',
+        'Confirm any routing mutation is explicitly approved before execution.',
+      ],
+    },
+    executionBoundary: {
+      executionMode: 'guarded_execution_planned',
+      stateMutation: 'planned',
+      externalSideEffects: 'planned',
+      reviewRequirement:
+        'This tool stays blocked until approval memory and guarded execution flows are operational.',
+      blockedCapabilities: [
+        'assign_operational_case',
+        'reroute_queue_membership',
+      ],
+    },
   },
   {
     key: 'invoice_document_drafting',
@@ -92,6 +179,40 @@ export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
     riskLevel: 'medium',
     actionKind: 'draft',
     requiresApproval: false,
+    inputContract: {
+      sourceSurfaceKeys: ['invoice_document_drafting'],
+      primaryPayload:
+        'Tenant-scoped invoicing drafting surface with deterministic readiness, checklist, and blocker signals.',
+      requiredContext: [
+        'readiness summary',
+        'drafting checklist',
+        'fiscal blocker explanation',
+      ],
+    },
+    outputContract: {
+      primaryArtifact: 'Document drafting brief and review checklist.',
+      suggestedOutputKeys: [
+        'drafting_brief',
+        'review_checklist',
+        'blocker_explanation',
+      ],
+      humanReviewFocus: [
+        'Verify the suggestion does not replace fiscal validation.',
+        'Confirm tax-document facts still match the deterministic invoicing surface.',
+      ],
+    },
+    executionBoundary: {
+      executionMode: 'suggestion_only',
+      stateMutation: 'none',
+      externalSideEffects: 'none',
+      reviewRequirement:
+        'Document guidance must stay advisory and be reviewed before any operator uses it in fiscal work.',
+      blockedCapabilities: [
+        'sign_tax_document',
+        'submit_tax_document',
+        'mark_document_authorized',
+      ],
+    },
   },
   {
     key: 'ecommerce_launch_briefing',
@@ -103,8 +224,57 @@ export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
     riskLevel: 'medium',
     actionKind: 'propose',
     requiresApproval: false,
+    inputContract: {
+      sourceSurfaceKeys: ['ecommerce_launch_workspace'],
+      primaryPayload:
+        'Planned ecommerce launch workspace with deterministic catalog, landing, and campaign context once available.',
+      requiredContext: [
+        'catalog facts',
+        'landing structure',
+        'campaign scope',
+      ],
+    },
+    outputContract: {
+      primaryArtifact: 'Launch brief and structured launch proposal.',
+      suggestedOutputKeys: ['launch_brief'],
+      humanReviewFocus: [
+        'Check that launch claims stay grounded in real catalog data.',
+        'Review that campaign structure fits the operator plan before publication.',
+      ],
+    },
+    executionBoundary: {
+      executionMode: 'guarded_execution_planned',
+      stateMutation: 'planned',
+      externalSideEffects: 'planned',
+      reviewRequirement:
+        'Suggestions should be reviewed by an operator before they influence storefront or campaign work.',
+      blockedCapabilities: [
+        'publish_storefront_content',
+        'launch_campaign',
+      ],
+    },
   },
 ];
+
+function cloneAiToolDefinition(entry: AiToolDefinition): AiToolDefinition {
+  return {
+    ...entry,
+    inputContract: {
+      ...entry.inputContract,
+      sourceSurfaceKeys: [...entry.inputContract.sourceSurfaceKeys],
+      requiredContext: [...entry.inputContract.requiredContext],
+    },
+    outputContract: {
+      ...entry.outputContract,
+      suggestedOutputKeys: [...entry.outputContract.suggestedOutputKeys],
+      humanReviewFocus: [...entry.outputContract.humanReviewFocus],
+    },
+    executionBoundary: {
+      ...entry.executionBoundary,
+      blockedCapabilities: [...entry.executionBoundary.blockedCapabilities],
+    },
+  };
+}
 
 export const AI_PROMPT_REGISTRY: AiPromptRegistryEntry[] = [
   {
@@ -265,7 +435,15 @@ export const AI_AGENT_TOOL_ACCESS: AiAgentToolAccessEntry[] = [
 ];
 
 export function listAiToolRegistry(): AiToolDefinition[] {
-  return AI_TOOL_REGISTRY.map((entry) => ({ ...entry }));
+  return AI_TOOL_REGISTRY.map((entry) => cloneAiToolDefinition(entry));
+}
+
+export function findAiToolRegistryEntryByKey(
+  toolKey: string,
+): AiToolDefinition | null {
+  const entry = AI_TOOL_REGISTRY.find((candidate) => candidate.key === toolKey);
+
+  return entry ? cloneAiToolDefinition(entry) : null;
 }
 
 export function listAiAgentToolAccessByAgentKey(
@@ -280,7 +458,7 @@ export function listAiAgentToolAccessByAgentKey(
       }
 
       return {
-        tool: { ...tool },
+        tool: cloneAiToolDefinition(tool),
         accessLevel: entry.accessLevel,
         rationale: entry.rationale,
       };

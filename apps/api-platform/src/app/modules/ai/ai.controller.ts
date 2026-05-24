@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
@@ -18,9 +19,12 @@ import {
   AiApprovalRequestAlreadyPendingError,
   AiApprovalRequestAlreadyReviewedError,
   AiApprovalRequestNotFoundError,
+  AiToolNotFoundError,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
+  GetAiToolRegistryEntryByKeyUseCase,
+  GetTenantAiSuggestionRunDetailUseCase,
   AiAgentNotFoundError,
   GetTenantAiSuggestionEnvelopeUseCase,
   ListTenantAiApprovalRequestsUseCase,
@@ -33,7 +37,9 @@ import {
   RequestTenantAiSuggestionRunApprovalUseCase,
   ReviewTenantAiApprovalRequestUseCase,
   AiSuggestionRunNotFoundError,
+  buildInitialAiSuggestionRunApprovalSummary,
 } from '@saas-platform/ai-application';
+import { AiApprovalRequestStatus } from '@saas-platform/ai-domain';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
 import { GROWTH_PERMISSIONS } from '@saas-platform/growth-application';
 import { INVOICING_PERMISSIONS } from '@saas-platform/invoicing-application';
@@ -75,9 +81,19 @@ import {
   AiSuggestionRunResponseDto,
   toAiSuggestionRunResponseDto,
 } from './dto/ai-suggestion-run.response';
+import {
+  AiSuggestionRunDetailResponseDto,
+  toAiSuggestionRunDetailResponseDto,
+} from './dto/ai-suggestion-run-detail.response';
 
 @Controller('ai')
 export class AiController {
+  private static readonly APPROVAL_REQUEST_STATUSES: AiApprovalRequestStatus[] = [
+    'pending',
+    'approved',
+    'rejected',
+  ];
+
   constructor(
     private readonly listAiAgentCatalogUseCase: ListAiAgentCatalogUseCase,
     private readonly listAiApprovalPoliciesUseCase: ListAiApprovalPoliciesUseCase,
@@ -85,8 +101,10 @@ export class AiController {
     private readonly listAiToolRegistryUseCase: ListAiToolRegistryUseCase,
     private readonly getAiApprovalPoliciesByAgentKeyUseCase: GetAiApprovalPoliciesByAgentKeyUseCase,
     private readonly getAiPromptRegistryEntryByAgentKeyUseCase: GetAiPromptRegistryEntryByAgentKeyUseCase,
+    private readonly getAiToolRegistryEntryByKeyUseCase: GetAiToolRegistryEntryByKeyUseCase,
     private readonly getAiAgentToolAccessByAgentKeyUseCase: GetAiAgentToolAccessByAgentKeyUseCase,
     private readonly getTenantAiSuggestionEnvelopeUseCase: GetTenantAiSuggestionEnvelopeUseCase,
+    private readonly getTenantAiSuggestionRunDetailUseCase: GetTenantAiSuggestionRunDetailUseCase,
     private readonly listTenantAiApprovalRequestsUseCase: ListTenantAiApprovalRequestsUseCase,
     private readonly listTenantAiSuggestionRunsUseCase: ListTenantAiSuggestionRunsUseCase,
     private readonly prepareTenantAiSuggestionRunUseCase: PrepareTenantAiSuggestionRunUseCase,
@@ -124,6 +142,24 @@ export class AiController {
     return this.listAiToolRegistryUseCase
       .execute()
       .map((entry) => toAiToolRegistryResponseDto(entry));
+  }
+
+  @Get('tools/:toolKey')
+  @UseGuards(JwtAuthenticationGuard)
+  getAiTool(
+    @Param('toolKey') toolKey: string,
+  ): AiToolRegistryResponseDto {
+    try {
+      return toAiToolRegistryResponseDto(
+        this.getAiToolRegistryEntryByKeyUseCase.execute(toolKey),
+      );
+    } catch (error) {
+      if (error instanceof AiToolNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
   }
 
   @Get('agents/:agentKey/approval-policies')
@@ -219,15 +255,30 @@ export class AiController {
     @Param('slug') slug: string,
     @Param('agentKey') agentKey: string,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('status') status?: string,
     @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
   ): Promise<AiApprovalRequestResponseDto[]> {
     try {
       this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
 
+      if (
+        status &&
+        !AiController.APPROVAL_REQUEST_STATUSES.includes(
+          status as AiApprovalRequestStatus,
+        )
+      ) {
+        throw new BadRequestException(
+          `Unsupported AI approval request status "${status}".`,
+        );
+      }
+
       const records = await this.listTenantAiApprovalRequestsUseCase.execute(
         tenantAccess?.tenantSlug ?? slug,
         agentKey,
-        limit,
+        {
+          limit,
+          status: (status as AiApprovalRequestStatus | undefined) ?? null,
+        },
       );
 
       return records.map((entry) => toAiApprovalRequestResponseDto(entry));
@@ -277,6 +328,41 @@ export class AiController {
     }
   }
 
+  @Get('tenants/:slug/agents/:agentKey/suggestion-runs/:runId')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiSuggestionRunDetail(
+    @Param('slug') slug: string,
+    @Param('agentKey') agentKey: string,
+    @Param('runId') runId: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiSuggestionRunDetailResponseDto> {
+    try {
+      this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
+
+      const record = await this.getTenantAiSuggestionRunDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        agentKey,
+        runId,
+      );
+
+      return toAiSuggestionRunDetailResponseDto(record);
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof AiSuggestionRunNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Post('tenants/:slug/agents/:agentKey/suggestion-runs')
   @UseGuards(
     JwtAuthenticationGuard,
@@ -303,7 +389,10 @@ export class AiController {
         requestedByEmail: authenticatedUser.email,
       });
 
-      return toAiSuggestionRunResponseDto(record);
+      return toAiSuggestionRunResponseDto({
+        ...record,
+        approvalSummary: buildInitialAiSuggestionRunApprovalSummary(),
+      });
     } catch (error) {
       if (
         error instanceof AiAgentNotFoundError ||

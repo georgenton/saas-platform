@@ -1,5 +1,6 @@
 import {
   AiApprovalRequestRecord,
+  AiApprovalRequestStatus,
   CreateAiApprovalRequestCommand,
   ReviewAiApprovalRequestCommand,
 } from '@saas-platform/ai-domain';
@@ -11,7 +12,15 @@ export interface AiApprovalRequestRepository {
   findByTenantIdAndAgentKey(
     tenantId: string,
     agentKey: string,
-    limit?: number | null,
+    options?: {
+      limit?: number | null;
+      status?: AiApprovalRequestStatus | null;
+    },
+  ): Promise<AiApprovalRequestRecord[]>;
+  findBySuggestionRunIds(
+    tenantId: string,
+    agentKey: string,
+    suggestionRunIds: string[],
   ): Promise<AiApprovalRequestRecord[]>;
   findByIdAndTenantIdAndAgentKey(
     requestId: string,

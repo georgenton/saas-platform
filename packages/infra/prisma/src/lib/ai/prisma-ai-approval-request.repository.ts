@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AiApprovalRequestRepository } from '@saas-platform/ai-application';
 import {
   AiApprovalRequestRecord,
+  AiApprovalRequestStatus,
   CreateAiApprovalRequestCommand,
   ReviewAiApprovalRequestCommand,
 } from '@saas-platform/ai-domain';
@@ -59,15 +60,42 @@ export class PrismaAiApprovalRequestRepository
   async findByTenantIdAndAgentKey(
     tenantId: string,
     agentKey: string,
-    limit?: number | null,
+    options?: {
+      limit?: number | null;
+      status?: AiApprovalRequestStatus | null;
+    },
   ): Promise<AiApprovalRequestRecord[]> {
     const records = await this.delegate.findMany({
       where: {
         tenantId,
         agentKey,
+        ...(options?.status ? { status: options.status } : {}),
       },
       orderBy: [{ createdAt: 'desc' }],
-      take: limit ?? 10,
+      take: options?.limit ?? 10,
+    });
+
+    return records.map((record) => this.toRecord(record as AiApprovalRequestRow));
+  }
+
+  async findBySuggestionRunIds(
+    tenantId: string,
+    agentKey: string,
+    suggestionRunIds: string[],
+  ): Promise<AiApprovalRequestRecord[]> {
+    if (suggestionRunIds.length === 0) {
+      return [];
+    }
+
+    const records = await this.delegate.findMany({
+      where: {
+        tenantId,
+        agentKey,
+        suggestionRunId: {
+          in: suggestionRunIds,
+        },
+      },
+      orderBy: [{ createdAt: 'desc' }],
     });
 
     return records.map((record) => this.toRecord(record as AiApprovalRequestRow));

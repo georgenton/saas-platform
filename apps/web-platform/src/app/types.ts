@@ -1156,6 +1156,23 @@ export interface AiToolRegistryResponse {
   riskLevel: 'low' | 'medium' | 'high';
   actionKind: 'read' | 'draft' | 'propose' | 'execute';
   requiresApproval: boolean;
+  inputContract: {
+    sourceSurfaceKeys: string[];
+    primaryPayload: string;
+    requiredContext: string[];
+  };
+  outputContract: {
+    primaryArtifact: string;
+    suggestedOutputKeys: string[];
+    humanReviewFocus: string[];
+  };
+  executionBoundary: {
+    executionMode: 'suggestion_only' | 'guarded_execution_planned';
+    stateMutation: 'none' | 'planned';
+    externalSideEffects: 'none' | 'planned';
+    reviewRequirement: string;
+    blockedCapabilities: string[];
+  };
 }
 
 export interface AiAgentToolAccessResponse {
@@ -1226,9 +1243,24 @@ export interface AiSuggestionRunResponse {
   requestedByEmail: string | null;
   summary: string;
   suggestedOutputKeys: string[];
+  approvalSummary: {
+    status: 'not_requested' | 'pending' | 'approved' | 'rejected';
+    totalRequests: number;
+    latestRequestId: string | null;
+    latestPolicyKey: string | null;
+    latestRequestedAt: string | null;
+    latestReviewedAt: string | null;
+  };
   envelope: AiSuggestionEnvelopeResponse;
   createdAt: string;
 }
+
+export interface AiSuggestionRunDetailResponse extends AiSuggestionRunResponse {
+  approvalRequests: AiApprovalRequestResponse[];
+}
+
+export type AiApprovalRequestStatus = 'pending' | 'approved' | 'rejected';
+export type AiApprovalRequestStatusFilter = 'all' | AiApprovalRequestStatus;
 
 export interface AiApprovalRequestResponse {
   id: string;
@@ -1241,7 +1273,7 @@ export interface AiApprovalRequestResponse {
   requestedByEmail: string | null;
   rationale: string | null;
   summary: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: AiApprovalRequestStatus;
   reviewedAt: string | null;
   reviewedByUserId: string | null;
   reviewedByEmail: string | null;

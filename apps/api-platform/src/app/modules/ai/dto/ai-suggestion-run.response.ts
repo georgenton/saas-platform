@@ -1,4 +1,8 @@
-import { AiSuggestionRunRecord } from '@saas-platform/ai-domain';
+import {
+  AiSuggestionRunApprovalSummary,
+  AiSuggestionRunHistoryEntry,
+  AiSuggestionRunRecord,
+} from '@saas-platform/ai-domain';
 import {
   AiSuggestionEnvelopeResponseDto,
   toAiSuggestionEnvelopeResponseDto,
@@ -20,13 +24,35 @@ export interface AiSuggestionRunResponseDto {
   requestedByEmail: string | null;
   summary: string;
   suggestedOutputKeys: string[];
+  approvalSummary: {
+    status: 'not_requested' | 'pending' | 'approved' | 'rejected';
+    totalRequests: number;
+    latestRequestId: string | null;
+    latestPolicyKey: string | null;
+    latestRequestedAt: string | null;
+    latestReviewedAt: string | null;
+  };
   envelope: AiSuggestionEnvelopeResponseDto;
   createdAt: string;
 }
 
 export const toAiSuggestionRunResponseDto = (
-  record: AiSuggestionRunRecord,
-): AiSuggestionRunResponseDto => ({
+  record:
+    | AiSuggestionRunHistoryEntry
+    | (AiSuggestionRunRecord & {
+        approvalSummary?: AiSuggestionRunApprovalSummary;
+      }),
+): AiSuggestionRunResponseDto => {
+  const approvalSummary = record.approvalSummary ?? {
+    status: 'not_requested',
+    totalRequests: 0,
+    latestRequestId: null,
+    latestPolicyKey: null,
+    latestRequestedAt: null,
+    latestReviewedAt: null,
+  };
+
+  return {
   id: record.id,
   tenantSlug: record.tenantSlug,
   agentKey: record.agentKey,
@@ -42,6 +68,15 @@ export const toAiSuggestionRunResponseDto = (
   requestedByEmail: record.requestedByEmail,
   summary: record.summary,
   suggestedOutputKeys: [...record.suggestedOutputKeys],
+  approvalSummary: {
+    status: approvalSummary.status,
+    totalRequests: approvalSummary.totalRequests,
+    latestRequestId: approvalSummary.latestRequestId,
+    latestPolicyKey: approvalSummary.latestPolicyKey,
+    latestRequestedAt: approvalSummary.latestRequestedAt?.toISOString() ?? null,
+    latestReviewedAt: approvalSummary.latestReviewedAt?.toISOString() ?? null,
+  },
   envelope: toAiSuggestionEnvelopeResponseDto(record.envelope),
   createdAt: record.createdAt.toISOString(),
-});
+  };
+};

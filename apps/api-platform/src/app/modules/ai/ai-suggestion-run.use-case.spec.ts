@@ -1,4 +1,5 @@
 import {
+  GetTenantAiSuggestionRunDetailUseCase,
   ListTenantAiSuggestionRunsUseCase,
   PrepareTenantAiSuggestionRunUseCase,
 } from '@saas-platform/ai-application';
@@ -10,6 +11,10 @@ describe('AI suggestion run use cases', () => {
   const aiSuggestionRunRepository = {
     create: jest.fn(),
     findByTenantIdAndAgentKey: jest.fn(),
+    findByIdAndTenantIdAndAgentKey: jest.fn(),
+  };
+  const aiApprovalRequestRepository = {
+    findBySuggestionRunIds: jest.fn(),
   };
   const getTenantAiSuggestionEnvelopeUseCase = {
     execute: jest.fn(),
@@ -74,27 +79,53 @@ describe('AI suggestion run use cases', () => {
       ...command,
       createdAt: new Date('2026-05-22T12:01:00.000Z'),
     }));
+    const suggestionRunRecord = {
+      id: 'ai-run-001',
+      tenantId: 'tenant_123',
+      tenantSlug: 'saas-platform',
+      agentKey: 'growth-assist-coach',
+      mode: 'suggestion',
+      status: 'prepared',
+      surfaceKey: 'growth_assist_daily_agenda',
+      sourceContractKey: 'growth.assist.daily_agenda',
+      sourceGeneratedAt: new Date('2026-05-22T12:00:00.000Z'),
+      promptPackKey: 'growth-assist-coach-core',
+      promptPackVersion: 'v1',
+      generatedAt: new Date('2026-05-22T12:00:00.000Z'),
+      requestedByUserId: 'user_123',
+      requestedByEmail: 'owner@saas-platform.dev',
+      summary:
+        'Growth Assist Coach prepared a suggestion-mode handoff for Growth Assist daily agenda using prompt pack growth-assist-coach-core@v1.',
+      suggestedOutputKeys: ['reply_draft'],
+      envelope,
+      createdAt: new Date('2026-05-22T12:01:00.000Z'),
+    };
     aiSuggestionRunRepository.findByTenantIdAndAgentKey.mockResolvedValue([
+      suggestionRunRecord,
+    ]);
+    aiSuggestionRunRepository.findByIdAndTenantIdAndAgentKey.mockResolvedValue(
+      suggestionRunRecord,
+    );
+    aiApprovalRequestRepository.findBySuggestionRunIds.mockResolvedValue([
       {
-        id: 'ai-run-001',
+        id: 'ai-approval-001',
         tenantId: 'tenant_123',
         tenantSlug: 'saas-platform',
         agentKey: 'growth-assist-coach',
-        mode: 'suggestion',
-        status: 'prepared',
-        surfaceKey: 'growth_assist_daily_agenda',
-        sourceContractKey: 'growth.assist.daily_agenda',
-        sourceGeneratedAt: new Date('2026-05-22T12:00:00.000Z'),
-        promptPackKey: 'growth-assist-coach-core',
-        promptPackVersion: 'v1',
-        generatedAt: new Date('2026-05-22T12:00:00.000Z'),
+        policyKey: 'growth-assist-suggestion-review',
+        scope: 'suggestion_review',
+        suggestionRunId: 'ai-run-001',
         requestedByUserId: 'user_123',
         requestedByEmail: 'owner@saas-platform.dev',
-        summary:
-          'Growth Assist Coach prepared a suggestion-mode handoff for Growth Assist daily agenda using prompt pack growth-assist-coach-core@v1.',
-        suggestedOutputKeys: ['reply_draft'],
-        envelope,
-        createdAt: new Date('2026-05-22T12:01:00.000Z'),
+        rationale: 'revision humana',
+        summary: 'summary',
+        status: 'pending',
+        reviewedAt: null,
+        reviewedByUserId: null,
+        reviewedByEmail: null,
+        reviewNote: null,
+        createdAt: new Date('2026-05-22T12:02:00.000Z'),
+        updatedAt: new Date('2026-05-22T12:02:00.000Z'),
       },
     ]);
   });
@@ -139,6 +170,7 @@ describe('AI suggestion run use cases', () => {
     const useCase = new ListTenantAiSuggestionRunsUseCase(
       tenantRepository as any,
       aiSuggestionRunRepository as any,
+      aiApprovalRequestRepository as any,
     );
 
     const result = await useCase.execute(
@@ -152,11 +184,58 @@ describe('AI suggestion run use cases', () => {
       'growth-assist-coach',
       5,
     );
+    expect(aiApprovalRequestRepository.findBySuggestionRunIds).toHaveBeenCalledWith(
+      'tenant_123',
+      'growth-assist-coach',
+      ['ai-run-001'],
+    );
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual(
       expect.objectContaining({
         id: 'ai-run-001',
         agentKey: 'growth-assist-coach',
+        approvalSummary: expect.objectContaining({
+          status: 'pending',
+          totalRequests: 1,
+          latestRequestId: 'ai-approval-001',
+        }),
+      }),
+    );
+  });
+
+  it('returns one tenant-scoped suggestion run detail with approval timeline', async () => {
+    const useCase = new GetTenantAiSuggestionRunDetailUseCase(
+      tenantRepository as any,
+      aiSuggestionRunRepository as any,
+      aiApprovalRequestRepository as any,
+    );
+
+    const result = await useCase.execute(
+      'saas-platform',
+      'growth-assist-coach',
+      'ai-run-001',
+    );
+
+    expect(
+      aiSuggestionRunRepository.findByIdAndTenantIdAndAgentKey,
+    ).toHaveBeenCalledWith('ai-run-001', 'tenant_123', 'growth-assist-coach');
+    expect(aiApprovalRequestRepository.findBySuggestionRunIds).toHaveBeenCalledWith(
+      'tenant_123',
+      'growth-assist-coach',
+      ['ai-run-001'],
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'ai-run-001',
+        approvalSummary: expect.objectContaining({
+          status: 'pending',
+        }),
+        approvalRequests: [
+          expect.objectContaining({
+            id: 'ai-approval-001',
+            suggestionRunId: 'ai-run-001',
+          }),
+        ],
       }),
     );
   });

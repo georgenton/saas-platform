@@ -1,4 +1,5 @@
 import {
+  GetAiToolRegistryEntryByKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
   ListAiToolRegistryUseCase,
 } from '@saas-platform/ai-application';
@@ -15,13 +16,41 @@ describe('AI tool registry use cases', () => {
           key: 'growth_assist_reply_drafting',
           actionKind: 'draft',
           availability: 'ready',
+          inputContract: expect.objectContaining({
+            sourceSurfaceKeys: ['growth_assist_daily_agenda'],
+          }),
         }),
         expect.objectContaining({
           key: 'growth_case_assignment_execution',
           requiresApproval: true,
           riskLevel: 'high',
+          executionBoundary: expect.objectContaining({
+            executionMode: 'guarded_execution_planned',
+          }),
         }),
       ]),
+    );
+  });
+
+  it('returns one tool contract by key', () => {
+    const useCase = new GetAiToolRegistryEntryByKeyUseCase();
+
+    const result = useCase.execute('invoice_document_drafting');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        key: 'invoice_document_drafting',
+        outputContract: expect.objectContaining({
+          suggestedOutputKeys: [
+            'drafting_brief',
+            'review_checklist',
+            'blocker_explanation',
+          ],
+        }),
+        executionBoundary: expect.objectContaining({
+          executionMode: 'suggestion_only',
+        }),
+      }),
     );
   });
 
@@ -36,6 +65,9 @@ describe('AI tool registry use cases', () => {
           accessLevel: 'allowed',
           tool: expect.objectContaining({
             key: 'growth_assist_reply_drafting',
+            outputContract: expect.objectContaining({
+              suggestedOutputKeys: ['reply_draft'],
+            }),
           }),
         }),
         expect.objectContaining({

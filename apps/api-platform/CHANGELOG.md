@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.47.0
+
+### Minor Changes
+
+- f3be9ad: Enrich the transversal AI platform with explicit tool contracts, suggestion-run detail views, and a filterable approval workspace for tenant-scoped AI handoffs.
+
 ## 0.46.0
 
 ### Minor Changes

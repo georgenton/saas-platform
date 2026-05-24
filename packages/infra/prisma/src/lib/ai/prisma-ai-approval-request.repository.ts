@@ -65,6 +65,10 @@ export class PrismaAiApprovalRequestRepository
       status?: AiApprovalRequestStatus | null;
     },
   ): Promise<AiApprovalRequestRecord[]> {
+    const take =
+      options?.limit === null || options?.limit === undefined
+        ? undefined
+        : options.limit;
     const records = await this.delegate.findMany({
       where: {
         tenantId,
@@ -72,7 +76,7 @@ export class PrismaAiApprovalRequestRepository
         ...(options?.status ? { status: options.status } : {}),
       },
       orderBy: [{ createdAt: 'desc' }],
-      take: options?.limit ?? 10,
+      ...(take !== undefined ? { take } : {}),
     });
 
     return records.map((record) => this.toRecord(record as AiApprovalRequestRow));

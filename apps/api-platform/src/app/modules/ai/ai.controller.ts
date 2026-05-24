@@ -58,6 +58,14 @@ import {
   toAiApprovalRequestResponseDto,
 } from './dto/ai-approval-request.response';
 import {
+  AiApprovalWorkspaceResponseDto,
+  toAiApprovalWorkspaceResponseDto,
+} from './dto/ai-approval-workspace.response';
+import {
+  AiActionCenterResponseDto,
+  toAiActionCenterResponseDto,
+} from './dto/ai-action-center.response';
+import {
   AiAgentCatalogResponseDto,
   toAiAgentCatalogResponseDto,
 } from './dto/ai-agent-catalog.response';
@@ -85,6 +93,14 @@ import {
   AiSuggestionRunDetailResponseDto,
   toAiSuggestionRunDetailResponseDto,
 } from './dto/ai-suggestion-run-detail.response';
+import {
+  AiHandoffWorkspaceResponseDto,
+  toAiHandoffWorkspaceResponseDto,
+} from './dto/ai-handoff-workspace.response';
+import {
+  AiOperationsSummaryResponseDto,
+  toAiOperationsSummaryResponseDto,
+} from './dto/ai-operations-summary.response';
 
 @Controller('ai')
 export class AiController {
@@ -261,23 +277,12 @@ export class AiController {
     try {
       this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
 
-      if (
-        status &&
-        !AiController.APPROVAL_REQUEST_STATUSES.includes(
-          status as AiApprovalRequestStatus,
-        )
-      ) {
-        throw new BadRequestException(
-          `Unsupported AI approval request status "${status}".`,
-        );
-      }
-
       const records = await this.listTenantAiApprovalRequestsUseCase.execute(
         tenantAccess?.tenantSlug ?? slug,
         agentKey,
         {
           limit,
-          status: (status as AiApprovalRequestStatus | undefined) ?? null,
+          status: this.parseApprovalRequestStatusFilter(status),
         },
       );
 
@@ -292,6 +297,683 @@ export class AiController {
 
       throw error;
     }
+  }
+
+  @Get('tenants/:slug/approval-requests')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async listTenantAiApprovalWorkspace(
+    @Param('slug') slug: string,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('status') status?: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiApprovalRequestResponseDto[]> {
+    const parsedStatus =
+      this.parseApprovalRequestStatusFilter(status);
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgentKeys = this.getAccessibleReadyAiWorkspaceAgentKeys(
+      tenantAccess?.permissionKeys,
+    );
+
+    if (accessibleAgentKeys.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant approval workspace.',
+      );
+    }
+
+    try {
+      const recordsByAgent = await Promise.all(
+        accessibleAgentKeys.map((agentKey) =>
+          this.listTenantAiApprovalRequestsUseCase.execute(
+            tenantSlug,
+            agentKey,
+            {
+              limit,
+              status: parsedStatus,
+            },
+          ),
+        ),
+      );
+
+      return recordsByAgent
+        .flat()
+        .sort(
+          (left, right) =>
+            right.createdAt.getTime() - left.createdAt.getTime() ||
+            right.updatedAt.getTime() - left.updatedAt.getTime(),
+        )
+        .slice(0, limit)
+        .map((entry) => toAiApprovalRequestResponseDto(entry));
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/approval-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiApprovalWorkspace(
+    @Param('slug') slug: string,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('status') status?: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiApprovalWorkspaceResponseDto> {
+    const parsedStatus = this.parseApprovalRequestStatusFilter(status);
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgentKeys = this.getAccessibleReadyAiWorkspaceAgentKeys(
+      tenantAccess?.permissionKeys,
+    );
+
+    if (accessibleAgentKeys.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant approval workspace.',
+      );
+    }
+
+    try {
+      const agentCatalog = this.listAiAgentCatalogUseCase.execute();
+      const agentCatalogByKey = new Map(
+        agentCatalog.map((entry) => [entry.key, entry] as const),
+      );
+      const approvalRequestsByAgent = await Promise.all(
+        accessibleAgentKeys.map(async (agentKey) => ({
+          agentKey,
+          records: await this.listTenantAiApprovalRequestsUseCase.execute(
+            tenantSlug,
+            agentKey,
+            {
+              limit: null,
+              status: null,
+            },
+          ),
+        })),
+      );
+
+      const approvalRequests = approvalRequestsByAgent
+        .flatMap((entry) => entry.records)
+        .sort(
+          (left, right) =>
+            right.createdAt.getTime() - left.createdAt.getTime() ||
+            right.updatedAt.getTime() - left.updatedAt.getTime(),
+        );
+      const filteredApprovalRequests = parsedStatus
+        ? approvalRequests.filter((entry) => entry.status === parsedStatus)
+        : approvalRequests;
+      const pendingApprovalRequests = approvalRequests.filter(
+        (entry) => entry.status === 'pending',
+      );
+      const reviewedApprovalRequests = approvalRequests.filter(
+        (entry) => entry.reviewedAt !== null,
+      );
+      const latestReviewedApprovalRequest = reviewedApprovalRequests.sort(
+        (left, right) =>
+          (right.reviewedAt?.getTime() ?? 0) -
+          (left.reviewedAt?.getTime() ?? 0),
+      )[0] ?? null;
+
+      return toAiApprovalWorkspaceResponseDto({
+        tenantSlug,
+        generatedAt: new Date(),
+        counts: {
+          totalApprovalRequests: approvalRequests.length,
+          pendingApprovalRequests: pendingApprovalRequests.length,
+          approvedApprovalRequests: approvalRequests.filter(
+            (entry) => entry.status === 'approved',
+          ).length,
+          rejectedApprovalRequests: approvalRequests.filter(
+            (entry) => entry.status === 'rejected',
+          ).length,
+        },
+        agentBreakdown: approvalRequestsByAgent.map(({ agentKey, records }) => ({
+          agentKey,
+          title:
+            agentCatalogByKey.get(agentKey)?.title ?? agentKey,
+          totalApprovalRequests: records.length,
+          pendingApprovalRequests: records.filter(
+            (entry) => entry.status === 'pending',
+          ).length,
+          approvedApprovalRequests: records.filter(
+            (entry) => entry.status === 'approved',
+          ).length,
+          rejectedApprovalRequests: records.filter(
+            (entry) => entry.status === 'rejected',
+          ).length,
+          latestRequestedAt: records[0]?.createdAt ?? null,
+          latestReviewedAt:
+            records
+              .filter((entry) => entry.reviewedAt !== null)
+              .sort(
+                (left, right) =>
+                  (right.reviewedAt?.getTime() ?? 0) -
+                  (left.reviewedAt?.getTime() ?? 0),
+              )[0]?.reviewedAt ?? null,
+        })),
+        oldestPendingApprovalRequest:
+          pendingApprovalRequests
+            .slice()
+            .sort(
+              (left, right) =>
+                left.createdAt.getTime() - right.createdAt.getTime() ||
+                left.updatedAt.getTime() - right.updatedAt.getTime(),
+            )[0] ?? null,
+        latestReviewedApprovalRequest,
+        recentApprovalRequests: filteredApprovalRequests.slice(0, limit),
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/operations-summary')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiOperationsSummary(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiOperationsSummaryResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgentKeys = this.getAccessibleReadyAiWorkspaceAgentKeys(
+      tenantAccess?.permissionKeys,
+    );
+
+    if (accessibleAgentKeys.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant operations summary.',
+      );
+    }
+
+    try {
+      const agentCatalog = this.listAiAgentCatalogUseCase.execute();
+      const agentCatalogByKey = new Map(
+        agentCatalog.map((entry) => [entry.key, entry] as const),
+      );
+      const [approvalRequestsByAgent, suggestionRunsByAgent] = await Promise.all([
+        Promise.all(
+          accessibleAgentKeys.map(async (agentKey) => ({
+            agentKey,
+            records: await this.listTenantAiApprovalRequestsUseCase.execute(
+              tenantSlug,
+              agentKey,
+              {
+                limit: null,
+                status: null,
+              },
+            ),
+          })),
+        ),
+        Promise.all(
+          accessibleAgentKeys.map(async (agentKey) => ({
+            agentKey,
+            records: await this.listTenantAiSuggestionRunsUseCase.execute(
+              tenantSlug,
+              agentKey,
+              null,
+            ),
+          })),
+        ),
+      ]);
+
+      const approvalRequests = approvalRequestsByAgent
+        .flatMap((entry) => entry.records)
+        .sort(
+          (left, right) =>
+            right.createdAt.getTime() - left.createdAt.getTime() ||
+            right.updatedAt.getTime() - left.updatedAt.getTime(),
+        );
+      const suggestionRuns = suggestionRunsByAgent
+        .flatMap((entry) => entry.records)
+        .sort(
+          (left, right) =>
+            right.createdAt.getTime() - left.createdAt.getTime() ||
+            right.generatedAt.getTime() - left.generatedAt.getTime(),
+        );
+
+      const pendingApprovalRequests = approvalRequests.filter(
+        (entry) => entry.status === 'pending',
+      );
+      const reviewedApprovalRequests = approvalRequests.filter(
+        (entry) => entry.reviewedAt !== null,
+      );
+      const reviewableSuggestionRuns = suggestionRuns.filter(
+        (entry) =>
+          entry.approvalSummary.status === 'not_requested' ||
+          entry.approvalSummary.status === 'rejected',
+      );
+      const latestReviewedApprovalRequest = reviewedApprovalRequests
+        .slice()
+        .sort(
+          (left, right) =>
+            (right.reviewedAt?.getTime() ?? 0) -
+            (left.reviewedAt?.getTime() ?? 0),
+        )[0] ?? null;
+      const oldestPendingApprovalRequest = pendingApprovalRequests
+        .slice()
+        .sort(
+          (left, right) =>
+            left.createdAt.getTime() - right.createdAt.getTime() ||
+            left.updatedAt.getTime() - right.updatedAt.getTime(),
+        )[0] ?? null;
+
+      return toAiOperationsSummaryResponseDto({
+        tenantSlug,
+        generatedAt: new Date(),
+        actionCenter: {
+          tenantSlug,
+          generatedAt: new Date(),
+          counts: {
+            pendingApprovalRequests: pendingApprovalRequests.length,
+            reviewableSuggestionRuns: reviewableSuggestionRuns.length,
+            reviewedApprovalRequests: reviewedApprovalRequests.length,
+          },
+          featuredPendingApprovalRequest: pendingApprovalRequests[0] ?? null,
+          featuredReviewableSuggestionRun: reviewableSuggestionRuns[0] ?? null,
+          latestReviewedApprovalRequest,
+        },
+        handoffWorkspace: {
+          counts: {
+            totalSuggestionRuns: suggestionRuns.length,
+            reviewableSuggestionRuns: reviewableSuggestionRuns.length,
+            pendingApprovalSuggestionRuns: suggestionRuns.filter(
+              (entry) => entry.approvalSummary.status === 'pending',
+            ).length,
+            approvedSuggestionRuns: suggestionRuns.filter(
+              (entry) => entry.approvalSummary.status === 'approved',
+            ).length,
+          },
+          agentBreakdown: suggestionRunsByAgent.map(({ agentKey, records }) => ({
+            agentKey,
+            title: agentCatalogByKey.get(agentKey)?.title ?? agentKey,
+            totalSuggestionRuns: records.length,
+            reviewableSuggestionRuns: records.filter(
+              (entry) =>
+                entry.approvalSummary.status === 'not_requested' ||
+                entry.approvalSummary.status === 'rejected',
+            ).length,
+            pendingApprovalSuggestionRuns: records.filter(
+              (entry) => entry.approvalSummary.status === 'pending',
+            ).length,
+            approvedSuggestionRuns: records.filter(
+              (entry) => entry.approvalSummary.status === 'approved',
+            ).length,
+            latestGeneratedAt: records[0]?.generatedAt?.toISOString() ?? null,
+          })),
+          latestSuggestionRun: suggestionRuns[0] ?? null,
+        },
+        approvalWorkspace: {
+          counts: {
+            totalApprovalRequests: approvalRequests.length,
+            pendingApprovalRequests: pendingApprovalRequests.length,
+            approvedApprovalRequests: approvalRequests.filter(
+              (entry) => entry.status === 'approved',
+            ).length,
+            rejectedApprovalRequests: approvalRequests.filter(
+              (entry) => entry.status === 'rejected',
+            ).length,
+          },
+          agentBreakdown: approvalRequestsByAgent.map(({ agentKey, records }) => ({
+            agentKey,
+            title: agentCatalogByKey.get(agentKey)?.title ?? agentKey,
+            totalApprovalRequests: records.length,
+            pendingApprovalRequests: records.filter(
+              (entry) => entry.status === 'pending',
+            ).length,
+            approvedApprovalRequests: records.filter(
+              (entry) => entry.status === 'approved',
+            ).length,
+            rejectedApprovalRequests: records.filter(
+              (entry) => entry.status === 'rejected',
+            ).length,
+            latestRequestedAt: records[0]?.createdAt?.toISOString() ?? null,
+            latestReviewedAt:
+              records
+                .filter((entry) => entry.reviewedAt !== null)
+                .sort(
+                  (left, right) =>
+                    (right.reviewedAt?.getTime() ?? 0) -
+                    (left.reviewedAt?.getTime() ?? 0),
+                )[0]?.reviewedAt?.toISOString() ?? null,
+          })),
+          oldestPendingApprovalRequest,
+          latestReviewedApprovalRequest,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/action-center')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiActionCenter(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiActionCenterResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgentKeys = this.getAccessibleReadyAiWorkspaceAgentKeys(
+      tenantAccess?.permissionKeys,
+    );
+
+    if (accessibleAgentKeys.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant action center.',
+      );
+    }
+
+    try {
+      const [approvalRequestsByAgent, suggestionRunsByAgent] = await Promise.all([
+        Promise.all(
+          accessibleAgentKeys.map((agentKey) =>
+            this.listTenantAiApprovalRequestsUseCase.execute(
+              tenantSlug,
+              agentKey,
+              {
+                limit: null,
+                status: null,
+              },
+            ),
+          ),
+        ),
+        Promise.all(
+          accessibleAgentKeys.map((agentKey) =>
+            this.listTenantAiSuggestionRunsUseCase.execute(
+              tenantSlug,
+              agentKey,
+              null,
+            ),
+          ),
+        ),
+      ]);
+
+      const approvalRequests = approvalRequestsByAgent
+        .flat()
+        .sort(
+          (left, right) =>
+            right.createdAt.getTime() - left.createdAt.getTime() ||
+            right.updatedAt.getTime() - left.updatedAt.getTime(),
+        );
+      const suggestionRuns = suggestionRunsByAgent
+        .flat()
+        .sort(
+          (left, right) =>
+            right.createdAt.getTime() - left.createdAt.getTime() ||
+            right.generatedAt.getTime() - left.generatedAt.getTime(),
+        );
+
+      const pendingApprovalRequests = approvalRequests.filter(
+        (entry) => entry.status === 'pending',
+      );
+      const reviewedApprovalRequests = approvalRequests.filter(
+        (entry) => entry.reviewedAt !== null,
+      );
+      const reviewableSuggestionRuns = suggestionRuns.filter(
+        (entry) =>
+          entry.approvalSummary.status === 'not_requested' ||
+          entry.approvalSummary.status === 'rejected',
+      );
+
+      return toAiActionCenterResponseDto({
+        tenantSlug,
+        generatedAt: new Date(),
+        counts: {
+          pendingApprovalRequests: pendingApprovalRequests.length,
+          reviewableSuggestionRuns: reviewableSuggestionRuns.length,
+          reviewedApprovalRequests: reviewedApprovalRequests.length,
+        },
+        featuredPendingApprovalRequest: pendingApprovalRequests[0] ?? null,
+        featuredReviewableSuggestionRun: reviewableSuggestionRuns[0] ?? null,
+        latestReviewedApprovalRequest: reviewedApprovalRequests.sort(
+          (left, right) =>
+            (right.reviewedAt?.getTime() ?? 0) -
+            (left.reviewedAt?.getTime() ?? 0),
+        )[0] ?? null,
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/handoff-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiHandoffWorkspace(
+    @Param('slug') slug: string,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiHandoffWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgentKeys = this.getAccessibleReadyAiWorkspaceAgentKeys(
+      tenantAccess?.permissionKeys,
+    );
+
+    if (accessibleAgentKeys.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant handoff workspace.',
+      );
+    }
+
+    try {
+      const agentCatalog = this.listAiAgentCatalogUseCase.execute();
+      const agentCatalogByKey = new Map(
+        agentCatalog.map((entry) => [entry.key, entry] as const),
+      );
+      const suggestionRunsByAgent = await Promise.all(
+        accessibleAgentKeys.map(async (agentKey) => ({
+          agentKey,
+          records: await this.listTenantAiSuggestionRunsUseCase.execute(
+            tenantSlug,
+            agentKey,
+            null,
+          ),
+        })),
+      );
+
+      const suggestionRuns = suggestionRunsByAgent
+        .flatMap((entry) => entry.records)
+        .sort(
+          (left, right) =>
+            right.createdAt.getTime() - left.createdAt.getTime() ||
+            right.generatedAt.getTime() - left.generatedAt.getTime(),
+        );
+
+      const counts = {
+        totalSuggestionRuns: suggestionRuns.length,
+        reviewableSuggestionRuns: suggestionRuns.filter(
+          (entry) =>
+            entry.approvalSummary.status === 'not_requested' ||
+            entry.approvalSummary.status === 'rejected',
+        ).length,
+        pendingApprovalSuggestionRuns: suggestionRuns.filter(
+          (entry) => entry.approvalSummary.status === 'pending',
+        ).length,
+        approvedSuggestionRuns: suggestionRuns.filter(
+          (entry) => entry.approvalSummary.status === 'approved',
+        ).length,
+      };
+
+      return toAiHandoffWorkspaceResponseDto({
+        tenantSlug,
+        generatedAt: new Date(),
+        counts,
+        agentBreakdown: suggestionRunsByAgent.map(({ agentKey, records }) => ({
+          agentKey,
+          title:
+            agentCatalogByKey.get(agentKey)?.title ?? agentKey,
+          totalSuggestionRuns: records.length,
+          reviewableSuggestionRuns: records.filter(
+            (entry) =>
+              entry.approvalSummary.status === 'not_requested' ||
+              entry.approvalSummary.status === 'rejected',
+          ).length,
+          pendingApprovalSuggestionRuns: records.filter(
+            (entry) => entry.approvalSummary.status === 'pending',
+          ).length,
+          approvedSuggestionRuns: records.filter(
+            (entry) => entry.approvalSummary.status === 'approved',
+          ).length,
+          latestGeneratedAt: records[0]?.generatedAt ?? null,
+        })),
+        recentSuggestionRuns: suggestionRuns.slice(0, limit),
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/suggestion-runs')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async listTenantAiSuggestionWorkspace(
+    @Param('slug') slug: string,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiSuggestionRunResponseDto[]> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgentKeys = this.getAccessibleReadyAiWorkspaceAgentKeys(
+      tenantAccess?.permissionKeys,
+    );
+
+    if (accessibleAgentKeys.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant suggestion workspace.',
+      );
+    }
+
+    try {
+      const recordsByAgent = await Promise.all(
+        accessibleAgentKeys.map((agentKey) =>
+          this.listTenantAiSuggestionRunsUseCase.execute(
+            tenantSlug,
+            agentKey,
+            limit,
+          ),
+        ),
+      );
+
+      return recordsByAgent
+        .flat()
+        .sort(
+          (left, right) =>
+            right.createdAt.getTime() - left.createdAt.getTime() ||
+            right.generatedAt.getTime() - left.generatedAt.getTime(),
+        )
+        .slice(0, limit)
+        .map((entry) => toAiSuggestionRunResponseDto(entry));
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/suggestion-runs/:runId')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiSuggestionWorkspaceDetail(
+    @Param('slug') slug: string,
+    @Param('runId') runId: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiSuggestionRunDetailResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgentKeys = this.getAccessibleReadyAiWorkspaceAgentKeys(
+      tenantAccess?.permissionKeys,
+    );
+
+    if (accessibleAgentKeys.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant suggestion workspace.',
+      );
+    }
+
+    for (const agentKey of accessibleAgentKeys) {
+      try {
+        const record = await this.getTenantAiSuggestionRunDetailUseCase.execute(
+          tenantSlug,
+          agentKey,
+          runId,
+        );
+
+        return toAiSuggestionRunDetailResponseDto(record);
+      } catch (error) {
+        if (
+          error instanceof AiSuggestionRunNotFoundError ||
+          error instanceof AiAgentNotFoundError
+        ) {
+          continue;
+        }
+
+        if (error instanceof TenantNotFoundError) {
+          throw new NotFoundException(error.message);
+        }
+
+        throw error;
+      }
+    }
+
+    throw new NotFoundException(
+      `AI suggestion run ${runId} was not found for tenant ${tenantSlug}.`,
+    );
   }
 
   @Get('tenants/:slug/agents/:agentKey/suggestion-runs')
@@ -508,15 +1190,55 @@ export class AiController {
     agentKey: string,
     permissionKeys: string[] | undefined,
   ): void {
-    const requiredPermission =
-      agentKey === 'invoice-document-assistant'
-        ? INVOICING_PERMISSIONS.REPORTS_READ
-        : GROWTH_PERMISSIONS.CONVERSATIONS_READ;
+    const requiredPermission = this.getRequiredPermissionForAgent(agentKey);
 
     if (!permissionKeys?.includes(requiredPermission)) {
       throw new ForbiddenException(
         `Permission "${requiredPermission}" is required for AI agent ${agentKey}.`,
       );
     }
+  }
+
+  private parseApprovalRequestStatusFilter(
+    status: string | undefined,
+  ): AiApprovalRequestStatus | null {
+    if (!status) {
+      return null;
+    }
+
+    if (
+      !AiController.APPROVAL_REQUEST_STATUSES.includes(
+        status as AiApprovalRequestStatus,
+      )
+    ) {
+      throw new BadRequestException(
+        `Unsupported AI approval request status "${status}".`,
+      );
+    }
+
+    return status as AiApprovalRequestStatus;
+  }
+
+  private getAccessibleReadyAiWorkspaceAgentKeys(
+    permissionKeys: string[] | undefined,
+  ): string[] {
+    return this.listAiAgentCatalogUseCase
+      .execute()
+      .filter((entry) => entry.availability === 'ready')
+      .map((entry) => entry.key)
+      .filter((agentKey) => this.hasAgentPermission(agentKey, permissionKeys));
+  }
+
+  private hasAgentPermission(
+    agentKey: string,
+    permissionKeys: string[] | undefined,
+  ): boolean {
+    return permissionKeys?.includes(this.getRequiredPermissionForAgent(agentKey)) ?? false;
+  }
+
+  private getRequiredPermissionForAgent(agentKey: string): string {
+    return agentKey === 'invoice-document-assistant'
+      ? INVOICING_PERMISSIONS.REPORTS_READ
+      : GROWTH_PERMISSIONS.CONVERSATIONS_READ;
   }
 }

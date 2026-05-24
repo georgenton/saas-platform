@@ -68,13 +68,14 @@ export class PrismaAiSuggestionRunRepository
     agentKey: string,
     limit?: number | null,
   ): Promise<AiSuggestionRunRecord[]> {
+    const take = limit === null || limit === undefined ? undefined : limit;
     const records = await this.delegate.findMany({
       where: {
         tenantId,
         agentKey,
       },
       orderBy: [{ createdAt: 'desc' }],
-      take: limit ?? 10,
+      ...(take !== undefined ? { take } : {}),
     });
 
     return records.map((record) => this.toRecord(record as AiSuggestionRunRow));

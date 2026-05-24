@@ -6140,6 +6140,35 @@ describe('API', () => {
               riskLevel: 'high',
               actionKind: 'execute',
               requiresApproval: true,
+              inputContract: {
+                sourceSurfaceKeys: ['growth_assist_daily_agenda'],
+                primaryPayload:
+                  'Tenant-scoped operational routing signals and deterministic assignment recommendations.',
+                requiredContext: [
+                  'assignment recommendation',
+                  'queue pressure',
+                  'assignee availability',
+                ],
+              },
+              outputContract: {
+                primaryArtifact: 'Assignment or routing change intent.',
+                suggestedOutputKeys: ['assignment_change_intent'],
+                humanReviewFocus: [
+                  'Validate the assignee or queue target still makes operational sense.',
+                  'Confirm any routing mutation is explicitly approved before execution.',
+                ],
+              },
+              executionBoundary: {
+                executionMode: 'guarded_execution_planned',
+                stateMutation: 'planned',
+                externalSideEffects: 'planned',
+                reviewRequirement:
+                  'This tool stays blocked until approval memory and guarded execution flows are operational.',
+                blockedCapabilities: [
+                  'assign_operational_case',
+                  'reroute_queue_membership',
+                ],
+              },
             },
             accessLevel: 'blocked',
             rationale:

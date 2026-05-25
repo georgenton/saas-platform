@@ -73,6 +73,7 @@ export * from './lib/use-cases/receive-tenant-meta-whatsapp-webhook.use-case';
 export * from './lib/use-cases/replay-tenant-webhook-event-envelope.use-case';
 export * from './lib/use-cases/review-tenant-growth-operational-case-routing.use-case';
 export * from './lib/use-cases/reopen-tenant-growth-operational-case.use-case';
+export * from './lib/use-cases/release-tenant-growth-operational-case.use-case';
 export * from './lib/use-cases/resolve-tenant-growth-operational-case.use-case';
 export * from './lib/use-cases/retry-tenant-whatsapp-failed-conversation-message.use-case';
 export * from './lib/use-cases/run-tenant-whatsapp-ready-retries.use-case';

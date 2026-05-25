@@ -17,6 +17,7 @@ export type AiApprovalRequestStatus = 'pending' | 'approved' | 'rejected';
 export type AiSuggestionRunApprovalStatus =
   | 'not_requested'
   | AiApprovalRequestStatus;
+export type AiGuardedExecutionEventType = 'executed' | 'rolled_back';
 
 export interface AiAgentCatalogEntry {
   key: string;
@@ -210,4 +211,27 @@ export interface AiApprovalRequestRecord {
   reviewNote: string | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface CreateAiGuardedExecutionEventCommand {
+  tenantId: string;
+  tenantSlug: string;
+  agentKey: string;
+  eventType: AiGuardedExecutionEventType;
+  approvalRequestId: string;
+  suggestionRunId: string;
+  toolKey: string;
+  caseId: string;
+  safeFallbackMode: 'suggestion_only' | null;
+  summary: string;
+  detail: string;
+  occurredAt: Date;
+  createdByUserId: string | null;
+  createdByEmail: string | null;
+}
+
+export interface AiGuardedExecutionEventRecord
+  extends CreateAiGuardedExecutionEventCommand {
+  id: string;
+  createdAt: Date;
 }

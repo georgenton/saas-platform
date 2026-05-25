@@ -14,6 +14,17 @@ import {
   fetchTenantAiApprovalRolloutWorkspace,
   fetchTenantAiApprovalReadinessWorkspace,
   fetchTenantAiApprovalLaunchWorkspace,
+  fetchTenantAiGuardedExecutionWorkspace,
+  fetchTenantAiGuardedExecutionAuditWorkspace,
+  fetchTenantAiGuardedExecutionControlWorkspace,
+  executeTenantAiGuardedExecution,
+  rollbackTenantAiGuardedExecution,
+  fetchTenantAiGuardedExecutionEventLogWorkspace,
+  fetchTenantAiGuardedExecutionLaunchWorkspace,
+  fetchTenantAiGuardedExecutionMonitorWorkspace,
+  fetchTenantAiGuardedExecutionPilotWorkspace,
+  fetchTenantAiGuardedExecutionRollbackWorkspace,
+  fetchTenantAiGuardedExecutionRunbookWorkspace,
   fetchTenantAiEvaluationWorkspace,
   fetchTenantAiGovernanceWorkspace,
   fetchTenantAiHealthWorkspace,
@@ -116,6 +127,18 @@ import {
   AiApprovalRolloutWorkspaceResponse,
   AiApprovalReadinessWorkspaceResponse,
   AiApprovalLaunchWorkspaceResponse,
+  AiGuardedExecutionAuditWorkspaceResponse,
+  AiGuardedExecutionControlWorkspaceResponse,
+  AiGuardedExecutionExecutionResponse,
+  AiGuardedExecutionRollbackExecutionResponse,
+  AiGuardedExecutionEventLogEntryType,
+  AiGuardedExecutionEventLogWorkspaceResponse,
+  AiGuardedExecutionLaunchWorkspaceResponse,
+  AiGuardedExecutionMonitorWorkspaceResponse,
+  AiGuardedExecutionRollbackWorkspaceResponse,
+  AiGuardedExecutionRunbookWorkspaceResponse,
+  AiGuardedExecutionWorkspaceResponse,
+  AiGuardedExecutionPilotWorkspaceResponse,
   AiEvaluationWorkspaceResponse,
   AiGovernanceWorkspaceResponse,
   AiHealthWorkspaceResponse,
@@ -951,6 +974,287 @@ function approvalLaunchStatusLabel(
   }
 }
 
+function guardedExecutionStatusTone(
+  status: 'pilot_candidate' | 'needs_launch_readiness' | 'suggestion_only',
+): string {
+  switch (status) {
+    case 'pilot_candidate':
+      return styles.healthy;
+    case 'needs_launch_readiness':
+      return styles.warning;
+    case 'suggestion_only':
+      return styles.muted;
+    default:
+      return '';
+  }
+}
+
+function guardedExecutionStatusLabel(
+  status: 'pilot_candidate' | 'needs_launch_readiness' | 'suggestion_only',
+): string {
+  switch (status) {
+    case 'pilot_candidate':
+      return 'Pilot candidate';
+    case 'needs_launch_readiness':
+      return 'Needs launch readiness';
+    case 'suggestion_only':
+      return 'Suggestion only';
+    default:
+      return status;
+  }
+}
+
+function guardedExecutionPilotStatusTone(
+  status: 'ready_for_pilot' | 'needs_operational_backing' | 'no_candidate',
+): string {
+  switch (status) {
+    case 'ready_for_pilot':
+      return styles.healthy;
+    case 'needs_operational_backing':
+      return styles.warning;
+    case 'no_candidate':
+      return styles.muted;
+    default:
+      return '';
+  }
+}
+
+function guardedExecutionPilotStatusLabel(
+  status: 'ready_for_pilot' | 'needs_operational_backing' | 'no_candidate',
+): string {
+  switch (status) {
+    case 'ready_for_pilot':
+      return 'Ready for pilot';
+    case 'needs_operational_backing':
+      return 'Needs operational backing';
+    case 'no_candidate':
+      return 'No candidate';
+    default:
+      return status;
+  }
+}
+
+function guardedExecutionRunbookStatusTone(
+  status: 'ready_to_document' | 'needs_design' | 'not_available',
+): string {
+  switch (status) {
+    case 'ready_to_document':
+      return styles.healthy;
+    case 'needs_design':
+      return styles.warning;
+    case 'not_available':
+      return styles.muted;
+    default:
+      return '';
+  }
+}
+
+function guardedExecutionRunbookStatusLabel(
+  status: 'ready_to_document' | 'needs_design' | 'not_available',
+): string {
+  switch (status) {
+    case 'ready_to_document':
+      return 'Ready to document';
+    case 'needs_design':
+      return 'Needs design';
+    case 'not_available':
+      return 'Not available';
+    default:
+      return status;
+  }
+}
+
+function guardedExecutionRollbackStatusTone(
+  status: 'ready_with_rollback' | 'needs_rollback_design' | 'not_applicable',
+): string {
+  switch (status) {
+    case 'ready_with_rollback':
+      return styles.healthy;
+    case 'needs_rollback_design':
+      return styles.warning;
+    case 'not_applicable':
+      return styles.muted;
+    default:
+      return '';
+  }
+}
+
+function guardedExecutionRollbackStatusLabel(
+  status: 'ready_with_rollback' | 'needs_rollback_design' | 'not_applicable',
+): string {
+  switch (status) {
+    case 'ready_with_rollback':
+      return 'Ready with rollback';
+    case 'needs_rollback_design':
+      return 'Needs rollback design';
+    case 'not_applicable':
+      return 'Not applicable';
+    default:
+      return status;
+  }
+}
+
+function guardedExecutionAuditStatusTone(
+  status: 'ready_for_audit' | 'needs_evidence_design' | 'not_applicable',
+): string {
+  switch (status) {
+    case 'ready_for_audit':
+      return styles.healthy;
+    case 'needs_evidence_design':
+      return styles.warning;
+    case 'not_applicable':
+      return styles.muted;
+    default:
+      return '';
+  }
+}
+
+function guardedExecutionAuditStatusLabel(
+  status: 'ready_for_audit' | 'needs_evidence_design' | 'not_applicable',
+): string {
+  switch (status) {
+    case 'ready_for_audit':
+      return 'Ready for audit';
+    case 'needs_evidence_design':
+      return 'Needs evidence design';
+    case 'not_applicable':
+      return 'Not applicable';
+    default:
+      return status;
+  }
+}
+
+function guardedExecutionLaunchStatusTone(
+  status: 'ready_to_launch' | 'pilot_only' | 'hold',
+): string {
+  switch (status) {
+    case 'ready_to_launch':
+      return styles.healthy;
+    case 'pilot_only':
+      return styles.warning;
+    case 'hold':
+      return styles.muted;
+    default:
+      return '';
+  }
+}
+
+function guardedExecutionLaunchStatusLabel(
+  status: 'ready_to_launch' | 'pilot_only' | 'hold',
+): string {
+  switch (status) {
+    case 'ready_to_launch':
+      return 'Ready to launch';
+    case 'pilot_only':
+      return 'Pilot only';
+    case 'hold':
+      return 'Hold';
+    default:
+      return status;
+  }
+}
+
+function guardedExecutionMonitorStatusTone(
+  status: 'ready_to_monitor' | 'monitor_after_launch' | 'not_applicable',
+): string {
+  switch (status) {
+    case 'ready_to_monitor':
+      return styles.healthy;
+    case 'monitor_after_launch':
+      return styles.warning;
+    case 'not_applicable':
+      return styles.muted;
+    default:
+      return '';
+  }
+}
+
+function guardedExecutionMonitorStatusLabel(
+  status: 'ready_to_monitor' | 'monitor_after_launch' | 'not_applicable',
+): string {
+  switch (status) {
+    case 'ready_to_monitor':
+      return 'Ready to monitor';
+    case 'monitor_after_launch':
+      return 'Monitor after launch';
+    case 'not_applicable':
+      return 'Not applicable';
+    default:
+      return status;
+  }
+}
+
+function guardedExecutionControlStatusTone(
+  status: 'open_lane' | 'pilot_then_open' | 'hold',
+): string {
+  switch (status) {
+    case 'open_lane':
+      return styles.healthy;
+    case 'pilot_then_open':
+      return styles.warning;
+    case 'hold':
+      return styles.muted;
+    default:
+      return '';
+  }
+}
+
+function guardedExecutionControlStatusLabel(
+  status: 'open_lane' | 'pilot_then_open' | 'hold',
+): string {
+  switch (status) {
+    case 'open_lane':
+      return 'Open lane';
+    case 'pilot_then_open':
+      return 'Pilot then open';
+    case 'hold':
+      return 'Hold';
+    default:
+      return status;
+  }
+}
+
+function guardedExecutionEventLogTone(
+  eventType: AiGuardedExecutionEventLogEntryType,
+): string {
+  switch (eventType) {
+    case 'guarded_execution_executed':
+    case 'approval_reviewed':
+    case 'guarded_execution_lane_ready':
+      return styles.healthy;
+    case 'guarded_execution_rolled_back':
+    case 'approval_requested':
+    case 'guarded_execution_pilot_only':
+      return styles.warning;
+    case 'suggestion_run_prepared':
+    default:
+      return styles.muted;
+  }
+}
+
+function guardedExecutionEventLogLabel(
+  eventType: AiGuardedExecutionEventLogEntryType,
+): string {
+  switch (eventType) {
+    case 'suggestion_run_prepared':
+      return 'Suggestion prepared';
+    case 'approval_requested':
+      return 'Approval requested';
+    case 'approval_reviewed':
+      return 'Approval reviewed';
+    case 'guarded_execution_executed':
+      return 'Executed';
+    case 'guarded_execution_rolled_back':
+      return 'Rolled back';
+    case 'guarded_execution_pilot_only':
+      return 'Pilot only';
+    case 'guarded_execution_lane_ready':
+      return 'Lane ready';
+    default:
+      return eventType;
+  }
+}
+
 function workbenchPriorityWeight(priority: string): number {
   switch (priority) {
     case 'critical':
@@ -1556,6 +1860,86 @@ export function App() {
     tenantAiApprovalLaunchWorkspaceLoading,
     setTenantAiApprovalLaunchWorkspaceLoading,
   ] = useState(false);
+  const [
+    tenantAiGuardedExecutionWorkspace,
+    setTenantAiGuardedExecutionWorkspace,
+  ] = useState<AiGuardedExecutionWorkspaceResponse | null>(null);
+  const [
+    tenantAiGuardedExecutionWorkspaceLoading,
+    setTenantAiGuardedExecutionWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantAiGuardedExecutionPilotWorkspace,
+    setTenantAiGuardedExecutionPilotWorkspace,
+  ] = useState<AiGuardedExecutionPilotWorkspaceResponse | null>(null);
+  const [
+    tenantAiGuardedExecutionPilotWorkspaceLoading,
+    setTenantAiGuardedExecutionPilotWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantAiGuardedExecutionRunbookWorkspace,
+    setTenantAiGuardedExecutionRunbookWorkspace,
+  ] = useState<AiGuardedExecutionRunbookWorkspaceResponse | null>(null);
+  const [
+    tenantAiGuardedExecutionRunbookWorkspaceLoading,
+    setTenantAiGuardedExecutionRunbookWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantAiGuardedExecutionRollbackWorkspace,
+    setTenantAiGuardedExecutionRollbackWorkspace,
+  ] = useState<AiGuardedExecutionRollbackWorkspaceResponse | null>(null);
+  const [
+    tenantAiGuardedExecutionRollbackWorkspaceLoading,
+    setTenantAiGuardedExecutionRollbackWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantAiGuardedExecutionAuditWorkspace,
+    setTenantAiGuardedExecutionAuditWorkspace,
+  ] = useState<AiGuardedExecutionAuditWorkspaceResponse | null>(null);
+  const [
+    tenantAiGuardedExecutionAuditWorkspaceLoading,
+    setTenantAiGuardedExecutionAuditWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantAiGuardedExecutionLaunchWorkspace,
+    setTenantAiGuardedExecutionLaunchWorkspace,
+  ] = useState<AiGuardedExecutionLaunchWorkspaceResponse | null>(null);
+  const [
+    tenantAiGuardedExecutionLaunchWorkspaceLoading,
+    setTenantAiGuardedExecutionLaunchWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantAiGuardedExecutionMonitorWorkspace,
+    setTenantAiGuardedExecutionMonitorWorkspace,
+  ] = useState<AiGuardedExecutionMonitorWorkspaceResponse | null>(null);
+  const [
+    tenantAiGuardedExecutionMonitorWorkspaceLoading,
+    setTenantAiGuardedExecutionMonitorWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantAiGuardedExecutionControlWorkspace,
+    setTenantAiGuardedExecutionControlWorkspace,
+  ] = useState<AiGuardedExecutionControlWorkspaceResponse | null>(null);
+  const [
+    tenantAiGuardedExecutionControlWorkspaceLoading,
+    setTenantAiGuardedExecutionControlWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantAiGuardedExecutionEventLogWorkspace,
+    setTenantAiGuardedExecutionEventLogWorkspace,
+  ] = useState<AiGuardedExecutionEventLogWorkspaceResponse | null>(null);
+  const [
+    tenantAiGuardedExecutionEventLogWorkspaceLoading,
+    setTenantAiGuardedExecutionEventLogWorkspaceLoading,
+  ] = useState(false);
+  const [
+    guardedExecutionCaseSelectionByAgent,
+    setGuardedExecutionCaseSelectionByAgent,
+  ] = useState<Record<string, string>>({});
+  const [lastGuardedExecutionResult, setLastGuardedExecutionResult] =
+    useState<AiGuardedExecutionExecutionResponse | null>(null);
+  const [lastGuardedExecutionRollbackResult, setLastGuardedExecutionRollbackResult] =
+    useState<AiGuardedExecutionRollbackExecutionResponse | null>(null);
   const [tenantAiHandoffWorkspaceSummary, setTenantAiHandoffWorkspaceSummary] =
     useState<AiHandoffWorkspaceResponse | null>(null);
   const [tenantAiSuggestionWorkspace, setTenantAiSuggestionWorkspace] = useState<
@@ -3213,6 +3597,39 @@ export function App() {
           ),
     [aiApprovalPolicyRegistry, growthAssistAiApprovalPolicies],
   );
+  const latestApprovedAiApprovalRequestByAgent = useMemo(() => {
+    const map = new Map<string, AiApprovalRequestResponse>();
+    const approvedRequests = [
+      ...tenantAiApprovalWorkspace,
+      ...growthAssistAiApprovalRequests,
+      ...invoiceAssistantAiApprovalRequests,
+    ]
+      .filter((entry) => entry.status === 'approved')
+      .sort(
+        (left, right) =>
+          new Date(right.reviewedAt ?? right.updatedAt).getTime() -
+          new Date(left.reviewedAt ?? left.updatedAt).getTime(),
+      );
+
+    approvedRequests.forEach((entry) => {
+      if (!map.has(entry.agentKey)) {
+        map.set(entry.agentKey, entry);
+      }
+    });
+
+    return map;
+  }, [
+    growthAssistAiApprovalRequests,
+    invoiceAssistantAiApprovalRequests,
+    tenantAiApprovalWorkspace,
+  ]);
+  const availableGuardedExecutionGrowthCases = useMemo(
+    () =>
+      growthOperationalCases.filter(
+        (entry) => entry.status === 'open' || entry.status === 'in_progress',
+      ),
+    [growthOperationalCases],
+  );
   const activeInvoiceAiAgent = useMemo(
     () => invoiceAssistantAiEnvelope?.agent ?? null,
     [invoiceAssistantAiEnvelope],
@@ -4379,6 +4796,592 @@ export function App() {
     }
 
     void loadTenantAiOperationsSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionEventLogWorkspace(null);
+      setTenantAiGuardedExecutionEventLogWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiGuardedExecutionEventLogWorkspace() {
+      setTenantAiGuardedExecutionEventLogWorkspaceLoading(true);
+
+      try {
+        const guardedExecutionEventLogWorkspace =
+          await fetchTenantAiGuardedExecutionEventLogWorkspace(
+            token,
+            tenantSlug,
+          );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiGuardedExecutionEventLogWorkspace(
+            guardedExecutionEventLogWorkspace,
+          );
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el guarded execution event log workspace de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiGuardedExecutionEventLogWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiGuardedExecutionEventLogWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionControlWorkspace(null);
+      setTenantAiGuardedExecutionControlWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiGuardedExecutionControlWorkspace() {
+      setTenantAiGuardedExecutionControlWorkspaceLoading(true);
+
+      try {
+        const guardedExecutionControlWorkspace =
+          await fetchTenantAiGuardedExecutionControlWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiGuardedExecutionControlWorkspace(
+            guardedExecutionControlWorkspace,
+          );
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el guarded execution control workspace de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiGuardedExecutionControlWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiGuardedExecutionControlWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionMonitorWorkspace(null);
+      setTenantAiGuardedExecutionMonitorWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiGuardedExecutionMonitorWorkspace() {
+      setTenantAiGuardedExecutionMonitorWorkspaceLoading(true);
+
+      try {
+        const guardedExecutionMonitorWorkspace =
+          await fetchTenantAiGuardedExecutionMonitorWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiGuardedExecutionMonitorWorkspace(
+            guardedExecutionMonitorWorkspace,
+          );
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el guarded execution monitor workspace de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiGuardedExecutionMonitorWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiGuardedExecutionMonitorWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionLaunchWorkspace(null);
+      setTenantAiGuardedExecutionLaunchWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiGuardedExecutionLaunchWorkspace() {
+      setTenantAiGuardedExecutionLaunchWorkspaceLoading(true);
+
+      try {
+        const guardedExecutionLaunchWorkspace =
+          await fetchTenantAiGuardedExecutionLaunchWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiGuardedExecutionLaunchWorkspace(
+            guardedExecutionLaunchWorkspace,
+          );
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el guarded execution launch workspace de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiGuardedExecutionLaunchWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiGuardedExecutionLaunchWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionAuditWorkspace(null);
+      setTenantAiGuardedExecutionAuditWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiGuardedExecutionAuditWorkspace() {
+      setTenantAiGuardedExecutionAuditWorkspaceLoading(true);
+
+      try {
+        const guardedExecutionAuditWorkspace =
+          await fetchTenantAiGuardedExecutionAuditWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiGuardedExecutionAuditWorkspace(
+            guardedExecutionAuditWorkspace,
+          );
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el guarded execution audit workspace de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiGuardedExecutionAuditWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiGuardedExecutionAuditWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionRollbackWorkspace(null);
+      setTenantAiGuardedExecutionRollbackWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiGuardedExecutionRollbackWorkspace() {
+      setTenantAiGuardedExecutionRollbackWorkspaceLoading(true);
+
+      try {
+        const guardedExecutionRollbackWorkspace =
+          await fetchTenantAiGuardedExecutionRollbackWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiGuardedExecutionRollbackWorkspace(
+            guardedExecutionRollbackWorkspace,
+          );
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el guarded execution rollback workspace de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiGuardedExecutionRollbackWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiGuardedExecutionRollbackWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionRunbookWorkspace(null);
+      setTenantAiGuardedExecutionRunbookWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiGuardedExecutionRunbookWorkspace() {
+      setTenantAiGuardedExecutionRunbookWorkspaceLoading(true);
+
+      try {
+        const guardedExecutionRunbookWorkspace =
+          await fetchTenantAiGuardedExecutionRunbookWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiGuardedExecutionRunbookWorkspace(
+            guardedExecutionRunbookWorkspace,
+          );
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el guarded execution runbook workspace de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiGuardedExecutionRunbookWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiGuardedExecutionRunbookWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionPilotWorkspace(null);
+      setTenantAiGuardedExecutionPilotWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiGuardedExecutionPilotWorkspace() {
+      setTenantAiGuardedExecutionPilotWorkspaceLoading(true);
+
+      try {
+        const guardedExecutionPilotWorkspace =
+          await fetchTenantAiGuardedExecutionPilotWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiGuardedExecutionPilotWorkspace(
+            guardedExecutionPilotWorkspace,
+          );
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el guarded execution pilot workspace de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiGuardedExecutionPilotWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiGuardedExecutionPilotWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionWorkspace(null);
+      setTenantAiGuardedExecutionWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiGuardedExecutionWorkspace() {
+      setTenantAiGuardedExecutionWorkspaceLoading(true);
+
+      try {
+        const guardedExecutionWorkspace =
+          await fetchTenantAiGuardedExecutionWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiGuardedExecutionWorkspace(guardedExecutionWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el guarded execution workspace de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiGuardedExecutionWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiGuardedExecutionWorkspace();
 
     return () => {
       cancelled = true;
@@ -6423,6 +7426,355 @@ export function App() {
     }
   }
 
+  async function refreshTenantAiGuardedExecutionWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionWorkspace(null);
+      setTenantAiGuardedExecutionWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiGuardedExecutionWorkspaceLoading(true);
+
+    try {
+      const guardedExecutionWorkspace =
+        await fetchTenantAiGuardedExecutionWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiGuardedExecutionWorkspace(guardedExecutionWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el guarded execution workspace de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiGuardedExecutionWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiGuardedExecutionPilotWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionPilotWorkspace(null);
+      setTenantAiGuardedExecutionPilotWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiGuardedExecutionPilotWorkspaceLoading(true);
+
+    try {
+      const guardedExecutionPilotWorkspace =
+        await fetchTenantAiGuardedExecutionPilotWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiGuardedExecutionPilotWorkspace(
+          guardedExecutionPilotWorkspace,
+        );
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el guarded execution pilot workspace de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiGuardedExecutionPilotWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiGuardedExecutionRunbookWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionRunbookWorkspace(null);
+      setTenantAiGuardedExecutionRunbookWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiGuardedExecutionRunbookWorkspaceLoading(true);
+
+    try {
+      const guardedExecutionRunbookWorkspace =
+        await fetchTenantAiGuardedExecutionRunbookWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiGuardedExecutionRunbookWorkspace(
+          guardedExecutionRunbookWorkspace,
+        );
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el guarded execution runbook workspace de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiGuardedExecutionRunbookWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiGuardedExecutionRollbackWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionRollbackWorkspace(null);
+      setTenantAiGuardedExecutionRollbackWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiGuardedExecutionRollbackWorkspaceLoading(true);
+
+    try {
+      const guardedExecutionRollbackWorkspace =
+        await fetchTenantAiGuardedExecutionRollbackWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiGuardedExecutionRollbackWorkspace(
+          guardedExecutionRollbackWorkspace,
+        );
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el guarded execution rollback workspace de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiGuardedExecutionRollbackWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiGuardedExecutionAuditWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionAuditWorkspace(null);
+      setTenantAiGuardedExecutionAuditWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiGuardedExecutionAuditWorkspaceLoading(true);
+
+    try {
+      const guardedExecutionAuditWorkspace =
+        await fetchTenantAiGuardedExecutionAuditWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiGuardedExecutionAuditWorkspace(
+          guardedExecutionAuditWorkspace,
+        );
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el guarded execution audit workspace de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiGuardedExecutionAuditWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiGuardedExecutionLaunchWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionLaunchWorkspace(null);
+      setTenantAiGuardedExecutionLaunchWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiGuardedExecutionLaunchWorkspaceLoading(true);
+
+    try {
+      const guardedExecutionLaunchWorkspace =
+        await fetchTenantAiGuardedExecutionLaunchWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiGuardedExecutionLaunchWorkspace(
+          guardedExecutionLaunchWorkspace,
+        );
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el guarded execution launch workspace de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiGuardedExecutionLaunchWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiGuardedExecutionMonitorWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionMonitorWorkspace(null);
+      setTenantAiGuardedExecutionMonitorWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiGuardedExecutionMonitorWorkspaceLoading(true);
+
+    try {
+      const guardedExecutionMonitorWorkspace =
+        await fetchTenantAiGuardedExecutionMonitorWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiGuardedExecutionMonitorWorkspace(
+          guardedExecutionMonitorWorkspace,
+        );
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el guarded execution monitor workspace de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiGuardedExecutionMonitorWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiGuardedExecutionControlWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionControlWorkspace(null);
+      setTenantAiGuardedExecutionControlWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiGuardedExecutionControlWorkspaceLoading(true);
+
+    try {
+      const guardedExecutionControlWorkspace =
+        await fetchTenantAiGuardedExecutionControlWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiGuardedExecutionControlWorkspace(
+          guardedExecutionControlWorkspace,
+        );
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el guarded execution control workspace de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiGuardedExecutionControlWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiGuardedExecutionEventLogWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGuardedExecutionEventLogWorkspace(null);
+      setTenantAiGuardedExecutionEventLogWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiGuardedExecutionEventLogWorkspaceLoading(true);
+
+    try {
+      const guardedExecutionEventLogWorkspace =
+        await fetchTenantAiGuardedExecutionEventLogWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiGuardedExecutionEventLogWorkspace(
+          guardedExecutionEventLogWorkspace,
+        );
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el guarded execution event log workspace de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiGuardedExecutionEventLogWorkspaceLoading(false);
+    }
+  }
+
   async function refreshTenantAiOperationsConsole() {
     await refreshTenantAiOperationsSummary();
     await refreshTenantAiApprovalWorkspaceSummary();
@@ -6441,6 +7793,15 @@ export function App() {
     await refreshTenantAiApprovalRolloutWorkspace();
     await refreshTenantAiApprovalReadinessWorkspace();
     await refreshTenantAiApprovalLaunchWorkspace();
+    await refreshTenantAiGuardedExecutionWorkspace();
+    await refreshTenantAiGuardedExecutionPilotWorkspace();
+    await refreshTenantAiGuardedExecutionRunbookWorkspace();
+    await refreshTenantAiGuardedExecutionRollbackWorkspace();
+    await refreshTenantAiGuardedExecutionAuditWorkspace();
+    await refreshTenantAiGuardedExecutionLaunchWorkspace();
+    await refreshTenantAiGuardedExecutionMonitorWorkspace();
+    await refreshTenantAiGuardedExecutionControlWorkspace();
+    await refreshTenantAiGuardedExecutionEventLogWorkspace();
   }
 
   async function refreshInvoicingWorkspace(options?: {
@@ -7635,6 +8996,122 @@ export function App() {
     }
 
     await handleReviewAiApprovalRequest(requestId, status);
+  }
+
+  async function handleExecuteTenantAiGuardedExecution(
+    agentKey: string,
+    requestId: string,
+    caseId: string,
+  ) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canManageGrowthConversations ||
+      agentKey !== 'growth-assist-coach'
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const actionKey = `execute-ai-guarded:${requestId}:${caseId}`;
+    setGrowthActionLoading(actionKey);
+    setGrowthActionMessage(null);
+    setGrowthError(null);
+
+    try {
+      const result = await executeTenantAiGuardedExecution(
+        token,
+        tenantSlug,
+        agentKey,
+        requestId,
+        {
+          caseId,
+        },
+      );
+
+      startTransition(() => {
+        setLastGuardedExecutionResult(result);
+        setGrowthOperationalCases((current) => [
+          result.operationalCase,
+          ...current.filter((entry) => entry.id !== result.operationalCase.id),
+        ]);
+      });
+
+      await Promise.all([
+        refreshGrowthWorkspace(),
+        refreshTenantAiOperationsConsole(),
+      ]);
+
+      setGrowthActionMessage(
+        `Guarded execution ejecutada sobre ${result.operationalCase.id} con ${result.toolKey}.`,
+      );
+    } catch (error) {
+      setGrowthError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo ejecutar el lane guardado de AI.',
+      );
+    } finally {
+      setGrowthActionLoading(null);
+    }
+  }
+
+  async function handleRollbackTenantAiGuardedExecution(
+    agentKey: string,
+    requestId: string,
+    caseId: string,
+  ) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canManageGrowthConversations ||
+      agentKey !== 'growth-assist-coach'
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const actionKey = `rollback-ai-guarded:${requestId}:${caseId}`;
+    setGrowthActionLoading(actionKey);
+    setGrowthActionMessage(null);
+    setGrowthError(null);
+
+    try {
+      const result = await rollbackTenantAiGuardedExecution(
+        token,
+        tenantSlug,
+        agentKey,
+        requestId,
+        {
+          caseId,
+        },
+      );
+
+      startTransition(() => {
+        setLastGuardedExecutionRollbackResult(result);
+        setGrowthOperationalCases((current) => [
+          result.operationalCase,
+          ...current.filter((entry) => entry.id !== result.operationalCase.id),
+        ]);
+      });
+
+      await Promise.all([
+        refreshGrowthWorkspace(),
+        refreshTenantAiOperationsConsole(),
+      ]);
+
+      setGrowthActionMessage(
+        `Guarded rollback ejecutado sobre ${result.operationalCase.id}; lane devuelto a suggestion_only.`,
+      );
+    } catch (error) {
+      setGrowthError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo ejecutar el rollback del lane guardado de AI.',
+      );
+    } finally {
+      setGrowthActionLoading(null);
+    }
   }
 
   async function handleRequestTenantAiWorkspaceSuggestionRunApproval(
@@ -14184,7 +15661,16 @@ export function App() {
                     tenantAiApprovalStaffingPlanWorkspaceLoading ||
                     tenantAiApprovalRolloutWorkspaceLoading ||
                     tenantAiApprovalReadinessWorkspaceLoading ||
-                    tenantAiApprovalLaunchWorkspaceLoading
+                    tenantAiApprovalLaunchWorkspaceLoading ||
+                    tenantAiGuardedExecutionWorkspaceLoading ||
+                    tenantAiGuardedExecutionPilotWorkspaceLoading ||
+                    tenantAiGuardedExecutionRunbookWorkspaceLoading ||
+                    tenantAiGuardedExecutionRollbackWorkspaceLoading ||
+                    tenantAiGuardedExecutionAuditWorkspaceLoading ||
+                    tenantAiGuardedExecutionLaunchWorkspaceLoading ||
+                    tenantAiGuardedExecutionMonitorWorkspaceLoading ||
+                    tenantAiGuardedExecutionControlWorkspaceLoading ||
+                    tenantAiGuardedExecutionEventLogWorkspaceLoading
                   }
                   onClick={() => {
                     void refreshTenantAiOperationsConsole();
@@ -14207,7 +15693,16 @@ export function App() {
                   tenantAiApprovalStaffingPlanWorkspaceLoading ||
                   tenantAiApprovalRolloutWorkspaceLoading ||
                   tenantAiApprovalReadinessWorkspaceLoading ||
-                  tenantAiApprovalLaunchWorkspaceLoading
+                  tenantAiApprovalLaunchWorkspaceLoading ||
+                  tenantAiGuardedExecutionWorkspaceLoading ||
+                  tenantAiGuardedExecutionPilotWorkspaceLoading ||
+                  tenantAiGuardedExecutionRunbookWorkspaceLoading ||
+                  tenantAiGuardedExecutionRollbackWorkspaceLoading ||
+                  tenantAiGuardedExecutionAuditWorkspaceLoading ||
+                  tenantAiGuardedExecutionLaunchWorkspaceLoading ||
+                  tenantAiGuardedExecutionMonitorWorkspaceLoading ||
+                  tenantAiGuardedExecutionControlWorkspaceLoading ||
+                  tenantAiGuardedExecutionEventLogWorkspaceLoading
                     ? 'Refrescando AI ops...'
                     : 'Refrescar AI ops'}
                 </button>
@@ -15968,6 +17463,1280 @@ export function App() {
                       <p>
                         Todavia no hay suficiente contexto para decidir launch de
                         approvals en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI guarded execution</span>
+                    <h3>Que agente podria pasar de suggestion mode a un piloto guardado</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiGuardedExecutionWorkspace
+                      ? formatDate(tenantAiGuardedExecutionWorkspace.generatedAt)
+                      : 'sin guarded execution'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Pilot candidates</span>
+                    <strong>
+                      {tenantAiGuardedExecutionWorkspace?.counts.pilotCandidateAgents ?? 0}
+                    </strong>
+                    <small>Agentes que ya podrian entrar a un piloto guardado narrow.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Needs launch readiness</span>
+                    <strong>
+                      {tenantAiGuardedExecutionWorkspace?.counts
+                        .needsLaunchReadinessAgents ?? 0}
+                    </strong>
+                    <small>Agentes con candidate tools, pero todavia sin condiciones operativas suficientes.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Suggestion only</span>
+                    <strong>
+                      {tenantAiGuardedExecutionWorkspace?.counts
+                        .suggestionOnlyAgents ?? 0}
+                    </strong>
+                    <small>Agentes que aun no tienen un path real para guarded execution.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Candidate tools</span>
+                    <strong>
+                      {tenantAiGuardedExecutionWorkspace?.counts
+                        .executionCandidateTools ?? 0}
+                    </strong>
+                    <small>Tools que hoy viven solo como candidatos a ejecucion guardada.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiGuardedExecutionWorkspace?.agents.length ? (
+                    tenantAiGuardedExecutionWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-guarded-execution:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${guardedExecutionStatusTone(
+                              agent.guardedExecutionStatus,
+                            )}`}
+                          >
+                            {guardedExecutionStatusLabel(agent.guardedExecutionStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · mode {humanizeKey(agent.currentMode)} ·
+                          {humanizeKey(agent.rolloutPhase)}
+                        </small>
+                        <small>
+                          Pending approvals {agent.pendingApprovalRequests} {'·'} Reviewable runs{' '}
+                          {agent.reviewableSuggestionRuns}
+                        </small>
+                        <small>{agent.nextStep}</small>
+                        <div className={styles.stack}>
+                          {agent.guardrailChecklist.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-check:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-guarded-execution-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiGuardedExecutionWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando guarded execution workspace de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para decidir pilotos de
+                        guarded execution en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI guarded execution pilot</span>
+                    <h3>Como seria el primer piloto narrow por agente</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiGuardedExecutionPilotWorkspace
+                      ? formatDate(
+                          tenantAiGuardedExecutionPilotWorkspace.generatedAt,
+                        )
+                      : 'sin pilot plan'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Ready for pilot</span>
+                    <strong>
+                      {tenantAiGuardedExecutionPilotWorkspace?.counts
+                        .readyForPilotAgents ?? 0}
+                    </strong>
+                    <small>Agentes que ya podrian entrar a un piloto narrow controlado.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Needs backing</span>
+                    <strong>
+                      {tenantAiGuardedExecutionPilotWorkspace?.counts
+                        .needsOperationalBackingAgents ?? 0}
+                    </strong>
+                    <small>Agentes con idea de piloto, pero sin respaldo operativo suficiente.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>No candidate</span>
+                    <strong>
+                      {tenantAiGuardedExecutionPilotWorkspace?.counts
+                        .noCandidateAgents ?? 0}
+                    </strong>
+                    <small>Agentes que todavia no tienen un tool concreto para pilotar.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Candidate pilots</span>
+                    <strong>
+                      {tenantAiGuardedExecutionPilotWorkspace?.counts
+                        .candidateToolPilots ?? 0}
+                    </strong>
+                    <small>Tools concretos que ya sirven como primer scope de piloto.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiGuardedExecutionPilotWorkspace?.agents.length ? (
+                    tenantAiGuardedExecutionPilotWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-guarded-execution-pilot:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${guardedExecutionPilotStatusTone(
+                              agent.pilotStatus,
+                            )}`}
+                          >
+                            {guardedExecutionPilotStatusLabel(agent.pilotStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · {humanizeKey(agent.pilotType)} ·
+                          {humanizeKey(agent.rolloutPhase)}
+                        </small>
+                        <small>
+                          Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} SLA{' '}
+                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
+                        </small>
+                        <small>{agent.recommendedPilotScope}</small>
+                        <small>{agent.nextStep}</small>
+                        <div className={styles.stack}>
+                          {agent.pilotPreconditions.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-pilot-pre:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.pilotGuardrails.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-pilot-guard:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-guarded-execution-pilot-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiGuardedExecutionPilotWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando guarded execution pilot workspace de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para definir el primer
+                        piloto narrow de guarded execution.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI guarded execution runbook</span>
+                    <h3>Como operar el piloto con lane, gate y stop conditions explicitas</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiGuardedExecutionRunbookWorkspace
+                      ? formatDate(
+                          tenantAiGuardedExecutionRunbookWorkspace.generatedAt,
+                        )
+                      : 'sin runbook'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Ready to document</span>
+                    <strong>
+                      {tenantAiGuardedExecutionRunbookWorkspace?.counts
+                        .readyToDocumentAgents ?? 0}
+                    </strong>
+                    <small>Agentes que ya pueden documentar un runbook narrow con execute path guardado.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Needs design</span>
+                    <strong>
+                      {tenantAiGuardedExecutionRunbookWorkspace?.counts
+                        .needsDesignAgents ?? 0}
+                    </strong>
+                    <small>Agentes que aun necesitan shadow review o cierre operativo antes del runbook final.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Not available</span>
+                    <strong>
+                      {tenantAiGuardedExecutionRunbookWorkspace?.counts
+                        .notAvailableAgents ?? 0}
+                    </strong>
+                    <small>Agentes sin candidate tool concreto para bajar a runbook.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Candidate runbooks</span>
+                    <strong>
+                      {tenantAiGuardedExecutionRunbookWorkspace?.counts
+                        .candidateRunbooks ?? 0}
+                    </strong>
+                    <small>Scopes concretos que ya pueden aterrizarse como lane operativa.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiGuardedExecutionRunbookWorkspace?.agents.length ? (
+                    tenantAiGuardedExecutionRunbookWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-guarded-execution-runbook:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${guardedExecutionRunbookStatusTone(
+                              agent.runbookStatus,
+                            )}`}
+                          >
+                            {guardedExecutionRunbookStatusLabel(
+                              agent.runbookStatus,
+                            )}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · {humanizeKey(agent.pilotType)} ·
+                          {humanizeKey(agent.rolloutPhase)}
+                        </small>
+                        <small>
+                          Lane {humanizeKey(agent.operatingLane)} {'·'} Gate{' '}
+                          {agent.namedHumanGate} {'·'} Blast radius{' '}
+                          {humanizeKey(agent.blastRadius)}
+                        </small>
+                        <small>
+                          Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} SLA{' '}
+                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
+                        </small>
+                        <small>{agent.nextStep}</small>
+                        <div className={styles.stack}>
+                          {agent.entryChecklist.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-runbook-entry:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.stopConditions.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-runbook-stop:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.exitCriteria.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-runbook-exit:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-guarded-execution-runbook-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiGuardedExecutionRunbookWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando guarded execution runbook workspace de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para definir runbooks de
+                        guarded execution en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI guarded execution rollback</span>
+                    <h3>Como contener el piloto y volver a suggestion mode sin perder control</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiGuardedExecutionRollbackWorkspace
+                      ? formatDate(
+                          tenantAiGuardedExecutionRollbackWorkspace.generatedAt,
+                        )
+                      : 'sin rollback'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Ready with rollback</span>
+                    <strong>
+                      {tenantAiGuardedExecutionRollbackWorkspace?.counts
+                        .readyWithRollbackAgents ?? 0}
+                    </strong>
+                    <small>Agentes que ya tienen suficiente forma para documentar rollback junto al execute path.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Needs rollback design</span>
+                    <strong>
+                      {tenantAiGuardedExecutionRollbackWorkspace?.counts
+                        .needsRollbackDesignAgents ?? 0}
+                    </strong>
+                    <small>Agentes que aun necesitan diseñar bien contención y reversión antes de abrir el lane.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Not applicable</span>
+                    <strong>
+                      {tenantAiGuardedExecutionRollbackWorkspace?.counts
+                        .notApplicableAgents ?? 0}
+                    </strong>
+                    <small>Agentes que todavía no tienen execute path como para hablar de rollback real.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Rollback candidates</span>
+                    <strong>
+                      {tenantAiGuardedExecutionRollbackWorkspace?.counts
+                        .rollbackCandidateTools ?? 0}
+                    </strong>
+                    <small>Scopes de ejecución que ya exigen un fallback explícito.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiGuardedExecutionRollbackWorkspace?.agents.length ? (
+                    tenantAiGuardedExecutionRollbackWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-guarded-execution-rollback:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${guardedExecutionRollbackStatusTone(
+                              agent.rollbackStatus,
+                            )}`}
+                          >
+                            {guardedExecutionRollbackStatusLabel(
+                              agent.rollbackStatus,
+                            )}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · {humanizeKey(agent.pilotType)} ·
+                          {humanizeKey(agent.rolloutPhase)}
+                        </small>
+                        <small>
+                          Owner {agent.rollbackOwner} {'·'} Blast radius{' '}
+                          {humanizeKey(agent.blastRadius)} {'·'} Fallback{' '}
+                          {humanizeKey(agent.safeFallbackMode)}
+                        </small>
+                        <small>
+                          Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} SLA{' '}
+                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
+                        </small>
+                        <small>{agent.nextStep}</small>
+                        <div className={styles.stack}>
+                          {agent.rollbackTriggerSummary.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-rollback-trigger:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.rollbackSteps.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-rollback-step:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.verificationChecks.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-rollback-check:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-guarded-execution-rollback-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiGuardedExecutionRollbackWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando guarded execution rollback workspace de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para definir rollback de
+                        guarded execution en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI guarded execution audit</span>
+                    <h3>Que evidencia y trazabilidad necesitamos antes de abrir un path ejecutable</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiGuardedExecutionAuditWorkspace
+                      ? formatDate(
+                          tenantAiGuardedExecutionAuditWorkspace.generatedAt,
+                        )
+                      : 'sin audit'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Ready for audit</span>
+                    <strong>
+                      {tenantAiGuardedExecutionAuditWorkspace?.counts
+                        .readyForAuditAgents ?? 0}
+                    </strong>
+                    <small>Agentes que ya podrían empaquetar evidencia formal para el primer lane guardado.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Needs evidence design</span>
+                    <strong>
+                      {tenantAiGuardedExecutionAuditWorkspace?.counts
+                        .needsEvidenceDesignAgents ?? 0}
+                    </strong>
+                    <small>Agentes que todavía necesitan mejor evidencia, logging y trail humano antes de auditarse bien.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Not applicable</span>
+                    <strong>
+                      {tenantAiGuardedExecutionAuditWorkspace?.counts
+                        .notApplicableAgents ?? 0}
+                    </strong>
+                    <small>Agentes que aún no tienen candidate tool como para exigir paquete de auditoría.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Audit candidates</span>
+                    <strong>
+                      {tenantAiGuardedExecutionAuditWorkspace?.counts
+                        .auditCandidateTools ?? 0}
+                    </strong>
+                    <small>Scopes ejecutables que ya exigen evidencia y trazabilidad explícitas.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiGuardedExecutionAuditWorkspace?.agents.length ? (
+                    tenantAiGuardedExecutionAuditWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-guarded-execution-audit:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${guardedExecutionAuditStatusTone(
+                              agent.auditStatus,
+                            )}`}
+                          >
+                            {guardedExecutionAuditStatusLabel(agent.auditStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · {humanizeKey(agent.pilotType)} ·
+                          {humanizeKey(agent.rolloutPhase)}
+                        </small>
+                        <small>
+                          Audit owner {agent.auditOwner} {'·'} Fallback{' '}
+                          {humanizeKey(agent.safeFallbackMode)}
+                        </small>
+                        <small>
+                          Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} SLA{' '}
+                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
+                        </small>
+                        <small>{agent.nextStep}</small>
+                        <div className={styles.stack}>
+                          {agent.evidencePackSummary.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-audit-evidence:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.requiredArtifacts.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-audit-artifact:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.loggingChecks.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-audit-log:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.reviewTrailSummary.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-audit-review:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-guarded-execution-audit-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiGuardedExecutionAuditWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando guarded execution audit workspace de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para definir evidencia de
+                        auditoria para guarded execution en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI guarded execution launch</span>
+                    <h3>Que agente ya puede abrir un lane guardado y cual debe quedarse en piloto</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiGuardedExecutionLaunchWorkspace
+                      ? formatDate(
+                          tenantAiGuardedExecutionLaunchWorkspace.generatedAt,
+                        )
+                      : 'sin launch'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Ready to launch</span>
+                    <strong>
+                      {tenantAiGuardedExecutionLaunchWorkspace?.counts
+                        .readyToLaunchAgents ?? 0}
+                    </strong>
+                    <small>Agentes que ya tendrían un go explícito para abrir un lane guardado narrow.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Pilot only</span>
+                    <strong>
+                      {tenantAiGuardedExecutionLaunchWorkspace?.counts
+                        .pilotOnlyAgents ?? 0}
+                    </strong>
+                    <small>Agentes que todavía deben quedarse en piloto o shadow-review antes del go-live.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Hold</span>
+                    <strong>
+                      {tenantAiGuardedExecutionLaunchWorkspace?.counts
+                        .holdAgents ?? 0}
+                    </strong>
+                    <small>Agentes que aún deben permanecer en suggestion mode.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Launch candidates</span>
+                    <strong>
+                      {tenantAiGuardedExecutionLaunchWorkspace?.counts
+                        .launchCandidateTools ?? 0}
+                    </strong>
+                    <small>Tools candidatos que ya entran en conversación real de go/no-go.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiGuardedExecutionLaunchWorkspace?.agents.length ? (
+                    tenantAiGuardedExecutionLaunchWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-guarded-execution-launch:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${guardedExecutionLaunchStatusTone(
+                              agent.launchStatus,
+                            )}`}
+                          >
+                            {guardedExecutionLaunchStatusLabel(agent.launchStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · {humanizeKey(agent.pilotType)} ·
+                          {humanizeKey(agent.launchWindow)}
+                        </small>
+                        <small>
+                          Launch owner {agent.launchOwner} {'·'} Fallback{' '}
+                          {humanizeKey(agent.safeFallbackMode)}
+                        </small>
+                        <small>
+                          Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} SLA{' '}
+                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
+                        </small>
+                        <small>{agent.nextStep}</small>
+                        <div className={styles.stack}>
+                          {agent.launchChecklist.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-launch-check:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.blockingFactors.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-launch-block:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.successSignals.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-launch-signal:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-guarded-execution-launch-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiGuardedExecutionLaunchWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando guarded execution launch workspace de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para decidir launch de
+                        guarded execution en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI guarded execution monitor</span>
+                    <h3>Que deberiamos vigilar el dia 0 y que señales disparan escalacion</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiGuardedExecutionMonitorWorkspace
+                      ? formatDate(
+                          tenantAiGuardedExecutionMonitorWorkspace.generatedAt,
+                        )
+                      : 'sin monitor'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Ready to monitor</span>
+                    <strong>
+                      {tenantAiGuardedExecutionMonitorWorkspace?.counts
+                        .readyToMonitorAgents ?? 0}
+                    </strong>
+                    <small>Agentes cuyo lane ya tendría una watchlist explícita para day 0.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Monitor after launch</span>
+                    <strong>
+                      {tenantAiGuardedExecutionMonitorWorkspace?.counts
+                        .monitorAfterLaunchAgents ?? 0}
+                    </strong>
+                    <small>Agentes que todavía requieren piloto o siguiente ventana antes de una vigilancia day 0 real.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Not applicable</span>
+                    <strong>
+                      {tenantAiGuardedExecutionMonitorWorkspace?.counts
+                        .notApplicableAgents ?? 0}
+                    </strong>
+                    <small>Agentes que siguen en suggestion mode sin lane ejecutable para vigilar.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Monitor candidates</span>
+                    <strong>
+                      {tenantAiGuardedExecutionMonitorWorkspace?.counts
+                        .monitorCandidateTools ?? 0}
+                    </strong>
+                    <small>Tools candidatos que ya exigen señales de watch y escalación explícitas.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiGuardedExecutionMonitorWorkspace?.agents.length ? (
+                    tenantAiGuardedExecutionMonitorWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-guarded-execution-monitor:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${guardedExecutionMonitorStatusTone(
+                              agent.monitorStatus,
+                            )}`}
+                          >
+                            {guardedExecutionMonitorStatusLabel(agent.monitorStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · {humanizeKey(agent.launchWindow)} ·
+                          {humanizeKey(agent.watchWindow)}
+                        </small>
+                        <small>
+                          Monitor owner {agent.monitorOwner} {'·'} Fallback{' '}
+                          {humanizeKey(agent.safeFallbackMode)}
+                        </small>
+                        <small>
+                          Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} Launch{' '}
+                          {guardedExecutionLaunchStatusLabel(agent.launchStatus)}
+                        </small>
+                        <small>{agent.nextStep}</small>
+                        <div className={styles.stack}>
+                          {agent.watchSignals.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-monitor-watch:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.escalationSignals.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-monitor-escalation:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.rollbackReadinessChecks.map((item, index) => (
+                            <small
+                              key={`ai-guarded-execution-monitor-rollback:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-guarded-execution-monitor-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiGuardedExecutionMonitorWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando guarded execution monitor workspace de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para definir vigilancia de
+                        day 0 para guarded execution en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI guarded execution control</span>
+                    <h3>La tarjeta compacta de go no-go para cada lane guardado</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiGuardedExecutionControlWorkspace
+                      ? formatDate(
+                          tenantAiGuardedExecutionControlWorkspace.generatedAt,
+                        )
+                      : 'sin control'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Open lane</span>
+                    <strong>
+                      {tenantAiGuardedExecutionControlWorkspace?.counts
+                        .openLaneAgents ?? 0}
+                    </strong>
+                    <small>Agentes que ya tendrían un go explícito para abrir el lane guardado.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Pilot then open</span>
+                    <strong>
+                      {tenantAiGuardedExecutionControlWorkspace?.counts
+                        .pilotThenOpenAgents ?? 0}
+                    </strong>
+                    <small>Agentes que todavía necesitan piloto o maduración antes del go.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Hold</span>
+                    <strong>
+                      {tenantAiGuardedExecutionControlWorkspace?.counts
+                        .holdAgents ?? 0}
+                    </strong>
+                    <small>Agentes que deben quedarse en suggestion mode por ahora.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Control candidates</span>
+                    <strong>
+                      {tenantAiGuardedExecutionControlWorkspace?.counts
+                        .controlCandidateTools ?? 0}
+                    </strong>
+                    <small>Tools candidatos que ya entran en una lectura compacta de control.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {lastGuardedExecutionResult ? (
+                    <div className={styles.assistCueCard}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>{lastGuardedExecutionResult.summary}</strong>
+                        <span className={styles.statusPill}>
+                          {formatDate(lastGuardedExecutionResult.executedAt)}
+                        </span>
+                      </div>
+                      <small>{lastGuardedExecutionResult.detail}</small>
+                      <small>
+                        Caso {lastGuardedExecutionResult.operationalCase.id} · Estado{' '}
+                        {humanizeKey(lastGuardedExecutionResult.operationalCase.status)} ·
+                        Tool {lastGuardedExecutionResult.toolKey}
+                      </small>
+                    </div>
+                  ) : null}
+                  {lastGuardedExecutionRollbackResult ? (
+                    <div className={styles.assistCueCard}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>{lastGuardedExecutionRollbackResult.summary}</strong>
+                        <span className={styles.statusPill}>
+                          {formatDate(lastGuardedExecutionRollbackResult.rolledBackAt)}
+                        </span>
+                      </div>
+                      <small>{lastGuardedExecutionRollbackResult.detail}</small>
+                      <small>
+                        Caso {lastGuardedExecutionRollbackResult.operationalCase.id} · Estado{' '}
+                        {humanizeKey(
+                          lastGuardedExecutionRollbackResult.operationalCase.status,
+                        )}{' '}
+                        · Fallback {lastGuardedExecutionRollbackResult.safeFallbackMode}
+                      </small>
+                    </div>
+                  ) : null}
+                  {tenantAiGuardedExecutionControlWorkspace?.agents.length ? (
+                    tenantAiGuardedExecutionControlWorkspace.agents.map((agent) => {
+                      const approvedRequest =
+                        latestApprovedAiApprovalRequestByAgent.get(agent.agentKey) ??
+                        null;
+                      const selectedCaseId =
+                        guardedExecutionCaseSelectionByAgent[agent.agentKey] ??
+                        availableGuardedExecutionGrowthCases[0]?.id ??
+                        '';
+                      const selectedCase =
+                        availableGuardedExecutionGrowthCases.find(
+                          (entry) => entry.id === selectedCaseId,
+                        ) ?? null;
+                      const executeActionKey =
+                        approvedRequest && selectedCaseId
+                          ? `execute-ai-guarded:${approvedRequest.id}:${selectedCaseId}`
+                          : null;
+                      const rollbackActionKey =
+                        approvedRequest && selectedCaseId
+                          ? `rollback-ai-guarded:${approvedRequest.id}:${selectedCaseId}`
+                          : null;
+                      const canExecuteGrowthLane =
+                        canManageGrowthConversations &&
+                        agent.agentKey === 'growth-assist-coach' &&
+                        agent.candidateToolKey === 'growth_case_assignment_execution' &&
+                        approvedRequest !== null &&
+                        selectedCaseId.length > 0;
+                      const canRollbackGrowthLane =
+                        canExecuteGrowthLane &&
+                        selectedCase !== null &&
+                        selectedCase.status === 'in_progress' &&
+                        selectedCase.assignedUserId !== null;
+
+                      return (
+                        <div
+                          className={styles.assistCueCard}
+                          key={`ai-guarded-execution-control:${agent.agentKey}`}
+                        >
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>{agent.title}</strong>
+                            <span
+                              className={`${styles.statusPill} ${guardedExecutionControlStatusTone(
+                                agent.controlStatus,
+                              )}`}
+                            >
+                              {guardedExecutionControlStatusLabel(agent.controlStatus)}
+                            </span>
+                          </div>
+                          <small>
+                            {humanizeKey(agent.domainKey)} · {humanizeKey(agent.controlWindow)} ·
+                            {guardedExecutionMonitorStatusLabel(agent.monitorStatus)}
+                          </small>
+                          <small>
+                            Control owner {agent.controlOwner} {'·'} Escalation{' '}
+                            {agent.escalationOwner}
+                          </small>
+                          <small>
+                            Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} Fallback{' '}
+                            {humanizeKey(agent.safeFallbackMode)}
+                          </small>
+                          <small>{agent.topAction}</small>
+                          <small>{agent.nextStep}</small>
+                          {agent.agentKey === 'growth-assist-coach' &&
+                          agent.candidateToolKey === 'growth_case_assignment_execution' ? (
+                            <>
+                              <small>
+                                {approvedRequest
+                                  ? `Approval aprobado visible: ${approvedRequest.id}.`
+                                  : 'Todavia no hay un approval aprobado visible para abrir el execute path.'}
+                              </small>
+                              <div className={styles.inlineActions}>
+                                <select
+                                  className={styles.selectField}
+                                  value={selectedCaseId}
+                                  onChange={(event) => {
+                                    const nextCaseId = event.target.value;
+                                    setGuardedExecutionCaseSelectionByAgent((current) => ({
+                                      ...current,
+                                      [agent.agentKey]: nextCaseId,
+                                    }));
+                                  }}
+                                  disabled={
+                                    availableGuardedExecutionGrowthCases.length === 0 ||
+                                    growthActionLoading === executeActionKey
+                                  }
+                                >
+                                  {availableGuardedExecutionGrowthCases.length === 0 ? (
+                                    <option value="">
+                                      No hay operational cases elegibles
+                                    </option>
+                                  ) : (
+                                    availableGuardedExecutionGrowthCases.map((entry) => (
+                                      <option key={entry.id} value={entry.id}>
+                                        {entry.id} · {entry.title}
+                                      </option>
+                                    ))
+                                  )}
+                                </select>
+                                <button
+                                  className={styles.secondaryButton}
+                                  type="button"
+                                  onClick={() => {
+                                    if (approvedRequest && selectedCaseId) {
+                                      void handleExecuteTenantAiGuardedExecution(
+                                        agent.agentKey,
+                                        approvedRequest.id,
+                                        selectedCaseId,
+                                      );
+                                    }
+                                  }}
+                                  disabled={
+                                    !canExecuteGrowthLane ||
+                                    growthActionLoading === executeActionKey
+                                  }
+                                >
+                                  Ejecutar take-case
+                                </button>
+                                <button
+                                  className={styles.ghostButton}
+                                  type="button"
+                                  onClick={() => {
+                                    if (approvedRequest && selectedCaseId) {
+                                      void handleRollbackTenantAiGuardedExecution(
+                                        agent.agentKey,
+                                        approvedRequest.id,
+                                        selectedCaseId,
+                                      );
+                                    }
+                                  }}
+                                  disabled={
+                                    !canRollbackGrowthLane ||
+                                    growthActionLoading === rollbackActionKey
+                                  }
+                                >
+                                  Rollback take-case
+                                </button>
+                              </div>
+                            </>
+                          ) : null}
+                          <div className={styles.stack}>
+                            {agent.controlChecklist.map((item, index) => (
+                              <small
+                                key={`ai-guarded-execution-control-check:${agent.agentKey}:${index}`}
+                              >
+                                {item}
+                              </small>
+                            ))}
+                          </div>
+                          <div className={styles.stack}>
+                            {agent.guardrails.map((item, index) => (
+                              <small
+                                key={`ai-guarded-execution-control-guard:${agent.agentKey}:${index}`}
+                              >
+                                {item}
+                              </small>
+                            ))}
+                          </div>
+                          <div className={styles.stack}>
+                            {agent.notes.map((note, index) => (
+                              <small
+                                key={`ai-guarded-execution-control-note:${agent.agentKey}:${index}`}
+                              >
+                                {note}
+                              </small>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : tenantAiGuardedExecutionControlWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando guarded execution control workspace de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para decidir el control de
+                        go no-go de guarded execution en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI guarded execution event log</span>
+                    <h3>Bitacora temporal del lane: handoff, approvals y posture operativo</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiGuardedExecutionEventLogWorkspace
+                      ? formatDate(
+                          tenantAiGuardedExecutionEventLogWorkspace.generatedAt,
+                        )
+                      : 'sin event log'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Total events</span>
+                    <strong>
+                      {tenantAiGuardedExecutionEventLogWorkspace?.counts.totalEvents ?? 0}
+                    </strong>
+                    <small>Eventos reales y marcadores sintéticos del frente guarded execution.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Prepared</span>
+                    <strong>
+                      {tenantAiGuardedExecutionEventLogWorkspace?.counts
+                        .suggestionRunPreparedEvents ?? 0}
+                    </strong>
+                    <small>Handoffs preparados que abren el rastro temporal.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Approvals</span>
+                    <strong>
+                      {(tenantAiGuardedExecutionEventLogWorkspace?.counts
+                        .approvalRequestedEvents ?? 0) +
+                        (tenantAiGuardedExecutionEventLogWorkspace?.counts
+                          .approvalReviewedEvents ?? 0)}
+                    </strong>
+                    <small>Solicitudes y revisiones humanas visibles en la bitácora.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Execute / rollback</span>
+                    <strong>
+                      {(tenantAiGuardedExecutionEventLogWorkspace?.counts
+                        .executedEvents ?? 0) +
+                        (tenantAiGuardedExecutionEventLogWorkspace?.counts
+                          .rolledBackEvents ?? 0)}
+                    </strong>
+                    <small>Eventos reales que ya cruzaron el lane ejecutable y su fallback.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiGuardedExecutionEventLogWorkspace?.entries.length ? (
+                    tenantAiGuardedExecutionEventLogWorkspace.entries.map((entry) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={entry.id}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{entry.summary}</strong>
+                          <span
+                            className={`${styles.statusPill} ${guardedExecutionEventLogTone(
+                              entry.eventType,
+                            )}`}
+                          >
+                            {guardedExecutionEventLogLabel(entry.eventType)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(entry.agentKey)} · {formatDate(entry.occurredAt)}
+                        </small>
+                        <small>
+                          Candidate tool {entry.candidateToolKey ?? 'none'} {'·'} Suggestion run{' '}
+                          {entry.suggestionRunId ?? 'n/a'} {'·'} Approval{' '}
+                          {entry.approvalRequestId ?? 'n/a'}
+                        </small>
+                        <small>{entry.detail}</small>
+                      </div>
+                    ))
+                  ) : tenantAiGuardedExecutionEventLogWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando guarded execution event log workspace de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para construir la bitacora
+                        temporal de guarded execution en este tenant.
                       </p>
                     </div>
                   )}

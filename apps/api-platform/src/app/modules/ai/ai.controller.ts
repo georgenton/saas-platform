@@ -20,6 +20,7 @@ import {
   AiApprovalRequestAlreadyReviewedError,
   AiApprovalRequestNotFoundError,
   AiToolNotFoundError,
+  CreateTenantAiGuardedExecutionEventUseCase,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
@@ -28,6 +29,7 @@ import {
   AiAgentNotFoundError,
   GetTenantAiSuggestionEnvelopeUseCase,
   ListTenantAiApprovalRequestsUseCase,
+  ListTenantAiGuardedExecutionEventsUseCase,
   ListTenantAiSuggestionRunsUseCase,
   ListAiApprovalPoliciesUseCase,
   ListAiAgentCatalogUseCase,
@@ -40,9 +42,14 @@ import {
   buildInitialAiSuggestionRunApprovalSummary,
 } from '@saas-platform/ai-application';
 import { AiApprovalRequestStatus } from '@saas-platform/ai-domain';
-import { TenantNotFoundError } from '@saas-platform/tenancy-application';
-import { GROWTH_PERMISSIONS } from '@saas-platform/growth-application';
+import {
+  GROWTH_PERMISSIONS,
+  GrowthOperationalCaseNotFoundError,
+  ReleaseTenantGrowthOperationalCaseUseCase,
+  TakeTenantGrowthOperationalCaseUseCase,
+} from '@saas-platform/growth-application';
 import { INVOICING_PERMISSIONS } from '@saas-platform/invoicing-application';
+import { TenantNotFoundError } from '@saas-platform/tenancy-application';
 import { AuthenticatedUser } from '../auth/authenticated-user.decorator';
 import { AuthenticatedUserContext } from '../auth/authenticated-user-context';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
@@ -135,6 +142,51 @@ import {
   toAiEvaluationWorkspaceResponseDto,
 } from './dto/ai-evaluation-workspace.response';
 import {
+  AiGuardedExecutionAuditWorkspaceResponseDto,
+  toAiGuardedExecutionAuditWorkspaceResponseDto,
+} from './dto/ai-guarded-execution-audit-workspace.response';
+import {
+  AiGuardedExecutionExecutionResponseDto,
+  toAiGuardedExecutionExecutionResponseDto,
+} from './dto/ai-guarded-execution-execution.response';
+import {
+  AiGuardedExecutionControlWorkspaceResponseDto,
+  toAiGuardedExecutionControlWorkspaceResponseDto,
+} from './dto/ai-guarded-execution-control-workspace.response';
+import {
+  AiGuardedExecutionEventLogEntryTypeResponseDto,
+  AiGuardedExecutionEventLogWorkspaceResponseDto,
+  toAiGuardedExecutionEventLogWorkspaceResponseDto,
+} from './dto/ai-guarded-execution-event-log-workspace.response';
+import {
+  AiGuardedExecutionLaunchWorkspaceResponseDto,
+  toAiGuardedExecutionLaunchWorkspaceResponseDto,
+} from './dto/ai-guarded-execution-launch-workspace.response';
+import {
+  AiGuardedExecutionMonitorWorkspaceResponseDto,
+  toAiGuardedExecutionMonitorWorkspaceResponseDto,
+} from './dto/ai-guarded-execution-monitor-workspace.response';
+import {
+  AiGuardedExecutionPilotWorkspaceResponseDto,
+  toAiGuardedExecutionPilotWorkspaceResponseDto,
+} from './dto/ai-guarded-execution-pilot-workspace.response';
+import {
+  AiGuardedExecutionRollbackWorkspaceResponseDto,
+  toAiGuardedExecutionRollbackWorkspaceResponseDto,
+} from './dto/ai-guarded-execution-rollback-workspace.response';
+import {
+  AiGuardedExecutionRollbackExecutionResponseDto,
+  toAiGuardedExecutionRollbackExecutionResponseDto,
+} from './dto/ai-guarded-execution-rollback-execution.response';
+import {
+  AiGuardedExecutionRunbookWorkspaceResponseDto,
+  toAiGuardedExecutionRunbookWorkspaceResponseDto,
+} from './dto/ai-guarded-execution-runbook-workspace.response';
+import {
+  AiGuardedExecutionWorkspaceResponseDto,
+  toAiGuardedExecutionWorkspaceResponseDto,
+} from './dto/ai-guarded-execution-workspace.response';
+import {
   AiGovernanceWorkspaceResponseDto,
   toAiGovernanceWorkspaceResponseDto,
 } from './dto/ai-governance-workspace.response';
@@ -158,6 +210,7 @@ import {
   AiPolicySimulationWorkspaceResponseDto,
   toAiPolicySimulationWorkspaceResponseDto,
 } from './dto/ai-policy-simulation-workspace.response';
+import { ExecuteAiGuardedExecutionRequestDto } from './dto/execute-ai-guarded-execution.request';
 
 @Controller('ai')
 export class AiController {
@@ -188,6 +241,10 @@ export class AiController {
     private readonly prepareTenantAiSuggestionRunUseCase: PrepareTenantAiSuggestionRunUseCase,
     private readonly requestTenantAiSuggestionRunApprovalUseCase: RequestTenantAiSuggestionRunApprovalUseCase,
     private readonly reviewTenantAiApprovalRequestUseCase: ReviewTenantAiApprovalRequestUseCase,
+    private readonly createTenantAiGuardedExecutionEventUseCase: CreateTenantAiGuardedExecutionEventUseCase,
+    private readonly listTenantAiGuardedExecutionEventsUseCase: ListTenantAiGuardedExecutionEventsUseCase,
+    private readonly takeTenantGrowthOperationalCaseUseCase: TakeTenantGrowthOperationalCaseUseCase,
+    private readonly releaseTenantGrowthOperationalCaseUseCase: ReleaseTenantGrowthOperationalCaseUseCase,
   ) {}
 
   @Get('agents')
@@ -2956,6 +3013,2581 @@ export class AiController {
     }
   }
 
+  @Get('tenants/:slug/guarded-execution-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiGuardedExecutionWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiGuardedExecutionWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgents = this.listAiAgentCatalogUseCase
+      .execute()
+      .filter((entry) => entry.availability === 'ready')
+      .filter((entry) =>
+        this.hasAgentPermission(entry.key, tenantAccess?.permissionKeys),
+      );
+
+    if (accessibleAgents.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant guarded execution workspace.',
+      );
+    }
+
+    try {
+      const getSlaStatus = (
+        touches: number,
+        stillBlockedToolCount: number,
+      ): 'on_track' | 'at_risk' | 'breached' => {
+        if (stillBlockedToolCount > 0 || touches >= 3) {
+          return 'breached';
+        }
+
+        if (touches >= 2) {
+          return 'at_risk';
+        }
+
+        return 'on_track';
+      };
+
+      const statusWeight = (
+        status:
+          | 'pilot_candidate'
+          | 'needs_launch_readiness'
+          | 'suggestion_only',
+      ): number => {
+        switch (status) {
+          case 'pilot_candidate':
+            return 3;
+          case 'needs_launch_readiness':
+            return 2;
+          case 'suggestion_only':
+          default:
+            return 1;
+        }
+      };
+
+      const agents = await Promise.all(
+        accessibleAgents.map(async (agent) => {
+          const [approvalPolicies, toolAccess, approvalRequests, suggestionRuns] =
+            await Promise.all([
+              this.getAiApprovalPoliciesByAgentKeyUseCase.execute(agent.key),
+              this.getAiAgentToolAccessByAgentKeyUseCase.execute(agent.key),
+              this.listTenantAiApprovalRequestsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                {
+                  limit: null,
+                  status: null,
+                },
+              ),
+              this.listTenantAiSuggestionRunsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                null,
+              ),
+            ]);
+
+          const pendingApprovalRequests = approvalRequests.filter(
+            (entry) => entry.status === 'pending',
+          ).length;
+          const reviewableSuggestionRuns = suggestionRuns.filter(
+            (entry) =>
+              entry.approvalSummary.status === 'not_requested' ||
+              entry.approvalSummary.status === 'rejected',
+          ).length;
+          const executionCandidateToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode ===
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+          const approvalRequiredToolKeys = toolAccess
+            .filter((entry) => entry.accessLevel === 'approval_required')
+            .map((entry) => entry.tool.key)
+            .sort();
+          const stillBlockedToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode !==
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+
+          const currentRequiredReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests + reviewableSuggestionRuns,
+          );
+          const recommendedReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests +
+              reviewableSuggestionRuns +
+              executionCandidateToolKeys.length,
+          );
+          const additionalReviewerEquivalentsToAssign = Math.max(
+            0,
+            recommendedReviewerEquivalents -
+              currentRequiredReviewerEquivalents,
+          );
+          const simulatedBacklogTouches =
+            pendingApprovalRequests +
+            reviewableSuggestionRuns +
+            executionCandidateToolKeys.length;
+          const simulatedSlaStatus = getSlaStatus(
+            simulatedBacklogTouches,
+            stillBlockedToolKeys.length,
+          );
+          const rolloutPhase: 'phase_1' | 'phase_2' | 'hold' =
+            stillBlockedToolKeys.length > 0
+              ? 'hold'
+              : additionalReviewerEquivalentsToAssign > 0
+                ? 'phase_1'
+                : 'phase_2';
+
+          const guardedExecutionStatus:
+            | 'pilot_candidate'
+            | 'needs_launch_readiness'
+            | 'suggestion_only' =
+            executionCandidateToolKeys.length === 0
+              ? 'suggestion_only'
+              : additionalReviewerEquivalentsToAssign > 0 ||
+                  simulatedSlaStatus !== 'on_track'
+                ? 'needs_launch_readiness'
+                : 'pilot_candidate';
+
+          const guardrailChecklist = [
+            executionCandidateToolKeys.length > 0
+              ? `${executionCandidateToolKeys.length} execution candidate tool(s) are planned for guarded mode.`
+              : 'No execution candidate tool is planned for guarded mode yet.',
+            approvalPolicies.length > 0
+              ? `${approvalPolicies.length} approval policy rule(s) already exist for human gating.`
+              : 'No explicit approval policy is available yet.',
+            pendingApprovalRequests > 0
+              ? `${pendingApprovalRequests} pending approval request(s) still compete for reviewer attention.`
+              : 'No pending approval request is currently competing for reviewer attention.',
+            simulatedSlaStatus === 'on_track'
+              ? 'Simulated review-first SLA remains on track under the current guardrails.'
+              : `Simulated review-first SLA is ${simulatedSlaStatus} and should be stabilized first.`,
+          ];
+
+          const nextStep =
+            guardedExecutionStatus === 'pilot_candidate'
+              ? 'Safe to design a narrow guarded-execution pilot for this agent without leaving the current approval model.'
+              : guardedExecutionStatus === 'needs_launch_readiness'
+                ? 'Finish launch readiness, reviewer coverage, and SLA stabilization before introducing a guarded-execution pilot.'
+                : 'Keep this agent in suggestion mode until at least one guarded-execution candidate tool exists.';
+
+          const notes = [
+            `Current mode stays ${agent.defaultMode}.`,
+            `Rollout phase reads ${rolloutPhase}, with ${additionalReviewerEquivalentsToAssign} extra reviewer-equivalent(s) still needed.`,
+            executionCandidateToolKeys.length > 0
+              ? `Candidate tools for guarded execution: ${executionCandidateToolKeys.join(', ')}.`
+              : 'This agent currently has no candidate tool for guarded execution.',
+            approvalRequiredToolKeys.length > 0
+              ? `Already approval-required today: ${approvalRequiredToolKeys.join(', ')}.`
+              : 'No tool is currently exposed as approval-required.',
+          ];
+
+          return {
+            agentKey: agent.key,
+            title: agent.title,
+            domainKey: agent.domainKey,
+            productKey: agent.productKey,
+            currentMode: agent.defaultMode,
+            approvalPolicyKeys: approvalPolicies.map((entry) => entry.policyKey),
+            executionCandidateToolKeys,
+            approvalRequiredToolKeys,
+            pendingApprovalRequests,
+            reviewableSuggestionRuns,
+            rolloutPhase,
+            guardedExecutionStatus,
+            guardrailChecklist,
+            nextStep,
+            notes,
+          };
+        }),
+      );
+
+      const sortedAgents = agents.sort(
+        (left, right) =>
+          statusWeight(right.guardedExecutionStatus) -
+            statusWeight(left.guardedExecutionStatus) ||
+          right.executionCandidateToolKeys.length -
+            left.executionCandidateToolKeys.length ||
+          left.title.localeCompare(right.title),
+      );
+
+      return toAiGuardedExecutionWorkspaceResponseDto({
+        tenantSlug,
+        generatedAt: new Date(),
+        counts: {
+          totalAgents: sortedAgents.length,
+          pilotCandidateAgents: sortedAgents.filter(
+            (entry) => entry.guardedExecutionStatus === 'pilot_candidate',
+          ).length,
+          needsLaunchReadinessAgents: sortedAgents.filter(
+            (entry) => entry.guardedExecutionStatus === 'needs_launch_readiness',
+          ).length,
+          suggestionOnlyAgents: sortedAgents.filter(
+            (entry) => entry.guardedExecutionStatus === 'suggestion_only',
+          ).length,
+          executionCandidateTools: sortedAgents.reduce(
+            (total, entry) => total + entry.executionCandidateToolKeys.length,
+            0,
+          ),
+        },
+        agents: sortedAgents,
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/guarded-execution-pilot-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiGuardedExecutionPilotWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiGuardedExecutionPilotWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgents = this.listAiAgentCatalogUseCase
+      .execute()
+      .filter((entry) => entry.availability === 'ready')
+      .filter((entry) =>
+        this.hasAgentPermission(entry.key, tenantAccess?.permissionKeys),
+      );
+
+    if (accessibleAgents.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant guarded execution pilot workspace.',
+      );
+    }
+
+    try {
+      const getSlaStatus = (
+        touches: number,
+        stillBlockedToolCount: number,
+      ): 'on_track' | 'at_risk' | 'breached' => {
+        if (stillBlockedToolCount > 0 || touches >= 3) {
+          return 'breached';
+        }
+
+        if (touches >= 2) {
+          return 'at_risk';
+        }
+
+        return 'on_track';
+      };
+
+      const statusWeight = (
+        status:
+          | 'ready_for_pilot'
+          | 'needs_operational_backing'
+          | 'no_candidate',
+      ): number => {
+        switch (status) {
+          case 'ready_for_pilot':
+            return 3;
+          case 'needs_operational_backing':
+            return 2;
+          case 'no_candidate':
+          default:
+            return 1;
+        }
+      };
+
+      const agents = await Promise.all(
+        accessibleAgents.map(async (agent) => {
+          const [approvalPolicies, toolAccess, approvalRequests, suggestionRuns] =
+            await Promise.all([
+              this.getAiApprovalPoliciesByAgentKeyUseCase.execute(agent.key),
+              this.getAiAgentToolAccessByAgentKeyUseCase.execute(agent.key),
+              this.listTenantAiApprovalRequestsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                {
+                  limit: null,
+                  status: null,
+                },
+              ),
+              this.listTenantAiSuggestionRunsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                null,
+              ),
+            ]);
+
+          const pendingApprovalRequests = approvalRequests.filter(
+            (entry) => entry.status === 'pending',
+          ).length;
+          const reviewableSuggestionRuns = suggestionRuns.filter(
+            (entry) =>
+              entry.approvalSummary.status === 'not_requested' ||
+              entry.approvalSummary.status === 'rejected',
+          ).length;
+          const executionCandidateToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode ===
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+          const stillBlockedToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode !==
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+
+          const currentRequiredReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests + reviewableSuggestionRuns,
+          );
+          const recommendedReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests +
+              reviewableSuggestionRuns +
+              executionCandidateToolKeys.length,
+          );
+          const additionalReviewerEquivalentsToAssign = Math.max(
+            0,
+            recommendedReviewerEquivalents -
+              currentRequiredReviewerEquivalents,
+          );
+          const simulatedBacklogTouches =
+            pendingApprovalRequests +
+            reviewableSuggestionRuns +
+            executionCandidateToolKeys.length;
+          const simulatedSlaStatus = getSlaStatus(
+            simulatedBacklogTouches,
+            stillBlockedToolKeys.length,
+          );
+          const rolloutPhase: 'phase_1' | 'phase_2' | 'hold' =
+            stillBlockedToolKeys.length > 0
+              ? 'hold'
+              : additionalReviewerEquivalentsToAssign > 0
+                ? 'phase_1'
+                : 'phase_2';
+
+          const pilotStatus:
+            | 'ready_for_pilot'
+            | 'needs_operational_backing'
+            | 'no_candidate' =
+            executionCandidateToolKeys.length === 0
+              ? 'no_candidate'
+              : additionalReviewerEquivalentsToAssign > 0 ||
+                  simulatedSlaStatus !== 'on_track'
+                ? 'needs_operational_backing'
+                : 'ready_for_pilot';
+          const pilotType:
+            | 'human_gate_then_execute'
+            | 'shadow_review'
+            | 'not_available' =
+            pilotStatus === 'ready_for_pilot'
+              ? 'human_gate_then_execute'
+              : pilotStatus === 'needs_operational_backing'
+                ? 'shadow_review'
+                : 'not_available';
+
+          const candidateToolKey = executionCandidateToolKeys[0] ?? null;
+          const pilotPreconditions = [
+            candidateToolKey
+              ? `Candidate tool selected for the first pilot: ${candidateToolKey}.`
+              : 'No candidate tool is available for a guarded-execution pilot.',
+            approvalPolicies.length > 0
+              ? `${approvalPolicies.length} approval policy rule(s) are already available to gate the pilot.`
+              : 'No approval policy exists yet to gate a pilot.',
+            additionalReviewerEquivalentsToAssign > 0
+              ? `${additionalReviewerEquivalentsToAssign} reviewer-equivalent(s) still need to be staffed before any execute path is opened.`
+              : 'Reviewer coverage is already aligned with the simulated pilot posture.',
+            simulatedSlaStatus === 'on_track'
+              ? 'Simulated same-day SLA stays on track for this pilot shape.'
+              : `Simulated same-day SLA is ${simulatedSlaStatus} for this pilot shape.`,
+          ];
+          const pilotGuardrails = [
+            pilotType === 'human_gate_then_execute'
+              ? 'Keep the first pilot behind an explicit named approver before any state mutation happens.'
+              : pilotType === 'shadow_review'
+                ? 'Start with shadow-review only and keep real mutations disabled.'
+                : 'No guarded execution path should be exposed yet.',
+            pendingApprovalRequests > 0
+              ? `${pendingApprovalRequests} pending approval request(s) should be drained or ring-fenced before pilot start.`
+              : 'No pending approval backlog needs ring-fencing before pilot start.',
+            reviewableSuggestionRuns > 0
+              ? `${reviewableSuggestionRuns} existing suggestion handoff(s) still need explicit human routing discipline.`
+              : 'No reviewable handoff is still waiting for explicit routing discipline.',
+          ];
+
+          const recommendedPilotScope =
+            pilotType === 'human_gate_then_execute'
+              ? `Limit the first pilot to ${candidateToolKey} under one explicit human gate and one narrow operating lane.`
+              : pilotType === 'shadow_review'
+                ? candidateToolKey
+                  ? `Use ${candidateToolKey} only as a shadow-review intent until reviewer coverage and SLA are stable.`
+                  : 'No pilot scope should be proposed while the agent has no guarded-execution candidate.'
+                : 'Keep this agent in suggestion-only scope.';
+
+          const nextStep =
+            pilotStatus === 'ready_for_pilot'
+              ? 'Draft the first guarded-execution pilot runbook and choose the named human gate for this lane.'
+              : pilotStatus === 'needs_operational_backing'
+                ? 'Close reviewer-capacity and SLA gaps before converting this lane from shadow review into execution.'
+                : 'Wait until a concrete guarded-execution candidate tool is introduced for this agent.';
+
+          const notes = [
+            `Current mode remains ${agent.defaultMode}.`,
+            `Rollout phase reads ${rolloutPhase}.`,
+            candidateToolKey
+              ? `First pilot candidate tool is ${candidateToolKey}.`
+              : 'There is no first pilot candidate tool yet.',
+            `Approval gate stays under ${approvalPolicies.map((entry) => entry.policyKey).join(', ')}.`,
+          ];
+
+          return {
+            agentKey: agent.key,
+            title: agent.title,
+            domainKey: agent.domainKey,
+            productKey: agent.productKey,
+            currentMode: agent.defaultMode,
+            approvalPolicyKeys: approvalPolicies.map((entry) => entry.policyKey),
+            candidateToolKey,
+            rolloutPhase,
+            simulatedSlaStatus,
+            pilotStatus,
+            pilotType,
+            additionalReviewerEquivalentsToAssign,
+            pilotPreconditions,
+            pilotGuardrails,
+            recommendedPilotScope,
+            nextStep,
+            notes,
+          };
+        }),
+      );
+
+      const sortedAgents = agents.sort(
+        (left, right) =>
+          statusWeight(right.pilotStatus) - statusWeight(left.pilotStatus) ||
+          left.additionalReviewerEquivalentsToAssign -
+            right.additionalReviewerEquivalentsToAssign ||
+          left.title.localeCompare(right.title),
+      );
+
+      return toAiGuardedExecutionPilotWorkspaceResponseDto({
+        tenantSlug,
+        generatedAt: new Date(),
+        counts: {
+          totalAgents: sortedAgents.length,
+          readyForPilotAgents: sortedAgents.filter(
+            (entry) => entry.pilotStatus === 'ready_for_pilot',
+          ).length,
+          needsOperationalBackingAgents: sortedAgents.filter(
+            (entry) => entry.pilotStatus === 'needs_operational_backing',
+          ).length,
+          noCandidateAgents: sortedAgents.filter(
+            (entry) => entry.pilotStatus === 'no_candidate',
+          ).length,
+          candidateToolPilots: sortedAgents.filter(
+            (entry) => entry.candidateToolKey !== null,
+          ).length,
+        },
+        agents: sortedAgents,
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/guarded-execution-runbook-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiGuardedExecutionRunbookWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiGuardedExecutionRunbookWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgents = this.listAiAgentCatalogUseCase
+      .execute()
+      .filter((entry) => entry.availability === 'ready')
+      .filter((entry) =>
+        this.hasAgentPermission(entry.key, tenantAccess?.permissionKeys),
+      );
+
+    if (accessibleAgents.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant guarded execution runbook workspace.',
+      );
+    }
+
+    try {
+      const getSlaStatus = (
+        touches: number,
+        stillBlockedToolCount: number,
+      ): 'on_track' | 'at_risk' | 'breached' => {
+        if (stillBlockedToolCount > 0 || touches >= 3) {
+          return 'breached';
+        }
+
+        if (touches >= 2) {
+          return 'at_risk';
+        }
+
+        return 'on_track';
+      };
+
+      const statusWeight = (
+        status: 'ready_to_document' | 'needs_design' | 'not_available',
+      ): number => {
+        switch (status) {
+          case 'ready_to_document':
+            return 3;
+          case 'needs_design':
+            return 2;
+          case 'not_available':
+          default:
+            return 1;
+        }
+      };
+
+      const agents = await Promise.all(
+        accessibleAgents.map(async (agent) => {
+          const [approvalPolicies, toolAccess, approvalRequests, suggestionRuns] =
+            await Promise.all([
+              this.getAiApprovalPoliciesByAgentKeyUseCase.execute(agent.key),
+              this.getAiAgentToolAccessByAgentKeyUseCase.execute(agent.key),
+              this.listTenantAiApprovalRequestsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                {
+                  limit: null,
+                  status: null,
+                },
+              ),
+              this.listTenantAiSuggestionRunsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                null,
+              ),
+            ]);
+
+          const pendingApprovalRequests = approvalRequests.filter(
+            (entry) => entry.status === 'pending',
+          ).length;
+          const reviewableSuggestionRuns = suggestionRuns.filter(
+            (entry) =>
+              entry.approvalSummary.status === 'not_requested' ||
+              entry.approvalSummary.status === 'rejected',
+          ).length;
+          const executionCandidateToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode ===
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+          const stillBlockedToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode !==
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+
+          const currentRequiredReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests + reviewableSuggestionRuns,
+          );
+          const recommendedReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests +
+              reviewableSuggestionRuns +
+              executionCandidateToolKeys.length,
+          );
+          const additionalReviewerEquivalentsToAssign = Math.max(
+            0,
+            recommendedReviewerEquivalents -
+              currentRequiredReviewerEquivalents,
+          );
+          const simulatedBacklogTouches =
+            pendingApprovalRequests +
+            reviewableSuggestionRuns +
+            executionCandidateToolKeys.length;
+          const simulatedSlaStatus = getSlaStatus(
+            simulatedBacklogTouches,
+            stillBlockedToolKeys.length,
+          );
+          const rolloutPhase: 'phase_1' | 'phase_2' | 'hold' =
+            stillBlockedToolKeys.length > 0
+              ? 'hold'
+              : additionalReviewerEquivalentsToAssign > 0
+                ? 'phase_1'
+                : 'phase_2';
+
+          const candidateToolKey = executionCandidateToolKeys[0] ?? null;
+          const pilotType:
+            | 'human_gate_then_execute'
+            | 'shadow_review'
+            | 'not_available' =
+            candidateToolKey === null
+              ? 'not_available'
+              : additionalReviewerEquivalentsToAssign > 0 ||
+                  simulatedSlaStatus !== 'on_track'
+                ? 'shadow_review'
+                : 'human_gate_then_execute';
+          const runbookStatus:
+            | 'ready_to_document'
+            | 'needs_design'
+            | 'not_available' =
+            candidateToolKey === null
+              ? 'not_available'
+              : pilotType === 'human_gate_then_execute'
+                ? 'ready_to_document'
+                : 'needs_design';
+
+          const operatingLane =
+            candidateToolKey === 'growth_case_assignment_execution'
+              ? 'operational_case_assignment_lane'
+              : candidateToolKey === null
+                ? 'suggestion_only_lane'
+                : 'single_record_execution_lane';
+          const namedHumanGate =
+            approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
+          const blastRadius: 'single_record' | 'single_queue_lane' | 'no_execution_scope' =
+            candidateToolKey === 'growth_case_assignment_execution'
+              ? 'single_queue_lane'
+              : candidateToolKey === null
+                ? 'no_execution_scope'
+                : 'single_record';
+
+          const entryChecklist = [
+            candidateToolKey
+              ? `Candidate tool ${candidateToolKey} is selected as the narrow execution scope.`
+              : 'No execution candidate tool has been selected yet.',
+            `Human gate resolves through ${namedHumanGate}.`,
+            additionalReviewerEquivalentsToAssign > 0
+              ? `${additionalReviewerEquivalentsToAssign} reviewer-equivalent(s) still need to be assigned before this runbook can open execution.`
+              : 'Current reviewer coverage already matches the simulated guarded-execution posture.',
+            simulatedSlaStatus === 'on_track'
+              ? 'Simulated same-day SLA stays on track for this runbook shape.'
+              : `Simulated same-day SLA is ${simulatedSlaStatus} for this runbook shape.`,
+          ];
+          const stopConditions = [
+            'Stop the pilot if reviewer coverage drops below the recommended minimum for the lane.',
+            simulatedSlaStatus === 'breached'
+              ? 'Do not open the pilot while the simulated SLA is already breached.'
+              : 'Pause the pilot if the simulated SLA drifts from on_track into at_risk or breached.',
+            pendingApprovalRequests > 0
+              ? 'Pause the pilot if the current approval queue keeps growing faster than same-day review can clear it.'
+              : 'Pause the pilot if new approval backlog starts accumulating faster than same-day review can clear it.',
+          ];
+          const exitCriteria = [
+            candidateToolKey
+              ? `The ${candidateToolKey} lane has an approved human gate and an explicit rollback path.`
+              : 'At least one candidate tool is selected before a runbook can be finalized.',
+            additionalReviewerEquivalentsToAssign > 0
+              ? 'Required reviewer coverage is assigned and the queue stabilizes under that coverage.'
+              : 'Reviewer coverage remains stable for the first guarded-execution window.',
+            pilotType === 'human_gate_then_execute'
+              ? 'The first gated execution path can be documented with entry, stop, and rollback steps.'
+              : 'Shadow-review evidence is collected before any execute path is documented as live.',
+          ];
+          const nextStep =
+            runbookStatus === 'ready_to_document'
+              ? 'Document the first guarded-execution runbook with named approver, rollback path, and lane ownership.'
+              : runbookStatus === 'needs_design'
+                ? 'Use a shadow-review runbook first, then close reviewer coverage and SLA gaps before documenting execute steps.'
+                : 'Stay in suggestion mode until a concrete guarded-execution candidate tool exists.';
+
+          const notes = [
+            `Current mode stays ${agent.defaultMode}.`,
+            `Pilot type reads ${pilotType} and rollout phase reads ${rolloutPhase}.`,
+            `Blast radius is constrained to ${blastRadius}.`,
+            candidateToolKey
+              ? `Named lane for the first runbook: ${operatingLane}.`
+              : 'No operating lane is defined yet because there is no execution candidate.',
+          ];
+
+          return {
+            agentKey: agent.key,
+            title: agent.title,
+            domainKey: agent.domainKey,
+            productKey: agent.productKey,
+            currentMode: agent.defaultMode,
+            approvalPolicyKeys: approvalPolicies.map((entry) => entry.policyKey),
+            candidateToolKey,
+            pilotType,
+            rolloutPhase,
+            simulatedSlaStatus,
+            additionalReviewerEquivalentsToAssign,
+            runbookStatus,
+            operatingLane,
+            namedHumanGate,
+            blastRadius,
+            stopConditions,
+            entryChecklist,
+            exitCriteria,
+            nextStep,
+            notes,
+          };
+        }),
+      );
+
+      const sortedAgents = agents.sort(
+        (left, right) =>
+          statusWeight(right.runbookStatus) -
+            statusWeight(left.runbookStatus) ||
+          right.additionalReviewerEquivalentsToAssign -
+            left.additionalReviewerEquivalentsToAssign ||
+          left.title.localeCompare(right.title),
+      );
+
+      return toAiGuardedExecutionRunbookWorkspaceResponseDto({
+        tenantSlug,
+        generatedAt: new Date(),
+        counts: {
+          totalAgents: sortedAgents.length,
+          readyToDocumentAgents: sortedAgents.filter(
+            (entry) => entry.runbookStatus === 'ready_to_document',
+          ).length,
+          needsDesignAgents: sortedAgents.filter(
+            (entry) => entry.runbookStatus === 'needs_design',
+          ).length,
+          notAvailableAgents: sortedAgents.filter(
+            (entry) => entry.runbookStatus === 'not_available',
+          ).length,
+          candidateRunbooks: sortedAgents.filter(
+            (entry) => entry.candidateToolKey !== null,
+          ).length,
+        },
+        agents: sortedAgents,
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/guarded-execution-rollback-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiGuardedExecutionRollbackWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiGuardedExecutionRollbackWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgents = this.listAiAgentCatalogUseCase
+      .execute()
+      .filter((entry) => entry.availability === 'ready')
+      .filter((entry) =>
+        this.hasAgentPermission(entry.key, tenantAccess?.permissionKeys),
+      );
+
+    if (accessibleAgents.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant guarded execution rollback workspace.',
+      );
+    }
+
+    try {
+      const getSlaStatus = (
+        touches: number,
+        stillBlockedToolCount: number,
+      ): 'on_track' | 'at_risk' | 'breached' => {
+        if (stillBlockedToolCount > 0 || touches >= 3) {
+          return 'breached';
+        }
+
+        if (touches >= 2) {
+          return 'at_risk';
+        }
+
+        return 'on_track';
+      };
+
+      const statusWeight = (
+        status:
+          | 'ready_with_rollback'
+          | 'needs_rollback_design'
+          | 'not_applicable',
+      ): number => {
+        switch (status) {
+          case 'ready_with_rollback':
+            return 3;
+          case 'needs_rollback_design':
+            return 2;
+          case 'not_applicable':
+          default:
+            return 1;
+        }
+      };
+
+      const agents = await Promise.all(
+        accessibleAgents.map(async (agent) => {
+          const [approvalPolicies, toolAccess, approvalRequests, suggestionRuns] =
+            await Promise.all([
+              this.getAiApprovalPoliciesByAgentKeyUseCase.execute(agent.key),
+              this.getAiAgentToolAccessByAgentKeyUseCase.execute(agent.key),
+              this.listTenantAiApprovalRequestsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                {
+                  limit: null,
+                  status: null,
+                },
+              ),
+              this.listTenantAiSuggestionRunsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                null,
+              ),
+            ]);
+
+          const pendingApprovalRequests = approvalRequests.filter(
+            (entry) => entry.status === 'pending',
+          ).length;
+          const reviewableSuggestionRuns = suggestionRuns.filter(
+            (entry) =>
+              entry.approvalSummary.status === 'not_requested' ||
+              entry.approvalSummary.status === 'rejected',
+          ).length;
+          const executionCandidateToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode ===
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+          const stillBlockedToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode !==
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+
+          const currentRequiredReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests + reviewableSuggestionRuns,
+          );
+          const recommendedReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests +
+              reviewableSuggestionRuns +
+              executionCandidateToolKeys.length,
+          );
+          const additionalReviewerEquivalentsToAssign = Math.max(
+            0,
+            recommendedReviewerEquivalents -
+              currentRequiredReviewerEquivalents,
+          );
+          const simulatedBacklogTouches =
+            pendingApprovalRequests +
+            reviewableSuggestionRuns +
+            executionCandidateToolKeys.length;
+          const simulatedSlaStatus = getSlaStatus(
+            simulatedBacklogTouches,
+            stillBlockedToolKeys.length,
+          );
+          const rolloutPhase: 'phase_1' | 'phase_2' | 'hold' =
+            stillBlockedToolKeys.length > 0
+              ? 'hold'
+              : additionalReviewerEquivalentsToAssign > 0
+                ? 'phase_1'
+                : 'phase_2';
+
+          const candidateToolKey = executionCandidateToolKeys[0] ?? null;
+          const pilotType:
+            | 'human_gate_then_execute'
+            | 'shadow_review'
+            | 'not_available' =
+            candidateToolKey === null
+              ? 'not_available'
+              : additionalReviewerEquivalentsToAssign > 0 ||
+                  simulatedSlaStatus !== 'on_track'
+                ? 'shadow_review'
+                : 'human_gate_then_execute';
+          const runbookStatus:
+            | 'ready_to_document'
+            | 'needs_design'
+            | 'not_available' =
+            candidateToolKey === null
+              ? 'not_available'
+              : pilotType === 'human_gate_then_execute'
+                ? 'ready_to_document'
+                : 'needs_design';
+          const rollbackStatus:
+            | 'ready_with_rollback'
+            | 'needs_rollback_design'
+            | 'not_applicable' =
+            candidateToolKey === null
+              ? 'not_applicable'
+              : runbookStatus === 'ready_to_document'
+                ? 'ready_with_rollback'
+                : 'needs_rollback_design';
+
+          const rollbackOwner =
+            approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
+          const blastRadius: 'single_record' | 'single_queue_lane' | 'no_execution_scope' =
+            candidateToolKey === 'growth_case_assignment_execution'
+              ? 'single_queue_lane'
+              : candidateToolKey === null
+                ? 'no_execution_scope'
+                : 'single_record';
+          const safeFallbackMode =
+            candidateToolKey === 'growth_case_assignment_execution'
+              ? 'suggestion_only_with_manual_assignment'
+              : 'suggestion_only';
+
+          const rollbackTriggerSummary = [
+            candidateToolKey
+              ? `Any ${candidateToolKey} attempt that misses explicit human gate approval should fall back immediately.`
+              : 'No execute path exists yet, so rollback stays conceptual only.',
+            simulatedSlaStatus === 'on_track'
+              ? 'Escalate rollback if same-day review falls off track during the pilot window.'
+              : `Rollback should trigger immediately if the pilot keeps the SLA at ${simulatedSlaStatus}.`,
+            additionalReviewerEquivalentsToAssign > 0
+              ? `${additionalReviewerEquivalentsToAssign} missing reviewer-equivalent(s) remain a hard rollback trigger.`
+              : 'Any sudden reviewer-coverage drop is a hard rollback trigger.',
+          ];
+          const rollbackSteps = [
+            candidateToolKey
+              ? `Disable ${candidateToolKey} execute path and return the lane to explicit human-only handling.`
+              : 'Keep the agent in suggestion-only mode with no execute path exposed.',
+            `Route the affected work back to ${safeFallbackMode}.`,
+            `Log the rollback decision under ${rollbackOwner} and capture the operator rationale for follow-up review.`,
+          ];
+          const verificationChecks = [
+            'Confirm no state mutation was finalized without an approved human gate.',
+            blastRadius === 'single_queue_lane'
+              ? 'Confirm the affected queue lane is back under manual ownership.'
+              : 'Confirm the affected execution scope is back under manual ownership.',
+            'Confirm the next operator flow continues in suggestion mode until the issue is closed.',
+          ];
+          const nextStep =
+            rollbackStatus === 'ready_with_rollback'
+              ? 'Attach these rollback triggers and verification checks to the first guarded-execution runbook before launch.'
+              : rollbackStatus === 'needs_rollback_design'
+                ? 'Finish the shadow-review design and write the rollback path before any execute step is documented.'
+                : 'Keep rollback planning lightweight until a concrete guarded-execution candidate tool exists.';
+
+          const notes = [
+            `Current mode stays ${agent.defaultMode}.`,
+            `Rollback owner resolves through ${rollbackOwner}.`,
+            `Fallback mode is ${safeFallbackMode}.`,
+            candidateToolKey
+              ? `Rollback scope is anchored to ${candidateToolKey} with ${blastRadius} blast radius.`
+              : 'There is no rollback scope yet because there is no execution candidate.',
+          ];
+
+          return {
+            agentKey: agent.key,
+            title: agent.title,
+            domainKey: agent.domainKey,
+            productKey: agent.productKey,
+            currentMode: agent.defaultMode,
+            approvalPolicyKeys: approvalPolicies.map((entry) => entry.policyKey),
+            candidateToolKey,
+            pilotType,
+            rolloutPhase,
+            simulatedSlaStatus,
+            runbookStatus,
+            rollbackStatus,
+            rollbackOwner,
+            blastRadius,
+            rollbackTriggerSummary,
+            rollbackSteps,
+            verificationChecks,
+            safeFallbackMode,
+            nextStep,
+            notes,
+          };
+        }),
+      );
+
+      const sortedAgents = agents.sort(
+        (left, right) =>
+          statusWeight(right.rollbackStatus) -
+            statusWeight(left.rollbackStatus) ||
+          left.title.localeCompare(right.title),
+      );
+
+      return toAiGuardedExecutionRollbackWorkspaceResponseDto({
+        tenantSlug,
+        generatedAt: new Date(),
+        counts: {
+          totalAgents: sortedAgents.length,
+          readyWithRollbackAgents: sortedAgents.filter(
+            (entry) => entry.rollbackStatus === 'ready_with_rollback',
+          ).length,
+          needsRollbackDesignAgents: sortedAgents.filter(
+            (entry) => entry.rollbackStatus === 'needs_rollback_design',
+          ).length,
+          notApplicableAgents: sortedAgents.filter(
+            (entry) => entry.rollbackStatus === 'not_applicable',
+          ).length,
+          rollbackCandidateTools: sortedAgents.filter(
+            (entry) => entry.candidateToolKey !== null,
+          ).length,
+        },
+        agents: sortedAgents,
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/guarded-execution-audit-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiGuardedExecutionAuditWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiGuardedExecutionAuditWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgents = this.listAiAgentCatalogUseCase
+      .execute()
+      .filter((entry) => entry.availability === 'ready')
+      .filter((entry) =>
+        this.hasAgentPermission(entry.key, tenantAccess?.permissionKeys),
+      );
+
+    if (accessibleAgents.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant guarded execution audit workspace.',
+      );
+    }
+
+    try {
+      const getSlaStatus = (
+        touches: number,
+        stillBlockedToolCount: number,
+      ): 'on_track' | 'at_risk' | 'breached' => {
+        if (stillBlockedToolCount > 0 || touches >= 3) {
+          return 'breached';
+        }
+
+        if (touches >= 2) {
+          return 'at_risk';
+        }
+
+        return 'on_track';
+      };
+
+      const statusWeight = (
+        status: 'ready_for_audit' | 'needs_evidence_design' | 'not_applicable',
+      ): number => {
+        switch (status) {
+          case 'ready_for_audit':
+            return 3;
+          case 'needs_evidence_design':
+            return 2;
+          case 'not_applicable':
+          default:
+            return 1;
+        }
+      };
+
+      const agents = await Promise.all(
+        accessibleAgents.map(async (agent) => {
+          const [approvalPolicies, toolAccess, approvalRequests, suggestionRuns] =
+            await Promise.all([
+              this.getAiApprovalPoliciesByAgentKeyUseCase.execute(agent.key),
+              this.getAiAgentToolAccessByAgentKeyUseCase.execute(agent.key),
+              this.listTenantAiApprovalRequestsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                {
+                  limit: null,
+                  status: null,
+                },
+              ),
+              this.listTenantAiSuggestionRunsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                null,
+              ),
+            ]);
+
+          const pendingApprovalRequests = approvalRequests.filter(
+            (entry) => entry.status === 'pending',
+          ).length;
+          const reviewedApprovalRequests = approvalRequests.filter(
+            (entry) => entry.status === 'approved' || entry.status === 'rejected',
+          ).length;
+          const reviewableSuggestionRuns = suggestionRuns.filter(
+            (entry) =>
+              entry.approvalSummary.status === 'not_requested' ||
+              entry.approvalSummary.status === 'rejected',
+          ).length;
+          const executionCandidateToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode ===
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+          const stillBlockedToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode !==
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+
+          const currentRequiredReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests + reviewableSuggestionRuns,
+          );
+          const recommendedReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests +
+              reviewableSuggestionRuns +
+              executionCandidateToolKeys.length,
+          );
+          const additionalReviewerEquivalentsToAssign = Math.max(
+            0,
+            recommendedReviewerEquivalents -
+              currentRequiredReviewerEquivalents,
+          );
+          const simulatedBacklogTouches =
+            pendingApprovalRequests +
+            reviewableSuggestionRuns +
+            executionCandidateToolKeys.length;
+          const simulatedSlaStatus = getSlaStatus(
+            simulatedBacklogTouches,
+            stillBlockedToolKeys.length,
+          );
+          const rolloutPhase: 'phase_1' | 'phase_2' | 'hold' =
+            stillBlockedToolKeys.length > 0
+              ? 'hold'
+              : additionalReviewerEquivalentsToAssign > 0
+                ? 'phase_1'
+                : 'phase_2';
+
+          const candidateToolKey = executionCandidateToolKeys[0] ?? null;
+          const pilotType:
+            | 'human_gate_then_execute'
+            | 'shadow_review'
+            | 'not_available' =
+            candidateToolKey === null
+              ? 'not_available'
+              : additionalReviewerEquivalentsToAssign > 0 ||
+                  simulatedSlaStatus !== 'on_track'
+                ? 'shadow_review'
+                : 'human_gate_then_execute';
+          const runbookStatus:
+            | 'ready_to_document'
+            | 'needs_design'
+            | 'not_available' =
+            candidateToolKey === null
+              ? 'not_available'
+              : pilotType === 'human_gate_then_execute'
+                ? 'ready_to_document'
+                : 'needs_design';
+          const rollbackStatus:
+            | 'ready_with_rollback'
+            | 'needs_rollback_design'
+            | 'not_applicable' =
+            candidateToolKey === null
+              ? 'not_applicable'
+              : runbookStatus === 'ready_to_document'
+                ? 'ready_with_rollback'
+                : 'needs_rollback_design';
+          const auditStatus:
+            | 'ready_for_audit'
+            | 'needs_evidence_design'
+            | 'not_applicable' =
+            candidateToolKey === null
+              ? 'not_applicable'
+              : runbookStatus === 'ready_to_document' &&
+                  rollbackStatus === 'ready_with_rollback' &&
+                  simulatedSlaStatus === 'on_track'
+                ? 'ready_for_audit'
+                : 'needs_evidence_design';
+
+          const auditOwner =
+            approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
+          const safeFallbackMode =
+            candidateToolKey === 'growth_case_assignment_execution'
+              ? 'suggestion_only_with_manual_assignment'
+              : 'suggestion_only';
+
+          const evidencePackSummary = [
+            candidateToolKey
+              ? `Audit evidence should bind every ${candidateToolKey} decision to a named human gate.`
+              : 'No guarded-execution evidence pack is needed yet because there is no execute path.',
+            reviewedApprovalRequests > 0
+              ? `${reviewedApprovalRequests} reviewed approval request(s) already exist as precedent evidence for human oversight.`
+              : 'No reviewed approval request exists yet as precedent evidence.',
+            simulatedSlaStatus === 'on_track'
+              ? 'Same-day review is stable enough to produce auditable reviewer evidence.'
+              : `Same-day review is still ${simulatedSlaStatus}, so audit evidence would be noisy until the lane stabilizes.`,
+          ];
+          const requiredArtifacts = [
+            candidateToolKey
+              ? `Named runbook for ${candidateToolKey} with entry, rollback, and approval gate references.`
+              : 'Candidate tool selection before an audit artifact set is required.',
+            `Approval-policy reference for ${auditOwner}.`,
+            `Operator-visible fallback path to ${safeFallbackMode}.`,
+          ];
+          const loggingChecks = [
+            'Every guarded decision should record actor, policy key, and handoff/run identifiers.',
+            candidateToolKey
+              ? `Every ${candidateToolKey} attempt should log whether it stayed in shadow review or crossed a human gate.`
+              : 'No execute-attempt logging is required yet because there is no candidate tool.',
+            'Rollback and fallback transitions should be visible in the same audit trail as the approval decision.',
+          ];
+          const reviewTrailSummary = [
+            reviewedApprovalRequests > 0
+              ? `${reviewedApprovalRequests} reviewed approval request(s) already contribute to the human review trail.`
+              : 'There is still no reviewed approval trail to reuse as precedent.',
+            pendingApprovalRequests > 0
+              ? `${pendingApprovalRequests} pending approval request(s) still need resolution before the trail is stable.`
+              : 'No pending approval request currently blocks audit readability.',
+            reviewableSuggestionRuns > 0
+              ? `${reviewableSuggestionRuns} suggestion run(s) still rely on explicit routing before they can support an audit package.`
+              : 'No unresolved suggestion run currently weakens the review trail.',
+          ];
+          const nextStep =
+            auditStatus === 'ready_for_audit'
+              ? 'Package the runbook, rollback path, and human review trail into the first guarded-execution audit bundle.'
+              : auditStatus === 'needs_evidence_design'
+                ? 'Stabilize review evidence, rollback references, and approval logging before treating this lane as audit-ready.'
+                : 'Stay in suggestion mode until a concrete guarded-execution candidate tool exists.';
+
+          const notes = [
+            `Current mode stays ${agent.defaultMode}.`,
+            `Audit owner resolves through ${auditOwner}.`,
+            `Fallback mode for audit references is ${safeFallbackMode}.`,
+            candidateToolKey
+              ? `Audit scope is anchored to ${candidateToolKey}.`
+              : 'There is no audit scope yet because there is no execution candidate.',
+          ];
+
+          return {
+            agentKey: agent.key,
+            title: agent.title,
+            domainKey: agent.domainKey,
+            productKey: agent.productKey,
+            currentMode: agent.defaultMode,
+            approvalPolicyKeys: approvalPolicies.map((entry) => entry.policyKey),
+            candidateToolKey,
+            pilotType,
+            rolloutPhase,
+            simulatedSlaStatus,
+            runbookStatus,
+            rollbackStatus,
+            auditStatus,
+            auditOwner,
+            safeFallbackMode,
+            evidencePackSummary,
+            requiredArtifacts,
+            loggingChecks,
+            reviewTrailSummary,
+            nextStep,
+            notes,
+          };
+        }),
+      );
+
+      const sortedAgents = agents.sort(
+        (left, right) =>
+          statusWeight(right.auditStatus) - statusWeight(left.auditStatus) ||
+          left.title.localeCompare(right.title),
+      );
+
+      return toAiGuardedExecutionAuditWorkspaceResponseDto({
+        tenantSlug,
+        generatedAt: new Date(),
+        counts: {
+          totalAgents: sortedAgents.length,
+          readyForAuditAgents: sortedAgents.filter(
+            (entry) => entry.auditStatus === 'ready_for_audit',
+          ).length,
+          needsEvidenceDesignAgents: sortedAgents.filter(
+            (entry) => entry.auditStatus === 'needs_evidence_design',
+          ).length,
+          notApplicableAgents: sortedAgents.filter(
+            (entry) => entry.auditStatus === 'not_applicable',
+          ).length,
+          auditCandidateTools: sortedAgents.filter(
+            (entry) => entry.candidateToolKey !== null,
+          ).length,
+        },
+        agents: sortedAgents,
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/guarded-execution-launch-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiGuardedExecutionLaunchWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiGuardedExecutionLaunchWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgents = this.listAiAgentCatalogUseCase
+      .execute()
+      .filter((entry) => entry.availability === 'ready')
+      .filter((entry) =>
+        this.hasAgentPermission(entry.key, tenantAccess?.permissionKeys),
+      );
+
+    if (accessibleAgents.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant guarded execution launch workspace.',
+      );
+    }
+
+    try {
+      const getSlaStatus = (
+        touches: number,
+        stillBlockedToolCount: number,
+      ): 'on_track' | 'at_risk' | 'breached' => {
+        if (stillBlockedToolCount > 0 || touches >= 3) {
+          return 'breached';
+        }
+
+        if (touches >= 2) {
+          return 'at_risk';
+        }
+
+        return 'on_track';
+      };
+
+      const statusWeight = (
+        status: 'ready_to_launch' | 'pilot_only' | 'hold',
+      ): number => {
+        switch (status) {
+          case 'ready_to_launch':
+            return 3;
+          case 'pilot_only':
+            return 2;
+          case 'hold':
+          default:
+            return 1;
+        }
+      };
+
+      const agents = await Promise.all(
+        accessibleAgents.map(async (agent) => {
+          const [approvalPolicies, toolAccess, approvalRequests, suggestionRuns] =
+            await Promise.all([
+              this.getAiApprovalPoliciesByAgentKeyUseCase.execute(agent.key),
+              this.getAiAgentToolAccessByAgentKeyUseCase.execute(agent.key),
+              this.listTenantAiApprovalRequestsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                {
+                  limit: null,
+                  status: null,
+                },
+              ),
+              this.listTenantAiSuggestionRunsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                null,
+              ),
+            ]);
+
+          const pendingApprovalRequests = approvalRequests.filter(
+            (entry) => entry.status === 'pending',
+          ).length;
+          const reviewedApprovalRequests = approvalRequests.filter(
+            (entry) => entry.status === 'approved' || entry.status === 'rejected',
+          ).length;
+          const reviewableSuggestionRuns = suggestionRuns.filter(
+            (entry) =>
+              entry.approvalSummary.status === 'not_requested' ||
+              entry.approvalSummary.status === 'rejected',
+          ).length;
+          const executionCandidateToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode ===
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+          const stillBlockedToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode !==
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+
+          const currentRequiredReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests + reviewableSuggestionRuns,
+          );
+          const recommendedReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests +
+              reviewableSuggestionRuns +
+              executionCandidateToolKeys.length,
+          );
+          const additionalReviewerEquivalentsToAssign = Math.max(
+            0,
+            recommendedReviewerEquivalents -
+              currentRequiredReviewerEquivalents,
+          );
+          const simulatedBacklogTouches =
+            pendingApprovalRequests +
+            reviewableSuggestionRuns +
+            executionCandidateToolKeys.length;
+          const simulatedSlaStatus = getSlaStatus(
+            simulatedBacklogTouches,
+            stillBlockedToolKeys.length,
+          );
+          const rolloutPhase: 'phase_1' | 'phase_2' | 'hold' =
+            stillBlockedToolKeys.length > 0
+              ? 'hold'
+              : additionalReviewerEquivalentsToAssign > 0
+                ? 'phase_1'
+                : 'phase_2';
+
+          const candidateToolKey = executionCandidateToolKeys[0] ?? null;
+          const pilotType:
+            | 'human_gate_then_execute'
+            | 'shadow_review'
+            | 'not_available' =
+            candidateToolKey === null
+              ? 'not_available'
+              : additionalReviewerEquivalentsToAssign > 0 ||
+                  simulatedSlaStatus !== 'on_track'
+                ? 'shadow_review'
+                : 'human_gate_then_execute';
+          const runbookStatus:
+            | 'ready_to_document'
+            | 'needs_design'
+            | 'not_available' =
+            candidateToolKey === null
+              ? 'not_available'
+              : pilotType === 'human_gate_then_execute'
+                ? 'ready_to_document'
+                : 'needs_design';
+          const rollbackStatus:
+            | 'ready_with_rollback'
+            | 'needs_rollback_design'
+            | 'not_applicable' =
+            candidateToolKey === null
+              ? 'not_applicable'
+              : runbookStatus === 'ready_to_document'
+                ? 'ready_with_rollback'
+                : 'needs_rollback_design';
+          const auditStatus:
+            | 'ready_for_audit'
+            | 'needs_evidence_design'
+            | 'not_applicable' =
+            candidateToolKey === null
+              ? 'not_applicable'
+              : runbookStatus === 'ready_to_document' &&
+                  rollbackStatus === 'ready_with_rollback' &&
+                  simulatedSlaStatus === 'on_track'
+                ? 'ready_for_audit'
+                : 'needs_evidence_design';
+
+          const launchStatus: 'ready_to_launch' | 'pilot_only' | 'hold' =
+            candidateToolKey === null
+              ? 'hold'
+              : auditStatus === 'ready_for_audit' &&
+                  pilotType === 'human_gate_then_execute'
+                ? 'ready_to_launch'
+                : pilotType === 'shadow_review' ||
+                    auditStatus === 'needs_evidence_design'
+                  ? 'pilot_only'
+                  : 'hold';
+          const launchWindow: 'current_window' | 'next_window' | 'defer' =
+            launchStatus === 'ready_to_launch'
+              ? 'current_window'
+              : launchStatus === 'pilot_only'
+                ? 'next_window'
+                : 'defer';
+          const launchOwner =
+            approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
+          const safeFallbackMode =
+            candidateToolKey === 'growth_case_assignment_execution'
+              ? 'suggestion_only_with_manual_assignment'
+              : 'suggestion_only';
+
+          const launchChecklist = [
+            candidateToolKey
+              ? `Launch scope stays constrained to ${candidateToolKey}.`
+              : 'No guarded-execution candidate tool exists yet.',
+            `Launch owner resolves through ${launchOwner}.`,
+            additionalReviewerEquivalentsToAssign > 0
+              ? `${additionalReviewerEquivalentsToAssign} reviewer-equivalent(s) still need to be staffed before launch.`
+              : 'Reviewer coverage already matches the guarded-execution posture.',
+            reviewedApprovalRequests > 0
+              ? `${reviewedApprovalRequests} reviewed approval request(s) already support the human oversight trail.`
+              : 'No reviewed approval request exists yet as launch evidence.',
+          ];
+          const blockingFactors = [
+            simulatedSlaStatus === 'on_track'
+              ? 'No SLA blocker is active right now.'
+              : `Simulated SLA remains ${simulatedSlaStatus}.`,
+            auditStatus === 'ready_for_audit'
+              ? 'Audit package is strong enough for a guarded launch.'
+              : 'Audit evidence still needs tightening before launch.',
+            rollbackStatus === 'ready_with_rollback'
+              ? 'Rollback path is already explicit.'
+              : 'Rollback path still needs to be finalized before launch.',
+          ];
+          const successSignals = [
+            candidateToolKey
+              ? `${candidateToolKey} stays inside the named human gate without bypasses.`
+              : 'Suggestion-only operation remains the safe default until a candidate exists.',
+            'Fallback mode remains visible and usable by operators.',
+            'Same-day review stays stable through the first guarded-execution window.',
+          ];
+          const nextStep =
+            launchStatus === 'ready_to_launch'
+              ? 'Open the first guarded-execution lane in the current window with explicit human gate and fallback path.'
+              : launchStatus === 'pilot_only'
+                ? 'Keep this agent in a narrow pilot path while audit evidence, rollback shape, or reviewer coverage continue to mature.'
+                : 'Hold this agent in suggestion mode until a guarded-execution candidate path is concrete and stable.';
+
+          const notes = [
+            `Current mode stays ${agent.defaultMode}.`,
+            `Launch owner resolves through ${launchOwner}.`,
+            `Fallback mode for launch remains ${safeFallbackMode}.`,
+            candidateToolKey
+              ? `Launch scope is anchored to ${candidateToolKey}.`
+              : 'There is no launch scope yet because there is no execution candidate.',
+          ];
+
+          return {
+            agentKey: agent.key,
+            title: agent.title,
+            domainKey: agent.domainKey,
+            productKey: agent.productKey,
+            currentMode: agent.defaultMode,
+            approvalPolicyKeys: approvalPolicies.map((entry) => entry.policyKey),
+            candidateToolKey,
+            pilotType,
+            rolloutPhase,
+            simulatedSlaStatus,
+            runbookStatus,
+            rollbackStatus,
+            auditStatus,
+            launchStatus,
+            launchWindow,
+            launchOwner,
+            safeFallbackMode,
+            launchChecklist,
+            blockingFactors,
+            successSignals,
+            nextStep,
+            notes,
+          };
+        }),
+      );
+
+      const sortedAgents = agents.sort(
+        (left, right) =>
+          statusWeight(right.launchStatus) - statusWeight(left.launchStatus) ||
+          left.title.localeCompare(right.title),
+      );
+
+      return toAiGuardedExecutionLaunchWorkspaceResponseDto({
+        tenantSlug,
+        generatedAt: new Date(),
+        counts: {
+          totalAgents: sortedAgents.length,
+          readyToLaunchAgents: sortedAgents.filter(
+            (entry) => entry.launchStatus === 'ready_to_launch',
+          ).length,
+          pilotOnlyAgents: sortedAgents.filter(
+            (entry) => entry.launchStatus === 'pilot_only',
+          ).length,
+          holdAgents: sortedAgents.filter(
+            (entry) => entry.launchStatus === 'hold',
+          ).length,
+          launchCandidateTools: sortedAgents.filter(
+            (entry) => entry.candidateToolKey !== null,
+          ).length,
+        },
+        agents: sortedAgents,
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/guarded-execution-monitor-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiGuardedExecutionMonitorWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiGuardedExecutionMonitorWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgents = this.listAiAgentCatalogUseCase
+      .execute()
+      .filter((entry) => entry.availability === 'ready')
+      .filter((entry) =>
+        this.hasAgentPermission(entry.key, tenantAccess?.permissionKeys),
+      );
+
+    if (accessibleAgents.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant guarded execution monitor workspace.',
+      );
+    }
+
+    try {
+      const getSlaStatus = (
+        touches: number,
+        stillBlockedToolCount: number,
+      ): 'on_track' | 'at_risk' | 'breached' => {
+        if (stillBlockedToolCount > 0 || touches >= 3) {
+          return 'breached';
+        }
+
+        if (touches >= 2) {
+          return 'at_risk';
+        }
+
+        return 'on_track';
+      };
+
+      const statusWeight = (
+        status: 'ready_to_monitor' | 'monitor_after_launch' | 'not_applicable',
+      ): number => {
+        switch (status) {
+          case 'ready_to_monitor':
+            return 3;
+          case 'monitor_after_launch':
+            return 2;
+          case 'not_applicable':
+          default:
+            return 1;
+        }
+      };
+
+      const agents = await Promise.all(
+        accessibleAgents.map(async (agent) => {
+          const [approvalPolicies, toolAccess, approvalRequests, suggestionRuns] =
+            await Promise.all([
+              this.getAiApprovalPoliciesByAgentKeyUseCase.execute(agent.key),
+              this.getAiAgentToolAccessByAgentKeyUseCase.execute(agent.key),
+              this.listTenantAiApprovalRequestsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                {
+                  limit: null,
+                  status: null,
+                },
+              ),
+              this.listTenantAiSuggestionRunsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                null,
+              ),
+            ]);
+
+          const pendingApprovalRequests = approvalRequests.filter(
+            (entry) => entry.status === 'pending',
+          ).length;
+          const reviewedApprovalRequests = approvalRequests.filter(
+            (entry) => entry.status === 'approved' || entry.status === 'rejected',
+          ).length;
+          const reviewableSuggestionRuns = suggestionRuns.filter(
+            (entry) =>
+              entry.approvalSummary.status === 'not_requested' ||
+              entry.approvalSummary.status === 'rejected',
+          ).length;
+          const executionCandidateToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode ===
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+          const stillBlockedToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode !==
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+
+          const currentRequiredReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests + reviewableSuggestionRuns,
+          );
+          const recommendedReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests +
+              reviewableSuggestionRuns +
+              executionCandidateToolKeys.length,
+          );
+          const additionalReviewerEquivalentsToAssign = Math.max(
+            0,
+            recommendedReviewerEquivalents -
+              currentRequiredReviewerEquivalents,
+          );
+          const simulatedBacklogTouches =
+            pendingApprovalRequests +
+            reviewableSuggestionRuns +
+            executionCandidateToolKeys.length;
+          const simulatedSlaStatus = getSlaStatus(
+            simulatedBacklogTouches,
+            stillBlockedToolKeys.length,
+          );
+
+          const candidateToolKey = executionCandidateToolKeys[0] ?? null;
+          const launchStatus: 'ready_to_launch' | 'pilot_only' | 'hold' =
+            candidateToolKey === null
+              ? 'hold'
+              : additionalReviewerEquivalentsToAssign === 0 &&
+                  simulatedSlaStatus === 'on_track' &&
+                  stillBlockedToolKeys.length === 0
+                ? 'ready_to_launch'
+                : 'pilot_only';
+          const launchWindow: 'current_window' | 'next_window' | 'defer' =
+            launchStatus === 'ready_to_launch'
+              ? 'current_window'
+              : launchStatus === 'pilot_only'
+                ? 'next_window'
+                : 'defer';
+          const monitorStatus:
+            | 'ready_to_monitor'
+            | 'monitor_after_launch'
+            | 'not_applicable' =
+            candidateToolKey === null
+              ? 'not_applicable'
+              : launchStatus === 'ready_to_launch'
+                ? 'ready_to_monitor'
+                : 'monitor_after_launch';
+          const monitorOwner =
+            approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
+          const safeFallbackMode =
+            candidateToolKey === 'growth_case_assignment_execution'
+              ? 'suggestion_only_with_manual_assignment'
+              : 'suggestion_only';
+          const watchWindow: 'day_0' | 'next_window' | 'not_scheduled' =
+            monitorStatus === 'ready_to_monitor'
+              ? 'day_0'
+              : monitorStatus === 'monitor_after_launch'
+                ? 'next_window'
+                : 'not_scheduled';
+
+          const watchSignals = [
+            candidateToolKey
+              ? `${candidateToolKey} stays inside the named human gate on every first-window attempt.`
+              : 'Suggestion-only mode stays stable while no execute path exists.',
+            pendingApprovalRequests > 0
+              ? `Current pending queue starts at ${pendingApprovalRequests} request(s) and should not grow through the watch window.`
+              : 'Pending approval queue starts at zero and should stay flat through the watch window.',
+            reviewedApprovalRequests > 0
+              ? `${reviewedApprovalRequests} reviewed approval decision(s) already give us baseline operator behavior to compare against.`
+              : 'There is no reviewed baseline yet, so operator behavior should be watched more closely.',
+          ];
+          const escalationSignals = [
+            simulatedSlaStatus === 'on_track'
+              ? 'Escalate if same-day review drifts from on_track during the first watch window.'
+              : `Escalate immediately if the lane still reads ${simulatedSlaStatus} at launch time.`,
+            additionalReviewerEquivalentsToAssign > 0
+              ? `${additionalReviewerEquivalentsToAssign} missing reviewer-equivalent(s) are still an escalation trigger.`
+              : 'Any sudden reviewer-coverage drop is an escalation trigger.',
+            `Escalate if fallback to ${safeFallbackMode} becomes the default path instead of the exception.`,
+          ];
+          const rollbackReadinessChecks = [
+            'Confirm the rollback owner can disable the execute path without waiting on additional routing.',
+            candidateToolKey
+              ? `Confirm ${candidateToolKey} can fall back to suggestion mode without leaving orphaned operator state.`
+              : 'Confirm suggestion mode remains the only available path until a candidate tool exists.',
+            'Confirm rollback events remain visible in the same oversight trail as approvals and review decisions.',
+          ];
+          const nextStep =
+            monitorStatus === 'ready_to_monitor'
+              ? 'Use this workspace as the day-0 watchlist when the first guarded lane opens.'
+              : monitorStatus === 'monitor_after_launch'
+                ? 'Keep these watch and escalation signals ready while the lane stays in pilot or next-window status.'
+                : 'No launch monitoring is needed yet beyond keeping the agent in suggestion mode.';
+
+          const notes = [
+            `Current mode stays ${agent.defaultMode}.`,
+            `Monitor owner resolves through ${monitorOwner}.`,
+            `Fallback mode for monitoring remains ${safeFallbackMode}.`,
+            candidateToolKey
+              ? `Monitoring scope is anchored to ${candidateToolKey}.`
+              : 'There is no monitoring scope yet because there is no execution candidate.',
+          ];
+
+          return {
+            agentKey: agent.key,
+            title: agent.title,
+            domainKey: agent.domainKey,
+            productKey: agent.productKey,
+            currentMode: agent.defaultMode,
+            approvalPolicyKeys: approvalPolicies.map((entry) => entry.policyKey),
+            candidateToolKey,
+            launchStatus,
+            launchWindow,
+            monitorStatus,
+            monitorOwner,
+            safeFallbackMode,
+            watchWindow,
+            watchSignals,
+            escalationSignals,
+            rollbackReadinessChecks,
+            nextStep,
+            notes,
+          };
+        }),
+      );
+
+      const sortedAgents = agents.sort(
+        (left, right) =>
+          statusWeight(right.monitorStatus) - statusWeight(left.monitorStatus) ||
+          left.title.localeCompare(right.title),
+      );
+
+      return toAiGuardedExecutionMonitorWorkspaceResponseDto({
+        tenantSlug,
+        generatedAt: new Date(),
+        counts: {
+          totalAgents: sortedAgents.length,
+          readyToMonitorAgents: sortedAgents.filter(
+            (entry) => entry.monitorStatus === 'ready_to_monitor',
+          ).length,
+          monitorAfterLaunchAgents: sortedAgents.filter(
+            (entry) => entry.monitorStatus === 'monitor_after_launch',
+          ).length,
+          notApplicableAgents: sortedAgents.filter(
+            (entry) => entry.monitorStatus === 'not_applicable',
+          ).length,
+          monitorCandidateTools: sortedAgents.filter(
+            (entry) => entry.candidateToolKey !== null,
+          ).length,
+        },
+        agents: sortedAgents,
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/guarded-execution-control-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiGuardedExecutionControlWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiGuardedExecutionControlWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgents = this.listAiAgentCatalogUseCase
+      .execute()
+      .filter((entry) => entry.availability === 'ready')
+      .filter((entry) =>
+        this.hasAgentPermission(entry.key, tenantAccess?.permissionKeys),
+      );
+
+    if (accessibleAgents.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant guarded execution control workspace.',
+      );
+    }
+
+    try {
+      const getSlaStatus = (
+        touches: number,
+        stillBlockedToolCount: number,
+      ): 'on_track' | 'at_risk' | 'breached' => {
+        if (stillBlockedToolCount > 0 || touches >= 3) {
+          return 'breached';
+        }
+
+        if (touches >= 2) {
+          return 'at_risk';
+        }
+
+        return 'on_track';
+      };
+
+      const statusWeight = (
+        status: 'open_lane' | 'pilot_then_open' | 'hold',
+      ): number => {
+        switch (status) {
+          case 'open_lane':
+            return 3;
+          case 'pilot_then_open':
+            return 2;
+          case 'hold':
+          default:
+            return 1;
+        }
+      };
+
+      const agents = await Promise.all(
+        accessibleAgents.map(async (agent) => {
+          const [approvalPolicies, toolAccess, approvalRequests, suggestionRuns] =
+            await Promise.all([
+              this.getAiApprovalPoliciesByAgentKeyUseCase.execute(agent.key),
+              this.getAiAgentToolAccessByAgentKeyUseCase.execute(agent.key),
+              this.listTenantAiApprovalRequestsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                {
+                  limit: null,
+                  status: null,
+                },
+              ),
+              this.listTenantAiSuggestionRunsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                null,
+              ),
+            ]);
+
+          const pendingApprovalRequests = approvalRequests.filter(
+            (entry) => entry.status === 'pending',
+          ).length;
+          const reviewedApprovalRequests = approvalRequests.filter(
+            (entry) => entry.status === 'approved' || entry.status === 'rejected',
+          ).length;
+          const reviewableSuggestionRuns = suggestionRuns.filter(
+            (entry) =>
+              entry.approvalSummary.status === 'not_requested' ||
+              entry.approvalSummary.status === 'rejected',
+          ).length;
+          const executionCandidateToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode ===
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+          const stillBlockedToolKeys = toolAccess
+            .filter(
+              (entry) =>
+                entry.accessLevel === 'blocked' &&
+                entry.tool.executionBoundary.executionMode !==
+                  'guarded_execution_planned',
+            )
+            .map((entry) => entry.tool.key)
+            .sort();
+
+          const currentRequiredReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests + reviewableSuggestionRuns,
+          );
+          const recommendedReviewerEquivalents = Math.max(
+            1,
+            pendingApprovalRequests +
+              reviewableSuggestionRuns +
+              executionCandidateToolKeys.length,
+          );
+          const additionalReviewerEquivalentsToAssign = Math.max(
+            0,
+            recommendedReviewerEquivalents -
+              currentRequiredReviewerEquivalents,
+          );
+          const simulatedBacklogTouches =
+            pendingApprovalRequests +
+            reviewableSuggestionRuns +
+            executionCandidateToolKeys.length;
+          const simulatedSlaStatus = getSlaStatus(
+            simulatedBacklogTouches,
+            stillBlockedToolKeys.length,
+          );
+
+          const candidateToolKey = executionCandidateToolKeys[0] ?? null;
+          const launchStatus: 'ready_to_launch' | 'pilot_only' | 'hold' =
+            candidateToolKey === null
+              ? 'hold'
+              : additionalReviewerEquivalentsToAssign === 0 &&
+                  simulatedSlaStatus === 'on_track' &&
+                  stillBlockedToolKeys.length === 0
+                ? 'ready_to_launch'
+                : 'pilot_only';
+          const launchWindow: 'current_window' | 'next_window' | 'defer' =
+            launchStatus === 'ready_to_launch'
+              ? 'current_window'
+              : launchStatus === 'pilot_only'
+                ? 'next_window'
+                : 'defer';
+          const monitorStatus:
+            | 'ready_to_monitor'
+            | 'monitor_after_launch'
+            | 'not_applicable' =
+            candidateToolKey === null
+              ? 'not_applicable'
+              : launchStatus === 'ready_to_launch'
+                ? 'ready_to_monitor'
+                : 'monitor_after_launch';
+          const controlStatus: 'open_lane' | 'pilot_then_open' | 'hold' =
+            launchStatus === 'ready_to_launch' &&
+            monitorStatus === 'ready_to_monitor'
+              ? 'open_lane'
+              : launchStatus === 'pilot_only'
+                ? 'pilot_then_open'
+                : 'hold';
+          const controlWindow: 'current_window' | 'next_window' | 'defer' =
+            controlStatus === 'open_lane'
+              ? 'current_window'
+              : controlStatus === 'pilot_then_open'
+                ? 'next_window'
+                : 'defer';
+          const controlOwner =
+            approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
+          const escalationOwner = controlOwner;
+          const safeFallbackMode =
+            candidateToolKey === 'growth_case_assignment_execution'
+              ? 'suggestion_only_with_manual_assignment'
+              : 'suggestion_only';
+
+          const topAction =
+            controlStatus === 'open_lane'
+              ? 'Open the lane with explicit watch coverage and fallback visibility.'
+              : controlStatus === 'pilot_then_open'
+                ? 'Keep this lane in pilot while reviewer coverage, evidence, or SLA mature.'
+                : 'Keep the agent in suggestion mode and do not expose an execute path yet.';
+
+          const controlChecklist = [
+            candidateToolKey
+              ? `Candidate tool ${candidateToolKey} stays inside the named lane scope.`
+              : 'No guarded-execution candidate tool exists yet.',
+            `Control owner resolves through ${controlOwner}.`,
+            reviewedApprovalRequests > 0
+              ? `${reviewedApprovalRequests} reviewed approval decision(s) already exist as operator precedent.`
+              : 'No reviewed approval decision exists yet as operator precedent.',
+            additionalReviewerEquivalentsToAssign > 0
+              ? `${additionalReviewerEquivalentsToAssign} reviewer-equivalent(s) still need to be staffed.`
+              : 'Reviewer coverage already matches the guarded lane posture.',
+          ];
+          const guardrails = [
+            simulatedSlaStatus === 'on_track'
+              ? 'Same-day review is on track under the current lane assumptions.'
+              : `Same-day review remains ${simulatedSlaStatus} under the current lane assumptions.`,
+            `Fallback path remains ${safeFallbackMode}.`,
+            stillBlockedToolKeys.length > 0
+              ? `${stillBlockedToolKeys.length} non-planned blocked tool(s) still keep this lane constrained.`
+              : 'No extra blocked tool posture is constraining this lane beyond the planned scope.',
+          ];
+          const nextStep =
+            controlStatus === 'open_lane'
+              ? 'Treat this as the go/no-go control card for the first guarded lane.'
+              : controlStatus === 'pilot_then_open'
+                ? 'Use this control card to keep the lane in pilot until coverage, evidence, and monitoring are strong enough.'
+                : 'Hold this agent in suggestion mode until a guarded lane becomes concrete.';
+
+          const notes = [
+            `Current mode stays ${agent.defaultMode}.`,
+            `Escalation owner resolves through ${escalationOwner}.`,
+            `Fallback mode for control remains ${safeFallbackMode}.`,
+            candidateToolKey
+              ? `Control scope is anchored to ${candidateToolKey}.`
+              : 'There is no control scope yet because there is no execution candidate.',
+          ];
+
+          return {
+            agentKey: agent.key,
+            title: agent.title,
+            domainKey: agent.domainKey,
+            productKey: agent.productKey,
+            currentMode: agent.defaultMode,
+            approvalPolicyKeys: approvalPolicies.map((entry) => entry.policyKey),
+            candidateToolKey,
+            controlStatus,
+            controlWindow,
+            launchStatus,
+            monitorStatus,
+            controlOwner,
+            escalationOwner,
+            safeFallbackMode,
+            topAction,
+            controlChecklist,
+            guardrails,
+            nextStep,
+            notes,
+          };
+        }),
+      );
+
+      const sortedAgents = agents.sort(
+        (left, right) =>
+          statusWeight(right.controlStatus) - statusWeight(left.controlStatus) ||
+          left.title.localeCompare(right.title),
+      );
+
+      return toAiGuardedExecutionControlWorkspaceResponseDto({
+        tenantSlug,
+        generatedAt: new Date(),
+        counts: {
+          totalAgents: sortedAgents.length,
+          openLaneAgents: sortedAgents.filter(
+            (entry) => entry.controlStatus === 'open_lane',
+          ).length,
+          pilotThenOpenAgents: sortedAgents.filter(
+            (entry) => entry.controlStatus === 'pilot_then_open',
+          ).length,
+          holdAgents: sortedAgents.filter(
+            (entry) => entry.controlStatus === 'hold',
+          ).length,
+          controlCandidateTools: sortedAgents.filter(
+            (entry) => entry.candidateToolKey !== null,
+          ).length,
+        },
+        agents: sortedAgents,
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get('tenants/:slug/guarded-execution-event-log-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiGuardedExecutionEventLogWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiGuardedExecutionEventLogWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgents = this.listAiAgentCatalogUseCase
+      .execute()
+      .filter((entry) => entry.availability === 'ready')
+      .filter((entry) =>
+        this.hasAgentPermission(entry.key, tenantAccess?.permissionKeys),
+      );
+
+    if (accessibleAgents.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant guarded execution event log workspace.',
+      );
+    }
+
+    try {
+      const persistedExecutionEvents =
+        await this.listTenantAiGuardedExecutionEventsUseCase.execute(
+          tenantSlug,
+          {
+            agentKeys: accessibleAgents.map((entry) => entry.key),
+            limit: null,
+            eventTypes: null,
+          },
+        );
+      const getSlaStatus = (
+        touches: number,
+        stillBlockedToolCount: number,
+      ): 'on_track' | 'at_risk' | 'breached' => {
+        if (stillBlockedToolCount > 0 || touches >= 3) {
+          return 'breached';
+        }
+
+        if (touches >= 2) {
+          return 'at_risk';
+        }
+
+        return 'on_track';
+      };
+
+      const entries = (
+        await Promise.all(
+          accessibleAgents.map(async (agent) => {
+            const [approvalRequests, suggestionRuns, toolAccess] = await Promise.all([
+              this.listTenantAiApprovalRequestsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                {
+                  limit: null,
+                  status: null,
+                },
+              ),
+              this.listTenantAiSuggestionRunsUseCase.execute(
+                tenantSlug,
+                agent.key,
+                null,
+              ),
+              this.getAiAgentToolAccessByAgentKeyUseCase.execute(agent.key),
+            ]);
+
+            const reviewableSuggestionRuns = suggestionRuns.filter(
+              (entry) =>
+                entry.approvalSummary.status === 'not_requested' ||
+                entry.approvalSummary.status === 'rejected',
+            ).length;
+            const pendingApprovalRequests = approvalRequests.filter(
+              (entry) => entry.status === 'pending',
+            ).length;
+            const executionCandidateToolKeys = toolAccess
+              .filter(
+                (entry) =>
+                  entry.accessLevel === 'blocked' &&
+                  entry.tool.executionBoundary.executionMode ===
+                    'guarded_execution_planned',
+              )
+              .map((entry) => entry.tool.key)
+              .sort();
+            const stillBlockedToolKeys = toolAccess
+              .filter(
+                (entry) =>
+                  entry.accessLevel === 'blocked' &&
+                  entry.tool.executionBoundary.executionMode !==
+                    'guarded_execution_planned',
+              )
+              .map((entry) => entry.tool.key)
+              .sort();
+
+            const currentRequiredReviewerEquivalents = Math.max(
+              1,
+              pendingApprovalRequests + reviewableSuggestionRuns,
+            );
+            const recommendedReviewerEquivalents = Math.max(
+              1,
+              pendingApprovalRequests +
+                reviewableSuggestionRuns +
+                executionCandidateToolKeys.length,
+            );
+            const additionalReviewerEquivalentsToAssign = Math.max(
+              0,
+              recommendedReviewerEquivalents -
+                currentRequiredReviewerEquivalents,
+            );
+            const simulatedBacklogTouches =
+              pendingApprovalRequests +
+              reviewableSuggestionRuns +
+              executionCandidateToolKeys.length;
+            const simulatedSlaStatus = getSlaStatus(
+              simulatedBacklogTouches,
+              stillBlockedToolKeys.length,
+            );
+            const candidateToolKey = executionCandidateToolKeys[0] ?? null;
+            const controlStatus: 'open_lane' | 'pilot_then_open' | 'hold' =
+              candidateToolKey === null
+                ? 'hold'
+                : additionalReviewerEquivalentsToAssign === 0 &&
+                    simulatedSlaStatus === 'on_track' &&
+                    stillBlockedToolKeys.length === 0
+                  ? 'open_lane'
+                  : 'pilot_then_open';
+
+            const baseEntries = suggestionRuns.flatMap((suggestionRun) => {
+              const localEntries: Array<{
+                id: string;
+                tenantSlug: string;
+                agentKey: string;
+                eventType: AiGuardedExecutionEventLogEntryTypeResponseDto;
+                occurredAt: Date;
+                suggestionRunId: string | null;
+                approvalRequestId: string | null;
+                candidateToolKey: string | null;
+                summary: string;
+                detail: string;
+              }> = [
+                {
+                  id: `guarded-log:prepared:${suggestionRun.id}`,
+                  tenantSlug,
+                  agentKey: agent.key,
+                  eventType: 'suggestion_run_prepared',
+                  occurredAt: suggestionRun.createdAt,
+                  suggestionRunId: suggestionRun.id,
+                  approvalRequestId: null,
+                  candidateToolKey: null,
+                  summary: suggestionRun.summary,
+                  detail: `Prepared suggestion handoff with ${suggestionRun.promptPackKey}@${suggestionRun.promptPackVersion}.`,
+                },
+              ];
+
+              return localEntries;
+            });
+
+            const approvalEntries = approvalRequests.flatMap((approvalRequest) => {
+              const localEntries: Array<{
+                id: string;
+                tenantSlug: string;
+                agentKey: string;
+                eventType: AiGuardedExecutionEventLogEntryTypeResponseDto;
+                occurredAt: Date;
+                suggestionRunId: string | null;
+                approvalRequestId: string | null;
+                candidateToolKey: string | null;
+                summary: string;
+                detail: string;
+              }> = [
+                {
+                  id: `guarded-log:approval-requested:${approvalRequest.id}`,
+                  tenantSlug,
+                  agentKey: agent.key,
+                  eventType: 'approval_requested',
+                  occurredAt: approvalRequest.createdAt,
+                  suggestionRunId: approvalRequest.suggestionRunId,
+                  approvalRequestId: approvalRequest.id,
+                  candidateToolKey: null,
+                  summary: approvalRequest.summary,
+                  detail:
+                    approvalRequest.rationale ??
+                    `Approval requested under policy ${approvalRequest.policyKey}.`,
+                },
+              ];
+
+              if (approvalRequest.reviewedAt !== null) {
+                localEntries.push({
+                  id: `guarded-log:approval-reviewed:${approvalRequest.id}`,
+                  tenantSlug,
+                  agentKey: agent.key,
+                  eventType: 'approval_reviewed',
+                  occurredAt: approvalRequest.reviewedAt,
+                  suggestionRunId: approvalRequest.suggestionRunId,
+                  approvalRequestId: approvalRequest.id,
+                  candidateToolKey: null,
+                  summary: `${agent.title} approval request ${approvalRequest.id} was ${approvalRequest.status}.`,
+                  detail:
+                    approvalRequest.reviewNote ??
+                    `Reviewed under policy ${approvalRequest.policyKey}.`,
+                });
+              }
+
+              return localEntries;
+            });
+
+            const statusEntries: Array<{
+              id: string;
+              tenantSlug: string;
+              agentKey: string;
+              eventType: AiGuardedExecutionEventLogEntryTypeResponseDto;
+              occurredAt: Date;
+              suggestionRunId: string | null;
+              approvalRequestId: string | null;
+              candidateToolKey: string | null;
+              summary: string;
+              detail: string;
+            }> = [];
+
+            if (candidateToolKey !== null) {
+              const anchorCandidates = [
+                ...suggestionRuns.map((entry) => entry.createdAt.getTime()),
+                ...approvalRequests.map((entry) =>
+                  (entry.reviewedAt ?? entry.createdAt).getTime(),
+                ),
+              ];
+              const anchorTimestamp =
+                Math.max(...anchorCandidates, new Date('2026-01-01T00:00:00.000Z').getTime()) +
+                1000;
+
+              if (controlStatus === 'open_lane') {
+                statusEntries.push({
+                  id: `guarded-log:lane-ready:${agent.key}:${candidateToolKey}`,
+                  tenantSlug,
+                  agentKey: agent.key,
+                  eventType: 'guarded_execution_lane_ready',
+                  occurredAt: new Date(anchorTimestamp),
+                  suggestionRunId: null,
+                  approvalRequestId: null,
+                  candidateToolKey,
+                  summary: `${agent.title} is ready to open a guarded-execution lane for ${candidateToolKey}.`,
+                  detail:
+                    'Control, launch, and monitor signals are aligned for a narrow guarded-execution opening.',
+                });
+              } else if (controlStatus === 'pilot_then_open') {
+                statusEntries.push({
+                  id: `guarded-log:pilot-only:${agent.key}:${candidateToolKey}`,
+                  tenantSlug,
+                  agentKey: agent.key,
+                  eventType: 'guarded_execution_pilot_only',
+                  occurredAt: new Date(anchorTimestamp),
+                  suggestionRunId: null,
+                  approvalRequestId: null,
+                  candidateToolKey,
+                  summary: `${agent.title} should stay in pilot-only posture for ${candidateToolKey}.`,
+                  detail:
+                    'Coverage, evidence, or monitoring still need to mature before opening the guarded lane.',
+                });
+              }
+            }
+
+            return [...baseEntries, ...approvalEntries, ...statusEntries];
+          }),
+        )
+      )
+        .flat()
+        .concat(
+          persistedExecutionEvents.map((event) => ({
+            id: `guarded-log:persisted:${event.id}`,
+            tenantSlug: event.tenantSlug,
+            agentKey: event.agentKey,
+            eventType:
+              event.eventType === 'executed'
+                ? ('guarded_execution_executed' as const)
+                : ('guarded_execution_rolled_back' as const),
+            occurredAt: event.occurredAt,
+            suggestionRunId: event.suggestionRunId,
+            approvalRequestId: event.approvalRequestId,
+            candidateToolKey: event.toolKey,
+            summary: event.summary,
+            detail: event.detail,
+          })),
+        )
+        .flat()
+        .sort((left, right) => {
+          const byTime = right.occurredAt.getTime() - left.occurredAt.getTime();
+          if (byTime !== 0) {
+            return byTime;
+          }
+
+          return left.id.localeCompare(right.id);
+        });
+
+      return toAiGuardedExecutionEventLogWorkspaceResponseDto({
+        tenantSlug,
+        generatedAt: new Date(),
+        counts: {
+          totalEvents: entries.length,
+          suggestionRunPreparedEvents: entries.filter(
+            (entry) => entry.eventType === 'suggestion_run_prepared',
+          ).length,
+          approvalRequestedEvents: entries.filter(
+            (entry) => entry.eventType === 'approval_requested',
+          ).length,
+          approvalReviewedEvents: entries.filter(
+            (entry) => entry.eventType === 'approval_reviewed',
+          ).length,
+          executedEvents: entries.filter(
+            (entry) => entry.eventType === 'guarded_execution_executed',
+          ).length,
+          rolledBackEvents: entries.filter(
+            (entry) => entry.eventType === 'guarded_execution_rolled_back',
+          ).length,
+          guardedExecutionStatusEvents: entries.filter(
+            (entry) =>
+              entry.eventType === 'guarded_execution_pilot_only' ||
+              entry.eventType === 'guarded_execution_lane_ready',
+          ).length,
+        },
+        entries,
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Get('tenants/:slug/operations-summary')
   @UseGuards(
     JwtAuthenticationGuard,
@@ -3658,6 +6290,212 @@ export class AiController {
     }
   }
 
+  @Post('tenants/:slug/agents/:agentKey/approval-requests/:requestId/guarded-execution')
+  @HttpCode(200)
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async executeTenantAiGuardedExecution(
+    @Param('slug') slug: string,
+    @Param('agentKey') agentKey: string,
+    @Param('requestId') requestId: string,
+    @Body() body: ExecuteAiGuardedExecutionRequestDto,
+    @AuthenticatedUser() authenticatedUser: AuthenticatedUserContext | undefined,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiGuardedExecutionExecutionResponseDto> {
+    if (!authenticatedUser) {
+      throw new NotFoundException('Authenticated user context is required.');
+    }
+
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+
+    try {
+      this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
+
+      const candidateToolKey = this.getGuardedExecutionCandidateToolKey(agentKey);
+
+      if (candidateToolKey !== 'growth_case_assignment_execution') {
+        throw new BadRequestException(
+          `AI agent ${agentKey} does not support the first guarded execution lane.`,
+        );
+      }
+
+      const approvalRequests =
+        await this.listTenantAiApprovalRequestsUseCase.execute(
+          tenantSlug,
+          agentKey,
+          {
+            limit: null,
+            status: null,
+          },
+        );
+      const approvalRequest =
+        approvalRequests.find((entry) => entry.id === requestId) ?? null;
+
+      if (!approvalRequest) {
+        throw new NotFoundException(
+          `AI approval request ${requestId} was not found.`,
+        );
+      }
+
+      if (approvalRequest.status !== 'approved') {
+        throw new ConflictException(
+          `AI approval request ${requestId} must be approved before guarded execution.`,
+        );
+      }
+
+      const operationalCase =
+        await this.takeTenantGrowthOperationalCaseUseCase.execute({
+          tenantSlug,
+          caseId: body.caseId,
+          assignedUserId: authenticatedUser.id,
+          assignedUserEmail: authenticatedUser.email,
+        });
+
+      await this.createTenantAiGuardedExecutionEventUseCase.execute({
+        tenantSlug,
+        agentKey,
+        eventType: 'executed',
+        approvalRequestId: approvalRequest.id,
+        suggestionRunId: approvalRequest.suggestionRunId,
+        toolKey: candidateToolKey,
+        caseId: operationalCase.id,
+        safeFallbackMode: null,
+        summary: `Guarded execution completed for ${candidateToolKey} after approved request ${approvalRequest.id}.`,
+        detail: `Operational case ${operationalCase.id} is now assigned to ${authenticatedUser.email ?? authenticatedUser.id} under the named human gate.`,
+        occurredAt: operationalCase.updatedAt,
+        createdByUserId: authenticatedUser.id,
+        createdByEmail: authenticatedUser.email,
+      });
+
+      return toAiGuardedExecutionExecutionResponseDto({
+        tenantSlug,
+        agentKey,
+        approvalRequestId: approvalRequest.id,
+        suggestionRunId: approvalRequest.suggestionRunId,
+        toolKey: candidateToolKey,
+        executedAt: operationalCase.updatedAt,
+        summary: `Guarded execution completed for ${candidateToolKey} after approved request ${approvalRequest.id}.`,
+        detail: `Operational case ${operationalCase.id} is now assigned to ${authenticatedUser.email ?? authenticatedUser.id} under the named human gate.`,
+        operationalCase,
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError ||
+        error instanceof GrowthOperationalCaseNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post('tenants/:slug/agents/:agentKey/approval-requests/:requestId/guarded-execution-rollback')
+  @HttpCode(200)
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async rollbackTenantAiGuardedExecution(
+    @Param('slug') slug: string,
+    @Param('agentKey') agentKey: string,
+    @Param('requestId') requestId: string,
+    @Body() body: ExecuteAiGuardedExecutionRequestDto,
+    @AuthenticatedUser() authenticatedUser: AuthenticatedUserContext | undefined,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiGuardedExecutionRollbackExecutionResponseDto> {
+    if (!authenticatedUser) {
+      throw new NotFoundException('Authenticated user context is required.');
+    }
+
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+
+    try {
+      this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
+
+      const candidateToolKey = this.getGuardedExecutionCandidateToolKey(agentKey);
+
+      if (candidateToolKey !== 'growth_case_assignment_execution') {
+        throw new BadRequestException(
+          `AI agent ${agentKey} does not support the first guarded execution rollback lane.`,
+        );
+      }
+
+      const approvalRequests =
+        await this.listTenantAiApprovalRequestsUseCase.execute(
+          tenantSlug,
+          agentKey,
+          {
+            limit: null,
+            status: null,
+          },
+        );
+      const approvalRequest =
+        approvalRequests.find((entry) => entry.id === requestId) ?? null;
+
+      if (!approvalRequest) {
+        throw new NotFoundException(
+          `AI approval request ${requestId} was not found.`,
+        );
+      }
+
+      if (approvalRequest.status !== 'approved') {
+        throw new ConflictException(
+          `AI approval request ${requestId} must be approved before guarded execution rollback.`,
+        );
+      }
+
+      const operationalCase =
+        await this.releaseTenantGrowthOperationalCaseUseCase.execute({
+          tenantSlug,
+          caseId: body.caseId,
+        });
+
+      await this.createTenantAiGuardedExecutionEventUseCase.execute({
+        tenantSlug,
+        agentKey,
+        eventType: 'rolled_back',
+        approvalRequestId: approvalRequest.id,
+        suggestionRunId: approvalRequest.suggestionRunId,
+        toolKey: candidateToolKey,
+        caseId: operationalCase.id,
+        safeFallbackMode: 'suggestion_only',
+        summary: `Guarded execution rolled back for ${candidateToolKey} after approved request ${approvalRequest.id}.`,
+        detail: `Operational case ${operationalCase.id} returned to explicit human-only handling for ${authenticatedUser.email ?? authenticatedUser.id}.`,
+        occurredAt: operationalCase.updatedAt,
+        createdByUserId: authenticatedUser.id,
+        createdByEmail: authenticatedUser.email,
+      });
+
+      return toAiGuardedExecutionRollbackExecutionResponseDto({
+        tenantSlug,
+        agentKey,
+        approvalRequestId: approvalRequest.id,
+        suggestionRunId: approvalRequest.suggestionRunId,
+        toolKey: candidateToolKey,
+        rolledBackAt: operationalCase.updatedAt,
+        summary: `Guarded execution rolled back for ${candidateToolKey} after approved request ${approvalRequest.id}.`,
+        detail: `Operational case ${operationalCase.id} returned to explicit human-only handling for ${authenticatedUser.email ?? authenticatedUser.id}.`,
+        operationalCase,
+      });
+    } catch (error) {
+      if (
+        error instanceof AiAgentNotFoundError ||
+        error instanceof TenantNotFoundError ||
+        error instanceof GrowthOperationalCaseNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   private assertAgentPermission(
     agentKey: string,
     permissionKeys: string[] | undefined,
@@ -3732,5 +6570,17 @@ export class AiController {
     return agentKey === 'invoice-document-assistant'
       ? INVOICING_PERMISSIONS.REPORTS_READ
       : GROWTH_PERMISSIONS.CONVERSATIONS_READ;
+  }
+
+  private getGuardedExecutionCandidateToolKey(agentKey: string): string | null {
+    return (
+      this.getAiAgentToolAccessByAgentKeyUseCase
+        .execute(agentKey)
+        .find(
+          (entry) =>
+            entry.tool.executionBoundary.executionMode ===
+            'guarded_execution_planned',
+        )?.tool.key ?? null
+    );
   }
 }

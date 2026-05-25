@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import {
   AI_APPROVAL_REQUEST_REPOSITORY,
+  AI_GUARDED_EXECUTION_EVENT_REPOSITORY,
   AI_SUGGESTION_RUN_REPOSITORY,
+  CreateTenantAiGuardedExecutionEventUseCase,
   GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
@@ -11,6 +13,7 @@ import {
   GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
   GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
   ListTenantAiApprovalRequestsUseCase,
+  ListTenantAiGuardedExecutionEventsUseCase,
   ListTenantAiSuggestionRunsUseCase,
   ListAiApprovalPoliciesUseCase,
   ListAiAgentCatalogUseCase,
@@ -20,6 +23,12 @@ import {
   RequestTenantAiSuggestionRunApprovalUseCase,
   ReviewTenantAiApprovalRequestUseCase,
 } from '@saas-platform/ai-application';
+import {
+  GetTenantGrowthAssistDailyAgendaUseCase,
+  GROWTH_OPERATIONAL_CASE_REPOSITORY,
+  ReleaseTenantGrowthOperationalCaseUseCase,
+  TakeTenantGrowthOperationalCaseUseCase,
+} from '@saas-platform/growth-application';
 import {
   GetTenantInvoiceDocumentDraftingAssistUseCase,
 } from '@saas-platform/invoicing-application';
@@ -41,7 +50,6 @@ import { InvoicingModule } from '../invoicing/invoicing.module';
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { AiController } from './ai.controller';
-import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-application';
 
 @Module({
   imports: [
@@ -207,6 +215,42 @@ import { GetTenantGrowthAssistDailyAgendaUseCase } from '@saas-platform/growth-a
         new ReviewTenantAiApprovalRequestUseCase(
           tenantRepository,
           aiApprovalRequestRepository,
+        ),
+    },
+    {
+      provide: CreateTenantAiGuardedExecutionEventUseCase,
+      inject: [TENANT_REPOSITORY, AI_GUARDED_EXECUTION_EVENT_REPOSITORY],
+      useFactory: (tenantRepository, aiGuardedExecutionEventRepository) =>
+        new CreateTenantAiGuardedExecutionEventUseCase(
+          tenantRepository,
+          aiGuardedExecutionEventRepository,
+        ),
+    },
+    {
+      provide: ListTenantAiGuardedExecutionEventsUseCase,
+      inject: [TENANT_REPOSITORY, AI_GUARDED_EXECUTION_EVENT_REPOSITORY],
+      useFactory: (tenantRepository, aiGuardedExecutionEventRepository) =>
+        new ListTenantAiGuardedExecutionEventsUseCase(
+          tenantRepository,
+          aiGuardedExecutionEventRepository,
+        ),
+    },
+    {
+      provide: TakeTenantGrowthOperationalCaseUseCase,
+      inject: [TENANT_REPOSITORY, GROWTH_OPERATIONAL_CASE_REPOSITORY],
+      useFactory: (tenantRepository, growthOperationalCaseRepository) =>
+        new TakeTenantGrowthOperationalCaseUseCase(
+          tenantRepository,
+          growthOperationalCaseRepository,
+        ),
+    },
+    {
+      provide: ReleaseTenantGrowthOperationalCaseUseCase,
+      inject: [TENANT_REPOSITORY, GROWTH_OPERATIONAL_CASE_REPOSITORY],
+      useFactory: (tenantRepository, growthOperationalCaseRepository) =>
+        new ReleaseTenantGrowthOperationalCaseUseCase(
+          tenantRepository,
+          growthOperationalCaseRepository,
         ),
     },
     {

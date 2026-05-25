@@ -50,6 +50,7 @@ model Tenant {
   growthOperationalCaseAutoAssignmentSettings GrowthOperationalCaseAutoAssignmentSettings?
   aiApprovalRequests AiApprovalRequest[]
   aiSuggestionRuns AiSuggestionRun[]
+  aiGuardedExecutionEvents AiGuardedExecutionEvent[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
@@ -380,6 +381,30 @@ model AiApprovalRequest {
   @@index([tenantId, agentKey, createdAt])
   @@index([tenantId, status, createdAt])
   @@index([suggestionRunId, createdAt])
+}
+
+model AiGuardedExecutionEvent {
+  id                String   @id @default(cuid())
+  tenantId          String
+  tenantSlug        String
+  agentKey          String
+  eventType         String
+  approvalRequestId String
+  suggestionRunId   String
+  toolKey           String
+  caseId            String
+  safeFallbackMode  String?
+  summary           String
+  detail            String   @db.Text
+  occurredAt        DateTime
+  createdByUserId   String?
+  createdByEmail    String?
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  @@index([tenantId, agentKey, occurredAt])
+  @@index([tenantId, eventType, occurredAt])
+  @@index([approvalRequestId, occurredAt])
 }
 
 model WebhookEventEnvelope {

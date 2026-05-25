@@ -9,6 +9,17 @@ import {
   AiApprovalRolloutWorkspaceResponse,
   AiApprovalReadinessWorkspaceResponse,
   AiApprovalLaunchWorkspaceResponse,
+  AiGuardedExecutionAuditWorkspaceResponse,
+  AiGuardedExecutionLaunchWorkspaceResponse,
+  AiGuardedExecutionMonitorWorkspaceResponse,
+  AiGuardedExecutionControlWorkspaceResponse,
+  AiGuardedExecutionExecutionResponse,
+  AiGuardedExecutionRollbackExecutionResponse,
+  AiGuardedExecutionEventLogWorkspaceResponse,
+  AiGuardedExecutionRollbackWorkspaceResponse,
+  AiGuardedExecutionRunbookWorkspaceResponse,
+  AiGuardedExecutionWorkspaceResponse,
+  AiGuardedExecutionPilotWorkspaceResponse,
   AiEvaluationWorkspaceResponse,
   AiGovernanceWorkspaceResponse,
   AiHealthWorkspaceResponse,
@@ -1530,6 +1541,139 @@ export async function fetchTenantAiApprovalLaunchWorkspace(
   );
 }
 
+export async function fetchTenantAiGuardedExecutionWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiGuardedExecutionWorkspaceResponse> {
+  return request<AiGuardedExecutionWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/guarded-execution-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiGuardedExecutionPilotWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiGuardedExecutionPilotWorkspaceResponse> {
+  return request<AiGuardedExecutionPilotWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/guarded-execution-pilot-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiGuardedExecutionRunbookWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiGuardedExecutionRunbookWorkspaceResponse> {
+  return request<AiGuardedExecutionRunbookWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/guarded-execution-runbook-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiGuardedExecutionRollbackWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiGuardedExecutionRollbackWorkspaceResponse> {
+  return request<AiGuardedExecutionRollbackWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/guarded-execution-rollback-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiGuardedExecutionAuditWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiGuardedExecutionAuditWorkspaceResponse> {
+  return request<AiGuardedExecutionAuditWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/guarded-execution-audit-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiGuardedExecutionLaunchWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiGuardedExecutionLaunchWorkspaceResponse> {
+  return request<AiGuardedExecutionLaunchWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/guarded-execution-launch-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiGuardedExecutionMonitorWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiGuardedExecutionMonitorWorkspaceResponse> {
+  return request<AiGuardedExecutionMonitorWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/guarded-execution-monitor-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiGuardedExecutionControlWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiGuardedExecutionControlWorkspaceResponse> {
+  return request<AiGuardedExecutionControlWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/guarded-execution-control-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiGuardedExecutionEventLogWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiGuardedExecutionEventLogWorkspaceResponse> {
+  return request<AiGuardedExecutionEventLogWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/guarded-execution-event-log-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function fetchTenantAiHandoffWorkspace(
   token: string,
   tenantSlug: string,
@@ -1731,6 +1875,52 @@ export async function reviewTenantAiApprovalRequest(
     )}/agents/${encodeURIComponent(
       agentKey,
     )}/approval-requests/${encodeURIComponent(requestId)}/review`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function executeTenantAiGuardedExecution(
+  token: string,
+  tenantSlug: string,
+  agentKey: string,
+  requestId: string,
+  body: {
+    caseId: string;
+  },
+): Promise<AiGuardedExecutionExecutionResponse> {
+  return request<AiGuardedExecutionExecutionResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/agents/${encodeURIComponent(
+      agentKey,
+    )}/approval-requests/${encodeURIComponent(requestId)}/guarded-execution`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function rollbackTenantAiGuardedExecution(
+  token: string,
+  tenantSlug: string,
+  agentKey: string,
+  requestId: string,
+  body: {
+    caseId: string;
+  },
+): Promise<AiGuardedExecutionRollbackExecutionResponse> {
+  return request<AiGuardedExecutionRollbackExecutionResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/agents/${encodeURIComponent(
+      agentKey,
+    )}/approval-requests/${encodeURIComponent(requestId)}/guarded-execution-rollback`,
     {
       method: 'POST',
       token,

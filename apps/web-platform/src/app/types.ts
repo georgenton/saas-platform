@@ -1765,6 +1765,351 @@ export interface AiApprovalLaunchWorkspaceResponse {
   agents: AiApprovalLaunchWorkspaceAgentResponse[];
 }
 
+export interface AiGuardedExecutionWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  currentMode: 'suggestion' | 'guarded_execution';
+  approvalPolicyKeys: string[];
+  executionCandidateToolKeys: string[];
+  approvalRequiredToolKeys: string[];
+  pendingApprovalRequests: number;
+  reviewableSuggestionRuns: number;
+  rolloutPhase: 'phase_1' | 'phase_2' | 'hold';
+  guardedExecutionStatus:
+    | 'pilot_candidate'
+    | 'needs_launch_readiness'
+    | 'suggestion_only';
+  guardrailChecklist: string[];
+  nextStep: string;
+  notes: string[];
+}
+
+export interface AiGuardedExecutionWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    pilotCandidateAgents: number;
+    needsLaunchReadinessAgents: number;
+    suggestionOnlyAgents: number;
+    executionCandidateTools: number;
+  };
+  agents: AiGuardedExecutionWorkspaceAgentResponse[];
+}
+
+export interface AiGuardedExecutionPilotWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  currentMode: 'suggestion' | 'guarded_execution';
+  approvalPolicyKeys: string[];
+  candidateToolKey: string | null;
+  rolloutPhase: 'phase_1' | 'phase_2' | 'hold';
+  simulatedSlaStatus: 'on_track' | 'at_risk' | 'breached';
+  pilotStatus: 'ready_for_pilot' | 'needs_operational_backing' | 'no_candidate';
+  pilotType: 'human_gate_then_execute' | 'shadow_review' | 'not_available';
+  additionalReviewerEquivalentsToAssign: number;
+  pilotPreconditions: string[];
+  pilotGuardrails: string[];
+  recommendedPilotScope: string;
+  nextStep: string;
+  notes: string[];
+}
+
+export interface AiGuardedExecutionPilotWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    readyForPilotAgents: number;
+    needsOperationalBackingAgents: number;
+    noCandidateAgents: number;
+    candidateToolPilots: number;
+  };
+  agents: AiGuardedExecutionPilotWorkspaceAgentResponse[];
+}
+
+export interface AiGuardedExecutionRunbookWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  currentMode: 'suggestion' | 'guarded_execution';
+  approvalPolicyKeys: string[];
+  candidateToolKey: string | null;
+  pilotType: 'human_gate_then_execute' | 'shadow_review' | 'not_available';
+  rolloutPhase: 'phase_1' | 'phase_2' | 'hold';
+  simulatedSlaStatus: 'on_track' | 'at_risk' | 'breached';
+  additionalReviewerEquivalentsToAssign: number;
+  runbookStatus: 'ready_to_document' | 'needs_design' | 'not_available';
+  operatingLane: string;
+  namedHumanGate: string;
+  blastRadius: 'single_record' | 'single_queue_lane' | 'no_execution_scope';
+  stopConditions: string[];
+  entryChecklist: string[];
+  exitCriteria: string[];
+  nextStep: string;
+  notes: string[];
+}
+
+export interface AiGuardedExecutionRunbookWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    readyToDocumentAgents: number;
+    needsDesignAgents: number;
+    notAvailableAgents: number;
+    candidateRunbooks: number;
+  };
+  agents: AiGuardedExecutionRunbookWorkspaceAgentResponse[];
+}
+
+export interface AiGuardedExecutionRollbackWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  currentMode: 'suggestion' | 'guarded_execution';
+  approvalPolicyKeys: string[];
+  candidateToolKey: string | null;
+  pilotType: 'human_gate_then_execute' | 'shadow_review' | 'not_available';
+  rolloutPhase: 'phase_1' | 'phase_2' | 'hold';
+  simulatedSlaStatus: 'on_track' | 'at_risk' | 'breached';
+  runbookStatus: 'ready_to_document' | 'needs_design' | 'not_available';
+  rollbackStatus: 'ready_with_rollback' | 'needs_rollback_design' | 'not_applicable';
+  rollbackOwner: string;
+  blastRadius: 'single_record' | 'single_queue_lane' | 'no_execution_scope';
+  rollbackTriggerSummary: string[];
+  rollbackSteps: string[];
+  verificationChecks: string[];
+  safeFallbackMode: string;
+  nextStep: string;
+  notes: string[];
+}
+
+export interface AiGuardedExecutionRollbackWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    readyWithRollbackAgents: number;
+    needsRollbackDesignAgents: number;
+    notApplicableAgents: number;
+    rollbackCandidateTools: number;
+  };
+  agents: AiGuardedExecutionRollbackWorkspaceAgentResponse[];
+}
+
+export interface AiGuardedExecutionAuditWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  currentMode: 'suggestion' | 'guarded_execution';
+  approvalPolicyKeys: string[];
+  candidateToolKey: string | null;
+  pilotType: 'human_gate_then_execute' | 'shadow_review' | 'not_available';
+  rolloutPhase: 'phase_1' | 'phase_2' | 'hold';
+  simulatedSlaStatus: 'on_track' | 'at_risk' | 'breached';
+  runbookStatus: 'ready_to_document' | 'needs_design' | 'not_available';
+  rollbackStatus: 'ready_with_rollback' | 'needs_rollback_design' | 'not_applicable';
+  auditStatus: 'ready_for_audit' | 'needs_evidence_design' | 'not_applicable';
+  auditOwner: string;
+  safeFallbackMode: string;
+  evidencePackSummary: string[];
+  requiredArtifacts: string[];
+  loggingChecks: string[];
+  reviewTrailSummary: string[];
+  nextStep: string;
+  notes: string[];
+}
+
+export interface AiGuardedExecutionAuditWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    readyForAuditAgents: number;
+    needsEvidenceDesignAgents: number;
+    notApplicableAgents: number;
+    auditCandidateTools: number;
+  };
+  agents: AiGuardedExecutionAuditWorkspaceAgentResponse[];
+}
+
+export interface AiGuardedExecutionLaunchWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  currentMode: 'suggestion' | 'guarded_execution';
+  approvalPolicyKeys: string[];
+  candidateToolKey: string | null;
+  pilotType: 'human_gate_then_execute' | 'shadow_review' | 'not_available';
+  rolloutPhase: 'phase_1' | 'phase_2' | 'hold';
+  simulatedSlaStatus: 'on_track' | 'at_risk' | 'breached';
+  runbookStatus: 'ready_to_document' | 'needs_design' | 'not_available';
+  rollbackStatus: 'ready_with_rollback' | 'needs_rollback_design' | 'not_applicable';
+  auditStatus: 'ready_for_audit' | 'needs_evidence_design' | 'not_applicable';
+  launchStatus: 'ready_to_launch' | 'pilot_only' | 'hold';
+  launchWindow: 'current_window' | 'next_window' | 'defer';
+  launchOwner: string;
+  safeFallbackMode: string;
+  launchChecklist: string[];
+  blockingFactors: string[];
+  successSignals: string[];
+  nextStep: string;
+  notes: string[];
+}
+
+export interface AiGuardedExecutionLaunchWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    readyToLaunchAgents: number;
+    pilotOnlyAgents: number;
+    holdAgents: number;
+    launchCandidateTools: number;
+  };
+  agents: AiGuardedExecutionLaunchWorkspaceAgentResponse[];
+}
+
+export interface AiGuardedExecutionMonitorWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  currentMode: 'suggestion' | 'guarded_execution';
+  approvalPolicyKeys: string[];
+  candidateToolKey: string | null;
+  launchStatus: 'ready_to_launch' | 'pilot_only' | 'hold';
+  launchWindow: 'current_window' | 'next_window' | 'defer';
+  monitorStatus: 'ready_to_monitor' | 'monitor_after_launch' | 'not_applicable';
+  monitorOwner: string;
+  safeFallbackMode: string;
+  watchWindow: 'day_0' | 'next_window' | 'not_scheduled';
+  watchSignals: string[];
+  escalationSignals: string[];
+  rollbackReadinessChecks: string[];
+  nextStep: string;
+  notes: string[];
+}
+
+export interface AiGuardedExecutionMonitorWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    readyToMonitorAgents: number;
+    monitorAfterLaunchAgents: number;
+    notApplicableAgents: number;
+    monitorCandidateTools: number;
+  };
+  agents: AiGuardedExecutionMonitorWorkspaceAgentResponse[];
+}
+
+export interface AiGuardedExecutionControlWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  currentMode: 'suggestion' | 'guarded_execution';
+  approvalPolicyKeys: string[];
+  candidateToolKey: string | null;
+  controlStatus: 'open_lane' | 'pilot_then_open' | 'hold';
+  controlWindow: 'current_window' | 'next_window' | 'defer';
+  launchStatus: 'ready_to_launch' | 'pilot_only' | 'hold';
+  monitorStatus: 'ready_to_monitor' | 'monitor_after_launch' | 'not_applicable';
+  controlOwner: string;
+  escalationOwner: string;
+  safeFallbackMode: string;
+  topAction: string;
+  controlChecklist: string[];
+  guardrails: string[];
+  nextStep: string;
+  notes: string[];
+}
+
+export interface AiGuardedExecutionControlWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    openLaneAgents: number;
+    pilotThenOpenAgents: number;
+    holdAgents: number;
+    controlCandidateTools: number;
+  };
+  agents: AiGuardedExecutionControlWorkspaceAgentResponse[];
+}
+
+export interface AiGuardedExecutionExecutionResponse {
+  tenantSlug: string;
+  agentKey: string;
+  approvalRequestId: string;
+  suggestionRunId: string;
+  toolKey: string;
+  executedAt: string;
+  summary: string;
+  detail: string;
+  operationalCase: GrowthOperationalCaseResponse;
+}
+
+export interface AiGuardedExecutionRollbackExecutionResponse {
+  tenantSlug: string;
+  agentKey: string;
+  approvalRequestId: string;
+  suggestionRunId: string;
+  toolKey: string;
+  rolledBackAt: string;
+  safeFallbackMode: 'suggestion_only';
+  summary: string;
+  detail: string;
+  operationalCase: GrowthOperationalCaseResponse;
+}
+
+export type AiGuardedExecutionEventLogEntryType =
+  | 'suggestion_run_prepared'
+  | 'approval_requested'
+  | 'approval_reviewed'
+  | 'guarded_execution_executed'
+  | 'guarded_execution_rolled_back'
+  | 'guarded_execution_pilot_only'
+  | 'guarded_execution_lane_ready';
+
+export interface AiGuardedExecutionEventLogEntryResponse {
+  id: string;
+  tenantSlug: string;
+  agentKey: string;
+  eventType: AiGuardedExecutionEventLogEntryType;
+  occurredAt: string;
+  suggestionRunId: string | null;
+  approvalRequestId: string | null;
+  candidateToolKey: string | null;
+  summary: string;
+  detail: string;
+}
+
+export interface AiGuardedExecutionEventLogWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalEvents: number;
+    suggestionRunPreparedEvents: number;
+    approvalRequestedEvents: number;
+    approvalReviewedEvents: number;
+    executedEvents: number;
+    rolledBackEvents: number;
+    guardedExecutionStatusEvents: number;
+  };
+  entries: AiGuardedExecutionEventLogEntryResponse[];
+}
+
 export interface AiOperationsSummaryResponse {
   tenantSlug: string;
   generatedAt: string;

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.49.0
+
+### Minor Changes
+
+- 6d6c2e9: Add tenant-scoped AI approval operations workspaces for governance, review capacity, rollout readiness, and launch planning in the AI Operations Console.
+
 ## 0.48.0
 
 ### Minor Changes

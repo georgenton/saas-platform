@@ -5,7 +5,21 @@ import {
   fetchAiAgentCatalog,
   fetchAiApprovalPolicies,
   fetchAiAgentToolAccess,
+  fetchTenantAiActivityFeed,
+  fetchTenantAiApprovalCapacityWorkspace,
+  fetchTenantAiApprovalDesignWorkspace,
+  fetchTenantAiApprovalSlaWorkspace,
+  fetchTenantAiApprovalStaffingWorkspace,
+  fetchTenantAiApprovalStaffingPlanWorkspace,
+  fetchTenantAiApprovalRolloutWorkspace,
+  fetchTenantAiApprovalReadinessWorkspace,
+  fetchTenantAiApprovalLaunchWorkspace,
+  fetchTenantAiEvaluationWorkspace,
+  fetchTenantAiGovernanceWorkspace,
+  fetchTenantAiHealthWorkspace,
+  fetchTenantAiMemoryWorkspace,
   fetchTenantAiOperationsSummary,
+  fetchTenantAiPolicySimulationWorkspace,
   fetchAiPromptRegistry,
   fetchTenantAiHandoffWorkspace,
   fetchTenantAiSuggestionWorkspaceDetail,
@@ -92,6 +106,21 @@ import {
   updateInvoiceStatus,
 } from './api';
 import {
+  AiActivityFeedEventType,
+  AiActivityFeedResponse,
+  AiApprovalCapacityWorkspaceResponse,
+  AiApprovalDesignWorkspaceResponse,
+  AiApprovalSlaWorkspaceResponse,
+  AiApprovalStaffingWorkspaceResponse,
+  AiApprovalStaffingPlanWorkspaceResponse,
+  AiApprovalRolloutWorkspaceResponse,
+  AiApprovalReadinessWorkspaceResponse,
+  AiApprovalLaunchWorkspaceResponse,
+  AiEvaluationWorkspaceResponse,
+  AiGovernanceWorkspaceResponse,
+  AiHealthWorkspaceResponse,
+  AiMemoryWorkspaceResponse,
+  AiPolicySimulationWorkspaceResponse,
   AiApprovalPolicyResponse,
   AiApprovalWorkspaceResponse,
   AiApprovalRequestResponse,
@@ -217,6 +246,8 @@ type GrowthAssistReplySuggestion = {
   followUpPrompt: string;
   checklist: string[];
 };
+
+type TenantAiActivityFeedFilter = 'all' | AiActivityFeedEventType;
 
 type GrowthAssistNextAction = {
   key: string;
@@ -502,6 +533,21 @@ function fallbackAiAgentTitle(agentKey: string): string {
   }
 }
 
+function humanizeAiActivityFeedEventType(
+  eventType: AiActivityFeedEventType,
+): string {
+  switch (eventType) {
+    case 'suggestion_run_prepared':
+      return 'Handoff preparado';
+    case 'approval_requested':
+      return 'Approval requested';
+    case 'approval_reviewed':
+      return 'Approval reviewed';
+    default:
+      return humanizeKey(eventType);
+  }
+}
+
 function matchesAiApprovalRequestStatusFilter(
   approvalRequest: AiApprovalRequestResponse,
   filter: AiApprovalRequestStatusFilter,
@@ -632,6 +678,276 @@ function operationalStatusWeight(
       return 1;
     default:
       return 0;
+  }
+}
+
+function policySimulationStatusTone(
+  status: 'review_ready' | 'more_reviewable' | 'still_blocked',
+): string {
+  switch (status) {
+    case 'review_ready':
+      return styles.healthy;
+    case 'more_reviewable':
+      return styles.warning;
+    case 'still_blocked':
+      return styles.critical;
+    default:
+      return '';
+  }
+}
+
+function policySimulationStatusLabel(
+  status: 'review_ready' | 'more_reviewable' | 'still_blocked',
+): string {
+  switch (status) {
+    case 'review_ready':
+      return 'Review-ready';
+    case 'more_reviewable':
+      return 'Mas revisable';
+    case 'still_blocked':
+      return 'Sigue bloqueado';
+    default:
+      return status;
+  }
+}
+
+function approvalDesignStatusTone(
+  status: 'unchanged' | 'heavier_review' | 'blocked_design',
+): string {
+  switch (status) {
+    case 'unchanged':
+      return styles.healthy;
+    case 'heavier_review':
+      return styles.warning;
+    case 'blocked_design':
+      return styles.critical;
+    default:
+      return '';
+  }
+}
+
+function approvalDesignStatusLabel(
+  status: 'unchanged' | 'heavier_review' | 'blocked_design',
+): string {
+  switch (status) {
+    case 'unchanged':
+      return 'Sin cambio';
+    case 'heavier_review':
+      return 'Mas revision';
+    case 'blocked_design':
+      return 'Diseno bloqueado';
+    default:
+      return status;
+  }
+}
+
+function approvalCapacityStatusTone(
+  status: 'stable' | 'watch' | 'overloaded',
+): string {
+  switch (status) {
+    case 'stable':
+      return styles.healthy;
+    case 'watch':
+      return styles.warning;
+    case 'overloaded':
+      return styles.critical;
+    default:
+      return '';
+  }
+}
+
+function approvalCapacityStatusLabel(
+  status: 'stable' | 'watch' | 'overloaded',
+): string {
+  switch (status) {
+    case 'stable':
+      return 'Estable';
+    case 'watch':
+      return 'Mirar';
+    case 'overloaded':
+      return 'Sobrecarga';
+    default:
+      return status;
+  }
+}
+
+function approvalSlaStatusTone(
+  status: 'on_track' | 'at_risk' | 'breached',
+): string {
+  switch (status) {
+    case 'on_track':
+      return styles.healthy;
+    case 'at_risk':
+      return styles.warning;
+    case 'breached':
+      return styles.critical;
+    default:
+      return '';
+  }
+}
+
+function approvalSlaStatusLabel(
+  status: 'on_track' | 'at_risk' | 'breached',
+): string {
+  switch (status) {
+    case 'on_track':
+      return 'On track';
+    case 'at_risk':
+      return 'En riesgo';
+    case 'breached':
+      return 'Breached';
+    default:
+      return status;
+  }
+}
+
+function approvalStaffingStatusTone(
+  status: 'sufficient' | 'watch' | 'insufficient',
+): string {
+  switch (status) {
+    case 'sufficient':
+      return styles.healthy;
+    case 'watch':
+      return styles.warning;
+    case 'insufficient':
+      return styles.critical;
+    default:
+      return '';
+  }
+}
+
+function approvalStaffingStatusLabel(
+  status: 'sufficient' | 'watch' | 'insufficient',
+): string {
+  switch (status) {
+    case 'sufficient':
+      return 'Suficiente';
+    case 'watch':
+      return 'Mirar staffing';
+    case 'insufficient':
+      return 'Falta staffing';
+    default:
+      return status;
+  }
+}
+
+function approvalStaffingPlanStatusTone(
+  status: 'maintain' | 'increase' | 'blocked',
+): string {
+  switch (status) {
+    case 'maintain':
+      return styles.healthy;
+    case 'increase':
+      return styles.warning;
+    case 'blocked':
+      return styles.critical;
+    default:
+      return '';
+  }
+}
+
+function approvalStaffingPlanStatusLabel(
+  status: 'maintain' | 'increase' | 'blocked',
+): string {
+  switch (status) {
+    case 'maintain':
+      return 'Mantener';
+    case 'increase':
+      return 'Aumentar';
+    case 'blocked':
+      return 'Bloqueado';
+    default:
+      return status;
+  }
+}
+
+function approvalRolloutStatusTone(
+  status: 'increase_then_rollout' | 'safe_to_rollout' | 'blocked',
+): string {
+  switch (status) {
+    case 'safe_to_rollout':
+      return styles.healthy;
+    case 'increase_then_rollout':
+      return styles.warning;
+    case 'blocked':
+      return styles.critical;
+    default:
+      return '';
+  }
+}
+
+function approvalRolloutStatusLabel(
+  status: 'increase_then_rollout' | 'safe_to_rollout' | 'blocked',
+): string {
+  switch (status) {
+    case 'safe_to_rollout':
+      return 'Listo';
+    case 'increase_then_rollout':
+      return 'Refuerza y abre';
+    case 'blocked':
+      return 'Hold';
+    default:
+      return status;
+  }
+}
+
+function approvalReadinessStatusTone(
+  status: 'ready_now' | 'needs_coverage' | 'blocked',
+): string {
+  switch (status) {
+    case 'ready_now':
+      return styles.healthy;
+    case 'needs_coverage':
+      return styles.warning;
+    case 'blocked':
+      return styles.critical;
+    default:
+      return '';
+  }
+}
+
+function approvalReadinessStatusLabel(
+  status: 'ready_now' | 'needs_coverage' | 'blocked',
+): string {
+  switch (status) {
+    case 'ready_now':
+      return 'Ready now';
+    case 'needs_coverage':
+      return 'Pide cobertura';
+    case 'blocked':
+      return 'Blocked';
+    default:
+      return status;
+  }
+}
+
+function approvalLaunchStatusTone(
+  status: 'launch_now' | 'pilot_after_coverage' | 'hold',
+): string {
+  switch (status) {
+    case 'launch_now':
+      return styles.healthy;
+    case 'pilot_after_coverage':
+      return styles.warning;
+    case 'hold':
+      return styles.critical;
+    default:
+      return '';
+  }
+}
+
+function approvalLaunchStatusLabel(
+  status: 'launch_now' | 'pilot_after_coverage' | 'hold',
+): string {
+  switch (status) {
+    case 'launch_now':
+      return 'Launch now';
+    case 'pilot_after_coverage':
+      return 'Pilot after coverage';
+    case 'hold':
+      return 'Hold';
+    default:
+      return status;
   }
 }
 
@@ -1156,6 +1472,90 @@ export function App() {
     useState<AiOperationsSummaryResponse | null>(null);
   const [tenantAiOperationsSummaryLoading, setTenantAiOperationsSummaryLoading] =
     useState(false);
+  const [tenantAiActivityFeed, setTenantAiActivityFeed] =
+    useState<AiActivityFeedResponse | null>(null);
+  const [tenantAiActivityFeedFilter, setTenantAiActivityFeedFilter] =
+    useState<TenantAiActivityFeedFilter>('all');
+  const [tenantAiActivityFeedLoading, setTenantAiActivityFeedLoading] =
+    useState(false);
+  const [tenantAiMemoryWorkspace, setTenantAiMemoryWorkspace] =
+    useState<AiMemoryWorkspaceResponse | null>(null);
+  const [tenantAiMemoryWorkspaceLoading, setTenantAiMemoryWorkspaceLoading] =
+    useState(false);
+  const [tenantAiHealthWorkspace, setTenantAiHealthWorkspace] =
+    useState<AiHealthWorkspaceResponse | null>(null);
+  const [tenantAiHealthWorkspaceLoading, setTenantAiHealthWorkspaceLoading] =
+    useState(false);
+  const [tenantAiEvaluationWorkspace, setTenantAiEvaluationWorkspace] =
+    useState<AiEvaluationWorkspaceResponse | null>(null);
+  const [tenantAiEvaluationWorkspaceLoading, setTenantAiEvaluationWorkspaceLoading] =
+    useState(false);
+  const [tenantAiGovernanceWorkspace, setTenantAiGovernanceWorkspace] =
+    useState<AiGovernanceWorkspaceResponse | null>(null);
+  const [tenantAiGovernanceWorkspaceLoading, setTenantAiGovernanceWorkspaceLoading] =
+    useState(false);
+  const [tenantAiPolicySimulationWorkspace, setTenantAiPolicySimulationWorkspace] =
+    useState<AiPolicySimulationWorkspaceResponse | null>(null);
+  const [
+    tenantAiPolicySimulationWorkspaceLoading,
+    setTenantAiPolicySimulationWorkspaceLoading,
+  ] = useState(false);
+  const [tenantAiApprovalDesignWorkspace, setTenantAiApprovalDesignWorkspace] =
+    useState<AiApprovalDesignWorkspaceResponse | null>(null);
+  const [
+    tenantAiApprovalDesignWorkspaceLoading,
+    setTenantAiApprovalDesignWorkspaceLoading,
+  ] = useState(false);
+  const [tenantAiApprovalCapacityWorkspace, setTenantAiApprovalCapacityWorkspace] =
+    useState<AiApprovalCapacityWorkspaceResponse | null>(null);
+  const [
+    tenantAiApprovalCapacityWorkspaceLoading,
+    setTenantAiApprovalCapacityWorkspaceLoading,
+  ] = useState(false);
+  const [tenantAiApprovalSlaWorkspace, setTenantAiApprovalSlaWorkspace] =
+    useState<AiApprovalSlaWorkspaceResponse | null>(null);
+  const [
+    tenantAiApprovalSlaWorkspaceLoading,
+    setTenantAiApprovalSlaWorkspaceLoading,
+  ] = useState(false);
+  const [tenantAiApprovalStaffingWorkspace, setTenantAiApprovalStaffingWorkspace] =
+    useState<AiApprovalStaffingWorkspaceResponse | null>(null);
+  const [
+    tenantAiApprovalStaffingWorkspaceLoading,
+    setTenantAiApprovalStaffingWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantAiApprovalStaffingPlanWorkspace,
+    setTenantAiApprovalStaffingPlanWorkspace,
+  ] = useState<AiApprovalStaffingPlanWorkspaceResponse | null>(null);
+  const [
+    tenantAiApprovalStaffingPlanWorkspaceLoading,
+    setTenantAiApprovalStaffingPlanWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantAiApprovalRolloutWorkspace,
+    setTenantAiApprovalRolloutWorkspace,
+  ] = useState<AiApprovalRolloutWorkspaceResponse | null>(null);
+  const [
+    tenantAiApprovalRolloutWorkspaceLoading,
+    setTenantAiApprovalRolloutWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantAiApprovalReadinessWorkspace,
+    setTenantAiApprovalReadinessWorkspace,
+  ] = useState<AiApprovalReadinessWorkspaceResponse | null>(null);
+  const [
+    tenantAiApprovalReadinessWorkspaceLoading,
+    setTenantAiApprovalReadinessWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantAiApprovalLaunchWorkspace,
+    setTenantAiApprovalLaunchWorkspace,
+  ] = useState<AiApprovalLaunchWorkspaceResponse | null>(null);
+  const [
+    tenantAiApprovalLaunchWorkspaceLoading,
+    setTenantAiApprovalLaunchWorkspaceLoading,
+  ] = useState(false);
   const [tenantAiHandoffWorkspaceSummary, setTenantAiHandoffWorkspaceSummary] =
     useState<AiHandoffWorkspaceResponse | null>(null);
   const [tenantAiSuggestionWorkspace, setTenantAiSuggestionWorkspace] = useState<
@@ -2905,6 +3305,26 @@ export function App() {
     tenantAiApprovalWorkspaceSummary?.oldestPendingApprovalRequest ?? null;
   const latestTenantAiReviewedWorkspaceApproval =
     tenantAiApprovalWorkspaceSummary?.latestReviewedApprovalRequest ?? null;
+  const tenantAiActivityFeedFilterOptions = useMemo(() => {
+    return [
+      {
+        key: 'all' as const,
+        label: 'Todas',
+      },
+      {
+        key: 'suggestion_run_prepared' as const,
+        label: 'Handoffs',
+      },
+      {
+        key: 'approval_requested' as const,
+        label: 'Approval requested',
+      },
+      {
+        key: 'approval_reviewed' as const,
+        label: 'Approval reviewed',
+      },
+    ];
+  }, []);
 
   async function copyGrowthAssistReplySuggestion(
     key: string,
@@ -3977,6 +4397,903 @@ export function App() {
       !currentTenancy ||
       (!canReadGrowthConversations && !canReadInvoicingReports)
     ) {
+      setTenantAiApprovalLaunchWorkspace(null);
+      setTenantAiApprovalLaunchWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiApprovalLaunchWorkspace() {
+      setTenantAiApprovalLaunchWorkspaceLoading(true);
+
+      try {
+        const approvalLaunchWorkspace =
+          await fetchTenantAiApprovalLaunchWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiApprovalLaunchWorkspace(approvalLaunchWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el launch workspace de approvals de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiApprovalLaunchWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiApprovalLaunchWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalReadinessWorkspace(null);
+      setTenantAiApprovalReadinessWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiApprovalReadinessWorkspace() {
+      setTenantAiApprovalReadinessWorkspaceLoading(true);
+
+      try {
+        const approvalReadinessWorkspace =
+          await fetchTenantAiApprovalReadinessWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiApprovalReadinessWorkspace(approvalReadinessWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar la readiness de approvals de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiApprovalReadinessWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiApprovalReadinessWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalRolloutWorkspace(null);
+      setTenantAiApprovalRolloutWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiApprovalRolloutWorkspace() {
+      setTenantAiApprovalRolloutWorkspaceLoading(true);
+
+      try {
+        const approvalRolloutWorkspace =
+          await fetchTenantAiApprovalRolloutWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiApprovalRolloutWorkspace(approvalRolloutWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el rollout de approvals de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiApprovalRolloutWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiApprovalRolloutWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalStaffingPlanWorkspace(null);
+      setTenantAiApprovalStaffingPlanWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiApprovalStaffingPlanWorkspace() {
+      setTenantAiApprovalStaffingPlanWorkspaceLoading(true);
+
+      try {
+        const approvalStaffingPlanWorkspace =
+          await fetchTenantAiApprovalStaffingPlanWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiApprovalStaffingPlanWorkspace(
+            approvalStaffingPlanWorkspace,
+          );
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el plan de staffing de approvals de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiApprovalStaffingPlanWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiApprovalStaffingPlanWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalStaffingWorkspace(null);
+      setTenantAiApprovalStaffingWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiApprovalStaffingWorkspace() {
+      setTenantAiApprovalStaffingWorkspaceLoading(true);
+
+      try {
+        const approvalStaffingWorkspace =
+          await fetchTenantAiApprovalStaffingWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiApprovalStaffingWorkspace(approvalStaffingWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el staffing de approvals de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiApprovalStaffingWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiApprovalStaffingWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalSlaWorkspace(null);
+      setTenantAiApprovalSlaWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiApprovalSlaWorkspace() {
+      setTenantAiApprovalSlaWorkspaceLoading(true);
+
+      try {
+        const approvalSlaWorkspace = await fetchTenantAiApprovalSlaWorkspace(
+          token,
+          tenantSlug,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiApprovalSlaWorkspace(approvalSlaWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el SLA de approvals de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiApprovalSlaWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiApprovalSlaWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalCapacityWorkspace(null);
+      setTenantAiApprovalCapacityWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiApprovalCapacityWorkspace() {
+      setTenantAiApprovalCapacityWorkspaceLoading(true);
+
+      try {
+        const approvalCapacityWorkspace =
+          await fetchTenantAiApprovalCapacityWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiApprovalCapacityWorkspace(approvalCapacityWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar la capacidad de approvals de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiApprovalCapacityWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiApprovalCapacityWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalDesignWorkspace(null);
+      setTenantAiApprovalDesignWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiApprovalDesignWorkspace() {
+      setTenantAiApprovalDesignWorkspaceLoading(true);
+
+      try {
+        const approvalDesignWorkspace =
+          await fetchTenantAiApprovalDesignWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiApprovalDesignWorkspace(approvalDesignWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el diseno de approvals de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiApprovalDesignWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiApprovalDesignWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiPolicySimulationWorkspace(null);
+      setTenantAiPolicySimulationWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiPolicySimulationWorkspace() {
+      setTenantAiPolicySimulationWorkspaceLoading(true);
+
+      try {
+        const policySimulationWorkspace =
+          await fetchTenantAiPolicySimulationWorkspace(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiPolicySimulationWorkspace(policySimulationWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar la simulación de políticas de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiPolicySimulationWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiPolicySimulationWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGovernanceWorkspace(null);
+      setTenantAiGovernanceWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiGovernanceWorkspace() {
+      setTenantAiGovernanceWorkspaceLoading(true);
+
+      try {
+        const governanceWorkspace = await fetchTenantAiGovernanceWorkspace(
+          token,
+          tenantSlug,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiGovernanceWorkspace(governanceWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar la gobernanza transversal de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiGovernanceWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiGovernanceWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiEvaluationWorkspace(null);
+      setTenantAiEvaluationWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiEvaluationWorkspace() {
+      setTenantAiEvaluationWorkspaceLoading(true);
+
+      try {
+        const evaluationWorkspace = await fetchTenantAiEvaluationWorkspace(
+          token,
+          tenantSlug,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiEvaluationWorkspace(evaluationWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar la evaluación transversal de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiEvaluationWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiEvaluationWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiHealthWorkspace(null);
+      setTenantAiHealthWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiHealthWorkspace() {
+      setTenantAiHealthWorkspaceLoading(true);
+
+      try {
+        const healthWorkspace = await fetchTenantAiHealthWorkspace(
+          token,
+          tenantSlug,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiHealthWorkspace(healthWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar la salud transversal de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiHealthWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiHealthWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiActivityFeed(null);
+      setTenantAiActivityFeedLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiActivityFeed() {
+      setTenantAiActivityFeedLoading(true);
+
+      try {
+        const feed = await fetchTenantAiActivityFeed(token, tenantSlug, {
+          limit: 8,
+          type: tenantAiActivityFeedFilter,
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiActivityFeed(feed);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el activity feed transversal de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiActivityFeedLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiActivityFeed();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    tenantAiActivityFeedFilter,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiMemoryWorkspace(null);
+      setTenantAiMemoryWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiMemoryWorkspace() {
+      setTenantAiMemoryWorkspaceLoading(true);
+
+      try {
+        const memoryWorkspace = await fetchTenantAiMemoryWorkspace(
+          token,
+          tenantSlug,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiMemoryWorkspace(memoryWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar la memoria transversal de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiMemoryWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiMemoryWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
       setTenantAiHandoffWorkspaceSummary(null);
       setTenantAiSuggestionWorkspace([]);
       setTenantAiSuggestionWorkspaceLoading(false);
@@ -4574,10 +5891,556 @@ export function App() {
     }
   }
 
+  async function refreshTenantAiActivityFeed() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiActivityFeed(null);
+      setTenantAiActivityFeedLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiActivityFeedLoading(true);
+
+    try {
+      const feed = await fetchTenantAiActivityFeed(token, tenantSlug, {
+        limit: 8,
+        type: tenantAiActivityFeedFilter,
+      });
+
+      startTransition(() => {
+        setTenantAiActivityFeed(feed);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el activity feed transversal de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiActivityFeedLoading(false);
+    }
+  }
+
+  async function refreshTenantAiMemoryWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiMemoryWorkspace(null);
+      setTenantAiMemoryWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiMemoryWorkspaceLoading(true);
+
+    try {
+      const memoryWorkspace = await fetchTenantAiMemoryWorkspace(
+        token,
+        tenantSlug,
+      );
+
+      startTransition(() => {
+        setTenantAiMemoryWorkspace(memoryWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar la memoria transversal de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiMemoryWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiHealthWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiHealthWorkspace(null);
+      setTenantAiHealthWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiHealthWorkspaceLoading(true);
+
+    try {
+      const healthWorkspace = await fetchTenantAiHealthWorkspace(
+        token,
+        tenantSlug,
+      );
+
+      startTransition(() => {
+        setTenantAiHealthWorkspace(healthWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar la salud transversal de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiHealthWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiEvaluationWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiEvaluationWorkspace(null);
+      setTenantAiEvaluationWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiEvaluationWorkspaceLoading(true);
+
+    try {
+      const evaluationWorkspace = await fetchTenantAiEvaluationWorkspace(
+        token,
+        tenantSlug,
+      );
+
+      startTransition(() => {
+        setTenantAiEvaluationWorkspace(evaluationWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar la evaluación transversal de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiEvaluationWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiGovernanceWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiGovernanceWorkspace(null);
+      setTenantAiGovernanceWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiGovernanceWorkspaceLoading(true);
+
+    try {
+      const governanceWorkspace = await fetchTenantAiGovernanceWorkspace(
+        token,
+        tenantSlug,
+      );
+
+      startTransition(() => {
+        setTenantAiGovernanceWorkspace(governanceWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar la gobernanza transversal de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiGovernanceWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiPolicySimulationWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiPolicySimulationWorkspace(null);
+      setTenantAiPolicySimulationWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiPolicySimulationWorkspaceLoading(true);
+
+    try {
+      const policySimulationWorkspace =
+        await fetchTenantAiPolicySimulationWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiPolicySimulationWorkspace(policySimulationWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar la simulación de políticas de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiPolicySimulationWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiApprovalDesignWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalDesignWorkspace(null);
+      setTenantAiApprovalDesignWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiApprovalDesignWorkspaceLoading(true);
+
+    try {
+      const approvalDesignWorkspace =
+        await fetchTenantAiApprovalDesignWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiApprovalDesignWorkspace(approvalDesignWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el diseno de approvals de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiApprovalDesignWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiApprovalCapacityWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalCapacityWorkspace(null);
+      setTenantAiApprovalCapacityWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiApprovalCapacityWorkspaceLoading(true);
+
+    try {
+      const approvalCapacityWorkspace =
+        await fetchTenantAiApprovalCapacityWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiApprovalCapacityWorkspace(approvalCapacityWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar la capacidad de approvals de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiApprovalCapacityWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiApprovalSlaWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalSlaWorkspace(null);
+      setTenantAiApprovalSlaWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiApprovalSlaWorkspaceLoading(true);
+
+    try {
+      const approvalSlaWorkspace = await fetchTenantAiApprovalSlaWorkspace(
+        token,
+        tenantSlug,
+      );
+
+      startTransition(() => {
+        setTenantAiApprovalSlaWorkspace(approvalSlaWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el SLA de approvals de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiApprovalSlaWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiApprovalStaffingWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalStaffingWorkspace(null);
+      setTenantAiApprovalStaffingWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiApprovalStaffingWorkspaceLoading(true);
+
+    try {
+      const approvalStaffingWorkspace =
+        await fetchTenantAiApprovalStaffingWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiApprovalStaffingWorkspace(approvalStaffingWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el staffing de approvals de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiApprovalStaffingWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiApprovalStaffingPlanWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalStaffingPlanWorkspace(null);
+      setTenantAiApprovalStaffingPlanWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiApprovalStaffingPlanWorkspaceLoading(true);
+
+    try {
+      const approvalStaffingPlanWorkspace =
+        await fetchTenantAiApprovalStaffingPlanWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiApprovalStaffingPlanWorkspace(
+          approvalStaffingPlanWorkspace,
+        );
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el plan de staffing de approvals de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiApprovalStaffingPlanWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiApprovalRolloutWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalRolloutWorkspace(null);
+      setTenantAiApprovalRolloutWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiApprovalRolloutWorkspaceLoading(true);
+
+    try {
+      const approvalRolloutWorkspace =
+        await fetchTenantAiApprovalRolloutWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiApprovalRolloutWorkspace(approvalRolloutWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el rollout de approvals de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiApprovalRolloutWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiApprovalReadinessWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalReadinessWorkspace(null);
+      setTenantAiApprovalReadinessWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiApprovalReadinessWorkspaceLoading(true);
+
+    try {
+      const approvalReadinessWorkspace =
+        await fetchTenantAiApprovalReadinessWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiApprovalReadinessWorkspace(approvalReadinessWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar la readiness de approvals de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiApprovalReadinessWorkspaceLoading(false);
+    }
+  }
+
+  async function refreshTenantAiApprovalLaunchWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiApprovalLaunchWorkspace(null);
+      setTenantAiApprovalLaunchWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiApprovalLaunchWorkspaceLoading(true);
+
+    try {
+      const approvalLaunchWorkspace =
+        await fetchTenantAiApprovalLaunchWorkspace(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiApprovalLaunchWorkspace(approvalLaunchWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el launch workspace de approvals de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiApprovalLaunchWorkspaceLoading(false);
+    }
+  }
+
   async function refreshTenantAiOperationsConsole() {
     await refreshTenantAiOperationsSummary();
     await refreshTenantAiApprovalWorkspaceSummary();
     await refreshTenantAiHandoffWorkspaceSummary();
+    await refreshTenantAiActivityFeed();
+    await refreshTenantAiMemoryWorkspace();
+    await refreshTenantAiHealthWorkspace();
+    await refreshTenantAiEvaluationWorkspace();
+    await refreshTenantAiGovernanceWorkspace();
+    await refreshTenantAiPolicySimulationWorkspace();
+    await refreshTenantAiApprovalDesignWorkspace();
+    await refreshTenantAiApprovalCapacityWorkspace();
+    await refreshTenantAiApprovalSlaWorkspace();
+    await refreshTenantAiApprovalStaffingWorkspace();
+    await refreshTenantAiApprovalStaffingPlanWorkspace();
+    await refreshTenantAiApprovalRolloutWorkspace();
+    await refreshTenantAiApprovalReadinessWorkspace();
+    await refreshTenantAiApprovalLaunchWorkspace();
   }
 
   async function refreshInvoicingWorkspace(options?: {
@@ -5189,9 +7052,7 @@ export function App() {
         );
       });
 
-      await refreshTenantAiApprovalWorkspaceSummary();
-      await refreshTenantAiHandoffWorkspaceSummary();
-      await refreshTenantAiOperationsSummary();
+      await refreshTenantAiOperationsConsole();
 
       setGrowthActionMessage(
         `Handoff auditable preparado con ${record.promptPackKey}@${record.promptPackVersion}.`,
@@ -5291,9 +7152,7 @@ export function App() {
         );
       });
 
-      await refreshTenantAiApprovalWorkspaceSummary();
-      await refreshTenantAiHandoffWorkspaceSummary();
-      await refreshTenantAiOperationsSummary();
+      await refreshTenantAiOperationsConsole();
 
       setGrowthActionMessage(
         `Solicitud de aprobacion registrada bajo ${record.policyKey}.`,
@@ -5393,9 +7252,7 @@ export function App() {
         );
       });
 
-      await refreshTenantAiApprovalWorkspaceSummary();
-      await refreshTenantAiHandoffWorkspaceSummary();
-      await refreshTenantAiOperationsSummary();
+      await refreshTenantAiOperationsConsole();
 
       setGrowthActionMessage(
         status === 'approved'
@@ -5440,9 +7297,7 @@ export function App() {
         );
       });
 
-      await refreshTenantAiApprovalWorkspaceSummary();
-      await refreshTenantAiHandoffWorkspaceSummary();
-      await refreshTenantAiOperationsSummary();
+      await refreshTenantAiOperationsConsole();
 
       setInvoicingActionMessage(
         `Handoff auditable preparado con ${record.promptPackKey}@${record.promptPackVersion}.`,
@@ -5544,8 +7399,7 @@ export function App() {
         );
       });
 
-      await refreshTenantAiHandoffWorkspaceSummary();
-      await refreshTenantAiOperationsSummary();
+      await refreshTenantAiOperationsConsole();
 
       setInvoicingActionMessage(
         `Solicitud de aprobacion registrada bajo ${record.policyKey}.`,
@@ -5645,8 +7499,7 @@ export function App() {
         );
       });
 
-      await refreshTenantAiHandoffWorkspaceSummary();
-      await refreshTenantAiOperationsSummary();
+      await refreshTenantAiOperationsConsole();
 
       setInvoicingActionMessage(
         status === 'approved'
@@ -12317,7 +14170,21 @@ export function App() {
                   disabled={
                     tenantAiOperationsSummaryLoading ||
                     tenantAiSuggestionWorkspaceLoading ||
-                    tenantAiApprovalWorkspaceLoading
+                    tenantAiApprovalWorkspaceLoading ||
+                    tenantAiActivityFeedLoading ||
+                    tenantAiMemoryWorkspaceLoading ||
+                    tenantAiHealthWorkspaceLoading ||
+                    tenantAiEvaluationWorkspaceLoading ||
+                    tenantAiGovernanceWorkspaceLoading ||
+                    tenantAiPolicySimulationWorkspaceLoading ||
+                    tenantAiApprovalDesignWorkspaceLoading ||
+                    tenantAiApprovalCapacityWorkspaceLoading ||
+                    tenantAiApprovalSlaWorkspaceLoading ||
+                    tenantAiApprovalStaffingWorkspaceLoading ||
+                    tenantAiApprovalStaffingPlanWorkspaceLoading ||
+                    tenantAiApprovalRolloutWorkspaceLoading ||
+                    tenantAiApprovalReadinessWorkspaceLoading ||
+                    tenantAiApprovalLaunchWorkspaceLoading
                   }
                   onClick={() => {
                     void refreshTenantAiOperationsConsole();
@@ -12326,7 +14193,21 @@ export function App() {
                 >
                   {tenantAiOperationsSummaryLoading ||
                   tenantAiSuggestionWorkspaceLoading ||
-                  tenantAiApprovalWorkspaceLoading
+                  tenantAiApprovalWorkspaceLoading ||
+                  tenantAiActivityFeedLoading ||
+                  tenantAiMemoryWorkspaceLoading ||
+                  tenantAiHealthWorkspaceLoading ||
+                  tenantAiEvaluationWorkspaceLoading ||
+                  tenantAiGovernanceWorkspaceLoading ||
+                  tenantAiPolicySimulationWorkspaceLoading ||
+                  tenantAiApprovalDesignWorkspaceLoading ||
+                  tenantAiApprovalCapacityWorkspaceLoading ||
+                  tenantAiApprovalSlaWorkspaceLoading ||
+                  tenantAiApprovalStaffingWorkspaceLoading ||
+                  tenantAiApprovalStaffingPlanWorkspaceLoading ||
+                  tenantAiApprovalRolloutWorkspaceLoading ||
+                  tenantAiApprovalReadinessWorkspaceLoading ||
+                  tenantAiApprovalLaunchWorkspaceLoading
                     ? 'Refrescando AI ops...'
                     : 'Refrescar AI ops'}
                 </button>
@@ -12350,8 +14231,9 @@ export function App() {
               </p>
             </div>
           ) : (
-            <div className={styles.twoColumn}>
-              <div className={styles.detailCard}>
+            <div className={styles.stack}>
+              <div className={styles.twoColumn}>
+                <div className={styles.detailCard}>
                 <div className={styles.sectionHeading}>
                   <div>
                     <span className={styles.label}>Operations snapshot</span>
@@ -12452,150 +14334,1778 @@ export function App() {
                     Cargando snapshot transversal de AI...
                   </small>
                 ) : null}
+                </div>
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Quick actions</span>
+                      <h3>Operar sin entrar al workspace embebido</h3>
+                    </div>
+                  </div>
+
+                  <div className={styles.stack}>
+                    <span className={styles.muted}>Handoffs recientes</span>
+                    {tenantAiHandoffWorkspaceSummary?.recentSuggestionRuns
+                      .slice(0, 2)
+                      .map((entry) => {
+                        const isInvoiceAgent =
+                          entry.agentKey === 'invoice-document-assistant';
+                        const actionKey = isInvoiceAgent
+                          ? `request-invoice-ai-approval:${entry.id}`
+                          : `request-ai-approval:${entry.id}`;
+                        const canRequestHumanReview =
+                          entry.approvalSummary.status === 'not_requested' ||
+                          entry.approvalSummary.status === 'rejected';
+
+                        return (
+                          <div className={styles.assistCueCard} key={`ops-run:${entry.id}`}>
+                            <strong>{entry.summary}</strong>
+                            <small>
+                              {formatDate(entry.createdAt)} ·{' '}
+                              {aiAgentCatalogByKey.get(entry.agentKey)?.title ??
+                                fallbackAiAgentTitle(entry.agentKey)}
+                            </small>
+                            <div className={styles.inlineActions}>
+                              <button
+                                className={styles.ghostButton}
+                                type="button"
+                                onClick={() => {
+                                  void handleOpenTenantAiWorkspaceSuggestionRunDetail(
+                                    entry.id,
+                                  );
+                                }}
+                                disabled={
+                                  growthActionLoading ===
+                                  `load-tenant-ai-run-detail:${entry.id}`
+                                }
+                              >
+                                Ver detalle
+                              </button>
+                              {canRequestHumanReview ? (
+                                <button
+                                  className={styles.secondaryButton}
+                                  type="button"
+                                  onClick={() => {
+                                    void handleRequestTenantAiWorkspaceSuggestionRunApproval(
+                                      entry.agentKey,
+                                      entry.id,
+                                    );
+                                  }}
+                                  disabled={
+                                    (isInvoiceAgent
+                                      ? actionLoading
+                                      : growthActionLoading) === actionKey
+                                  }
+                                >
+                                  Pedir revisión
+                                </button>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                    {tenantAiApprovalWorkspaceSummary?.recentApprovalRequests.length ? (
+                      <>
+                        <span className={styles.muted}>Approvals recientes</span>
+                        {tenantAiApprovalWorkspaceSummary.recentApprovalRequests
+                          .slice(0, 2)
+                          .map((entry) => {
+                            const isInvoiceAgent =
+                              entry.agentKey === 'invoice-document-assistant';
+                            const reviewActionKey = isInvoiceAgent
+                              ? `review-invoice-ai-approval:${entry.id}`
+                              : `review-ai-approval:${entry.id}`;
+                            const reviewLoading =
+                              (isInvoiceAgent ? actionLoading : growthActionLoading) ===
+                              reviewActionKey;
+
+                            return (
+                              <div
+                                className={styles.assistCueCard}
+                                key={`ops-approval:${entry.id}`}
+                              >
+                                <strong>{entry.summary}</strong>
+                                <small>
+                                  {formatDate(entry.createdAt)} ·{' '}
+                                  {humanizeKey(entry.status)}
+                                </small>
+                                <div className={styles.inlineActions}>
+                                  <button
+                                    className={styles.ghostButton}
+                                    type="button"
+                                    onClick={() => {
+                                      void handleOpenTenantAiWorkspaceSuggestionRunDetail(
+                                        entry.suggestionRunId,
+                                      );
+                                    }}
+                                    disabled={
+                                      growthActionLoading ===
+                                      `load-tenant-ai-run-detail:${entry.suggestionRunId}`
+                                    }
+                                  >
+                                    Ver handoff
+                                  </button>
+                                  {entry.status === 'pending' ? (
+                                    <button
+                                      className={styles.secondaryButton}
+                                      type="button"
+                                      onClick={() => {
+                                        void handleReviewTenantAiApprovalWorkspaceRequest(
+                                          entry.agentKey,
+                                          entry.id,
+                                          'approved',
+                                        );
+                                      }}
+                                      disabled={reviewLoading}
+                                    >
+                                      Aprobar
+                                    </button>
+                                  ) : null}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </>
+                    ) : null}
+
+                    {tenantAiSuggestionWorkspaceLoading &&
+                    tenantAiApprovalWorkspaceLoading &&
+                    !tenantAiHandoffWorkspaceSummary &&
+                    !tenantAiApprovalWorkspaceSummary ? (
+                      <small className={styles.muted}>
+                        Cargando cola operacional de AI...
+                      </small>
+                    ) : null}
+                  </div>
+                </div>
               </div>
 
               <div className={styles.detailCard}>
                 <div className={styles.sectionHeading}>
                   <div>
-                    <span className={styles.label}>Quick actions</span>
-                    <h3>Operar sin entrar al workspace embebido</h3>
+                    <span className={styles.label}>Activity feed</span>
+                    <h3>Timeline transversal de handoffs y approvals</h3>
                   </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiActivityFeed ? formatDate(tenantAiActivityFeed.generatedAt) : 'sin feed'}
+                  </span>
+                </div>
+
+                <div className={styles.inlineActions}>
+                  {tenantAiActivityFeedFilterOptions.map(({ key, label }) => (
+                    <button
+                      key={`ai-activity-filter:${key}`}
+                      className={
+                        tenantAiActivityFeedFilter === key
+                          ? styles.secondaryButton
+                          : styles.ghostButton
+                      }
+                      type="button"
+                      onClick={() => {
+                        setTenantAiActivityFeedFilter(key);
+                      }}
+                      disabled={tenantAiActivityFeedLoading}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
 
                 <div className={styles.stack}>
-                  <span className={styles.muted}>Handoffs recientes</span>
-                  {tenantAiHandoffWorkspaceSummary?.recentSuggestionRuns
-                    .slice(0, 2)
-                    .map((entry) => {
+                  {tenantAiActivityFeed?.entries.length ? (
+                    tenantAiActivityFeed.entries.map((entry) => {
                       const isInvoiceAgent =
                         entry.agentKey === 'invoice-document-assistant';
-                      const actionKey = isInvoiceAgent
-                        ? `request-invoice-ai-approval:${entry.id}`
-                        : `request-ai-approval:${entry.id}`;
-                      const canRequestHumanReview =
-                        entry.approvalSummary.status === 'not_requested' ||
-                        entry.approvalSummary.status === 'rejected';
+                      const isPendingApprovalRequest =
+                        entry.eventType === 'approval_requested' &&
+                        entry.approvalRequestId !== null;
+                      const reviewActionKey =
+                        entry.approvalRequestId === null
+                          ? null
+                          : isInvoiceAgent
+                            ? `review-invoice-ai-approval:${entry.approvalRequestId}`
+                            : `review-ai-approval:${entry.approvalRequestId}`;
 
                       return (
-                        <div className={styles.assistCueCard} key={`ops-run:${entry.id}`}>
-                          <strong>{entry.summary}</strong>
+                        <div
+                          className={styles.assistCueCard}
+                          key={`ai-activity:${entry.id}`}
+                        >
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>{entry.summary}</strong>
+                            <span className={styles.statusPill}>
+                              {humanizeAiActivityFeedEventType(entry.eventType)}
+                            </span>
+                          </div>
                           <small>
-                            {formatDate(entry.createdAt)} ·{' '}
+                            {formatDate(entry.occurredAt)} ·{' '}
                             {aiAgentCatalogByKey.get(entry.agentKey)?.title ??
                               fallbackAiAgentTitle(entry.agentKey)}
                           </small>
+                          <small>{entry.detail}</small>
                           <div className={styles.inlineActions}>
                             <button
                               className={styles.ghostButton}
                               type="button"
                               onClick={() => {
                                 void handleOpenTenantAiWorkspaceSuggestionRunDetail(
-                                  entry.id,
+                                  entry.suggestionRunId,
                                 );
                               }}
                               disabled={
                                 growthActionLoading ===
-                                `load-tenant-ai-run-detail:${entry.id}`
+                                `load-tenant-ai-run-detail:${entry.suggestionRunId}`
                               }
                             >
-                              Ver detalle
+                              Ver handoff
                             </button>
-                            {canRequestHumanReview ? (
+                            {isPendingApprovalRequest && reviewActionKey ? (
                               <button
                                 className={styles.secondaryButton}
                                 type="button"
                                 onClick={() => {
-                                  void handleRequestTenantAiWorkspaceSuggestionRunApproval(
+                                  void handleReviewTenantAiApprovalWorkspaceRequest(
                                     entry.agentKey,
-                                    entry.id,
+                                    entry.approvalRequestId as string,
+                                    'approved',
                                   );
                                 }}
                                 disabled={
-                                  (isInvoiceAgent
-                                    ? actionLoading
-                                    : growthActionLoading) === actionKey
+                                  (isInvoiceAgent ? actionLoading : growthActionLoading) ===
+                                  reviewActionKey
                                 }
                               >
-                                Pedir revisión
+                                Aprobar
                               </button>
                             ) : null}
                           </div>
                         </div>
                       );
-                    })}
-
-                  {tenantAiApprovalWorkspaceSummary?.recentApprovalRequests.length ? (
-                    <>
-                      <span className={styles.muted}>Approvals recientes</span>
-                      {tenantAiApprovalWorkspaceSummary.recentApprovalRequests
-                        .slice(0, 2)
-                        .map((entry) => {
-                          const isInvoiceAgent =
-                            entry.agentKey === 'invoice-document-assistant';
-                          const reviewActionKey = isInvoiceAgent
-                            ? `review-invoice-ai-approval:${entry.id}`
-                            : `review-ai-approval:${entry.id}`;
-                          const reviewLoading =
-                            (isInvoiceAgent ? actionLoading : growthActionLoading) ===
-                            reviewActionKey;
-
-                          return (
-                            <div
-                              className={styles.assistCueCard}
-                              key={`ops-approval:${entry.id}`}
-                            >
-                              <strong>{entry.summary}</strong>
-                              <small>
-                                {formatDate(entry.createdAt)} ·{' '}
-                                {humanizeKey(entry.status)}
-                              </small>
-                              <div className={styles.inlineActions}>
-                                <button
-                                  className={styles.ghostButton}
-                                  type="button"
-                                  onClick={() => {
-                                    void handleOpenTenantAiWorkspaceSuggestionRunDetail(
-                                      entry.suggestionRunId,
-                                    );
-                                  }}
-                                  disabled={
-                                    growthActionLoading ===
-                                    `load-tenant-ai-run-detail:${entry.suggestionRunId}`
-                                  }
-                                >
-                                  Ver handoff
-                                </button>
-                                {entry.status === 'pending' ? (
-                                  <button
-                                    className={styles.secondaryButton}
-                                    type="button"
-                                    onClick={() => {
-                                      void handleReviewTenantAiApprovalWorkspaceRequest(
-                                        entry.agentKey,
-                                        entry.id,
-                                        'approved',
-                                      );
-                                    }}
-                                    disabled={reviewLoading}
-                                  >
-                                    Aprobar
-                                  </button>
-                                ) : null}
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </>
-                  ) : null}
-
-                  {tenantAiSuggestionWorkspaceLoading &&
-                  tenantAiApprovalWorkspaceLoading &&
-                  !tenantAiHandoffWorkspaceSummary &&
-                  !tenantAiApprovalWorkspaceSummary ? (
+                    })
+                  ) : tenantAiActivityFeedLoading ? (
                     <small className={styles.muted}>
-                      Cargando cola operacional de AI...
+                      Cargando timeline transversal de AI...
                     </small>
-                  ) : null}
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavía no hay eventos para este filtro en la operación transversal
+                        de AI.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI evaluation workspace</span>
+                    <h3>Calidad de outcomes revisados por agente</h3>
+                  </div>
+                  <span
+                    className={`${styles.statusPill} ${operationalStatusTone(
+                      tenantAiEvaluationWorkspace?.overallStatus ?? 'healthy',
+                    )}`}
+                  >
+                    {tenantAiEvaluationWorkspace
+                      ? operationalStatusLabel(
+                          tenantAiEvaluationWorkspace.overallStatus,
+                        )
+                      : 'sin evaluación'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Outcomes revisados</span>
+                    <strong>
+                      {tenantAiEvaluationWorkspace?.counts.reviewedApprovalRequests ?? 0}
+                    </strong>
+                    <small>Total de decisiones humanas ya registradas.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Aprobados</span>
+                    <strong>
+                      {tenantAiEvaluationWorkspace?.counts
+                        .approvedReviewedApprovalRequests ?? 0}
+                    </strong>
+                    <small>Handoffs que sí superaron la revisión humana.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Rechazados</span>
+                    <strong>
+                      {tenantAiEvaluationWorkspace?.counts
+                        .rejectedReviewedApprovalRequests ?? 0}
+                    </strong>
+                    <small>Casos donde la revisión humana frenó el handoff.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Agentes evaluados</span>
+                    <strong>
+                      {tenantAiEvaluationWorkspace?.counts.agentsWithReviewedOutcomes ?? 0}
+                    </strong>
+                    <small>Agentes con señal suficiente para leer calidad.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiEvaluationWorkspace?.agents.length ? (
+                    tenantAiEvaluationWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-evaluation:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              agent.status,
+                            )}`}
+                          >
+                            {operationalStatusLabel(agent.status)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · {agent.reviewedApprovalRequestsCount}{' '}
+                          reviewed · {agent.approvedReviewedApprovalRequestsCount}{' '}
+                          approved · {agent.rejectedReviewedApprovalRequestsCount}{' '}
+                          rejected
+                        </small>
+                        <small>
+                          Approval rate:{' '}
+                          {agent.approvalRatePercentage === null
+                            ? 'sin data'
+                            : `${agent.approvalRatePercentage}%`}
+                        </small>
+                        {agent.latestReviewedAt ? (
+                          <small>
+                            Última revisión {formatDate(agent.latestReviewedAt)}
+                          </small>
+                        ) : null}
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small key={`ai-evaluation-note:${agent.agentKey}:${index}`}>
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.inlineActions}>
+                          {agent.latestReviewedApprovalRequest ? (
+                            <button
+                              className={styles.ghostButton}
+                              type="button"
+                              onClick={() => {
+                                void handleOpenTenantAiWorkspaceSuggestionRunDetail(
+                                  agent.latestReviewedApprovalRequest!.suggestionRunId,
+                                );
+                              }}
+                              disabled={
+                                growthActionLoading ===
+                                `load-tenant-ai-run-detail:${agent.latestReviewedApprovalRequest.suggestionRunId}`
+                              }
+                            >
+                              Abrir último resultado
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiEvaluationWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando evaluación transversal de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Aún no hay resultados humanos suficientes para evaluar estos
+                        agentes.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI health workspace</span>
+                    <h3>Observabilidad operativa por agente</h3>
+                  </div>
+                  <span
+                    className={`${styles.statusPill} ${operationalStatusTone(
+                      tenantAiHealthWorkspace?.overallStatus ?? 'healthy',
+                    )}`}
+                  >
+                    {tenantAiHealthWorkspace
+                      ? operationalStatusLabel(tenantAiHealthWorkspace.overallStatus)
+                      : 'sin salud'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Healthy</span>
+                    <strong>{tenantAiHealthWorkspace?.counts.healthyAgents ?? 0}</strong>
+                    <small>Agentes sin fricción operativa inmediata.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Warning</span>
+                    <strong>{tenantAiHealthWorkspace?.counts.warningAgents ?? 0}</strong>
+                    <small>Agentes con handoffs o posture que piden atención.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Critical</span>
+                    <strong>{tenantAiHealthWorkspace?.counts.criticalAgents ?? 0}</strong>
+                    <small>Agentes con approvals pendientes activos.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Agentes visibles</span>
+                    <strong>{tenantAiHealthWorkspace?.counts.totalAgents ?? 0}</strong>
+                    <small>Scope actual de observabilidad transversal.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiHealthWorkspace?.agents.length ? (
+                    tenantAiHealthWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-health:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              agent.status,
+                            )}`}
+                          >
+                            {operationalStatusLabel(agent.status)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · {agent.pendingApprovalRequestsCount}{' '}
+                          pending approvals · {agent.reviewableSuggestionRunsCount}{' '}
+                          reviewable handoffs
+                        </small>
+                        {agent.recentActivityAt ? (
+                          <small>
+                            Última actividad {formatDate(agent.recentActivityAt)}
+                          </small>
+                        ) : null}
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small key={`ai-health-note:${agent.agentKey}:${index}`}>
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.inlineActions}>
+                          {agent.latestSuggestionRun ? (
+                            <button
+                              className={styles.ghostButton}
+                              type="button"
+                              onClick={() => {
+                                void handleOpenTenantAiWorkspaceSuggestionRunDetail(
+                                  agent.latestSuggestionRun!.id,
+                                );
+                              }}
+                              disabled={
+                                growthActionLoading ===
+                                `load-tenant-ai-run-detail:${agent.latestSuggestionRun.id}`
+                              }
+                            >
+                              Abrir handoff
+                            </button>
+                          ) : null}
+                          {agent.oldestPendingApprovalRequest ? (
+                            <button
+                              className={styles.secondaryButton}
+                              type="button"
+                              onClick={() => {
+                                void handleReviewTenantAiApprovalWorkspaceRequest(
+                                  agent.agentKey,
+                                  agent.oldestPendingApprovalRequest!.id,
+                                  'approved',
+                                );
+                              }}
+                              disabled={
+                                (agent.agentKey === 'invoice-document-assistant'
+                                  ? actionLoading
+                                  : growthActionLoading) ===
+                                (agent.agentKey === 'invoice-document-assistant'
+                                  ? `review-invoice-ai-approval:${agent.oldestPendingApprovalRequest.id}`
+                                  : `review-ai-approval:${agent.oldestPendingApprovalRequest.id}`)
+                              }
+                            >
+                              Resolver pendiente
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiHealthWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando observabilidad transversal de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavía no hay suficiente señal operativa para construir salud por
+                        agente en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI governance workspace</span>
+                    <h3>Guardrails, approvals y postura por agente</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiGovernanceWorkspace
+                      ? formatDate(tenantAiGovernanceWorkspace.generatedAt)
+                      : 'sin gobernanza'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Agentes visibles</span>
+                    <strong>{tenantAiGovernanceWorkspace?.counts.totalAgents ?? 0}</strong>
+                    <small>Agentes listos y gobernados en este tenant.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Suggestion mode</span>
+                    <strong>
+                      {tenantAiGovernanceWorkspace?.counts.suggestionModeAgents ?? 0}
+                    </strong>
+                    <small>Agentes que hoy operan en modo sugerencia.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Guarded planned</span>
+                    <strong>
+                      {tenantAiGovernanceWorkspace?.counts
+                        .guardedExecutionPlannedAgents ?? 0}
+                    </strong>
+                    <small>Agentes con ejecución guardada todavía bloqueada.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Tools con fricción</span>
+                    <strong>
+                      {(tenantAiGovernanceWorkspace?.counts.approvalRequiredTools ??
+                        0) +
+                        (tenantAiGovernanceWorkspace?.counts.blockedTools ?? 0)}
+                    </strong>
+                    <small>Tools que exigen approval o siguen bloqueados.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiGovernanceWorkspace?.agents.length ? (
+                    tenantAiGovernanceWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-governance:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span className={styles.statusPill}>
+                            {humanizeKey(agent.domainKey)}
+                          </span>
+                        </div>
+                        <small>
+                          Prompt pack {agent.promptPack.key}@{agent.promptPack.version} ·{' '}
+                          {agent.promptPack.mode}
+                        </small>
+                        <small>
+                          Tool posture: {agent.toolAccessSummary.allowedCount} allowed,{' '}
+                          {agent.toolAccessSummary.approvalRequiredCount}{' '}
+                          approval-required, {agent.toolAccessSummary.blockedCount} blocked
+                        </small>
+                        <small>
+                          Execution modes:{' '}
+                          {agent.executionModes
+                            .map((entry) => humanizeKey(entry))
+                            .join(', ')}
+                        </small>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small key={`ai-governance-note:${agent.agentKey}:${index}`}>
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          <small>
+                            Approval policies:{' '}
+                            {agent.approvalPolicyKeys.length
+                              ? agent.approvalPolicyKeys.join(', ')
+                              : 'none'}
+                          </small>
+                          <small>
+                            Review requirements:{' '}
+                            {agent.reviewRequirementHighlights.join(' | ')}
+                          </small>
+                          <small>
+                            Blocked capabilities:{' '}
+                            {agent.blockedCapabilities.length
+                              ? agent.blockedCapabilities.join(', ')
+                              : 'none'}
+                          </small>
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiGovernanceWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando gobernanza transversal de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavía no hay suficiente información para resumir la
+                        gobernanza transversal de AI en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI policy simulation</span>
+                    <h3>Que cambiaria si abrimos guarded execution con review</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiPolicySimulationWorkspace
+                      ? formatDate(tenantAiPolicySimulationWorkspace.generatedAt)
+                      : 'sin simulacion'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Agentes simulados</span>
+                    <strong>
+                      {tenantAiPolicySimulationWorkspace?.counts.totalAgents ?? 0}
+                    </strong>
+                    <small>Agentes visibles dentro del escenario review-first.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Con delta</span>
+                    <strong>
+                      {tenantAiPolicySimulationWorkspace?.counts
+                        .agentsWithSimulationDelta ?? 0}
+                    </strong>
+                    <small>Agentes que cambiarian de postura si abrimos el gate.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Promovidos a review</span>
+                    <strong>
+                      {tenantAiPolicySimulationWorkspace?.counts
+                        .toolsPromotedToApprovalRequired ?? 0}
+                    </strong>
+                    <small>Tools que pasarian de blocked a approval-required.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Siguen bloqueados</span>
+                    <strong>
+                      {tenantAiPolicySimulationWorkspace?.counts.toolsStillBlocked ?? 0}
+                    </strong>
+                    <small>Tools que ni asi conviene abrir todavia.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiPolicySimulationWorkspace?.agents.length ? (
+                    tenantAiPolicySimulationWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-policy-simulation:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${policySimulationStatusTone(
+                              agent.simulationStatus,
+                            )}`}
+                          >
+                            {policySimulationStatusLabel(agent.simulationStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · current {agent.currentToolAccessSummary.allowedCount}
+                          /{agent.currentToolAccessSummary.approvalRequiredCount}/
+                          {agent.currentToolAccessSummary.blockedCount} {'->'} simulated{' '}
+                          {agent.simulatedToolAccessSummary.allowedCount}/
+                          {agent.simulatedToolAccessSummary.approvalRequiredCount}/
+                          {agent.simulatedToolAccessSummary.blockedCount}
+                        </small>
+                        <small>
+                          Approval policies:{' '}
+                          {agent.approvalPolicyKeys.length
+                            ? agent.approvalPolicyKeys.join(', ')
+                            : 'none'}
+                        </small>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-policy-simulation-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          <small>
+                            Promoted tools:{' '}
+                            {agent.promotedToolKeys.length
+                              ? agent.promotedToolKeys.join(', ')
+                              : 'none'}
+                          </small>
+                          <small>
+                            Still blocked tools:{' '}
+                            {agent.stillBlockedToolKeys.length
+                              ? agent.stillBlockedToolKeys.join(', ')
+                              : 'none'}
+                          </small>
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiPolicySimulationWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando simulacion de politicas de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para simular cambios de
+                        postura en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI approval design</span>
+                    <h3>Carga humana esperada por escenario de approval</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiApprovalDesignWorkspace
+                      ? formatDate(tenantAiApprovalDesignWorkspace.generatedAt)
+                      : 'sin diseno'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Human reviews actuales</span>
+                    <strong>
+                      {tenantAiApprovalDesignWorkspace?.counts
+                        .currentExpectedHumanReviews ?? 0}
+                    </strong>
+                    <small>Backlog y handoffs reviewables bajo la postura actual.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Human reviews simulados</span>
+                    <strong>
+                      {tenantAiApprovalDesignWorkspace?.counts
+                        .simulatedExpectedHumanReviews ?? 0}
+                    </strong>
+                    <small>Carga esperada si pasamos a un diseno mas review-first.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Touches extra</span>
+                    <strong>
+                      {tenantAiApprovalDesignWorkspace?.counts
+                        .addedHumanReviewTouches ?? 0}
+                    </strong>
+                    <small>Revision adicional que el nuevo diseno agregaria.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Agentes con mas revision</span>
+                    <strong>
+                      {tenantAiApprovalDesignWorkspace?.counts
+                        .agentsWithHeavierReview ?? 0}
+                    </strong>
+                    <small>Agentes cuyo diseno aumentaria el trabajo humano.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiApprovalDesignWorkspace?.agents.length ? (
+                    tenantAiApprovalDesignWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-approval-design:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${approvalDesignStatusTone(
+                              agent.designStatus,
+                            )}`}
+                          >
+                            {approvalDesignStatusLabel(agent.designStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · current load{' '}
+                          {agent.currentExpectedReviewLoad.totalHumanReviewTouches}{' '}
+                          {'->'} simulated load{' '}
+                          {agent.simulatedExpectedReviewLoad.totalHumanReviewTouches}
+                        </small>
+                        <small>
+                          Pending approvals {agent.currentExpectedReviewLoad.pendingApprovalRequests}
+                          {' · '}reviewable handoffs{' '}
+                          {agent.currentExpectedReviewLoad.reviewableSuggestionRuns}
+                          {' · '}extra tool checkpoints{' '}
+                          {agent.simulatedExpectedReviewLoad.promotedToolReviewPoints}
+                        </small>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-approval-design-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          <small>
+                            Approval policies:{' '}
+                            {agent.approvalPolicyKeys.length
+                              ? agent.approvalPolicyKeys.join(', ')
+                              : 'none'}
+                          </small>
+                          <small>
+                            Promoted tools:{' '}
+                            {agent.promotedToolKeys.length
+                              ? agent.promotedToolKeys.join(', ')
+                              : 'none'}
+                          </small>
+                          <small>
+                            Still blocked tools:{' '}
+                            {agent.stillBlockedToolKeys.length
+                              ? agent.stillBlockedToolKeys.join(', ')
+                              : 'none'}
+                          </small>
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiApprovalDesignWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando diseno de approvals de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para disenar escenarios de
+                        approval en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI approval capacity</span>
+                    <h3>Capacidad minima diaria de revision por agente</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiApprovalCapacityWorkspace
+                      ? formatDate(tenantAiApprovalCapacityWorkspace.generatedAt)
+                      : 'sin capacidad'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Reviews/dia actual</span>
+                    <strong>
+                      {tenantAiApprovalCapacityWorkspace?.counts
+                        .currentMinimumReviewsPerDay ?? 0}
+                    </strong>
+                    <small>Piso minimo de toques humanos con la postura actual.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Reviews/dia simulado</span>
+                    <strong>
+                      {tenantAiApprovalCapacityWorkspace?.counts
+                        .simulatedMinimumReviewsPerDay ?? 0}
+                    </strong>
+                    <small>Piso minimo si abrimos el escenario review-first.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Carga extra/dia</span>
+                    <strong>
+                      {tenantAiApprovalCapacityWorkspace?.counts.addedReviewsPerDay ?? 0}
+                    </strong>
+                    <small>Revision diaria adicional para sostener el cambio.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Agentes en riesgo</span>
+                    <strong>
+                      {tenantAiApprovalCapacityWorkspace?.counts
+                        .agentsAtCapacityRisk ?? 0}
+                    </strong>
+                    <small>Agentes que pedirian buffer humano o rediseño.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiApprovalCapacityWorkspace?.agents.length ? (
+                    tenantAiApprovalCapacityWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-approval-capacity:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${approvalCapacityStatusTone(
+                              agent.capacityStatus,
+                            )}`}
+                          >
+                            {approvalCapacityStatusLabel(agent.capacityStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · current{' '}
+                          {agent.currentMinimumReviewsPerDay} {'->'} simulated{' '}
+                          {agent.simulatedMinimumReviewsPerDay} review touch(es)/day
+                        </small>
+                        <small>
+                          Added load: {agent.addedReviewsPerDay} {'· '}Approval policies:{' '}
+                          {agent.approvalPolicyKeys.length
+                            ? agent.approvalPolicyKeys.join(', ')
+                            : 'none'}
+                        </small>
+                        <div className={styles.stack}>
+                          {agent.bottleneckReasons.map((reason, index) => (
+                            <small
+                              key={`ai-approval-capacity-bottleneck:${agent.agentKey}:${index}`}
+                            >
+                              {reason}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-approval-capacity-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiApprovalCapacityWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando capacidad de approvals de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para estimar capacidad de
+                        approvals en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI approval SLA</span>
+                    <h3>Riesgo temporal del loop humano por agente</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiApprovalSlaWorkspace
+                      ? formatDate(tenantAiApprovalSlaWorkspace.generatedAt)
+                      : 'sin SLA'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Backlog actual</span>
+                    <strong>
+                      {tenantAiApprovalSlaWorkspace?.counts.currentBacklogTouches ?? 0}
+                    </strong>
+                    <small>Touches humanos pendientes bajo la postura actual.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Backlog simulado</span>
+                    <strong>
+                      {tenantAiApprovalSlaWorkspace?.counts.simulatedBacklogTouches ??
+                        0}
+                    </strong>
+                    <small>Touches humanos si abrimos el escenario review-first.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Agentes en riesgo</span>
+                    <strong>
+                      {tenantAiApprovalSlaWorkspace?.counts.agentsAtRisk ?? 0}
+                    </strong>
+                    <small>Agentes que ya se acercan a incumplir same-day review.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Agentes breached</span>
+                    <strong>
+                      {tenantAiApprovalSlaWorkspace?.counts.agentsBreached ?? 0}
+                    </strong>
+                    <small>Agentes que ya necesitarian rediseño o buffer adicional.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiApprovalSlaWorkspace?.agents.length ? (
+                    tenantAiApprovalSlaWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-approval-sla:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${approvalSlaStatusTone(
+                              agent.simulatedSlaStatus,
+                            )}`}
+                          >
+                            {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · current{' '}
+                          {agent.currentEstimatedClearDays}d {'->'} simulated{' '}
+                          {agent.simulatedEstimatedClearDays}d clear time
+                        </small>
+                        <small>
+                          Current status {approvalSlaStatusLabel(agent.currentSlaStatus)}
+                          {' · '}Pending approvals {agent.pendingApprovalRequests}
+                          {' · '}Reviewable handoffs {agent.reviewableSuggestionRuns}
+                        </small>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small key={`ai-approval-sla-note:${agent.agentKey}:${index}`}>
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiApprovalSlaWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando SLA de approvals de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para estimar el SLA de
+                        approvals en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI approval staffing</span>
+                    <h3>Reviewer-equivalents minimos para sostener el loop</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiApprovalStaffingWorkspace
+                      ? formatDate(tenantAiApprovalStaffingWorkspace.generatedAt)
+                      : 'sin staffing'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Reviewers actuales</span>
+                    <strong>
+                      {tenantAiApprovalStaffingWorkspace?.counts
+                        .currentRequiredReviewerEquivalents ?? 0}
+                    </strong>
+                    <small>Minimo equivalente para sostener same-day review hoy.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Reviewers simulados</span>
+                    <strong>
+                      {tenantAiApprovalStaffingWorkspace?.counts
+                        .simulatedRequiredReviewerEquivalents ?? 0}
+                    </strong>
+                    <small>Minimo equivalente si abrimos la postura review-first.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Cobertura extra</span>
+                    <strong>
+                      {tenantAiApprovalStaffingWorkspace?.counts
+                        .addedReviewerEquivalents ?? 0}
+                    </strong>
+                    <small>Reviewer-equivalents adicionales que harian falta.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Agentes con gap</span>
+                    <strong>
+                      {tenantAiApprovalStaffingWorkspace?.counts
+                        .agentsNeedingMoreCoverage ?? 0}
+                    </strong>
+                    <small>Agentes donde el staffing actual quedaria corto.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiApprovalStaffingWorkspace?.agents.length ? (
+                    tenantAiApprovalStaffingWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-approval-staffing:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${approvalStaffingStatusTone(
+                              agent.staffingStatus,
+                            )}`}
+                          >
+                            {approvalStaffingStatusLabel(agent.staffingStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · current{' '}
+                          {agent.currentRequiredReviewerEquivalents} {'->'} simulated{' '}
+                          {agent.simulatedRequiredReviewerEquivalents} reviewer-equivalent(s)
+                        </small>
+                        <small>
+                          Added coverage {agent.addedReviewerEquivalents}
+                          {' · '}Approval policies:{' '}
+                          {agent.approvalPolicyKeys.length
+                            ? agent.approvalPolicyKeys.join(', ')
+                            : 'none'}
+                        </small>
+                        <div className={styles.stack}>
+                          {agent.staffingReasons.map((reason, index) => (
+                            <small
+                              key={`ai-approval-staffing-reason:${agent.agentKey}:${index}`}
+                            >
+                              {reason}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-approval-staffing-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiApprovalStaffingWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando staffing de approvals de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para estimar staffing de
+                        approvals en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI approval staffing plan</span>
+                    <h3>Reparto recomendado de cobertura por agente</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiApprovalStaffingPlanWorkspace
+                      ? formatDate(tenantAiApprovalStaffingPlanWorkspace.generatedAt)
+                      : 'sin plan'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Coverage recomendada</span>
+                    <strong>
+                      {tenantAiApprovalStaffingPlanWorkspace?.counts
+                        .totalRecommendedReviewerEquivalents ?? 0}
+                    </strong>
+                    <small>Reviewer-equivalents totales recomendados por el plan.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Coverage extra</span>
+                    <strong>
+                      {tenantAiApprovalStaffingPlanWorkspace?.counts
+                        .totalAdditionalReviewerEquivalents ?? 0}
+                    </strong>
+                    <small>Reviewer-equivalents adicionales sobre la base actual.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Agentes a reforzar</span>
+                    <strong>
+                      {tenantAiApprovalStaffingPlanWorkspace?.counts
+                        .agentsRequiringIncrease ?? 0}
+                    </strong>
+                    <small>Agentes donde el plan pide aumentar cobertura.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Prioridades activas</span>
+                    <strong>
+                      {tenantAiApprovalStaffingPlanWorkspace?.counts
+                        .highestPriorityAgents ?? 0}
+                    </strong>
+                    <small>Agentes que deberían entrar primero al plan.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiApprovalStaffingPlanWorkspace?.agents.length ? (
+                    tenantAiApprovalStaffingPlanWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-approval-staffing-plan:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>
+                            #{agent.priorityRank} {agent.title}
+                          </strong>
+                          <span
+                            className={`${styles.statusPill} ${approvalStaffingPlanStatusTone(
+                              agent.planStatus,
+                            )}`}
+                          >
+                            {approvalStaffingPlanStatusLabel(agent.planStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · current{' '}
+                          {agent.currentRequiredReviewerEquivalents} {'->'} recommended{' '}
+                          {agent.recommendedReviewerEquivalents} reviewer-equivalent(s)
+                        </small>
+                        <small>
+                          Extra assignment {agent.additionalReviewerEquivalentsToAssign}
+                          {' · '}Approval policies:{' '}
+                          {agent.approvalPolicyKeys.length
+                            ? agent.approvalPolicyKeys.join(', ')
+                            : 'none'}
+                        </small>
+                        <div className={styles.stack}>
+                          {agent.planActions.map((action, index) => (
+                            <small
+                              key={`ai-approval-staffing-plan-action:${agent.agentKey}:${index}`}
+                            >
+                              {action}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-approval-staffing-plan-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiApprovalStaffingPlanWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando plan de staffing de approvals de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para proponer un plan de
+                        staffing en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI approval rollout</span>
+                    <h3>Secuencia por fases para abrir review-first</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiApprovalRolloutWorkspace
+                      ? formatDate(tenantAiApprovalRolloutWorkspace.generatedAt)
+                      : 'sin rollout'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Phase 1</span>
+                    <strong>
+                      {tenantAiApprovalRolloutWorkspace?.counts.phase1Agents ?? 0}
+                    </strong>
+                    <small>Agentes que piden refuerzo antes de abrir el path.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Phase 2</span>
+                    <strong>
+                      {tenantAiApprovalRolloutWorkspace?.counts.phase2Agents ?? 0}
+                    </strong>
+                    <small>Agentes que pueden entrar despues sin refuerzo extra.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Hold</span>
+                    <strong>
+                      {tenantAiApprovalRolloutWorkspace?.counts.holdAgents ?? 0}
+                    </strong>
+                    <small>Agentes que siguen bloqueados por restricciones de diseño.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Coverage extra</span>
+                    <strong>
+                      {tenantAiApprovalRolloutWorkspace?.counts
+                        .totalAdditionalReviewerEquivalents ?? 0}
+                    </strong>
+                    <small>Reviewer-equivalents extra a provisionar para el rollout.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiApprovalRolloutWorkspace?.agents.length ? (
+                    tenantAiApprovalRolloutWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-approval-rollout:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>
+                            #{agent.priorityRank} {agent.title}
+                          </strong>
+                          <span
+                            className={`${styles.statusPill} ${approvalRolloutStatusTone(
+                              agent.rolloutStatus,
+                            )}`}
+                          >
+                            {approvalRolloutStatusLabel(agent.rolloutStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · {humanizeKey(agent.rolloutPhase)} ·
+                          current {agent.currentRequiredReviewerEquivalents} {'->'} target{' '}
+                          {agent.recommendedReviewerEquivalents}
+                        </small>
+                        <small>
+                          Extra assignment {agent.additionalReviewerEquivalentsToAssign}
+                          {' · '}Approval policies:{' '}
+                          {agent.approvalPolicyKeys.length
+                            ? agent.approvalPolicyKeys.join(', ')
+                            : 'none'}
+                        </small>
+                        <div className={styles.stack}>
+                          {agent.rolloutActions.map((action, index) => (
+                            <small
+                              key={`ai-approval-rollout-action:${agent.agentKey}:${index}`}
+                            >
+                              {action}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-approval-rollout-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiApprovalRolloutWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando rollout de approvals de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para ordenar un rollout de
+                        approvals en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI approval readiness</span>
+                    <h3>Que agente esta listo hoy para abrir review-first</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiApprovalReadinessWorkspace
+                      ? formatDate(tenantAiApprovalReadinessWorkspace.generatedAt)
+                      : 'sin readiness'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Ready now</span>
+                    <strong>
+                      {tenantAiApprovalReadinessWorkspace?.counts.readyNowAgents ?? 0}
+                    </strong>
+                    <small>Agentes que ya pueden abrir el path con la cobertura actual.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Needs coverage</span>
+                    <strong>
+                      {tenantAiApprovalReadinessWorkspace?.counts
+                        .needsCoverageAgents ?? 0}
+                    </strong>
+                    <small>Agentes que primero necesitan refuerzo humano o bajar riesgo.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Blocked</span>
+                    <strong>
+                      {tenantAiApprovalReadinessWorkspace?.counts.blockedAgents ?? 0}
+                    </strong>
+                    <small>Agentes que siguen cerrados por guardrails de diseño.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Total</span>
+                    <strong>
+                      {tenantAiApprovalReadinessWorkspace?.counts.totalAgents ?? 0}
+                    </strong>
+                    <small>Agentes AI visibles en esta lectura compacta de readiness.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiApprovalReadinessWorkspace?.agents.length ? (
+                    tenantAiApprovalReadinessWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-approval-readiness:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${approvalReadinessStatusTone(
+                              agent.readinessStatus,
+                            )}`}
+                          >
+                            {approvalReadinessStatusLabel(agent.readinessStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · {humanizeKey(agent.rolloutPhase)} ·
+                          current {agent.currentRequiredReviewerEquivalents} {'->'} target{' '}
+                          {agent.recommendedReviewerEquivalents}
+                        </small>
+                        <small>
+                          SLA {approvalSlaStatusLabel(agent.currentSlaStatus)} {'->'}{' '}
+                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)} {' · '}
+                          extra coverage {agent.additionalReviewerEquivalentsToAssign}
+                        </small>
+                        <small>{agent.nextStep}</small>
+                        <div className={styles.stack}>
+                          {agent.readinessReasons.map((reason, index) => (
+                            <small
+                              key={`ai-approval-readiness-reason:${agent.agentKey}:${index}`}
+                            >
+                              {reason}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-approval-readiness-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiApprovalReadinessWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando readiness de approvals de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para decidir readiness de
+                        approvals en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>AI approval launch</span>
+                    <h3>Recomendacion explicita para abrir el path por agente</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiApprovalLaunchWorkspace
+                      ? formatDate(tenantAiApprovalLaunchWorkspace.generatedAt)
+                      : 'sin launch plan'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Launch now</span>
+                    <strong>
+                      {tenantAiApprovalLaunchWorkspace?.counts.launchNowAgents ?? 0}
+                    </strong>
+                    <small>Agentes que podemos abrir en la ventana actual.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Pilot next</span>
+                    <strong>
+                      {tenantAiApprovalLaunchWorkspace?.counts
+                        .pilotAfterCoverageAgents ?? 0}
+                    </strong>
+                    <small>Agentes que primero necesitan cobertura o estabilizar SLA.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Hold</span>
+                    <strong>
+                      {tenantAiApprovalLaunchWorkspace?.counts.holdAgents ?? 0}
+                    </strong>
+                    <small>Agentes que no deberiamos meter todavia en launch scope.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Coverage gap</span>
+                    <strong>
+                      {tenantAiApprovalLaunchWorkspace?.counts.totalCoverageGap ?? 0}
+                    </strong>
+                    <small>Reviewer-equivalents que faltan para el siguiente corte.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiApprovalLaunchWorkspace?.agents.length ? (
+                    tenantAiApprovalLaunchWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-approval-launch:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span
+                            className={`${styles.statusPill} ${approvalLaunchStatusTone(
+                              agent.launchStatus,
+                            )}`}
+                          >
+                            {approvalLaunchStatusLabel(agent.launchStatus)}
+                          </span>
+                        </div>
+                        <small>
+                          {humanizeKey(agent.domainKey)} · {humanizeKey(agent.launchWindow)} ·
+                          {humanizeKey(agent.rolloutPhase)}
+                        </small>
+                        <small>
+                          Coverage {agent.currentRequiredReviewerEquivalents} {'->'}{' '}
+                          {agent.recommendedReviewerEquivalents} {' · '}SLA{' '}
+                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
+                        </small>
+                        <small>{agent.recommendedAction}</small>
+                        <div className={styles.stack}>
+                          {agent.launchChecklist.map((item, index) => (
+                            <small
+                              key={`ai-approval-launch-check:${agent.agentKey}:${index}`}
+                            >
+                              {item}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.stack}>
+                          {agent.notes.map((note, index) => (
+                            <small
+                              key={`ai-approval-launch-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiApprovalLaunchWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando launch workspace de approvals de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavia no hay suficiente contexto para decidir launch de
+                        approvals en este tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>Tenant AI memory</span>
+                    <h3>Memoria operativa por agente y dominio</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiMemoryWorkspace
+                      ? formatDate(tenantAiMemoryWorkspace.generatedAt)
+                      : 'sin memoria'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Agentes activos</span>
+                    <strong>{tenantAiMemoryWorkspace?.counts.totalAgents ?? 0}</strong>
+                    <small>Agentes AI listos y visibles en este tenant.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Con handoffs</span>
+                    <strong>
+                      {tenantAiMemoryWorkspace?.counts.agentsWithSuggestionRuns ?? 0}
+                    </strong>
+                    <small>Agentes que ya prepararon al menos un handoff.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Con approvals pendientes</span>
+                    <strong>
+                      {tenantAiMemoryWorkspace?.counts.agentsWithPendingApprovals ?? 0}
+                    </strong>
+                    <small>Agentes que hoy esperan revisión humana.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Pending approvals</span>
+                    <strong>
+                      {tenantAiMemoryWorkspace?.counts.totalPendingApprovalRequests ?? 0}
+                    </strong>
+                    <small>Backlog humano que la memoria operativa recuerda.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiMemoryWorkspace?.agents.length ? (
+                    tenantAiMemoryWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-memory:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span className={styles.statusPill}>
+                            {humanizeKey(agent.domainKey)}
+                          </span>
+                        </div>
+                        <small>
+                          Prompt pack {agent.promptPack.key}@{agent.promptPack.version} ·{' '}
+                          {agent.promptPack.mode}
+                        </small>
+                        <small>
+                          Tool posture: {agent.toolAccessSummary.allowedCount} allowed,{' '}
+                          {agent.toolAccessSummary.approvalRequiredCount}{' '}
+                          approval-required, {agent.toolAccessSummary.blockedCount} blocked
+                        </small>
+                        {agent.recentActivityAt ? (
+                          <small>
+                            Última actividad {formatDate(agent.recentActivityAt)}
+                          </small>
+                        ) : null}
+                        <div className={styles.stack}>
+                          {agent.memoryNotes.map((note, index) => (
+                            <small key={`ai-memory-note:${agent.agentKey}:${index}`}>
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                        <div className={styles.inlineActions}>
+                          {agent.latestSuggestionRun ? (
+                            <button
+                              className={styles.ghostButton}
+                              type="button"
+                              onClick={() => {
+                                void handleOpenTenantAiWorkspaceSuggestionRunDetail(
+                                  agent.latestSuggestionRun!.id,
+                                );
+                              }}
+                              disabled={
+                                growthActionLoading ===
+                                `load-tenant-ai-run-detail:${agent.latestSuggestionRun.id}`
+                              }
+                            >
+                              Abrir último handoff
+                            </button>
+                          ) : null}
+                          {agent.oldestPendingApprovalRequest ? (
+                            <button
+                              className={styles.secondaryButton}
+                              type="button"
+                              onClick={() => {
+                                void handleReviewTenantAiApprovalWorkspaceRequest(
+                                  agent.agentKey,
+                                  agent.oldestPendingApprovalRequest!.id,
+                                  'approved',
+                                );
+                              }}
+                              disabled={
+                                (agent.agentKey === 'invoice-document-assistant'
+                                  ? actionLoading
+                                  : growthActionLoading) ===
+                                (agent.agentKey === 'invoice-document-assistant'
+                                  ? `review-invoice-ai-approval:${agent.oldestPendingApprovalRequest.id}`
+                                  : `review-ai-approval:${agent.oldestPendingApprovalRequest.id}`)
+                              }
+                            >
+                              Aprobar pendiente más antiguo
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))
+                  ) : tenantAiMemoryWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando memoria transversal de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        La memoria operativa todavía no tiene suficientes señales para este
+                        tenant.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

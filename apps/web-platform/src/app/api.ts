@@ -1,6 +1,20 @@
 import {
+  AiActivityFeedResponse,
   AiActionCenterResponse,
+  AiApprovalCapacityWorkspaceResponse,
+  AiApprovalDesignWorkspaceResponse,
+  AiApprovalSlaWorkspaceResponse,
+  AiApprovalStaffingWorkspaceResponse,
+  AiApprovalStaffingPlanWorkspaceResponse,
+  AiApprovalRolloutWorkspaceResponse,
+  AiApprovalReadinessWorkspaceResponse,
+  AiApprovalLaunchWorkspaceResponse,
+  AiEvaluationWorkspaceResponse,
+  AiGovernanceWorkspaceResponse,
+  AiHealthWorkspaceResponse,
+  AiPolicySimulationWorkspaceResponse,
   AiApprovalWorkspaceResponse,
+  AiMemoryWorkspaceResponse,
   AiOperationsSummaryResponse,
   AiApprovalPolicyResponse,
   AiApprovalRequestResponse,
@@ -1312,6 +1326,203 @@ export async function fetchTenantAiOperationsSummary(
 ): Promise<AiOperationsSummaryResponse> {
   return request<AiOperationsSummaryResponse>(
     `/ai/tenants/${encodeURIComponent(tenantSlug)}/operations-summary`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiActivityFeed(
+  token: string,
+  tenantSlug: string,
+  options?: {
+    limit?: number;
+    type?: 'all' | 'suggestion_run_prepared' | 'approval_requested' | 'approval_reviewed';
+  },
+): Promise<AiActivityFeedResponse> {
+  const searchParams = new URLSearchParams();
+  searchParams.set('limit', String(options?.limit ?? 20));
+
+  if (options?.type && options.type !== 'all') {
+    searchParams.set('type', options.type);
+  }
+
+  return request<AiActivityFeedResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/activity-feed?${searchParams.toString()}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiMemoryWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiMemoryWorkspaceResponse> {
+  return request<AiMemoryWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/memory-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiHealthWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiHealthWorkspaceResponse> {
+  return request<AiHealthWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/health-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiEvaluationWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiEvaluationWorkspaceResponse> {
+  return request<AiEvaluationWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/evaluation-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiGovernanceWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiGovernanceWorkspaceResponse> {
+  return request<AiGovernanceWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/governance-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiPolicySimulationWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiPolicySimulationWorkspaceResponse> {
+  return request<AiPolicySimulationWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/policy-simulation-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiApprovalDesignWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiApprovalDesignWorkspaceResponse> {
+  return request<AiApprovalDesignWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/approval-design-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiApprovalCapacityWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiApprovalCapacityWorkspaceResponse> {
+  return request<AiApprovalCapacityWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/approval-capacity-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiApprovalSlaWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiApprovalSlaWorkspaceResponse> {
+  return request<AiApprovalSlaWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/approval-sla-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiApprovalStaffingWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiApprovalStaffingWorkspaceResponse> {
+  return request<AiApprovalStaffingWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/approval-staffing-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiApprovalStaffingPlanWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiApprovalStaffingPlanWorkspaceResponse> {
+  return request<AiApprovalStaffingPlanWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/approval-staffing-plan-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiApprovalRolloutWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiApprovalRolloutWorkspaceResponse> {
+  return request<AiApprovalRolloutWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/approval-rollout-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiApprovalReadinessWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiApprovalReadinessWorkspaceResponse> {
+  return request<AiApprovalReadinessWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/approval-readiness-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiApprovalLaunchWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiApprovalLaunchWorkspaceResponse> {
+  return request<AiApprovalLaunchWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/approval-launch-workspace`,
     {
       method: 'GET',
       token,

@@ -9719,7 +9719,7 @@ describe('API', () => {
               safeFallbackMode: 'suggestion_only_with_manual_assignment',
               evidencePackSummary: [
                 'Audit evidence should bind every growth_case_assignment_execution decision to a named human gate.',
-                'There is still no reviewed approval trail to reuse as precedent.',
+                'No reviewed approval request exists yet as precedent evidence.',
                 'Same-day review is still at_risk, so audit evidence would be noisy until the lane stabilizes.',
               ],
               requiredArtifacts: [

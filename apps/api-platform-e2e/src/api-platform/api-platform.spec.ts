@@ -7040,13 +7040,13 @@ describe('API', () => {
               tenantSlug: 'saas-platform',
               agentKey: 'growth-assist-coach',
               eventType: 'suggestion_run_prepared',
-              occurredAt: '2026-05-20T10:36:00.000Z',
+              occurredAt: '2026-05-20T10:37:00.000Z',
               suggestionRunId: 'ai-run-001',
               approvalRequestId: null,
               actorUserId: user.id,
               actorEmail: user.email,
               summary:
-                'Growth Assist Coach prepared a suggestion-mode handoff for growth assist daily agenda using prompt pack growth-assist-coach-core@v1.',
+                'Growth Assist Coach prepared a suggestion-mode handoff for Growth Assist daily agenda using prompt pack growth-assist-coach-core@v1.',
               detail: 'Prepared handoff with growth-assist-coach-core@v1.',
             },
           ],
@@ -7623,94 +7623,96 @@ describe('API', () => {
       .get('/api/ai/tenants/saas-platform/governance-workspace')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect({
-        tenantSlug: 'saas-platform',
-        generatedAt: expect.any(String),
-        counts: {
-          totalAgents: 2,
-          suggestionModeAgents: 2,
-          guardedExecutionPlannedAgents: 1,
-          approvalRequiredTools: 1,
-          blockedTools: 1,
-        },
-        agents: [
-          {
-            agentKey: 'growth-assist-coach',
-            title: 'Growth Assist Coach',
-            domainKey: 'growth',
-            productKey: 'growth',
-            defaultMode: 'suggestion',
-            promptPack: {
-              key: 'growth-assist-coach-core',
-              version: 'v1',
-              mode: 'suggestion',
-              title: 'Growth Assist Coach Core',
-            },
-            approvalPolicyKeys: ['growth-assist-suggestion-review'],
-            toolAccessSummary: {
-              allowedCount: 2,
-              approvalRequiredCount: 0,
-              blockedCount: 1,
-            },
-            executionModes: [
-              'guarded_execution_planned',
-              'suggestion_only',
-            ],
-            blockedCapabilities: [
-              'assign_operational_case',
-              'mutate_conversation_state',
-              'reroute_queue_membership',
-              'schedule_message_send',
-              'send_whatsapp_message',
-              'update_case_follow_up_state',
-            ],
-            reviewRequirementHighlights: [
-              'An operator should review the draft before sending it through any real channel.',
-              'The operator should translate the plan into real CRM or messaging actions manually.',
-              'This tool stays blocked until approval memory and guarded execution flows are operational.',
-            ],
-            notes: [
-              'Prompt pack growth-assist-coach-core@v1 anchors this agent in suggestion mode.',
-              '1 approval policy rule(s) govern the current handoff posture.',
-              '2 allowed, 0 approval-required, 1 blocked tool(s).',
-              'Guarded execution remains planned, not unlocked.',
-            ],
+      .expect((response) => {
+        expect(response.body).toEqual({
+          tenantSlug: 'saas-platform',
+          generatedAt: expect.any(String),
+          counts: {
+            totalAgents: 2,
+            suggestionModeAgents: 2,
+            guardedExecutionPlannedAgents: 1,
+            approvalRequiredTools: 1,
+            blockedTools: 1,
           },
-          {
-            agentKey: 'invoice-document-assistant',
-            title: 'Invoice Document Assistant',
-            domainKey: 'invoicing',
-            productKey: 'invoicing',
-            defaultMode: 'suggestion',
-            promptPack: {
-              key: 'invoice-document-assistant-core',
-              version: 'v1',
-              mode: 'suggestion',
-              title: 'Invoice Document Assistant Core',
+          agents: [
+            {
+              agentKey: 'growth-assist-coach',
+              title: 'Growth Assist Coach',
+              domainKey: 'growth',
+              productKey: 'growth',
+              defaultMode: 'suggestion',
+              promptPack: {
+                key: 'growth-assist-coach-core',
+                version: 'v1',
+                mode: 'suggestion',
+                title: 'Growth Assist Coach Core',
+              },
+              approvalPolicyKeys: ['growth-assist-suggestion-review'],
+              toolAccessSummary: {
+                allowedCount: 2,
+                approvalRequiredCount: 0,
+                blockedCount: 1,
+              },
+              executionModes: [
+                'guarded_execution_planned',
+                'suggestion_only',
+              ],
+              blockedCapabilities: [
+                'assign_operational_case',
+                'mutate_conversation_state',
+                'reroute_queue_membership',
+                'schedule_message_send',
+                'send_whatsapp_message',
+                'update_case_follow_up_state',
+              ],
+              reviewRequirementHighlights: [
+                'An operator should review the draft before sending it through any real channel.',
+                'The operator should translate the plan into real CRM or messaging actions manually.',
+                'This tool stays blocked until approval memory and guarded execution flows are operational.',
+              ],
+              notes: [
+                'Prompt pack growth-assist-coach-core@v1 anchors this agent in suggestion mode.',
+                '1 approval policy rule(s) govern the current handoff posture.',
+                '2 allowed, 0 approval-required, 1 blocked tool(s).',
+                'Guarded execution remains planned, not unlocked.',
+              ],
             },
-            approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-            toolAccessSummary: {
-              allowedCount: 0,
-              approvalRequiredCount: 1,
-              blockedCount: 0,
+            {
+              agentKey: 'invoice-document-assistant',
+              title: 'Invoice Document Assistant',
+              domainKey: 'invoicing',
+              productKey: 'invoicing',
+              defaultMode: 'suggestion',
+              promptPack: {
+                key: 'invoice-document-assistant-core',
+                version: 'v1',
+                mode: 'suggestion',
+                title: 'Invoice Document Assistant Core',
+              },
+              approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
+              toolAccessSummary: {
+                allowedCount: 0,
+                approvalRequiredCount: 1,
+                blockedCount: 0,
+              },
+              executionModes: ['suggestion_only'],
+              blockedCapabilities: [
+                'mark_document_authorized',
+                'sign_tax_document',
+                'submit_tax_document',
+              ],
+              reviewRequirementHighlights: [
+                'Document guidance must stay advisory and be reviewed before any operator uses it in fiscal work.',
+              ],
+              notes: [
+                'Prompt pack invoice-document-assistant-core@v1 anchors this agent in suggestion mode.',
+                '1 approval policy rule(s) govern the current handoff posture.',
+                '0 allowed, 1 approval-required, 0 blocked tool(s).',
+                'All visible tools stay in suggestion-only mode.',
+              ],
             },
-            executionModes: ['suggestion_only'],
-            blockedCapabilities: [
-              'mark_document_authorized',
-              'sign_tax_document',
-              'submit_tax_document',
-            ],
-            reviewRequirementHighlights: [
-              'Document guidance must stay advisory and be reviewed before any operator uses it in fiscal work.',
-            ],
-            notes: [
-              'Prompt pack invoice-document-assistant-core@v1 anchors this agent in suggestion mode.',
-              '1 approval policy rule(s) govern the current handoff posture.',
-              '0 allowed, 1 approval-required, 0 blocked tool(s).',
-              'All visible tools stay in suggestion-only mode.',
-            ],
-          },
-        ],
+          ],
+        });
       });
   });
 
@@ -7719,7 +7721,8 @@ describe('API', () => {
       .get('/api/ai/tenants/saas-platform/policy-simulation-workspace')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect({
+      .expect((response) => {
+        expect(response.body).toEqual({
         tenantSlug: 'saas-platform',
         generatedAt: expect.any(String),
         counts: {
@@ -7784,6 +7787,7 @@ describe('API', () => {
             ],
           },
         ],
+        });
       });
   });
 
@@ -7861,7 +7865,8 @@ describe('API', () => {
       .get('/api/ai/tenants/saas-platform/approval-design-workspace')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect({
+      .expect((response) => {
+        expect(response.body).toEqual({
         tenantSlug: 'saas-platform',
         generatedAt: expect.any(String),
         counts: {
@@ -7927,6 +7932,7 @@ describe('API', () => {
             ],
           },
         ],
+        });
       });
   });
 
@@ -8004,7 +8010,8 @@ describe('API', () => {
       .get('/api/ai/tenants/saas-platform/approval-capacity-workspace')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect({
+      .expect((response) => {
+        expect(response.body).toEqual({
         tenantSlug: 'saas-platform',
         generatedAt: expect.any(String),
         counts: {
@@ -8061,6 +8068,7 @@ describe('API', () => {
             ],
           },
         ],
+        });
       });
   });
 
@@ -8138,7 +8146,8 @@ describe('API', () => {
       .get('/api/ai/tenants/saas-platform/approval-sla-workspace')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect({
+      .expect((response) => {
+        expect(response.body).toEqual({
         tenantSlug: 'saas-platform',
         generatedAt: expect.any(String),
         counts: {
@@ -8193,6 +8202,7 @@ describe('API', () => {
             ],
           },
         ],
+        });
       });
   });
 
@@ -8270,7 +8280,8 @@ describe('API', () => {
       .get('/api/ai/tenants/saas-platform/approval-staffing-workspace')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect({
+      .expect((response) => {
+        expect(response.body).toEqual({
         tenantSlug: 'saas-platform',
         generatedAt: expect.any(String),
         counts: {
@@ -8327,6 +8338,7 @@ describe('API', () => {
             ],
           },
         ],
+        });
       });
   });
 
@@ -8404,7 +8416,8 @@ describe('API', () => {
       .get('/api/ai/tenants/saas-platform/approval-staffing-plan-workspace')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect({
+      .expect((response) => {
+        expect(response.body).toEqual({
         tenantSlug: 'saas-platform',
         generatedAt: expect.any(String),
         counts: {
@@ -8468,6 +8481,7 @@ describe('API', () => {
             ],
           },
         ],
+        });
       });
   });
 
@@ -8545,7 +8559,8 @@ describe('API', () => {
       .get('/api/ai/tenants/saas-platform/approval-rollout-workspace')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect({
+      .expect((response) => {
+        expect(response.body).toEqual({
         tenantSlug: 'saas-platform',
         generatedAt: expect.any(String),
         counts: {
@@ -8607,6 +8622,7 @@ describe('API', () => {
             ],
           },
         ],
+        });
       });
   });
 
@@ -8684,7 +8700,8 @@ describe('API', () => {
       .get('/api/ai/tenants/saas-platform/approval-readiness-workspace')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect({
+      .expect((response) => {
+        expect(response.body).toEqual({
         tenantSlug: 'saas-platform',
         generatedAt: expect.any(String),
         counts: {
@@ -8751,6 +8768,7 @@ describe('API', () => {
             ],
           },
         ],
+        });
       });
   });
 
@@ -8828,7 +8846,8 @@ describe('API', () => {
       .get('/api/ai/tenants/saas-platform/approval-launch-workspace')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect({
+      .expect((response) => {
+        expect(response.body).toEqual({
         tenantSlug: 'saas-platform',
         generatedAt: expect.any(String),
         counts: {
@@ -8894,6 +8913,7 @@ describe('API', () => {
             ],
           },
         ],
+        });
       });
   });
 

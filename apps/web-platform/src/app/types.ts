@@ -1321,6 +1321,450 @@ export interface AiApprovalWorkspaceResponse {
   recentApprovalRequests: AiApprovalRequestResponse[];
 }
 
+export type AiActivityFeedEventType =
+  | 'suggestion_run_prepared'
+  | 'approval_requested'
+  | 'approval_reviewed';
+
+export interface AiActivityFeedEntryResponse {
+  id: string;
+  tenantSlug: string;
+  agentKey: string;
+  eventType: AiActivityFeedEventType;
+  occurredAt: string;
+  suggestionRunId: string;
+  approvalRequestId: string | null;
+  actorUserId: string | null;
+  actorEmail: string | null;
+  summary: string;
+  detail: string;
+}
+
+export interface AiActivityFeedResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  entries: AiActivityFeedEntryResponse[];
+}
+
+export interface AiMemoryWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  availability: 'ready' | 'planned';
+  defaultMode: 'suggestion' | 'guarded_execution';
+  supportedSurfaceKeys: string[];
+  promptPack: {
+    key: string;
+    version: string;
+    mode: 'suggestion' | 'guarded_execution';
+    title: string;
+    summary: string;
+  };
+  toolAccessSummary: {
+    allowedCount: number;
+    approvalRequiredCount: number;
+    blockedCount: number;
+  };
+  pendingApprovalRequestsCount: number;
+  oldestPendingApprovalRequest: AiApprovalRequestResponse | null;
+  latestReviewedApprovalRequest: AiApprovalRequestResponse | null;
+  latestSuggestionRun: AiSuggestionRunResponse | null;
+  recentActivityAt: string | null;
+  memoryNotes: string[];
+}
+
+export interface AiMemoryWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    agentsWithSuggestionRuns: number;
+    agentsWithPendingApprovals: number;
+    totalPendingApprovalRequests: number;
+  };
+  agents: AiMemoryWorkspaceAgentResponse[];
+}
+
+export interface AiHealthWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  status: 'healthy' | 'warning' | 'critical';
+  pendingApprovalRequestsCount: number;
+  reviewableSuggestionRunsCount: number;
+  toolAccessSummary: {
+    allowedCount: number;
+    approvalRequiredCount: number;
+    blockedCount: number;
+  };
+  recentActivityAt: string | null;
+  oldestPendingApprovalRequest: AiApprovalRequestResponse | null;
+  latestSuggestionRun: AiSuggestionRunResponse | null;
+  notes: string[];
+}
+
+export interface AiHealthWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  overallStatus: 'healthy' | 'warning' | 'critical';
+  counts: {
+    totalAgents: number;
+    healthyAgents: number;
+    warningAgents: number;
+    criticalAgents: number;
+  };
+  agents: AiHealthWorkspaceAgentResponse[];
+}
+
+export interface AiEvaluationWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  status: 'healthy' | 'warning' | 'critical';
+  reviewedApprovalRequestsCount: number;
+  approvedReviewedApprovalRequestsCount: number;
+  rejectedReviewedApprovalRequestsCount: number;
+  approvalRatePercentage: number | null;
+  latestReviewedAt: string | null;
+  latestReviewedApprovalRequest: AiApprovalRequestResponse | null;
+  notes: string[];
+}
+
+export interface AiEvaluationWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  overallStatus: 'healthy' | 'warning' | 'critical';
+  counts: {
+    totalAgents: number;
+    agentsWithReviewedOutcomes: number;
+    reviewedApprovalRequests: number;
+    approvedReviewedApprovalRequests: number;
+    rejectedReviewedApprovalRequests: number;
+  };
+  agents: AiEvaluationWorkspaceAgentResponse[];
+}
+
+export interface AiGovernanceWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  defaultMode: 'suggestion' | 'guarded_execution';
+  promptPack: {
+    key: string;
+    version: string;
+    mode: 'suggestion' | 'guarded_execution';
+    title: string;
+  };
+  approvalPolicyKeys: string[];
+  toolAccessSummary: {
+    allowedCount: number;
+    approvalRequiredCount: number;
+    blockedCount: number;
+  };
+  executionModes: Array<'suggestion_only' | 'guarded_execution_planned'>;
+  blockedCapabilities: string[];
+  reviewRequirementHighlights: string[];
+  notes: string[];
+}
+
+export interface AiGovernanceWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    suggestionModeAgents: number;
+    guardedExecutionPlannedAgents: number;
+    approvalRequiredTools: number;
+    blockedTools: number;
+  };
+  agents: AiGovernanceWorkspaceAgentResponse[];
+}
+
+export interface AiPolicySimulationWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  defaultMode: 'suggestion' | 'guarded_execution';
+  approvalPolicyKeys: string[];
+  currentToolAccessSummary: {
+    allowedCount: number;
+    approvalRequiredCount: number;
+    blockedCount: number;
+  };
+  simulatedToolAccessSummary: {
+    allowedCount: number;
+    approvalRequiredCount: number;
+    blockedCount: number;
+  };
+  simulationStatus: 'review_ready' | 'more_reviewable' | 'still_blocked';
+  promotedToolKeys: string[];
+  stillBlockedToolKeys: string[];
+  notes: string[];
+}
+
+export interface AiPolicySimulationWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    agentsWithSimulationDelta: number;
+    toolsPromotedToApprovalRequired: number;
+    toolsStillBlocked: number;
+  };
+  agents: AiPolicySimulationWorkspaceAgentResponse[];
+}
+
+export interface AiApprovalDesignWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  approvalPolicyKeys: string[];
+  currentExpectedReviewLoad: {
+    pendingApprovalRequests: number;
+    reviewableSuggestionRuns: number;
+    totalHumanReviewTouches: number;
+  };
+  simulatedExpectedReviewLoad: {
+    pendingApprovalRequests: number;
+    reviewableSuggestionRuns: number;
+    promotedToolReviewPoints: number;
+    totalHumanReviewTouches: number;
+  };
+  designStatus: 'unchanged' | 'heavier_review' | 'blocked_design';
+  promotedToolKeys: string[];
+  stillBlockedToolKeys: string[];
+  notes: string[];
+}
+
+export interface AiApprovalDesignWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    agentsWithHeavierReview: number;
+    currentExpectedHumanReviews: number;
+    simulatedExpectedHumanReviews: number;
+    addedHumanReviewTouches: number;
+  };
+  agents: AiApprovalDesignWorkspaceAgentResponse[];
+}
+
+export interface AiApprovalCapacityWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  approvalPolicyKeys: string[];
+  currentMinimumReviewsPerDay: number;
+  simulatedMinimumReviewsPerDay: number;
+  addedReviewsPerDay: number;
+  capacityStatus: 'stable' | 'watch' | 'overloaded';
+  promotedToolKeys: string[];
+  stillBlockedToolKeys: string[];
+  bottleneckReasons: string[];
+  notes: string[];
+}
+
+export interface AiApprovalCapacityWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    agentsAtCapacityRisk: number;
+    currentMinimumReviewsPerDay: number;
+    simulatedMinimumReviewsPerDay: number;
+    addedReviewsPerDay: number;
+  };
+  agents: AiApprovalCapacityWorkspaceAgentResponse[];
+}
+
+export interface AiApprovalSlaWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  approvalPolicyKeys: string[];
+  pendingApprovalRequests: number;
+  reviewableSuggestionRuns: number;
+  promotedToolKeys: string[];
+  stillBlockedToolKeys: string[];
+  currentEstimatedClearDays: number;
+  simulatedEstimatedClearDays: number;
+  currentSlaStatus: 'on_track' | 'at_risk' | 'breached';
+  simulatedSlaStatus: 'on_track' | 'at_risk' | 'breached';
+  notes: string[];
+}
+
+export interface AiApprovalSlaWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    agentsAtRisk: number;
+    agentsBreached: number;
+    currentBacklogTouches: number;
+    simulatedBacklogTouches: number;
+    addedBacklogTouches: number;
+  };
+  agents: AiApprovalSlaWorkspaceAgentResponse[];
+}
+
+export interface AiApprovalStaffingWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  approvalPolicyKeys: string[];
+  currentRequiredReviewerEquivalents: number;
+  simulatedRequiredReviewerEquivalents: number;
+  addedReviewerEquivalents: number;
+  staffingStatus: 'sufficient' | 'watch' | 'insufficient';
+  promotedToolKeys: string[];
+  stillBlockedToolKeys: string[];
+  staffingReasons: string[];
+  notes: string[];
+}
+
+export interface AiApprovalStaffingWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    agentsNeedingMoreCoverage: number;
+    currentRequiredReviewerEquivalents: number;
+    simulatedRequiredReviewerEquivalents: number;
+    addedReviewerEquivalents: number;
+  };
+  agents: AiApprovalStaffingWorkspaceAgentResponse[];
+}
+
+export interface AiApprovalStaffingPlanWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  approvalPolicyKeys: string[];
+  currentRequiredReviewerEquivalents: number;
+  simulatedRequiredReviewerEquivalents: number;
+  recommendedReviewerEquivalents: number;
+  additionalReviewerEquivalentsToAssign: number;
+  priorityRank: number;
+  planStatus: 'maintain' | 'increase' | 'blocked';
+  promotedToolKeys: string[];
+  stillBlockedToolKeys: string[];
+  planActions: string[];
+  notes: string[];
+}
+
+export interface AiApprovalStaffingPlanWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    agentsRequiringIncrease: number;
+    totalRecommendedReviewerEquivalents: number;
+    totalAdditionalReviewerEquivalents: number;
+    highestPriorityAgents: number;
+  };
+  agents: AiApprovalStaffingPlanWorkspaceAgentResponse[];
+}
+
+export interface AiApprovalRolloutWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  approvalPolicyKeys: string[];
+  currentRequiredReviewerEquivalents: number;
+  recommendedReviewerEquivalents: number;
+  additionalReviewerEquivalentsToAssign: number;
+  priorityRank: number;
+  rolloutPhase: 'phase_1' | 'phase_2' | 'hold';
+  rolloutStatus: 'increase_then_rollout' | 'safe_to_rollout' | 'blocked';
+  promotedToolKeys: string[];
+  stillBlockedToolKeys: string[];
+  rolloutActions: string[];
+  notes: string[];
+}
+
+export interface AiApprovalRolloutWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    phase1Agents: number;
+    phase2Agents: number;
+    holdAgents: number;
+    totalAdditionalReviewerEquivalents: number;
+  };
+  agents: AiApprovalRolloutWorkspaceAgentResponse[];
+}
+
+export interface AiApprovalReadinessWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  approvalPolicyKeys: string[];
+  currentRequiredReviewerEquivalents: number;
+  recommendedReviewerEquivalents: number;
+  additionalReviewerEquivalentsToAssign: number;
+  currentSlaStatus: 'on_track' | 'at_risk' | 'breached';
+  simulatedSlaStatus: 'on_track' | 'at_risk' | 'breached';
+  rolloutPhase: 'phase_1' | 'phase_2' | 'hold';
+  readinessStatus: 'ready_now' | 'needs_coverage' | 'blocked';
+  readinessReasons: string[];
+  nextStep: string;
+  notes: string[];
+}
+
+export interface AiApprovalReadinessWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    readyNowAgents: number;
+    needsCoverageAgents: number;
+    blockedAgents: number;
+  };
+  agents: AiApprovalReadinessWorkspaceAgentResponse[];
+}
+
+export interface AiApprovalLaunchWorkspaceAgentResponse {
+  agentKey: string;
+  title: string;
+  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  productKey: string;
+  approvalPolicyKeys: string[];
+  currentRequiredReviewerEquivalents: number;
+  recommendedReviewerEquivalents: number;
+  additionalReviewerEquivalentsToAssign: number;
+  rolloutPhase: 'phase_1' | 'phase_2' | 'hold';
+  simulatedSlaStatus: 'on_track' | 'at_risk' | 'breached';
+  launchStatus: 'launch_now' | 'pilot_after_coverage' | 'hold';
+  launchWindow: 'current_window' | 'next_window' | 'defer';
+  recommendedAction: string;
+  launchChecklist: string[];
+  notes: string[];
+}
+
+export interface AiApprovalLaunchWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    launchNowAgents: number;
+    pilotAfterCoverageAgents: number;
+    holdAgents: number;
+    totalCoverageGap: number;
+  };
+  agents: AiApprovalLaunchWorkspaceAgentResponse[];
+}
+
 export interface AiOperationsSummaryResponse {
   tenantSlug: string;
   generatedAt: string;

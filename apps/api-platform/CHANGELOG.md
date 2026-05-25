@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.50.0
+
+### Minor Changes
+
+- c75a14b: Extend the tenant AI operations surface with the first real guarded-execution Growth lane, persisted execute and rollback event history, and repeatable positive and negative smoke validation.
+
 ## 0.49.0
 
 ### Minor Changes

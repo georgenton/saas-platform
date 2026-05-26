@@ -72,6 +72,41 @@ describe('AI suggestion run use cases', () => {
           bullets: ['Reply now count: 1'],
         },
       ],
+      retrieval: {
+        retrievedAt: new Date('2026-05-22T11:59:00.000Z'),
+        recordCount: 1,
+        policy: {
+          version: 'v1',
+          limit: 5,
+          suppressedDuplicateCount: 0,
+          archivedRecordCount: 0,
+          prioritizedRecordIds: ['ai-memory-001'],
+          archivalSummary:
+            'Operator notes are never auto-archived; working guarded-execution memory archives after 7 days; working approval memory archives after 14 days; durable automated memory archives after 45 days.',
+          rankingSummary:
+            'operator_note > guarded_execution_memory > approval_memory; agent > domain > tenant; working_memory > durable_memory; recency breaks ties.',
+        },
+        records: [
+          {
+            id: 'ai-memory-001',
+            scope: 'agent',
+            domainKey: 'growth',
+            agentKey: 'growth-assist-coach',
+            sourceKind: 'operator_note',
+            freshness: 'working_memory',
+            title: 'Lead routing preference',
+            summary:
+              'Priorizar reasignacion manual cuando el queue llegue caliente.',
+            detail:
+              'Cuando el lead ya esta caliente, Growth prefiere reasignacion manual antes de auto-routing.',
+            tags: ['routing'],
+            lastUpdatedAt: new Date('2026-05-22T11:58:00.000Z'),
+            inclusionReason:
+              'Agent-scoped memory attached directly to growth-assist-coach.',
+          },
+        ],
+        notes: ['1 persisted memory record(s) matched this agent context.'],
+      },
     };
     getTenantAiSuggestionEnvelopeUseCase.execute.mockResolvedValue(envelope);
     aiSuggestionRunRepository.create.mockImplementation(async (command) => ({
@@ -156,6 +191,11 @@ describe('AI suggestion run use cases', () => {
         promptPackKey: 'growth-assist-coach-core',
         promptPackVersion: 'v1',
         requestedByUserId: 'user_123',
+        envelope: expect.objectContaining({
+          retrieval: expect.objectContaining({
+            recordCount: 1,
+          }),
+        }),
       }),
     );
     expect(result).toEqual(

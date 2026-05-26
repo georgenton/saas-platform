@@ -4,9 +4,29 @@ describe('AI invoice suggestion envelope use case', () => {
   const getTenantInvoiceDocumentDraftingAssistUseCase = {
     execute: jest.fn(),
   };
+  const getTenantAiMemoryRetrievalUseCase = {
+    execute: jest.fn(),
+  };
 
   beforeEach(() => {
     jest.resetAllMocks();
+    getTenantAiMemoryRetrievalUseCase.execute.mockResolvedValue({
+      retrievedAt: new Date('2026-05-23T11:00:00.000Z'),
+      recordCount: 0,
+      policy: {
+        version: 'v1',
+        limit: 5,
+        suppressedDuplicateCount: 0,
+        archivedRecordCount: 0,
+        prioritizedRecordIds: [],
+        archivalSummary:
+          'Operator notes are never auto-archived; working guarded-execution memory archives after 7 days; working approval memory archives after 14 days; durable automated memory archives after 45 days.',
+        rankingSummary:
+          'operator_note > guarded_execution_memory > approval_memory; agent > domain > tenant; working_memory > durable_memory; recency breaks ties.',
+      },
+      records: [],
+      notes: ['No persisted memory record matched this agent context yet.'],
+    });
     getTenantInvoiceDocumentDraftingAssistUseCase.execute.mockResolvedValue({
       tenantSlug: 'saas-platform',
       generatedAt: new Date('2026-05-23T11:00:00.000Z'),
@@ -65,6 +85,7 @@ describe('AI invoice suggestion envelope use case', () => {
   it('builds a tenant-scoped suggestion envelope from the invoicing drafting surface', async () => {
     const useCase = new GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase(
       getTenantInvoiceDocumentDraftingAssistUseCase as any,
+      getTenantAiMemoryRetrievalUseCase as any,
     );
 
     const result = await useCase.execute('saas-platform');

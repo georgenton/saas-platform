@@ -49,6 +49,7 @@ model Tenant {
   growthOperationalCases GrowthOperationalCase[]
   growthOperationalCaseAutoAssignmentSettings GrowthOperationalCaseAutoAssignmentSettings?
   aiApprovalRequests AiApprovalRequest[]
+  aiMemoryRecords  AiMemoryRecord[]
   aiSuggestionRuns AiSuggestionRun[]
   aiGuardedExecutionEvents AiGuardedExecutionEvent[]
   webhookEventEnvelopes WebhookEventEnvelope[]
@@ -354,6 +355,31 @@ model AiSuggestionRun {
 
   @@index([tenantId, agentKey, createdAt])
   @@index([tenantId, surfaceKey, createdAt])
+}
+
+model AiMemoryRecord {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenantSlug      String
+  scope           String
+  domainKey       String?
+  agentKey        String?
+  sourceKind      String
+  freshness       String
+  title           String
+  summary         String
+  detail          String   @db.Text
+  tagsJson        String   @db.Text
+  status          String
+  createdByUserId String?
+  createdByEmail  String?
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId, scope, updatedAt])
+  @@index([tenantId, domainKey, updatedAt])
+  @@index([tenantId, agentKey, updatedAt])
 }
 
 model AiApprovalRequest {

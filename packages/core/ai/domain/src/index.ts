@@ -18,6 +18,13 @@ export type AiSuggestionRunApprovalStatus =
   | 'not_requested'
   | AiApprovalRequestStatus;
 export type AiGuardedExecutionEventType = 'executed' | 'rolled_back';
+export type AiMemoryRecordScope = 'tenant' | 'domain' | 'agent';
+export type AiMemoryRecordStatus = 'active' | 'inactive';
+export type AiMemoryRecordSourceKind =
+  | 'operator_note'
+  | 'approval_memory'
+  | 'guarded_execution_memory';
+export type AiMemoryRecordFreshness = 'working_memory' | 'durable_memory';
 
 export interface AiAgentCatalogEntry {
   key: string;
@@ -107,6 +114,89 @@ export interface AiSuggestionContextBlock {
   bullets: string[];
 }
 
+export interface CreateAiMemoryRecordCommand {
+  tenantId: string;
+  tenantSlug: string;
+  scope: AiMemoryRecordScope;
+  domainKey: AiDomainKey | null;
+  agentKey: string | null;
+  sourceKind: AiMemoryRecordSourceKind;
+  freshness: AiMemoryRecordFreshness;
+  title: string;
+  summary: string;
+  detail: string;
+  tags: string[];
+  status: AiMemoryRecordStatus;
+  createdByUserId: string | null;
+  createdByEmail: string | null;
+}
+
+export interface AiMemoryRecord extends CreateAiMemoryRecordCommand {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AiRetrievedMemoryRecord {
+  id: string;
+  scope: AiMemoryRecordScope;
+  domainKey: AiDomainKey | null;
+  agentKey: string | null;
+  sourceKind: AiMemoryRecordSourceKind;
+  freshness: AiMemoryRecordFreshness;
+  title: string;
+  summary: string;
+  detail: string;
+  tags: string[];
+  lastUpdatedAt: Date;
+  inclusionReason: string;
+}
+
+export interface AiMemoryRetrieval {
+  retrievedAt: Date;
+  recordCount: number;
+  policy: {
+    version: 'v1';
+    limit: number;
+    suppressedDuplicateCount: number;
+    archivedRecordCount: number;
+    prioritizedRecordIds: string[];
+    archivalSummary: string;
+    rankingSummary: string;
+  };
+  records: AiRetrievedMemoryRecord[];
+  notes: string[];
+}
+
+export interface AiMemoryRecordUsageReference {
+  suggestionRunId: string;
+  agentKey: string;
+  surfaceKey: string;
+  sourceContractKey: string;
+  promptPackKey: string;
+  promptPackVersion: string;
+  generatedAt: Date;
+  createdAt: Date;
+  requestedByUserId: string;
+  requestedByEmail: string | null;
+  summary: string;
+  memoryScope: AiMemoryRecordScope;
+  memoryInclusionReason: string | null;
+}
+
+export interface AiMemoryRecordProvenance {
+  usageCount: number;
+  agentsUsingCount: number;
+  latestUsedAt: Date | null;
+  recentSuggestionRuns: AiMemoryRecordUsageReference[];
+  notes: string[];
+}
+
+export interface AiMemoryRecordDetailView {
+  record: AiMemoryRecord;
+  provenance: AiMemoryRecordProvenance;
+}
+
 export interface TenantAiSuggestionEnvelope {
   tenantSlug: string;
   generatedAt: Date;
@@ -125,6 +215,7 @@ export interface TenantAiSuggestionEnvelope {
     rationale: string;
   }[];
   contextBlocks: AiSuggestionContextBlock[];
+  retrieval?: AiMemoryRetrieval;
 }
 
 export type AiSuggestionRunStatus = 'prepared';

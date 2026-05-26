@@ -26,6 +26,9 @@ import {
   AiPolicySimulationWorkspaceResponse,
   AiApprovalWorkspaceResponse,
   AiMemoryWorkspaceResponse,
+  AiMemoryRecordDetailResponse,
+  AiMemoryRecordResponse,
+  AiRetrievalWorkspaceResponse,
   AiOperationsSummaryResponse,
   AiApprovalPolicyResponse,
   AiApprovalRequestResponse,
@@ -1383,6 +1386,111 @@ export async function fetchTenantAiMemoryWorkspace(
   );
 }
 
+export async function fetchTenantAiMemoryRecords(
+  token: string,
+  tenantSlug: string,
+  limit = 20,
+  status: 'active' | 'inactive' | 'all' = 'all',
+): Promise<AiMemoryRecordResponse[]> {
+  return request<AiMemoryRecordResponse[]>(
+    `/ai/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/memory-records?limit=${encodeURIComponent(String(limit))}&status=${encodeURIComponent(status)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiMemoryRecordDetail(
+  token: string,
+  tenantSlug: string,
+  recordId: string,
+): Promise<AiMemoryRecordDetailResponse> {
+  return request<AiMemoryRecordDetailResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/memory-records/${encodeURIComponent(
+      recordId,
+    )}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function createTenantAiMemoryRecord(
+  token: string,
+  tenantSlug: string,
+  payload: {
+    scope: 'tenant' | 'domain' | 'agent';
+    domainKey?: 'growth' | 'invoicing' | 'ecommerce' | null;
+    agentKey?: string | null;
+    sourceKind?:
+      | 'operator_note'
+      | 'approval_memory'
+      | 'guarded_execution_memory'
+      | null;
+    freshness?: 'working_memory' | 'durable_memory' | null;
+    title: string;
+    summary: string;
+    detail: string;
+    tags?: string[] | null;
+  },
+): Promise<AiMemoryRecordResponse> {
+  return request<AiMemoryRecordResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/memory-records`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function updateTenantAiMemoryRecord(
+  token: string,
+  tenantSlug: string,
+  recordId: string,
+  payload: {
+    sourceKind?:
+      | 'operator_note'
+      | 'approval_memory'
+      | 'guarded_execution_memory'
+      | null;
+    freshness?: 'working_memory' | 'durable_memory' | null;
+    title?: string | null;
+    summary?: string | null;
+    detail?: string | null;
+    tags?: string[] | null;
+    status?: 'active' | 'inactive' | null;
+  },
+): Promise<AiMemoryRecordResponse> {
+  return request<AiMemoryRecordResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/memory-records/${encodeURIComponent(
+      recordId,
+    )}`,
+    {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function fetchTenantAiRetrievalWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiRetrievalWorkspaceResponse> {
+  return request<AiRetrievalWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/retrieval-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function fetchTenantAiHealthWorkspace(
   token: string,
   tenantSlug: string,
@@ -1889,7 +1997,8 @@ export async function executeTenantAiGuardedExecution(
   agentKey: string,
   requestId: string,
   body: {
-    caseId: string;
+    caseId?: string;
+    invoiceId?: string;
   },
 ): Promise<AiGuardedExecutionExecutionResponse> {
   return request<AiGuardedExecutionExecutionResponse>(
@@ -1912,7 +2021,8 @@ export async function rollbackTenantAiGuardedExecution(
   agentKey: string,
   requestId: string,
   body: {
-    caseId: string;
+    caseId?: string;
+    invoiceId?: string;
   },
 ): Promise<AiGuardedExecutionRollbackExecutionResponse> {
   return request<AiGuardedExecutionRollbackExecutionResponse>(

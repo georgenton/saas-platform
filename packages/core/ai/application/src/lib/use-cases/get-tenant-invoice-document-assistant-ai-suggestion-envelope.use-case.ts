@@ -12,6 +12,7 @@ import {
   findAiPromptRegistryEntryByAgentKey,
   listAiAgentToolAccessByAgentKey,
 } from '../support/ai-agent-catalog';
+import { GetTenantAiMemoryRetrievalUseCase } from './get-tenant-ai-memory-retrieval.use-case';
 
 const INVOICE_DOCUMENT_ASSISTANT_AGENT_KEY = 'invoice-document-assistant';
 const INVOICE_DOCUMENT_ASSISTANT_SURFACE_KEY = 'invoice_document_drafting';
@@ -19,6 +20,7 @@ const INVOICE_DOCUMENT_ASSISTANT_SURFACE_KEY = 'invoice_document_drafting';
 export class GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase {
   constructor(
     private readonly getTenantInvoiceDocumentDraftingAssistUseCase: GetTenantInvoiceDocumentDraftingAssistUseCase,
+    private readonly getTenantAiMemoryRetrievalUseCase: GetTenantAiMemoryRetrievalUseCase,
   ) {}
 
   async execute(
@@ -41,6 +43,10 @@ export class GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase {
       await this.getTenantInvoiceDocumentDraftingAssistUseCase.execute(
         tenantSlug,
       );
+    const retrieval = await this.getTenantAiMemoryRetrievalUseCase.execute(
+      tenantSlug,
+      agentKey,
+    );
 
     return {
       tenantSlug,
@@ -67,12 +73,16 @@ export class GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase {
         accessLevel: entry.accessLevel,
         rationale: entry.rationale,
       })),
-      contextBlocks: this.buildContextBlocks(assist),
+      contextBlocks: this.buildContextBlocks(assist, retrieval.records),
+      ...(retrieval.recordCount > 0 ? { retrieval } : {}),
     };
   }
 
   private buildContextBlocks(
     assist: TenantInvoiceDocumentDraftingAssistView,
+    retrievedMemoryRecords: Awaited<
+      ReturnType<GetTenantAiMemoryRetrievalUseCase['execute']>
+    >['records'],
   ): AiSuggestionContextBlock[] {
     return [
       {
@@ -123,6 +133,18 @@ export class GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase {
           'These actions stay blocked even if the assistant can already help with drafting or review guidance.',
         bullets: assist.blockedActions,
       },
+      ...retrievedMemoryRecords.map((entry) => ({
+        key: `memory_${entry.id}`,
+        title: `Memory: ${entry.title}`,
+        detail: entry.summary,
+        bullets: [
+          entry.detail,
+          `Scope: ${entry.scope}`,
+          `Source: ${entry.sourceKind}`,
+          `Freshness: ${entry.freshness}`,
+          `Why included: ${entry.inclusionReason}`,
+        ],
+      })),
     ].map((block) => ({
       ...block,
       bullets:

@@ -2,11 +2,13 @@ import { Module } from '@nestjs/common';
 import {
   AI_APPROVAL_REQUEST_REPOSITORY,
   AI_GUARDED_EXECUTION_EVENT_REPOSITORY,
+  AI_MEMORY_RECORD_REPOSITORY,
   AI_SUGGESTION_RUN_REPOSITORY,
 } from '@saas-platform/ai-application';
 import { PrismaModule } from '../prisma.module';
 import { PrismaAiApprovalRequestRepository } from './prisma-ai-approval-request.repository';
 import { PrismaAiGuardedExecutionEventRepository } from './prisma-ai-guarded-execution-event.repository';
+import { PrismaAiMemoryRecordRepository } from './prisma-ai-memory-record.repository';
 import { PrismaAiSuggestionRunRepository } from './prisma-ai-suggestion-run.repository';
 
 @Module({
@@ -14,10 +16,15 @@ import { PrismaAiSuggestionRunRepository } from './prisma-ai-suggestion-run.repo
   providers: [
     PrismaAiApprovalRequestRepository,
     PrismaAiGuardedExecutionEventRepository,
+    PrismaAiMemoryRecordRepository,
     PrismaAiSuggestionRunRepository,
     {
       provide: AI_APPROVAL_REQUEST_REPOSITORY,
       useExisting: PrismaAiApprovalRequestRepository,
+    },
+    {
+      provide: AI_MEMORY_RECORD_REPOSITORY,
+      useExisting: PrismaAiMemoryRecordRepository,
     },
     {
       provide: AI_GUARDED_EXECUTION_EVENT_REPOSITORY,
@@ -31,6 +38,7 @@ import { PrismaAiSuggestionRunRepository } from './prisma-ai-suggestion-run.repo
   exports: [
     AI_APPROVAL_REQUEST_REPOSITORY,
     AI_GUARDED_EXECUTION_EVENT_REPOSITORY,
+    AI_MEMORY_RECORD_REPOSITORY,
     AI_SUGGESTION_RUN_REPOSITORY,
   ],
 })

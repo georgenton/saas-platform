@@ -5,6 +5,8 @@ import {
   fetchAiAgentCatalog,
   fetchAiApprovalPolicies,
   fetchAiAgentToolAccess,
+  createTenantAiMemoryRecord,
+  fetchTenantAiMemoryRecordDetail,
   fetchTenantAiActivityFeed,
   fetchTenantAiApprovalCapacityWorkspace,
   fetchTenantAiApprovalDesignWorkspace,
@@ -28,6 +30,8 @@ import {
   fetchTenantAiEvaluationWorkspace,
   fetchTenantAiGovernanceWorkspace,
   fetchTenantAiHealthWorkspace,
+  fetchTenantAiMemoryRecords,
+  fetchTenantAiRetrievalWorkspace,
   fetchTenantAiMemoryWorkspace,
   fetchTenantAiOperationsSummary,
   fetchTenantAiPolicySimulationWorkspace,
@@ -107,6 +111,7 @@ import {
   submitPresignedInvoiceElectronicDocument,
   syncIssuerProfileTaxIdFromSignature,
   takeGrowthOperationalCase,
+  updateTenantAiMemoryRecord,
   updateGrowthOperationalCaseFollowUpState,
   upsertElectronicSubmissionSettings,
   upsertElectronicSignatureSettings,
@@ -142,6 +147,9 @@ import {
   AiEvaluationWorkspaceResponse,
   AiGovernanceWorkspaceResponse,
   AiHealthWorkspaceResponse,
+  AiMemoryRecordDetailResponse,
+  AiMemoryRecordResponse,
+  AiRetrievalWorkspaceResponse,
   AiMemoryWorkspaceResponse,
   AiPolicySimulationWorkspaceResponse,
   AiApprovalPolicyResponse,
@@ -1786,6 +1794,48 @@ export function App() {
     useState<AiMemoryWorkspaceResponse | null>(null);
   const [tenantAiMemoryWorkspaceLoading, setTenantAiMemoryWorkspaceLoading] =
     useState(false);
+  const [tenantAiMemoryRecords, setTenantAiMemoryRecords] = useState<
+    AiMemoryRecordResponse[]
+  >([]);
+  const [tenantAiMemoryRecordsLoading, setTenantAiMemoryRecordsLoading] =
+    useState(false);
+  const [selectedTenantAiMemoryRecordId, setSelectedTenantAiMemoryRecordId] =
+    useState<string | null>(null);
+  const [selectedTenantAiMemoryRecordDetail, setSelectedTenantAiMemoryRecordDetail] =
+    useState<AiMemoryRecordDetailResponse | null>(null);
+  const [selectedTenantAiMemoryRecordDetailLoading, setSelectedTenantAiMemoryRecordDetailLoading] =
+    useState(false);
+  const [tenantAiRetrievalWorkspace, setTenantAiRetrievalWorkspace] =
+    useState<AiRetrievalWorkspaceResponse | null>(null);
+  const [tenantAiRetrievalWorkspaceLoading, setTenantAiRetrievalWorkspaceLoading] =
+    useState(false);
+  const [newAiMemoryScope, setNewAiMemoryScope] = useState<
+    'tenant' | 'domain' | 'agent'
+  >('agent');
+  const [newAiMemoryDomainKey, setNewAiMemoryDomainKey] = useState<
+    'growth' | 'invoicing' | 'ecommerce'
+  >('growth');
+  const [newAiMemoryAgentKey, setNewAiMemoryAgentKey] = useState('growth-assist-coach');
+  const [newAiMemoryTitle, setNewAiMemoryTitle] = useState('');
+  const [newAiMemorySummary, setNewAiMemorySummary] = useState('');
+  const [newAiMemoryDetail, setNewAiMemoryDetail] = useState('');
+  const [newAiMemoryTags, setNewAiMemoryTags] = useState('');
+  const [newAiMemoryFreshness, setNewAiMemoryFreshness] = useState<
+    'working_memory' | 'durable_memory'
+  >('working_memory');
+  const [newAiMemorySourceKind, setNewAiMemorySourceKind] = useState<
+    'operator_note' | 'approval_memory' | 'guarded_execution_memory'
+  >('operator_note');
+  const [editingAiMemoryTitle, setEditingAiMemoryTitle] = useState('');
+  const [editingAiMemorySummary, setEditingAiMemorySummary] = useState('');
+  const [editingAiMemoryDetail, setEditingAiMemoryDetail] = useState('');
+  const [editingAiMemoryTags, setEditingAiMemoryTags] = useState('');
+  const [editingAiMemoryFreshness, setEditingAiMemoryFreshness] = useState<
+    'working_memory' | 'durable_memory'
+  >('working_memory');
+  const [editingAiMemorySourceKind, setEditingAiMemorySourceKind] = useState<
+    'operator_note' | 'approval_memory' | 'guarded_execution_memory'
+  >('operator_note');
   const [tenantAiHealthWorkspace, setTenantAiHealthWorkspace] =
     useState<AiHealthWorkspaceResponse | null>(null);
   const [tenantAiHealthWorkspaceLoading, setTenantAiHealthWorkspaceLoading] =
@@ -2276,6 +2326,17 @@ export function App() {
   const growthWorkspaceAvailable = canReadGrowthConversations;
   const currentTenantGrowthAccessible = Boolean(
     currentTenancy?.permissionKeys.includes('growth.conversations.read'),
+  );
+  const visibleAiMemoryAgents = useMemo(
+    () => tenantAiMemoryWorkspace?.agents ?? [],
+    [tenantAiMemoryWorkspace],
+  );
+  const visibleAiMemoryDomainKeys = useMemo(
+    () =>
+      Array.from(
+        new Set(visibleAiMemoryAgents.map((agent) => agent.domainKey)),
+      ) as Array<'growth' | 'invoicing' | 'ecommerce'>,
+    [visibleAiMemoryAgents],
   );
   const selectedInvoiceSummary = useMemo(
     () =>
@@ -3630,6 +3691,15 @@ export function App() {
       ),
     [growthOperationalCases],
   );
+  const availableGuardedExecutionInvoices = useMemo(
+    () =>
+      invoices.filter(
+        (entry) =>
+          (entry.status === 'issued' || entry.status === 'partially_paid') &&
+          entry.settlement.balanceDueInCents > 0,
+      ),
+    [invoices],
+  );
   const activeInvoiceAiAgent = useMemo(
     () => invoiceAssistantAiEnvelope?.agent ?? null,
     [invoiceAssistantAiEnvelope],
@@ -4294,6 +4364,7 @@ export function App() {
     }
 
     const tenantSlug = currentTenancy.tenant.slug;
+    const recordId = selectedTenantAiMemoryRecordId;
     let cancelled = false;
 
     async function loadInvoiceApprovalQueue() {
@@ -4476,6 +4547,7 @@ export function App() {
     }
 
     const tenantSlug = currentTenancy.tenant.slug;
+    const recordId = selectedTenantAiMemoryRecordId;
     let cancelled = false;
 
     async function loadGrowthWorkspace() {
@@ -4796,6 +4868,256 @@ export function App() {
     }
 
     void loadTenantAiOperationsSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (!visibleAiMemoryDomainKeys.length) {
+      return;
+    }
+
+    if (!visibleAiMemoryDomainKeys.includes(newAiMemoryDomainKey)) {
+      setNewAiMemoryDomainKey(visibleAiMemoryDomainKeys[0]);
+    }
+  }, [newAiMemoryDomainKey, visibleAiMemoryDomainKeys]);
+
+  useEffect(() => {
+    if (!visibleAiMemoryAgents.length) {
+      return;
+    }
+
+    const domainAgents = visibleAiMemoryAgents.filter(
+      (agent) => agent.domainKey === newAiMemoryDomainKey,
+    );
+    const nextAgentPool = domainAgents.length > 0 ? domainAgents : visibleAiMemoryAgents;
+
+    if (!nextAgentPool.some((agent) => agent.agentKey === newAiMemoryAgentKey)) {
+      setNewAiMemoryAgentKey(nextAgentPool[0].agentKey);
+    }
+  }, [newAiMemoryAgentKey, newAiMemoryDomainKey, visibleAiMemoryAgents]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiRetrievalWorkspace(null);
+      setTenantAiRetrievalWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiRetrievalWorkspace() {
+      setTenantAiRetrievalWorkspaceLoading(true);
+
+      try {
+        const retrievalWorkspace = await fetchTenantAiRetrievalWorkspace(
+          token,
+          tenantSlug,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiRetrievalWorkspace(retrievalWorkspace);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el retrieval workspace transversal de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiRetrievalWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiRetrievalWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (!tenantAiMemoryRecords.length) {
+      setSelectedTenantAiMemoryRecordId(null);
+      return;
+    }
+
+    if (
+      selectedTenantAiMemoryRecordId &&
+      tenantAiMemoryRecords.some((record) => record.id === selectedTenantAiMemoryRecordId)
+    ) {
+      return;
+    }
+
+    setSelectedTenantAiMemoryRecordId(tenantAiMemoryRecords[0]?.id ?? null);
+  }, [selectedTenantAiMemoryRecordId, tenantAiMemoryRecords]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      !selectedTenantAiMemoryRecordId ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setSelectedTenantAiMemoryRecordDetail(null);
+      setSelectedTenantAiMemoryRecordDetailLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const recordId = selectedTenantAiMemoryRecordId;
+    let cancelled = false;
+
+    async function loadTenantAiMemoryRecordDetail() {
+      setSelectedTenantAiMemoryRecordDetailLoading(true);
+
+      try {
+        const detail = await fetchTenantAiMemoryRecordDetail(
+          token,
+          tenantSlug,
+          recordId,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setSelectedTenantAiMemoryRecordDetail(detail);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el detalle de memoria de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setSelectedTenantAiMemoryRecordDetailLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiMemoryRecordDetail();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    canReadGrowthConversations,
+    canReadInvoicingReports,
+    currentTenancy,
+    growthWorkspaceAvailable,
+    selectedTenantAiMemoryRecordId,
+    token,
+  ]);
+
+  useEffect(() => {
+    if (!selectedTenantAiMemoryRecordDetail) {
+      return;
+    }
+
+    setEditingAiMemoryTitle(selectedTenantAiMemoryRecordDetail.record.title);
+    setEditingAiMemorySummary(selectedTenantAiMemoryRecordDetail.record.summary);
+    setEditingAiMemoryDetail(selectedTenantAiMemoryRecordDetail.record.detail);
+    setEditingAiMemoryTags(selectedTenantAiMemoryRecordDetail.record.tags.join(', '));
+    setEditingAiMemoryFreshness(selectedTenantAiMemoryRecordDetail.record.freshness);
+    setEditingAiMemorySourceKind(selectedTenantAiMemoryRecordDetail.record.sourceKind);
+  }, [selectedTenantAiMemoryRecordDetail]);
+
+  useEffect(() => {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiMemoryRecords([]);
+      setTenantAiMemoryRecordsLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiMemoryRecords() {
+      setTenantAiMemoryRecordsLoading(true);
+
+      try {
+        const memoryRecords = await fetchTenantAiMemoryRecords(token, tenantSlug);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiMemoryRecords(memoryRecords);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'No se pudieron cargar los memory records de AI.';
+
+        if (growthWorkspaceAvailable) {
+          setGrowthError(message);
+        } else {
+          setInvoicingError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setTenantAiMemoryRecordsLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiMemoryRecords();
 
     return () => {
       cancelled = true;
@@ -6972,6 +7294,234 @@ export function App() {
     }
   }
 
+  async function refreshTenantAiMemoryRecords() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiMemoryRecords([]);
+      setTenantAiMemoryRecordsLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiMemoryRecordsLoading(true);
+
+    try {
+      const memoryRecords = await fetchTenantAiMemoryRecords(token, tenantSlug);
+
+      startTransition(() => {
+        setTenantAiMemoryRecords(memoryRecords);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudieron cargar los memory records de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiMemoryRecordsLoading(false);
+    }
+  }
+
+  async function refreshSelectedTenantAiMemoryRecordDetail() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !selectedTenantAiMemoryRecordId ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setSelectedTenantAiMemoryRecordDetail(null);
+      setSelectedTenantAiMemoryRecordDetailLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const recordId = selectedTenantAiMemoryRecordId;
+    setSelectedTenantAiMemoryRecordDetailLoading(true);
+
+    try {
+      const detail = await fetchTenantAiMemoryRecordDetail(
+        token,
+        tenantSlug,
+        recordId,
+      );
+
+      startTransition(() => {
+        setSelectedTenantAiMemoryRecordDetail(detail);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el detalle de memoria de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setSelectedTenantAiMemoryRecordDetailLoading(false);
+    }
+  }
+
+  async function refreshTenantAiRetrievalWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      (!canReadGrowthConversations && !canReadInvoicingReports)
+    ) {
+      setTenantAiRetrievalWorkspace(null);
+      setTenantAiRetrievalWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiRetrievalWorkspaceLoading(true);
+
+    try {
+      const retrievalWorkspace = await fetchTenantAiRetrievalWorkspace(
+        token,
+        tenantSlug,
+      );
+
+      startTransition(() => {
+        setTenantAiRetrievalWorkspace(retrievalWorkspace);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el retrieval workspace transversal de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setTenantAiRetrievalWorkspaceLoading(false);
+    }
+  }
+
+  async function handleCreateTenantAiMemoryRecord(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (
+      !token ||
+      !currentTenancy ||
+      !newAiMemoryTitle.trim() ||
+      !newAiMemorySummary.trim() ||
+      !newAiMemoryDetail.trim()
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setActionLoading('create-ai-memory-record');
+
+    try {
+      await createTenantAiMemoryRecord(token, tenantSlug, {
+        scope: newAiMemoryScope,
+        domainKey:
+          newAiMemoryScope === 'domain' || newAiMemoryScope === 'agent'
+            ? newAiMemoryDomainKey
+            : null,
+        agentKey: newAiMemoryScope === 'agent' ? newAiMemoryAgentKey : null,
+        sourceKind: newAiMemorySourceKind,
+        freshness: newAiMemoryFreshness,
+        title: newAiMemoryTitle.trim(),
+        summary: newAiMemorySummary.trim(),
+        detail: newAiMemoryDetail.trim(),
+        tags: newAiMemoryTags
+          .split(',')
+          .map((entry) => entry.trim())
+          .filter(Boolean),
+      });
+
+      setNewAiMemoryTitle('');
+      setNewAiMemorySummary('');
+      setNewAiMemoryDetail('');
+      setNewAiMemoryTags('');
+
+      await Promise.all([refreshTenantAiMemoryRecords(), refreshTenantAiMemoryWorkspace(), refreshTenantAiRetrievalWorkspace()]);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo crear el memory record de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleUpdateTenantAiMemoryRecord(
+    statusOverride?: 'active' | 'inactive',
+  ) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !selectedTenantAiMemoryRecordDetail?.record
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const record = selectedTenantAiMemoryRecordDetail.record;
+    const actionKey = `update-ai-memory-record:${record.id}`;
+    setActionLoading(actionKey);
+
+    try {
+      await updateTenantAiMemoryRecord(token, tenantSlug, record.id, {
+        sourceKind: editingAiMemorySourceKind,
+        freshness: editingAiMemoryFreshness,
+        title: editingAiMemoryTitle.trim(),
+        summary: editingAiMemorySummary.trim(),
+        detail: editingAiMemoryDetail.trim(),
+        tags: editingAiMemoryTags
+          .split(',')
+          .map((entry) => entry.trim())
+          .filter(Boolean),
+        status: statusOverride ?? record.status,
+      });
+
+      await Promise.all([
+        refreshTenantAiMemoryRecords(),
+        refreshSelectedTenantAiMemoryRecordDetail(),
+        refreshTenantAiMemoryWorkspace(),
+        refreshTenantAiRetrievalWorkspace(),
+      ]);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar el memory record de AI.';
+
+      if (growthWorkspaceAvailable) {
+        setGrowthError(message);
+      } else {
+        setInvoicingError(message);
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   async function refreshTenantAiHealthWorkspace() {
     if (
       !token ||
@@ -7780,7 +8330,9 @@ export function App() {
     await refreshTenantAiApprovalWorkspaceSummary();
     await refreshTenantAiHandoffWorkspaceSummary();
     await refreshTenantAiActivityFeed();
+    await refreshTenantAiMemoryRecords();
     await refreshTenantAiMemoryWorkspace();
+    await refreshTenantAiRetrievalWorkspace();
     await refreshTenantAiHealthWorkspace();
     await refreshTenantAiEvaluationWorkspace();
     await refreshTenantAiGovernanceWorkspace();
@@ -9001,49 +9553,70 @@ export function App() {
   async function handleExecuteTenantAiGuardedExecution(
     agentKey: string,
     requestId: string,
-    caseId: string,
+    targetId: string,
   ) {
-    if (
-      !token ||
-      !currentTenancy ||
-      !canManageGrowthConversations ||
-      agentKey !== 'growth-assist-coach'
-    ) {
+    if (!token || !currentTenancy) {
       return;
     }
 
     const tenantSlug = currentTenancy.tenant.slug;
-    const actionKey = `execute-ai-guarded:${requestId}:${caseId}`;
+    const actionKey = `execute-ai-guarded:${requestId}:${targetId}`;
     setGrowthActionLoading(actionKey);
     setGrowthActionMessage(null);
     setGrowthError(null);
 
     try {
+      const body =
+        agentKey === 'invoice-document-assistant'
+          ? { invoiceId: targetId }
+          : { caseId: targetId };
       const result = await executeTenantAiGuardedExecution(
         token,
         tenantSlug,
         agentKey,
         requestId,
-        {
-          caseId,
-        },
+        body,
       );
 
       startTransition(() => {
         setLastGuardedExecutionResult(result);
-        setGrowthOperationalCases((current) => [
-          result.operationalCase,
-          ...current.filter((entry) => entry.id !== result.operationalCase.id),
-        ]);
+        if (result.operationalCase) {
+          const operationalCase = result.operationalCase;
+          setGrowthOperationalCases((current) => [
+            operationalCase as GrowthOperationalCaseResponse,
+            ...current.filter((entry) => entry.id !== operationalCase.id),
+          ]);
+        }
+        if (result.invoice) {
+          setSelectedInvoiceDetail(result.invoice);
+          setInvoices((current) =>
+            current.map((entry) =>
+              entry.id === result.invoice?.id
+                ? {
+                    ...entry,
+                    status: result.invoice.status,
+                    updatedAt: result.invoice.updatedAt,
+                    settlement: result.invoice.settlement,
+                  }
+                : entry,
+            ),
+          );
+        }
       });
 
-      await Promise.all([
-        refreshGrowthWorkspace(),
-        refreshTenantAiOperationsConsole(),
-      ]);
+      await Promise.all(
+        [
+          refreshTenantAiOperationsConsole(),
+          agentKey === 'growth-assist-coach'
+            ? refreshGrowthWorkspace()
+            : refreshInvoicingWorkspace({ selectInvoiceId: targetId }),
+        ].filter(Boolean),
+      );
 
       setGrowthActionMessage(
-        `Guarded execution ejecutada sobre ${result.operationalCase.id} con ${result.toolKey}.`,
+        result.targetKind === 'invoice_payment'
+          ? `Guarded execution ejecutada sobre la factura ${result.invoice?.number ?? targetId} con ${result.toolKey}.`
+          : `Guarded execution ejecutada sobre ${result.operationalCase?.id ?? targetId} con ${result.toolKey}.`,
       );
     } catch (error) {
       setGrowthError(
@@ -9059,49 +9632,70 @@ export function App() {
   async function handleRollbackTenantAiGuardedExecution(
     agentKey: string,
     requestId: string,
-    caseId: string,
+    targetId: string,
   ) {
-    if (
-      !token ||
-      !currentTenancy ||
-      !canManageGrowthConversations ||
-      agentKey !== 'growth-assist-coach'
-    ) {
+    if (!token || !currentTenancy) {
       return;
     }
 
     const tenantSlug = currentTenancy.tenant.slug;
-    const actionKey = `rollback-ai-guarded:${requestId}:${caseId}`;
+    const actionKey = `rollback-ai-guarded:${requestId}:${targetId}`;
     setGrowthActionLoading(actionKey);
     setGrowthActionMessage(null);
     setGrowthError(null);
 
     try {
+      const body =
+        agentKey === 'invoice-document-assistant'
+          ? { invoiceId: targetId }
+          : { caseId: targetId };
       const result = await rollbackTenantAiGuardedExecution(
         token,
         tenantSlug,
         agentKey,
         requestId,
-        {
-          caseId,
-        },
+        body,
       );
 
       startTransition(() => {
         setLastGuardedExecutionRollbackResult(result);
-        setGrowthOperationalCases((current) => [
-          result.operationalCase,
-          ...current.filter((entry) => entry.id !== result.operationalCase.id),
-        ]);
+        if (result.operationalCase) {
+          const operationalCase = result.operationalCase;
+          setGrowthOperationalCases((current) => [
+            operationalCase as GrowthOperationalCaseResponse,
+            ...current.filter((entry) => entry.id !== operationalCase.id),
+          ]);
+        }
+        if (result.invoice) {
+          setSelectedInvoiceDetail(result.invoice);
+          setInvoices((current) =>
+            current.map((entry) =>
+              entry.id === result.invoice?.id
+                ? {
+                    ...entry,
+                    status: result.invoice.status,
+                    updatedAt: result.invoice.updatedAt,
+                    settlement: result.invoice.settlement,
+                  }
+                : entry,
+            ),
+          );
+        }
       });
 
-      await Promise.all([
-        refreshGrowthWorkspace(),
-        refreshTenantAiOperationsConsole(),
-      ]);
+      await Promise.all(
+        [
+          refreshTenantAiOperationsConsole(),
+          agentKey === 'growth-assist-coach'
+            ? refreshGrowthWorkspace()
+            : refreshInvoicingWorkspace({ selectInvoiceId: targetId }),
+        ].filter(Boolean),
+      );
 
       setGrowthActionMessage(
-        `Guarded rollback ejecutado sobre ${result.operationalCase.id}; lane devuelto a suggestion_only.`,
+        result.targetKind === 'invoice_payment'
+          ? `Guarded rollback ejecutado sobre la factura ${result.invoice?.number ?? targetId}; lane devuelto a suggestion_only.`
+          : `Guarded rollback ejecutado sobre ${result.operationalCase?.id ?? targetId}; lane devuelto a suggestion_only.`,
       );
     } catch (error) {
       setGrowthError(
@@ -18438,11 +19032,24 @@ export function App() {
                         </span>
                       </div>
                       <small>{lastGuardedExecutionResult.detail}</small>
-                      <small>
-                        Caso {lastGuardedExecutionResult.operationalCase.id} · Estado{' '}
-                        {humanizeKey(lastGuardedExecutionResult.operationalCase.status)} ·
-                        Tool {lastGuardedExecutionResult.toolKey}
-                      </small>
+                      {lastGuardedExecutionResult.targetKind ===
+                      'invoice_payment' ? (
+                        <small>
+                          Factura {lastGuardedExecutionResult.invoice?.number ?? 'sin numero'} ·
+                          Estado {humanizeKey(lastGuardedExecutionResult.invoice?.status ?? 'unknown')}{' '}
+                          · Pago {lastGuardedExecutionResult.payment?.id ?? 'sin pago'} · Tool{' '}
+                          {lastGuardedExecutionResult.toolKey}
+                        </small>
+                      ) : (
+                        <small>
+                          Caso {lastGuardedExecutionResult.operationalCase?.id ?? 'sin caso'} ·
+                          Estado{' '}
+                          {humanizeKey(
+                            lastGuardedExecutionResult.operationalCase?.status ?? 'unknown',
+                          )}{' '}
+                          · Tool {lastGuardedExecutionResult.toolKey}
+                        </small>
+                      )}
                     </div>
                   ) : null}
                   {lastGuardedExecutionRollbackResult ? (
@@ -18454,13 +19061,31 @@ export function App() {
                         </span>
                       </div>
                       <small>{lastGuardedExecutionRollbackResult.detail}</small>
-                      <small>
-                        Caso {lastGuardedExecutionRollbackResult.operationalCase.id} · Estado{' '}
-                        {humanizeKey(
-                          lastGuardedExecutionRollbackResult.operationalCase.status,
-                        )}{' '}
-                        · Fallback {lastGuardedExecutionRollbackResult.safeFallbackMode}
-                      </small>
+                      {lastGuardedExecutionRollbackResult.targetKind ===
+                      'invoice_payment' ? (
+                        <small>
+                          Factura{' '}
+                          {lastGuardedExecutionRollbackResult.invoice?.number ?? 'sin numero'} ·
+                          Estado{' '}
+                          {humanizeKey(
+                            lastGuardedExecutionRollbackResult.invoice?.status ?? 'unknown',
+                          )}{' '}
+                          · Pago{' '}
+                          {lastGuardedExecutionRollbackResult.payment?.id ?? 'sin pago'} ·
+                          Fallback {lastGuardedExecutionRollbackResult.safeFallbackMode}
+                        </small>
+                      ) : (
+                        <small>
+                          Caso{' '}
+                          {lastGuardedExecutionRollbackResult.operationalCase?.id ?? 'sin caso'}{' '}
+                          · Estado{' '}
+                          {humanizeKey(
+                            lastGuardedExecutionRollbackResult.operationalCase?.status ??
+                              'unknown',
+                          )}{' '}
+                          · Fallback {lastGuardedExecutionRollbackResult.safeFallbackMode}
+                        </small>
+                      )}
                     </div>
                   ) : null}
                   {tenantAiGuardedExecutionControlWorkspace?.agents.length ? (
@@ -18472,17 +19097,40 @@ export function App() {
                         guardedExecutionCaseSelectionByAgent[agent.agentKey] ??
                         availableGuardedExecutionGrowthCases[0]?.id ??
                         '';
+                      const selectedInvoiceIdForGuardedExecution =
+                        guardedExecutionCaseSelectionByAgent[agent.agentKey] ??
+                        selectedInvoiceId ??
+                        availableGuardedExecutionInvoices[0]?.id ??
+                        '';
                       const selectedCase =
                         availableGuardedExecutionGrowthCases.find(
                           (entry) => entry.id === selectedCaseId,
                         ) ?? null;
+                      const selectedInvoiceForGuardedExecution =
+                        invoices.find(
+                          (entry) => entry.id === selectedInvoiceIdForGuardedExecution,
+                        ) ?? null;
                       const executeActionKey =
-                        approvedRequest && selectedCaseId
-                          ? `execute-ai-guarded:${approvedRequest.id}:${selectedCaseId}`
+                        approvedRequest &&
+                        (agent.agentKey === 'invoice-document-assistant'
+                          ? selectedInvoiceIdForGuardedExecution
+                          : selectedCaseId)
+                          ? `execute-ai-guarded:${approvedRequest.id}:${
+                              agent.agentKey === 'invoice-document-assistant'
+                                ? selectedInvoiceIdForGuardedExecution
+                                : selectedCaseId
+                            }`
                           : null;
                       const rollbackActionKey =
-                        approvedRequest && selectedCaseId
-                          ? `rollback-ai-guarded:${approvedRequest.id}:${selectedCaseId}`
+                        approvedRequest &&
+                        (agent.agentKey === 'invoice-document-assistant'
+                          ? selectedInvoiceIdForGuardedExecution
+                          : selectedCaseId)
+                          ? `rollback-ai-guarded:${approvedRequest.id}:${
+                              agent.agentKey === 'invoice-document-assistant'
+                                ? selectedInvoiceIdForGuardedExecution
+                                : selectedCaseId
+                            }`
                           : null;
                       const canExecuteGrowthLane =
                         canManageGrowthConversations &&
@@ -18495,6 +19143,32 @@ export function App() {
                         selectedCase !== null &&
                         selectedCase.status === 'in_progress' &&
                         selectedCase.assignedUserId !== null;
+                      const canExecuteInvoiceLane =
+                        canReadInvoicingReports &&
+                        agent.agentKey === 'invoice-document-assistant' &&
+                        agent.candidateToolKey === 'invoice_payment_collection_execution' &&
+                        approvedRequest !== null &&
+                        selectedInvoiceForGuardedExecution !== null &&
+                        (selectedInvoiceForGuardedExecution.status === 'issued' ||
+                          selectedInvoiceForGuardedExecution.status ===
+                            'partially_paid') &&
+                        selectedInvoiceForGuardedExecution.settlement.balanceDueInCents > 0;
+                      const matchingInvoiceRollbackPayment =
+                        agent.agentKey === 'invoice-document-assistant' &&
+                        approvedRequest !== null &&
+                        selectedInvoiceDetail?.id === selectedInvoiceIdForGuardedExecution
+                          ? [...selectedInvoiceDetail.payments]
+                              .reverse()
+                              .find(
+                                (payment) =>
+                                  payment.reference ===
+                                    `ai-approval:${approvedRequest.id}` &&
+                                  payment.status === 'posted' &&
+                                  payment.reversedAt === null,
+                              ) ?? null
+                          : null;
+                      const canRollbackInvoiceLane =
+                        canExecuteInvoiceLane && matchingInvoiceRollbackPayment !== null;
 
                       return (
                         <div
@@ -18598,6 +19272,86 @@ export function App() {
                                   }
                                 >
                                   Rollback take-case
+                                </button>
+                              </div>
+                            </>
+                          ) : null}
+                          {agent.agentKey === 'invoice-document-assistant' &&
+                          agent.candidateToolKey ===
+                            'invoice_payment_collection_execution' ? (
+                            <>
+                              <small>
+                                {approvedRequest
+                                  ? `Approval aprobado visible: ${approvedRequest.id}.`
+                                  : 'Todavia no hay un approval aprobado visible para abrir el execute path.'}
+                              </small>
+                              <div className={styles.inlineActions}>
+                                <select
+                                  className={styles.selectField}
+                                  value={selectedInvoiceIdForGuardedExecution}
+                                  onChange={(event) => {
+                                    const nextInvoiceId = event.target.value;
+                                    setGuardedExecutionCaseSelectionByAgent((current) => ({
+                                      ...current,
+                                      [agent.agentKey]: nextInvoiceId,
+                                    }));
+                                  }}
+                                  disabled={
+                                    availableGuardedExecutionInvoices.length === 0 ||
+                                    growthActionLoading === executeActionKey
+                                  }
+                                >
+                                  {availableGuardedExecutionInvoices.length === 0 ? (
+                                    <option value="">No hay facturas elegibles</option>
+                                  ) : (
+                                    availableGuardedExecutionInvoices.map((entry) => (
+                                      <option key={entry.id} value={entry.id}>
+                                        {entry.number} · saldo{' '}
+                                        {formatMoney(
+                                          entry.settlement.balanceDueInCents,
+                                          entry.currency,
+                                        )}
+                                      </option>
+                                    ))
+                                  )}
+                                </select>
+                                <button
+                                  className={styles.secondaryButton}
+                                  type="button"
+                                  onClick={() => {
+                                    if (approvedRequest && selectedInvoiceIdForGuardedExecution) {
+                                      void handleExecuteTenantAiGuardedExecution(
+                                        agent.agentKey,
+                                        approvedRequest.id,
+                                        selectedInvoiceIdForGuardedExecution,
+                                      );
+                                    }
+                                  }}
+                                  disabled={
+                                    !canExecuteInvoiceLane ||
+                                    growthActionLoading === executeActionKey
+                                  }
+                                >
+                                  Ejecutar post-payment
+                                </button>
+                                <button
+                                  className={styles.ghostButton}
+                                  type="button"
+                                  onClick={() => {
+                                    if (approvedRequest && selectedInvoiceIdForGuardedExecution) {
+                                      void handleRollbackTenantAiGuardedExecution(
+                                        agent.agentKey,
+                                        approvedRequest.id,
+                                        selectedInvoiceIdForGuardedExecution,
+                                      );
+                                    }
+                                  }}
+                                  disabled={
+                                    !canRollbackInvoiceLane ||
+                                    growthActionLoading === rollbackActionKey
+                                  }
+                                >
+                                  Rollback payment
                                 </button>
                               </div>
                             </>
@@ -18785,6 +19539,470 @@ export function App() {
                   </div>
                 </div>
 
+                <form className={styles.stack} onSubmit={handleCreateTenantAiMemoryRecord}>
+                  <div className={styles.invoiceInlineGrid}>
+                    <label className={styles.field}>
+                      <span>Scope</span>
+                      <select
+                        className={styles.selectField}
+                        onChange={(event) =>
+                          setNewAiMemoryScope(
+                            event.target.value as 'tenant' | 'domain' | 'agent',
+                          )
+                        }
+                        value={newAiMemoryScope}
+                      >
+                        <option value="tenant">Tenant</option>
+                        <option value="domain">Domain</option>
+                        <option value="agent">Agent</option>
+                      </select>
+                    </label>
+                    <label className={styles.field}>
+                      <span>Freshness</span>
+                      <select
+                        className={styles.selectField}
+                        onChange={(event) =>
+                          setNewAiMemoryFreshness(
+                            event.target.value as
+                              | 'working_memory'
+                              | 'durable_memory',
+                          )
+                        }
+                        value={newAiMemoryFreshness}
+                      >
+                        <option value="working_memory">Working memory</option>
+                        <option value="durable_memory">Durable memory</option>
+                      </select>
+                    </label>
+                    <label className={styles.field}>
+                      <span>Source</span>
+                      <select
+                        className={styles.selectField}
+                        onChange={(event) =>
+                          setNewAiMemorySourceKind(
+                            event.target.value as
+                              | 'operator_note'
+                              | 'approval_memory'
+                              | 'guarded_execution_memory',
+                          )
+                        }
+                        value={newAiMemorySourceKind}
+                      >
+                        <option value="operator_note">Operator note</option>
+                        <option value="approval_memory">Approval memory</option>
+                        <option value="guarded_execution_memory">
+                          Guarded execution memory
+                        </option>
+                      </select>
+                    </label>
+                  </div>
+
+                  {(newAiMemoryScope === 'domain' || newAiMemoryScope === 'agent') && (
+                    <div className={styles.invoiceInlineGrid}>
+                      <label className={styles.field}>
+                        <span>Domain</span>
+                        <select
+                          className={styles.selectField}
+                          onChange={(event) =>
+                            setNewAiMemoryDomainKey(
+                              event.target.value as
+                                | 'growth'
+                                | 'invoicing'
+                                | 'ecommerce',
+                            )
+                          }
+                          value={newAiMemoryDomainKey}
+                        >
+                          {visibleAiMemoryDomainKeys.map((domainKey) => (
+                            <option key={`ai-memory-domain:${domainKey}`} value={domainKey}>
+                              {humanizeKey(domainKey)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      {newAiMemoryScope === 'agent' ? (
+                        <label className={styles.field}>
+                          <span>Agent</span>
+                          <select
+                            className={styles.selectField}
+                            onChange={(event) =>
+                              setNewAiMemoryAgentKey(event.target.value)
+                            }
+                            value={newAiMemoryAgentKey}
+                          >
+                            {visibleAiMemoryAgents
+                              .filter(
+                                (agent) => agent.domainKey === newAiMemoryDomainKey,
+                              )
+                              .map((agent) => (
+                                <option
+                                  key={`ai-memory-agent:${agent.agentKey}`}
+                                  value={agent.agentKey}
+                                >
+                                  {agent.title}
+                                </option>
+                              ))}
+                          </select>
+                        </label>
+                      ) : null}
+                    </div>
+                  )}
+
+                  <label className={styles.field}>
+                    <span>Titulo</span>
+                    <input
+                      onChange={(event) => setNewAiMemoryTitle(event.target.value)}
+                      placeholder="Lead routing preference"
+                      value={newAiMemoryTitle}
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span>Resumen corto</span>
+                    <input
+                      onChange={(event) => setNewAiMemorySummary(event.target.value)}
+                      placeholder="Priorizar reasignacion manual cuando el queue llegue caliente."
+                      value={newAiMemorySummary}
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span>Detalle operativo</span>
+                    <textarea
+                      onChange={(event) => setNewAiMemoryDetail(event.target.value)}
+                      placeholder="Explica la regla, el contexto y la razon de negocio que el agente debe recordar."
+                      value={newAiMemoryDetail}
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span>Tags</span>
+                    <input
+                      onChange={(event) => setNewAiMemoryTags(event.target.value)}
+                      placeholder="routing, hot-leads"
+                      value={newAiMemoryTags}
+                    />
+                  </label>
+                  <div className={styles.inlineActions}>
+                    <button
+                      className={styles.primaryButton}
+                      disabled={
+                        !newAiMemoryTitle.trim() ||
+                        !newAiMemorySummary.trim() ||
+                        !newAiMemoryDetail.trim() ||
+                        actionLoading === 'create-ai-memory-record'
+                      }
+                      type="submit"
+                    >
+                      {actionLoading === 'create-ai-memory-record'
+                        ? 'Guardando memoria...'
+                        : 'Guardar memory record'}
+                    </button>
+                    <small className={styles.muted}>
+                      Esta nota queda persistida y luego puede entrar al retrieval de los
+                      agentes visibles para este tenant.
+                    </small>
+                  </div>
+                </form>
+
+                <div className={styles.stack}>
+                  {tenantAiMemoryRecords.length ? (
+                    tenantAiMemoryRecords.map((record) => (
+                      <div
+                        className={styles.timelineCard}
+                        key={`ai-memory-record:${record.id}`}
+                        onClick={() => setSelectedTenantAiMemoryRecordId(record.id)}
+                        role="button"
+                        style={{
+                          borderColor:
+                            selectedTenantAiMemoryRecordId === record.id
+                              ? 'rgba(0, 114, 178, 0.45)'
+                              : undefined,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{record.title}</strong>
+                          <div className={styles.inlineActions}>
+                            <span className={styles.statusPill}>
+                              {humanizeKey(record.scope)}
+                            </span>
+                            <span className={styles.statusPill}>
+                              {humanizeKey(record.status)}
+                            </span>
+                          </div>
+                        </div>
+                        <small>{record.summary}</small>
+                        <small>
+                          {record.agentKey
+                            ? `Agent ${record.agentKey}`
+                            : record.domainKey
+                              ? `Domain ${record.domainKey}`
+                              : 'Tenant-wide memory'}
+                        </small>
+                        <small>
+                          Source {humanizeKey(record.sourceKind)} · freshness{' '}
+                          {humanizeKey(record.freshness)} · updated{' '}
+                          {formatDate(record.updatedAt)}
+                        </small>
+                      </div>
+                    ))
+                  ) : tenantAiMemoryRecordsLoading ? (
+                    <small className={styles.muted}>
+                      Cargando memory records de AI...
+                    </small>
+                  ) : (
+                    <small className={styles.muted}>
+                      Todavía no hay memory records persistidos desde la consola.
+                    </small>
+                  )}
+                </div>
+
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Memory Provenance</span>
+                      <h3>Donde se uso esta memoria y si sigue entrando al contexto</h3>
+                    </div>
+                    <span className={styles.statusPill}>
+                      {selectedTenantAiMemoryRecordDetail
+                        ? humanizeKey(selectedTenantAiMemoryRecordDetail.record.status)
+                        : 'sin detalle'}
+                    </span>
+                  </div>
+
+                  {selectedTenantAiMemoryRecordDetail ? (
+                    <div className={styles.stack}>
+                      <div className={styles.commercialMetricsGrid}>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Visible ahora</span>
+                          <strong>
+                            {selectedTenantAiMemoryRecordDetail.currentRetrieval.agentCount}
+                          </strong>
+                          <small>Agentes visibles que hidratarian este record hoy.</small>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Usos persistidos</span>
+                          <strong>
+                            {selectedTenantAiMemoryRecordDetail.provenance.usageCount}
+                          </strong>
+                          <small>Suggestion runs ya guardados que lo referencian.</small>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Agentes con uso</span>
+                          <strong>
+                            {selectedTenantAiMemoryRecordDetail.provenance.agentsUsingCount}
+                          </strong>
+                          <small>Agentes distintos donde ya aparecio esta memoria.</small>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Ultimo uso</span>
+                          <strong>
+                            {selectedTenantAiMemoryRecordDetail.provenance.latestUsedAt
+                              ? formatDate(
+                                  selectedTenantAiMemoryRecordDetail.provenance.latestUsedAt,
+                                )
+                              : 'nunca'}
+                          </strong>
+                          <small>Trazabilidad de envelopes persistidos.</small>
+                        </div>
+                      </div>
+
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Title</span>
+                          <input
+                            onChange={(event) => setEditingAiMemoryTitle(event.target.value)}
+                            value={editingAiMemoryTitle}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Freshness</span>
+                          <select
+                            className={styles.selectField}
+                            onChange={(event) =>
+                              setEditingAiMemoryFreshness(
+                                event.target.value as
+                                  | 'working_memory'
+                                  | 'durable_memory',
+                              )
+                            }
+                            value={editingAiMemoryFreshness}
+                          >
+                            <option value="working_memory">Working memory</option>
+                            <option value="durable_memory">Durable memory</option>
+                          </select>
+                        </label>
+                        <label className={styles.field}>
+                          <span>Source</span>
+                          <select
+                            className={styles.selectField}
+                            onChange={(event) =>
+                              setEditingAiMemorySourceKind(
+                                event.target.value as
+                                  | 'operator_note'
+                                  | 'approval_memory'
+                                  | 'guarded_execution_memory',
+                              )
+                            }
+                            value={editingAiMemorySourceKind}
+                          >
+                            <option value="operator_note">Operator note</option>
+                            <option value="approval_memory">Approval memory</option>
+                            <option value="guarded_execution_memory">
+                              Guarded execution memory
+                            </option>
+                          </select>
+                        </label>
+                      </div>
+
+                      <label className={styles.field}>
+                        <span>Summary</span>
+                        <input
+                          onChange={(event) => setEditingAiMemorySummary(event.target.value)}
+                          value={editingAiMemorySummary}
+                        />
+                      </label>
+                      <label className={styles.field}>
+                        <span>Detail</span>
+                        <textarea
+                          onChange={(event) => setEditingAiMemoryDetail(event.target.value)}
+                          value={editingAiMemoryDetail}
+                        />
+                      </label>
+                      <label className={styles.field}>
+                        <span>Tags</span>
+                        <input
+                          onChange={(event) => setEditingAiMemoryTags(event.target.value)}
+                          value={editingAiMemoryTags}
+                        />
+                      </label>
+
+                      <div className={styles.inlineActions}>
+                        <button
+                          className={styles.primaryButton}
+                          type="button"
+                          onClick={() => {
+                            void handleUpdateTenantAiMemoryRecord();
+                          }}
+                          disabled={
+                            !editingAiMemoryTitle.trim() ||
+                            !editingAiMemorySummary.trim() ||
+                            !editingAiMemoryDetail.trim() ||
+                            actionLoading ===
+                              `update-ai-memory-record:${selectedTenantAiMemoryRecordDetail.record.id}`
+                          }
+                        >
+                          {actionLoading ===
+                          `update-ai-memory-record:${selectedTenantAiMemoryRecordDetail.record.id}`
+                            ? 'Guardando cambios...'
+                            : 'Guardar cambios'}
+                        </button>
+                        <button
+                          className={styles.secondaryButton}
+                          type="button"
+                          onClick={() => {
+                            void handleUpdateTenantAiMemoryRecord(
+                              selectedTenantAiMemoryRecordDetail.record.status === 'active'
+                                ? 'inactive'
+                                : 'active',
+                            );
+                          }}
+                          disabled={
+                            actionLoading ===
+                            `update-ai-memory-record:${selectedTenantAiMemoryRecordDetail.record.id}`
+                          }
+                        >
+                          {selectedTenantAiMemoryRecordDetail.record.status === 'active'
+                            ? 'Desactivar memoria'
+                            : 'Reactivar memoria'}
+                        </button>
+                        <small className={styles.muted}>
+                          El scope y el binding tenant/domain/agent quedan fijos para no
+                          romper provenance historico.
+                        </small>
+                      </div>
+
+                      <div className={styles.stack}>
+                        {selectedTenantAiMemoryRecordDetail.currentRetrieval.notes.map(
+                          (note, index) => (
+                            <small key={`ai-memory-current-note:${index}`}>{note}</small>
+                          ),
+                        )}
+                      </div>
+
+                      {selectedTenantAiMemoryRecordDetail.currentRetrieval.agents.length ? (
+                        <div className={styles.stack}>
+                          {selectedTenantAiMemoryRecordDetail.currentRetrieval.agents.map(
+                            (agent) => (
+                              <div
+                                className={styles.timelineCard}
+                                key={`ai-memory-current-agent:${agent.agentKey}`}
+                              >
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>{agent.title}</strong>
+                                  <span className={styles.statusPill}>
+                                    {humanizeKey(agent.domainKey)}
+                                  </span>
+                                </div>
+                                <small>{agent.inclusionReason}</small>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      ) : null}
+
+                      <div className={styles.stack}>
+                        {selectedTenantAiMemoryRecordDetail.provenance.notes.map(
+                          (note, index) => (
+                            <small key={`ai-memory-provenance-note:${index}`}>
+                              {note}
+                            </small>
+                          ),
+                        )}
+                      </div>
+
+                      {selectedTenantAiMemoryRecordDetail.provenance.recentSuggestionRuns
+                        .length ? (
+                        <div className={styles.stack}>
+                          {selectedTenantAiMemoryRecordDetail.provenance.recentSuggestionRuns.map(
+                            (entry) => (
+                              <div
+                                className={styles.timelineCard}
+                                key={`ai-memory-usage:${entry.suggestionRunId}`}
+                              >
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>{entry.agentKey}</strong>
+                                  <span className={styles.statusPill}>
+                                    {humanizeKey(entry.memoryScope)}
+                                  </span>
+                                </div>
+                                <small>{entry.summary}</small>
+                                <small>
+                                  Surface {entry.surfaceKey} · prompt pack{' '}
+                                  {entry.promptPackKey}@{entry.promptPackVersion}
+                                </small>
+                                <small>
+                                  {entry.memoryInclusionReason ??
+                                    'Sin razon de inclusion registrada.'}
+                                </small>
+                                <small>Persistido {formatDate(entry.createdAt)}</small>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : selectedTenantAiMemoryRecordDetailLoading ? (
+                    <small className={styles.muted}>
+                      Cargando detalle y provenance de memoria de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Selecciona un memory record para ver su provenance y operar su lifecycle.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 <div className={styles.stack}>
                   {tenantAiMemoryWorkspace?.agents.length ? (
                     tenantAiMemoryWorkspace.agents.map((agent) => (
@@ -18872,6 +20090,115 @@ export function App() {
                       <p>
                         La memoria operativa todavía no tiene suficientes señales para este
                         tenant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailCard}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>Tenant AI retrieval</span>
+                    <h3>Qué memoria entra al contexto y por qué</h3>
+                  </div>
+                  <span className={styles.statusPill}>
+                    {tenantAiRetrievalWorkspace
+                      ? formatDate(tenantAiRetrievalWorkspace.generatedAt)
+                      : 'sin retrieval'}
+                  </span>
+                </div>
+
+                <div className={styles.commercialMetricsGrid}>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Agentes evaluados</span>
+                    <strong>{tenantAiRetrievalWorkspace?.counts.totalAgents ?? 0}</strong>
+                    <small>Agentes AI visibles para hydration contextual.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Con memoria</span>
+                    <strong>
+                      {tenantAiRetrievalWorkspace?.counts.agentsWithMemory ?? 0}
+                    </strong>
+                    <small>Agentes que ya reciben memoria persistida en su contexto.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Records recuperados</span>
+                    <strong>
+                      {tenantAiRetrievalWorkspace?.counts.totalRetrievedRecords ?? 0}
+                    </strong>
+                    <small>Entradas de memoria que hoy entran al retrieval.</small>
+                  </div>
+                  <div className={styles.commercialCard}>
+                    <span className={styles.muted}>Records únicos</span>
+                    <strong>
+                      {tenantAiRetrievalWorkspace?.counts.uniqueRetrievedRecords ?? 0}
+                    </strong>
+                    <small>Memoria persistida distinta, sin contar repeticiones por agente.</small>
+                  </div>
+                </div>
+
+                <div className={styles.stack}>
+                  {tenantAiRetrievalWorkspace?.agents.length ? (
+                    tenantAiRetrievalWorkspace.agents.map((agent) => (
+                      <div
+                        className={styles.assistCueCard}
+                        key={`ai-retrieval:${agent.agentKey}`}
+                      >
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{agent.title}</strong>
+                          <span className={styles.statusPill}>
+                            {humanizeKey(agent.domainKey)}
+                          </span>
+                        </div>
+                        <small>
+                          {agent.retrieval.recordCount} record(s) entran hoy al contexto de
+                          este agente.
+                        </small>
+                        <div className={styles.stack}>
+                          {agent.retrieval.notes.map((note, index) => (
+                            <small
+                              key={`ai-retrieval-note:${agent.agentKey}:${index}`}
+                            >
+                              {note}
+                            </small>
+                          ))}
+                        </div>
+                        {agent.retrieval.records.length ? (
+                          <div className={styles.stack}>
+                            {agent.retrieval.records.map((record) => (
+                              <div
+                                className={styles.timelineCard}
+                                key={`ai-retrieval-record:${agent.agentKey}:${record.id}`}
+                              >
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>{record.title}</strong>
+                                  <span className={styles.statusPill}>
+                                    {humanizeKey(record.scope)}
+                                  </span>
+                                </div>
+                                <small>{record.summary}</small>
+                                <small>{record.inclusionReason}</small>
+                                <small>
+                                  Source {humanizeKey(record.sourceKind)} · freshness{' '}
+                                  {humanizeKey(record.freshness)} · updated{' '}
+                                  {formatDate(record.lastUpdatedAt)}
+                                </small>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    ))
+                  ) : tenantAiRetrievalWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando retrieval workspace transversal de AI...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavía no hay memoria persistida suficiente como para hidratar
+                        contexto reutilizable en este tenant.
                       </p>
                     </div>
                   )}

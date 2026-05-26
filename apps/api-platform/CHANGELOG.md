@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.53.0
+
+### Minor Changes
+
+- 9a2db70: Expose a versioned AI operating model manifest, use it to centralize agent posture and permissions, and surface the manifest in the web AI console with manifest-driven handoff filters.
+
 ## 0.52.0
 
 ### Minor Changes

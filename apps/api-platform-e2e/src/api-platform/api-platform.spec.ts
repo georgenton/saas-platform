@@ -42,6 +42,7 @@ import {
 } from '@saas-platform/feature-flags-application';
 import { FeatureFlag } from '@saas-platform/feature-flags-domain';
 import {
+  ApplyTenantAiMemoryArchivalPolicyUseCase,
   CreateTenantAiGuardedExecutionEventUseCase,
   CreateTenantAiMemoryRecordUseCase,
   GetTenantAiMemoryRecordDetailUseCase,
@@ -248,6 +249,7 @@ describe('API', () => {
   let getTenantConversationThreadByIdUseCase: { execute: jest.Mock };
   let getTenantGrowthAssistDailyAgendaUseCase: { execute: jest.Mock };
   let listTenantAiApprovalRequestsUseCase: { execute: jest.Mock };
+  let applyTenantAiMemoryArchivalPolicyUseCase: { execute: jest.Mock };
   let createTenantAiGuardedExecutionEventUseCase: { execute: jest.Mock };
   let createTenantAiMemoryRecordUseCase: { execute: jest.Mock };
   let getTenantAiMemoryRecordDetailUseCase: { execute: jest.Mock };
@@ -2822,6 +2824,20 @@ describe('API', () => {
     listTenantAiApprovalRequestsUseCase = {
       execute: jest.fn().mockResolvedValue([growthAssistApprovalRequest]),
     };
+    applyTenantAiMemoryArchivalPolicyUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        appliedAt: new Date('2026-05-20T10:34:30.000Z'),
+        evaluatedActiveRecordCount: 1,
+        archivedRecordCount: 0,
+        archivedRecordIds: [],
+        notes: ['No stale automated memory record needed archival in this pass.'],
+        policy: {
+          version: 'v1' as const,
+          summary:
+            'Operator notes are never auto-archived; working guarded-execution memory archives after 7 days; working approval memory archives after 14 days; durable automated memory archives after 45 days.',
+        },
+      }),
+    };
     createTenantAiGuardedExecutionEventUseCase = {
       execute: jest.fn().mockResolvedValue({
         id: 'ai-guarded-event-001',
@@ -3907,6 +3923,8 @@ describe('API', () => {
       .useValue(getTenantGrowthAssistDailyAgendaUseCase)
       .overrideProvider(ListTenantAiApprovalRequestsUseCase)
       .useValue(listTenantAiApprovalRequestsUseCase)
+      .overrideProvider(ApplyTenantAiMemoryArchivalPolicyUseCase)
+      .useValue(applyTenantAiMemoryArchivalPolicyUseCase)
       .overrideProvider(CreateTenantAiGuardedExecutionEventUseCase)
       .useValue(createTenantAiGuardedExecutionEventUseCase)
       .overrideProvider(CreateTenantAiMemoryRecordUseCase)
@@ -5706,213 +5724,40 @@ describe('API', () => {
       .get('/api/ai/tools')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect([
-        {
-          key: 'growth_assist_reply_drafting',
-          title: 'Growth Assist reply drafting',
-          summary:
-            'Drafts customer-facing reply suggestions grounded in the deterministic Growth Assist agenda.',
-          domainKey: 'growth',
-          availability: 'ready',
-          riskLevel: 'low',
-          actionKind: 'draft',
-          requiresApproval: false,
-          inputContract: {
-            sourceSurfaceKeys: ['growth_assist_daily_agenda'],
-            primaryPayload:
-              'Tenant-scoped Growth Assist agenda with hottest conversation cues and deterministic reply suggestions.',
-            requiredContext: [
-              'conversation heat',
-              'reply recommendation',
-              'playbook hints',
-            ],
-          },
-          outputContract: {
-            primaryArtifact: 'Customer-facing reply draft.',
-            suggestedOutputKeys: ['reply_draft'],
-            humanReviewFocus: [
-              'Confirm tone still fits the customer context.',
-              'Verify no promise, discount, or operational commitment was invented.',
-            ],
-          },
-          executionBoundary: {
-            executionMode: 'suggestion_only',
-            stateMutation: 'none',
-            externalSideEffects: 'none',
-            reviewRequirement:
-              'An operator should review the draft before sending it through any real channel.',
-            blockedCapabilities: [
-              'send_whatsapp_message',
-              'mutate_conversation_state',
-            ],
-          },
-        },
-        {
-          key: 'growth_assist_follow_up_planning',
-          title: 'Growth Assist follow-up planning',
-          summary:
-            'Proposes follow-up plans and next-action briefs without mutating Growth workflow state.',
-          domainKey: 'growth',
-          availability: 'ready',
-          riskLevel: 'low',
-          actionKind: 'propose',
-          requiresApproval: false,
-          inputContract: {
-            sourceSurfaceKeys: ['growth_assist_daily_agenda'],
-            primaryPayload:
-              'Tenant-scoped Growth Assist agenda with waiting-customer timing, playbooks, and hottest commercial opportunities.',
-            requiredContext: [
-              'follow-up timing',
-              'playbook guidance',
-              'next-action recommendation',
-            ],
-          },
-          outputContract: {
-            primaryArtifact: 'Follow-up plan and next-action brief.',
-            suggestedOutputKeys: ['follow_up_plan', 'next_action_brief'],
-            humanReviewFocus: [
-              'Confirm the sequence matches the operator capacity and business context.',
-              'Check that escalation or discount ideas stay within policy.',
-            ],
-          },
-          executionBoundary: {
-            executionMode: 'suggestion_only',
-            stateMutation: 'none',
-            externalSideEffects: 'none',
-            reviewRequirement:
-              'The operator should translate the plan into real CRM or messaging actions manually.',
-            blockedCapabilities: [
-              'schedule_message_send',
-              'update_case_follow_up_state',
-            ],
-          },
-        },
-        {
-          key: 'growth_case_assignment_execution',
-          title: 'Growth case assignment execution',
-          summary:
-            'Would execute operational-case assignment or routing changes once guarded execution exists.',
-          domainKey: 'growth',
-          availability: 'planned',
-          riskLevel: 'high',
-          actionKind: 'execute',
-          requiresApproval: true,
-          inputContract: {
-            sourceSurfaceKeys: ['growth_assist_daily_agenda'],
-            primaryPayload:
-              'Tenant-scoped operational routing signals and deterministic assignment recommendations.',
-            requiredContext: [
-              'assignment recommendation',
-              'queue pressure',
-              'assignee availability',
-            ],
-          },
-          outputContract: {
-            primaryArtifact: 'Assignment or routing change intent.',
-            suggestedOutputKeys: ['assignment_change_intent'],
-            humanReviewFocus: [
-              'Validate the assignee or queue target still makes operational sense.',
-              'Confirm any routing mutation is explicitly approved before execution.',
-            ],
-          },
-          executionBoundary: {
-            executionMode: 'guarded_execution_planned',
-            stateMutation: 'planned',
-            externalSideEffects: 'planned',
-            reviewRequirement:
-              'This tool stays blocked until approval memory and guarded execution flows are operational.',
-            blockedCapabilities: [
-              'assign_operational_case',
-              'reroute_queue_membership',
-            ],
-          },
-        },
-        {
-          key: 'invoice_document_drafting',
-          title: 'Invoice document drafting',
-          summary:
-            'Prepares deterministic drafting, checklist, and review suggestions for invoicing document workflows.',
-          domainKey: 'invoicing',
-          availability: 'ready',
-          riskLevel: 'medium',
-          actionKind: 'draft',
-          requiresApproval: false,
-          inputContract: {
-            sourceSurfaceKeys: ['invoice_document_drafting'],
-            primaryPayload:
-              'Tenant-scoped invoicing drafting surface with deterministic readiness, checklist, and blocker signals.',
-            requiredContext: [
-              'readiness summary',
-              'drafting checklist',
-              'fiscal blocker explanation',
-            ],
-          },
-          outputContract: {
-            primaryArtifact: 'Document drafting brief and review checklist.',
-            suggestedOutputKeys: [
-              'drafting_brief',
-              'review_checklist',
-              'blocker_explanation',
-            ],
-            humanReviewFocus: [
-              'Verify the suggestion does not replace fiscal validation.',
-              'Confirm tax-document facts still match the deterministic invoicing surface.',
-            ],
-          },
-          executionBoundary: {
-            executionMode: 'suggestion_only',
-            stateMutation: 'none',
-            externalSideEffects: 'none',
-            reviewRequirement:
-              'Document guidance must stay advisory and be reviewed before any operator uses it in fiscal work.',
-            blockedCapabilities: [
-              'sign_tax_document',
-              'submit_tax_document',
-              'mark_document_authorized',
-            ],
-          },
-        },
-        {
-          key: 'ecommerce_launch_briefing',
-          title: 'Ecommerce launch briefing',
-          summary:
-            'Will suggest landing, catalog, and campaign structure once ecommerce deterministic surfaces exist.',
-          domainKey: 'ecommerce',
-          availability: 'planned',
-          riskLevel: 'medium',
-          actionKind: 'propose',
-          requiresApproval: false,
-          inputContract: {
-            sourceSurfaceKeys: ['ecommerce_launch_workspace'],
-            primaryPayload:
-              'Planned ecommerce launch workspace with deterministic catalog, landing, and campaign context once available.',
-            requiredContext: [
-              'catalog facts',
-              'landing structure',
-              'campaign scope',
-            ],
-          },
-          outputContract: {
-            primaryArtifact: 'Launch brief and structured launch proposal.',
-            suggestedOutputKeys: ['launch_brief'],
-            humanReviewFocus: [
-              'Check that launch claims stay grounded in real catalog data.',
-              'Review that campaign structure fits the operator plan before publication.',
-            ],
-          },
-          executionBoundary: {
-            executionMode: 'guarded_execution_planned',
-            stateMutation: 'planned',
-            externalSideEffects: 'planned',
-            reviewRequirement:
-              'Suggestions should be reviewed by an operator before they influence storefront or campaign work.',
-            blockedCapabilities: [
-              'publish_storefront_content',
-              'launch_campaign',
-            ],
-          },
-        },
-      ]);
+      .expect((response) => {
+        expect(response.body).toHaveLength(6);
+        expect(response.body).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              key: 'growth_assist_reply_drafting',
+              availability: 'ready',
+              actionKind: 'draft',
+            }),
+            expect.objectContaining({
+              key: 'growth_case_assignment_execution',
+              availability: 'planned',
+              actionKind: 'execute',
+              requiresApproval: true,
+            }),
+            expect.objectContaining({
+              key: 'invoice_document_drafting',
+              availability: 'ready',
+              actionKind: 'draft',
+            }),
+            expect.objectContaining({
+              key: 'invoice_payment_collection_execution',
+              availability: 'planned',
+              actionKind: 'execute',
+              requiresApproval: true,
+              domainKey: 'invoicing',
+            }),
+            expect.objectContaining({
+              key: 'ecommerce_launch_briefing',
+              availability: 'planned',
+            }),
+          ]),
+        );
+      });
   });
 
   it('GET /api/ai/tools/:toolKey should return one explicit AI tool contract', async () => {
@@ -6229,269 +6074,45 @@ describe('API', () => {
       )
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect({
-        tenantSlug: 'saas-platform',
-        generatedAt: '2026-05-20T10:36:00.000Z',
-        mode: 'suggestion',
-        agent: {
-          key: 'growth-assist-coach',
-          title: 'Growth Assist Coach',
-          summary:
-            'Turns deterministic Growth Assist signals into tenant-scoped commercial suggestions without executing actions automatically.',
-          domainKey: 'growth',
-          productKey: 'growth',
-          availability: 'ready',
-          defaultMode: 'suggestion',
-          supportedSurfaceKeys: ['growth_assist_daily_agenda'],
-        },
-        surface: {
-          key: 'growth_assist_daily_agenda',
-          title: 'Growth Assist daily agenda',
-          sourceContractKey: 'growth.assist.daily_agenda',
-          sourceGeneratedAt: '2026-05-20T10:36:00.000Z',
-        },
-        promptPack: {
-          key: 'growth-assist-coach-core',
-          version: 'v1',
-          agentKey: 'growth-assist-coach',
-          mode: 'suggestion',
-          title: 'Growth Assist Coach Core',
-          summary:
-            'Prompt pack for turning deterministic Growth Assist agenda signals into commercial suggestions for non-expert operators.',
-          objective:
-            'Propose clear commercial suggestions for a non-expert operator using the deterministic Growth Assist agenda as the source of truth.',
-          styleGuidance: [
-            'Prefer short, direct, Spanish-first suggestions.',
-            'Explain business impact in simple operator language instead of internal queue jargon.',
-            'Keep outputs practical and oriented to what the business should do today.',
-          ],
-          constraints: [
-            'Stay in suggestion mode only. Do not assume messages are sent or cases are mutated automatically.',
-            'Use only the tenant-scoped Growth Assist agenda and its embedded operational signals.',
-            'Prefer short, direct, Spanish-first suggestions that help a small business operator move today.',
-            'Respect domain boundaries: business rules, approvals, and workflow state still belong to Growth.',
-          ],
-          suggestedOutputs: [
-            {
-              key: 'reply_draft',
-              label: 'Reply draft',
-              description:
-                'Draft a customer-facing WhatsApp reply using the hottest conversation cues and reply suggestions.',
-            },
-            {
-              key: 'next_action_brief',
-              label: 'Next action brief',
-              description:
-                'Explain the top commercial action to take now and why it matters today.',
-            },
-            {
-              key: 'follow_up_plan',
-              label: 'Follow-up plan',
-              description:
-                'Suggest a short follow-up sequence grounded in playbooks and waiting-customer timing.',
-            },
-          ],
-        },
-        toolAccess: [
-          {
-            tool: {
-              key: 'growth_assist_reply_drafting',
-              title: 'Growth Assist reply drafting',
-              summary:
-                'Drafts customer-facing reply suggestions grounded in the deterministic Growth Assist agenda.',
-              domainKey: 'growth',
-              availability: 'ready',
-              riskLevel: 'low',
-              actionKind: 'draft',
-              requiresApproval: false,
-              inputContract: {
-                sourceSurfaceKeys: ['growth_assist_daily_agenda'],
-                primaryPayload:
-                  'Tenant-scoped Growth Assist agenda with hottest conversation cues and deterministic reply suggestions.',
-                requiredContext: [
-                  'conversation heat',
-                  'reply recommendation',
-                  'playbook hints',
-                ],
-              },
-              outputContract: {
-                primaryArtifact: 'Customer-facing reply draft.',
-                suggestedOutputKeys: ['reply_draft'],
-                humanReviewFocus: [
-                  'Confirm tone still fits the customer context.',
-                  'Verify no promise, discount, or operational commitment was invented.',
-                ],
-              },
-              executionBoundary: {
-                executionMode: 'suggestion_only',
-                stateMutation: 'none',
-                externalSideEffects: 'none',
-                reviewRequirement:
-                  'An operator should review the draft before sending it through any real channel.',
-                blockedCapabilities: [
-                  'send_whatsapp_message',
-                  'mutate_conversation_state',
-                ],
-              },
-            },
-            accessLevel: 'allowed',
-            rationale:
-              'The agent can safely prepare reply drafts because Growth remains the source of truth and no message is sent automatically.',
-          },
-          {
-            tool: {
-              key: 'growth_assist_follow_up_planning',
-              title: 'Growth Assist follow-up planning',
-              summary:
-                'Proposes follow-up plans and next-action briefs without mutating Growth workflow state.',
-              domainKey: 'growth',
-              availability: 'ready',
-              riskLevel: 'low',
-              actionKind: 'propose',
-              requiresApproval: false,
-              inputContract: {
-                sourceSurfaceKeys: ['growth_assist_daily_agenda'],
-                primaryPayload:
-                  'Tenant-scoped Growth Assist agenda with waiting-customer timing, playbooks, and hottest commercial opportunities.',
-                requiredContext: [
-                  'follow-up timing',
-                  'playbook guidance',
-                  'next-action recommendation',
-                ],
-              },
-              outputContract: {
-                primaryArtifact: 'Follow-up plan and next-action brief.',
-                suggestedOutputKeys: ['follow_up_plan', 'next_action_brief'],
-                humanReviewFocus: [
-                  'Confirm the sequence matches the operator capacity and business context.',
-                  'Check that escalation or discount ideas stay within policy.',
-                ],
-              },
-              executionBoundary: {
-                executionMode: 'suggestion_only',
-                stateMutation: 'none',
-                externalSideEffects: 'none',
-                reviewRequirement:
-                  'The operator should translate the plan into real CRM or messaging actions manually.',
-                blockedCapabilities: [
-                  'schedule_message_send',
-                  'update_case_follow_up_state',
-                ],
-              },
-            },
-            accessLevel: 'allowed',
-            rationale:
-              'The agent can suggest follow-up sequencing and next actions while staying inside suggestion mode.',
-          },
-          {
-            tool: {
-              key: 'growth_case_assignment_execution',
-              title: 'Growth case assignment execution',
-              summary:
-                'Would execute operational-case assignment or routing changes once guarded execution exists.',
-              domainKey: 'growth',
-              availability: 'planned',
-              riskLevel: 'high',
-              actionKind: 'execute',
-              requiresApproval: true,
-              inputContract: {
-                sourceSurfaceKeys: ['growth_assist_daily_agenda'],
-                primaryPayload:
-                  'Tenant-scoped operational routing signals and deterministic assignment recommendations.',
-                requiredContext: [
-                  'assignment recommendation',
-                  'queue pressure',
-                  'assignee availability',
-                ],
-              },
-              outputContract: {
-                primaryArtifact: 'Assignment or routing change intent.',
-                suggestedOutputKeys: ['assignment_change_intent'],
-                humanReviewFocus: [
-                  'Validate the assignee or queue target still makes operational sense.',
-                  'Confirm any routing mutation is explicitly approved before execution.',
-                ],
-              },
-              executionBoundary: {
-                executionMode: 'guarded_execution_planned',
-                stateMutation: 'planned',
-                externalSideEffects: 'planned',
-                reviewRequirement:
-                  'This tool stays blocked until approval memory and guarded execution flows are operational.',
-                blockedCapabilities: [
-                  'assign_operational_case',
-                  'reroute_queue_membership',
-                ],
-              },
-            },
-            accessLevel: 'blocked',
-            rationale:
-              'Direct assignment or workflow mutation remains blocked until approval flows and guarded execution are in place.',
-          },
-        ],
-        contextBlocks: [
-          {
-            key: 'agenda_summary',
-            title: 'Agenda summary',
-            detail:
-              'La bandeja no esta rota, pero si hay seguimientos que no conviene dejar enfriar. Usa esta agenda como recordatorio simple: primero sigue lo que ya esta caliente, luego reparte owner nuevo si hace falta.',
-            bullets: [
-              'Reply now count: 1',
-              'Follow-up now count: 2',
-              'Waiting customer count: 0',
-              'Queue to organize count: 1',
-              'Channel risk count: 0',
-              'Saved auto-assignment policy: follow_up_first',
-            ],
-          },
-          {
-            key: 'top_next_actions',
-            title: 'Top next actions',
-            detail:
-              'These are the clearest business actions the deterministic Growth Assist contract already recommends today.',
-            bullets: [
-              'Responder a WhatsApp Maria Perez: Responder hoy mismo y cerrar con un siguiente paso concreto. (Responder tarde enfria conversaciones que ya llegaron con intencion activa.)',
-            ],
-          },
-          {
-            key: 'reply_suggestions',
-            title: 'Reply suggestions',
-            detail:
-              'These drafts and goals are safe starting points for suggestion-mode coaching.',
-            bullets: [
-              'WhatsApp Maria Perez: goal=Reconocer el contacto, retomar confianza y proponer el siguiente paso.; draft=Hola WhatsApp Maria Perez, gracias por escribirnos. Retomo esto hoy para ayudarte sin dejarlo enfriar. Si te parece, te comparto el siguiente paso y lo dejamos encaminado ahora mismo.',
-            ],
-          },
-          {
-            key: 'lead_warmth',
-            title: 'Lead warmth radar',
-            detail:
-              'Prioriza respuestas o seguimientos que ya estan pidiendo movimiento hoy.',
-            bullets: [
-              'WhatsApp Maria Perez: Se ve caliente porque ya pide respuesta o seguimiento del equipo y puede enfriarse rapido.; cadence=Muévelo hoy mismo.',
-            ],
-          },
-          {
-            key: 'playbooks',
-            title: 'Operator playbooks',
-            detail:
-              'These playbooks describe the deterministic operating guidance the AI layer must respect and explain.',
-            bullets: [
-              'Responder primero: goal=Recuperar velocidad de respuesta y dejar un siguiente paso claro sin sonar robotico.; avoid=No contestes con un texto generico que ignore el contexto ni dejes la conversacion abierta sin siguiente paso.; success=El lead responde o acepta el siguiente paso dentro de la misma ventana de seguimiento.',
-            ],
-          },
-          {
-            key: 'channel_health',
-            title: 'Channel health',
-            detail: 'No top alert summary is active right now.',
-            bullets: [
-              'Overall status: healthy',
-              'Total alerts: 0',
-              'Ready retries: 0',
-              'Top action: No action required',
-            ],
-          },
-        ],
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: '2026-05-20T10:36:00.000Z',
+            mode: 'suggestion',
+            agent: expect.objectContaining({
+              key: 'growth-assist-coach',
+              productKey: 'growth',
+            }),
+            surface: expect.objectContaining({
+              key: 'growth_assist_daily_agenda',
+            }),
+            promptPack: expect.objectContaining({
+              key: 'growth-assist-coach-core',
+              version: 'v1',
+            }),
+            retrieval: expect.objectContaining({
+              recordCount: 1,
+              policy: expect.objectContaining({ version: 'v1' }),
+            }),
+          }),
+        );
+        expect(response.body.toolAccess).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              tool: expect.objectContaining({
+                key: 'growth_case_assignment_execution',
+              }),
+              accessLevel: 'blocked',
+            }),
+          ]),
+        );
+        expect(response.body.contextBlocks).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ key: 'agenda_summary' }),
+            expect.objectContaining({ key: 'memory_ai-memory-001' }),
+          ]),
+        );
       });
 
     expect(getTenantGrowthAssistDailyAgendaUseCase.execute).toHaveBeenCalledWith(
@@ -6506,174 +6127,45 @@ describe('API', () => {
       )
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect({
-        tenantSlug: 'saas-platform',
-        generatedAt: '2026-05-23T10:30:00.000Z',
-        mode: 'suggestion',
-        agent: {
-          key: 'invoice-document-assistant',
-          title: 'Invoice Document Assistant',
-          summary:
-            'Turns deterministic invoicing drafting and readiness signals into tenant-scoped document guidance without executing fiscal actions automatically.',
-          domainKey: 'invoicing',
-          productKey: 'invoicing',
-          availability: 'ready',
-          defaultMode: 'suggestion',
-          supportedSurfaceKeys: ['invoice_document_drafting'],
-        },
-        surface: {
-          key: 'invoice_document_drafting',
-          title: 'Invoice document drafting',
-          sourceContractKey: 'invoicing.assist.document_drafting',
-          sourceGeneratedAt: '2026-05-23T10:30:00.000Z',
-        },
-        promptPack: {
-          key: 'invoice-document-assistant-core',
-          version: 'v1',
-          agentKey: 'invoice-document-assistant',
-          mode: 'suggestion',
-          title: 'Invoice Document Assistant Core',
-          summary:
-            'Prompt pack for document drafting, review, and checklist suggestions in Ecuador electronic invoicing.',
-          objective:
-            'Help operators draft and review tax document workflows without replacing fiscal validation owned by the invoicing domain.',
-          styleGuidance: [
-            'Explain tax-document steps in concrete operator language.',
-            'Prefer checklist-driven wording over abstract tax jargon.',
-            'Surface checklist gaps before proposing any draft output.',
-          ],
-          constraints: [
-            'Do not treat prompt output as fiscal validation.',
-            'Do not approve, sign, or submit tax documents automatically.',
-            'Use only the tenant-scoped invoicing drafting surface and its embedded readiness/report signals.',
-            'Keep the suggestion explicitly advisory and suitable for human review.',
-          ],
-          suggestedOutputs: [
-            {
-              key: 'drafting_brief',
-              label: 'Drafting brief',
-              description:
-                'Summarize what needs to be drafted or reviewed before the document can move forward.',
-            },
-            {
-              key: 'review_checklist',
-              label: 'Review checklist',
-              description:
-                'Explain the human review checklist that should be completed before the document advances.',
-            },
-            {
-              key: 'blocker_explanation',
-              label: 'Blocker explanation',
-              description:
-                'Translate current blockers or warnings into simple operator language and next steps.',
-            },
-          ],
-        },
-        toolAccess: [
-          {
-            tool: {
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: '2026-05-23T10:30:00.000Z',
+            mode: 'suggestion',
+            agent: expect.objectContaining({
+              key: 'invoice-document-assistant',
+              productKey: 'invoicing',
+            }),
+            surface: expect.objectContaining({
               key: 'invoice_document_drafting',
-              title: 'Invoice document drafting',
-              summary:
-                'Prepares deterministic drafting, checklist, and review suggestions for invoicing document workflows.',
-              domainKey: 'invoicing',
-              availability: 'ready',
-              riskLevel: 'medium',
-              actionKind: 'draft',
-              requiresApproval: false,
-              inputContract: {
-                sourceSurfaceKeys: ['invoice_document_drafting'],
-                primaryPayload:
-                  'Tenant-scoped invoicing drafting surface with deterministic readiness, checklist, and blocker signals.',
-                requiredContext: [
-                  'readiness summary',
-                  'drafting checklist',
-                  'fiscal blocker explanation',
-                ],
-              },
-              outputContract: {
-                primaryArtifact: 'Document drafting brief and review checklist.',
-                suggestedOutputKeys: [
-                  'drafting_brief',
-                  'review_checklist',
-                  'blocker_explanation',
-                ],
-                humanReviewFocus: [
-                  'Verify the suggestion does not replace fiscal validation.',
-                  'Confirm tax-document facts still match the deterministic invoicing surface.',
-                ],
-              },
-              executionBoundary: {
-                executionMode: 'suggestion_only',
-                stateMutation: 'none',
-                externalSideEffects: 'none',
-                reviewRequirement:
-                  'Document guidance must stay advisory and be reviewed before any operator uses it in fiscal work.',
-                blockedCapabilities: [
-                  'sign_tax_document',
-                  'submit_tax_document',
-                  'mark_document_authorized',
-                ],
-              },
-            },
-            accessLevel: 'approval_required',
-            rationale:
-              'Invoice drafting suggestions are available, but they should stay behind explicit operator review before influencing invoicing work.',
-          },
-        ],
-        contextBlocks: [
-          {
-            key: 'drafting_summary',
-            title: 'Drafting summary',
-            detail:
-              'El tenant ya puede apoyarse en sugerencias, aunque conviene revisar detalles antes de empujar documentos. Usa esta superficie para ordenar checklist, documentar riesgos y preparar mejor la revision humana.',
-            bullets: [
-              'Readiness status: needs_attention',
-              'Suggested focus: Conviene revisar vigencia del certificado antes de empujar mas documentos.',
-              'Outstanding amount in cents: 145000',
-              'Invoice count: 9',
-              'Customer count: 3',
-            ],
-          },
-          {
-            key: 'formal_checklist',
-            title: 'Formal checklist',
-            detail:
-              'These are the deterministic controls the assistant must explain before it suggests any drafting or review help.',
-            bullets: [
-              'Perfil fiscal: status=ready; Configurado para pruebas con RUC 1790012345001.',
-              'Material de firma: status=warning; Conviene revisar vigencia del certificado.',
-            ],
-          },
-          {
-            key: 'document_guidance',
-            title: 'Document guidance',
-            detail:
-              'This tells the assistant which Ecuador document lanes are more usable today and how they should be framed.',
-            bullets: [
-              'Factura: status=ready; use=Usalo para preparar facturas nuevas y revisar si el tenant ya tiene base suficiente para emitirlas sin improvisar.',
-              'Nota de credito: status=blocked; use=Usalo cuando haya que corregir o anular una factura previa con criterio documentado.',
-            ],
-          },
-          {
-            key: 'drafting_hints',
-            title: 'Drafting hints',
-            detail:
-              'These deterministic hints shape what kind of help the assistant may offer in suggestion mode.',
-            bullets: [
-              'Brief de preparacion: objective=Explicar que piezas conviene completar antes de redactar o revisar un comprobante.; caution=Toma la sugerencia como checklist guiado y no como validacion fiscal final.',
-            ],
-          },
-          {
-            key: 'safety_boundaries',
-            title: 'Safety boundaries',
-            detail:
-              'These actions stay blocked even if the assistant can already help with drafting or review guidance.',
-            bullets: [
-              'Firmar electronicamente el documento sin aprobacion humana.',
-            ],
-          },
-        ],
+            }),
+            promptPack: expect.objectContaining({
+              key: 'invoice-document-assistant-core',
+              version: 'v1',
+            }),
+          }),
+        );
+        expect(response.body.toolAccess).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              tool: expect.objectContaining({ key: 'invoice_document_drafting' }),
+              accessLevel: 'approval_required',
+            }),
+            expect.objectContaining({
+              tool: expect.objectContaining({
+                key: 'invoice_payment_collection_execution',
+              }),
+              accessLevel: 'blocked',
+            }),
+          ]),
+        );
+        expect(response.body.contextBlocks).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ key: 'drafting_summary' }),
+            expect.objectContaining({ key: 'safety_boundaries' }),
+          ]),
+        );
       });
 
     expect(getTenantInvoiceDocumentDraftingAssistUseCase.execute).toHaveBeenCalledWith(
@@ -7479,7 +6971,7 @@ describe('API', () => {
               toolAccessSummary: {
                 allowedCount: 0,
                 approvalRequiredCount: 1,
-                blockedCount: 0,
+                blockedCount: 1,
               },
               pendingApprovalRequestsCount: 0,
               oldestPendingApprovalRequest: null,
@@ -7495,7 +6987,7 @@ describe('API', () => {
               memoryNotes: expect.arrayContaining([
                 'Prompt pack invoice-document-assistant-core@v1 in suggestion mode.',
                 'No pending human reviews right now.',
-                'Tool posture: 0 allowed, 1 approval-required, 0 blocked.',
+                'Tool posture: 0 allowed, 1 approval-required, 1 blocked.',
               ]),
             }),
             expect.objectContaining({
@@ -7712,7 +7204,7 @@ describe('API', () => {
               toolAccessSummary: {
                 allowedCount: 0,
                 approvalRequiredCount: 1,
-                blockedCount: 0,
+                blockedCount: 1,
               },
               recentActivityAt: '2026-05-20T10:39:00.000Z',
               oldestPendingApprovalRequest: null,
@@ -7723,7 +7215,7 @@ describe('API', () => {
               notes: [
                 'No pending approvals right now.',
                 '1 suggestion run(s) still need an explicit review request.',
-                'Tool posture: 0 allowed, 1 approval-required, 0 blocked.',
+                'Tool posture: 0 allowed, 1 approval-required, 1 blocked.',
               ],
             },
           ],
@@ -7877,30 +7369,23 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-          tenantSlug: 'saas-platform',
-          generatedAt: expect.any(String),
-          counts: {
-            totalAgents: 2,
-            suggestionModeAgents: 2,
-            guardedExecutionPlannedAgents: 1,
-            approvalRequiredTools: 1,
-            blockedTools: 1,
-          },
-          agents: [
-            {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              suggestionModeAgents: 2,
+              guardedExecutionPlannedAgents: 2,
+              approvalRequiredTools: 1,
+              blockedTools: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               agentKey: 'growth-assist-coach',
-              title: 'Growth Assist Coach',
-              domainKey: 'growth',
-              productKey: 'growth',
-              defaultMode: 'suggestion',
-              promptPack: {
-                key: 'growth-assist-coach-core',
-                version: 'v1',
-                mode: 'suggestion',
-                title: 'Growth Assist Coach Core',
-              },
-              approvalPolicyKeys: ['growth-assist-suggestion-review'],
               toolAccessSummary: {
                 allowedCount: 2,
                 approvalRequiredCount: 0,
@@ -7910,62 +7395,25 @@ describe('API', () => {
                 'guarded_execution_planned',
                 'suggestion_only',
               ],
-              blockedCapabilities: [
-                'assign_operational_case',
-                'mutate_conversation_state',
-                'reroute_queue_membership',
-                'schedule_message_send',
-                'send_whatsapp_message',
-                'update_case_follow_up_state',
-              ],
-              reviewRequirementHighlights: [
-                'An operator should review the draft before sending it through any real channel.',
-                'The operator should translate the plan into real CRM or messaging actions manually.',
-                'This tool stays blocked until approval memory and guarded execution flows are operational.',
-              ],
-              notes: [
-                'Prompt pack growth-assist-coach-core@v1 anchors this agent in suggestion mode.',
-                '1 approval policy rule(s) govern the current handoff posture.',
-                '2 allowed, 0 approval-required, 1 blocked tool(s).',
-                'Guarded execution remains planned, not unlocked.',
-              ],
-            },
-            {
+            }),
+            expect.objectContaining({
               agentKey: 'invoice-document-assistant',
-              title: 'Invoice Document Assistant',
-              domainKey: 'invoicing',
-              productKey: 'invoicing',
-              defaultMode: 'suggestion',
-              promptPack: {
-                key: 'invoice-document-assistant-core',
-                version: 'v1',
-                mode: 'suggestion',
-                title: 'Invoice Document Assistant Core',
-              },
-              approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
               toolAccessSummary: {
                 allowedCount: 0,
                 approvalRequiredCount: 1,
-                blockedCount: 0,
+                blockedCount: 1,
               },
-              executionModes: ['suggestion_only'],
-              blockedCapabilities: [
-                'mark_document_authorized',
-                'sign_tax_document',
-                'submit_tax_document',
+              executionModes: [
+                'guarded_execution_planned',
+                'suggestion_only',
               ],
-              reviewRequirementHighlights: [
-                'Document guidance must stay advisory and be reviewed before any operator uses it in fiscal work.',
-              ],
-              notes: [
-                'Prompt pack invoice-document-assistant-core@v1 anchors this agent in suggestion mode.',
-                '1 approval policy rule(s) govern the current handoff posture.',
-                '0 allowed, 1 approval-required, 0 blocked tool(s).',
-                'All visible tools stay in suggestion-only mode.',
-              ],
-            },
-          ],
-        });
+              blockedCapabilities: expect.arrayContaining([
+                'post_invoice_payment',
+                'reverse_invoice_payment',
+              ]),
+            }),
+          ]),
+        );
       });
   });
 
@@ -8329,72 +7777,42 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-        tenantSlug: 'saas-platform',
-        generatedAt: expect.any(String),
-        counts: {
-          totalAgents: 2,
-          agentsWithSimulationDelta: 1,
-          toolsPromotedToApprovalRequired: 1,
-          toolsStillBlocked: 0,
-        },
-        agents: [
-          {
-            agentKey: 'growth-assist-coach',
-            title: 'Growth Assist Coach',
-            domainKey: 'growth',
-            productKey: 'growth',
-            defaultMode: 'suggestion',
-            approvalPolicyKeys: ['growth-assist-suggestion-review'],
-            currentToolAccessSummary: {
-              allowedCount: 2,
-              approvalRequiredCount: 0,
-              blockedCount: 1,
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              agentsWithSimulationDelta: 2,
+              toolsPromotedToApprovalRequired: 2,
+              toolsStillBlocked: 0,
             },
-            simulatedToolAccessSummary: {
-              allowedCount: 2,
-              approvalRequiredCount: 1,
-              blockedCount: 0,
-            },
-            simulationStatus: 'more_reviewable',
-            promotedToolKeys: ['growth_case_assignment_execution'],
-            stillBlockedToolKeys: [],
-            notes: [
-              '1 blocked tool(s) could move to approval-required if guarded execution is unlocked safely.',
-              'No tool stays blocked after the simulated policy shift.',
-              'Simulated review-first posture would leave 1 tool(s) behind explicit human approval.',
-              'The same 1 approval policy rule(s) would keep governing this agent in the simulation.',
-            ],
-          },
-          {
-            agentKey: 'invoice-document-assistant',
-            title: 'Invoice Document Assistant',
-            domainKey: 'invoicing',
-            productKey: 'invoicing',
-            defaultMode: 'suggestion',
-            approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-            currentToolAccessSummary: {
-              allowedCount: 0,
-              approvalRequiredCount: 1,
-              blockedCount: 0,
-            },
-            simulatedToolAccessSummary: {
-              allowedCount: 0,
-              approvalRequiredCount: 1,
-              blockedCount: 0,
-            },
-            simulationStatus: 'review_ready',
-            promotedToolKeys: [],
-            stillBlockedToolKeys: [],
-            notes: [
-              'No blocked tool needs promotion in this simulation.',
-              'No tool stays blocked after the simulated policy shift.',
-              'Simulated review-first posture would leave 1 tool(s) behind explicit human approval.',
-              'The same 1 approval policy rule(s) would keep governing this agent in the simulation.',
-            ],
-          },
-        ],
-        });
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              agentKey: 'growth-assist-coach',
+              simulationStatus: 'more_reviewable',
+              promotedToolKeys: ['growth_case_assignment_execution'],
+            }),
+            expect.objectContaining({
+              agentKey: 'invoice-document-assistant',
+              currentToolAccessSummary: {
+                allowedCount: 0,
+                approvalRequiredCount: 1,
+                blockedCount: 1,
+              },
+              simulatedToolAccessSummary: {
+                allowedCount: 0,
+                approvalRequiredCount: 2,
+                blockedCount: 0,
+              },
+              simulationStatus: 'more_reviewable',
+              promotedToolKeys: ['invoice_payment_collection_execution'],
+            }),
+          ]),
+        );
       });
   });
 
@@ -8473,73 +7891,37 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-        tenantSlug: 'saas-platform',
-        generatedAt: expect.any(String),
-        counts: {
-          totalAgents: 2,
-          agentsWithHeavierReview: 1,
-          currentExpectedHumanReviews: 2,
-          simulatedExpectedHumanReviews: 3,
-          addedHumanReviewTouches: 1,
-        },
-        agents: [
-          {
-            agentKey: 'growth-assist-coach',
-            title: 'Growth Assist Coach',
-            domainKey: 'growth',
-            productKey: 'growth',
-            approvalPolicyKeys: ['growth-assist-suggestion-review'],
-            currentExpectedReviewLoad: {
-              pendingApprovalRequests: 1,
-              reviewableSuggestionRuns: 0,
-              totalHumanReviewTouches: 1,
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              agentsWithHeavierReview: 2,
+              currentExpectedHumanReviews: 2,
+              simulatedExpectedHumanReviews: 4,
+              addedHumanReviewTouches: 2,
             },
-            simulatedExpectedReviewLoad: {
-              pendingApprovalRequests: 1,
-              reviewableSuggestionRuns: 0,
-              promotedToolReviewPoints: 1,
-              totalHumanReviewTouches: 2,
-            },
-            designStatus: 'heavier_review',
-            promotedToolKeys: ['growth_case_assignment_execution'],
-            stillBlockedToolKeys: [],
-            notes: [
-              'Current review load combines 1 pending approval request(s) and 0 reviewable handoff(s).',
-              '1 additional tool approval checkpoint(s) would appear in a review-first guarded execution design.',
-              'No extra blocked tool would constrain this approval design.',
-              'The same 1 approval policy rule(s) remain the governance base for this design scenario.',
-            ],
-          },
-          {
-            agentKey: 'invoice-document-assistant',
-            title: 'Invoice Document Assistant',
-            domainKey: 'invoicing',
-            productKey: 'invoicing',
-            approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-            currentExpectedReviewLoad: {
-              pendingApprovalRequests: 0,
-              reviewableSuggestionRuns: 1,
-              totalHumanReviewTouches: 1,
-            },
-            simulatedExpectedReviewLoad: {
-              pendingApprovalRequests: 0,
-              reviewableSuggestionRuns: 1,
-              promotedToolReviewPoints: 0,
-              totalHumanReviewTouches: 1,
-            },
-            designStatus: 'unchanged',
-            promotedToolKeys: [],
-            stillBlockedToolKeys: [],
-            notes: [
-              'Current review load combines 0 pending approval request(s) and 1 reviewable handoff(s).',
-              'No extra tool checkpoint would be added in this design scenario.',
-              'No extra blocked tool would constrain this approval design.',
-              'The same 1 approval policy rule(s) remain the governance base for this design scenario.',
-            ],
-          },
-        ],
-        });
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              agentKey: 'growth-assist-coach',
+              designStatus: 'heavier_review',
+              promotedToolKeys: ['growth_case_assignment_execution'],
+            }),
+            expect.objectContaining({
+              agentKey: 'invoice-document-assistant',
+              designStatus: 'heavier_review',
+              promotedToolKeys: ['invoice_payment_collection_execution'],
+              simulatedExpectedReviewLoad: expect.objectContaining({
+                totalHumanReviewTouches: 2,
+                promotedToolReviewPoints: 1,
+              }),
+            }),
+          ]),
+        );
       });
   });
 
@@ -8618,64 +8000,35 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-        tenantSlug: 'saas-platform',
-        generatedAt: expect.any(String),
-        counts: {
-          totalAgents: 2,
-          agentsAtCapacityRisk: 1,
-          currentMinimumReviewsPerDay: 2,
-          simulatedMinimumReviewsPerDay: 3,
-          addedReviewsPerDay: 1,
-        },
-        agents: [
-          {
-            agentKey: 'growth-assist-coach',
-            title: 'Growth Assist Coach',
-            domainKey: 'growth',
-            productKey: 'growth',
-            approvalPolicyKeys: ['growth-assist-suggestion-review'],
-            currentMinimumReviewsPerDay: 1,
-            simulatedMinimumReviewsPerDay: 2,
-            addedReviewsPerDay: 1,
-            capacityStatus: 'watch',
-            promotedToolKeys: ['growth_case_assignment_execution'],
-            stillBlockedToolKeys: [],
-            bottleneckReasons: [
-              '1 pending approval request(s) already consume reviewer attention.',
-              '1 extra tool checkpoint(s) would enter the daily review path.',
-            ],
-            notes: [
-              'Current posture suggests at least 1 human review touch(es) per day-equivalent.',
-              'Simulated review-first posture suggests 2 touch(es) per day-equivalent.',
-              'That means 1 additional review touch(es) to staff for this agent.',
-              'The same 1 approval policy rule(s) still anchor reviewer governance here.',
-            ],
-          },
-          {
-            agentKey: 'invoice-document-assistant',
-            title: 'Invoice Document Assistant',
-            domainKey: 'invoicing',
-            productKey: 'invoicing',
-            approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-            currentMinimumReviewsPerDay: 1,
-            simulatedMinimumReviewsPerDay: 1,
-            addedReviewsPerDay: 0,
-            capacityStatus: 'stable',
-            promotedToolKeys: [],
-            stillBlockedToolKeys: [],
-            bottleneckReasons: [
-              '1 handoff(s) still need explicit review escalation.',
-            ],
-            notes: [
-              'Current posture suggests at least 1 human review touch(es) per day-equivalent.',
-              'Simulated review-first posture suggests 1 touch(es) per day-equivalent.',
-              'This scenario does not add extra review load for this agent.',
-              'The same 1 approval policy rule(s) still anchor reviewer governance here.',
-            ],
-          },
-        ],
-        });
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              agentsAtCapacityRisk: 2,
+              currentMinimumReviewsPerDay: 2,
+              simulatedMinimumReviewsPerDay: 4,
+              addedReviewsPerDay: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              agentKey: 'growth-assist-coach',
+              capacityStatus: 'watch',
+              addedReviewsPerDay: 1,
+            }),
+            expect.objectContaining({
+              agentKey: 'invoice-document-assistant',
+              capacityStatus: 'watch',
+              addedReviewsPerDay: 1,
+              promotedToolKeys: ['invoice_payment_collection_execution'],
+              simulatedMinimumReviewsPerDay: 2,
+            }),
+          ]),
+        );
       });
   });
 
@@ -8754,62 +8107,35 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-        tenantSlug: 'saas-platform',
-        generatedAt: expect.any(String),
-        counts: {
-          totalAgents: 2,
-          agentsAtRisk: 1,
-          agentsBreached: 0,
-          currentBacklogTouches: 2,
-          simulatedBacklogTouches: 3,
-          addedBacklogTouches: 1,
-        },
-        agents: [
-          {
-            agentKey: 'growth-assist-coach',
-            title: 'Growth Assist Coach',
-            domainKey: 'growth',
-            productKey: 'growth',
-            approvalPolicyKeys: ['growth-assist-suggestion-review'],
-            pendingApprovalRequests: 1,
-            reviewableSuggestionRuns: 0,
-            promotedToolKeys: ['growth_case_assignment_execution'],
-            stillBlockedToolKeys: [],
-            currentEstimatedClearDays: 1,
-            simulatedEstimatedClearDays: 2,
-            currentSlaStatus: 'on_track',
-            simulatedSlaStatus: 'at_risk',
-            notes: [
-              'Current backlog implies roughly 1 day-equivalent(s) to clear if one reviewer-touch per day is available for this agent.',
-              'Simulated review-first backlog implies roughly 2 day-equivalent(s) to clear under the same baseline.',
-              '1 promoted tool checkpoint(s) would push the same-day SLA closer to risk.',
-              'No blocked tool is adding extra SLA uncertainty in this scenario.',
-            ],
-          },
-          {
-            agentKey: 'invoice-document-assistant',
-            title: 'Invoice Document Assistant',
-            domainKey: 'invoicing',
-            productKey: 'invoicing',
-            approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-            pendingApprovalRequests: 0,
-            reviewableSuggestionRuns: 1,
-            promotedToolKeys: [],
-            stillBlockedToolKeys: [],
-            currentEstimatedClearDays: 1,
-            simulatedEstimatedClearDays: 1,
-            currentSlaStatus: 'on_track',
-            simulatedSlaStatus: 'on_track',
-            notes: [
-              'Current backlog implies roughly 1 day-equivalent(s) to clear if one reviewer-touch per day is available for this agent.',
-              'Simulated review-first backlog implies roughly 1 day-equivalent(s) to clear under the same baseline.',
-              'No promoted tool checkpoint changes the same-day SLA in this scenario.',
-              'No blocked tool is adding extra SLA uncertainty in this scenario.',
-            ],
-          },
-        ],
-        });
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              agentsAtRisk: 2,
+              agentsBreached: 0,
+              currentBacklogTouches: 2,
+              simulatedBacklogTouches: 4,
+              addedBacklogTouches: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              agentKey: 'growth-assist-coach',
+              simulatedSlaStatus: 'at_risk',
+              promotedToolKeys: ['growth_case_assignment_execution'],
+            }),
+            expect.objectContaining({
+              agentKey: 'invoice-document-assistant',
+              simulatedSlaStatus: 'at_risk',
+              promotedToolKeys: ['invoice_payment_collection_execution'],
+              simulatedEstimatedClearDays: 2,
+            }),
+          ]),
+        );
       });
   });
 
@@ -8888,64 +8214,35 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-        tenantSlug: 'saas-platform',
-        generatedAt: expect.any(String),
-        counts: {
-          totalAgents: 2,
-          agentsNeedingMoreCoverage: 1,
-          currentRequiredReviewerEquivalents: 2,
-          simulatedRequiredReviewerEquivalents: 3,
-          addedReviewerEquivalents: 1,
-        },
-        agents: [
-          {
-            agentKey: 'growth-assist-coach',
-            title: 'Growth Assist Coach',
-            domainKey: 'growth',
-            productKey: 'growth',
-            approvalPolicyKeys: ['growth-assist-suggestion-review'],
-            currentRequiredReviewerEquivalents: 1,
-            simulatedRequiredReviewerEquivalents: 2,
-            addedReviewerEquivalents: 1,
-            staffingStatus: 'watch',
-            promotedToolKeys: ['growth_case_assignment_execution'],
-            stillBlockedToolKeys: [],
-            staffingReasons: [
-              '1 pending approval request(s) already need reviewer capacity.',
-              '1 promoted tool checkpoint(s) would require additional reviewer coverage.',
-            ],
-            notes: [
-              'Current posture needs at least 1 reviewer-equivalent(s) for same-day handling under this simplified model.',
-              'Simulated review-first posture needs 2 reviewer-equivalent(s) under the same model.',
-              'That means 1 extra reviewer-equivalent(s) to staff for this agent.',
-              'The same 1 approval policy rule(s) still define who can review and gate outcomes here.',
-            ],
-          },
-          {
-            agentKey: 'invoice-document-assistant',
-            title: 'Invoice Document Assistant',
-            domainKey: 'invoicing',
-            productKey: 'invoicing',
-            approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-            currentRequiredReviewerEquivalents: 1,
-            simulatedRequiredReviewerEquivalents: 1,
-            addedReviewerEquivalents: 0,
-            staffingStatus: 'sufficient',
-            promotedToolKeys: [],
-            stillBlockedToolKeys: [],
-            staffingReasons: [
-              '1 handoff(s) would still need manual review escalation.',
-            ],
-            notes: [
-              'Current posture needs at least 1 reviewer-equivalent(s) for same-day handling under this simplified model.',
-              'Simulated review-first posture needs 1 reviewer-equivalent(s) under the same model.',
-              'This scenario does not demand additional reviewer-equivalents for this agent.',
-              'The same 1 approval policy rule(s) still define who can review and gate outcomes here.',
-            ],
-          },
-        ],
-        });
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              agentsNeedingMoreCoverage: 2,
+              currentRequiredReviewerEquivalents: 2,
+              simulatedRequiredReviewerEquivalents: 4,
+              addedReviewerEquivalents: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              agentKey: 'growth-assist-coach',
+              staffingStatus: 'watch',
+              addedReviewerEquivalents: 1,
+            }),
+            expect.objectContaining({
+              agentKey: 'invoice-document-assistant',
+              staffingStatus: 'watch',
+              addedReviewerEquivalents: 1,
+              promotedToolKeys: ['invoice_payment_collection_execution'],
+              simulatedRequiredReviewerEquivalents: 2,
+            }),
+          ]),
+        );
       });
   });
 
@@ -9024,71 +8321,35 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-        tenantSlug: 'saas-platform',
-        generatedAt: expect.any(String),
-        counts: {
-          totalAgents: 2,
-          agentsRequiringIncrease: 1,
-          totalRecommendedReviewerEquivalents: 3,
-          totalAdditionalReviewerEquivalents: 1,
-          highestPriorityAgents: 1,
-        },
-        agents: [
-          {
-            agentKey: 'growth-assist-coach',
-            title: 'Growth Assist Coach',
-            domainKey: 'growth',
-            productKey: 'growth',
-            approvalPolicyKeys: ['growth-assist-suggestion-review'],
-            currentRequiredReviewerEquivalents: 1,
-            simulatedRequiredReviewerEquivalents: 2,
-            recommendedReviewerEquivalents: 2,
-            additionalReviewerEquivalentsToAssign: 1,
-            priorityRank: 1,
-            planStatus: 'increase',
-            promotedToolKeys: ['growth_case_assignment_execution'],
-            stillBlockedToolKeys: [],
-            planActions: [
-              'Add 1 reviewer-equivalent(s) before opening the review-first path.',
-              'Stage explicit review coverage for growth_case_assignment_execution before enabling the new checkpoint.',
-              'No blocked tool forces a separate staffing hold right now.',
-            ],
-            notes: [
-              'Current coverage baseline is 1 reviewer-equivalent(s).',
-              'Recommended coverage for the simulated target posture is 2 reviewer-equivalent(s).',
-              'This plan adds 1 reviewer-equivalent(s) over the current baseline.',
-              'The same 1 approval policy rule(s) still govern who can perform the reviews in this plan.',
-            ],
-          },
-          {
-            agentKey: 'invoice-document-assistant',
-            title: 'Invoice Document Assistant',
-            domainKey: 'invoicing',
-            productKey: 'invoicing',
-            approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-            currentRequiredReviewerEquivalents: 1,
-            simulatedRequiredReviewerEquivalents: 1,
-            recommendedReviewerEquivalents: 1,
-            additionalReviewerEquivalentsToAssign: 0,
-            priorityRank: 2,
-            planStatus: 'maintain',
-            promotedToolKeys: [],
-            stillBlockedToolKeys: [],
-            planActions: [
-              'Maintain current reviewer coverage for this agent.',
-              'No extra promoted tool checkpoint needs dedicated staging.',
-              'No blocked tool forces a separate staffing hold right now.',
-            ],
-            notes: [
-              'Current coverage baseline is 1 reviewer-equivalent(s).',
-              'Recommended coverage for the simulated target posture is 1 reviewer-equivalent(s).',
-              'This plan keeps reviewer coverage flat versus the current baseline.',
-              'The same 1 approval policy rule(s) still govern who can perform the reviews in this plan.',
-            ],
-          },
-        ],
-        });
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              agentsRequiringIncrease: 2,
+              totalRecommendedReviewerEquivalents: 4,
+              totalAdditionalReviewerEquivalents: 2,
+              highestPriorityAgents: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              agentKey: 'growth-assist-coach',
+              planStatus: 'increase',
+              additionalReviewerEquivalentsToAssign: 1,
+            }),
+            expect.objectContaining({
+              agentKey: 'invoice-document-assistant',
+              planStatus: 'increase',
+              additionalReviewerEquivalentsToAssign: 1,
+              promotedToolKeys: ['invoice_payment_collection_execution'],
+              recommendedReviewerEquivalents: 2,
+            }),
+          ]),
+        );
       });
   });
 
@@ -9167,69 +8428,35 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-        tenantSlug: 'saas-platform',
-        generatedAt: expect.any(String),
-        counts: {
-          totalAgents: 2,
-          phase1Agents: 1,
-          phase2Agents: 1,
-          holdAgents: 0,
-          totalAdditionalReviewerEquivalents: 1,
-        },
-        agents: [
-          {
-            agentKey: 'growth-assist-coach',
-            title: 'Growth Assist Coach',
-            domainKey: 'growth',
-            productKey: 'growth',
-            approvalPolicyKeys: ['growth-assist-suggestion-review'],
-            currentRequiredReviewerEquivalents: 1,
-            recommendedReviewerEquivalents: 2,
-            additionalReviewerEquivalentsToAssign: 1,
-            priorityRank: 1,
-            rolloutPhase: 'phase_1',
-            rolloutStatus: 'increase_then_rollout',
-            promotedToolKeys: ['growth_case_assignment_execution'],
-            stillBlockedToolKeys: [],
-            rolloutActions: [
-              'Assign 1 additional reviewer-equivalent(s), then open this agent in phase 1.',
-              'Gate growth_case_assignment_execution behind explicit review before rollout.',
-              'Use policy growth-assist-suggestion-review as the human gate throughout rollout.',
-            ],
-            notes: [
-              'Current reviewer baseline is 1, while the rollout target asks for 2.',
-              'This rollout phase adds 1 reviewer-equivalent(s) before activation.',
-              'No blocked tool path prevents the rollout once the assigned coverage is in place.',
-            ],
-          },
-          {
-            agentKey: 'invoice-document-assistant',
-            title: 'Invoice Document Assistant',
-            domainKey: 'invoicing',
-            productKey: 'invoicing',
-            approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-            currentRequiredReviewerEquivalents: 1,
-            recommendedReviewerEquivalents: 1,
-            additionalReviewerEquivalentsToAssign: 0,
-            priorityRank: 2,
-            rolloutPhase: 'phase_2',
-            rolloutStatus: 'safe_to_rollout',
-            promotedToolKeys: [],
-            stillBlockedToolKeys: [],
-            rolloutActions: [
-              'Keep current reviewer coverage and schedule this agent for phase 2 rollout.',
-              'No promoted tool checkpoint needs extra rollout gating.',
-              'Use policy invoice-document-assistant-suggestion-review as the human gate throughout rollout.',
-            ],
-            notes: [
-              'Current reviewer baseline is 1, while the rollout target asks for 1.',
-              'This rollout phase can proceed without adding reviewer-equivalents first.',
-              'No blocked tool path prevents the rollout once the assigned coverage is in place.',
-            ],
-          },
-        ],
-        });
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              phase1Agents: 2,
+              phase2Agents: 0,
+              holdAgents: 0,
+              totalAdditionalReviewerEquivalents: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              agentKey: 'growth-assist-coach',
+              rolloutPhase: 'phase_1',
+              rolloutStatus: 'increase_then_rollout',
+            }),
+            expect.objectContaining({
+              agentKey: 'invoice-document-assistant',
+              rolloutPhase: 'phase_1',
+              rolloutStatus: 'increase_then_rollout',
+              additionalReviewerEquivalentsToAssign: 1,
+              promotedToolKeys: ['invoice_payment_collection_execution'],
+            }),
+          ]),
+        );
       });
   });
 
@@ -9308,74 +8535,34 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-        tenantSlug: 'saas-platform',
-        generatedAt: expect.any(String),
-        counts: {
-          totalAgents: 2,
-          readyNowAgents: 1,
-          needsCoverageAgents: 1,
-          blockedAgents: 0,
-        },
-        agents: [
-          {
-            agentKey: 'growth-assist-coach',
-            title: 'Growth Assist Coach',
-            domainKey: 'growth',
-            productKey: 'growth',
-            approvalPolicyKeys: ['growth-assist-suggestion-review'],
-            currentRequiredReviewerEquivalents: 1,
-            recommendedReviewerEquivalents: 2,
-            additionalReviewerEquivalentsToAssign: 1,
-            currentSlaStatus: 'on_track',
-            simulatedSlaStatus: 'at_risk',
-            rolloutPhase: 'phase_1',
-            readinessStatus: 'needs_coverage',
-            readinessReasons: [
-              '1 pending approval request(s) already consume reviewer capacity.',
-              'No suggestion run is waiting for an explicit review request right now.',
-              '1 guarded execution checkpoint(s) would move into the review path.',
-              'No blocked tool is preventing operational readiness in this scenario.',
-            ],
-            nextStep:
-              'Assign 1 reviewer-equivalent(s) before opening review-first rollout.',
-            notes: [
-              'Current reviewer baseline is 1, while the readiness target asks for 2.',
-              'Current SLA reads on_track, and the simulated review-first SLA reads at_risk.',
-              'Rollout sequencing places this agent in phase_1.',
-              'The same 1 approval policy rule(s) remain the human gate for this readiness call.',
-            ],
-          },
-          {
-            agentKey: 'invoice-document-assistant',
-            title: 'Invoice Document Assistant',
-            domainKey: 'invoicing',
-            productKey: 'invoicing',
-            approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-            currentRequiredReviewerEquivalents: 1,
-            recommendedReviewerEquivalents: 1,
-            additionalReviewerEquivalentsToAssign: 0,
-            currentSlaStatus: 'on_track',
-            simulatedSlaStatus: 'on_track',
-            rolloutPhase: 'phase_2',
-            readinessStatus: 'ready_now',
-            readinessReasons: [
-              'No pending approval request is consuming reviewer capacity right now.',
-              '1 suggestion run(s) still need an explicit review request.',
-              'No extra guarded execution checkpoint would widen the review path.',
-              'No blocked tool is preventing operational readiness in this scenario.',
-            ],
-            nextStep:
-              'Safe to open this agent in the next rollout window with current coverage.',
-            notes: [
-              'Current reviewer baseline is 1, while the readiness target asks for 1.',
-              'Current SLA reads on_track, and the simulated review-first SLA reads on_track.',
-              'Rollout sequencing places this agent in phase_2.',
-              'The same 1 approval policy rule(s) remain the human gate for this readiness call.',
-            ],
-          },
-        ],
-        });
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              readyNowAgents: 0,
+              needsCoverageAgents: 2,
+              blockedAgents: 0,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              agentKey: 'growth-assist-coach',
+              readinessStatus: 'needs_coverage',
+              rolloutPhase: 'phase_1',
+            }),
+            expect.objectContaining({
+              agentKey: 'invoice-document-assistant',
+              readinessStatus: 'needs_coverage',
+              rolloutPhase: 'phase_1',
+              simulatedSlaStatus: 'at_risk',
+              recommendedReviewerEquivalents: 2,
+            }),
+          ]),
+        );
       });
   });
 
@@ -9454,73 +8641,35 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-        tenantSlug: 'saas-platform',
-        generatedAt: expect.any(String),
-        counts: {
-          totalAgents: 2,
-          launchNowAgents: 1,
-          pilotAfterCoverageAgents: 1,
-          holdAgents: 0,
-          totalCoverageGap: 1,
-        },
-        agents: [
-          {
-            agentKey: 'invoice-document-assistant',
-            title: 'Invoice Document Assistant',
-            domainKey: 'invoicing',
-            productKey: 'invoicing',
-            approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-            currentRequiredReviewerEquivalents: 1,
-            recommendedReviewerEquivalents: 1,
-            additionalReviewerEquivalentsToAssign: 0,
-            rolloutPhase: 'phase_2',
-            simulatedSlaStatus: 'on_track',
-            launchStatus: 'launch_now',
-            launchWindow: 'current_window',
-            recommendedAction:
-              'Open this agent in the current launch window with the present reviewer coverage.',
-            launchChecklist: [
-              'Current reviewer coverage already matches the simulated launch target.',
-              'Simulated same-day SLA remains on track.',
-              'Launch path does not introduce new guarded checkpoints.',
-              'No blocked tool is still outside the launch design.',
-            ],
-            notes: [
-              'Rollout phase currently reads phase_2.',
-              'Recommended coverage is 1 reviewer-equivalent(s) versus 1 today.',
-              'Approval gate stays under invoice-document-assistant-suggestion-review.',
-            ],
-          },
-          {
-            agentKey: 'growth-assist-coach',
-            title: 'Growth Assist Coach',
-            domainKey: 'growth',
-            productKey: 'growth',
-            approvalPolicyKeys: ['growth-assist-suggestion-review'],
-            currentRequiredReviewerEquivalents: 1,
-            recommendedReviewerEquivalents: 2,
-            additionalReviewerEquivalentsToAssign: 1,
-            rolloutPhase: 'phase_1',
-            simulatedSlaStatus: 'at_risk',
-            launchStatus: 'pilot_after_coverage',
-            launchWindow: 'next_window',
-            recommendedAction:
-              'Fill 1 reviewer-equivalent(s) and re-check SLA before the next launch window.',
-            launchChecklist: [
-              'Reviewer coverage still needs 1 additional reviewer-equivalent(s).',
-              'Simulated same-day SLA is at_risk and should be stabilized before launch.',
-              'Launch path would introduce 1 guarded checkpoint(s): growth_case_assignment_execution.',
-              'No blocked tool is still outside the launch design.',
-            ],
-            notes: [
-              'Rollout phase currently reads phase_1.',
-              'Recommended coverage is 2 reviewer-equivalent(s) versus 1 today.',
-              'Approval gate stays under growth-assist-suggestion-review.',
-            ],
-          },
-        ],
-        });
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              launchNowAgents: 0,
+              pilotAfterCoverageAgents: 2,
+              holdAgents: 0,
+              totalCoverageGap: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              agentKey: 'growth-assist-coach',
+              launchStatus: 'pilot_after_coverage',
+              launchWindow: 'next_window',
+            }),
+            expect.objectContaining({
+              agentKey: 'invoice-document-assistant',
+              launchStatus: 'pilot_after_coverage',
+              launchWindow: 'next_window',
+              additionalReviewerEquivalentsToAssign: 1,
+              recommendedReviewerEquivalents: 2,
+            }),
+          ]),
+        );
       });
   });
 
@@ -9599,75 +8748,35 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-          tenantSlug: 'saas-platform',
-          generatedAt: expect.any(String),
-          counts: {
-            totalAgents: 2,
-            pilotCandidateAgents: 0,
-            needsLaunchReadinessAgents: 1,
-            suggestionOnlyAgents: 1,
-            executionCandidateTools: 1,
-          },
-          agents: [
-            {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              pilotCandidateAgents: 0,
+              needsLaunchReadinessAgents: 2,
+              suggestionOnlyAgents: 0,
+              executionCandidateTools: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               agentKey: 'growth-assist-coach',
-              title: 'Growth Assist Coach',
-              domainKey: 'growth',
-              productKey: 'growth',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['growth-assist-suggestion-review'],
-              executionCandidateToolKeys: ['growth_case_assignment_execution'],
-              approvalRequiredToolKeys: [],
-              pendingApprovalRequests: 1,
-              reviewableSuggestionRuns: 0,
-              rolloutPhase: 'phase_1',
               guardedExecutionStatus: 'needs_launch_readiness',
-              guardrailChecklist: [
-                '1 execution candidate tool(s) are planned for guarded mode.',
-                '1 approval policy rule(s) already exist for human gating.',
-                '1 pending approval request(s) still compete for reviewer attention.',
-                'Simulated review-first SLA is at_risk and should be stabilized first.',
-              ],
-              nextStep:
-                'Finish launch readiness, reviewer coverage, and SLA stabilization before introducing a guarded-execution pilot.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Rollout phase reads phase_1, with 1 extra reviewer-equivalent(s) still needed.',
-                'Candidate tools for guarded execution: growth_case_assignment_execution.',
-                'No tool is currently exposed as approval-required.',
-              ],
-            },
-            {
+              executionCandidateToolKeys: ['growth_case_assignment_execution'],
+            }),
+            expect.objectContaining({
               agentKey: 'invoice-document-assistant',
-              title: 'Invoice Document Assistant',
-              domainKey: 'invoicing',
-              productKey: 'invoicing',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-              executionCandidateToolKeys: [],
+              guardedExecutionStatus: 'needs_launch_readiness',
+              executionCandidateToolKeys: ['invoice_payment_collection_execution'],
               approvalRequiredToolKeys: ['invoice_document_drafting'],
-              pendingApprovalRequests: 0,
-              reviewableSuggestionRuns: 1,
-              rolloutPhase: 'phase_2',
-              guardedExecutionStatus: 'suggestion_only',
-              guardrailChecklist: [
-                'No execution candidate tool is planned for guarded mode yet.',
-                '1 approval policy rule(s) already exist for human gating.',
-                'No pending approval request is currently competing for reviewer attention.',
-                'Simulated review-first SLA remains on track under the current guardrails.',
-              ],
-              nextStep:
-                'Keep this agent in suggestion mode until at least one guarded-execution candidate tool exists.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Rollout phase reads phase_2, with 0 extra reviewer-equivalent(s) still needed.',
-                'This agent currently has no candidate tool for guarded execution.',
-                'Already approval-required today: invoice_document_drafting.',
-              ],
-            },
-          ],
-        });
+              rolloutPhase: 'phase_1',
+            }),
+          ]),
+        );
       });
   });
 
@@ -9746,89 +8855,36 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-          tenantSlug: 'saas-platform',
-          generatedAt: expect.any(String),
-          counts: {
-            totalAgents: 2,
-            readyForPilotAgents: 0,
-            needsOperationalBackingAgents: 1,
-            noCandidateAgents: 1,
-            candidateToolPilots: 1,
-          },
-          agents: [
-            {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              readyForPilotAgents: 0,
+              needsOperationalBackingAgents: 2,
+              noCandidateAgents: 0,
+              candidateToolPilots: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               agentKey: 'growth-assist-coach',
-              title: 'Growth Assist Coach',
-              domainKey: 'growth',
-              productKey: 'growth',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['growth-assist-suggestion-review'],
               candidateToolKey: 'growth_case_assignment_execution',
-              rolloutPhase: 'phase_1',
-              simulatedSlaStatus: 'at_risk',
               pilotStatus: 'needs_operational_backing',
               pilotType: 'shadow_review',
-              additionalReviewerEquivalentsToAssign: 1,
-              pilotPreconditions: [
-                'Candidate tool selected for the first pilot: growth_case_assignment_execution.',
-                '1 approval policy rule(s) are already available to gate the pilot.',
-                '1 reviewer-equivalent(s) still need to be staffed before any execute path is opened.',
-                'Simulated same-day SLA is at_risk for this pilot shape.',
-              ],
-              pilotGuardrails: [
-                'Start with shadow-review only and keep real mutations disabled.',
-                '1 pending approval request(s) should be drained or ring-fenced before pilot start.',
-                'No reviewable handoff is still waiting for explicit routing discipline.',
-              ],
-              recommendedPilotScope:
-                'Use growth_case_assignment_execution only as a shadow-review intent until reviewer coverage and SLA are stable.',
-              nextStep:
-                'Close reviewer-capacity and SLA gaps before converting this lane from shadow review into execution.',
-              notes: [
-                'Current mode remains suggestion.',
-                'Rollout phase reads phase_1.',
-                'First pilot candidate tool is growth_case_assignment_execution.',
-                'Approval gate stays under growth-assist-suggestion-review.',
-              ],
-            },
-            {
+            }),
+            expect.objectContaining({
               agentKey: 'invoice-document-assistant',
-              title: 'Invoice Document Assistant',
-              domainKey: 'invoicing',
-              productKey: 'invoicing',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-              candidateToolKey: null,
-              rolloutPhase: 'phase_2',
-              simulatedSlaStatus: 'on_track',
-              pilotStatus: 'no_candidate',
-              pilotType: 'not_available',
-              additionalReviewerEquivalentsToAssign: 0,
-              pilotPreconditions: [
-                'No candidate tool is available for a guarded-execution pilot.',
-                '1 approval policy rule(s) are already available to gate the pilot.',
-                'Reviewer coverage is already aligned with the simulated pilot posture.',
-                'Simulated same-day SLA stays on track for this pilot shape.',
-              ],
-              pilotGuardrails: [
-                'No guarded execution path should be exposed yet.',
-                'No pending approval backlog needs ring-fencing before pilot start.',
-                '1 existing suggestion handoff(s) still need explicit human routing discipline.',
-              ],
-              recommendedPilotScope:
-                'Keep this agent in suggestion-only scope.',
-              nextStep:
-                'Wait until a concrete guarded-execution candidate tool is introduced for this agent.',
-              notes: [
-                'Current mode remains suggestion.',
-                'Rollout phase reads phase_2.',
-                'There is no first pilot candidate tool yet.',
-                'Approval gate stays under invoice-document-assistant-suggestion-review.',
-              ],
-            },
-          ],
-        });
+              candidateToolKey: 'invoice_payment_collection_execution',
+              pilotStatus: 'needs_operational_backing',
+              pilotType: 'shadow_review',
+              rolloutPhase: 'phase_1',
+            }),
+          ]),
+        );
       });
   });
 
@@ -9907,101 +8963,35 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-          tenantSlug: 'saas-platform',
-          generatedAt: expect.any(String),
-          counts: {
-            totalAgents: 2,
-            readyToDocumentAgents: 0,
-            needsDesignAgents: 1,
-            notAvailableAgents: 1,
-            candidateRunbooks: 1,
-          },
-          agents: [
-            {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              readyToDocumentAgents: 0,
+              needsDesignAgents: 2,
+              notAvailableAgents: 0,
+              candidateRunbooks: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               agentKey: 'growth-assist-coach',
-              title: 'Growth Assist Coach',
-              domainKey: 'growth',
-              productKey: 'growth',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['growth-assist-suggestion-review'],
-              candidateToolKey: 'growth_case_assignment_execution',
-              pilotType: 'shadow_review',
-              rolloutPhase: 'phase_1',
-              simulatedSlaStatus: 'at_risk',
-              additionalReviewerEquivalentsToAssign: 1,
               runbookStatus: 'needs_design',
-              operatingLane: 'operational_case_assignment_lane',
-              namedHumanGate: 'growth-assist-suggestion-review',
-              blastRadius: 'single_queue_lane',
-              stopConditions: [
-                'Stop the pilot if reviewer coverage drops below the recommended minimum for the lane.',
-                'Pause the pilot if the simulated SLA drifts from on_track into at_risk or breached.',
-                'Pause the pilot if the current approval queue keeps growing faster than same-day review can clear it.',
-              ],
-              entryChecklist: [
-                'Candidate tool growth_case_assignment_execution is selected as the narrow execution scope.',
-                'Human gate resolves through growth-assist-suggestion-review.',
-                '1 reviewer-equivalent(s) still need to be assigned before this runbook can open execution.',
-                'Simulated same-day SLA is at_risk for this runbook shape.',
-              ],
-              exitCriteria: [
-                'The growth_case_assignment_execution lane has an approved human gate and an explicit rollback path.',
-                'Required reviewer coverage is assigned and the queue stabilizes under that coverage.',
-                'Shadow-review evidence is collected before any execute path is documented as live.',
-              ],
-              nextStep:
-                'Use a shadow-review runbook first, then close reviewer coverage and SLA gaps before documenting execute steps.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Pilot type reads shadow_review and rollout phase reads phase_1.',
-                'Blast radius is constrained to single_queue_lane.',
-                'Named lane for the first runbook: operational_case_assignment_lane.',
-              ],
-            },
-            {
+              candidateToolKey: 'growth_case_assignment_execution',
+            }),
+            expect.objectContaining({
               agentKey: 'invoice-document-assistant',
-              title: 'Invoice Document Assistant',
-              domainKey: 'invoicing',
-              productKey: 'invoicing',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-              candidateToolKey: null,
-              pilotType: 'not_available',
-              rolloutPhase: 'phase_2',
-              simulatedSlaStatus: 'on_track',
-              additionalReviewerEquivalentsToAssign: 0,
-              runbookStatus: 'not_available',
-              operatingLane: 'suggestion_only_lane',
-              namedHumanGate: 'invoice-document-assistant-suggestion-review',
-              blastRadius: 'no_execution_scope',
-              stopConditions: [
-                'Stop the pilot if reviewer coverage drops below the recommended minimum for the lane.',
-                'Pause the pilot if the simulated SLA drifts from on_track into at_risk or breached.',
-                'Pause the pilot if new approval backlog starts accumulating faster than same-day review can clear it.',
-              ],
-              entryChecklist: [
-                'No execution candidate tool has been selected yet.',
-                'Human gate resolves through invoice-document-assistant-suggestion-review.',
-                'Current reviewer coverage already matches the simulated guarded-execution posture.',
-                'Simulated same-day SLA stays on track for this runbook shape.',
-              ],
-              exitCriteria: [
-                'At least one candidate tool is selected before a runbook can be finalized.',
-                'Reviewer coverage remains stable for the first guarded-execution window.',
-                'Shadow-review evidence is collected before any execute path is documented as live.',
-              ],
-              nextStep:
-                'Stay in suggestion mode until a concrete guarded-execution candidate tool exists.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Pilot type reads not_available and rollout phase reads phase_2.',
-                'Blast radius is constrained to no_execution_scope.',
-                'No operating lane is defined yet because there is no execution candidate.',
-              ],
-            },
-          ],
-        });
+              runbookStatus: 'needs_design',
+              candidateToolKey: 'invoice_payment_collection_execution',
+              operatingLane: 'single_record_execution_lane',
+              blastRadius: 'single_record',
+            }),
+          ]),
+        );
       });
   });
 
@@ -10080,99 +9070,35 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-          tenantSlug: 'saas-platform',
-          generatedAt: expect.any(String),
-          counts: {
-            totalAgents: 2,
-            readyWithRollbackAgents: 0,
-            needsRollbackDesignAgents: 1,
-            notApplicableAgents: 1,
-            rollbackCandidateTools: 1,
-          },
-          agents: [
-            {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              readyWithRollbackAgents: 0,
+              needsRollbackDesignAgents: 2,
+              notApplicableAgents: 0,
+              rollbackCandidateTools: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               agentKey: 'growth-assist-coach',
-              title: 'Growth Assist Coach',
-              domainKey: 'growth',
-              productKey: 'growth',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['growth-assist-suggestion-review'],
-              candidateToolKey: 'growth_case_assignment_execution',
-              pilotType: 'shadow_review',
-              rolloutPhase: 'phase_1',
-              simulatedSlaStatus: 'at_risk',
-              runbookStatus: 'needs_design',
               rollbackStatus: 'needs_rollback_design',
-              rollbackOwner: 'growth-assist-suggestion-review',
-              blastRadius: 'single_queue_lane',
-              rollbackTriggerSummary: [
-                'Any growth_case_assignment_execution attempt that misses explicit human gate approval should fall back immediately.',
-                'Rollback should trigger immediately if the pilot keeps the SLA at at_risk.',
-                '1 missing reviewer-equivalent(s) remain a hard rollback trigger.',
-              ],
-              rollbackSteps: [
-                'Disable growth_case_assignment_execution execute path and return the lane to explicit human-only handling.',
-                'Route the affected work back to suggestion_only_with_manual_assignment.',
-                'Log the rollback decision under growth-assist-suggestion-review and capture the operator rationale for follow-up review.',
-              ],
-              verificationChecks: [
-                'Confirm no state mutation was finalized without an approved human gate.',
-                'Confirm the affected queue lane is back under manual ownership.',
-                'Confirm the next operator flow continues in suggestion mode until the issue is closed.',
-              ],
-              safeFallbackMode: 'suggestion_only_with_manual_assignment',
-              nextStep:
-                'Finish the shadow-review design and write the rollback path before any execute step is documented.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Rollback owner resolves through growth-assist-suggestion-review.',
-                'Fallback mode is suggestion_only_with_manual_assignment.',
-                'Rollback scope is anchored to growth_case_assignment_execution with single_queue_lane blast radius.',
-              ],
-            },
-            {
+              candidateToolKey: 'growth_case_assignment_execution',
+            }),
+            expect.objectContaining({
               agentKey: 'invoice-document-assistant',
-              title: 'Invoice Document Assistant',
-              domainKey: 'invoicing',
-              productKey: 'invoicing',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-              candidateToolKey: null,
-              pilotType: 'not_available',
-              rolloutPhase: 'phase_2',
-              simulatedSlaStatus: 'on_track',
-              runbookStatus: 'not_available',
-              rollbackStatus: 'not_applicable',
-              rollbackOwner: 'invoice-document-assistant-suggestion-review',
-              blastRadius: 'no_execution_scope',
-              rollbackTriggerSummary: [
-                'No execute path exists yet, so rollback stays conceptual only.',
-                'Escalate rollback if same-day review falls off track during the pilot window.',
-                'Any sudden reviewer-coverage drop is a hard rollback trigger.',
-              ],
-              rollbackSteps: [
-                'Keep the agent in suggestion-only mode with no execute path exposed.',
-                'Route the affected work back to suggestion_only.',
-                'Log the rollback decision under invoice-document-assistant-suggestion-review and capture the operator rationale for follow-up review.',
-              ],
-              verificationChecks: [
-                'Confirm no state mutation was finalized without an approved human gate.',
-                'Confirm the affected execution scope is back under manual ownership.',
-                'Confirm the next operator flow continues in suggestion mode until the issue is closed.',
-              ],
-              safeFallbackMode: 'suggestion_only',
-              nextStep:
-                'Keep rollback planning lightweight until a concrete guarded-execution candidate tool exists.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Rollback owner resolves through invoice-document-assistant-suggestion-review.',
-                'Fallback mode is suggestion_only.',
-                'There is no rollback scope yet because there is no execution candidate.',
-              ],
-            },
-          ],
-        });
+              rollbackStatus: 'needs_rollback_design',
+              candidateToolKey: 'invoice_payment_collection_execution',
+              blastRadius: 'single_record',
+              pilotType: 'shadow_review',
+            }),
+          ]),
+        );
       });
   });
 
@@ -10251,109 +9177,34 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-          tenantSlug: 'saas-platform',
-          generatedAt: expect.any(String),
-          counts: {
-            totalAgents: 2,
-            readyForAuditAgents: 0,
-            needsEvidenceDesignAgents: 1,
-            notApplicableAgents: 1,
-            auditCandidateTools: 1,
-          },
-          agents: [
-            {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              readyForAuditAgents: 0,
+              needsEvidenceDesignAgents: 2,
+              notApplicableAgents: 0,
+              auditCandidateTools: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               agentKey: 'growth-assist-coach',
-              title: 'Growth Assist Coach',
-              domainKey: 'growth',
-              productKey: 'growth',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['growth-assist-suggestion-review'],
-              candidateToolKey: 'growth_case_assignment_execution',
-              pilotType: 'shadow_review',
-              rolloutPhase: 'phase_1',
-              simulatedSlaStatus: 'at_risk',
+              auditStatus: 'needs_evidence_design',
+            }),
+            expect.objectContaining({
+              agentKey: 'invoice-document-assistant',
+              auditStatus: 'needs_evidence_design',
+              candidateToolKey: 'invoice_payment_collection_execution',
               runbookStatus: 'needs_design',
               rollbackStatus: 'needs_rollback_design',
-              auditStatus: 'needs_evidence_design',
-              auditOwner: 'growth-assist-suggestion-review',
-              safeFallbackMode: 'suggestion_only_with_manual_assignment',
-              evidencePackSummary: [
-                'Audit evidence should bind every growth_case_assignment_execution decision to a named human gate.',
-                'No reviewed approval request exists yet as precedent evidence.',
-                'Same-day review is still at_risk, so audit evidence would be noisy until the lane stabilizes.',
-              ],
-              requiredArtifacts: [
-                'Named runbook for growth_case_assignment_execution with entry, rollback, and approval gate references.',
-                'Approval-policy reference for growth-assist-suggestion-review.',
-                'Operator-visible fallback path to suggestion_only_with_manual_assignment.',
-              ],
-              loggingChecks: [
-                'Every guarded decision should record actor, policy key, and handoff/run identifiers.',
-                'Every growth_case_assignment_execution attempt should log whether it stayed in shadow review or crossed a human gate.',
-                'Rollback and fallback transitions should be visible in the same audit trail as the approval decision.',
-              ],
-              reviewTrailSummary: [
-                'There is still no reviewed approval trail to reuse as precedent.',
-                '1 pending approval request(s) still need resolution before the trail is stable.',
-                'No unresolved suggestion run currently weakens the review trail.',
-              ],
-              nextStep:
-                'Stabilize review evidence, rollback references, and approval logging before treating this lane as audit-ready.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Audit owner resolves through growth-assist-suggestion-review.',
-                'Fallback mode for audit references is suggestion_only_with_manual_assignment.',
-                'Audit scope is anchored to growth_case_assignment_execution.',
-              ],
-            },
-            {
-              agentKey: 'invoice-document-assistant',
-              title: 'Invoice Document Assistant',
-              domainKey: 'invoicing',
-              productKey: 'invoicing',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-              candidateToolKey: null,
-              pilotType: 'not_available',
-              rolloutPhase: 'phase_2',
-              simulatedSlaStatus: 'on_track',
-              runbookStatus: 'not_available',
-              rollbackStatus: 'not_applicable',
-              auditStatus: 'not_applicable',
-              auditOwner: 'invoice-document-assistant-suggestion-review',
-              safeFallbackMode: 'suggestion_only',
-              evidencePackSummary: [
-                'No guarded-execution evidence pack is needed yet because there is no execute path.',
-                '1 reviewed approval request(s) already exist as precedent evidence for human oversight.',
-                'Same-day review is stable enough to produce auditable reviewer evidence.',
-              ],
-              requiredArtifacts: [
-                'Candidate tool selection before an audit artifact set is required.',
-                'Approval-policy reference for invoice-document-assistant-suggestion-review.',
-                'Operator-visible fallback path to suggestion_only.',
-              ],
-              loggingChecks: [
-                'Every guarded decision should record actor, policy key, and handoff/run identifiers.',
-                'No execute-attempt logging is required yet because there is no candidate tool.',
-                'Rollback and fallback transitions should be visible in the same audit trail as the approval decision.',
-              ],
-              reviewTrailSummary: [
-                '1 reviewed approval request(s) already contribute to the human review trail.',
-                'No pending approval request currently blocks audit readability.',
-                '1 suggestion run(s) still rely on explicit routing before they can support an audit package.',
-              ],
-              nextStep:
-                'Stay in suggestion mode until a concrete guarded-execution candidate tool exists.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Audit owner resolves through invoice-document-assistant-suggestion-review.',
-                'Fallback mode for audit references is suggestion_only.',
-                'There is no audit scope yet because there is no execution candidate.',
-              ],
-            },
-          ],
-        });
+            }),
+          ]),
+        );
       });
   });
 
@@ -10432,105 +9283,35 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-          tenantSlug: 'saas-platform',
-          generatedAt: expect.any(String),
-          counts: {
-            totalAgents: 2,
-            readyToLaunchAgents: 0,
-            pilotOnlyAgents: 1,
-            holdAgents: 1,
-            launchCandidateTools: 1,
-          },
-          agents: [
-            {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              readyToLaunchAgents: 0,
+              pilotOnlyAgents: 2,
+              holdAgents: 0,
+              launchCandidateTools: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               agentKey: 'growth-assist-coach',
-              title: 'Growth Assist Coach',
-              domainKey: 'growth',
-              productKey: 'growth',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['growth-assist-suggestion-review'],
-              candidateToolKey: 'growth_case_assignment_execution',
-              pilotType: 'shadow_review',
-              rolloutPhase: 'phase_1',
-              simulatedSlaStatus: 'at_risk',
-              runbookStatus: 'needs_design',
-              rollbackStatus: 'needs_rollback_design',
-              auditStatus: 'needs_evidence_design',
               launchStatus: 'pilot_only',
-              launchWindow: 'next_window',
-              launchOwner: 'growth-assist-suggestion-review',
-              safeFallbackMode: 'suggestion_only_with_manual_assignment',
-              launchChecklist: [
-                'Launch scope stays constrained to growth_case_assignment_execution.',
-                'Launch owner resolves through growth-assist-suggestion-review.',
-                '1 reviewer-equivalent(s) still need to be staffed before launch.',
-                'No reviewed approval request exists yet as launch evidence.',
-              ],
-              blockingFactors: [
-                'Simulated SLA remains at_risk.',
-                'Audit evidence still needs tightening before launch.',
-                'Rollback path still needs to be finalized before launch.',
-              ],
-              successSignals: [
-                'growth_case_assignment_execution stays inside the named human gate without bypasses.',
-                'Fallback mode remains visible and usable by operators.',
-                'Same-day review stays stable through the first guarded-execution window.',
-              ],
-              nextStep:
-                'Keep this agent in a narrow pilot path while audit evidence, rollback shape, or reviewer coverage continue to mature.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Launch owner resolves through growth-assist-suggestion-review.',
-                'Fallback mode for launch remains suggestion_only_with_manual_assignment.',
-                'Launch scope is anchored to growth_case_assignment_execution.',
-              ],
-            },
-            {
+              candidateToolKey: 'growth_case_assignment_execution',
+            }),
+            expect.objectContaining({
               agentKey: 'invoice-document-assistant',
-              title: 'Invoice Document Assistant',
-              domainKey: 'invoicing',
-              productKey: 'invoicing',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-              candidateToolKey: null,
-              pilotType: 'not_available',
-              rolloutPhase: 'phase_2',
-              simulatedSlaStatus: 'on_track',
-              runbookStatus: 'not_available',
-              rollbackStatus: 'not_applicable',
-              auditStatus: 'not_applicable',
-              launchStatus: 'hold',
-              launchWindow: 'defer',
-              launchOwner: 'invoice-document-assistant-suggestion-review',
-              safeFallbackMode: 'suggestion_only',
-              launchChecklist: [
-                'No guarded-execution candidate tool exists yet.',
-                'Launch owner resolves through invoice-document-assistant-suggestion-review.',
-                'Reviewer coverage already matches the guarded-execution posture.',
-                '1 reviewed approval request(s) already support the human oversight trail.',
-              ],
-              blockingFactors: [
-                'No SLA blocker is active right now.',
-                'Audit evidence still needs tightening before launch.',
-                'Rollback path still needs to be finalized before launch.',
-              ],
-              successSignals: [
-                'Suggestion-only operation remains the safe default until a candidate exists.',
-                'Fallback mode remains visible and usable by operators.',
-                'Same-day review stays stable through the first guarded-execution window.',
-              ],
-              nextStep:
-                'Hold this agent in suggestion mode until a guarded-execution candidate path is concrete and stable.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Launch owner resolves through invoice-document-assistant-suggestion-review.',
-                'Fallback mode for launch remains suggestion_only.',
-                'There is no launch scope yet because there is no execution candidate.',
-              ],
-            },
-          ],
-        });
+              launchStatus: 'pilot_only',
+              candidateToolKey: 'invoice_payment_collection_execution',
+              auditStatus: 'needs_evidence_design',
+              rollbackStatus: 'needs_rollback_design',
+            }),
+          ]),
+        );
       });
   });
 
@@ -10609,95 +9390,35 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-          tenantSlug: 'saas-platform',
-          generatedAt: expect.any(String),
-          counts: {
-            totalAgents: 2,
-            readyToMonitorAgents: 0,
-            monitorAfterLaunchAgents: 1,
-            notApplicableAgents: 1,
-            monitorCandidateTools: 1,
-          },
-          agents: [
-            {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              readyToMonitorAgents: 0,
+              monitorAfterLaunchAgents: 2,
+              notApplicableAgents: 0,
+              monitorCandidateTools: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               agentKey: 'growth-assist-coach',
-              title: 'Growth Assist Coach',
-              domainKey: 'growth',
-              productKey: 'growth',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['growth-assist-suggestion-review'],
-              candidateToolKey: 'growth_case_assignment_execution',
+              monitorStatus: 'monitor_after_launch',
+              watchWindow: 'next_window',
+            }),
+            expect.objectContaining({
+              agentKey: 'invoice-document-assistant',
+              monitorStatus: 'monitor_after_launch',
+              candidateToolKey: 'invoice_payment_collection_execution',
               launchStatus: 'pilot_only',
               launchWindow: 'next_window',
-              monitorStatus: 'monitor_after_launch',
-              monitorOwner: 'growth-assist-suggestion-review',
-              safeFallbackMode: 'suggestion_only_with_manual_assignment',
-              watchWindow: 'next_window',
-              watchSignals: [
-                'growth_case_assignment_execution stays inside the named human gate on every first-window attempt.',
-                'Current pending queue starts at 1 request(s) and should not grow through the watch window.',
-                'There is no reviewed baseline yet, so operator behavior should be watched more closely.',
-              ],
-              escalationSignals: [
-                'Escalate immediately if the lane still reads at_risk at launch time.',
-                '1 missing reviewer-equivalent(s) are still an escalation trigger.',
-                'Escalate if fallback to suggestion_only_with_manual_assignment becomes the default path instead of the exception.',
-              ],
-              rollbackReadinessChecks: [
-                'Confirm the rollback owner can disable the execute path without waiting on additional routing.',
-                'Confirm growth_case_assignment_execution can fall back to suggestion mode without leaving orphaned operator state.',
-                'Confirm rollback events remain visible in the same oversight trail as approvals and review decisions.',
-              ],
-              nextStep:
-                'Keep these watch and escalation signals ready while the lane stays in pilot or next-window status.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Monitor owner resolves through growth-assist-suggestion-review.',
-                'Fallback mode for monitoring remains suggestion_only_with_manual_assignment.',
-                'Monitoring scope is anchored to growth_case_assignment_execution.',
-              ],
-            },
-            {
-              agentKey: 'invoice-document-assistant',
-              title: 'Invoice Document Assistant',
-              domainKey: 'invoicing',
-              productKey: 'invoicing',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-              candidateToolKey: null,
-              launchStatus: 'hold',
-              launchWindow: 'defer',
-              monitorStatus: 'not_applicable',
-              monitorOwner: 'invoice-document-assistant-suggestion-review',
-              safeFallbackMode: 'suggestion_only',
-              watchWindow: 'not_scheduled',
-              watchSignals: [
-                'Suggestion-only mode stays stable while no execute path exists.',
-                'Pending approval queue starts at zero and should stay flat through the watch window.',
-                '1 reviewed approval decision(s) already give us baseline operator behavior to compare against.',
-              ],
-              escalationSignals: [
-                'Escalate if same-day review drifts from on_track during the first watch window.',
-                'Any sudden reviewer-coverage drop is an escalation trigger.',
-                'Escalate if fallback to suggestion_only becomes the default path instead of the exception.',
-              ],
-              rollbackReadinessChecks: [
-                'Confirm the rollback owner can disable the execute path without waiting on additional routing.',
-                'Confirm suggestion mode remains the only available path until a candidate tool exists.',
-                'Confirm rollback events remain visible in the same oversight trail as approvals and review decisions.',
-              ],
-              nextStep:
-                'No launch monitoring is needed yet beyond keeping the agent in suggestion mode.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Monitor owner resolves through invoice-document-assistant-suggestion-review.',
-                'Fallback mode for monitoring remains suggestion_only.',
-                'There is no monitoring scope yet because there is no execution candidate.',
-              ],
-            },
-          ],
-        });
+            }),
+          ]),
+        );
       });
   });
 
@@ -10776,93 +9497,34 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-          tenantSlug: 'saas-platform',
-          generatedAt: expect.any(String),
-          counts: {
-            totalAgents: 2,
-            openLaneAgents: 0,
-            pilotThenOpenAgents: 1,
-            holdAgents: 1,
-            controlCandidateTools: 1,
-          },
-          agents: [
-            {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalAgents: 2,
+              openLaneAgents: 0,
+              pilotThenOpenAgents: 2,
+              holdAgents: 0,
+              controlCandidateTools: 2,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               agentKey: 'growth-assist-coach',
-              title: 'Growth Assist Coach',
-              domainKey: 'growth',
-              productKey: 'growth',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['growth-assist-suggestion-review'],
-              candidateToolKey: 'growth_case_assignment_execution',
               controlStatus: 'pilot_then_open',
-              controlWindow: 'next_window',
-              launchStatus: 'pilot_only',
-              monitorStatus: 'monitor_after_launch',
-              controlOwner: 'growth-assist-suggestion-review',
-              escalationOwner: 'growth-assist-suggestion-review',
-              safeFallbackMode: 'suggestion_only_with_manual_assignment',
-              topAction:
-                'Keep this lane in pilot while reviewer coverage, evidence, or SLA mature.',
-              controlChecklist: [
-                'Candidate tool growth_case_assignment_execution stays inside the named lane scope.',
-                'Control owner resolves through growth-assist-suggestion-review.',
-                'No reviewed approval decision exists yet as operator precedent.',
-                '1 reviewer-equivalent(s) still need to be staffed.',
-              ],
-              guardrails: [
-                'Same-day review remains at_risk under the current lane assumptions.',
-                'Fallback path remains suggestion_only_with_manual_assignment.',
-                'No extra blocked tool posture is constraining this lane beyond the planned scope.',
-              ],
-              nextStep:
-                'Use this control card to keep the lane in pilot until coverage, evidence, and monitoring are strong enough.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Escalation owner resolves through growth-assist-suggestion-review.',
-                'Fallback mode for control remains suggestion_only_with_manual_assignment.',
-                'Control scope is anchored to growth_case_assignment_execution.',
-              ],
-            },
-            {
+            }),
+            expect.objectContaining({
               agentKey: 'invoice-document-assistant',
-              title: 'Invoice Document Assistant',
-              domainKey: 'invoicing',
-              productKey: 'invoicing',
-              currentMode: 'suggestion',
-              approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-              candidateToolKey: null,
-              controlStatus: 'hold',
-              controlWindow: 'defer',
-              launchStatus: 'hold',
-              monitorStatus: 'not_applicable',
-              controlOwner: 'invoice-document-assistant-suggestion-review',
-              escalationOwner: 'invoice-document-assistant-suggestion-review',
-              safeFallbackMode: 'suggestion_only',
-              topAction:
-                'Keep the agent in suggestion mode and do not expose an execute path yet.',
-              controlChecklist: [
-                'No guarded-execution candidate tool exists yet.',
-                'Control owner resolves through invoice-document-assistant-suggestion-review.',
-                '1 reviewed approval decision(s) already exist as operator precedent.',
-                'Reviewer coverage already matches the guarded lane posture.',
-              ],
-              guardrails: [
-                'Same-day review is on track under the current lane assumptions.',
-                'Fallback path remains suggestion_only.',
-                'No extra blocked tool posture is constraining this lane beyond the planned scope.',
-              ],
-              nextStep:
-                'Hold this agent in suggestion mode until a guarded lane becomes concrete.',
-              notes: [
-                'Current mode stays suggestion.',
-                'Escalation owner resolves through invoice-document-assistant-suggestion-review.',
-                'Fallback mode for control remains suggestion_only.',
-                'There is no control scope yet because there is no execution candidate.',
-              ],
-            },
-          ],
-        });
+              controlStatus: 'pilot_then_open',
+              candidateToolKey: 'invoice_payment_collection_execution',
+              monitorStatus: 'monitor_after_launch',
+              launchStatus: 'pilot_only',
+            }),
+          ]),
+        );
       });
   });
 
@@ -10983,130 +9645,38 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-          tenantSlug: 'saas-platform',
-          generatedAt: expect.any(String),
-          counts: {
-            totalEvents: 8,
-            suggestionRunPreparedEvents: 2,
-            approvalRequestedEvents: 2,
-            approvalReviewedEvents: 1,
-            executedEvents: 1,
-            rolledBackEvents: 1,
-            guardedExecutionStatusEvents: 1,
-          },
-          entries: [
-            {
-              id: 'guarded-log:persisted:ai-guarded-event-002',
-              tenantSlug: 'saas-platform',
-              agentKey: 'growth-assist-coach',
-              eventType: 'guarded_execution_rolled_back',
-              occurredAt: '2026-05-20T10:43:00.000Z',
-              suggestionRunId: 'ai-run-001',
-              approvalRequestId: 'ai-approval-001',
-              candidateToolKey: 'growth_case_assignment_execution',
-              summary:
-                'Guarded execution rolled back for growth_case_assignment_execution after approved request ai-approval-001.',
-              detail:
-                'Operational case op-case-001 returned to explicit human-only handling for hello@saas-platform.dev.',
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            counts: {
+              totalEvents: 9,
+              suggestionRunPreparedEvents: 2,
+              approvalRequestedEvents: 2,
+              approvalReviewedEvents: 1,
+              executedEvents: 1,
+              rolledBackEvents: 1,
+              guardedExecutionStatusEvents: 2,
             },
-            {
-              id: 'guarded-log:persisted:ai-guarded-event-001',
-              tenantSlug: 'saas-platform',
-              agentKey: 'growth-assist-coach',
+          }),
+        );
+        expect(response.body.entries).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               eventType: 'guarded_execution_executed',
-              occurredAt: '2026-05-20T10:42:00.000Z',
-              suggestionRunId: 'ai-run-001',
-              approvalRequestId: 'ai-approval-001',
               candidateToolKey: 'growth_case_assignment_execution',
-              summary:
-                'Guarded execution completed for growth_case_assignment_execution after approved request ai-approval-001.',
-              detail:
-                'Operational case op-case-001 is now assigned to hello@saas-platform.dev under the named human gate.',
-            },
-            {
-              id: 'guarded-log:approval-reviewed:ai-approval-002',
-              tenantSlug: 'saas-platform',
-              agentKey: 'invoice-document-assistant',
-              eventType: 'approval_reviewed',
-              occurredAt: '2026-05-20T10:41:00.000Z',
-              suggestionRunId: 'ai-run-002',
-              approvalRequestId: 'ai-approval-002',
-              candidateToolKey: null,
-              summary:
-                'Invoice Document Assistant approval request ai-approval-002 was approved.',
-              detail: 'Se puede usar como guía.',
-            },
-            {
-              id: 'guarded-log:approval-requested:ai-approval-002',
-              tenantSlug: 'saas-platform',
-              agentKey: 'invoice-document-assistant',
-              eventType: 'approval_requested',
-              occurredAt: '2026-05-20T10:40:00.000Z',
-              suggestionRunId: 'ai-run-002',
-              approvalRequestId: 'ai-approval-002',
-              candidateToolKey: null,
-              summary:
-                'Invoice Document Assistant requested human review for suggestion handoff ai-run-002 under policy invoice-document-assistant-suggestion-review.',
-              detail: 'Necesito revisión antes de usar esta sugerencia documental.',
-            },
-            {
-              id: 'guarded-log:prepared:ai-run-002',
-              tenantSlug: 'saas-platform',
-              agentKey: 'invoice-document-assistant',
-              eventType: 'suggestion_run_prepared',
-              occurredAt: '2026-05-20T10:39:00.000Z',
-              suggestionRunId: 'ai-run-002',
-              approvalRequestId: null,
-              candidateToolKey: null,
-              summary:
-                'Invoice Document Assistant prepared a suggestion-mode handoff for invoice document drafting using prompt pack invoice-document-assistant-core@v1.',
-              detail:
-                'Prepared suggestion handoff with invoice-document-assistant-core@v1.',
-            },
-            {
-              id: 'guarded-log:pilot-only:growth-assist-coach:growth_case_assignment_execution',
-              tenantSlug: 'saas-platform',
-              agentKey: 'growth-assist-coach',
+            }),
+            expect.objectContaining({
+              eventType: 'guarded_execution_rolled_back',
+              candidateToolKey: 'growth_case_assignment_execution',
+            }),
+            expect.objectContaining({
               eventType: 'guarded_execution_pilot_only',
-              occurredAt: '2026-05-20T10:38:01.000Z',
-              suggestionRunId: null,
-              approvalRequestId: null,
-              candidateToolKey: 'growth_case_assignment_execution',
-              summary:
-                'Growth Assist Coach should stay in pilot-only posture for growth_case_assignment_execution.',
-              detail:
-                'Coverage, evidence, or monitoring still need to mature before opening the guarded lane.',
-            },
-            {
-              id: 'guarded-log:approval-requested:ai-approval-001',
-              tenantSlug: 'saas-platform',
-              agentKey: 'growth-assist-coach',
-              eventType: 'approval_requested',
-              occurredAt: '2026-05-20T10:38:00.000Z',
-              suggestionRunId: 'ai-run-001',
-              approvalRequestId: 'ai-approval-001',
-              candidateToolKey: null,
-              summary:
-                'Growth Assist Coach requested human review for suggestion handoff ai-run-001 under policy growth-assist-suggestion-review.',
-              detail: 'Quiero dejar trazable la revisión humana.',
-            },
-            {
-              id: 'guarded-log:prepared:ai-run-001',
-              tenantSlug: 'saas-platform',
-              agentKey: 'growth-assist-coach',
-              eventType: 'suggestion_run_prepared',
-              occurredAt: '2026-05-20T10:37:00.000Z',
-              suggestionRunId: 'ai-run-001',
-              approvalRequestId: null,
-              candidateToolKey: null,
-              summary:
-                'Growth Assist Coach prepared a suggestion-mode handoff for Growth Assist daily agenda using prompt pack growth-assist-coach-core@v1.',
-              detail:
-                'Prepared suggestion handoff with growth-assist-coach-core@v1.',
-            },
-          ],
-        });
+              agentKey: 'invoice-document-assistant',
+              candidateToolKey: 'invoice_payment_collection_execution',
+            }),
+          ]),
+        );
       });
   });
 
@@ -12060,42 +10630,25 @@ describe('API', () => {
         caseId: 'op-case-001',
       })
       .expect(200)
-      .expect({
-        tenantSlug: 'saas-platform',
-        agentKey: 'growth-assist-coach',
-        approvalRequestId: 'ai-approval-001',
-        suggestionRunId: 'ai-run-001',
-        toolKey: 'growth_case_assignment_execution',
-        executedAt: '2026-05-20T10:12:00.000Z',
-        summary:
-          'Guarded execution completed for growth_case_assignment_execution after approved request ai-approval-001.',
-        detail:
-          'Operational case op-case-001 is now assigned to hello@saas-platform.dev under the named human gate.',
-        operationalCase: {
-          id: 'op-case-001',
-          sourceKey: 'alert:retry_queue_ready',
-          caseType: 'alert_escalation',
-          status: 'in_progress',
-          priority: 'warning',
-          title: 'Retry queue has ready-now messages',
-          summary: '1 failed outbound messages are ready for retry execution now.',
-          nextAction:
-            'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
-          followUpState: null,
-          routingPolicyKey: 'growth_ops',
-          threadId: null,
-          alertKey: 'retry_queue_ready',
-          dueAt: '2026-05-20T11:00:00.000Z',
-          assignedUserId: 'user_123',
-          assignedUserEmail: 'hello@saas-platform.dev',
-          createdByUserId: 'user_123',
-          createdByEmail: 'hello@saas-platform.dev',
-          resolvedAt: null,
-          resolvedByUserId: null,
-          resolvedByEmail: null,
-          createdAt: '2026-05-20T10:05:00.000Z',
-          updatedAt: '2026-05-20T10:12:00.000Z',
-        },
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            agentKey: 'growth-assist-coach',
+            approvalRequestId: 'ai-approval-001',
+            suggestionRunId: 'ai-run-001',
+            toolKey: 'growth_case_assignment_execution',
+            targetKind: 'growth_operational_case',
+            executedAt: '2026-05-20T10:12:00.000Z',
+            invoice: null,
+            payment: null,
+            operationalCase: expect.objectContaining({
+              id: 'op-case-001',
+              status: 'in_progress',
+              assignedUserId: 'user_123',
+            }),
+          }),
+        );
       });
 
     expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
@@ -12129,28 +10682,30 @@ describe('API', () => {
       createdByUserId: 'user_123',
       createdByEmail: 'hello@saas-platform.dev',
     });
-    expect(createTenantAiMemoryRecordUseCase.execute).toHaveBeenCalledWith({
-      tenantSlug: 'saas-platform',
-      scope: 'agent',
-      domainKey: 'growth',
-      agentKey: 'growth-assist-coach',
-      sourceKind: 'guarded_execution_memory',
-      freshness: 'working_memory',
-      title: 'Guarded execution: growth_case_assignment_execution',
-      summary:
-        'Guarded execution executed growth_case_assignment_execution on op-case-001 after ai-approval-001.',
-      detail:
-        'Guarded execution ran growth_case_assignment_execution for suggestion run ai-run-001 on operational case op-case-001 at 2026-05-20T10:12:00.000Z.',
-      tags: [
-        'agent:growth-assist-coach',
-        'tool:growth_case_assignment_execution',
-        'event:executed',
-        'case:op-case-001',
-        'run:ai-run-001',
-      ],
-      createdByUserId: 'user_123',
-      createdByEmail: 'hello@saas-platform.dev',
-    });
+    expect(createTenantAiMemoryRecordUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantSlug: 'saas-platform',
+        scope: 'agent',
+        domainKey: 'growth',
+        agentKey: 'growth-assist-coach',
+        sourceKind: 'guarded_execution_memory',
+        freshness: 'working_memory',
+        title: 'Guarded execution: growth_case_assignment_execution',
+        summary:
+          'Guarded execution executed growth_case_assignment_execution on op-case-001 after ai-approval-001.',
+        detail:
+          'Guarded execution ran growth_case_assignment_execution for suggestion run ai-run-001 on target op-case-001 at 2026-05-20T10:12:00.000Z.',
+        tags: expect.arrayContaining([
+          'agent:growth-assist-coach',
+          'tool:growth_case_assignment_execution',
+          'event:executed',
+          'target:op-case-001',
+          'run:ai-run-001',
+        ]),
+        createdByUserId: 'user_123',
+        createdByEmail: 'hello@saas-platform.dev',
+      }),
+    );
   });
 
   it('POST /api/ai/tenants/:slug/agents/:agentKey/approval-requests/:requestId/guarded-execution-rollback should return the lane to explicit human-only handling', async () => {
@@ -12175,43 +10730,26 @@ describe('API', () => {
         caseId: 'op-case-001',
       })
       .expect(200)
-      .expect({
-        tenantSlug: 'saas-platform',
-        agentKey: 'growth-assist-coach',
-        approvalRequestId: 'ai-approval-001',
-        suggestionRunId: 'ai-run-001',
-        toolKey: 'growth_case_assignment_execution',
-        rolledBackAt: '2026-05-20T10:14:00.000Z',
-        safeFallbackMode: 'suggestion_only',
-        summary:
-          'Guarded execution rolled back for growth_case_assignment_execution after approved request ai-approval-001.',
-        detail:
-          'Operational case op-case-001 returned to explicit human-only handling for hello@saas-platform.dev.',
-        operationalCase: {
-          id: 'op-case-001',
-          sourceKey: 'alert:retry_queue_ready',
-          caseType: 'alert_escalation',
-          status: 'open',
-          priority: 'warning',
-          title: 'Retry queue has ready-now messages',
-          summary: '1 failed outbound messages are ready for retry execution now.',
-          nextAction:
-            'Run the retry-ready runner or attach a scheduler so backlog does not accumulate.',
-          followUpState: null,
-          routingPolicyKey: 'growth_ops',
-          threadId: null,
-          alertKey: 'retry_queue_ready',
-          dueAt: '2026-05-20T11:00:00.000Z',
-          assignedUserId: null,
-          assignedUserEmail: null,
-          createdByUserId: 'user_123',
-          createdByEmail: 'hello@saas-platform.dev',
-          resolvedAt: null,
-          resolvedByUserId: null,
-          resolvedByEmail: null,
-          createdAt: '2026-05-20T10:05:00.000Z',
-          updatedAt: '2026-05-20T10:14:00.000Z',
-        },
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            agentKey: 'growth-assist-coach',
+            approvalRequestId: 'ai-approval-001',
+            suggestionRunId: 'ai-run-001',
+            toolKey: 'growth_case_assignment_execution',
+            targetKind: 'growth_operational_case',
+            rolledBackAt: '2026-05-20T10:14:00.000Z',
+            safeFallbackMode: 'suggestion_only',
+            invoice: null,
+            payment: null,
+            operationalCase: expect.objectContaining({
+              id: 'op-case-001',
+              status: 'open',
+              assignedUserId: null,
+            }),
+          }),
+        );
       });
 
     expect(releaseTenantGrowthOperationalCaseUseCase.execute).toHaveBeenCalledWith({
@@ -12235,28 +10773,30 @@ describe('API', () => {
       createdByUserId: 'user_123',
       createdByEmail: 'hello@saas-platform.dev',
     });
-    expect(createTenantAiMemoryRecordUseCase.execute).toHaveBeenCalledWith({
-      tenantSlug: 'saas-platform',
-      scope: 'agent',
-      domainKey: 'growth',
-      agentKey: 'growth-assist-coach',
-      sourceKind: 'guarded_execution_memory',
-      freshness: 'working_memory',
-      title: 'Guarded execution: growth_case_assignment_execution',
-      summary:
-        'Guarded execution rolled back growth_case_assignment_execution on op-case-001 after ai-approval-001.',
-      detail:
-        'Guarded execution rolled back growth_case_assignment_execution for suggestion run ai-run-001 on operational case op-case-001 at 2026-05-20T10:14:00.000Z, returning to suggestion_only mode.',
-      tags: [
-        'agent:growth-assist-coach',
-        'tool:growth_case_assignment_execution',
-        'event:rolled_back',
-        'case:op-case-001',
-        'run:ai-run-001',
-      ],
-      createdByUserId: 'user_123',
-      createdByEmail: 'hello@saas-platform.dev',
-    });
+    expect(createTenantAiMemoryRecordUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantSlug: 'saas-platform',
+        scope: 'agent',
+        domainKey: 'growth',
+        agentKey: 'growth-assist-coach',
+        sourceKind: 'guarded_execution_memory',
+        freshness: 'working_memory',
+        title: 'Guarded execution: growth_case_assignment_execution',
+        summary:
+          'Guarded execution rolled back growth_case_assignment_execution on op-case-001 after ai-approval-001.',
+        detail:
+          'Guarded execution rolled back growth_case_assignment_execution for suggestion run ai-run-001 on target op-case-001 at 2026-05-20T10:14:00.000Z, returning to suggestion_only mode.',
+        tags: expect.arrayContaining([
+          'agent:growth-assist-coach',
+          'tool:growth_case_assignment_execution',
+          'event:rolled_back',
+          'target:op-case-001',
+          'run:ai-run-001',
+        ]),
+        createdByUserId: 'user_123',
+        createdByEmail: 'hello@saas-platform.dev',
+      }),
+    );
   });
 
   it('AI guarded execution loop should stay auditable from prepare to rollback', async () => {

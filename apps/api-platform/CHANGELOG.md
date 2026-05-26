@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.51.0
+
+### Minor Changes
+
+- f90f717: Add persisted AI memory records, retrieval hydration, ranking and archival policy, and a second guarded execution lane for invoicing with real smoke coverage.
+
 ## 0.50.0
 
 ### Minor Changes

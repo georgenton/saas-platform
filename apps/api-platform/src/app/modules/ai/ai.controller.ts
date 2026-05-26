@@ -4216,19 +4216,10 @@ export class AiController {
                 : 'needs_design';
 
           const operatingLane =
-            candidateToolKey === 'growth_case_assignment_execution'
-              ? 'operational_case_assignment_lane'
-              : candidateToolKey === null
-                ? 'suggestion_only_lane'
-                : 'single_record_execution_lane';
+            this.getGuardedExecutionOperatingLane(agent.key);
           const namedHumanGate =
             approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
-          const blastRadius: 'single_record' | 'single_queue_lane' | 'no_execution_scope' =
-            candidateToolKey === 'growth_case_assignment_execution'
-              ? 'single_queue_lane'
-              : candidateToolKey === null
-                ? 'no_execution_scope'
-                : 'single_record';
+          const blastRadius = this.getGuardedExecutionBlastRadius(agent.key);
 
           const entryChecklist = [
             candidateToolKey
@@ -4511,16 +4502,9 @@ export class AiController {
 
           const rollbackOwner =
             approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
-          const blastRadius: 'single_record' | 'single_queue_lane' | 'no_execution_scope' =
-            candidateToolKey === 'growth_case_assignment_execution'
-              ? 'single_queue_lane'
-              : candidateToolKey === null
-                ? 'no_execution_scope'
-                : 'single_record';
+          const blastRadius = this.getGuardedExecutionBlastRadius(agent.key);
           const safeFallbackMode =
-            candidateToolKey === 'growth_case_assignment_execution'
-              ? 'suggestion_only_with_manual_assignment'
-              : 'suggestion_only';
+            this.getGuardedExecutionSafeFallbackMode(agent.key);
 
           const rollbackTriggerSummary = [
             candidateToolKey
@@ -4806,9 +4790,7 @@ export class AiController {
           const auditOwner =
             approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
           const safeFallbackMode =
-            candidateToolKey === 'growth_case_assignment_execution'
-              ? 'suggestion_only_with_manual_assignment'
-              : 'suggestion_only';
+            this.getGuardedExecutionSafeFallbackMode(agent.key);
 
           const evidencePackSummary = [
             candidateToolKey
@@ -5121,9 +5103,7 @@ export class AiController {
           const launchOwner =
             approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
           const safeFallbackMode =
-            candidateToolKey === 'growth_case_assignment_execution'
-              ? 'suggestion_only_with_manual_assignment'
-              : 'suggestion_only';
+            this.getGuardedExecutionSafeFallbackMode(agent.key);
 
           const launchChecklist = [
             candidateToolKey
@@ -5392,9 +5372,7 @@ export class AiController {
           const monitorOwner =
             approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
           const safeFallbackMode =
-            candidateToolKey === 'growth_case_assignment_execution'
-              ? 'suggestion_only_with_manual_assignment'
-              : 'suggestion_only';
+            this.getGuardedExecutionSafeFallbackMode(agent.key);
           const watchWindow: 'day_0' | 'next_window' | 'not_scheduled' =
             monitorStatus === 'ready_to_monitor'
               ? 'day_0'
@@ -5676,9 +5654,7 @@ export class AiController {
             approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
           const escalationOwner = controlOwner;
           const safeFallbackMode =
-            candidateToolKey === 'growth_case_assignment_execution'
-              ? 'suggestion_only_with_manual_assignment'
-              : 'suggestion_only';
+            this.getGuardedExecutionSafeFallbackMode(agent.key);
 
           const topAction =
             controlStatus === 'open_lane'
@@ -6862,6 +6838,7 @@ export class AiController {
       this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
 
       const candidateToolKey = this.getGuardedExecutionCandidateToolKey(agentKey);
+      const candidateTargetKind = this.getGuardedExecutionTargetKind(agentKey);
 
       const approvalRequests =
         await this.listTenantAiApprovalRequestsUseCase.execute(
@@ -6894,7 +6871,7 @@ export class AiController {
         candidateToolKey,
       );
 
-      if (candidateToolKey === 'growth_case_assignment_execution') {
+      if (candidateTargetKind === 'growth_operational_case') {
         if (!body.caseId) {
           throw new BadRequestException(
             'caseId is required for growth guarded execution.',
@@ -6956,7 +6933,7 @@ export class AiController {
         });
       }
 
-      if (candidateToolKey === 'invoice_payment_collection_execution') {
+      if (candidateTargetKind === 'invoice') {
         if (!body.invoiceId) {
           throw new BadRequestException(
             'invoiceId is required for invoicing guarded execution.',
@@ -7087,6 +7064,7 @@ export class AiController {
       this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
 
       const candidateToolKey = this.getGuardedExecutionCandidateToolKey(agentKey);
+      const candidateTargetKind = this.getGuardedExecutionTargetKind(agentKey);
 
       const approvalRequests =
         await this.listTenantAiApprovalRequestsUseCase.execute(
@@ -7112,7 +7090,7 @@ export class AiController {
         );
       }
 
-      if (candidateToolKey === 'growth_case_assignment_execution') {
+      if (candidateTargetKind === 'growth_operational_case') {
         if (!body.caseId) {
           throw new BadRequestException(
             'caseId is required for growth guarded execution rollback.',
@@ -7172,7 +7150,7 @@ export class AiController {
         });
       }
 
-      if (candidateToolKey === 'invoice_payment_collection_execution') {
+      if (candidateTargetKind === 'invoice') {
         if (!body.invoiceId) {
           throw new BadRequestException(
             'invoiceId is required for invoicing guarded execution rollback.',
@@ -7439,6 +7417,51 @@ export class AiController {
 
   private getGuardedExecutionCandidateToolKey(agentKey: string): string | null {
     return this.getOperatingModelAgentEntry(agentKey).guardedExecutionCandidateToolKey;
+  }
+
+  private getGuardedExecutionCandidate(agentKey: string) {
+    return this.getOperatingModelAgentEntry(agentKey).guardedExecutionCandidate;
+  }
+
+  private getGuardedExecutionTargetKind(
+    agentKey: string,
+  ): 'growth_operational_case' | 'invoice' | null {
+    return this.getGuardedExecutionCandidate(agentKey)?.targetKind ?? null;
+  }
+
+  private getGuardedExecutionOperatingLane(
+    agentKey: string,
+  ): 'operational_case_assignment_lane' | 'single_record_execution_lane' | 'suggestion_only_lane' {
+    switch (this.getGuardedExecutionTargetKind(agentKey)) {
+      case 'growth_operational_case':
+        return 'operational_case_assignment_lane';
+      case 'invoice':
+        return 'single_record_execution_lane';
+      default:
+        return 'suggestion_only_lane';
+    }
+  }
+
+  private getGuardedExecutionBlastRadius(
+    agentKey: string,
+  ): 'single_record' | 'single_queue_lane' | 'no_execution_scope' {
+    switch (this.getGuardedExecutionTargetKind(agentKey)) {
+      case 'growth_operational_case':
+        return 'single_queue_lane';
+      case 'invoice':
+        return 'single_record';
+      default:
+        return 'no_execution_scope';
+    }
+  }
+
+  private getGuardedExecutionSafeFallbackMode(
+    agentKey: string,
+  ): 'suggestion_only' | 'suggestion_only_with_manual_assignment' {
+    return this.getGuardedExecutionTargetKind(agentKey) ===
+      'growth_operational_case'
+      ? 'suggestion_only_with_manual_assignment'
+      : 'suggestion_only';
   }
 
   private getOperatingModelAgentEntry(agentKey: string) {

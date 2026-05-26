@@ -22,6 +22,15 @@ describe('AI operating model use case', () => {
           }),
           approvalPolicyKeys: ['growth-assist-suggestion-review'],
           guardedExecutionCandidateToolKey: 'growth_case_assignment_execution',
+          guardedExecutionCandidate: {
+            toolKey: 'growth_case_assignment_execution',
+            title: 'Growth case assignment lane',
+            targetKind: 'growth_operational_case',
+            targetSelectionLabel: 'Operational case',
+            emptyTargetSelectionLabel: 'No eligible operational cases',
+            executeActionLabel: 'Execute take-case',
+            rollbackActionLabel: 'Rollback take-case',
+          },
           toolAccess: expect.arrayContaining([
             expect.objectContaining({
               toolKey: 'growth_case_assignment_execution',
@@ -38,6 +47,15 @@ describe('AI operating model use case', () => {
           requiredPermissionKey: 'invoicing.reports.read',
           guardedExecutionCandidateToolKey:
             'invoice_payment_collection_execution',
+          guardedExecutionCandidate: {
+            toolKey: 'invoice_payment_collection_execution',
+            title: 'Invoice payment collection lane',
+            targetKind: 'invoice',
+            targetSelectionLabel: 'Invoice',
+            emptyTargetSelectionLabel: 'No eligible invoices',
+            executeActionLabel: 'Execute post-payment',
+            rollbackActionLabel: 'Rollback payment',
+          },
         }),
         expect.objectContaining({
           agent: expect.objectContaining({
@@ -46,6 +64,7 @@ describe('AI operating model use case', () => {
           }),
           requiredPermissionKey: 'tenant.entitlements.read',
           guardedExecutionCandidateToolKey: null,
+          guardedExecutionCandidate: null,
         }),
       ]),
       counts: {

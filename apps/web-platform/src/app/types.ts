@@ -1158,6 +1158,15 @@ export interface AiOperatingModelAgentResponse {
     requiresApproval: boolean;
   }>;
   guardedExecutionCandidateToolKey: string | null;
+  guardedExecutionCandidate: {
+    toolKey: string;
+    title: string;
+    targetKind: 'growth_operational_case' | 'invoice';
+    targetSelectionLabel: string;
+    emptyTargetSelectionLabel: string;
+    executeActionLabel: string;
+    rollbackActionLabel: string;
+  } | null;
 }
 
 export interface AiOperatingModelResponse {

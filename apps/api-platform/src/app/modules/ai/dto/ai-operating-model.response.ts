@@ -28,6 +28,15 @@ export interface AiOperatingModelAgentResponseDto {
     requiresApproval: boolean;
   }>;
   guardedExecutionCandidateToolKey: string | null;
+  guardedExecutionCandidate: {
+    toolKey: string;
+    title: string;
+    targetKind: 'growth_operational_case' | 'invoice';
+    targetSelectionLabel: string;
+    emptyTargetSelectionLabel: string;
+    executeActionLabel: string;
+    rollbackActionLabel: string;
+  } | null;
 }
 
 export interface AiOperatingModelResponseDto {
@@ -62,6 +71,11 @@ export function toAiOperatingModelResponseDto(
       approvalPolicyKeys: [...entry.approvalPolicyKeys],
       toolAccess: entry.toolAccess.map((tool) => ({ ...tool })),
       guardedExecutionCandidateToolKey: entry.guardedExecutionCandidateToolKey,
+      guardedExecutionCandidate: entry.guardedExecutionCandidate
+        ? {
+            ...entry.guardedExecutionCandidate,
+          }
+        : null,
     })),
     counts: {
       ...manifest.counts,

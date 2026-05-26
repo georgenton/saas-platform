@@ -663,6 +663,49 @@ function prependOrReplaceApprovalRequest(
   ];
 }
 
+function bumpSuggestionRunDetailApprovalToPending(
+  detail: AiSuggestionRunDetailResponse | null,
+  approvalRequest: AiApprovalRequestResponse,
+): AiSuggestionRunDetailResponse | null {
+  return detail && detail.id === approvalRequest.suggestionRunId
+    ? {
+        ...detail,
+        approvalSummary: {
+          status: 'pending',
+          totalRequests: detail.approvalSummary.totalRequests + 1,
+          latestRequestId: approvalRequest.id,
+          latestPolicyKey: approvalRequest.policyKey,
+          latestRequestedAt: approvalRequest.createdAt,
+          latestReviewedAt: approvalRequest.reviewedAt,
+        },
+        approvalRequests: prependOrReplaceApprovalRequest(
+          detail.approvalRequests,
+          approvalRequest,
+        ),
+      }
+    : detail;
+}
+
+function applyReviewedApprovalToSuggestionRunDetail(
+  detail: AiSuggestionRunDetailResponse | null,
+  approvalRequest: AiApprovalRequestResponse,
+): AiSuggestionRunDetailResponse | null {
+  return detail && detail.id === approvalRequest.suggestionRunId
+    ? {
+        ...detail,
+        approvalSummary: {
+          ...detail.approvalSummary,
+          status: approvalRequest.status,
+          latestReviewedAt: approvalRequest.reviewedAt,
+        },
+        approvalRequests: prependOrReplaceApprovalRequest(
+          detail.approvalRequests,
+          approvalRequest,
+        ),
+      }
+    : detail;
+}
+
 function syncApprovalRequestsWithFilter(
   approvalRequests: AiApprovalRequestResponse[],
   nextApprovalRequest: AiApprovalRequestResponse,
@@ -3708,6 +3751,8 @@ export function App() {
     aiAgentCatalogByKey.get(agentKey)?.title ??
     aiOperatingModelAgentByKey.get(agentKey)?.agent.title ??
     fallbackAiAgentTitle(agentKey);
+  const resolveAiGuardedExecutionCandidate = (agentKey: string) =>
+    aiOperatingModelAgentByKey.get(agentKey)?.guardedExecutionCandidate ?? null;
   const resolveAiAgentDomainKey = (
     agentKey: string,
   ): AiAgentCatalogResponse['domainKey'] | null =>
@@ -3813,6 +3858,299 @@ export function App() {
     agentKey: string,
     requestId: string,
   ): string => `review-tenant-ai-approval:${agentKey}:${requestId}`;
+  const syncAiAgentSuggestionRunPrepared = (
+    agentKey: string,
+    suggestionRun: AiSuggestionRunResponse,
+  ): void => {
+    startTransition(() => {
+      setTenantAiSuggestionWorkspace((current) =>
+        prependOrReplaceSuggestionRun(current, suggestionRun),
+      );
+
+      switch (agentKey) {
+        case 'growth-assist-coach':
+          setGrowthAssistAiSuggestionRuns((current) =>
+            prependOrReplaceSuggestionRun(current, suggestionRun),
+          );
+          break;
+        case 'invoice-document-assistant':
+          setInvoiceAssistantAiSuggestionRuns((current) =>
+            prependOrReplaceSuggestionRun(current, suggestionRun),
+          );
+          break;
+        default:
+          break;
+      }
+    });
+  };
+  const syncAiAgentApprovalRequestPending = (
+    agentKey: string,
+    approvalRequest: AiApprovalRequestResponse,
+  ): void => {
+    startTransition(() => {
+      setTenantAiApprovalWorkspace((current) =>
+        syncApprovalRequestsWithFilter(
+          current,
+          approvalRequest,
+          tenantAiApprovalWorkspaceStatusFilter,
+        ),
+      );
+      setTenantAiSuggestionWorkspace((current) =>
+        bumpSuggestionRunApprovalToPending(current, approvalRequest),
+      );
+      setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
+        bumpSuggestionRunDetailApprovalToPending(current, approvalRequest),
+      );
+
+      switch (agentKey) {
+        case 'growth-assist-coach':
+          setGrowthAssistAiApprovalRequests((current) =>
+            syncApprovalRequestsWithFilter(
+              current,
+              approvalRequest,
+              growthAiApprovalStatusFilter,
+            ),
+          );
+          setGrowthAssistAiSuggestionRuns((current) =>
+            bumpSuggestionRunApprovalToPending(current, approvalRequest),
+          );
+          setSelectedGrowthAiSuggestionRunDetail((current) =>
+            bumpSuggestionRunDetailApprovalToPending(current, approvalRequest),
+          );
+          break;
+        case 'invoice-document-assistant':
+          setInvoiceAssistantAiApprovalRequests((current) =>
+            syncApprovalRequestsWithFilter(
+              current,
+              approvalRequest,
+              invoiceAiApprovalStatusFilter,
+            ),
+          );
+          setInvoiceAssistantAiSuggestionRuns((current) =>
+            bumpSuggestionRunApprovalToPending(current, approvalRequest),
+          );
+          setSelectedInvoiceAiSuggestionRunDetail((current) =>
+            bumpSuggestionRunDetailApprovalToPending(current, approvalRequest),
+          );
+          break;
+        default:
+          break;
+      }
+    });
+  };
+  const syncAiAgentApprovalRequestReviewed = (
+    agentKey: string,
+    approvalRequest: AiApprovalRequestResponse,
+  ): void => {
+    startTransition(() => {
+      setTenantAiApprovalWorkspace((current) =>
+        syncApprovalRequestsWithFilter(
+          current,
+          approvalRequest,
+          tenantAiApprovalWorkspaceStatusFilter,
+        ),
+      );
+      setTenantAiSuggestionWorkspace((current) =>
+        applyReviewedApprovalToSuggestionRuns(current, approvalRequest),
+      );
+      setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
+        applyReviewedApprovalToSuggestionRunDetail(current, approvalRequest),
+      );
+
+      switch (agentKey) {
+        case 'growth-assist-coach':
+          setGrowthAssistAiApprovalRequests((current) =>
+            syncApprovalRequestsWithFilter(
+              current,
+              approvalRequest,
+              growthAiApprovalStatusFilter,
+            ),
+          );
+          setGrowthAssistAiSuggestionRuns((current) =>
+            applyReviewedApprovalToSuggestionRuns(current, approvalRequest),
+          );
+          setSelectedGrowthAiSuggestionRunDetail((current) =>
+            applyReviewedApprovalToSuggestionRunDetail(current, approvalRequest),
+          );
+          break;
+        case 'invoice-document-assistant':
+          setInvoiceAssistantAiApprovalRequests((current) =>
+            syncApprovalRequestsWithFilter(
+              current,
+              approvalRequest,
+              invoiceAiApprovalStatusFilter,
+            ),
+          );
+          setInvoiceAssistantAiSuggestionRuns((current) =>
+            applyReviewedApprovalToSuggestionRuns(current, approvalRequest),
+          );
+          setSelectedInvoiceAiSuggestionRunDetail((current) =>
+            applyReviewedApprovalToSuggestionRunDetail(current, approvalRequest),
+          );
+          break;
+        default:
+          break;
+      }
+    });
+  };
+  const buildAiGuardedExecutionTargetBody = (
+    agentKey: string,
+    targetId: string,
+  ): { caseId: string } | { invoiceId: string } =>
+    resolveAiGuardedExecutionCandidate(agentKey)?.targetKind === 'invoice'
+      ? { invoiceId: targetId }
+      : { caseId: targetId };
+  const refreshAiAgentActionSurfaces = async (
+    agentKey: string,
+    options?: {
+      includeOperationsConsole?: boolean;
+      includeDedicatedWorkspace?: boolean;
+      selectInvoiceId?: string;
+    },
+  ): Promise<void> => {
+    const tasks: Promise<unknown>[] = [];
+    const includeOperationsConsole = options?.includeOperationsConsole ?? true;
+    const includeDedicatedWorkspace = options?.includeDedicatedWorkspace ?? false;
+    const domainKey = resolveAiAgentDomainKey(agentKey);
+
+    if (includeOperationsConsole) {
+      tasks.push(refreshTenantAiOperationsConsole());
+    }
+
+    if (includeDedicatedWorkspace) {
+      switch (domainKey) {
+        case 'growth':
+          tasks.push(refreshGrowthWorkspace());
+          break;
+        case 'invoicing':
+          tasks.push(
+            refreshInvoicingWorkspace(
+              options?.selectInvoiceId
+                ? { selectInvoiceId: options.selectInvoiceId }
+                : undefined,
+            ),
+          );
+          break;
+        case 'ecommerce':
+          tasks.push(refreshTenantAiEcommerceLaunchWorkspace());
+          break;
+        default:
+          break;
+      }
+    } else if (domainKey === 'ecommerce') {
+      tasks.push(refreshTenantAiEcommerceLaunchWorkspace());
+    }
+
+    await Promise.all(tasks);
+  };
+  const getAiAgentApprovalStatusFilter = (
+    agentKey: string,
+  ): AiApprovalRequestStatusFilter => {
+    switch (agentKey) {
+      case 'growth-assist-coach':
+        return growthAiApprovalStatusFilter;
+      case 'invoice-document-assistant':
+        return invoiceAiApprovalStatusFilter;
+      default:
+        return 'all';
+    }
+  };
+  const fetchAiAgentWorkspaceSupportBundle = async (
+    agentKey: string,
+    tenantSlug: string,
+  ) => {
+    const approvalStatusFilter = getAiAgentApprovalStatusFilter(agentKey);
+    const [
+      approvalPolicies,
+      approvalRequests,
+      toolAccess,
+      suggestionEnvelope,
+      suggestionRuns,
+    ] = await Promise.all([
+      fetchAiAgentApprovalPolicies(token!, agentKey).catch(() => []),
+      fetchTenantAiApprovalRequests(token!, tenantSlug, agentKey, {
+        status: approvalStatusFilter,
+      }).catch(() => []),
+      fetchAiAgentToolAccess(token!, agentKey).catch(() => []),
+      fetchTenantAiSuggestionEnvelope(token!, tenantSlug, agentKey).catch(
+        () => null,
+      ),
+      fetchTenantAiSuggestionRuns(token!, tenantSlug, agentKey).catch(() => []),
+    ]);
+
+    return {
+      approvalPolicies,
+      approvalRequests,
+      toolAccess,
+      suggestionEnvelope,
+      suggestionRuns,
+    };
+  };
+  const applyAiAgentWorkspaceSupportBundle = (
+    agentKey: string,
+    bundle: Awaited<ReturnType<typeof fetchAiAgentWorkspaceSupportBundle>>,
+  ): void => {
+    switch (agentKey) {
+      case 'growth-assist-coach':
+        setGrowthAssistAiApprovalPolicies(bundle.approvalPolicies);
+        setGrowthAssistAiApprovalRequests(bundle.approvalRequests);
+        setGrowthAssistAiToolAccess(bundle.toolAccess);
+        setGrowthAssistAiEnvelope(bundle.suggestionEnvelope);
+        setGrowthAssistAiSuggestionRuns(bundle.suggestionRuns);
+        setSelectedGrowthAiSuggestionRunDetail(null);
+        break;
+      case 'invoice-document-assistant':
+        setInvoiceAssistantAiApprovalPolicies(bundle.approvalPolicies);
+        setInvoiceAssistantAiApprovalRequests(bundle.approvalRequests);
+        setInvoiceAssistantAiToolAccess(bundle.toolAccess);
+        setInvoiceAssistantAiEnvelope(bundle.suggestionEnvelope);
+        setInvoiceAssistantAiSuggestionRuns(bundle.suggestionRuns);
+        setSelectedInvoiceAiSuggestionRunDetail(null);
+        break;
+      default:
+        break;
+    }
+  };
+  const fetchAiAgentApprovalQueue = async (
+    agentKey: string,
+    tenantSlug: string,
+  ): Promise<AiApprovalRequestResponse[]> =>
+    fetchTenantAiApprovalRequests(token!, tenantSlug, agentKey, {
+      status: getAiAgentApprovalStatusFilter(agentKey),
+    });
+  const applyAiAgentApprovalQueue = (
+    agentKey: string,
+    approvalRequests: AiApprovalRequestResponse[],
+  ): void => {
+    switch (agentKey) {
+      case 'growth-assist-coach':
+        setGrowthAssistAiApprovalRequests(approvalRequests);
+        break;
+      case 'invoice-document-assistant':
+        setInvoiceAssistantAiApprovalRequests(approvalRequests);
+        break;
+      default:
+        break;
+    }
+  };
+  const fetchTenantAiEcommerceLaunchSurface = async (tenantSlug: string) => {
+    const [workspace, envelope] = await Promise.all([
+      fetchTenantAiEcommerceLaunchWorkspace(token!, tenantSlug),
+      fetchTenantAiSuggestionEnvelope(
+        token!,
+        tenantSlug,
+        'ecommerce-launch-assistant',
+      ),
+    ]);
+
+    return { workspace, envelope };
+  };
+  const applyTenantAiEcommerceLaunchSurface = (
+    surface: Awaited<ReturnType<typeof fetchTenantAiEcommerceLaunchSurface>>,
+  ): void => {
+    setTenantAiEcommerceLaunchWorkspace(surface.workspace);
+    setEcommerceLaunchAssistantAiEnvelope(surface.envelope);
+  };
   const currentTenantAccessibleAiOperatingModelAgents = useMemo(
     () =>
       aiOperatingModelAgents.filter((entry) =>
@@ -4538,11 +4876,7 @@ export function App() {
           nextReport,
           nextSettings,
           nextDraftingAssist,
-          nextAiApprovalPolicies,
-          nextAiApprovalRequests,
-          nextAiToolAccess,
-          nextAiSuggestionEnvelope,
-          nextAiSuggestionRuns,
+          nextAiSupportBundle,
         ] =
           await Promise.all([
           listCustomers(token, tenantSlug),
@@ -4551,32 +4885,10 @@ export function App() {
           fetchInvoicingReportSummary(token, tenantSlug),
           loadOptionalInvoicingSettings(token, tenantSlug),
           fetchInvoiceDocumentDraftingAssist(token, tenantSlug).catch(() => null),
-          fetchAiAgentApprovalPolicies(
-            token,
+          fetchAiAgentWorkspaceSupportBundle(
             'invoice-document-assistant',
-          ).catch(() => []),
-          fetchTenantAiApprovalRequests(
-            token,
             tenantSlug,
-            'invoice-document-assistant',
-            {
-              status: invoiceAiApprovalStatusFilter,
-            },
-          ).catch(() => []),
-          fetchAiAgentToolAccess(
-            token,
-            'invoice-document-assistant',
-          ).catch(() => []),
-          fetchTenantAiSuggestionEnvelope(
-            token,
-            tenantSlug,
-            'invoice-document-assistant',
-          ).catch(() => null),
-          fetchTenantAiSuggestionRuns(
-            token,
-            tenantSlug,
-            'invoice-document-assistant',
-          ).catch(() => []),
+          ),
         ]);
 
         if (cancelled) {
@@ -4601,12 +4913,10 @@ export function App() {
           setInvoiceNumberingSettings(nextSettings.invoiceNumberingSettings);
           setInvoicingReport(nextReport);
           setInvoiceDocumentDraftingAssist(nextDraftingAssist);
-          setInvoiceAssistantAiApprovalPolicies(nextAiApprovalPolicies);
-          setInvoiceAssistantAiApprovalRequests(nextAiApprovalRequests);
-          setInvoiceAssistantAiToolAccess(nextAiToolAccess);
-          setInvoiceAssistantAiEnvelope(nextAiSuggestionEnvelope);
-          setInvoiceAssistantAiSuggestionRuns(nextAiSuggestionRuns);
-          setSelectedInvoiceAiSuggestionRunDetail(null);
+          applyAiAgentWorkspaceSupportBundle(
+            'invoice-document-assistant',
+            nextAiSupportBundle,
+          );
           setSelectedInvoiceId((currentSelection) =>
             nextInvoices.some((invoice) => invoice.id === currentSelection)
               ? currentSelection
@@ -4669,13 +4979,9 @@ export function App() {
 
     async function loadInvoiceApprovalQueue() {
       try {
-        const approvalRequests = await fetchTenantAiApprovalRequests(
-          token,
-          tenantSlug,
+        const approvalRequests = await fetchAiAgentApprovalQueue(
           'invoice-document-assistant',
-          {
-            status: invoiceAiApprovalStatusFilter,
-          },
+          tenantSlug,
         );
 
         if (cancelled) {
@@ -4683,7 +4989,10 @@ export function App() {
         }
 
         startTransition(() => {
-          setInvoiceAssistantAiApprovalRequests(approvalRequests);
+          applyAiAgentApprovalQueue(
+            'invoice-document-assistant',
+            approvalRequests,
+          );
         });
       } catch (error) {
         if (cancelled) {
@@ -4722,22 +5031,14 @@ export function App() {
       setEcommerceLaunchError(null);
 
       try {
-        const [workspace, envelope] = await Promise.all([
-          fetchTenantAiEcommerceLaunchWorkspace(token, tenantSlug),
-          fetchTenantAiSuggestionEnvelope(
-            token,
-            tenantSlug,
-            'ecommerce-launch-assistant',
-          ),
-        ]);
+        const surface = await fetchTenantAiEcommerceLaunchSurface(tenantSlug);
 
         if (cancelled) {
           return;
         }
 
         startTransition(() => {
-          setTenantAiEcommerceLaunchWorkspace(workspace);
-          setEcommerceLaunchAssistantAiEnvelope(envelope);
+          applyTenantAiEcommerceLaunchSurface(surface);
         });
       } catch (error) {
         if (cancelled) {
@@ -4924,15 +5225,11 @@ export function App() {
           nextAcknowledgements,
           nextOperationalCases,
           nextAutoAssignmentSettings,
+          nextGrowthAiSupportBundle,
           nextAiApprovalPolicyRegistry,
           nextAiAgentCatalog,
           nextAiPromptRegistry,
           nextAiToolRegistry,
-          nextAiApprovalPolicies,
-          nextAiApprovalRequests,
-          nextAiToolAccess,
-          nextAiSuggestionEnvelope,
-          nextAiSuggestionRuns,
         ] =
         await Promise.all([
           fetchGrowthConversationWorkbench(token, tenantSlug, {
@@ -4950,32 +5247,14 @@ export function App() {
           fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug),
           fetchGrowthOperationalCases(token, tenantSlug),
           fetchGrowthOperationalCaseAutoAssignmentSettings(token, tenantSlug),
+          fetchAiAgentWorkspaceSupportBundle(
+            'growth-assist-coach',
+            tenantSlug,
+          ),
           fetchAiApprovalPolicies(token).catch(() => []),
           fetchAiAgentCatalog(token).catch(() => []),
           fetchAiPromptRegistry(token).catch(() => []),
           fetchAiToolRegistry(token).catch(() => []),
-          fetchAiAgentApprovalPolicies(token, 'growth-assist-coach').catch(
-            () => [],
-          ),
-          fetchTenantAiApprovalRequests(
-            token,
-            tenantSlug,
-            'growth-assist-coach',
-            {
-              status: growthAiApprovalStatusFilter,
-            },
-          ).catch(() => []),
-          fetchAiAgentToolAccess(token, 'growth-assist-coach').catch(() => []),
-          fetchTenantAiSuggestionEnvelope(
-            token,
-            tenantSlug,
-            'growth-assist-coach',
-          ).catch(() => null),
-          fetchTenantAiSuggestionRuns(
-            token,
-            tenantSlug,
-            'growth-assist-coach',
-          ).catch(() => []),
         ]);
 
         if (cancelled) {
@@ -4989,12 +5268,10 @@ export function App() {
           setAiAgentCatalog(nextAiAgentCatalog);
           setAiPromptRegistry(nextAiPromptRegistry);
           setAiToolRegistry(nextAiToolRegistry);
-          setGrowthAssistAiApprovalPolicies(nextAiApprovalPolicies);
-          setGrowthAssistAiApprovalRequests(nextAiApprovalRequests);
-          setGrowthAssistAiToolAccess(nextAiToolAccess);
-          setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
-          setGrowthAssistAiSuggestionRuns(nextAiSuggestionRuns);
-          setSelectedGrowthAiSuggestionRunDetail(null);
+          applyAiAgentWorkspaceSupportBundle(
+            'growth-assist-coach',
+            nextGrowthAiSupportBundle,
+          );
           setWhatsappSummary(nextSummary);
           setGrowthMonitorHistory(nextMonitorRuns);
           setWhatsappMonitorAnalytics(nextMonitorAnalytics);
@@ -5071,13 +5348,9 @@ export function App() {
 
     async function loadGrowthApprovalQueue() {
       try {
-        const approvalRequests = await fetchTenantAiApprovalRequests(
-          token,
-          tenantSlug,
+        const approvalRequests = await fetchAiAgentApprovalQueue(
           'growth-assist-coach',
-          {
-            status: growthAiApprovalStatusFilter,
-          },
+          tenantSlug,
         );
 
         if (cancelled) {
@@ -5085,7 +5358,7 @@ export function App() {
         }
 
         startTransition(() => {
-          setGrowthAssistAiApprovalRequests(approvalRequests);
+          applyAiAgentApprovalQueue('growth-assist-coach', approvalRequests);
         });
       } catch (error) {
         if (cancelled) {
@@ -8729,18 +9002,10 @@ export function App() {
     setEcommerceLaunchError(null);
 
     try {
-      const [workspace, envelope] = await Promise.all([
-        fetchTenantAiEcommerceLaunchWorkspace(token, tenantSlug),
-        fetchTenantAiSuggestionEnvelope(
-          token,
-          tenantSlug,
-          'ecommerce-launch-assistant',
-        ),
-      ]);
+      const surface = await fetchTenantAiEcommerceLaunchSurface(tenantSlug);
 
       startTransition(() => {
-        setTenantAiEcommerceLaunchWorkspace(workspace);
-        setEcommerceLaunchAssistantAiEnvelope(envelope);
+        applyTenantAiEcommerceLaunchSurface(surface);
       });
     } catch (error) {
       setTenantAiEcommerceLaunchWorkspace(null);
@@ -8774,11 +9039,7 @@ export function App() {
         nextReport,
         nextSettings,
         nextDraftingAssist,
-        nextAiApprovalPolicies,
-        nextAiApprovalRequests,
-        nextAiToolAccess,
-        nextAiSuggestionEnvelope,
-        nextAiSuggestionRuns,
+        nextAiSupportBundle,
       ] =
         await Promise.all([
         listTaxRates(token, tenantSlug),
@@ -8787,31 +9048,10 @@ export function App() {
         fetchInvoicingReportSummary(token, tenantSlug),
         loadOptionalInvoicingSettings(token, tenantSlug),
         fetchInvoiceDocumentDraftingAssist(token, tenantSlug).catch(() => null),
-        fetchAiAgentApprovalPolicies(
-          token,
+        fetchAiAgentWorkspaceSupportBundle(
           'invoice-document-assistant',
-        ).catch(() => []),
-        fetchTenantAiApprovalRequests(
-          token,
           tenantSlug,
-          'invoice-document-assistant',
-          {
-            status: invoiceAiApprovalStatusFilter,
-          },
-        ).catch(() => []),
-        fetchAiAgentToolAccess(token, 'invoice-document-assistant').catch(
-          () => [],
         ),
-        fetchTenantAiSuggestionEnvelope(
-          token,
-          tenantSlug,
-          'invoice-document-assistant',
-        ).catch(() => null),
-        fetchTenantAiSuggestionRuns(
-          token,
-          tenantSlug,
-          'invoice-document-assistant',
-        ).catch(() => []),
       ]);
 
       startTransition(() => {
@@ -8828,12 +9068,10 @@ export function App() {
         setInvoiceNumberingSettings(nextSettings.invoiceNumberingSettings);
         setInvoicingReport(nextReport);
         setInvoiceDocumentDraftingAssist(nextDraftingAssist);
-        setInvoiceAssistantAiApprovalPolicies(nextAiApprovalPolicies);
-        setInvoiceAssistantAiApprovalRequests(nextAiApprovalRequests);
-        setInvoiceAssistantAiToolAccess(nextAiToolAccess);
-        setInvoiceAssistantAiEnvelope(nextAiSuggestionEnvelope);
-        setInvoiceAssistantAiSuggestionRuns(nextAiSuggestionRuns);
-        setSelectedInvoiceAiSuggestionRunDetail(null);
+        applyAiAgentWorkspaceSupportBundle(
+          'invoice-document-assistant',
+          nextAiSupportBundle,
+        );
         const preferredInvoiceId = options?.selectInvoiceId;
         if (
           preferredInvoiceId &&
@@ -8883,15 +9121,11 @@ export function App() {
         nextAcknowledgements,
         nextOperationalCases,
         nextAutoAssignmentSettings,
+        nextGrowthAiSupportBundle,
         nextAiApprovalPolicyRegistry,
         nextAiAgentCatalog,
         nextAiPromptRegistry,
         nextAiToolRegistry,
-        nextAiApprovalPolicies,
-        nextAiApprovalRequests,
-        nextAiToolAccess,
-        nextAiSuggestionEnvelope,
-        nextAiSuggestionRuns,
       ] =
         await Promise.all([
         fetchGrowthConversationWorkbench(token, tenantSlug, {
@@ -8908,32 +9142,14 @@ export function App() {
         fetchWhatsappOperationalAlertAcknowledgements(token, tenantSlug),
         fetchGrowthOperationalCases(token, tenantSlug),
         fetchGrowthOperationalCaseAutoAssignmentSettings(token, tenantSlug),
+        fetchAiAgentWorkspaceSupportBundle(
+          'growth-assist-coach',
+          tenantSlug,
+        ),
         fetchAiApprovalPolicies(token).catch(() => []),
         fetchAiAgentCatalog(token).catch(() => []),
         fetchAiPromptRegistry(token).catch(() => []),
         fetchAiToolRegistry(token).catch(() => []),
-        fetchAiAgentApprovalPolicies(token, 'growth-assist-coach').catch(
-          () => [],
-        ),
-        fetchTenantAiApprovalRequests(
-          token,
-          tenantSlug,
-          'growth-assist-coach',
-          {
-            status: growthAiApprovalStatusFilter,
-          },
-        ).catch(() => []),
-        fetchAiAgentToolAccess(token, 'growth-assist-coach').catch(() => []),
-        fetchTenantAiSuggestionEnvelope(
-          token,
-          tenantSlug,
-          'growth-assist-coach',
-        ).catch(() => null),
-        fetchTenantAiSuggestionRuns(
-          token,
-          tenantSlug,
-          'growth-assist-coach',
-        ).catch(() => []),
       ]);
 
       startTransition(() => {
@@ -8943,12 +9159,10 @@ export function App() {
         setAiAgentCatalog(nextAiAgentCatalog);
         setAiPromptRegistry(nextAiPromptRegistry);
         setAiToolRegistry(nextAiToolRegistry);
-        setGrowthAssistAiApprovalPolicies(nextAiApprovalPolicies);
-        setGrowthAssistAiApprovalRequests(nextAiApprovalRequests);
-        setGrowthAssistAiToolAccess(nextAiToolAccess);
-        setGrowthAssistAiEnvelope(nextAiSuggestionEnvelope);
-        setGrowthAssistAiSuggestionRuns(nextAiSuggestionRuns);
-        setSelectedGrowthAiSuggestionRunDetail(null);
+        applyAiAgentWorkspaceSupportBundle(
+          'growth-assist-coach',
+          nextGrowthAiSupportBundle,
+        );
         setWhatsappSummary(nextSummary);
         setGrowthMonitorHistory(nextMonitorRuns);
         setWhatsappMonitorAnalytics(nextMonitorAnalytics);
@@ -9354,17 +9568,9 @@ export function App() {
         'growth-assist-coach',
       );
 
-      startTransition(() => {
-        setGrowthAssistAiSuggestionRuns((current) => [
-          record,
-          ...current.filter((entry) => entry.id !== record.id),
-        ]);
-        setTenantAiSuggestionWorkspace((current) =>
-          prependOrReplaceSuggestionRun(current, record),
-        );
-      });
+      syncAiAgentSuggestionRunPrepared('growth-assist-coach', record);
 
-      await refreshTenantAiOperationsConsole();
+      await refreshAiAgentActionSurfaces('growth-assist-coach');
 
       setGrowthActionMessage(
         `Handoff auditable preparado con ${record.promptPackKey}@${record.promptPackVersion}.`,
@@ -9403,68 +9609,9 @@ export function App() {
         },
       );
 
-      startTransition(() => {
-        setGrowthAssistAiApprovalRequests((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            record,
-            growthAiApprovalStatusFilter,
-          ),
-        );
-        setTenantAiApprovalWorkspace((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            record,
-            tenantAiApprovalWorkspaceStatusFilter,
-          ),
-        );
-        setGrowthAssistAiSuggestionRuns((current) =>
-          bumpSuggestionRunApprovalToPending(current, record),
-        );
-        setTenantAiSuggestionWorkspace((current) =>
-          bumpSuggestionRunApprovalToPending(current, record),
-        );
-        setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
-          current && current.id === record.suggestionRunId
-            ? {
-                ...current,
-                approvalSummary: {
-                  status: 'pending',
-                  totalRequests: current.approvalSummary.totalRequests + 1,
-                  latestRequestId: record.id,
-                  latestPolicyKey: record.policyKey,
-                  latestRequestedAt: record.createdAt,
-                  latestReviewedAt: record.reviewedAt,
-                },
-                approvalRequests: prependOrReplaceApprovalRequest(
-                  current.approvalRequests,
-                  record,
-                ),
-              }
-            : current,
-        );
-        setSelectedGrowthAiSuggestionRunDetail((current) =>
-          current && current.id === record.suggestionRunId
-            ? {
-                ...current,
-                approvalSummary: {
-                  status: 'pending',
-                  totalRequests: current.approvalSummary.totalRequests + 1,
-                  latestRequestId: record.id,
-                  latestPolicyKey: record.policyKey,
-                  latestRequestedAt: record.createdAt,
-                  latestReviewedAt: record.reviewedAt,
-                },
-                approvalRequests: prependOrReplaceApprovalRequest(
-                  current.approvalRequests,
-                  record,
-                ),
-              }
-            : current,
-        );
-      });
+      syncAiAgentApprovalRequestPending('growth-assist-coach', record);
 
-      await refreshTenantAiOperationsConsole();
+      await refreshAiAgentActionSurfaces('growth-assist-coach');
 
       setGrowthActionMessage(
         `Solicitud de aprobacion registrada bajo ${record.policyKey}.`,
@@ -9509,62 +9656,9 @@ export function App() {
         },
       );
 
-      startTransition(() => {
-        setGrowthAssistAiApprovalRequests((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            record,
-            growthAiApprovalStatusFilter,
-          ),
-        );
-        setTenantAiApprovalWorkspace((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            record,
-            tenantAiApprovalWorkspaceStatusFilter,
-          ),
-        );
-        setGrowthAssistAiSuggestionRuns((current) =>
-          applyReviewedApprovalToSuggestionRuns(current, record),
-        );
-        setTenantAiSuggestionWorkspace((current) =>
-          applyReviewedApprovalToSuggestionRuns(current, record),
-        );
-        setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
-          current && current.id === record.suggestionRunId
-            ? {
-                ...current,
-                approvalSummary: {
-                  ...current.approvalSummary,
-                  status: record.status,
-                  latestReviewedAt: record.reviewedAt,
-                },
-                approvalRequests: prependOrReplaceApprovalRequest(
-                  current.approvalRequests,
-                  record,
-                ),
-              }
-            : current,
-        );
-        setSelectedGrowthAiSuggestionRunDetail((current) =>
-          current && current.id === record.suggestionRunId
-            ? {
-                ...current,
-                approvalSummary: {
-                  ...current.approvalSummary,
-                  status: record.status,
-                  latestReviewedAt: record.reviewedAt,
-                },
-                approvalRequests: prependOrReplaceApprovalRequest(
-                  current.approvalRequests,
-                  record,
-                ),
-              }
-            : current,
-        );
-      });
+      syncAiAgentApprovalRequestReviewed('growth-assist-coach', record);
 
-      await refreshTenantAiOperationsConsole();
+      await refreshAiAgentActionSurfaces('growth-assist-coach');
 
       setGrowthActionMessage(
         status === 'approved'
@@ -9599,17 +9693,9 @@ export function App() {
         'invoice-document-assistant',
       );
 
-      startTransition(() => {
-        setInvoiceAssistantAiSuggestionRuns((current) => [
-          record,
-          ...current.filter((entry) => entry.id !== record.id),
-        ]);
-        setTenantAiSuggestionWorkspace((current) =>
-          prependOrReplaceSuggestionRun(current, record),
-        );
-      });
+      syncAiAgentSuggestionRunPrepared('invoice-document-assistant', record);
 
-      await refreshTenantAiOperationsConsole();
+      await refreshAiAgentActionSurfaces('invoice-document-assistant');
 
       setInvoicingActionMessage(
         `Handoff auditable preparado con ${record.promptPackKey}@${record.promptPackVersion}.`,
@@ -9642,16 +9728,9 @@ export function App() {
         'ecommerce-launch-assistant',
       );
 
-      startTransition(() => {
-        setTenantAiSuggestionWorkspace((current) =>
-          prependOrReplaceSuggestionRun(current, record),
-        );
-      });
+      syncAiAgentSuggestionRunPrepared('ecommerce-launch-assistant', record);
 
-      await Promise.all([
-        refreshTenantAiOperationsConsole(),
-        refreshTenantAiEcommerceLaunchWorkspace(),
-      ]);
+      await refreshAiAgentActionSurfaces('ecommerce-launch-assistant');
 
       setEcommerceLaunchActionMessage(
         `Handoff auditable preparado con ${record.promptPackKey}@${record.promptPackVersion}.`,
@@ -9692,68 +9771,9 @@ export function App() {
         },
       );
 
-      startTransition(() => {
-        setInvoiceAssistantAiApprovalRequests((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            record,
-            invoiceAiApprovalStatusFilter,
-          ),
-        );
-        setTenantAiApprovalWorkspace((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            record,
-            tenantAiApprovalWorkspaceStatusFilter,
-          ),
-        );
-        setInvoiceAssistantAiSuggestionRuns((current) =>
-          bumpSuggestionRunApprovalToPending(current, record),
-        );
-        setTenantAiSuggestionWorkspace((current) =>
-          bumpSuggestionRunApprovalToPending(current, record),
-        );
-        setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
-          current && current.id === record.suggestionRunId
-            ? {
-                ...current,
-                approvalSummary: {
-                  status: 'pending',
-                  totalRequests: current.approvalSummary.totalRequests + 1,
-                  latestRequestId: record.id,
-                  latestPolicyKey: record.policyKey,
-                  latestRequestedAt: record.createdAt,
-                  latestReviewedAt: record.reviewedAt,
-                },
-                approvalRequests: prependOrReplaceApprovalRequest(
-                  current.approvalRequests,
-                  record,
-                ),
-              }
-            : current,
-        );
-        setSelectedInvoiceAiSuggestionRunDetail((current) =>
-          current && current.id === record.suggestionRunId
-            ? {
-                ...current,
-                approvalSummary: {
-                  status: 'pending',
-                  totalRequests: current.approvalSummary.totalRequests + 1,
-                  latestRequestId: record.id,
-                  latestPolicyKey: record.policyKey,
-                  latestRequestedAt: record.createdAt,
-                  latestReviewedAt: record.reviewedAt,
-                },
-                approvalRequests: prependOrReplaceApprovalRequest(
-                  current.approvalRequests,
-                  record,
-                ),
-              }
-            : current,
-        );
-      });
+      syncAiAgentApprovalRequestPending('invoice-document-assistant', record);
 
-      await refreshTenantAiOperationsConsole();
+      await refreshAiAgentActionSurfaces('invoice-document-assistant');
 
       setInvoicingActionMessage(
         `Solicitud de aprobacion registrada bajo ${record.policyKey}.`,
@@ -9798,62 +9818,9 @@ export function App() {
         },
       );
 
-      startTransition(() => {
-        setInvoiceAssistantAiApprovalRequests((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            record,
-            invoiceAiApprovalStatusFilter,
-          ),
-        );
-        setTenantAiApprovalWorkspace((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            record,
-            tenantAiApprovalWorkspaceStatusFilter,
-          ),
-        );
-        setInvoiceAssistantAiSuggestionRuns((current) =>
-          applyReviewedApprovalToSuggestionRuns(current, record),
-        );
-        setTenantAiSuggestionWorkspace((current) =>
-          applyReviewedApprovalToSuggestionRuns(current, record),
-        );
-        setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
-          current && current.id === record.suggestionRunId
-            ? {
-                ...current,
-                approvalSummary: {
-                  ...current.approvalSummary,
-                  status: record.status,
-                  latestReviewedAt: record.reviewedAt,
-                },
-                approvalRequests: prependOrReplaceApprovalRequest(
-                  current.approvalRequests,
-                  record,
-                ),
-              }
-            : current,
-        );
-        setSelectedInvoiceAiSuggestionRunDetail((current) =>
-          current && current.id === record.suggestionRunId
-            ? {
-                ...current,
-                approvalSummary: {
-                  ...current.approvalSummary,
-                  status: record.status,
-                  latestReviewedAt: record.reviewedAt,
-                },
-                approvalRequests: prependOrReplaceApprovalRequest(
-                  current.approvalRequests,
-                  record,
-                ),
-              }
-            : current,
-        );
-      });
+      syncAiAgentApprovalRequestReviewed('invoice-document-assistant', record);
 
-      await refreshTenantAiOperationsConsole();
+      await refreshAiAgentActionSurfaces('invoice-document-assistant');
 
       setInvoicingActionMessage(
         status === 'approved'
@@ -10010,99 +9977,9 @@ export function App() {
         },
       );
 
-      startTransition(() => {
-        setTenantAiApprovalWorkspace((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            record,
-            tenantAiApprovalWorkspaceStatusFilter,
-          ),
-        );
-        setTenantAiSuggestionWorkspace((current) =>
-          applyReviewedApprovalToSuggestionRuns(current, record),
-        );
-        setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
-          current && current.id === record.suggestionRunId
-            ? {
-                ...current,
-                approvalSummary: {
-                  ...current.approvalSummary,
-                  status: record.status,
-                  latestReviewedAt: record.reviewedAt,
-                },
-                approvalRequests: prependOrReplaceApprovalRequest(
-                  current.approvalRequests,
-                  record,
-                ),
-              }
-            : current,
-        );
+      syncAiAgentApprovalRequestReviewed(agentKey, record);
 
-        if (agentKey === 'growth-assist-coach') {
-          setGrowthAssistAiApprovalRequests((current) =>
-            syncApprovalRequestsWithFilter(
-              current,
-              record,
-              growthAiApprovalStatusFilter,
-            ),
-          );
-          setGrowthAssistAiSuggestionRuns((current) =>
-            applyReviewedApprovalToSuggestionRuns(current, record),
-          );
-          setSelectedGrowthAiSuggestionRunDetail((current) =>
-            current && current.id === record.suggestionRunId
-              ? {
-                  ...current,
-                  approvalSummary: {
-                    ...current.approvalSummary,
-                    status: record.status,
-                    latestReviewedAt: record.reviewedAt,
-                  },
-                  approvalRequests: prependOrReplaceApprovalRequest(
-                    current.approvalRequests,
-                    record,
-                  ),
-                }
-              : current,
-          );
-        }
-
-        if (agentKey === 'invoice-document-assistant') {
-          setInvoiceAssistantAiApprovalRequests((current) =>
-            syncApprovalRequestsWithFilter(
-              current,
-              record,
-              invoiceAiApprovalStatusFilter,
-            ),
-          );
-          setInvoiceAssistantAiSuggestionRuns((current) =>
-            applyReviewedApprovalToSuggestionRuns(current, record),
-          );
-          setSelectedInvoiceAiSuggestionRunDetail((current) =>
-            current && current.id === record.suggestionRunId
-              ? {
-                  ...current,
-                  approvalSummary: {
-                    ...current.approvalSummary,
-                    status: record.status,
-                    latestReviewedAt: record.reviewedAt,
-                  },
-                  approvalRequests: prependOrReplaceApprovalRequest(
-                    current.approvalRequests,
-                    record,
-                  ),
-                }
-              : current,
-          );
-        }
-      });
-
-      await Promise.all([
-        refreshTenantAiOperationsConsole(),
-        resolveAiAgentDomainKey(agentKey) === 'ecommerce'
-          ? refreshTenantAiEcommerceLaunchWorkspace()
-          : Promise.resolve(),
-      ]);
+      await refreshAiAgentActionSurfaces(agentKey);
 
       setAiAgentActionSuccessMessage(
         agentKey,
@@ -10138,16 +10015,12 @@ export function App() {
     setGrowthError(null);
 
     try {
-      const body =
-        agentKey === 'invoice-document-assistant'
-          ? { invoiceId: targetId }
-          : { caseId: targetId };
       const result = await executeTenantAiGuardedExecution(
         token,
         tenantSlug,
         agentKey,
         requestId,
-        body,
+        buildAiGuardedExecutionTargetBody(agentKey, targetId),
       );
 
       startTransition(() => {
@@ -10176,14 +10049,10 @@ export function App() {
         }
       });
 
-      await Promise.all(
-        [
-          refreshTenantAiOperationsConsole(),
-          agentKey === 'growth-assist-coach'
-            ? refreshGrowthWorkspace()
-            : refreshInvoicingWorkspace({ selectInvoiceId: targetId }),
-        ].filter(Boolean),
-      );
+      await refreshAiAgentActionSurfaces(agentKey, {
+        includeDedicatedWorkspace: true,
+        selectInvoiceId: targetId,
+      });
 
       setGrowthActionMessage(
         result.targetKind === 'invoice_payment'
@@ -10217,16 +10086,12 @@ export function App() {
     setGrowthError(null);
 
     try {
-      const body =
-        agentKey === 'invoice-document-assistant'
-          ? { invoiceId: targetId }
-          : { caseId: targetId };
       const result = await rollbackTenantAiGuardedExecution(
         token,
         tenantSlug,
         agentKey,
         requestId,
-        body,
+        buildAiGuardedExecutionTargetBody(agentKey, targetId),
       );
 
       startTransition(() => {
@@ -10255,14 +10120,10 @@ export function App() {
         }
       });
 
-      await Promise.all(
-        [
-          refreshTenantAiOperationsConsole(),
-          agentKey === 'growth-assist-coach'
-            ? refreshGrowthWorkspace()
-            : refreshInvoicingWorkspace({ selectInvoiceId: targetId }),
-        ].filter(Boolean),
-      );
+      await refreshAiAgentActionSurfaces(agentKey, {
+        includeDedicatedWorkspace: true,
+        selectInvoiceId: targetId,
+      });
 
       setGrowthActionMessage(
         result.targetKind === 'invoice_payment'
@@ -10309,108 +10170,9 @@ export function App() {
         },
       );
 
-      startTransition(() => {
-        setTenantAiApprovalWorkspace((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            record,
-            tenantAiApprovalWorkspaceStatusFilter,
-          ),
-        );
-        setTenantAiSuggestionWorkspace((current) =>
-          bumpSuggestionRunApprovalToPending(current, record),
-        );
-        setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
-          current && current.id === record.suggestionRunId
-            ? {
-                ...current,
-                approvalSummary: {
-                  status: 'pending',
-                  totalRequests: current.approvalSummary.totalRequests + 1,
-                  latestRequestId: record.id,
-                  latestPolicyKey: record.policyKey,
-                  latestRequestedAt: record.createdAt,
-                  latestReviewedAt: record.reviewedAt,
-                },
-                approvalRequests: prependOrReplaceApprovalRequest(
-                  current.approvalRequests,
-                  record,
-                ),
-              }
-            : current,
-        );
+      syncAiAgentApprovalRequestPending(agentKey, record);
 
-        if (agentKey === 'growth-assist-coach') {
-          setGrowthAssistAiApprovalRequests((current) =>
-            syncApprovalRequestsWithFilter(
-              current,
-              record,
-              growthAiApprovalStatusFilter,
-            ),
-          );
-          setGrowthAssistAiSuggestionRuns((current) =>
-            bumpSuggestionRunApprovalToPending(current, record),
-          );
-          setSelectedGrowthAiSuggestionRunDetail((current) =>
-            current && current.id === record.suggestionRunId
-              ? {
-                  ...current,
-                  approvalSummary: {
-                    status: 'pending',
-                    totalRequests: current.approvalSummary.totalRequests + 1,
-                    latestRequestId: record.id,
-                    latestPolicyKey: record.policyKey,
-                    latestRequestedAt: record.createdAt,
-                    latestReviewedAt: record.reviewedAt,
-                  },
-                  approvalRequests: prependOrReplaceApprovalRequest(
-                    current.approvalRequests,
-                    record,
-                  ),
-                }
-              : current,
-          );
-        }
-
-        if (agentKey === 'invoice-document-assistant') {
-          setInvoiceAssistantAiApprovalRequests((current) =>
-            syncApprovalRequestsWithFilter(
-              current,
-              record,
-              invoiceAiApprovalStatusFilter,
-            ),
-          );
-          setInvoiceAssistantAiSuggestionRuns((current) =>
-            bumpSuggestionRunApprovalToPending(current, record),
-          );
-          setSelectedInvoiceAiSuggestionRunDetail((current) =>
-            current && current.id === record.suggestionRunId
-              ? {
-                  ...current,
-                  approvalSummary: {
-                    status: 'pending',
-                    totalRequests: current.approvalSummary.totalRequests + 1,
-                    latestRequestId: record.id,
-                    latestPolicyKey: record.policyKey,
-                    latestRequestedAt: record.createdAt,
-                    latestReviewedAt: record.reviewedAt,
-                  },
-                  approvalRequests: prependOrReplaceApprovalRequest(
-                    current.approvalRequests,
-                    record,
-                  ),
-                }
-              : current,
-          );
-        }
-      });
-
-      await Promise.all([
-        refreshTenantAiOperationsConsole(),
-        resolveAiAgentDomainKey(agentKey) === 'ecommerce'
-          ? refreshTenantAiEcommerceLaunchWorkspace()
-          : Promise.resolve(),
-      ]);
+      await refreshAiAgentActionSurfaces(agentKey);
 
       setAiAgentActionSuccessMessage(
         agentKey,
@@ -13247,8 +13009,7 @@ export function App() {
                                         </span>
                                         <span className={styles.badge}>
                                           candidate lane{' '}
-                                          {entry.guardedExecutionCandidateToolKey ??
-                                            'none'}
+                                          {entry.guardedExecutionCandidate?.title ?? 'none'}
                                         </span>
                                       </div>
                                       <small>
@@ -13291,7 +13052,8 @@ export function App() {
                                         {entry.guardedExecutionCandidateToolKey ? (
                                           <span className={styles.badge}>
                                             next lane{' '}
-                                            {entry.guardedExecutionCandidateToolKey}
+                                            {entry.guardedExecutionCandidate?.title ??
+                                              entry.guardedExecutionCandidateToolKey}
                                           </span>
                                         ) : null}
                                       </div>
@@ -19536,8 +19298,12 @@ export function App() {
                           {humanizeKey(agent.rolloutPhase)}
                         </small>
                         <small>
-                          Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} SLA{' '}
-                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
+                          Candidate lane{' '}
+                          {resolveAiGuardedExecutionCandidate(agent.agentKey)
+                            ?.title ??
+                            agent.candidateToolKey ??
+                            'none'}{' '}
+                          {'·'} SLA {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
                         </small>
                         <small>{agent.recommendedPilotScope}</small>
                         <small>{agent.nextStep}</small>
@@ -19664,8 +19430,12 @@ export function App() {
                           {humanizeKey(agent.blastRadius)}
                         </small>
                         <small>
-                          Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} SLA{' '}
-                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
+                          Candidate lane{' '}
+                          {resolveAiGuardedExecutionCandidate(agent.agentKey)
+                            ?.title ??
+                            agent.candidateToolKey ??
+                            'none'}{' '}
+                          {'·'} SLA {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
                         </small>
                         <small>{agent.nextStep}</small>
                         <div className={styles.stack}>
@@ -19800,8 +19570,12 @@ export function App() {
                           {humanizeKey(agent.safeFallbackMode)}
                         </small>
                         <small>
-                          Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} SLA{' '}
-                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
+                          Candidate lane{' '}
+                          {resolveAiGuardedExecutionCandidate(agent.agentKey)
+                            ?.title ??
+                            agent.candidateToolKey ??
+                            'none'}{' '}
+                          {'·'} SLA {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
                         </small>
                         <small>{agent.nextStep}</small>
                         <div className={styles.stack}>
@@ -19933,8 +19707,12 @@ export function App() {
                           {humanizeKey(agent.safeFallbackMode)}
                         </small>
                         <small>
-                          Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} SLA{' '}
-                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
+                          Candidate lane{' '}
+                          {resolveAiGuardedExecutionCandidate(agent.agentKey)
+                            ?.title ??
+                            agent.candidateToolKey ??
+                            'none'}{' '}
+                          {'·'} SLA {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
                         </small>
                         <small>{agent.nextStep}</small>
                         <div className={styles.stack}>
@@ -20075,8 +19853,12 @@ export function App() {
                           {humanizeKey(agent.safeFallbackMode)}
                         </small>
                         <small>
-                          Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} SLA{' '}
-                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
+                          Candidate lane{' '}
+                          {resolveAiGuardedExecutionCandidate(agent.agentKey)
+                            ?.title ??
+                            agent.candidateToolKey ??
+                            'none'}{' '}
+                          {'·'} SLA {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
                         </small>
                         <small>{agent.nextStep}</small>
                         <div className={styles.stack}>
@@ -20208,7 +19990,12 @@ export function App() {
                           {humanizeKey(agent.safeFallbackMode)}
                         </small>
                         <small>
-                          Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} Launch{' '}
+                          Candidate lane{' '}
+                          {resolveAiGuardedExecutionCandidate(agent.agentKey)
+                            ?.title ??
+                            agent.candidateToolKey ??
+                            'none'}{' '}
+                          {'·'} Launch{' '}
                           {guardedExecutionLaunchStatusLabel(agent.launchStatus)}
                         </small>
                         <small>{agent.nextStep}</small>
@@ -20403,12 +20190,13 @@ export function App() {
                         invoices.find(
                           (entry) => entry.id === selectedInvoiceIdForGuardedExecution,
                         ) ?? null;
+                      const candidateLane = resolveAiGuardedExecutionCandidate(
+                        agent.agentKey,
+                      );
                       const isGrowthCaseCandidate =
-                        agent.candidateToolKey ===
-                        'growth_case_assignment_execution';
+                        candidateLane?.targetKind === 'growth_operational_case';
                       const isInvoicePaymentCandidate =
-                        agent.candidateToolKey ===
-                        'invoice_payment_collection_execution';
+                        candidateLane?.targetKind === 'invoice';
                       const selectedGuardedExecutionTargetId =
                         isInvoicePaymentCandidate
                           ? selectedInvoiceIdForGuardedExecution
@@ -20489,7 +20277,8 @@ export function App() {
                             {agent.escalationOwner}
                           </small>
                           <small>
-                            Candidate tool {agent.candidateToolKey ?? 'none'} {'·'} Fallback{' '}
+                            Candidate lane{' '}
+                            {candidateLane?.title ?? agent.candidateToolKey ?? 'none'} {'·'} Fallback{' '}
                             {humanizeKey(agent.safeFallbackMode)}
                           </small>
                           <small>{agent.topAction}</small>
@@ -20519,7 +20308,8 @@ export function App() {
                                 >
                                   {availableGuardedExecutionGrowthCases.length === 0 ? (
                                     <option value="">
-                                      No hay operational cases elegibles
+                                      {candidateLane?.emptyTargetSelectionLabel ??
+                                        'No eligible operational cases'}
                                     </option>
                                   ) : (
                                     availableGuardedExecutionGrowthCases.map((entry) => (
@@ -20546,7 +20336,8 @@ export function App() {
                                     growthActionLoading === executeActionKey
                                   }
                                 >
-                                  Ejecutar take-case
+                                  {candidateLane?.executeActionLabel ??
+                                    'Execute take-case'}
                                 </button>
                                 <button
                                   className={styles.ghostButton}
@@ -20565,7 +20356,8 @@ export function App() {
                                     growthActionLoading === rollbackActionKey
                                   }
                                 >
-                                  Rollback take-case
+                                  {candidateLane?.rollbackActionLabel ??
+                                    'Rollback take-case'}
                                 </button>
                               </div>
                             </>
@@ -20594,7 +20386,10 @@ export function App() {
                                   }
                                 >
                                   {availableGuardedExecutionInvoices.length === 0 ? (
-                                    <option value="">No hay facturas elegibles</option>
+                                    <option value="">
+                                      {candidateLane?.emptyTargetSelectionLabel ??
+                                        'No eligible invoices'}
+                                    </option>
                                   ) : (
                                     availableGuardedExecutionInvoices.map((entry) => (
                                       <option key={entry.id} value={entry.id}>
@@ -20624,7 +20419,8 @@ export function App() {
                                     growthActionLoading === executeActionKey
                                   }
                                 >
-                                  Ejecutar post-payment
+                                  {candidateLane?.executeActionLabel ??
+                                    'Execute post-payment'}
                                 </button>
                                 <button
                                   className={styles.ghostButton}
@@ -20643,7 +20439,8 @@ export function App() {
                                     growthActionLoading === rollbackActionKey
                                   }
                                 >
-                                  Rollback payment
+                                  {candidateLane?.rollbackActionLabel ??
+                                    'Rollback payment'}
                                 </button>
                               </div>
                               <small>
@@ -20783,8 +20580,12 @@ export function App() {
                           {humanizeKey(entry.agentKey)} · {formatDate(entry.occurredAt)}
                         </small>
                         <small>
-                          Candidate tool {entry.candidateToolKey ?? 'none'} {'·'} Suggestion run{' '}
-                          {entry.suggestionRunId ?? 'n/a'} {'·'} Approval{' '}
+                          Candidate lane{' '}
+                          {resolveAiGuardedExecutionCandidate(entry.agentKey)
+                            ?.title ??
+                            entry.candidateToolKey ??
+                            'none'}{' '}
+                          {'·'} Suggestion run {entry.suggestionRunId ?? 'n/a'} {'·'} Approval{' '}
                           {entry.approvalRequestId ?? 'n/a'}
                         </small>
                         <small>{entry.detail}</small>

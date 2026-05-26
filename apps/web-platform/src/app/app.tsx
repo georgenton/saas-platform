@@ -4133,6 +4133,21 @@ export function App() {
         break;
     }
   };
+  const setAiAgentSuggestionRunDetailState = (
+    agentKey: string,
+    detail: AiSuggestionRunDetailResponse | null,
+  ): void => {
+    switch (agentKey) {
+      case 'growth-assist-coach':
+        setSelectedGrowthAiSuggestionRunDetail(detail);
+        break;
+      case 'invoice-document-assistant':
+        setSelectedInvoiceAiSuggestionRunDetail(detail);
+        break;
+      default:
+        break;
+    }
+  };
   const fetchTenantAiEcommerceLaunchSurface = async (tenantSlug: string) => {
     const [workspace, envelope] = await Promise.all([
       fetchTenantAiEcommerceLaunchWorkspace(token!, tenantSlug),
@@ -4151,6 +4166,208 @@ export function App() {
     setTenantAiEcommerceLaunchWorkspace(surface.workspace);
     setEcommerceLaunchAssistantAiEnvelope(surface.envelope);
   };
+  const getAiAgentDedicatedSuggestionRunActionKey = (
+    action:
+      | 'prepare'
+      | 'request_approval'
+      | 'review_approval'
+      | 'load_detail',
+    agentKey: string,
+    suggestionRunOrRequestId?: string,
+  ): string => {
+    switch (action) {
+      case 'prepare':
+        switch (agentKey) {
+          case 'growth-assist-coach':
+            return 'prepare-ai-suggestion-run';
+          case 'invoice-document-assistant':
+            return 'prepare-invoice-ai-suggestion-run';
+          case 'ecommerce-launch-assistant':
+            return 'prepare-ecommerce-ai-suggestion-run';
+          default:
+            return `prepare-${agentKey}`;
+        }
+      case 'request_approval':
+        switch (agentKey) {
+          case 'growth-assist-coach':
+            return `request-ai-approval:${suggestionRunOrRequestId ?? ''}`;
+          case 'invoice-document-assistant':
+            return `request-invoice-ai-approval:${suggestionRunOrRequestId ?? ''}`;
+          default:
+            return `request-ai-approval:${agentKey}:${suggestionRunOrRequestId ?? ''}`;
+        }
+      case 'review_approval':
+        switch (agentKey) {
+          case 'growth-assist-coach':
+            return `review-ai-approval:${suggestionRunOrRequestId ?? ''}`;
+          case 'invoice-document-assistant':
+            return `review-invoice-ai-approval:${suggestionRunOrRequestId ?? ''}`;
+          default:
+            return `review-ai-approval:${agentKey}:${suggestionRunOrRequestId ?? ''}`;
+        }
+      case 'load_detail':
+        switch (agentKey) {
+          case 'growth-assist-coach':
+            return `load-ai-run-detail:${suggestionRunOrRequestId ?? ''}`;
+          case 'invoice-document-assistant':
+            return `load-invoice-ai-run-detail:${suggestionRunOrRequestId ?? ''}`;
+          default:
+            return `load-ai-run-detail:${agentKey}:${suggestionRunOrRequestId ?? ''}`;
+        }
+      default:
+        return `${action}:${agentKey}:${suggestionRunOrRequestId ?? ''}`;
+    }
+  };
+  const getAiAgentSuggestionApprovalRationale = (agentKey: string): string => {
+    switch (agentKey) {
+      case 'growth-assist-coach':
+        return 'Solicitar revision humana antes de tratar el handoff como aprobado.';
+      case 'invoice-document-assistant':
+        return 'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.';
+      case 'ecommerce-launch-assistant':
+        return `Solicitar revision humana antes de usar la sugerencia de ${resolveAiAgentTitle(
+          agentKey,
+        )}.`;
+      default:
+        return `Solicitar revision humana antes de usar la sugerencia de ${resolveAiAgentTitle(
+          agentKey,
+        )}.`;
+    }
+  };
+  const getAiAgentSuggestionReviewNote = (
+    agentKey: string,
+    status: 'approved' | 'rejected',
+  ): string => {
+    if (agentKey === 'growth-assist-coach') {
+      return status === 'approved'
+        ? 'Aprobado desde la consola transversal de AI.'
+        : 'Rechazado desde la consola transversal de AI.';
+    }
+
+    return status === 'approved'
+      ? `Aprobado desde la consola transversal de AI para ${resolveAiAgentTitle(
+          agentKey,
+        )}.`
+      : `Rechazado desde la consola transversal de AI para ${resolveAiAgentTitle(
+          agentKey,
+        )}.`;
+  };
+  const getAiAgentSuggestionReviewSuccessMessage = (
+    agentKey: string,
+    status: 'approved' | 'rejected',
+  ): string => {
+    if (agentKey === 'invoice-document-assistant') {
+      return status === 'approved'
+        ? 'Solicitud de aprobación de invoicing marcada como aprobada.'
+        : 'Solicitud de aprobación de invoicing marcada como rechazada.';
+    }
+
+    return status === 'approved'
+      ? 'Solicitud de aprobación marcada como aprobada.'
+      : 'Solicitud de aprobación marcada como rechazada.';
+  };
+  const aiAgentEnvelopeByKey = useMemo(
+    () =>
+      new Map(
+        [
+          growthAssistAiEnvelope,
+          invoiceAssistantAiEnvelope,
+          ecommerceLaunchAssistantAiEnvelope,
+        ]
+          .filter(
+            (entry): entry is NonNullable<typeof growthAssistAiEnvelope> =>
+              entry !== null,
+          )
+          .map((entry) => [entry.agent.key, entry] as const),
+      ),
+    [
+      ecommerceLaunchAssistantAiEnvelope,
+      growthAssistAiEnvelope,
+      invoiceAssistantAiEnvelope,
+    ],
+  );
+  const aiAgentDeclaredToolAccessByKey = useMemo(
+    () =>
+      new Map<string, AiAgentToolAccessResponse[]>([
+        ['growth-assist-coach', growthAssistAiToolAccess],
+        ['invoice-document-assistant', invoiceAssistantAiToolAccess],
+      ]),
+    [growthAssistAiToolAccess, invoiceAssistantAiToolAccess],
+  );
+  const aiAgentApprovalPoliciesByKey = useMemo(
+    () =>
+      new Map<string, AiApprovalPolicyResponse[]>([
+        [
+          'growth-assist-coach',
+          growthAssistAiApprovalPolicies.length > 0
+            ? growthAssistAiApprovalPolicies
+            : aiApprovalPolicyRegistry.filter(
+                (entry) => entry.agentKey === 'growth-assist-coach',
+              ),
+        ],
+        [
+          'invoice-document-assistant',
+          invoiceAssistantAiApprovalPolicies.length > 0
+            ? invoiceAssistantAiApprovalPolicies
+            : aiApprovalPolicyRegistry.filter(
+                (entry) => entry.agentKey === 'invoice-document-assistant',
+              ),
+        ],
+        [
+          'ecommerce-launch-assistant',
+          aiApprovalPolicyRegistry.filter(
+            (entry) => entry.agentKey === 'ecommerce-launch-assistant',
+          ),
+        ],
+      ]),
+    [
+      aiApprovalPolicyRegistry,
+      growthAssistAiApprovalPolicies,
+      invoiceAssistantAiApprovalPolicies,
+    ],
+  );
+  const aiAgentSuggestionRunsByKey = useMemo(
+    () =>
+      new Map<string, AiSuggestionRunResponse[]>([
+        ['growth-assist-coach', growthAssistAiSuggestionRuns],
+        ['invoice-document-assistant', invoiceAssistantAiSuggestionRuns],
+        [
+          'ecommerce-launch-assistant',
+          tenantAiSuggestionWorkspace.filter(
+            (entry) => entry.agentKey === 'ecommerce-launch-assistant',
+          ),
+        ],
+      ]),
+    [
+      growthAssistAiSuggestionRuns,
+      invoiceAssistantAiSuggestionRuns,
+      tenantAiSuggestionWorkspace,
+    ],
+  );
+  const resolveActiveAiAgent = (agentKey: string): AiAgentCatalogResponse | null =>
+    aiAgentEnvelopeByKey.get(agentKey)?.agent ??
+    aiOperatingModelAgentByKey.get(agentKey)?.agent ??
+    aiAgentCatalogByKey.get(agentKey) ??
+    null;
+  const resolveActiveAiPromptPack = (agentKey: string) =>
+    aiAgentEnvelopeByKey.get(agentKey)?.promptPack ??
+    aiPromptRegistry.find((entry) => entry.agentKey === agentKey) ??
+    null;
+  const resolveActiveAiToolAccess = (agentKey: string): AiAgentToolAccessResponse[] =>
+    aiAgentEnvelopeByKey.get(agentKey)?.toolAccess ??
+    aiAgentDeclaredToolAccessByKey.get(agentKey) ??
+    [];
+  const resolveActiveAiApprovalPolicies = (
+    agentKey: string,
+  ): AiApprovalPolicyResponse[] =>
+    aiAgentApprovalPoliciesByKey.get(agentKey) ?? [];
+  const resolveAiSuggestionRunsForAgent = (
+    agentKey: string,
+  ): AiSuggestionRunResponse[] => aiAgentSuggestionRunsByKey.get(agentKey) ?? [];
+  const resolveLatestApprovedAiApprovalRequest = (
+    agentKey: string,
+  ): AiApprovalRequestResponse | null =>
+    latestApprovedAiApprovalRequestByAgent.get(agentKey) ?? null;
   const currentTenantAccessibleAiOperatingModelAgents = useMemo(
     () =>
       aiOperatingModelAgents.filter((entry) =>
@@ -4159,12 +4376,8 @@ export function App() {
     [aiOperatingModelAgents, currentTenancy],
   );
   const activeGrowthAiAgent = useMemo(
-    () =>
-      growthAssistAiEnvelope?.agent ??
-      aiOperatingModelAgentByKey.get('growth-assist-coach')?.agent ??
-      aiAgentCatalog.find((entry) => entry.key === 'growth-assist-coach') ??
-      null,
-    [aiAgentCatalog, aiOperatingModelAgentByKey, growthAssistAiEnvelope],
+    () => resolveActiveAiAgent('growth-assist-coach'),
+    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey, aiAgentCatalogByKey],
   );
   const plannedAiAgents = useMemo(
     () =>
@@ -4176,26 +4389,16 @@ export function App() {
     [aiAgentCatalog, aiOperatingModelAgents],
   );
   const activeGrowthAiPromptPack = useMemo(
-    () =>
-      growthAssistAiEnvelope?.promptPack ??
-      aiPromptRegistry.find((entry) => entry.agentKey === 'growth-assist-coach') ??
-      null,
-    [aiPromptRegistry, growthAssistAiEnvelope],
+    () => resolveActiveAiPromptPack('growth-assist-coach'),
+    [aiAgentEnvelopeByKey, aiPromptRegistry],
   );
   const activeGrowthAiToolAccess = useMemo(
-    () =>
-      growthAssistAiEnvelope?.toolAccess ??
-      growthAssistAiToolAccess,
-    [growthAssistAiEnvelope, growthAssistAiToolAccess],
+    () => resolveActiveAiToolAccess('growth-assist-coach'),
+    [aiAgentDeclaredToolAccessByKey, aiAgentEnvelopeByKey],
   );
   const activeGrowthAiApprovalPolicies = useMemo(
-    () =>
-      growthAssistAiApprovalPolicies.length > 0
-        ? growthAssistAiApprovalPolicies
-        : aiApprovalPolicyRegistry.filter(
-            (entry) => entry.agentKey === 'growth-assist-coach',
-          ),
-    [aiApprovalPolicyRegistry, growthAssistAiApprovalPolicies],
+    () => resolveActiveAiApprovalPolicies('growth-assist-coach'),
+    [aiAgentApprovalPoliciesByKey],
   );
   const latestApprovedAiApprovalRequestByAgent = useMemo(() => {
     const map = new Map<string, AiApprovalRequestResponse>();
@@ -4240,59 +4443,44 @@ export function App() {
     [invoices],
   );
   const activeInvoiceAiAgent = useMemo(
-    () =>
-      invoiceAssistantAiEnvelope?.agent ??
-      aiOperatingModelAgentByKey.get('invoice-document-assistant')?.agent ??
-      aiAgentCatalog.find((entry) => entry.key === 'invoice-document-assistant') ??
-      null,
-    [aiAgentCatalog, aiOperatingModelAgentByKey, invoiceAssistantAiEnvelope],
+    () => resolveActiveAiAgent('invoice-document-assistant'),
+    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey, aiAgentCatalogByKey],
   );
   const activeEcommerceAiAgent = useMemo(
-    () =>
-      ecommerceLaunchAssistantAiEnvelope?.agent ??
-      aiOperatingModelAgentByKey.get('ecommerce-launch-assistant')?.agent ??
-      aiAgentCatalog.find((entry) => entry.key === 'ecommerce-launch-assistant') ??
-      null,
-    [
-      aiAgentCatalog,
-      aiOperatingModelAgentByKey,
-      ecommerceLaunchAssistantAiEnvelope,
-    ],
+    () => resolveActiveAiAgent('ecommerce-launch-assistant'),
+    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey, aiAgentCatalogByKey],
   );
   const activeEcommerceAiPromptPack = useMemo(
-    () =>
-      ecommerceLaunchAssistantAiEnvelope?.promptPack ??
-      aiPromptRegistry.find(
-        (entry) => entry.agentKey === 'ecommerce-launch-assistant',
-      ) ??
-      null,
-    [aiPromptRegistry, ecommerceLaunchAssistantAiEnvelope],
+    () => resolveActiveAiPromptPack('ecommerce-launch-assistant'),
+    [aiAgentEnvelopeByKey, aiPromptRegistry],
   );
   const activeEcommerceAiApprovalPolicies = useMemo(
-    () =>
-      aiApprovalPolicyRegistry.filter(
-        (entry) => entry.agentKey === 'ecommerce-launch-assistant',
-      ),
-    [aiApprovalPolicyRegistry],
+    () => resolveActiveAiApprovalPolicies('ecommerce-launch-assistant'),
+    [aiAgentApprovalPoliciesByKey],
+  );
+  const activeEcommerceAiToolAccess = useMemo(
+    () => resolveActiveAiToolAccess('ecommerce-launch-assistant'),
+    [aiAgentDeclaredToolAccessByKey, aiAgentEnvelopeByKey],
   );
   const ecommerceLaunchAssistantSuggestionRuns = useMemo(
-    () =>
-      tenantAiSuggestionWorkspace.filter(
-        (entry) => entry.agentKey === 'ecommerce-launch-assistant',
-      ),
-    [tenantAiSuggestionWorkspace],
+    () => resolveAiSuggestionRunsForAgent('ecommerce-launch-assistant'),
+    [aiAgentSuggestionRunsByKey],
   );
   const latestApprovedEcommerceAiApprovalRequest = useMemo(
-    () =>
-      latestApprovedAiApprovalRequestByAgent.get('ecommerce-launch-assistant') ??
-      null,
+    () => resolveLatestApprovedAiApprovalRequest('ecommerce-launch-assistant'),
     [latestApprovedAiApprovalRequestByAgent],
   );
   const activeInvoiceAiToolAccess = useMemo(
-    () =>
-      invoiceAssistantAiEnvelope?.toolAccess ??
-      invoiceAssistantAiToolAccess,
-    [invoiceAssistantAiEnvelope, invoiceAssistantAiToolAccess],
+    () => resolveActiveAiToolAccess('invoice-document-assistant'),
+    [aiAgentDeclaredToolAccessByKey, aiAgentEnvelopeByKey],
+  );
+  const activeInvoiceAiApprovalPolicies = useMemo(
+    () => resolveActiveAiApprovalPolicies('invoice-document-assistant'),
+    [aiAgentApprovalPoliciesByKey],
+  );
+  const activeInvoiceAiSuggestionRuns = useMemo(
+    () => resolveAiSuggestionRunsForAgent('invoice-document-assistant'),
+    [aiAgentSuggestionRunsByKey],
   );
   const visibleTenantAiSuggestionWorkspace = useMemo(() => {
     return tenantAiSuggestionWorkspace.filter((entry) =>
@@ -9551,357 +9739,263 @@ export function App() {
     }
   }
 
-  async function handlePrepareAiSuggestionRun() {
-    if (!token || !currentTenancy || !canReadGrowthConversations) {
+  async function handlePrepareAiSuggestionRunForAgent(
+    agentKey: string,
+    fallbackErrorMessage: string,
+  ) {
+    if (!token || !currentTenancy || !canOperateAiAgent(agentKey)) {
       return;
     }
 
     const tenantSlug = currentTenancy.tenant.slug;
-    setGrowthActionLoading('prepare-ai-suggestion-run');
-    setGrowthActionMessage(null);
-    setGrowthError(null);
+    const actionKey = getAiAgentDedicatedSuggestionRunActionKey(
+      'prepare',
+      agentKey,
+    );
+    setAiAgentActionLoadingState(agentKey, actionKey);
+    clearAiAgentActionFeedback(agentKey);
 
     try {
-      const record = await prepareTenantAiSuggestionRun(
-        token,
-        tenantSlug,
-        'growth-assist-coach',
-      );
+      const record = await prepareTenantAiSuggestionRun(token, tenantSlug, agentKey);
 
-      syncAiAgentSuggestionRunPrepared('growth-assist-coach', record);
+      syncAiAgentSuggestionRunPrepared(agentKey, record);
 
-      await refreshAiAgentActionSurfaces('growth-assist-coach');
+      await refreshAiAgentActionSurfaces(agentKey);
 
-      setGrowthActionMessage(
+      setAiAgentActionSuccessMessage(
+        agentKey,
         `Handoff auditable preparado con ${record.promptPackKey}@${record.promptPackVersion}.`,
       );
     } catch (error) {
-      setGrowthError(
+      setAiAgentActionErrorMessage(
+        agentKey,
         error instanceof Error
           ? error.message
-          : 'No se pudo preparar el handoff auditable de AI.',
+          : fallbackErrorMessage,
       );
     } finally {
-      setGrowthActionLoading(null);
+      setAiAgentActionLoadingState(agentKey, null);
     }
   }
 
-  async function handleRequestAiSuggestionRunApproval(suggestionRunId: string) {
-    if (!token || !currentTenancy || !canReadGrowthConversations) {
+  async function handleRequestAiSuggestionRunApprovalForAgent(
+    agentKey: string,
+    suggestionRunId: string,
+    fallbackErrorMessage: string,
+  ) {
+    if (!token || !currentTenancy || !canOperateAiAgent(agentKey)) {
       return;
     }
 
     const tenantSlug = currentTenancy.tenant.slug;
-    const actionKey = `request-ai-approval:${suggestionRunId}`;
-    setGrowthActionLoading(actionKey);
-    setGrowthActionMessage(null);
-    setGrowthError(null);
+    const actionKey = getAiAgentDedicatedSuggestionRunActionKey(
+      'request_approval',
+      agentKey,
+      suggestionRunId,
+    );
+    setAiAgentActionLoadingState(agentKey, actionKey);
+    clearAiAgentActionFeedback(agentKey);
 
     try {
       const record = await requestTenantAiSuggestionRunApproval(
         token,
         tenantSlug,
-        'growth-assist-coach',
+        agentKey,
         suggestionRunId,
         {
-          rationale:
-            'Solicitar revision humana antes de tratar el handoff como aprobado.',
+          rationale: getAiAgentSuggestionApprovalRationale(agentKey),
         },
       );
 
-      syncAiAgentApprovalRequestPending('growth-assist-coach', record);
+      syncAiAgentApprovalRequestPending(agentKey, record);
 
-      await refreshAiAgentActionSurfaces('growth-assist-coach');
+      await refreshAiAgentActionSurfaces(agentKey);
 
-      setGrowthActionMessage(
+      setAiAgentActionSuccessMessage(
+        agentKey,
         `Solicitud de aprobacion registrada bajo ${record.policyKey}.`,
       );
     } catch (error) {
-      setGrowthError(
+      setAiAgentActionErrorMessage(
+        agentKey,
         error instanceof Error
           ? error.message
-          : 'No se pudo pedir la aprobación del handoff de AI.',
+          : fallbackErrorMessage,
       );
     } finally {
-      setGrowthActionLoading(null);
+      setAiAgentActionLoadingState(agentKey, null);
     }
+  }
+
+  async function handleReviewAiApprovalRequestForAgent(
+    agentKey: string,
+    requestId: string,
+    status: 'approved' | 'rejected',
+    fallbackErrorMessage: string,
+  ) {
+    if (!token || !currentTenancy || !canOperateAiAgent(agentKey)) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const actionKey = getAiAgentDedicatedSuggestionRunActionKey(
+      'review_approval',
+      agentKey,
+      requestId,
+    );
+    setAiAgentActionLoadingState(agentKey, actionKey);
+    clearAiAgentActionFeedback(agentKey);
+
+    try {
+      const record = await reviewTenantAiApprovalRequest(
+        token,
+        tenantSlug,
+        agentKey,
+        requestId,
+        {
+          status,
+          reviewNote: getAiAgentSuggestionReviewNote(agentKey, status),
+        },
+      );
+
+      syncAiAgentApprovalRequestReviewed(agentKey, record);
+
+      await refreshAiAgentActionSurfaces(agentKey);
+
+      setAiAgentActionSuccessMessage(
+        agentKey,
+        getAiAgentSuggestionReviewSuccessMessage(agentKey, status),
+      );
+    } catch (error) {
+      setAiAgentActionErrorMessage(
+        agentKey,
+        error instanceof Error
+          ? error.message
+          : fallbackErrorMessage,
+      );
+    } finally {
+      setAiAgentActionLoadingState(agentKey, null);
+    }
+  }
+
+  async function handleOpenAiSuggestionRunDetailForAgent(
+    agentKey: string,
+    suggestionRunId: string,
+    fallbackErrorMessage: string,
+  ) {
+    if (!token || !currentTenancy || !canOperateAiAgent(agentKey)) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const actionKey = getAiAgentDedicatedSuggestionRunActionKey(
+      'load_detail',
+      agentKey,
+      suggestionRunId,
+    );
+    setAiAgentActionLoadingState(agentKey, actionKey);
+    clearAiAgentActionFeedback(agentKey);
+
+    try {
+      const detail = await fetchTenantAiSuggestionRunDetail(
+        token,
+        tenantSlug,
+        agentKey,
+        suggestionRunId,
+      );
+
+      startTransition(() => {
+        setAiAgentSuggestionRunDetailState(agentKey, detail);
+      });
+    } catch (error) {
+      setAiAgentActionErrorMessage(
+        agentKey,
+        error instanceof Error
+          ? error.message
+          : fallbackErrorMessage,
+      );
+    } finally {
+      setAiAgentActionLoadingState(agentKey, null);
+    }
+  }
+
+  async function handlePrepareAiSuggestionRun() {
+    await handlePrepareAiSuggestionRunForAgent(
+      'growth-assist-coach',
+      'No se pudo preparar el handoff auditable de AI.',
+    );
+  }
+
+  async function handleRequestAiSuggestionRunApproval(suggestionRunId: string) {
+    await handleRequestAiSuggestionRunApprovalForAgent(
+      'growth-assist-coach',
+      suggestionRunId,
+      'No se pudo pedir la aprobación del handoff de AI.',
+    );
   }
 
   async function handleReviewAiApprovalRequest(
     requestId: string,
     status: 'approved' | 'rejected',
   ) {
-    if (!token || !currentTenancy || !canReadGrowthConversations) {
-      return;
-    }
-
-    const tenantSlug = currentTenancy.tenant.slug;
-    const actionKey = `review-ai-approval:${requestId}`;
-    setGrowthActionLoading(actionKey);
-    setGrowthActionMessage(null);
-    setGrowthError(null);
-
-    try {
-      const record = await reviewTenantAiApprovalRequest(
-        token,
-        tenantSlug,
-        'growth-assist-coach',
-        requestId,
-        {
-          status,
-          reviewNote:
-            status === 'approved'
-              ? 'Aprobado desde la consola transversal de AI.'
-              : 'Rechazado desde la consola transversal de AI.',
-        },
-      );
-
-      syncAiAgentApprovalRequestReviewed('growth-assist-coach', record);
-
-      await refreshAiAgentActionSurfaces('growth-assist-coach');
-
-      setGrowthActionMessage(
-        status === 'approved'
-          ? 'Solicitud de aprobación marcada como aprobada.'
-          : 'Solicitud de aprobación marcada como rechazada.',
-      );
-    } catch (error) {
-      setGrowthError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo revisar la solicitud de aprobación de AI.',
-      );
-    } finally {
-      setGrowthActionLoading(null);
-    }
+    await handleReviewAiApprovalRequestForAgent(
+      'growth-assist-coach',
+      requestId,
+      status,
+      'No se pudo revisar la solicitud de aprobación de AI.',
+    );
   }
 
   async function handlePrepareInvoiceAiSuggestionRun() {
-    if (!token || !currentTenancy || !canReadInvoicingReports) {
-      return;
-    }
-
-    const tenantSlug = currentTenancy.tenant.slug;
-    setActionLoading('prepare-invoice-ai-suggestion-run');
-    setInvoicingActionMessage(null);
-    setInvoicingError(null);
-
-    try {
-      const record = await prepareTenantAiSuggestionRun(
-        token,
-        tenantSlug,
-        'invoice-document-assistant',
-      );
-
-      syncAiAgentSuggestionRunPrepared('invoice-document-assistant', record);
-
-      await refreshAiAgentActionSurfaces('invoice-document-assistant');
-
-      setInvoicingActionMessage(
-        `Handoff auditable preparado con ${record.promptPackKey}@${record.promptPackVersion}.`,
-      );
-    } catch (error) {
-      setInvoicingError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo preparar el handoff auditable de AI para invoicing.',
-      );
-    } finally {
-      setActionLoading(null);
-    }
+    await handlePrepareAiSuggestionRunForAgent(
+      'invoice-document-assistant',
+      'No se pudo preparar el handoff auditable de AI para invoicing.',
+    );
   }
 
   async function handlePrepareEcommerceAiSuggestionRun() {
-    if (!token || !currentTenancy || !canReadTenantEntitlements) {
-      return;
-    }
-
-    const tenantSlug = currentTenancy.tenant.slug;
-    setActionLoading('prepare-ecommerce-ai-suggestion-run');
-    setEcommerceLaunchActionMessage(null);
-    setEcommerceLaunchError(null);
-
-    try {
-      const record = await prepareTenantAiSuggestionRun(
-        token,
-        tenantSlug,
-        'ecommerce-launch-assistant',
-      );
-
-      syncAiAgentSuggestionRunPrepared('ecommerce-launch-assistant', record);
-
-      await refreshAiAgentActionSurfaces('ecommerce-launch-assistant');
-
-      setEcommerceLaunchActionMessage(
-        `Handoff auditable preparado con ${record.promptPackKey}@${record.promptPackVersion}.`,
-      );
-    } catch (error) {
-      setEcommerceLaunchError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo preparar el handoff AI de ecommerce launch.',
-      );
-    } finally {
-      setActionLoading(null);
-    }
+    await handlePrepareAiSuggestionRunForAgent(
+      'ecommerce-launch-assistant',
+      'No se pudo preparar el handoff AI de ecommerce launch.',
+    );
   }
 
   async function handleRequestInvoiceAiSuggestionRunApproval(
     suggestionRunId: string,
   ) {
-    if (!token || !currentTenancy || !canReadInvoicingReports) {
-      return;
-    }
-
-    const tenantSlug = currentTenancy.tenant.slug;
-    const actionKey = `request-invoice-ai-approval:${suggestionRunId}`;
-    setActionLoading(actionKey);
-    setInvoicingActionMessage(null);
-    setInvoicingError(null);
-
-    try {
-      const record = await requestTenantAiSuggestionRunApproval(
-        token,
-        tenantSlug,
-        'invoice-document-assistant',
-        suggestionRunId,
-        {
-          rationale:
-            'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
-        },
-      );
-
-      syncAiAgentApprovalRequestPending('invoice-document-assistant', record);
-
-      await refreshAiAgentActionSurfaces('invoice-document-assistant');
-
-      setInvoicingActionMessage(
-        `Solicitud de aprobacion registrada bajo ${record.policyKey}.`,
-      );
-    } catch (error) {
-      setInvoicingError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo pedir la aprobación del handoff de AI para invoicing.',
-      );
-    } finally {
-      setActionLoading(null);
-    }
+    await handleRequestAiSuggestionRunApprovalForAgent(
+      'invoice-document-assistant',
+      suggestionRunId,
+      'No se pudo pedir la aprobación del handoff de AI para invoicing.',
+    );
   }
 
   async function handleReviewInvoiceAiApprovalRequest(
     requestId: string,
     status: 'approved' | 'rejected',
   ) {
-    if (!token || !currentTenancy || !canReadInvoicingReports) {
-      return;
-    }
-
-    const tenantSlug = currentTenancy.tenant.slug;
-    const actionKey = `review-invoice-ai-approval:${requestId}`;
-    setActionLoading(actionKey);
-    setInvoicingActionMessage(null);
-    setInvoicingError(null);
-
-    try {
-      const record = await reviewTenantAiApprovalRequest(
-        token,
-        tenantSlug,
-        'invoice-document-assistant',
-        requestId,
-        {
-          status,
-          reviewNote:
-            status === 'approved'
-              ? 'Aprobado desde la consola transversal de AI para invoicing.'
-              : 'Rechazado desde la consola transversal de AI para invoicing.',
-        },
-      );
-
-      syncAiAgentApprovalRequestReviewed('invoice-document-assistant', record);
-
-      await refreshAiAgentActionSurfaces('invoice-document-assistant');
-
-      setInvoicingActionMessage(
-        status === 'approved'
-          ? 'Solicitud de aprobación de invoicing marcada como aprobada.'
-          : 'Solicitud de aprobación de invoicing marcada como rechazada.',
-      );
-    } catch (error) {
-      setInvoicingError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo revisar la aprobación del handoff de AI para invoicing.',
-      );
-    } finally {
-      setActionLoading(null);
-    }
+    await handleReviewAiApprovalRequestForAgent(
+      'invoice-document-assistant',
+      requestId,
+      status,
+      'No se pudo revisar la aprobación del handoff de AI para invoicing.',
+    );
   }
 
   async function handleOpenGrowthAiSuggestionRunDetail(suggestionRunId: string) {
-    if (!token || !currentTenancy || !canReadGrowthConversations) {
-      return;
-    }
-
-    const tenantSlug = currentTenancy.tenant.slug;
-    const actionKey = `load-ai-run-detail:${suggestionRunId}`;
-    setGrowthActionLoading(actionKey);
-    setGrowthActionMessage(null);
-    setGrowthError(null);
-
-    try {
-      const detail = await fetchTenantAiSuggestionRunDetail(
-        token,
-        tenantSlug,
-        'growth-assist-coach',
-        suggestionRunId,
-      );
-
-      startTransition(() => {
-        setSelectedGrowthAiSuggestionRunDetail(detail);
-      });
-    } catch (error) {
-      setGrowthError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo cargar el detalle del handoff de AI.',
-      );
-    } finally {
-      setGrowthActionLoading(null);
-    }
+    await handleOpenAiSuggestionRunDetailForAgent(
+      'growth-assist-coach',
+      suggestionRunId,
+      'No se pudo cargar el detalle del handoff de AI.',
+    );
   }
 
   async function handleOpenInvoiceAiSuggestionRunDetail(suggestionRunId: string) {
-    if (!token || !currentTenancy || !canReadInvoicingReports) {
-      return;
-    }
-
-    const tenantSlug = currentTenancy.tenant.slug;
-    const actionKey = `load-invoice-ai-run-detail:${suggestionRunId}`;
-    setActionLoading(actionKey);
-    setInvoicingActionMessage(null);
-    setInvoicingError(null);
-
-    try {
-      const detail = await fetchTenantAiSuggestionRunDetail(
-        token,
-        tenantSlug,
-        'invoice-document-assistant',
-        suggestionRunId,
-      );
-
-      startTransition(() => {
-        setSelectedInvoiceAiSuggestionRunDetail(detail);
-      });
-    } catch (error) {
-      setInvoicingError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo cargar el detalle del handoff de AI para invoicing.',
-      );
-    } finally {
-      setActionLoading(null);
-    }
+    await handleOpenAiSuggestionRunDetailForAgent(
+      'invoice-document-assistant',
+      suggestionRunId,
+      'No se pudo cargar el detalle del handoff de AI para invoicing.',
+    );
   }
 
   async function handleOpenTenantAiWorkspaceSuggestionRunDetail(
@@ -12264,7 +12358,7 @@ export function App() {
                             <h3>Postura real de la capacidad AI</h3>
                           </div>
                         </div>
-                        {ecommerceLaunchAssistantAiEnvelope.toolAccess.map((entry) => (
+                        {activeEcommerceAiToolAccess.map((entry) => (
                           <div
                             className={styles.invoiceItemCard}
                             key={`ecommerce-tool:${entry.tool.key}`}
@@ -21676,12 +21770,12 @@ export function App() {
                               <h3>Historial auditable reciente</h3>
                             </div>
                           </div>
-                          {invoiceAssistantAiSuggestionRuns.length === 0 ? (
+                          {activeInvoiceAiSuggestionRuns.length === 0 ? (
                             <div className={styles.emptyState}>
                               <p>Todavia no hay handoffs auditables para este agente.</p>
                             </div>
                           ) : (
-                            invoiceAssistantAiSuggestionRuns.slice(0, 3).map((entry) => {
+                            activeInvoiceAiSuggestionRuns.slice(0, 3).map((entry) => {
                               const hasPendingApproval =
                                 entry.approvalSummary.status === 'pending';
                               const hasApprovedApproval =
@@ -21837,12 +21931,12 @@ export function App() {
                               <h3>Guardrails vigentes</h3>
                             </div>
                           </div>
-                          {invoiceAssistantAiApprovalPolicies.length === 0 ? (
+                          {activeInvoiceAiApprovalPolicies.length === 0 ? (
                             <div className={styles.emptyState}>
                               <p>Este agente todavía no expone políticas de revisión.</p>
                             </div>
                           ) : (
-                            invoiceAssistantAiApprovalPolicies.map((entry) => (
+                            activeInvoiceAiApprovalPolicies.map((entry) => (
                               <div className={styles.invoiceItemCard} key={entry.policyKey}>
                                 <div className={styles.invoiceCardHeader}>
                                   <strong>{entry.title}</strong>

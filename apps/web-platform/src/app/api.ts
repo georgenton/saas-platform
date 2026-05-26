@@ -29,6 +29,7 @@ import {
   AiMemoryWorkspaceResponse,
   AiMemoryRecordDetailResponse,
   AiMemoryRecordResponse,
+  AiOperatingModelResponse,
   AiRetrievalWorkspaceResponse,
   AiOperationsSummaryResponse,
   AiApprovalPolicyResponse,
@@ -1256,6 +1257,15 @@ export async function fetchAiToolRegistry(
   token: string,
 ): Promise<AiToolRegistryResponse[]> {
   return request<AiToolRegistryResponse[]>('/ai/tools', {
+    method: 'GET',
+    token,
+  });
+}
+
+export async function fetchAiOperatingModel(
+  token: string,
+): Promise<AiOperatingModelResponse> {
+  return request<AiOperatingModelResponse>('/ai/model', {
     method: 'GET',
     token,
   });

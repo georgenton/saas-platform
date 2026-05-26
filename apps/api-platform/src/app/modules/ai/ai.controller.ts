@@ -28,6 +28,7 @@ import {
   AiToolNotFoundError,
   CreateTenantAiGuardedExecutionEventUseCase,
   CreateTenantAiMemoryRecordUseCase,
+  GetAiOperatingModelManifestUseCase,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
@@ -245,6 +246,10 @@ import {
   toAiOperationsSummaryResponseDto,
 } from './dto/ai-operations-summary.response';
 import {
+  AiOperatingModelResponseDto,
+  toAiOperatingModelResponseDto,
+} from './dto/ai-operating-model.response';
+import {
   AiPolicySimulationWorkspaceResponseDto,
   toAiPolicySimulationWorkspaceResponseDto,
 } from './dto/ai-policy-simulation-workspace.response';
@@ -269,6 +274,7 @@ export class AiController {
 
   constructor(
     private readonly listAiAgentCatalogUseCase: ListAiAgentCatalogUseCase,
+    private readonly getAiOperatingModelManifestUseCase: GetAiOperatingModelManifestUseCase,
     private readonly listAiApprovalPoliciesUseCase: ListAiApprovalPoliciesUseCase,
     private readonly listAiPromptRegistryUseCase: ListAiPromptRegistryUseCase,
     private readonly listAiToolRegistryUseCase: ListAiToolRegistryUseCase,
@@ -305,6 +311,14 @@ export class AiController {
     return this.listAiAgentCatalogUseCase
       .execute()
       .map((entry) => toAiAgentCatalogResponseDto(entry));
+  }
+
+  @Get('model')
+  @UseGuards(JwtAuthenticationGuard)
+  getAiOperatingModel(): AiOperatingModelResponseDto {
+    return toAiOperatingModelResponseDto(
+      this.getAiOperatingModelManifestUseCase.execute(),
+    );
   }
 
   @Get('approval-policies')
@@ -7358,10 +7372,10 @@ export class AiController {
   private getAccessibleReadyAiWorkspaceAgentKeys(
     permissionKeys: string[] | undefined,
   ): string[] {
-    return this.listAiAgentCatalogUseCase
+    return this.getAiOperatingModelManifestUseCase
       .execute()
-      .filter((entry) => entry.availability === 'ready')
-      .map((entry) => entry.key)
+      .agents.filter((entry) => entry.agent.availability === 'ready')
+      .map((entry) => entry.agent.key)
       .filter((agentKey) => this.hasAgentPermission(agentKey, permissionKeys));
   }
 
@@ -7373,14 +7387,7 @@ export class AiController {
   }
 
   private getRequiredPermissionForAgent(agentKey: string): string {
-    switch (agentKey) {
-      case 'invoice-document-assistant':
-        return INVOICING_PERMISSIONS.REPORTS_READ;
-      case 'ecommerce-launch-assistant':
-        return TENANT_PERMISSIONS.ENTITLEMENTS_READ;
-      default:
-        return GROWTH_PERMISSIONS.CONVERSATIONS_READ;
-    }
+    return this.getOperatingModelAgentEntry(agentKey).requiredPermissionKey;
   }
 
   private getAccessibleDomainKeys(
@@ -7398,15 +7405,7 @@ export class AiController {
   private getAgentDomainKey(
     agentKey: string,
   ): 'growth' | 'invoicing' | 'ecommerce' {
-    const agent = this.listAiAgentCatalogUseCase
-      .execute()
-      .find((entry) => entry.key === agentKey);
-
-    if (!agent) {
-      throw new NotFoundException(`AI agent ${agentKey} was not found.`);
-    }
-
-    return agent.domainKey;
+    return this.getOperatingModelAgentEntry(agentKey).agent.domainKey;
   }
 
   private isVisibleAiMemoryRecord(
@@ -7439,15 +7438,19 @@ export class AiController {
   }
 
   private getGuardedExecutionCandidateToolKey(agentKey: string): string | null {
-    return (
-      this.getAiAgentToolAccessByAgentKeyUseCase
-        .execute(agentKey)
-        .find(
-          (entry) =>
-            entry.tool.executionBoundary.executionMode ===
-            'guarded_execution_planned',
-        )?.tool.key ?? null
-    );
+    return this.getOperatingModelAgentEntry(agentKey).guardedExecutionCandidateToolKey;
+  }
+
+  private getOperatingModelAgentEntry(agentKey: string) {
+    const entry = this.getAiOperatingModelManifestUseCase
+      .execute()
+      .agents.find((candidate) => candidate.agent.key === agentKey);
+
+    if (!entry) {
+      throw new NotFoundException(`AI agent ${agentKey} was not found.`);
+    }
+
+    return entry;
   }
 
   private async assertApprovalRequestHasNotExecutedGuardedLane(

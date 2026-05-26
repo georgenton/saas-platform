@@ -5692,6 +5692,149 @@ describe('API', () => {
       ]);
   });
 
+  it('GET /api/ai/model should return the versioned AI operating model manifest', async () => {
+    await request(httpServer)
+      .get('/api/ai/model')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        version: 'v1',
+        agents: [
+          {
+            agent: {
+              key: 'growth-assist-coach',
+              title: 'Growth Assist Coach',
+              summary:
+                'Turns deterministic Growth Assist signals into tenant-scoped commercial suggestions without executing actions automatically.',
+              domainKey: 'growth',
+              productKey: 'growth',
+              availability: 'ready',
+              defaultMode: 'suggestion',
+              supportedSurfaceKeys: ['growth_assist_daily_agenda'],
+            },
+            requiredPermissionKey: GROWTH_PERMISSIONS.CONVERSATIONS_READ,
+            promptPack: {
+              key: 'growth-assist-coach-core',
+              version: 'v1',
+              mode: 'suggestion',
+              title: 'Growth Assist Coach Core',
+            },
+            approvalPolicyKeys: ['growth-assist-suggestion-review'],
+            toolAccess: [
+              {
+                toolKey: 'growth_assist_reply_drafting',
+                accessLevel: 'allowed',
+                availability: 'ready',
+                actionKind: 'draft',
+                executionMode: 'suggestion_only',
+                requiresApproval: false,
+              },
+              {
+                toolKey: 'growth_assist_follow_up_planning',
+                accessLevel: 'allowed',
+                availability: 'ready',
+                actionKind: 'propose',
+                executionMode: 'suggestion_only',
+                requiresApproval: false,
+              },
+              {
+                toolKey: 'growth_case_assignment_execution',
+                accessLevel: 'blocked',
+                availability: 'planned',
+                actionKind: 'execute',
+                executionMode: 'guarded_execution_planned',
+                requiresApproval: true,
+              },
+            ],
+            guardedExecutionCandidateToolKey: 'growth_case_assignment_execution',
+          },
+          {
+            agent: {
+              key: 'invoice-document-assistant',
+              title: 'Invoice Document Assistant',
+              summary:
+                'Turns deterministic invoicing drafting and readiness signals into tenant-scoped document guidance without executing fiscal actions automatically.',
+              domainKey: 'invoicing',
+              productKey: 'invoicing',
+              availability: 'ready',
+              defaultMode: 'suggestion',
+              supportedSurfaceKeys: ['invoice_document_drafting'],
+            },
+            requiredPermissionKey: INVOICING_PERMISSIONS.REPORTS_READ,
+            promptPack: {
+              key: 'invoice-document-assistant-core',
+              version: 'v1',
+              mode: 'suggestion',
+              title: 'Invoice Document Assistant Core',
+            },
+            approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
+            toolAccess: [
+              {
+                toolKey: 'invoice_document_drafting',
+                accessLevel: 'approval_required',
+                availability: 'ready',
+                actionKind: 'draft',
+                executionMode: 'suggestion_only',
+                requiresApproval: false,
+              },
+              {
+                toolKey: 'invoice_payment_collection_execution',
+                accessLevel: 'blocked',
+                availability: 'planned',
+                actionKind: 'execute',
+                executionMode: 'guarded_execution_planned',
+                requiresApproval: true,
+              },
+            ],
+            guardedExecutionCandidateToolKey:
+              'invoice_payment_collection_execution',
+          },
+          {
+            agent: {
+              key: 'ecommerce-launch-assistant',
+              title: 'Ecommerce Launch Assistant',
+              summary:
+                'Turns deterministic ecommerce launch signals into tenant-scoped launch suggestions without publishing storefront work automatically.',
+              domainKey: 'ecommerce',
+              productKey: 'ecommerce',
+              availability: 'ready',
+              defaultMode: 'suggestion',
+              supportedSurfaceKeys: ['ecommerce_launch_workspace'],
+            },
+            requiredPermissionKey: TENANT_PERMISSIONS.ENTITLEMENTS_READ,
+            promptPack: {
+              key: 'ecommerce-launch-assistant-core',
+              version: 'v1',
+              mode: 'suggestion',
+              title: 'Ecommerce Launch Assistant Core',
+            },
+            approvalPolicyKeys: ['ecommerce-launch-assistant-suggestion-review'],
+            toolAccess: [
+              {
+                toolKey: 'ecommerce_launch_briefing',
+                accessLevel: 'approval_required',
+                availability: 'ready',
+                actionKind: 'propose',
+                executionMode: 'suggestion_only',
+                requiresApproval: false,
+              },
+            ],
+            guardedExecutionCandidateToolKey: null,
+          },
+        ],
+        counts: {
+          totalAgents: 3,
+          readyAgents: 3,
+          plannedAgents: 0,
+          agentsWithApprovalPolicies: 3,
+          agentsWithGuardedExecutionCandidate: 2,
+          totalToolAccessEntries: 6,
+          approvalRequiredToolAccessEntries: 2,
+          blockedToolAccessEntries: 2,
+        },
+      });
+  });
+
   it('GET /api/ai/prompts should return the transversal prompt registry', async () => {
     await request(httpServer)
       .get('/api/ai/prompts')

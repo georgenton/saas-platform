@@ -2,9 +2,13 @@ import {
   AiApprovalPolicyEntry,
   AiAgentToolAccessEntry,
   AiAgentCatalogEntry,
+  AiOperatingModelAgentEntry,
+  AiOperatingModelManifest,
   AiPromptRegistryEntry,
   AiToolDefinition,
 } from '@saas-platform/ai-domain';
+
+export const AI_OPERATING_MODEL_VERSION = 'v1';
 
 export const AI_AGENT_CATALOG: AiAgentCatalogEntry[] = [
   {
@@ -42,10 +46,25 @@ export const AI_AGENT_CATALOG: AiAgentCatalogEntry[] = [
   },
 ];
 
+const AI_AGENT_REQUIRED_PERMISSION_KEYS: Record<string, string> = {
+  'growth-assist-coach': 'growth.conversations.read',
+  'invoice-document-assistant': 'invoicing.reports.read',
+  'ecommerce-launch-assistant': 'tenant.entitlements.read',
+};
+
+function cloneAiAgentCatalogEntry(entry: AiAgentCatalogEntry): AiAgentCatalogEntry {
+  return {
+    ...entry,
+    supportedSurfaceKeys: [...entry.supportedSurfaceKeys],
+  };
+}
+
 export function findAiAgentByKey(
   agentKey: string,
 ): AiAgentCatalogEntry | null {
-  return AI_AGENT_CATALOG.find((entry) => entry.key === agentKey) ?? null;
+  const entry = AI_AGENT_CATALOG.find((candidate) => candidate.key === agentKey);
+
+  return entry ? cloneAiAgentCatalogEntry(entry) : null;
 }
 
 export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
@@ -571,4 +590,105 @@ export function listAiApprovalPoliciesByAgentKey(
   return AI_APPROVAL_POLICY_REGISTRY.filter(
     (entry) => entry.agentKey === agentKey,
   ).map((entry) => ({ ...entry }));
+}
+
+export function getAiAgentRequiredPermissionKey(agentKey: string): string | null {
+  return AI_AGENT_REQUIRED_PERMISSION_KEYS[agentKey] ?? null;
+}
+
+export function getAiGuardedExecutionCandidateToolKey(
+  agentKey: string,
+): string | null {
+  return (
+    listAiAgentToolAccessByAgentKey(agentKey).find(
+      (entry) =>
+        entry.tool.executionBoundary.executionMode ===
+        'guarded_execution_planned',
+    )?.tool.key ?? null
+  );
+}
+
+export function listAiOperatingModelManifest(): AiOperatingModelManifest {
+  const agents: AiOperatingModelAgentEntry[] = AI_AGENT_CATALOG.map((agent) => {
+    const promptPack = findAiPromptRegistryEntryByAgentKey(agent.key);
+    const requiredPermissionKey = getAiAgentRequiredPermissionKey(agent.key);
+
+    if (!promptPack || !requiredPermissionKey) {
+      throw new Error(
+        `AI operating model is incomplete for agent ${agent.key}.`,
+      );
+    }
+
+    const toolAccess = listAiAgentToolAccessByAgentKey(agent.key).map((entry) => ({
+      toolKey: entry.tool.key,
+      accessLevel: entry.accessLevel,
+      availability: entry.tool.availability,
+      actionKind: entry.tool.actionKind,
+      executionMode: entry.tool.executionBoundary.executionMode,
+      requiresApproval: entry.tool.requiresApproval,
+    }));
+
+    return {
+      agent: cloneAiAgentCatalogEntry(agent),
+      requiredPermissionKey,
+      promptPack: {
+        key: promptPack.key,
+        version: promptPack.version,
+        mode: promptPack.mode,
+        title: promptPack.title,
+      },
+      approvalPolicyKeys: listAiApprovalPoliciesByAgentKey(agent.key).map(
+        (entry) => entry.policyKey,
+      ),
+      toolAccess,
+      guardedExecutionCandidateToolKey:
+        getAiGuardedExecutionCandidateToolKey(agent.key),
+    };
+  });
+
+  const totalToolAccessEntries = agents.reduce(
+    (total, agent) => total + agent.toolAccess.length,
+    0,
+  );
+  const approvalRequiredToolAccessEntries = agents.reduce(
+    (total, agent) =>
+      total +
+      agent.toolAccess.filter((entry) => entry.accessLevel === 'approval_required')
+        .length,
+    0,
+  );
+  const blockedToolAccessEntries = agents.reduce(
+    (total, agent) =>
+      total + agent.toolAccess.filter((entry) => entry.accessLevel === 'blocked').length,
+    0,
+  );
+
+  return {
+    version: AI_OPERATING_MODEL_VERSION,
+    agents,
+    counts: {
+      totalAgents: agents.length,
+      readyAgents: agents.filter((entry) => entry.agent.availability === 'ready').length,
+      plannedAgents: agents.filter((entry) => entry.agent.availability === 'planned').length,
+      agentsWithApprovalPolicies: agents.filter(
+        (entry) => entry.approvalPolicyKeys.length > 0,
+      ).length,
+      agentsWithGuardedExecutionCandidate: agents.filter(
+        (entry) => entry.guardedExecutionCandidateToolKey !== null,
+      ).length,
+      totalToolAccessEntries,
+      approvalRequiredToolAccessEntries,
+      blockedToolAccessEntries,
+    },
+  };
+}
+
+export function findAiOperatingModelAgentEntryByKey(
+  agentKey: string,
+): AiOperatingModelAgentEntry | null {
+  return (
+    listAiOperatingModelManifest().agents.find(
+      (entry) => entry.agent.key === agentKey,
+    ) ?? null
+  );
 }

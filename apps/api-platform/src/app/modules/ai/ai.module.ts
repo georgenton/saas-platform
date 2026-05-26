@@ -14,6 +14,7 @@ import {
   CreateTenantAiMemoryRecordUseCase,
   GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
+  GetAiOperatingModelManifestUseCase,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase,
   GetTenantEcommerceLaunchWorkspaceUseCase,
@@ -120,6 +121,10 @@ import { AiController } from './ai.controller';
     {
       provide: GetAiAgentToolAccessByAgentKeyUseCase,
       useFactory: () => new GetAiAgentToolAccessByAgentKeyUseCase(),
+    },
+    {
+      provide: GetAiOperatingModelManifestUseCase,
+      useFactory: () => new GetAiOperatingModelManifestUseCase(),
     },
     {
       provide: ListTenantEnabledProductsUseCase,

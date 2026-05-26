@@ -42,6 +42,7 @@ import {
   fetchAiToolRegistry,
   fetchTenantAiApprovalRequests,
   fetchTenantAiApprovalWorkspaceSummary,
+  fetchTenantAiEcommerceLaunchWorkspace,
   fetchTenantAiSuggestionEnvelope,
   fetchTenantAiSuggestionRuns,
   acceptInvitation,
@@ -145,6 +146,7 @@ import {
   AiGuardedExecutionWorkspaceResponse,
   AiGuardedExecutionPilotWorkspaceResponse,
   AiEvaluationWorkspaceResponse,
+  AiEcommerceLaunchWorkspaceResponse,
   AiGovernanceWorkspaceResponse,
   AiHealthWorkspaceResponse,
   AiMemoryRecordDetailResponse,
@@ -1762,6 +1764,18 @@ export function App() {
   );
   const [growthAssistAiEnvelope, setGrowthAssistAiEnvelope] =
     useState<AiSuggestionEnvelopeResponse | null>(null);
+  const [tenantAiEcommerceLaunchWorkspace, setTenantAiEcommerceLaunchWorkspace] =
+    useState<AiEcommerceLaunchWorkspaceResponse | null>(null);
+  const [tenantAiEcommerceLaunchWorkspaceLoading, setTenantAiEcommerceLaunchWorkspaceLoading] =
+    useState(false);
+  const [ecommerceLaunchAssistantAiEnvelope, setEcommerceLaunchAssistantAiEnvelope] =
+    useState<AiSuggestionEnvelopeResponse | null>(null);
+  const [ecommerceLaunchError, setEcommerceLaunchError] = useState<string | null>(
+    null,
+  );
+  const [ecommerceLaunchActionMessage, setEcommerceLaunchActionMessage] = useState<
+    string | null
+  >(null);
   const [growthAssistAiToolAccess, setGrowthAssistAiToolAccess] = useState<
     AiAgentToolAccessResponse[]
   >([]);
@@ -1996,7 +2010,12 @@ export function App() {
     AiSuggestionRunResponse[]
   >([]);
   const [tenantAiSuggestionWorkspaceAgentFilter, setTenantAiSuggestionWorkspaceAgentFilter] =
-    useState<'all' | 'growth-assist-coach' | 'invoice-document-assistant'>('all');
+    useState<
+      | 'all'
+      | 'growth-assist-coach'
+      | 'invoice-document-assistant'
+      | 'ecommerce-launch-assistant'
+    >('all');
   const [tenantAiSuggestionWorkspaceLoading, setTenantAiSuggestionWorkspaceLoading] =
     useState(false);
   const [selectedTenantAiSuggestionWorkspaceDetail, setSelectedTenantAiSuggestionWorkspaceDetail] =
@@ -2258,6 +2277,9 @@ export function App() {
   );
   const canReadInvoicingReports = Boolean(
     currentTenancy?.permissionKeys.includes('invoicing.reports.read'),
+  );
+  const canReadTenantEntitlements = Boolean(
+    currentTenancy?.permissionKeys.includes('tenant.entitlements.read'),
   );
   const canReadGrowthConversations = Boolean(
     currentTenancy?.permissionKeys.includes('growth.conversations.read'),
@@ -3621,10 +3643,16 @@ export function App() {
       ...aiAgentCatalog,
       growthAssistAiEnvelope?.agent,
       invoiceAssistantAiEnvelope?.agent,
+      ecommerceLaunchAssistantAiEnvelope?.agent,
     ].filter((entry): entry is AiAgentCatalogResponse => entry !== null && entry !== undefined);
 
     return new Map(entries.map((entry) => [entry.key, entry] as const));
-  }, [aiAgentCatalog, growthAssistAiEnvelope, invoiceAssistantAiEnvelope]);
+  }, [
+    aiAgentCatalog,
+    ecommerceLaunchAssistantAiEnvelope,
+    growthAssistAiEnvelope,
+    invoiceAssistantAiEnvelope,
+  ]);
   const activeGrowthAiAgent = useMemo(
     () =>
       growthAssistAiEnvelope?.agent ??
@@ -3633,7 +3661,7 @@ export function App() {
     [aiAgentCatalog, growthAssistAiEnvelope],
   );
   const plannedAiAgents = useMemo(
-    () => aiAgentCatalog.filter((entry) => entry.key !== 'growth-assist-coach'),
+    () => aiAgentCatalog.filter((entry) => entry.availability === 'planned'),
     [aiAgentCatalog],
   );
   const activeGrowthAiPromptPack = useMemo(
@@ -3704,6 +3732,42 @@ export function App() {
     () => invoiceAssistantAiEnvelope?.agent ?? null,
     [invoiceAssistantAiEnvelope],
   );
+  const activeEcommerceAiAgent = useMemo(
+    () =>
+      ecommerceLaunchAssistantAiEnvelope?.agent ??
+      aiAgentCatalog.find((entry) => entry.key === 'ecommerce-launch-assistant') ??
+      null,
+    [aiAgentCatalog, ecommerceLaunchAssistantAiEnvelope],
+  );
+  const activeEcommerceAiPromptPack = useMemo(
+    () =>
+      ecommerceLaunchAssistantAiEnvelope?.promptPack ??
+      aiPromptRegistry.find(
+        (entry) => entry.agentKey === 'ecommerce-launch-assistant',
+      ) ??
+      null,
+    [aiPromptRegistry, ecommerceLaunchAssistantAiEnvelope],
+  );
+  const activeEcommerceAiApprovalPolicies = useMemo(
+    () =>
+      aiApprovalPolicyRegistry.filter(
+        (entry) => entry.agentKey === 'ecommerce-launch-assistant',
+      ),
+    [aiApprovalPolicyRegistry],
+  );
+  const ecommerceLaunchAssistantSuggestionRuns = useMemo(
+    () =>
+      tenantAiSuggestionWorkspace.filter(
+        (entry) => entry.agentKey === 'ecommerce-launch-assistant',
+      ),
+    [tenantAiSuggestionWorkspace],
+  );
+  const latestApprovedEcommerceAiApprovalRequest = useMemo(
+    () =>
+      latestApprovedAiApprovalRequestByAgent.get('ecommerce-launch-assistant') ??
+      null,
+    [latestApprovedAiApprovalRequestByAgent],
+  );
   const activeInvoiceAiToolAccess = useMemo(
     () =>
       invoiceAssistantAiEnvelope?.toolAccess ??
@@ -3726,7 +3790,8 @@ export function App() {
         visible:
           (tenantAiHandoffWorkspaceSummary?.counts.totalSuggestionRuns ?? 0) > 0 ||
           canReadGrowthConversations ||
-          canReadInvoicingReports,
+          canReadInvoicingReports ||
+          canReadTenantEntitlements,
       },
       {
         key: 'growth-assist-coach' as const,
@@ -3746,12 +3811,22 @@ export function App() {
           )?.totalSuggestionRuns ?? 0,
         visible: canReadInvoicingReports,
       },
+      {
+        key: 'ecommerce-launch-assistant' as const,
+        label: 'Ecommerce',
+        count:
+          tenantAiHandoffWorkspaceSummary?.agentBreakdown.find(
+            (entry) => entry.agentKey === 'ecommerce-launch-assistant',
+          )?.totalSuggestionRuns ?? 0,
+        visible: canReadTenantEntitlements,
+      },
     ];
 
     return options.filter((entry) => entry.visible);
   }, [
     canReadGrowthConversations,
     canReadInvoicingReports,
+    canReadTenantEntitlements,
     tenantAiHandoffWorkspaceSummary,
   ]);
   const tenantAiApprovalWorkspaceStatusOptions = useMemo(() => {
@@ -4404,6 +4479,66 @@ export function App() {
       cancelled = true;
     };
   }, [currentTenancy, invoiceAiApprovalStatusFilter, invoicingEnabled, token]);
+
+  useEffect(() => {
+    if (!token || !currentTenancy || !canReadTenantEntitlements) {
+      setTenantAiEcommerceLaunchWorkspace(null);
+      setEcommerceLaunchAssistantAiEnvelope(null);
+      setTenantAiEcommerceLaunchWorkspaceLoading(false);
+      setEcommerceLaunchError(null);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    let cancelled = false;
+
+    async function loadTenantAiEcommerceLaunchWorkspace() {
+      setTenantAiEcommerceLaunchWorkspaceLoading(true);
+      setEcommerceLaunchError(null);
+
+      try {
+        const [workspace, envelope] = await Promise.all([
+          fetchTenantAiEcommerceLaunchWorkspace(token, tenantSlug),
+          fetchTenantAiSuggestionEnvelope(
+            token,
+            tenantSlug,
+            'ecommerce-launch-assistant',
+          ),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setTenantAiEcommerceLaunchWorkspace(workspace);
+          setEcommerceLaunchAssistantAiEnvelope(envelope);
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setTenantAiEcommerceLaunchWorkspace(null);
+        setEcommerceLaunchAssistantAiEnvelope(null);
+        setEcommerceLaunchError(
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar la superficie AI de ecommerce launch.',
+        );
+      } finally {
+        if (!cancelled) {
+          setTenantAiEcommerceLaunchWorkspaceLoading(false);
+        }
+      }
+    }
+
+    void loadTenantAiEcommerceLaunchWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canReadTenantEntitlements, currentTenancy, token]);
 
   useEffect(() => {
     if (!token || growthAccessibleTenancies.length === 0) {
@@ -8356,6 +8491,45 @@ export function App() {
     await refreshTenantAiGuardedExecutionEventLogWorkspace();
   }
 
+  async function refreshTenantAiEcommerceLaunchWorkspace() {
+    if (!token || !currentTenancy || !canReadTenantEntitlements) {
+      setTenantAiEcommerceLaunchWorkspace(null);
+      setEcommerceLaunchAssistantAiEnvelope(null);
+      setTenantAiEcommerceLaunchWorkspaceLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantAiEcommerceLaunchWorkspaceLoading(true);
+    setEcommerceLaunchError(null);
+
+    try {
+      const [workspace, envelope] = await Promise.all([
+        fetchTenantAiEcommerceLaunchWorkspace(token, tenantSlug),
+        fetchTenantAiSuggestionEnvelope(
+          token,
+          tenantSlug,
+          'ecommerce-launch-assistant',
+        ),
+      ]);
+
+      startTransition(() => {
+        setTenantAiEcommerceLaunchWorkspace(workspace);
+        setEcommerceLaunchAssistantAiEnvelope(envelope);
+      });
+    } catch (error) {
+      setTenantAiEcommerceLaunchWorkspace(null);
+      setEcommerceLaunchAssistantAiEnvelope(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar la superficie AI de ecommerce launch.',
+      );
+    } finally {
+      setTenantAiEcommerceLaunchWorkspaceLoading(false);
+    }
+  }
+
   async function refreshInvoicingWorkspace(options?: {
     selectInvoiceId?: string | null;
   }) {
@@ -9220,6 +9394,48 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo preparar el handoff auditable de AI para invoicing.',
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handlePrepareEcommerceAiSuggestionRun() {
+    if (!token || !currentTenancy || !canReadTenantEntitlements) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setActionLoading('prepare-ecommerce-ai-suggestion-run');
+    setEcommerceLaunchActionMessage(null);
+    setEcommerceLaunchError(null);
+
+    try {
+      const record = await prepareTenantAiSuggestionRun(
+        token,
+        tenantSlug,
+        'ecommerce-launch-assistant',
+      );
+
+      startTransition(() => {
+        setTenantAiSuggestionWorkspace((current) =>
+          prependOrReplaceSuggestionRun(current, record),
+        );
+      });
+
+      await Promise.all([
+        refreshTenantAiOperationsConsole(),
+        refreshTenantAiEcommerceLaunchWorkspace(),
+      ]);
+
+      setEcommerceLaunchActionMessage(
+        `Handoff auditable preparado con ${record.promptPackKey}@${record.promptPackVersion}.`,
+      );
+    } catch (error) {
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo preparar el handoff AI de ecommerce launch.',
       );
     } finally {
       setActionLoading(null);
@@ -11516,6 +11732,415 @@ export function App() {
               </>
             )}
           </article>
+        </section>
+
+        <section className={styles.adminPanel}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.label}>AI ecommerce launch</span>
+              <h2>Surface determinística para preparar el primer launch</h2>
+            </div>
+            {session && currentTenancy && canReadTenantEntitlements ? (
+              <button
+                className={styles.ghostButton}
+                disabled={tenantAiEcommerceLaunchWorkspaceLoading}
+                onClick={() => void refreshTenantAiEcommerceLaunchWorkspace()}
+                type="button"
+              >
+                {tenantAiEcommerceLaunchWorkspaceLoading
+                  ? 'Refrescando ecommerce AI...'
+                  : 'Refrescar ecommerce AI'}
+              </button>
+            ) : null}
+          </div>
+
+          {!session ? (
+            <div className={styles.emptyState}>
+              <p>Primero carguemos la sesión para abrir el workspace AI de ecommerce.</p>
+            </div>
+          ) : !currentTenancy ? (
+            <div className={styles.emptyState}>
+              <p>Selecciona un tenant actual para revisar el launch workspace de ecommerce.</p>
+            </div>
+          ) : !canReadTenantEntitlements ? (
+            <div className={styles.emptyState}>
+              <p>
+                Este tenant no expone <code>tenant.entitlements.read</code>, así que
+                todavía no podemos abrir la superficie AI de ecommerce.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.stack}>
+              {ecommerceLaunchError ? (
+                <p className={styles.errorBanner}>{ecommerceLaunchError}</p>
+              ) : null}
+              {ecommerceLaunchActionMessage ? (
+                <p className={styles.successBanner}>{ecommerceLaunchActionMessage}</p>
+              ) : null}
+
+              <div className={styles.twoColumn}>
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Launch workspace</span>
+                      <h3>Base real para catálogo, landing y campaña</h3>
+                    </div>
+                    <span
+                      className={`${styles.statusPill} ${operationalStatusTone(
+                        tenantAiEcommerceLaunchWorkspace?.summary.tone ?? 'healthy',
+                      )}`}
+                    >
+                      {tenantAiEcommerceLaunchWorkspace
+                        ? operationalStatusLabel(
+                            tenantAiEcommerceLaunchWorkspace.summary.tone,
+                          )
+                        : 'sin workspace'}
+                    </span>
+                  </div>
+
+                  {tenantAiEcommerceLaunchWorkspace ? (
+                    <div className={styles.stack}>
+                      <p>{tenantAiEcommerceLaunchWorkspace.summary.headline}</p>
+                      <small>{tenantAiEcommerceLaunchWorkspace.summary.detail}</small>
+                      <small>
+                        Focus sugerido:{' '}
+                        {tenantAiEcommerceLaunchWorkspace.summary.suggestedFocus}
+                      </small>
+
+                      <div className={styles.invoiceKpiGrid}>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Readiness</span>
+                          <strong>
+                            {humanizeKey(
+                              tenantAiEcommerceLaunchWorkspace.summary
+                                .launchReadiness,
+                            )}
+                          </strong>
+                          <small>Estado base del launch actual.</small>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Producto</span>
+                          <strong>
+                            {tenantAiEcommerceLaunchWorkspace.moduleSnapshot
+                              .productEnabled
+                              ? 'Activo'
+                              : 'Inactivo'}
+                          </strong>
+                          <small>Si ecommerce ya está habilitado para el tenant.</small>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Módulos activos</span>
+                          <strong>
+                            {
+                              tenantAiEcommerceLaunchWorkspace.moduleSnapshot
+                                .activeModuleCount
+                            }
+                          </strong>
+                          <small>Base disponible para el primer brief.</small>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Inactivos</span>
+                          <strong>
+                            {
+                              tenantAiEcommerceLaunchWorkspace.moduleSnapshot
+                                .inactiveModuleKeys.length
+                            }
+                          </strong>
+                          <small>Piezas que conviene dejar fuera del scope inicial.</small>
+                        </div>
+                      </div>
+
+                      <div className={styles.stack}>
+                        <div className={styles.sectionHeading}>
+                          <div>
+                            <span className={styles.label}>Checklist</span>
+                            <h3>Módulos y postura del launch</h3>
+                          </div>
+                        </div>
+                        {tenantAiEcommerceLaunchWorkspace.checklist.map((entry) => (
+                          <div
+                            className={styles.invoiceItemCard}
+                            key={`ecommerce-launch-check:${entry.key}`}
+                          >
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{entry.label}</strong>
+                              <span
+                                className={`${styles.statusPill} ${operationalStatusTone(
+                                  entry.status === 'blocked'
+                                    ? 'critical'
+                                    : entry.status === 'warning'
+                                      ? 'warning'
+                                      : 'healthy',
+                                )}`}
+                              >
+                                {entry.status}
+                              </span>
+                            </div>
+                            <small>
+                              {entry.isCore ? 'Core' : 'Optional'} · {entry.detail}
+                            </small>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className={styles.stack}>
+                        <div className={styles.sectionHeading}>
+                          <div>
+                            <span className={styles.label}>Launch lanes</span>
+                            <h3>Cómo bajar el brief sin inventar estructura</h3>
+                          </div>
+                        </div>
+                        {tenantAiEcommerceLaunchWorkspace.channelGuidance.map((entry) => (
+                          <div
+                            className={styles.assistCueCard}
+                            key={`ecommerce-launch-lane:${entry.key}`}
+                          >
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{entry.title}</strong>
+                              <span
+                                className={`${styles.statusPill} ${operationalStatusTone(
+                                  entry.status === 'blocked'
+                                    ? 'critical'
+                                    : entry.status === 'warning'
+                                      ? 'warning'
+                                      : 'healthy',
+                                )}`}
+                              >
+                                {entry.status}
+                              </span>
+                            </div>
+                            <small>{entry.detail}</small>
+                            <small>Uso recomendado: {entry.recommendedUse}</small>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : tenantAiEcommerceLaunchWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando workspace AI de ecommerce launch...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Todavía no hay suficiente contexto para hidratar el launch
+                        workspace de ecommerce.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.detailCard}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>AI Capability Platform</span>
+                      <h3>Ecommerce Launch Assistant</h3>
+                    </div>
+                    {activeEcommerceAiAgent ? (
+                      <span
+                        className={`${styles.statusPill} ${aiAgentAvailabilityTone(
+                          activeEcommerceAiAgent.availability,
+                        )}`}
+                      >
+                        {aiAgentAvailabilityLabel(activeEcommerceAiAgent.availability)}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {ecommerceLaunchAssistantAiEnvelope ? (
+                    <div className={styles.stack}>
+                      <p className={styles.muted}>
+                        <strong>{ecommerceLaunchAssistantAiEnvelope.agent.title}</strong>{' '}
+                        ya puede convertir esta superficie determinística en un brief
+                        reusable para catálogo, landing y campaña, pero sigue en modo
+                        sugerencia y no publica nada por sí solo.
+                      </p>
+                      <div className={styles.badgeRow}>
+                        <span className={styles.badge}>
+                          Surface {ecommerceLaunchAssistantAiEnvelope.surface.key}
+                        </span>
+                        <span className={styles.badge}>
+                          Prompt pack {ecommerceLaunchAssistantAiEnvelope.promptPack.key}
+                        </span>
+                        <span className={styles.badge}>
+                          Mode {ecommerceLaunchAssistantAiEnvelope.mode}
+                        </span>
+                      </div>
+                      {activeEcommerceAiPromptPack ? (
+                        <div className={styles.assistReplyBox}>
+                          <span className={styles.muted}>Objetivo del agente</span>
+                          <strong>{activeEcommerceAiPromptPack.objective}</strong>
+                        </div>
+                      ) : null}
+
+                      <div className={styles.assistChecklist}>
+                        {ecommerceLaunchAssistantAiEnvelope.promptPack.suggestedOutputs.map(
+                          (entry) => (
+                            <span
+                              className={styles.badge}
+                              key={`ecommerce-output:${entry.key}`}
+                            >
+                              {entry.label}
+                            </span>
+                          ),
+                        )}
+                      </div>
+
+                      <div className={styles.actionRow}>
+                        <button
+                          className={styles.primaryButton}
+                          disabled={
+                            !canReadTenantEntitlements ||
+                            actionLoading === 'prepare-ecommerce-ai-suggestion-run'
+                          }
+                          onClick={() => void handlePrepareEcommerceAiSuggestionRun()}
+                          type="button"
+                        >
+                          {actionLoading === 'prepare-ecommerce-ai-suggestion-run'
+                            ? 'Preparando...'
+                            : 'Preparar handoff AI'}
+                        </button>
+                      </div>
+
+                      <div className={styles.stack}>
+                        <div className={styles.sectionHeading}>
+                          <div>
+                            <span className={styles.label}>Tool access</span>
+                            <h3>Postura real de la capacidad AI</h3>
+                          </div>
+                        </div>
+                        {ecommerceLaunchAssistantAiEnvelope.toolAccess.map((entry) => (
+                          <div
+                            className={styles.invoiceItemCard}
+                            key={`ecommerce-tool:${entry.tool.key}`}
+                          >
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{entry.tool.title}</strong>
+                              <span className={styles.statusPill}>
+                                {entry.accessLevel}
+                              </span>
+                            </div>
+                            <small>{entry.rationale}</small>
+                            <small>
+                              Boundary {humanizeKey(
+                                entry.tool.executionBoundary.executionMode,
+                              )}
+                            </small>
+                          </div>
+                        ))}
+                      </div>
+
+                      {ecommerceLaunchAssistantAiEnvelope.retrieval ? (
+                        <div className={styles.stack}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Retrieved memory</span>
+                              <h3>Contexto persistido que ya entra al brief</h3>
+                            </div>
+                          </div>
+                          <small>
+                            {
+                              ecommerceLaunchAssistantAiEnvelope.retrieval
+                                .recordCount
+                            }{' '}
+                            record(s) visibles para este agente.
+                          </small>
+                          {ecommerceLaunchAssistantAiEnvelope.retrieval.notes.map(
+                            (note, index) => (
+                              <small key={`ecommerce-retrieval-note:${index}`}>
+                                {note}
+                              </small>
+                            ),
+                          )}
+                        </div>
+                      ) : null}
+
+                      {activeEcommerceAiApprovalPolicies.length > 0 ? (
+                        <div className={styles.stack}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Human gate</span>
+                              <h3>Cómo entra a revisión humana</h3>
+                            </div>
+                          </div>
+                          {activeEcommerceAiApprovalPolicies.map((entry) => (
+                            <div
+                              className={styles.assistCueCard}
+                              key={`ecommerce-policy:${entry.policyKey}`}
+                            >
+                              <div className={styles.invoiceCardHeader}>
+                                <strong>{entry.title}</strong>
+                                <span
+                                  className={`${styles.statusPill} ${styles.statusWarning}`}
+                                >
+                                  {entry.scope}
+                                </span>
+                              </div>
+                              <small>{entry.summary}</small>
+                              <small>{entry.reviewGuidance}</small>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {ecommerceLaunchAssistantSuggestionRuns.length > 0 ? (
+                        <div className={styles.stack}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Recent handoffs</span>
+                              <h3>Últimos briefs preparados</h3>
+                            </div>
+                          </div>
+                          {ecommerceLaunchAssistantSuggestionRuns
+                            .slice(0, 2)
+                            .map((entry) => (
+                              <div
+                                className={styles.timelineCard}
+                                key={`ecommerce-run:${entry.id}`}
+                              >
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>{entry.summary}</strong>
+                                  <span className={styles.statusPill}>
+                                    {humanizeKey(entry.approvalSummary.status)}
+                                  </span>
+                                </div>
+                                <small>
+                                  {formatDate(entry.createdAt)} · {entry.promptPackKey}@
+                                  {entry.promptPackVersion}
+                                </small>
+                              </div>
+                            ))}
+                        </div>
+                      ) : null}
+
+                      {latestApprovedEcommerceAiApprovalRequest ? (
+                        <div className={styles.assistCueCard}>
+                          <strong>Última decisión humana</strong>
+                          <small>{latestApprovedEcommerceAiApprovalRequest.summary}</small>
+                          <small>
+                            Revisada{' '}
+                            {formatDate(
+                              latestApprovedEcommerceAiApprovalRequest.reviewedAt,
+                            )}
+                          </small>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : tenantAiEcommerceLaunchWorkspaceLoading ? (
+                    <small className={styles.muted}>
+                      Cargando envelope AI de ecommerce launch...
+                    </small>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>
+                        Cuando el envelope AI esté disponible, aquí veremos el brief
+                        reusable del launch assistant.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         <section className={styles.adminPanel}>
@@ -19168,7 +19793,13 @@ export function App() {
                               ) ?? null
                           : null;
                       const canRollbackInvoiceLane =
-                        canExecuteInvoiceLane && matchingInvoiceRollbackPayment !== null;
+                        canReadInvoicingReports &&
+                        agent.agentKey === 'invoice-document-assistant' &&
+                        agent.candidateToolKey ===
+                          'invoice_payment_collection_execution' &&
+                        approvedRequest !== null &&
+                        selectedInvoiceForGuardedExecution !== null &&
+                        matchingInvoiceRollbackPayment !== null;
 
                       return (
                         <div
@@ -19354,6 +19985,22 @@ export function App() {
                                   Rollback payment
                                 </button>
                               </div>
+                              <small>
+                                {selectedInvoiceForGuardedExecution
+                                  ? `Factura ${selectedInvoiceForGuardedExecution.number} · estado ${humanizeKey(
+                                      selectedInvoiceForGuardedExecution.status,
+                                    )} · saldo ${formatMoney(
+                                      selectedInvoiceForGuardedExecution.settlement
+                                        .balanceDueInCents,
+                                      selectedInvoiceForGuardedExecution.currency,
+                                    )}.`
+                                  : 'Selecciona una factura elegible para abrir este lane.'}
+                              </small>
+                              <small>
+                                {matchingInvoiceRollbackPayment
+                                  ? `Pago reversible visible: ${matchingInvoiceRollbackPayment.id}.`
+                                  : 'Todavia no hay un pago reversible visible para esta factura y approval.'}
+                              </small>
                             </>
                           ) : null}
                           <div className={styles.stack}>

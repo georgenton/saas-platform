@@ -16,6 +16,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ProductNotFoundError,
+} from '@saas-platform/catalog-application';
+import {
   AiApprovalPolicyNotFoundError,
   AiApprovalRequestAlreadyPendingError,
   AiApprovalRequestAlreadyReviewedError,
@@ -28,6 +31,7 @@ import {
   GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
+  GetTenantEcommerceLaunchWorkspaceUseCase,
   GetAiToolRegistryEntryByKeyUseCase,
   GetTenantAiMemoryRecordDetailUseCase,
   GetTenantAiMemoryRetrievalUseCase,
@@ -66,7 +70,10 @@ import {
   PaymentNotFoundError,
   ReverseTenantInvoicePaymentUseCase,
 } from '@saas-platform/invoicing-application';
-import { TenantNotFoundError } from '@saas-platform/tenancy-application';
+import {
+  TENANT_PERMISSIONS,
+  TenantNotFoundError,
+} from '@saas-platform/tenancy-application';
 import { AuthenticatedUser } from '../auth/authenticated-user.decorator';
 import { AuthenticatedUserContext } from '../auth/authenticated-user-context';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
@@ -156,6 +163,10 @@ import {
   AiSuggestionRunDetailResponseDto,
   toAiSuggestionRunDetailResponseDto,
 } from './dto/ai-suggestion-run-detail.response';
+import {
+  AiEcommerceLaunchWorkspaceResponseDto,
+  toAiEcommerceLaunchWorkspaceResponseDto,
+} from './dto/ai-ecommerce-launch-workspace.response';
 import {
   AiEvaluationWorkspaceResponseDto,
   toAiEvaluationWorkspaceResponseDto,
@@ -271,6 +282,7 @@ export class AiController {
     private readonly getTenantAiMemoryRecordDetailUseCase: GetTenantAiMemoryRecordDetailUseCase,
     private readonly getTenantAiMemoryRetrievalUseCase: GetTenantAiMemoryRetrievalUseCase,
     private readonly updateTenantAiMemoryRecordUseCase: UpdateTenantAiMemoryRecordUseCase,
+    private readonly getTenantEcommerceLaunchWorkspaceUseCase: GetTenantEcommerceLaunchWorkspaceUseCase,
     private readonly getTenantAiSuggestionEnvelopeUseCase: GetTenantAiSuggestionEnvelopeUseCase,
     private readonly getTenantAiSuggestionRunDetailUseCase: GetTenantAiSuggestionRunDetailUseCase,
     private readonly listTenantAiApprovalRequestsUseCase: ListTenantAiApprovalRequestsUseCase,
@@ -1357,6 +1369,41 @@ export class AiController {
       },
       agents,
     });
+  }
+
+  @Get('tenants/:slug/ecommerce-launch-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiEcommerceLaunchWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiEcommerceLaunchWorkspaceResponseDto> {
+    if (!tenantAccess?.permissionKeys?.includes(TENANT_PERMISSIONS.ENTITLEMENTS_READ)) {
+      throw new ForbiddenException(
+        `Permission "${TENANT_PERMISSIONS.ENTITLEMENTS_READ}" is required for the tenant AI ecommerce launch workspace.`,
+      );
+    }
+
+    try {
+      const workspace =
+        await this.getTenantEcommerceLaunchWorkspaceUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toAiEcommerceLaunchWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof ProductNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
   }
 
   @Get('tenants/:slug/health-workspace')
@@ -6826,6 +6873,13 @@ export class AiController {
         );
       }
 
+      await this.assertApprovalRequestHasNotExecutedGuardedLane(
+        tenantSlug,
+        agentKey,
+        approvalRequest.id,
+        candidateToolKey,
+      );
+
       if (candidateToolKey === 'growth_case_assignment_execution') {
         if (!body.caseId) {
           throw new BadRequestException(
@@ -7319,9 +7373,14 @@ export class AiController {
   }
 
   private getRequiredPermissionForAgent(agentKey: string): string {
-    return agentKey === 'invoice-document-assistant'
-      ? INVOICING_PERMISSIONS.REPORTS_READ
-      : GROWTH_PERMISSIONS.CONVERSATIONS_READ;
+    switch (agentKey) {
+      case 'invoice-document-assistant':
+        return INVOICING_PERMISSIONS.REPORTS_READ;
+      case 'ecommerce-launch-assistant':
+        return TENANT_PERMISSIONS.ENTITLEMENTS_READ;
+      default:
+        return GROWTH_PERMISSIONS.CONVERSATIONS_READ;
+    }
   }
 
   private getAccessibleDomainKeys(
@@ -7389,6 +7448,35 @@ export class AiController {
             'guarded_execution_planned',
         )?.tool.key ?? null
     );
+  }
+
+  private async assertApprovalRequestHasNotExecutedGuardedLane(
+    tenantSlug: string,
+    agentKey: string,
+    approvalRequestId: string,
+    toolKey: string | null,
+  ): Promise<void> {
+    if (!toolKey) {
+      return;
+    }
+
+    const executedEvents =
+      await this.listTenantAiGuardedExecutionEventsUseCase.execute(tenantSlug, {
+        agentKeys: [agentKey],
+        limit: null,
+        eventTypes: ['executed'],
+      });
+    const existingExecution = executedEvents.find(
+      (entry) =>
+        entry.approvalRequestId === approvalRequestId &&
+        entry.toolKey === toolKey,
+    );
+
+    if (existingExecution) {
+      throw new ConflictException(
+        `AI approval request ${approvalRequestId} already executed ${toolKey} on ${existingExecution.caseId} at ${existingExecution.occurredAt.toISOString()}. Request a new approval before re-running this guarded lane.`,
+      );
+    }
   }
 
   private async captureAiApprovalMemory(input: {

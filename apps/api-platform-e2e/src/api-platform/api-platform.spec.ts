@@ -45,6 +45,7 @@ import {
   ApplyTenantAiMemoryArchivalPolicyUseCase,
   CreateTenantAiGuardedExecutionEventUseCase,
   CreateTenantAiMemoryRecordUseCase,
+  GetTenantEcommerceLaunchWorkspaceUseCase,
   GetTenantAiMemoryRecordDetailUseCase,
   GetTenantAiMemoryRetrievalUseCase,
   GetTenantAiSuggestionRunDetailUseCase,
@@ -252,6 +253,7 @@ describe('API', () => {
   let applyTenantAiMemoryArchivalPolicyUseCase: { execute: jest.Mock };
   let createTenantAiGuardedExecutionEventUseCase: { execute: jest.Mock };
   let createTenantAiMemoryRecordUseCase: { execute: jest.Mock };
+  let getTenantEcommerceLaunchWorkspaceUseCase: { execute: jest.Mock };
   let getTenantAiMemoryRecordDetailUseCase: { execute: jest.Mock };
   let getTenantAiMemoryRetrievalUseCase: { execute: jest.Mock };
   let getTenantAiSuggestionRunDetailUseCase: { execute: jest.Mock };
@@ -2821,6 +2823,95 @@ describe('API', () => {
     getTenantGrowthAssistDailyAgendaUseCase = {
       execute: jest.fn().mockResolvedValue(growthAssistDailyAgenda),
     };
+    getTenantEcommerceLaunchWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-24T11:00:00.000Z'),
+        summary: {
+          tone: 'warning',
+          launchReadiness: 'launch_ready',
+          headline:
+            'Ya existe una base suficiente para un launch inicial, aunque todavia conviene empezar con un alcance estrecho.',
+          detail:
+            'La superficie actual favorece un catalogo simple, una landing compacta y una campaña controlada antes de abrir extras.',
+          suggestedFocus:
+            'Empieza por un launch simple y deja para despues los modulos no activos: promotions.',
+        },
+        moduleSnapshot: {
+          productEnabled: true,
+          activeModuleCount: 5,
+          coreModuleCount: 5,
+          optionalModuleCount: 0,
+          inactiveModuleKeys: ['promotions'],
+        },
+        checklist: [
+          {
+            key: 'catalog',
+            label: 'Catalog',
+            isCore: true,
+            status: 'ready',
+            detail: 'Disponible para el launch base del tenant.',
+          },
+          {
+            key: 'checkout',
+            label: 'Checkout',
+            isCore: true,
+            status: 'ready',
+            detail: 'Disponible para el launch base del tenant.',
+          },
+          {
+            key: 'promotions',
+            label: 'Promotions',
+            isCore: false,
+            status: 'warning',
+            detail: 'Este modulo esta fuera del scope inicial y puede quedar para una fase posterior.',
+          },
+        ],
+        channelGuidance: [
+          {
+            key: 'catalog',
+            title: 'Catalog scope',
+            status: 'ready',
+            detail:
+              'Ya puedes estructurar un catalogo inicial sin inventar modulos base.',
+            recommendedUse:
+              'Empieza por un set corto de productos ancla, categorias simples y nomenclatura estable.',
+          },
+          {
+            key: 'campaign',
+            title: 'Campaign scope',
+            status: 'warning',
+            detail:
+              'Conviene partir con una campaña simple antes de depender de promociones o mecanicas avanzadas.',
+            recommendedUse:
+              'Prioriza una campaña de validacion con un solo angulo comercial antes de multiplicar canales o promesas.',
+          },
+        ],
+        launchHints: [
+          {
+            key: 'launch-angle',
+            title: 'Launch angle',
+            objective:
+              'Bajar el lanzamiento a una promesa comercial concreta y entendible para un small-business operator.',
+            whenToUse:
+              'Cuando ya hay base para escribir el primer brief comercial.',
+            recommendedInputs: [
+              'Enabled product list',
+              'Active ecommerce modules',
+              'Primary conversion goal',
+            ],
+            caution:
+              'No conviertas el angle en promesas de catalogo o promociones que todavia no existen en la superficie deterministica.',
+          },
+        ],
+        safeActions: [
+          'Resumir el launch scope inicial usando solo productos y modulos activos del catalogo.',
+        ],
+        blockedActions: [
+          'Publicar catalogo, landing o checkout automaticamente.',
+        ],
+      }),
+    };
     listTenantAiApprovalRequestsUseCase = {
       execute: jest.fn().mockResolvedValue([growthAssistApprovalRequest]),
     };
@@ -3921,6 +4012,8 @@ describe('API', () => {
       .useValue(createTenantGrowthOperationalCaseUseCase)
       .overrideProvider(GetTenantGrowthAssistDailyAgendaUseCase)
       .useValue(getTenantGrowthAssistDailyAgendaUseCase)
+      .overrideProvider(GetTenantEcommerceLaunchWorkspaceUseCase)
+      .useValue(getTenantEcommerceLaunchWorkspaceUseCase)
       .overrideProvider(ListTenantAiApprovalRequestsUseCase)
       .useValue(listTenantAiApprovalRequestsUseCase)
       .overrideProvider(ApplyTenantAiMemoryArchivalPolicyUseCase)
@@ -5589,10 +5682,10 @@ describe('API', () => {
           key: 'ecommerce-launch-assistant',
           title: 'Ecommerce Launch Assistant',
           summary:
-            'Will help shape product, catalog, landing, and campaign suggestions once the ecommerce domain is active.',
+            'Turns deterministic ecommerce launch signals into tenant-scoped launch suggestions without publishing storefront work automatically.',
           domainKey: 'ecommerce',
           productKey: 'ecommerce',
-          availability: 'planned',
+          availability: 'ready',
           defaultMode: 'suggestion',
           supportedSurfaceKeys: ['ecommerce_launch_workspace'],
         },
@@ -5691,21 +5784,23 @@ describe('API', () => {
         },
         {
           key: 'ecommerce-launch-assistant-core',
-          version: 'planned-v1',
+          version: 'v1',
           agentKey: 'ecommerce-launch-assistant',
           mode: 'suggestion',
           title: 'Ecommerce Launch Assistant Core',
           summary:
-            'Planned prompt pack for product, landing, and campaign suggestions once ecommerce surfaces exist.',
+            'Prompt pack for ecommerce launch, landing, and campaign suggestions grounded in deterministic tenant context.',
           objective:
             'Propose launch content and structure suggestions without becoming the source of truth for catalog or storefront workflows.',
           styleGuidance: [
             'Favor concise, conversion-oriented recommendations.',
             'Keep brand and product structure grounded in deterministic ecommerce context.',
+            'Translate launch tradeoffs into simple operator language before suggesting expansion.',
           ],
           constraints: [
             'Do not publish products or landing pages automatically.',
             'Do not invent catalog facts that are missing from the ecommerce domain surface.',
+            'Keep recommendations advisory and suitable for explicit human review.',
           ],
           suggestedOutputs: [
             {
@@ -5713,6 +5808,18 @@ describe('API', () => {
               label: 'Launch brief',
               description:
                 'Summarize the recommended launch angle, landing structure, and first content direction.',
+            },
+            {
+              key: 'channel_plan',
+              label: 'Channel plan',
+              description:
+                'Explain the narrow catalog, landing, and campaign sequence that best fits the current tenant posture.',
+            },
+            {
+              key: 'launch_risk_checklist',
+              label: 'Launch risk checklist',
+              description:
+                'Call out missing modules, risky assumptions, and operator checkpoints before launch work starts.',
             },
           ],
         },
@@ -5753,7 +5860,8 @@ describe('API', () => {
             }),
             expect.objectContaining({
               key: 'ecommerce_launch_briefing',
-              availability: 'planned',
+              availability: 'ready',
+              actionKind: 'propose',
             }),
           ]),
         );
@@ -6171,6 +6279,159 @@ describe('API', () => {
     expect(getTenantInvoiceDocumentDraftingAssistUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
     );
+  });
+
+  it('GET /api/ai/tenants/:slug/ecommerce-launch-workspace should return the tenant-scoped ecommerce launch workspace', async () => {
+    await request(httpServer)
+      .get('/api/ai/tenants/saas-platform/ecommerce-launch-workspace')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          tenantSlug: 'saas-platform',
+          generatedAt: '2026-05-24T11:00:00.000Z',
+          summary: {
+            tone: 'warning',
+            launchReadiness: 'launch_ready',
+            headline:
+              'Ya existe una base suficiente para un launch inicial, aunque todavia conviene empezar con un alcance estrecho.',
+            detail:
+              'La superficie actual favorece un catalogo simple, una landing compacta y una campaña controlada antes de abrir extras.',
+            suggestedFocus:
+              'Empieza por un launch simple y deja para despues los modulos no activos: promotions.',
+          },
+          moduleSnapshot: {
+            productEnabled: true,
+            activeModuleCount: 5,
+            coreModuleCount: 5,
+            optionalModuleCount: 0,
+            inactiveModuleKeys: ['promotions'],
+          },
+          checklist: [
+            {
+              key: 'catalog',
+              label: 'Catalog',
+              isCore: true,
+              status: 'ready',
+              detail: 'Disponible para el launch base del tenant.',
+            },
+            {
+              key: 'checkout',
+              label: 'Checkout',
+              isCore: true,
+              status: 'ready',
+              detail: 'Disponible para el launch base del tenant.',
+            },
+            {
+              key: 'promotions',
+              label: 'Promotions',
+              isCore: false,
+              status: 'warning',
+              detail:
+                'Este modulo esta fuera del scope inicial y puede quedar para una fase posterior.',
+            },
+          ],
+          channelGuidance: [
+            {
+              key: 'catalog',
+              title: 'Catalog scope',
+              status: 'ready',
+              detail:
+                'Ya puedes estructurar un catalogo inicial sin inventar modulos base.',
+              recommendedUse:
+                'Empieza por un set corto de productos ancla, categorias simples y nomenclatura estable.',
+            },
+            {
+              key: 'campaign',
+              title: 'Campaign scope',
+              status: 'warning',
+              detail:
+                'Conviene partir con una campaña simple antes de depender de promociones o mecanicas avanzadas.',
+              recommendedUse:
+                'Prioriza una campaña de validacion con un solo angulo comercial antes de multiplicar canales o promesas.',
+            },
+          ],
+          launchHints: [
+            {
+              key: 'launch-angle',
+              title: 'Launch angle',
+              objective:
+                'Bajar el lanzamiento a una promesa comercial concreta y entendible para un small-business operator.',
+              whenToUse:
+                'Cuando ya hay base para escribir el primer brief comercial.',
+              recommendedInputs: [
+                'Enabled product list',
+                'Active ecommerce modules',
+                'Primary conversion goal',
+              ],
+              caution:
+                'No conviertas el angle en promesas de catalogo o promociones que todavia no existen en la superficie deterministica.',
+            },
+          ],
+          safeActions: [
+            'Resumir el launch scope inicial usando solo productos y modulos activos del catalogo.',
+          ],
+          blockedActions: [
+            'Publicar catalogo, landing o checkout automaticamente.',
+          ],
+        });
+      });
+
+    expect(getTenantEcommerceLaunchWorkspaceUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-envelope should return a tenant-scoped Ecommerce Launch Assistant suggestion envelope', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ai/tenants/saas-platform/agents/ecommerce-launch-assistant/suggestion-envelope',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: '2026-05-24T11:00:00.000Z',
+            mode: 'suggestion',
+            agent: expect.objectContaining({
+              key: 'ecommerce-launch-assistant',
+              productKey: 'ecommerce',
+              availability: 'ready',
+            }),
+            surface: expect.objectContaining({
+              key: 'ecommerce_launch_workspace',
+              sourceContractKey: 'ecommerce.launch.workspace',
+            }),
+            promptPack: expect.objectContaining({
+              key: 'ecommerce-launch-assistant-core',
+              version: 'v1',
+            }),
+          }),
+        );
+        expect(response.body.toolAccess).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              tool: expect.objectContaining({
+                key: 'ecommerce_launch_briefing',
+                availability: 'ready',
+                executionBoundary: expect.objectContaining({
+                  executionMode: 'suggestion_only',
+                }),
+              }),
+              accessLevel: 'approval_required',
+            }),
+          ]),
+        );
+        expect(response.body.contextBlocks).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ key: 'launch_summary' }),
+            expect.objectContaining({ key: 'launch_lanes' }),
+            expect.objectContaining({ key: 'safety_boundaries' }),
+          ]),
+        );
+      });
   });
 
   it('GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-runs should return suggestion-mode run history', async () => {
@@ -6949,7 +7210,7 @@ describe('API', () => {
           tenantSlug: 'saas-platform',
           generatedAt: expect.any(String),
           counts: {
-            totalAgents: 2,
+            totalAgents: 3,
             agentsWithSuggestionRuns: 2,
             agentsWithPendingApprovals: 1,
             totalPendingApprovalRequests: 1,
@@ -7024,6 +7285,35 @@ describe('API', () => {
                 '1 pending human review request(s).',
                 'No reviewed approvals recorded yet.',
                 'Tool posture: 2 allowed, 0 approval-required, 1 blocked.',
+              ]),
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              title: 'Ecommerce Launch Assistant',
+              domainKey: 'ecommerce',
+              productKey: 'ecommerce',
+              promptPack: {
+                key: 'ecommerce-launch-assistant-core',
+                version: 'v1',
+                mode: 'suggestion',
+                title: 'Ecommerce Launch Assistant Core',
+                summary:
+                  'Prompt pack for ecommerce launch, landing, and campaign suggestions grounded in deterministic tenant context.',
+              },
+              toolAccessSummary: {
+                allowedCount: 0,
+                approvalRequiredCount: 1,
+                blockedCount: 0,
+              },
+              pendingApprovalRequestsCount: 0,
+              oldestPendingApprovalRequest: null,
+              latestReviewedApprovalRequest: null,
+              latestSuggestionRun: null,
+              recentActivityAt: null,
+              memoryNotes: expect.arrayContaining([
+                'Prompt pack ecommerce-launch-assistant-core@v1 in suggestion mode.',
+                'No pending human reviews right now.',
+                'Tool posture: 0 allowed, 1 approval-required, 0 blocked.',
               ]),
             }),
           ],
@@ -7156,18 +7446,22 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-          tenantSlug: 'saas-platform',
-          generatedAt: expect.any(String),
-          overallStatus: 'critical',
-          counts: {
-            totalAgents: 2,
-            healthyAgents: 0,
-            warningAgents: 1,
-            criticalAgents: 1,
-          },
-          agents: [
-            {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            overallStatus: 'critical',
+            counts: {
+              totalAgents: 3,
+              healthyAgents: 0,
+              warningAgents: 2,
+              criticalAgents: 1,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               agentKey: 'growth-assist-coach',
               title: 'Growth Assist Coach',
               domainKey: 'growth',
@@ -7193,8 +7487,8 @@ describe('API', () => {
                 'No reviewable handoffs waiting for escalation.',
                 'Tool posture: 2 allowed, 0 approval-required, 1 blocked.',
               ],
-            },
-            {
+            }),
+            expect.objectContaining({
               agentKey: 'invoice-document-assistant',
               title: 'Invoice Document Assistant',
               domainKey: 'invoicing',
@@ -7217,9 +7511,30 @@ describe('API', () => {
                 '1 suggestion run(s) still need an explicit review request.',
                 'Tool posture: 0 allowed, 1 approval-required, 1 blocked.',
               ],
-            },
-          ],
-        });
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              title: 'Ecommerce Launch Assistant',
+              domainKey: 'ecommerce',
+              status: 'warning',
+              pendingApprovalRequestsCount: 0,
+              reviewableSuggestionRunsCount: 0,
+              toolAccessSummary: {
+                allowedCount: 0,
+                approvalRequiredCount: 1,
+                blockedCount: 0,
+              },
+              recentActivityAt: null,
+              oldestPendingApprovalRequest: null,
+              latestSuggestionRun: null,
+              notes: [
+                'No pending approvals right now.',
+                'No reviewable handoffs waiting for escalation.',
+                'Tool posture: 0 allowed, 1 approval-required, 0 blocked.',
+              ],
+            }),
+          ]),
+        );
       });
 
     expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
@@ -7292,19 +7607,23 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toEqual({
-          tenantSlug: 'saas-platform',
-          generatedAt: expect.any(String),
-          overallStatus: 'warning',
-          counts: {
-            totalAgents: 2,
-            agentsWithReviewedOutcomes: 1,
-            reviewedApprovalRequests: 1,
-            approvedReviewedApprovalRequests: 1,
-            rejectedReviewedApprovalRequests: 0,
-          },
-          agents: [
-            {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            generatedAt: expect.any(String),
+            overallStatus: 'warning',
+            counts: {
+              totalAgents: 3,
+              agentsWithReviewedOutcomes: 1,
+              reviewedApprovalRequests: 1,
+              approvedReviewedApprovalRequests: 1,
+              rejectedReviewedApprovalRequests: 0,
+            },
+          }),
+        );
+        expect(response.body.agents).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
               agentKey: 'growth-assist-coach',
               title: 'Growth Assist Coach',
               domainKey: 'growth',
@@ -7320,8 +7639,8 @@ describe('API', () => {
                 'Approval-rate signal is still unavailable.',
                 'No latest reviewed decision is available yet.',
               ],
-            },
-            {
+            }),
+            expect.objectContaining({
               agentKey: 'invoice-document-assistant',
               title: 'Invoice Document Assistant',
               domainKey: 'invoicing',
@@ -7340,9 +7659,26 @@ describe('API', () => {
                 'Approval rate currently sits at 100%.',
                 'Latest reviewed outcome was approved on 2026-05-20T10:41:00.000Z.',
               ],
-            },
-          ],
-        });
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              title: 'Ecommerce Launch Assistant',
+              domainKey: 'ecommerce',
+              status: 'warning',
+              reviewedApprovalRequestsCount: 0,
+              approvedReviewedApprovalRequestsCount: 0,
+              rejectedReviewedApprovalRequestsCount: 0,
+              approvalRatePercentage: null,
+              latestReviewedAt: null,
+              latestReviewedApprovalRequest: null,
+              notes: [
+                'No reviewed outcomes recorded yet for this agent.',
+                'Approval-rate signal is still unavailable.',
+                'No latest reviewed decision is available yet.',
+              ],
+            }),
+          ]),
+        );
       });
 
     expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
@@ -7374,10 +7710,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
-              suggestionModeAgents: 2,
+              totalAgents: 3,
+              suggestionModeAgents: 3,
               guardedExecutionPlannedAgents: 2,
-              approvalRequiredTools: 1,
+              approvalRequiredTools: 2,
               blockedTools: 2,
             },
           }),
@@ -7411,6 +7747,15 @@ describe('API', () => {
                 'post_invoice_payment',
                 'reverse_invoice_payment',
               ]),
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              toolAccessSummary: {
+                allowedCount: 0,
+                approvalRequiredCount: 1,
+                blockedCount: 0,
+              },
+              executionModes: ['suggestion_only'],
             }),
           ]),
         );
@@ -7582,7 +7927,11 @@ describe('API', () => {
       'saas-platform',
       'ai-memory-001',
       {
-        accessibleAgentKeys: ['growth-assist-coach', 'invoice-document-assistant'],
+        accessibleAgentKeys: [
+          'growth-assist-coach',
+          'invoice-document-assistant',
+          'ecommerce-launch-assistant',
+        ],
       },
     );
   });
@@ -7647,7 +7996,7 @@ describe('API', () => {
           tenantSlug: 'saas-platform',
           generatedAt: expect.any(String),
           counts: {
-            totalAgents: 2,
+            totalAgents: 3,
             agentsWithMemory: 1,
             totalRetrievedRecords: 1,
             uniqueRetrievedRecords: 1,
@@ -7701,6 +8050,31 @@ describe('API', () => {
               title: 'Invoice Document Assistant',
               domainKey: 'invoicing',
               productKey: 'invoicing',
+              retrieval: {
+                retrievedAt: '2026-05-20T10:35:00.000Z',
+                recordCount: 0,
+                policy: {
+                  version: 'v1',
+                  limit: 5,
+                  suppressedDuplicateCount: 0,
+                  archivedRecordCount: 0,
+                  prioritizedRecordIds: [],
+                  archivalSummary:
+                    'Operator notes are never auto-archived; working guarded-execution memory archives after 7 days; working approval memory archives after 14 days; durable automated memory archives after 45 days.',
+                  rankingSummary:
+                    'operator_note > guarded_execution_memory > approval_memory; agent > domain > tenant; working_memory > durable_memory; recency breaks ties.',
+                },
+                records: [],
+                notes: expect.arrayContaining([
+                  'No persisted memory record matched this agent context yet.',
+                ]),
+              },
+            },
+            {
+              agentKey: 'ecommerce-launch-assistant',
+              title: 'Ecommerce Launch Assistant',
+              domainKey: 'ecommerce',
+              productKey: 'ecommerce',
               retrieval: {
                 retrievedAt: '2026-05-20T10:35:00.000Z',
                 recordCount: 0,
@@ -7782,7 +8156,7 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               agentsWithSimulationDelta: 2,
               toolsPromotedToApprovalRequired: 2,
               toolsStillBlocked: 0,
@@ -7896,7 +8270,7 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               agentsWithHeavierReview: 2,
               currentExpectedHumanReviews: 2,
               simulatedExpectedHumanReviews: 4,
@@ -8005,7 +8379,7 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               agentsAtCapacityRisk: 2,
               currentMinimumReviewsPerDay: 2,
               simulatedMinimumReviewsPerDay: 4,
@@ -8026,6 +8400,13 @@ describe('API', () => {
               addedReviewsPerDay: 1,
               promotedToolKeys: ['invoice_payment_collection_execution'],
               simulatedMinimumReviewsPerDay: 2,
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              capacityStatus: 'stable',
+              addedReviewsPerDay: 0,
+              promotedToolKeys: [],
+              simulatedMinimumReviewsPerDay: 0,
             }),
           ]),
         );
@@ -8112,7 +8493,7 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               agentsAtRisk: 2,
               agentsBreached: 0,
               currentBacklogTouches: 2,
@@ -8133,6 +8514,12 @@ describe('API', () => {
               simulatedSlaStatus: 'at_risk',
               promotedToolKeys: ['invoice_payment_collection_execution'],
               simulatedEstimatedClearDays: 2,
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              simulatedSlaStatus: 'on_track',
+              promotedToolKeys: [],
+              simulatedEstimatedClearDays: 1,
             }),
           ]),
         );
@@ -8219,10 +8606,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               agentsNeedingMoreCoverage: 2,
-              currentRequiredReviewerEquivalents: 2,
-              simulatedRequiredReviewerEquivalents: 4,
+              currentRequiredReviewerEquivalents: 3,
+              simulatedRequiredReviewerEquivalents: 5,
               addedReviewerEquivalents: 2,
             },
           }),
@@ -8240,6 +8627,13 @@ describe('API', () => {
               addedReviewerEquivalents: 1,
               promotedToolKeys: ['invoice_payment_collection_execution'],
               simulatedRequiredReviewerEquivalents: 2,
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              staffingStatus: 'sufficient',
+              addedReviewerEquivalents: 0,
+              promotedToolKeys: [],
+              simulatedRequiredReviewerEquivalents: 1,
             }),
           ]),
         );
@@ -8326,9 +8720,9 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               agentsRequiringIncrease: 2,
-              totalRecommendedReviewerEquivalents: 4,
+              totalRecommendedReviewerEquivalents: 5,
               totalAdditionalReviewerEquivalents: 2,
               highestPriorityAgents: 2,
             },
@@ -8347,6 +8741,13 @@ describe('API', () => {
               additionalReviewerEquivalentsToAssign: 1,
               promotedToolKeys: ['invoice_payment_collection_execution'],
               recommendedReviewerEquivalents: 2,
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              planStatus: 'maintain',
+              additionalReviewerEquivalentsToAssign: 0,
+              promotedToolKeys: [],
+              recommendedReviewerEquivalents: 1,
             }),
           ]),
         );
@@ -8433,9 +8834,9 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               phase1Agents: 2,
-              phase2Agents: 0,
+              phase2Agents: 1,
               holdAgents: 0,
               totalAdditionalReviewerEquivalents: 2,
             },
@@ -8454,6 +8855,13 @@ describe('API', () => {
               rolloutStatus: 'increase_then_rollout',
               additionalReviewerEquivalentsToAssign: 1,
               promotedToolKeys: ['invoice_payment_collection_execution'],
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              rolloutPhase: 'phase_2',
+              rolloutStatus: 'safe_to_rollout',
+              additionalReviewerEquivalentsToAssign: 0,
+              promotedToolKeys: [],
             }),
           ]),
         );
@@ -8540,8 +8948,8 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
-              readyNowAgents: 0,
+              totalAgents: 3,
+              readyNowAgents: 1,
               needsCoverageAgents: 2,
               blockedAgents: 0,
             },
@@ -8560,6 +8968,13 @@ describe('API', () => {
               rolloutPhase: 'phase_1',
               simulatedSlaStatus: 'at_risk',
               recommendedReviewerEquivalents: 2,
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              readinessStatus: 'ready_now',
+              rolloutPhase: 'phase_2',
+              simulatedSlaStatus: 'on_track',
+              recommendedReviewerEquivalents: 1,
             }),
           ]),
         );
@@ -8646,8 +9061,8 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
-              launchNowAgents: 0,
+              totalAgents: 3,
+              launchNowAgents: 1,
               pilotAfterCoverageAgents: 2,
               holdAgents: 0,
               totalCoverageGap: 2,
@@ -8667,6 +9082,13 @@ describe('API', () => {
               launchWindow: 'next_window',
               additionalReviewerEquivalentsToAssign: 1,
               recommendedReviewerEquivalents: 2,
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              launchStatus: 'launch_now',
+              launchWindow: 'current_window',
+              additionalReviewerEquivalentsToAssign: 0,
+              recommendedReviewerEquivalents: 1,
             }),
           ]),
         );
@@ -8753,10 +9175,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               pilotCandidateAgents: 0,
               needsLaunchReadinessAgents: 2,
-              suggestionOnlyAgents: 0,
+              suggestionOnlyAgents: 1,
               executionCandidateTools: 2,
             },
           }),
@@ -8774,6 +9196,12 @@ describe('API', () => {
               executionCandidateToolKeys: ['invoice_payment_collection_execution'],
               approvalRequiredToolKeys: ['invoice_document_drafting'],
               rolloutPhase: 'phase_1',
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              guardedExecutionStatus: 'suggestion_only',
+              executionCandidateToolKeys: [],
+              rolloutPhase: 'phase_2',
             }),
           ]),
         );
@@ -8860,10 +9288,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               readyForPilotAgents: 0,
               needsOperationalBackingAgents: 2,
-              noCandidateAgents: 0,
+              noCandidateAgents: 1,
               candidateToolPilots: 2,
             },
           }),
@@ -8882,6 +9310,13 @@ describe('API', () => {
               pilotStatus: 'needs_operational_backing',
               pilotType: 'shadow_review',
               rolloutPhase: 'phase_1',
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              candidateToolKey: null,
+              pilotStatus: 'no_candidate',
+              pilotType: 'not_available',
+              rolloutPhase: 'phase_2',
             }),
           ]),
         );
@@ -8968,10 +9403,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               readyToDocumentAgents: 0,
               needsDesignAgents: 2,
-              notAvailableAgents: 0,
+              notAvailableAgents: 1,
               candidateRunbooks: 2,
             },
           }),
@@ -8989,6 +9424,12 @@ describe('API', () => {
               candidateToolKey: 'invoice_payment_collection_execution',
               operatingLane: 'single_record_execution_lane',
               blastRadius: 'single_record',
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              runbookStatus: 'not_available',
+              candidateToolKey: null,
+              operatingLane: 'suggestion_only_lane',
             }),
           ]),
         );
@@ -9075,10 +9516,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               readyWithRollbackAgents: 0,
               needsRollbackDesignAgents: 2,
-              notApplicableAgents: 0,
+              notApplicableAgents: 1,
               rollbackCandidateTools: 2,
             },
           }),
@@ -9096,6 +9537,12 @@ describe('API', () => {
               candidateToolKey: 'invoice_payment_collection_execution',
               blastRadius: 'single_record',
               pilotType: 'shadow_review',
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              rollbackStatus: 'not_applicable',
+              candidateToolKey: null,
+              pilotType: 'not_available',
             }),
           ]),
         );
@@ -9182,10 +9629,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               readyForAuditAgents: 0,
               needsEvidenceDesignAgents: 2,
-              notApplicableAgents: 0,
+              notApplicableAgents: 1,
               auditCandidateTools: 2,
             },
           }),
@@ -9202,6 +9649,13 @@ describe('API', () => {
               candidateToolKey: 'invoice_payment_collection_execution',
               runbookStatus: 'needs_design',
               rollbackStatus: 'needs_rollback_design',
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              auditStatus: 'not_applicable',
+              candidateToolKey: null,
+              runbookStatus: 'not_available',
+              rollbackStatus: 'not_applicable',
             }),
           ]),
         );
@@ -9288,10 +9742,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               readyToLaunchAgents: 0,
               pilotOnlyAgents: 2,
-              holdAgents: 0,
+              holdAgents: 1,
               launchCandidateTools: 2,
             },
           }),
@@ -9309,6 +9763,13 @@ describe('API', () => {
               candidateToolKey: 'invoice_payment_collection_execution',
               auditStatus: 'needs_evidence_design',
               rollbackStatus: 'needs_rollback_design',
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              launchStatus: 'hold',
+              candidateToolKey: null,
+              auditStatus: 'not_applicable',
+              rollbackStatus: 'not_applicable',
             }),
           ]),
         );
@@ -9395,10 +9856,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               readyToMonitorAgents: 0,
               monitorAfterLaunchAgents: 2,
-              notApplicableAgents: 0,
+              notApplicableAgents: 1,
               monitorCandidateTools: 2,
             },
           }),
@@ -9416,6 +9877,12 @@ describe('API', () => {
               candidateToolKey: 'invoice_payment_collection_execution',
               launchStatus: 'pilot_only',
               launchWindow: 'next_window',
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              monitorStatus: 'not_applicable',
+              candidateToolKey: null,
+              watchWindow: 'not_scheduled',
             }),
           ]),
         );
@@ -9502,10 +9969,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 2,
+              totalAgents: 3,
               openLaneAgents: 0,
               pilotThenOpenAgents: 2,
-              holdAgents: 0,
+              holdAgents: 1,
               controlCandidateTools: 2,
             },
           }),
@@ -9522,6 +9989,13 @@ describe('API', () => {
               candidateToolKey: 'invoice_payment_collection_execution',
               monitorStatus: 'monitor_after_launch',
               launchStatus: 'pilot_only',
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              controlStatus: 'hold',
+              candidateToolKey: null,
+              monitorStatus: 'not_applicable',
+              launchStatus: 'hold',
             }),
           ]),
         );
@@ -9793,6 +10267,15 @@ describe('API', () => {
               approvedSuggestionRuns: 0,
               latestGeneratedAt: '2026-05-20T10:36:00.000Z',
             },
+            {
+              agentKey: 'ecommerce-launch-assistant',
+              title: 'Ecommerce Launch Assistant',
+              totalSuggestionRuns: 0,
+              reviewableSuggestionRuns: 0,
+              pendingApprovalSuggestionRuns: 0,
+              approvedSuggestionRuns: 0,
+              latestGeneratedAt: null,
+            },
           ],
           recentSuggestionRuns: [
             expect.objectContaining({
@@ -9833,6 +10316,11 @@ describe('API', () => {
     expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'invoice-document-assistant',
+      null,
+    );
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'ecommerce-launch-assistant',
       null,
     );
   });
@@ -10162,6 +10650,16 @@ describe('API', () => {
               latestRequestedAt: '2026-05-20T10:40:00.000Z',
               latestReviewedAt: '2026-05-20T10:41:00.000Z',
             },
+            {
+              agentKey: 'ecommerce-launch-assistant',
+              title: 'Ecommerce Launch Assistant',
+              totalApprovalRequests: 0,
+              pendingApprovalRequests: 0,
+              approvedApprovalRequests: 0,
+              rejectedApprovalRequests: 0,
+              latestRequestedAt: null,
+              latestReviewedAt: null,
+            },
           ],
           oldestPendingApprovalRequest: {
             id: 'ai-approval-001',
@@ -10259,6 +10757,14 @@ describe('API', () => {
     expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'invoice-document-assistant',
+      {
+        limit: null,
+        status: null,
+      },
+    );
+    expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'ecommerce-launch-assistant',
       {
         limit: null,
         status: null,
@@ -10391,6 +10897,15 @@ describe('API', () => {
                 approvedSuggestionRuns: 0,
                 latestGeneratedAt: '2026-05-20T10:36:00.000Z',
               },
+              {
+                agentKey: 'ecommerce-launch-assistant',
+                title: 'Ecommerce Launch Assistant',
+                totalSuggestionRuns: 0,
+                reviewableSuggestionRuns: 0,
+                pendingApprovalSuggestionRuns: 0,
+                approvedSuggestionRuns: 0,
+                latestGeneratedAt: null,
+              },
             ],
             latestSuggestionRun: expect.objectContaining({
               id: 'ai-run-002',
@@ -10425,6 +10940,16 @@ describe('API', () => {
                 latestRequestedAt: '2026-05-20T10:39:00.000Z',
                 latestReviewedAt: '2026-05-20T10:41:00.000Z',
               },
+              {
+                agentKey: 'ecommerce-launch-assistant',
+                title: 'Ecommerce Launch Assistant',
+                totalApprovalRequests: 0,
+                pendingApprovalRequests: 0,
+                approvedApprovalRequests: 0,
+                rejectedApprovalRequests: 0,
+                latestRequestedAt: null,
+                latestReviewedAt: null,
+              },
             ],
             oldestPendingApprovalRequest: expect.objectContaining({
               id: 'ai-approval-001',
@@ -10454,6 +10979,14 @@ describe('API', () => {
         status: null,
       },
     );
+    expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'ecommerce-launch-assistant',
+      {
+        limit: null,
+        status: null,
+      },
+    );
     expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'growth-assist-coach',
@@ -10462,6 +10995,11 @@ describe('API', () => {
     expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'invoice-document-assistant',
+      null,
+    );
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'ecommerce-launch-assistant',
       null,
     );
   });
@@ -10706,6 +11244,63 @@ describe('API', () => {
         createdByEmail: 'hello@saas-platform.dev',
       }),
     );
+  });
+
+  it('POST /api/ai/tenants/:slug/agents/:agentKey/approval-requests/:requestId/guarded-execution should reject reusing an approval request after one execution already happened', async () => {
+    listTenantAiApprovalRequestsUseCase.execute.mockResolvedValueOnce([
+      {
+        ...growthAssistApprovalRequest,
+        status: 'approved',
+        reviewedAt: new Date('2026-05-20T10:39:00.000Z'),
+        reviewedByUserId: user.id,
+        reviewedByEmail: user.email,
+        reviewNote: 'Se ve segura para uso guiado.',
+        updatedAt: new Date('2026-05-20T10:39:00.000Z'),
+      },
+    ]);
+    listTenantAiGuardedExecutionEventsUseCase.execute.mockResolvedValueOnce([
+      {
+        id: 'ai-guarded-event-001',
+        tenantId: 'tenant_123',
+        tenantSlug: 'saas-platform',
+        agentKey: 'growth-assist-coach',
+        eventType: 'executed',
+        approvalRequestId: 'ai-approval-001',
+        suggestionRunId: 'ai-run-001',
+        toolKey: 'growth_case_assignment_execution',
+        caseId: 'op-case-001',
+        safeFallbackMode: null,
+        summary:
+          'Guarded execution completed for growth_case_assignment_execution after approved request ai-approval-001.',
+        detail:
+          'Operational case op-case-001 is now assigned to hello@saas-platform.dev under the named human gate.',
+        occurredAt: new Date('2026-05-20T10:12:00.000Z'),
+        createdByUserId: 'user_123',
+        createdByEmail: 'hello@saas-platform.dev',
+        createdAt: new Date('2026-05-20T10:12:00.000Z'),
+      },
+    ]);
+    takeTenantGrowthOperationalCaseUseCase.execute.mockClear();
+
+    await request(httpServer)
+      .post(
+        '/api/ai/tenants/saas-platform/agents/growth-assist-coach/approval-requests/ai-approval-001/guarded-execution',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        caseId: 'op-case-001',
+      })
+      .expect(409)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          message:
+            'AI approval request ai-approval-001 already executed growth_case_assignment_execution on op-case-001 at 2026-05-20T10:12:00.000Z. Request a new approval before re-running this guarded lane.',
+          error: 'Conflict',
+          statusCode: 409,
+        });
+      });
+
+    expect(takeTenantGrowthOperationalCaseUseCase.execute).not.toHaveBeenCalled();
   });
 
   it('POST /api/ai/tenants/:slug/agents/:agentKey/approval-requests/:requestId/guarded-execution-rollback should return the lane to explicit human-only handling', async () => {
@@ -11148,7 +11743,11 @@ describe('API', () => {
       expect(listTenantAiGuardedExecutionEventsUseCase.execute).toHaveBeenLastCalledWith(
         'saas-platform',
         {
-          agentKeys: ['growth-assist-coach', 'invoice-document-assistant'],
+          agentKeys: [
+            'growth-assist-coach',
+            'invoice-document-assistant',
+            'ecommerce-launch-assistant',
+          ],
           limit: null,
           eventTypes: null,
         },

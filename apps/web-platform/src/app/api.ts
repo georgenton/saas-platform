@@ -25,6 +25,7 @@ import {
   AiHealthWorkspaceResponse,
   AiPolicySimulationWorkspaceResponse,
   AiApprovalWorkspaceResponse,
+  AiEcommerceLaunchWorkspaceResponse,
   AiMemoryWorkspaceResponse,
   AiMemoryRecordDetailResponse,
   AiMemoryRecordResponse,
@@ -1484,6 +1485,19 @@ export async function fetchTenantAiRetrievalWorkspace(
 ): Promise<AiRetrievalWorkspaceResponse> {
   return request<AiRetrievalWorkspaceResponse>(
     `/ai/tenants/${encodeURIComponent(tenantSlug)}/retrieval-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantAiEcommerceLaunchWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<AiEcommerceLaunchWorkspaceResponse> {
+  return request<AiEcommerceLaunchWorkspaceResponse>(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/ecommerce-launch-workspace`,
     {
       method: 'GET',
       token,

@@ -33,10 +33,10 @@ export const AI_AGENT_CATALOG: AiAgentCatalogEntry[] = [
     key: 'ecommerce-launch-assistant',
     title: 'Ecommerce Launch Assistant',
     summary:
-      'Will help shape product, catalog, landing, and campaign suggestions once the ecommerce domain is active.',
+      'Turns deterministic ecommerce launch signals into tenant-scoped launch suggestions without publishing storefront work automatically.',
     domainKey: 'ecommerce',
     productKey: 'ecommerce',
-    availability: 'planned',
+    availability: 'ready',
     defaultMode: 'suggestion',
     supportedSurfaceKeys: ['ecommerce_launch_workspace'],
   },
@@ -255,16 +255,16 @@ export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
     key: 'ecommerce_launch_briefing',
     title: 'Ecommerce launch briefing',
     summary:
-      'Will suggest landing, catalog, and campaign structure once ecommerce deterministic surfaces exist.',
+      'Prepares deterministic launch, landing, catalog, and campaign suggestions for ecommerce rollout planning.',
     domainKey: 'ecommerce',
-    availability: 'planned',
+    availability: 'ready',
     riskLevel: 'medium',
     actionKind: 'propose',
     requiresApproval: false,
     inputContract: {
       sourceSurfaceKeys: ['ecommerce_launch_workspace'],
       primaryPayload:
-        'Planned ecommerce launch workspace with deterministic catalog, landing, and campaign context once available.',
+        'Tenant-scoped ecommerce launch workspace with deterministic catalog, landing, and campaign posture signals.',
       requiredContext: [
         'catalog facts',
         'landing structure',
@@ -280,14 +280,15 @@ export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
       ],
     },
     executionBoundary: {
-      executionMode: 'guarded_execution_planned',
-      stateMutation: 'planned',
-      externalSideEffects: 'planned',
+      executionMode: 'suggestion_only',
+      stateMutation: 'none',
+      externalSideEffects: 'none',
       reviewRequirement:
         'Suggestions should be reviewed by an operator before they influence storefront or campaign work.',
       blockedCapabilities: [
         'publish_storefront_content',
         'launch_campaign',
+        'change_catalog_pricing',
       ],
     },
   },
@@ -400,21 +401,23 @@ export const AI_PROMPT_REGISTRY: AiPromptRegistryEntry[] = [
   },
   {
     key: 'ecommerce-launch-assistant-core',
-    version: 'planned-v1',
+    version: 'v1',
     agentKey: 'ecommerce-launch-assistant',
     mode: 'suggestion',
     title: 'Ecommerce Launch Assistant Core',
     summary:
-      'Planned prompt pack for product, landing, and campaign suggestions once ecommerce surfaces exist.',
+      'Prompt pack for ecommerce launch, landing, and campaign suggestions grounded in deterministic tenant context.',
     objective:
       'Propose launch content and structure suggestions without becoming the source of truth for catalog or storefront workflows.',
     styleGuidance: [
       'Favor concise, conversion-oriented recommendations.',
       'Keep brand and product structure grounded in deterministic ecommerce context.',
+      'Translate launch tradeoffs into simple operator language before suggesting expansion.',
     ],
     constraints: [
       'Do not publish products or landing pages automatically.',
       'Do not invent catalog facts that are missing from the ecommerce domain surface.',
+      'Keep recommendations advisory and suitable for explicit human review.',
     ],
     suggestedOutputs: [
       {
@@ -422,6 +425,18 @@ export const AI_PROMPT_REGISTRY: AiPromptRegistryEntry[] = [
         label: 'Launch brief',
         description:
           'Summarize the recommended launch angle, landing structure, and first content direction.',
+      },
+      {
+        key: 'channel_plan',
+        label: 'Channel plan',
+        description:
+          'Explain the narrow catalog, landing, and campaign sequence that best fits the current tenant posture.',
+      },
+      {
+        key: 'launch_risk_checklist',
+        label: 'Launch risk checklist',
+        description:
+          'Call out missing modules, risky assumptions, and operator checkpoints before launch work starts.',
       },
     ],
   },

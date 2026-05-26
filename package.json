@@ -21,6 +21,7 @@
     "smoke:ai:guarded-execution-growth-lane": "node tools/smoke/run-ai-guarded-execution-growth-lane-smoke.mjs",
     "smoke:ai:guarded-execution-rejection-fallback": "node tools/smoke/run-ai-guarded-execution-rejection-fallback-smoke.mjs",
     "smoke:ai:retrieval-fed-run": "node tools/smoke/run-ai-retrieval-fed-run-smoke.mjs",
+    "smoke:ai:ecommerce-launch": "node tools/smoke/run-ai-ecommerce-launch-smoke.mjs",
     "smoke:ai:guarded-execution-invoice-lane": "node tools/smoke/run-ai-guarded-execution-invoice-lane-smoke.mjs",
     "smoke:ai:guarded-execution-invoice-rejection-fallback": "node tools/smoke/run-ai-guarded-execution-invoice-rejection-fallback-smoke.mjs",
     "dev:whatsapp-monitor-collector": "node tools/observability/run-whatsapp-operational-monitor-collector.mjs",

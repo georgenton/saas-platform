@@ -107,6 +107,46 @@ export interface AiApprovalPolicyEntry {
   approvalRequired: boolean;
 }
 
+export interface AiOperatingModelAgentPromptPackReference {
+  key: string;
+  version: string;
+  mode: 'suggestion' | 'guarded_execution';
+  title: string;
+}
+
+export interface AiOperatingModelAgentToolAccessEntry {
+  toolKey: string;
+  accessLevel: AiToolAccessLevel;
+  availability: AiToolAvailability;
+  actionKind: AiToolActionKind;
+  executionMode: AiToolExecutionMode;
+  requiresApproval: boolean;
+}
+
+export interface AiOperatingModelAgentEntry {
+  agent: AiAgentCatalogEntry;
+  requiredPermissionKey: string;
+  promptPack: AiOperatingModelAgentPromptPackReference;
+  approvalPolicyKeys: string[];
+  toolAccess: AiOperatingModelAgentToolAccessEntry[];
+  guardedExecutionCandidateToolKey: string | null;
+}
+
+export interface AiOperatingModelManifest {
+  version: string;
+  agents: AiOperatingModelAgentEntry[];
+  counts: {
+    totalAgents: number;
+    readyAgents: number;
+    plannedAgents: number;
+    agentsWithApprovalPolicies: number;
+    agentsWithGuardedExecutionCandidate: number;
+    totalToolAccessEntries: number;
+    approvalRequiredToolAccessEntries: number;
+    blockedToolAccessEntries: number;
+  };
+}
+
 export interface AiSuggestionContextBlock {
   key: string;
   title: string;

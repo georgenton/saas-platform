@@ -16,6 +16,7 @@ export * from './lib/use-cases/apply-tenant-ai-memory-archival-policy.use-case';
 export * from './lib/use-cases/create-tenant-ai-memory-record.use-case';
 export * from './lib/use-cases/get-ai-approval-policies-by-agent-key.use-case';
 export * from './lib/use-cases/get-ai-agent-tool-access-by-agent-key.use-case';
+export * from './lib/use-cases/get-ai-operating-model-manifest.use-case';
 export * from './lib/use-cases/get-ai-prompt-registry-entry-by-agent-key.use-case';
 export * from './lib/use-cases/get-ai-tool-registry-entry-by-key.use-case';
 export * from './lib/use-cases/get-tenant-ai-memory-record-detail.use-case';

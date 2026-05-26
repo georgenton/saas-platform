@@ -5,6 +5,7 @@ import {
   fetchAiAgentCatalog,
   fetchAiApprovalPolicies,
   fetchAiAgentToolAccess,
+  fetchAiOperatingModel,
   createTenantAiMemoryRecord,
   fetchTenantAiMemoryRecordDetail,
   fetchTenantAiActivityFeed,
@@ -151,6 +152,7 @@ import {
   AiHealthWorkspaceResponse,
   AiMemoryRecordDetailResponse,
   AiMemoryRecordResponse,
+  AiOperatingModelResponse,
   AiRetrievalWorkspaceResponse,
   AiMemoryWorkspaceResponse,
   AiPolicySimulationWorkspaceResponse,
@@ -1556,6 +1558,20 @@ function aiAgentAvailabilityLabel(
   return availability === 'ready' ? 'Ready' : 'Planned';
 }
 
+function aiToolAccessLevelTone(
+  accessLevel: 'allowed' | 'approval_required' | 'blocked',
+): string {
+  switch (accessLevel) {
+    case 'allowed':
+      return styles.statusHealthy;
+    case 'approval_required':
+      return styles.statusWarning;
+    case 'blocked':
+    default:
+      return styles.statusCritical;
+  }
+}
+
 function formatRelativeHours(value: number | null): string {
   if (value === null) {
     return 'sin referencia reciente';
@@ -1755,6 +1771,12 @@ export function App() {
   >([]);
   const [aiAgentCatalog, setAiAgentCatalog] = useState<AiAgentCatalogResponse[]>(
     [],
+  );
+  const [aiOperatingModel, setAiOperatingModel] =
+    useState<AiOperatingModelResponse | null>(null);
+  const [aiOperatingModelLoading, setAiOperatingModelLoading] = useState(false);
+  const [aiOperatingModelError, setAiOperatingModelError] = useState<string | null>(
+    null,
   );
   const [aiPromptRegistry, setAiPromptRegistry] = useState<
     AiPromptRegistryResponse[]
@@ -2010,12 +2032,7 @@ export function App() {
     AiSuggestionRunResponse[]
   >([]);
   const [tenantAiSuggestionWorkspaceAgentFilter, setTenantAiSuggestionWorkspaceAgentFilter] =
-    useState<
-      | 'all'
-      | 'growth-assist-coach'
-      | 'invoice-document-assistant'
-      | 'ecommerce-launch-assistant'
-    >('all');
+    useState<string>('all');
   const [tenantAiSuggestionWorkspaceLoading, setTenantAiSuggestionWorkspaceLoading] =
     useState(false);
   const [selectedTenantAiSuggestionWorkspaceDetail, setSelectedTenantAiSuggestionWorkspaceDetail] =
@@ -3653,6 +3670,24 @@ export function App() {
     growthAssistAiEnvelope,
     invoiceAssistantAiEnvelope,
   ]);
+  const aiOperatingModelAgents = useMemo(
+    () => aiOperatingModel?.agents ?? [],
+    [aiOperatingModel],
+  );
+  const aiOperatingModelAgentByKey = useMemo(
+    () =>
+      new Map(
+        aiOperatingModelAgents.map((entry) => [entry.agent.key, entry] as const),
+      ),
+    [aiOperatingModelAgents],
+  );
+  const currentTenantAccessibleAiOperatingModelAgents = useMemo(
+    () =>
+      aiOperatingModelAgents.filter((entry) =>
+        currentTenancy?.permissionKeys.includes(entry.requiredPermissionKey),
+      ),
+    [aiOperatingModelAgents, currentTenancy],
+  );
   const activeGrowthAiAgent = useMemo(
     () =>
       growthAssistAiEnvelope?.agent ??
@@ -3661,8 +3696,13 @@ export function App() {
     [aiAgentCatalog, growthAssistAiEnvelope],
   );
   const plannedAiAgents = useMemo(
-    () => aiAgentCatalog.filter((entry) => entry.availability === 'planned'),
-    [aiAgentCatalog],
+    () =>
+      aiOperatingModelAgents.length > 0
+        ? aiOperatingModelAgents
+            .filter((entry) => entry.agent.availability === 'planned')
+            .map((entry) => entry.agent)
+        : aiAgentCatalog.filter((entry) => entry.availability === 'planned'),
+    [aiAgentCatalog, aiOperatingModelAgents],
   );
   const activeGrowthAiPromptPack = useMemo(
     () =>
@@ -3729,15 +3769,24 @@ export function App() {
     [invoices],
   );
   const activeInvoiceAiAgent = useMemo(
-    () => invoiceAssistantAiEnvelope?.agent ?? null,
-    [invoiceAssistantAiEnvelope],
+    () =>
+      invoiceAssistantAiEnvelope?.agent ??
+      aiOperatingModelAgentByKey.get('invoice-document-assistant')?.agent ??
+      aiAgentCatalog.find((entry) => entry.key === 'invoice-document-assistant') ??
+      null,
+    [aiAgentCatalog, aiOperatingModelAgentByKey, invoiceAssistantAiEnvelope],
   );
   const activeEcommerceAiAgent = useMemo(
     () =>
       ecommerceLaunchAssistantAiEnvelope?.agent ??
+      aiOperatingModelAgentByKey.get('ecommerce-launch-assistant')?.agent ??
       aiAgentCatalog.find((entry) => entry.key === 'ecommerce-launch-assistant') ??
       null,
-    [aiAgentCatalog, ecommerceLaunchAssistantAiEnvelope],
+    [
+      aiAgentCatalog,
+      aiOperatingModelAgentByKey,
+      ecommerceLaunchAssistantAiEnvelope,
+    ],
   );
   const activeEcommerceAiPromptPack = useMemo(
     () =>
@@ -3782,52 +3831,66 @@ export function App() {
     );
   }, [tenantAiSuggestionWorkspace, tenantAiSuggestionWorkspaceAgentFilter]);
   const tenantAiSuggestionWorkspaceAgentOptions = useMemo(() => {
-    const options = [
+    const breakdown = tenantAiHandoffWorkspaceSummary?.agentBreakdown ?? [];
+    const baseOptions =
+      currentTenantAccessibleAiOperatingModelAgents.length > 0
+        ? currentTenantAccessibleAiOperatingModelAgents.map((entry) => ({
+            key: entry.agent.key,
+            label: entry.agent.title.replace(' Assistant', '').replace(' Coach', ''),
+            count:
+              breakdown.find((item) => item.agentKey === entry.agent.key)
+                ?.totalSuggestionRuns ?? 0,
+          }))
+        : [
+            {
+              key: 'growth-assist-coach',
+              label: 'Growth',
+              count:
+                breakdown.find((entry) => entry.agentKey === 'growth-assist-coach')
+                  ?.totalSuggestionRuns ?? 0,
+            },
+            {
+              key: 'invoice-document-assistant',
+              label: 'Invoice',
+              count:
+                breakdown.find(
+                  (entry) => entry.agentKey === 'invoice-document-assistant',
+                )?.totalSuggestionRuns ?? 0,
+            },
+            {
+              key: 'ecommerce-launch-assistant',
+              label: 'Ecommerce',
+              count:
+                breakdown.find(
+                  (entry) => entry.agentKey === 'ecommerce-launch-assistant',
+                )?.totalSuggestionRuns ?? 0,
+            },
+          ];
+
+    return [
       {
-        key: 'all' as const,
+        key: 'all',
         label: 'Todas',
         count: tenantAiHandoffWorkspaceSummary?.counts.totalSuggestionRuns ?? 0,
-        visible:
-          (tenantAiHandoffWorkspaceSummary?.counts.totalSuggestionRuns ?? 0) > 0 ||
-          canReadGrowthConversations ||
-          canReadInvoicingReports ||
-          canReadTenantEntitlements,
       },
-      {
-        key: 'growth-assist-coach' as const,
-        label: 'Growth',
-        count:
-          tenantAiHandoffWorkspaceSummary?.agentBreakdown.find(
-            (entry) => entry.agentKey === 'growth-assist-coach',
-          )?.totalSuggestionRuns ?? 0,
-        visible: canReadGrowthConversations,
-      },
-      {
-        key: 'invoice-document-assistant' as const,
-        label: 'Invoice',
-        count:
-          tenantAiHandoffWorkspaceSummary?.agentBreakdown.find(
-            (entry) => entry.agentKey === 'invoice-document-assistant',
-          )?.totalSuggestionRuns ?? 0,
-        visible: canReadInvoicingReports,
-      },
-      {
-        key: 'ecommerce-launch-assistant' as const,
-        label: 'Ecommerce',
-        count:
-          tenantAiHandoffWorkspaceSummary?.agentBreakdown.find(
-            (entry) => entry.agentKey === 'ecommerce-launch-assistant',
-          )?.totalSuggestionRuns ?? 0,
-        visible: canReadTenantEntitlements,
-      },
+      ...baseOptions,
     ];
-
-    return options.filter((entry) => entry.visible);
   }, [
-    canReadGrowthConversations,
-    canReadInvoicingReports,
-    canReadTenantEntitlements,
+    currentTenantAccessibleAiOperatingModelAgents,
     tenantAiHandoffWorkspaceSummary,
+  ]);
+  useEffect(() => {
+    if (
+      tenantAiSuggestionWorkspaceAgentFilter !== 'all' &&
+      !tenantAiSuggestionWorkspaceAgentOptions.some(
+        (entry) => entry.key === tenantAiSuggestionWorkspaceAgentFilter,
+      )
+    ) {
+      setTenantAiSuggestionWorkspaceAgentFilter('all');
+    }
+  }, [
+    tenantAiSuggestionWorkspaceAgentFilter,
+    tenantAiSuggestionWorkspaceAgentOptions,
   ]);
   const tenantAiApprovalWorkspaceStatusOptions = useMemo(() => {
     return [
@@ -4219,6 +4282,55 @@ export function App() {
     }
 
     void loadCatalog();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      setAiOperatingModel(null);
+      setAiOperatingModelLoading(false);
+      setAiOperatingModelError(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadAiOperatingModel() {
+      setAiOperatingModelLoading(true);
+      setAiOperatingModelError(null);
+
+      try {
+        const model = await fetchAiOperatingModel(token);
+
+        if (cancelled) {
+          return;
+        }
+
+        startTransition(() => {
+          setAiOperatingModel(model);
+          setAiAgentCatalog(model.agents.map((entry) => entry.agent));
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setAiOperatingModelError(
+          error instanceof Error
+            ? error.message
+            : 'No se pudo cargar el manifiesto operativo de AI.',
+        );
+      } finally {
+        if (!cancelled) {
+          setAiOperatingModelLoading(false);
+        }
+      }
+    }
+
+    void loadAiOperatingModel();
 
     return () => {
       cancelled = true;
@@ -12624,6 +12736,211 @@ export function App() {
                               ) : null}
                             </div>
                           ) : null}
+                          <div className={styles.stack}>
+                            <span className={styles.muted}>
+                              AI operating model manifest
+                            </span>
+                            {aiOperatingModelError ? (
+                              <p className={styles.errorBanner}>
+                                {aiOperatingModelError}
+                              </p>
+                            ) : null}
+                            {aiOperatingModel ? (
+                              <>
+                                <div className={styles.commercialMetricsGrid}>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>Version</span>
+                                    <strong>{aiOperatingModel.version}</strong>
+                                    <small>Modelo conceptual activo del slice AI.</small>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>Agentes</span>
+                                    <strong>{aiOperatingModel.counts.totalAgents}</strong>
+                                    <small>
+                                      {aiOperatingModel.counts.readyAgents} ready /{' '}
+                                      {aiOperatingModel.counts.plannedAgents} planned.
+                                    </small>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Lanes candidatos
+                                    </span>
+                                    <strong>
+                                      {
+                                        aiOperatingModel.counts
+                                          .agentsWithGuardedExecutionCandidate
+                                      }
+                                    </strong>
+                                    <small>
+                                      Agentes con un primer guarded lane identificado.
+                                    </small>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Visibles en este tenant
+                                    </span>
+                                    <strong>
+                                      {
+                                        currentTenantAccessibleAiOperatingModelAgents
+                                          .length
+                                      }
+                                    </strong>
+                                    <small>
+                                      Agentes cuyo permiso requerido ya existe en el
+                                      workspace actual.
+                                    </small>
+                                  </div>
+                                </div>
+
+                                <div className={styles.assistChecklist}>
+                                  <span className={styles.badge}>
+                                    approval-required entries:{' '}
+                                    {
+                                      aiOperatingModel.counts
+                                        .approvalRequiredToolAccessEntries
+                                    }
+                                  </span>
+                                  <span className={styles.badge}>
+                                    blocked entries:{' '}
+                                    {aiOperatingModel.counts.blockedToolAccessEntries}
+                                  </span>
+                                  <span className={styles.badge}>
+                                    policy-backed agents:{' '}
+                                    {
+                                      aiOperatingModel.counts
+                                        .agentsWithApprovalPolicies
+                                    }
+                                  </span>
+                                </div>
+
+                                {aiOperatingModel.agents.map((entry) => {
+                                  const isAccessibleInCurrentTenant = Boolean(
+                                    currentTenancy?.permissionKeys.includes(
+                                      entry.requiredPermissionKey,
+                                    ),
+                                  );
+                                  const allowedCount = entry.toolAccess.filter(
+                                    (tool) => tool.accessLevel === 'allowed',
+                                  ).length;
+                                  const approvalRequiredCount = entry.toolAccess.filter(
+                                    (tool) => tool.accessLevel === 'approval_required',
+                                  ).length;
+                                  const blockedCount = entry.toolAccess.filter(
+                                    (tool) => tool.accessLevel === 'blocked',
+                                  ).length;
+
+                                  return (
+                                    <div
+                                      className={styles.assistCueCard}
+                                      key={`ai-model:${entry.agent.key}`}
+                                    >
+                                      <div className={styles.invoiceCardHeader}>
+                                        <strong>{entry.agent.title}</strong>
+                                        <span
+                                          className={`${styles.statusPill} ${
+                                            isAccessibleInCurrentTenant
+                                              ? styles.statusHealthy
+                                              : styles.statusWarning
+                                          }`}
+                                        >
+                                          {isAccessibleInCurrentTenant
+                                            ? 'visible aquí'
+                                            : 'sin permiso actual'}
+                                        </span>
+                                      </div>
+                                      <small>{entry.agent.summary}</small>
+                                      <div className={styles.assistChecklist}>
+                                        <span className={styles.badge}>
+                                          domain {entry.agent.domainKey}
+                                        </span>
+                                        <span className={styles.badge}>
+                                          permission {entry.requiredPermissionKey}
+                                        </span>
+                                        <span className={styles.badge}>
+                                          prompt {entry.promptPack.key}@
+                                          {entry.promptPack.version}
+                                        </span>
+                                        <span className={styles.badge}>
+                                          mode {entry.promptPack.mode}
+                                        </span>
+                                        <span className={styles.badge}>
+                                          candidate lane{' '}
+                                          {entry.guardedExecutionCandidateToolKey ??
+                                            'none'}
+                                        </span>
+                                      </div>
+                                      <small>
+                                        Tool posture: {allowedCount} allowed,{' '}
+                                        {approvalRequiredCount} approval-required,{' '}
+                                        {blockedCount} blocked.
+                                      </small>
+                                      {entry.approvalPolicyKeys.length > 0 ? (
+                                        <div className={styles.assistChecklist}>
+                                          {entry.approvalPolicyKeys.map((policyKey) => (
+                                            <span
+                                              className={styles.badge}
+                                              key={`${entry.agent.key}:${policyKey}`}
+                                            >
+                                              policy {policyKey}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      ) : null}
+                                      <div className={styles.inlineActions}>
+                                        <button
+                                          className={
+                                            tenantAiSuggestionWorkspaceAgentFilter ===
+                                            entry.agent.key
+                                              ? styles.secondaryButton
+                                              : styles.ghostButton
+                                          }
+                                          type="button"
+                                          onClick={() => {
+                                            setTenantAiSuggestionWorkspaceAgentFilter(
+                                              entry.agent.key,
+                                            );
+                                          }}
+                                          disabled={!isAccessibleInCurrentTenant}
+                                        >
+                                          {isAccessibleInCurrentTenant
+                                            ? 'Filtrar handoffs'
+                                            : 'Sin acceso en este tenant'}
+                                        </button>
+                                        {entry.guardedExecutionCandidateToolKey ? (
+                                          <span className={styles.badge}>
+                                            next lane{' '}
+                                            {entry.guardedExecutionCandidateToolKey}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      <div className={styles.assistChecklist}>
+                                        {entry.toolAccess.map((tool) => (
+                                          <span
+                                            className={`${styles.statusPill} ${aiToolAccessLevelTone(
+                                              tool.accessLevel,
+                                            )}`}
+                                            key={`${entry.agent.key}:${tool.toolKey}`}
+                                          >
+                                            {tool.toolKey} · {humanizeKey(tool.accessLevel)} ·{' '}
+                                            {humanizeKey(tool.executionMode)}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </>
+                            ) : aiOperatingModelLoading ? (
+                              <small className={styles.muted}>
+                                Cargando manifiesto operativo de AI...
+                              </small>
+                            ) : (
+                              <small className={styles.muted}>
+                                El manifiesto operativo todavía no está disponible en
+                                esta sesión.
+                              </small>
+                            )}
+                          </div>
                           <div className={styles.inlineActions}>
                             <button
                               className={styles.secondaryButton}

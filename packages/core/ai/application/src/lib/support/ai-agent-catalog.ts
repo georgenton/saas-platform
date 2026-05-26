@@ -2,6 +2,7 @@ import {
   AiApprovalPolicyEntry,
   AiAgentToolAccessEntry,
   AiAgentCatalogEntry,
+  AiGuardedExecutionCandidateDescriptor,
   AiOperatingModelAgentEntry,
   AiOperatingModelManifest,
   AiPromptRegistryEntry,
@@ -608,6 +609,37 @@ export function getAiGuardedExecutionCandidateToolKey(
   );
 }
 
+export function getAiGuardedExecutionCandidateDescriptor(
+  agentKey: string,
+): AiGuardedExecutionCandidateDescriptor | null {
+  const toolKey = getAiGuardedExecutionCandidateToolKey(agentKey);
+
+  switch (toolKey) {
+    case 'growth_case_assignment_execution':
+      return {
+        toolKey,
+        title: 'Growth case assignment lane',
+        targetKind: 'growth_operational_case',
+        targetSelectionLabel: 'Operational case',
+        emptyTargetSelectionLabel: 'No eligible operational cases',
+        executeActionLabel: 'Execute take-case',
+        rollbackActionLabel: 'Rollback take-case',
+      };
+    case 'invoice_payment_collection_execution':
+      return {
+        toolKey,
+        title: 'Invoice payment collection lane',
+        targetKind: 'invoice',
+        targetSelectionLabel: 'Invoice',
+        emptyTargetSelectionLabel: 'No eligible invoices',
+        executeActionLabel: 'Execute post-payment',
+        rollbackActionLabel: 'Rollback payment',
+      };
+    default:
+      return null;
+  }
+}
+
 export function listAiOperatingModelManifest(): AiOperatingModelManifest {
   const agents: AiOperatingModelAgentEntry[] = AI_AGENT_CATALOG.map((agent) => {
     const promptPack = findAiPromptRegistryEntryByAgentKey(agent.key);
@@ -643,6 +675,8 @@ export function listAiOperatingModelManifest(): AiOperatingModelManifest {
       toolAccess,
       guardedExecutionCandidateToolKey:
         getAiGuardedExecutionCandidateToolKey(agent.key),
+      guardedExecutionCandidate:
+        getAiGuardedExecutionCandidateDescriptor(agent.key),
     };
   });
 

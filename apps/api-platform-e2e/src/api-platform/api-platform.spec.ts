@@ -5747,6 +5747,15 @@ describe('API', () => {
               },
             ],
             guardedExecutionCandidateToolKey: 'growth_case_assignment_execution',
+            guardedExecutionCandidate: {
+              toolKey: 'growth_case_assignment_execution',
+              title: 'Growth case assignment lane',
+              targetKind: 'growth_operational_case',
+              targetSelectionLabel: 'Operational case',
+              emptyTargetSelectionLabel: 'No eligible operational cases',
+              executeActionLabel: 'Execute take-case',
+              rollbackActionLabel: 'Rollback take-case',
+            },
           },
           {
             agent: {
@@ -5788,6 +5797,15 @@ describe('API', () => {
             ],
             guardedExecutionCandidateToolKey:
               'invoice_payment_collection_execution',
+            guardedExecutionCandidate: {
+              toolKey: 'invoice_payment_collection_execution',
+              title: 'Invoice payment collection lane',
+              targetKind: 'invoice',
+              targetSelectionLabel: 'Invoice',
+              emptyTargetSelectionLabel: 'No eligible invoices',
+              executeActionLabel: 'Execute post-payment',
+              rollbackActionLabel: 'Rollback payment',
+            },
           },
           {
             agent: {
@@ -5820,6 +5838,7 @@ describe('API', () => {
               },
             ],
             guardedExecutionCandidateToolKey: null,
+            guardedExecutionCandidate: null,
           },
         ],
         counts: {

@@ -18,6 +18,9 @@ export type AiSuggestionRunApprovalStatus =
   | 'not_requested'
   | AiApprovalRequestStatus;
 export type AiGuardedExecutionEventType = 'executed' | 'rolled_back';
+export type AiGuardedExecutionTargetKind =
+  | 'growth_operational_case'
+  | 'invoice';
 export type AiMemoryRecordScope = 'tenant' | 'domain' | 'agent';
 export type AiMemoryRecordStatus = 'active' | 'inactive';
 export type AiMemoryRecordSourceKind =
@@ -123,6 +126,16 @@ export interface AiOperatingModelAgentToolAccessEntry {
   requiresApproval: boolean;
 }
 
+export interface AiGuardedExecutionCandidateDescriptor {
+  toolKey: string;
+  title: string;
+  targetKind: AiGuardedExecutionTargetKind;
+  targetSelectionLabel: string;
+  emptyTargetSelectionLabel: string;
+  executeActionLabel: string;
+  rollbackActionLabel: string;
+}
+
 export interface AiOperatingModelAgentEntry {
   agent: AiAgentCatalogEntry;
   requiredPermissionKey: string;
@@ -130,6 +143,7 @@ export interface AiOperatingModelAgentEntry {
   approvalPolicyKeys: string[];
   toolAccess: AiOperatingModelAgentToolAccessEntry[];
   guardedExecutionCandidateToolKey: string | null;
+  guardedExecutionCandidate: AiGuardedExecutionCandidateDescriptor | null;
 }
 
 export interface AiOperatingModelManifest {

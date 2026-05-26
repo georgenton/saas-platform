@@ -60,6 +60,34 @@ export interface AiSuggestionEnvelopeResponseDto {
     detail: string;
     bullets: string[];
   }[];
+  retrieval?: {
+    retrievedAt: string;
+    recordCount: number;
+    policy: {
+      version: 'v1';
+      limit: number;
+      suppressedDuplicateCount: number;
+      archivedRecordCount: number;
+      prioritizedRecordIds: string[];
+      archivalSummary: string;
+      rankingSummary: string;
+    };
+    records: {
+      id: string;
+      scope: 'tenant' | 'domain' | 'agent';
+      domainKey: 'growth' | 'invoicing' | 'ecommerce' | null;
+      agentKey: string | null;
+      sourceKind: 'operator_note' | 'approval_memory' | 'guarded_execution_memory';
+      freshness: 'working_memory' | 'durable_memory';
+      title: string;
+      summary: string;
+      detail: string;
+      tags: string[];
+      lastUpdatedAt: string;
+      inclusionReason: string;
+    }[];
+    notes: string[];
+  };
 }
 
 export const toAiSuggestionEnvelopeResponseDto = (
@@ -95,4 +123,40 @@ export const toAiSuggestionEnvelopeResponseDto = (
     ...entry,
     bullets: [...entry.bullets],
   })),
+  ...(envelope.retrieval
+    ? {
+        retrieval: {
+          retrievedAt: toIsoString(envelope.retrieval.retrievedAt),
+          recordCount: envelope.retrieval.recordCount,
+          policy: {
+            version: envelope.retrieval.policy.version,
+            limit: envelope.retrieval.policy.limit,
+            suppressedDuplicateCount:
+              envelope.retrieval.policy.suppressedDuplicateCount,
+            archivedRecordCount:
+              envelope.retrieval.policy.archivedRecordCount,
+            prioritizedRecordIds: [
+              ...envelope.retrieval.policy.prioritizedRecordIds,
+            ],
+            archivalSummary: envelope.retrieval.policy.archivalSummary,
+            rankingSummary: envelope.retrieval.policy.rankingSummary,
+          },
+          records: envelope.retrieval.records.map((entry) => ({
+            id: entry.id,
+            scope: entry.scope,
+            domainKey: entry.domainKey,
+            agentKey: entry.agentKey,
+            sourceKind: entry.sourceKind,
+            freshness: entry.freshness,
+            title: entry.title,
+            summary: entry.summary,
+            detail: entry.detail,
+            tags: [...entry.tags],
+            lastUpdatedAt: toIsoString(entry.lastUpdatedAt),
+            inclusionReason: entry.inclusionReason,
+          })),
+          notes: [...envelope.retrieval.notes],
+        },
+      }
+    : {}),
 });

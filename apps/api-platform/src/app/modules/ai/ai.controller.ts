@@ -9,6 +9,7 @@ import {
   HttpCode,
   NotFoundException,
   Param,
+  Patch,
   ParseIntPipe,
   Post,
   Query,
@@ -19,17 +20,23 @@ import {
   AiApprovalRequestAlreadyPendingError,
   AiApprovalRequestAlreadyReviewedError,
   AiApprovalRequestNotFoundError,
+  ApplyTenantAiMemoryArchivalPolicyUseCase,
+  AiMemoryRecordNotFoundError,
   AiToolNotFoundError,
   CreateTenantAiGuardedExecutionEventUseCase,
+  CreateTenantAiMemoryRecordUseCase,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
   GetAiToolRegistryEntryByKeyUseCase,
+  GetTenantAiMemoryRecordDetailUseCase,
+  GetTenantAiMemoryRetrievalUseCase,
   GetTenantAiSuggestionRunDetailUseCase,
   AiAgentNotFoundError,
   GetTenantAiSuggestionEnvelopeUseCase,
   ListTenantAiApprovalRequestsUseCase,
   ListTenantAiGuardedExecutionEventsUseCase,
+  ListTenantAiMemoryRecordsUseCase,
   ListTenantAiSuggestionRunsUseCase,
   ListAiApprovalPoliciesUseCase,
   ListAiAgentCatalogUseCase,
@@ -38,6 +45,7 @@ import {
   PrepareTenantAiSuggestionRunUseCase,
   RequestTenantAiSuggestionRunApprovalUseCase,
   ReviewTenantAiApprovalRequestUseCase,
+  UpdateTenantAiMemoryRecordUseCase,
   AiSuggestionRunNotFoundError,
   buildInitialAiSuggestionRunApprovalSummary,
 } from '@saas-platform/ai-application';
@@ -48,7 +56,16 @@ import {
   ReleaseTenantGrowthOperationalCaseUseCase,
   TakeTenantGrowthOperationalCaseUseCase,
 } from '@saas-platform/growth-application';
-import { INVOICING_PERMISSIONS } from '@saas-platform/invoicing-application';
+import {
+  CreateTenantInvoicePaymentUseCase,
+  INVOICING_PERMISSIONS,
+  GetTenantInvoiceDetailUseCase,
+  InvalidInvoicePaymentStateError,
+  InvoiceNotFoundError,
+  InvoicePaymentExceedsBalanceError,
+  PaymentNotFoundError,
+  ReverseTenantInvoicePaymentUseCase,
+} from '@saas-platform/invoicing-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
 import { AuthenticatedUser } from '../auth/authenticated-user.decorator';
 import { AuthenticatedUserContext } from '../auth/authenticated-user-context';
@@ -114,6 +131,8 @@ import {
   toAiAgentCatalogResponseDto,
 } from './dto/ai-agent-catalog.response';
 import { CreateAiApprovalRequestRequestDto } from './dto/create-ai-approval-request.request';
+import { CreateAiMemoryRecordRequestDto } from './dto/create-ai-memory-record.request';
+import { UpdateAiMemoryRecordRequestDto } from './dto/update-ai-memory-record.request';
 import {
   AiPromptRegistryResponseDto,
   toAiPromptRegistryResponseDto,
@@ -203,6 +222,14 @@ import {
   toAiMemoryWorkspaceResponseDto,
 } from './dto/ai-memory-workspace.response';
 import {
+  AiMemoryRecordResponseDto,
+  toAiMemoryRecordResponseDto,
+} from './dto/ai-memory-record.response';
+import {
+  AiMemoryRecordDetailResponseDto,
+  toAiMemoryRecordDetailResponseDto,
+} from './dto/ai-memory-record-detail.response';
+import {
   AiOperationsSummaryResponseDto,
   toAiOperationsSummaryResponseDto,
 } from './dto/ai-operations-summary.response';
@@ -210,6 +237,10 @@ import {
   AiPolicySimulationWorkspaceResponseDto,
   toAiPolicySimulationWorkspaceResponseDto,
 } from './dto/ai-policy-simulation-workspace.response';
+import {
+  AiRetrievalWorkspaceResponseDto,
+  toAiRetrievalWorkspaceResponseDto,
+} from './dto/ai-retrieval-workspace.response';
 import { ExecuteAiGuardedExecutionRequestDto } from './dto/execute-ai-guarded-execution.request';
 
 @Controller('ai')
@@ -234,6 +265,12 @@ export class AiController {
     private readonly getAiPromptRegistryEntryByAgentKeyUseCase: GetAiPromptRegistryEntryByAgentKeyUseCase,
     private readonly getAiToolRegistryEntryByKeyUseCase: GetAiToolRegistryEntryByKeyUseCase,
     private readonly getAiAgentToolAccessByAgentKeyUseCase: GetAiAgentToolAccessByAgentKeyUseCase,
+    private readonly applyTenantAiMemoryArchivalPolicyUseCase: ApplyTenantAiMemoryArchivalPolicyUseCase,
+    private readonly createTenantAiMemoryRecordUseCase: CreateTenantAiMemoryRecordUseCase,
+    private readonly listTenantAiMemoryRecordsUseCase: ListTenantAiMemoryRecordsUseCase,
+    private readonly getTenantAiMemoryRecordDetailUseCase: GetTenantAiMemoryRecordDetailUseCase,
+    private readonly getTenantAiMemoryRetrievalUseCase: GetTenantAiMemoryRetrievalUseCase,
+    private readonly updateTenantAiMemoryRecordUseCase: UpdateTenantAiMemoryRecordUseCase,
     private readonly getTenantAiSuggestionEnvelopeUseCase: GetTenantAiSuggestionEnvelopeUseCase,
     private readonly getTenantAiSuggestionRunDetailUseCase: GetTenantAiSuggestionRunDetailUseCase,
     private readonly listTenantAiApprovalRequestsUseCase: ListTenantAiApprovalRequestsUseCase,
@@ -245,6 +282,9 @@ export class AiController {
     private readonly listTenantAiGuardedExecutionEventsUseCase: ListTenantAiGuardedExecutionEventsUseCase,
     private readonly takeTenantGrowthOperationalCaseUseCase: TakeTenantGrowthOperationalCaseUseCase,
     private readonly releaseTenantGrowthOperationalCaseUseCase: ReleaseTenantGrowthOperationalCaseUseCase,
+    private readonly getTenantInvoiceDetailUseCase: GetTenantInvoiceDetailUseCase,
+    private readonly createTenantInvoicePaymentUseCase: CreateTenantInvoicePaymentUseCase,
+    private readonly reverseTenantInvoicePaymentUseCase: ReverseTenantInvoicePaymentUseCase,
   ) {}
 
   @Get('agents')
@@ -373,6 +413,380 @@ export class AiController {
       return toAiSuggestionEnvelopeResponseDto(envelope);
     } catch (error) {
       if (error instanceof AiAgentNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post('tenants/:slug/memory-records')
+  @HttpCode(201)
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async createTenantAiMemoryRecord(
+    @Param('slug') slug: string,
+    @Body() body: CreateAiMemoryRecordRequestDto,
+    @AuthenticatedUser() authenticatedUser: AuthenticatedUserContext | undefined,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiMemoryRecordResponseDto> {
+    if (!authenticatedUser) {
+      throw new NotFoundException('Authenticated user context is required.');
+    }
+
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    this.assertAtLeastOneAiPermission(
+      tenantAccess?.permissionKeys,
+      'At least one AI agent permission is required to create tenant memory records.',
+    );
+
+    let domainKey = body.domainKey ?? null;
+    let agentKey = body.agentKey ?? null;
+
+    if (body.scope === 'tenant' && (body.domainKey || body.agentKey)) {
+      throw new BadRequestException(
+        'Tenant-scoped AI memory records cannot include domainKey or agentKey.',
+      );
+    }
+
+    if (body.scope === 'domain') {
+      if (!body.domainKey) {
+        throw new BadRequestException(
+          'Domain-scoped AI memory records require domainKey.',
+        );
+      }
+
+      if (body.agentKey) {
+        throw new BadRequestException(
+          'Domain-scoped AI memory records cannot include agentKey.',
+        );
+      }
+
+      if (
+        !this.getAccessibleDomainKeys(tenantAccess?.permissionKeys).includes(
+          body.domainKey,
+        )
+      ) {
+        throw new ForbiddenException(
+          `Visible AI access for domain "${body.domainKey}" is required to create this memory record.`,
+        );
+      }
+    }
+
+    if (body.scope === 'agent') {
+      if (!body.agentKey) {
+        throw new BadRequestException(
+          'Agent-scoped AI memory records require agentKey.',
+        );
+      }
+
+      this.assertAgentPermission(body.agentKey, tenantAccess?.permissionKeys);
+      domainKey = this.getAgentDomainKey(body.agentKey);
+      agentKey = body.agentKey;
+    }
+
+    const record = await this.createTenantAiMemoryRecordUseCase.execute({
+      tenantSlug,
+      scope: body.scope,
+      domainKey,
+      agentKey,
+      sourceKind: body.sourceKind ?? 'operator_note',
+      freshness: body.freshness ?? 'working_memory',
+      title: body.title,
+      summary: body.summary,
+      detail: body.detail,
+      tags: body.tags ?? [],
+      createdByUserId: authenticatedUser.id,
+      createdByEmail: authenticatedUser.email,
+    });
+
+    return toAiMemoryRecordResponseDto(record);
+  }
+
+  @Get('tenants/:slug/memory-records')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async listTenantAiMemoryRecords(
+    @Param('slug') slug: string,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('scope') scope?: string,
+    @Query('status') status?: string,
+    @Query('domainKey') domainKey?: string,
+    @Query('agentKey') agentKey?: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiMemoryRecordResponseDto[]> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgentKeys = this.getAccessibleReadyAiWorkspaceAgentKeys(
+      tenantAccess?.permissionKeys,
+    );
+
+    if (accessibleAgentKeys.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for tenant memory records.',
+      );
+    }
+
+    if (agentKey) {
+      this.assertAgentPermission(agentKey, tenantAccess?.permissionKeys);
+    }
+
+    const accessibleDomainKeys = this.getAccessibleDomainKeys(
+      tenantAccess?.permissionKeys,
+    );
+
+    if (
+      domainKey &&
+      !accessibleDomainKeys.includes(
+        domainKey as 'growth' | 'invoicing' | 'ecommerce',
+      )
+    ) {
+      throw new ForbiddenException(
+        `Visible AI access for domain "${domainKey}" is required to read these memory records.`,
+      );
+    }
+
+    await this.applyTenantAiMemoryArchivalPolicyUseCase.execute(tenantSlug);
+
+    const records = await this.listTenantAiMemoryRecordsUseCase.execute(
+      tenantSlug,
+      {
+        scopes: this.parseMemoryScopeFilter(scope),
+        statuses: this.parseMemoryStatusFilter(status),
+        domainKeys: accessibleDomainKeys,
+        agentKeys: accessibleAgentKeys,
+        limit,
+      },
+    );
+
+    return records
+      .filter((entry) => {
+        const visible =
+          entry.scope === 'tenant' ||
+          (entry.scope === 'domain' &&
+            !!entry.domainKey &&
+            accessibleDomainKeys.includes(entry.domainKey)) ||
+          (entry.scope === 'agent' &&
+            !!entry.agentKey &&
+            accessibleAgentKeys.includes(entry.agentKey));
+
+        if (!visible) {
+          return false;
+        }
+
+        if (scope && entry.scope !== scope) {
+          return false;
+        }
+
+        if (domainKey && entry.domainKey !== domainKey) {
+          return false;
+        }
+
+        if (agentKey && entry.agentKey !== agentKey) {
+          return false;
+        }
+
+        return true;
+      })
+      .map((entry) => toAiMemoryRecordResponseDto(entry));
+  }
+
+  @Get('tenants/:slug/memory-records/:recordId')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiMemoryRecordDetail(
+    @Param('slug') slug: string,
+    @Param('recordId') recordId: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiMemoryRecordDetailResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgentKeys = this.getAccessibleReadyAiWorkspaceAgentKeys(
+      tenantAccess?.permissionKeys,
+    );
+
+    this.assertAtLeastOneAiPermission(
+      tenantAccess?.permissionKeys,
+      'At least one AI agent permission is required for tenant memory record detail.',
+    );
+
+    const accessibleDomainKeys = this.getAccessibleDomainKeys(
+      tenantAccess?.permissionKeys,
+    );
+
+    try {
+      await this.applyTenantAiMemoryArchivalPolicyUseCase.execute(tenantSlug);
+
+      const detail = await this.getTenantAiMemoryRecordDetailUseCase.execute(
+        tenantSlug,
+        recordId,
+        {
+          accessibleAgentKeys,
+        },
+      );
+
+      if (
+        !this.isVisibleAiMemoryRecord(
+          detail.record,
+          accessibleDomainKeys,
+          accessibleAgentKeys,
+        )
+      ) {
+        throw new ForbiddenException(
+          `Visible AI access is required to inspect memory record ${recordId}.`,
+        );
+      }
+
+      const accessibleAgents = this.listAiAgentCatalogUseCase
+        .execute()
+        .filter((entry) => entry.availability === 'ready')
+        .filter((entry) => accessibleAgentKeys.includes(entry.key));
+
+      const currentRetrievalAgents = (
+        await Promise.all(
+          accessibleAgents.map(async (agent) => {
+            const retrieval = await this.getTenantAiMemoryRetrievalUseCase.execute(
+              tenantSlug,
+              agent.key,
+              20,
+            );
+            const matchingRecord =
+              retrieval.records.find((entry) => entry.id === recordId) ?? null;
+
+            if (!matchingRecord) {
+              return null;
+            }
+
+            return {
+              agentKey: agent.key,
+              title: agent.title,
+              domainKey: agent.domainKey,
+              inclusionReason: matchingRecord.inclusionReason,
+            };
+          }),
+        )
+      ).filter(
+        (
+          entry,
+        ): entry is {
+          agentKey: string;
+          title: string;
+          domainKey: 'growth' | 'invoicing' | 'ecommerce';
+          inclusionReason: string;
+        } => entry !== null,
+      );
+
+      return toAiMemoryRecordDetailResponseDto(detail, {
+        agentCount: currentRetrievalAgents.length,
+        agents: currentRetrievalAgents,
+        notes: [
+          currentRetrievalAgents.length > 0
+            ? `${currentRetrievalAgents.length} visible agent(s) would hydrate this memory record right now.`
+            : 'No visible agent would hydrate this memory record right now.',
+          detail.record.status === 'inactive'
+            ? 'Inactive records stay visible for audit and editing, but they do not enter live retrieval until reactivated.'
+            : 'Active records remain eligible for live retrieval when they match tenant/domain/agent scope.',
+        ],
+      });
+    } catch (error) {
+      if (
+        error instanceof AiMemoryRecordNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Patch('tenants/:slug/memory-records/:recordId')
+  @HttpCode(200)
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async updateTenantAiMemoryRecord(
+    @Param('slug') slug: string,
+    @Param('recordId') recordId: string,
+    @Body() body: UpdateAiMemoryRecordRequestDto,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiMemoryRecordResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+
+    this.assertAtLeastOneAiPermission(
+      tenantAccess?.permissionKeys,
+      'At least one AI agent permission is required to update tenant memory records.',
+    );
+
+    const accessibleAgentKeys = this.getAccessibleReadyAiWorkspaceAgentKeys(
+      tenantAccess?.permissionKeys,
+    );
+    const accessibleDomainKeys = this.getAccessibleDomainKeys(
+      tenantAccess?.permissionKeys,
+    );
+
+    try {
+      const detail = await this.getTenantAiMemoryRecordDetailUseCase.execute(
+        tenantSlug,
+        recordId,
+        {
+          accessibleAgentKeys,
+        },
+      );
+
+      if (
+        !this.isVisibleAiMemoryRecord(
+          detail.record,
+          accessibleDomainKeys,
+          accessibleAgentKeys,
+        )
+      ) {
+        throw new ForbiddenException(
+          `Visible AI access is required to update memory record ${recordId}.`,
+        );
+      }
+
+      if (
+        body.sourceKind === undefined &&
+        body.freshness === undefined &&
+        body.title === undefined &&
+        body.summary === undefined &&
+        body.detail === undefined &&
+        body.tags === undefined &&
+        body.status === undefined
+      ) {
+        throw new BadRequestException(
+          'At least one editable AI memory record field is required.',
+        );
+      }
+
+      const record = await this.updateTenantAiMemoryRecordUseCase.execute({
+        tenantSlug,
+        recordId,
+        sourceKind: body.sourceKind ?? undefined,
+        freshness: body.freshness ?? undefined,
+        title: body.title ?? undefined,
+        summary: body.summary ?? undefined,
+        detail: body.detail ?? undefined,
+        tags: body.tags ?? undefined,
+        status: body.status ?? undefined,
+      });
+
+      return toAiMemoryRecordResponseDto(record);
+    } catch (error) {
+      if (
+        error instanceof AiMemoryRecordNotFoundError ||
+        error instanceof TenantNotFoundError
+      ) {
         throw new NotFoundException(error.message);
       }
 
@@ -885,6 +1299,64 @@ export class AiController {
 
       throw error;
     }
+  }
+
+  @Get('tenants/:slug/retrieval-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  async getTenantAiRetrievalWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: { tenantSlug?: string; permissionKeys?: string[] },
+  ): Promise<AiRetrievalWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const accessibleAgents = this.listAiAgentCatalogUseCase
+      .execute()
+      .filter((entry) => entry.availability === 'ready')
+      .filter((entry) =>
+        this.hasAgentPermission(entry.key, tenantAccess?.permissionKeys),
+      );
+
+    if (accessibleAgents.length === 0) {
+      throw new ForbiddenException(
+        'At least one AI agent permission is required for the tenant retrieval workspace.',
+      );
+    }
+
+    const agents = await Promise.all(
+      accessibleAgents.map(async (agent) => ({
+        agentKey: agent.key,
+        title: agent.title,
+        domainKey: agent.domainKey,
+        productKey: agent.productKey,
+        retrieval: await this.getTenantAiMemoryRetrievalUseCase.execute(
+          tenantSlug,
+          agent.key,
+        ),
+      })),
+    );
+
+    const uniqueRecordIds = new Set(
+      agents.flatMap((entry) => entry.retrieval.records.map((record) => record.id)),
+    );
+
+    return toAiRetrievalWorkspaceResponseDto({
+      tenantSlug,
+      generatedAt: new Date(),
+      counts: {
+        totalAgents: agents.length,
+        agentsWithMemory: agents.filter((entry) => entry.retrieval.recordCount > 0)
+          .length,
+        totalRetrievedRecords: agents.reduce(
+          (total, entry) => total + entry.retrieval.recordCount,
+          0,
+        ),
+        uniqueRetrievedRecords: uniqueRecordIds.size,
+      },
+      agents,
+    });
   }
 
   @Get('tenants/:slug/health-workspace')
@@ -6273,6 +6745,20 @@ export class AiController {
         reviewNote: body.reviewNote ?? null,
       });
 
+      if (record.status === 'approved' || record.status === 'rejected') {
+        await this.captureAiApprovalMemory({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          agentKey,
+          approvalRequestId: record.id,
+          suggestionRunId: record.suggestionRunId,
+          policyKey: record.policyKey,
+          status: record.status,
+          reviewNote: record.reviewNote,
+          actorUserId: authenticatedUser.id,
+          actorEmail: authenticatedUser.email,
+        });
+      }
+
       return toAiApprovalRequestResponseDto(record);
     } catch (error) {
       if (
@@ -6316,12 +6802,6 @@ export class AiController {
 
       const candidateToolKey = this.getGuardedExecutionCandidateToolKey(agentKey);
 
-      if (candidateToolKey !== 'growth_case_assignment_execution') {
-        throw new BadRequestException(
-          `AI agent ${agentKey} does not support the first guarded execution lane.`,
-        );
-      }
-
       const approvalRequests =
         await this.listTenantAiApprovalRequestsUseCase.execute(
           tenantSlug,
@@ -6346,48 +6826,168 @@ export class AiController {
         );
       }
 
-      const operationalCase =
-        await this.takeTenantGrowthOperationalCaseUseCase.execute({
+      if (candidateToolKey === 'growth_case_assignment_execution') {
+        if (!body.caseId) {
+          throw new BadRequestException(
+            'caseId is required for growth guarded execution.',
+          );
+        }
+
+        const operationalCase =
+          await this.takeTenantGrowthOperationalCaseUseCase.execute({
+            tenantSlug,
+            caseId: body.caseId,
+            assignedUserId: authenticatedUser.id,
+            assignedUserEmail: authenticatedUser.email,
+          });
+
+        const summary = `Guarded execution completed for ${candidateToolKey} after approved request ${approvalRequest.id}.`;
+        const detail = `Operational case ${operationalCase.id} is now assigned to ${authenticatedUser.email ?? authenticatedUser.id} under the named human gate.`;
+
+        await this.createTenantAiGuardedExecutionEventUseCase.execute({
           tenantSlug,
-          caseId: body.caseId,
-          assignedUserId: authenticatedUser.id,
-          assignedUserEmail: authenticatedUser.email,
+          agentKey,
+          eventType: 'executed',
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          caseId: operationalCase.id,
+          safeFallbackMode: null,
+          summary,
+          detail,
+          occurredAt: operationalCase.updatedAt,
+          createdByUserId: authenticatedUser.id,
+          createdByEmail: authenticatedUser.email,
         });
 
-      await this.createTenantAiGuardedExecutionEventUseCase.execute({
-        tenantSlug,
-        agentKey,
-        eventType: 'executed',
-        approvalRequestId: approvalRequest.id,
-        suggestionRunId: approvalRequest.suggestionRunId,
-        toolKey: candidateToolKey,
-        caseId: operationalCase.id,
-        safeFallbackMode: null,
-        summary: `Guarded execution completed for ${candidateToolKey} after approved request ${approvalRequest.id}.`,
-        detail: `Operational case ${operationalCase.id} is now assigned to ${authenticatedUser.email ?? authenticatedUser.id} under the named human gate.`,
-        occurredAt: operationalCase.updatedAt,
-        createdByUserId: authenticatedUser.id,
-        createdByEmail: authenticatedUser.email,
-      });
+        await this.captureAiGuardedExecutionMemory({
+          tenantSlug,
+          agentKey,
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          targetId: operationalCase.id,
+          eventType: 'executed',
+          safeFallbackMode: null,
+          occurredAt: operationalCase.updatedAt,
+          actorUserId: authenticatedUser.id,
+          actorEmail: authenticatedUser.email,
+        });
 
-      return toAiGuardedExecutionExecutionResponseDto({
-        tenantSlug,
-        agentKey,
-        approvalRequestId: approvalRequest.id,
-        suggestionRunId: approvalRequest.suggestionRunId,
-        toolKey: candidateToolKey,
-        executedAt: operationalCase.updatedAt,
-        summary: `Guarded execution completed for ${candidateToolKey} after approved request ${approvalRequest.id}.`,
-        detail: `Operational case ${operationalCase.id} is now assigned to ${authenticatedUser.email ?? authenticatedUser.id} under the named human gate.`,
-        operationalCase,
-      });
+        return toAiGuardedExecutionExecutionResponseDto({
+          tenantSlug,
+          agentKey,
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          targetKind: 'growth_operational_case',
+          executedAt: operationalCase.updatedAt,
+          summary,
+          detail,
+          operationalCase,
+        });
+      }
+
+      if (candidateToolKey === 'invoice_payment_collection_execution') {
+        if (!body.invoiceId) {
+          throw new BadRequestException(
+            'invoiceId is required for invoicing guarded execution.',
+          );
+        }
+
+        const invoiceDetail = await this.getTenantInvoiceDetailUseCase.execute(
+          tenantSlug,
+          body.invoiceId,
+        );
+
+        if (invoiceDetail.settlement.balanceDueInCents <= 0) {
+          throw new ConflictException(
+            `Invoice ${body.invoiceId} has no outstanding balance for guarded payment posting.`,
+          );
+        }
+
+        const payment =
+          await this.createTenantInvoicePaymentUseCase.execute({
+            tenantSlug,
+            invoiceId: body.invoiceId,
+            amountInCents: invoiceDetail.settlement.balanceDueInCents,
+            method: 'ai_guarded_execution',
+            reference: `ai-approval:${approvalRequest.id}`,
+            notes: `Guarded execution payment posted from approval request ${approvalRequest.id}.`,
+          });
+        const updatedInvoiceDetail =
+          await this.getTenantInvoiceDetailUseCase.execute(
+            tenantSlug,
+            body.invoiceId,
+          );
+
+        const summary = `Guarded execution completed for ${candidateToolKey} after approved request ${approvalRequest.id}.`;
+        const detail = `Invoice ${body.invoiceId} received guarded payment ${payment.id} for ${payment.amountInCents} ${payment.currency} under the named human gate.`;
+
+        await this.createTenantAiGuardedExecutionEventUseCase.execute({
+          tenantSlug,
+          agentKey,
+          eventType: 'executed',
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          caseId: body.invoiceId,
+          safeFallbackMode: null,
+          summary,
+          detail,
+          occurredAt: payment.updatedAt,
+          createdByUserId: authenticatedUser.id,
+          createdByEmail: authenticatedUser.email,
+        });
+
+        await this.captureAiGuardedExecutionMemory({
+          tenantSlug,
+          agentKey,
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          targetId: body.invoiceId,
+          eventType: 'executed',
+          safeFallbackMode: null,
+          occurredAt: payment.updatedAt,
+          actorUserId: authenticatedUser.id,
+          actorEmail: authenticatedUser.email,
+        });
+
+        return toAiGuardedExecutionExecutionResponseDto({
+          tenantSlug,
+          agentKey,
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          targetKind: 'invoice_payment',
+          executedAt: payment.updatedAt,
+          summary,
+          detail,
+          invoice: updatedInvoiceDetail,
+          payment,
+        });
+      }
+
+      throw new BadRequestException(
+        `AI agent ${agentKey} does not support a guarded execution lane yet.`,
+      );
     } catch (error) {
       if (
         error instanceof AiAgentNotFoundError ||
         error instanceof TenantNotFoundError ||
-        error instanceof GrowthOperationalCaseNotFoundError
+        error instanceof GrowthOperationalCaseNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof PaymentNotFoundError
       ) {
         throw new NotFoundException(error.message);
+      }
+
+      if (
+        error instanceof InvalidInvoicePaymentStateError ||
+        error instanceof InvoicePaymentExceedsBalanceError
+      ) {
+        throw new ConflictException(error.message);
       }
 
       throw error;
@@ -6420,12 +7020,6 @@ export class AiController {
 
       const candidateToolKey = this.getGuardedExecutionCandidateToolKey(agentKey);
 
-      if (candidateToolKey !== 'growth_case_assignment_execution') {
-        throw new BadRequestException(
-          `AI agent ${agentKey} does not support the first guarded execution rollback lane.`,
-        );
-      }
-
       const approvalRequests =
         await this.listTenantAiApprovalRequestsUseCase.execute(
           tenantSlug,
@@ -6450,46 +7044,172 @@ export class AiController {
         );
       }
 
-      const operationalCase =
-        await this.releaseTenantGrowthOperationalCaseUseCase.execute({
+      if (candidateToolKey === 'growth_case_assignment_execution') {
+        if (!body.caseId) {
+          throw new BadRequestException(
+            'caseId is required for growth guarded execution rollback.',
+          );
+        }
+
+        const operationalCase =
+          await this.releaseTenantGrowthOperationalCaseUseCase.execute({
+            tenantSlug,
+            caseId: body.caseId,
+          });
+
+        const summary = `Guarded execution rolled back for ${candidateToolKey} after approved request ${approvalRequest.id}.`;
+        const detail = `Operational case ${operationalCase.id} returned to explicit human-only handling for ${authenticatedUser.email ?? authenticatedUser.id}.`;
+
+        await this.createTenantAiGuardedExecutionEventUseCase.execute({
           tenantSlug,
-          caseId: body.caseId,
+          agentKey,
+          eventType: 'rolled_back',
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          caseId: operationalCase.id,
+          safeFallbackMode: 'suggestion_only',
+          summary,
+          detail,
+          occurredAt: operationalCase.updatedAt,
+          createdByUserId: authenticatedUser.id,
+          createdByEmail: authenticatedUser.email,
         });
 
-      await this.createTenantAiGuardedExecutionEventUseCase.execute({
-        tenantSlug,
-        agentKey,
-        eventType: 'rolled_back',
-        approvalRequestId: approvalRequest.id,
-        suggestionRunId: approvalRequest.suggestionRunId,
-        toolKey: candidateToolKey,
-        caseId: operationalCase.id,
-        safeFallbackMode: 'suggestion_only',
-        summary: `Guarded execution rolled back for ${candidateToolKey} after approved request ${approvalRequest.id}.`,
-        detail: `Operational case ${operationalCase.id} returned to explicit human-only handling for ${authenticatedUser.email ?? authenticatedUser.id}.`,
-        occurredAt: operationalCase.updatedAt,
-        createdByUserId: authenticatedUser.id,
-        createdByEmail: authenticatedUser.email,
-      });
+        await this.captureAiGuardedExecutionMemory({
+          tenantSlug,
+          agentKey,
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          targetId: operationalCase.id,
+          eventType: 'rolled_back',
+          safeFallbackMode: 'suggestion_only',
+          occurredAt: operationalCase.updatedAt,
+          actorUserId: authenticatedUser.id,
+          actorEmail: authenticatedUser.email,
+        });
 
-      return toAiGuardedExecutionRollbackExecutionResponseDto({
-        tenantSlug,
-        agentKey,
-        approvalRequestId: approvalRequest.id,
-        suggestionRunId: approvalRequest.suggestionRunId,
-        toolKey: candidateToolKey,
-        rolledBackAt: operationalCase.updatedAt,
-        summary: `Guarded execution rolled back for ${candidateToolKey} after approved request ${approvalRequest.id}.`,
-        detail: `Operational case ${operationalCase.id} returned to explicit human-only handling for ${authenticatedUser.email ?? authenticatedUser.id}.`,
-        operationalCase,
-      });
+        return toAiGuardedExecutionRollbackExecutionResponseDto({
+          tenantSlug,
+          agentKey,
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          targetKind: 'growth_operational_case',
+          rolledBackAt: operationalCase.updatedAt,
+          summary,
+          detail,
+          operationalCase,
+        });
+      }
+
+      if (candidateToolKey === 'invoice_payment_collection_execution') {
+        if (!body.invoiceId) {
+          throw new BadRequestException(
+            'invoiceId is required for invoicing guarded execution rollback.',
+          );
+        }
+
+        const invoiceDetail = await this.getTenantInvoiceDetailUseCase.execute(
+          tenantSlug,
+          body.invoiceId,
+        );
+        const matchingPayment = [...invoiceDetail.payments]
+          .reverse()
+          .find(
+            (entry) =>
+              entry.reference === `ai-approval:${approvalRequest.id}` &&
+              entry.status === 'posted' &&
+              entry.reversedAt === null,
+          );
+
+        if (!matchingPayment) {
+          throw new NotFoundException(
+            `No guarded payment linked to approval request ${approvalRequest.id} was found for invoice ${body.invoiceId}.`,
+          );
+        }
+
+        const payment =
+          await this.reverseTenantInvoicePaymentUseCase.execute({
+            tenantSlug,
+            invoiceId: body.invoiceId,
+            paymentId: matchingPayment.id,
+            reason: `Guarded execution rollback for approval request ${approvalRequest.id}.`,
+          });
+        const updatedInvoiceDetail =
+          await this.getTenantInvoiceDetailUseCase.execute(
+            tenantSlug,
+            body.invoiceId,
+          );
+
+        const summary = `Guarded execution rolled back for ${candidateToolKey} after approved request ${approvalRequest.id}.`;
+        const detail = `Invoice ${body.invoiceId} reversed guarded payment ${payment.id} and returned the lane to explicit human-only handling.`;
+
+        await this.createTenantAiGuardedExecutionEventUseCase.execute({
+          tenantSlug,
+          agentKey,
+          eventType: 'rolled_back',
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          caseId: body.invoiceId,
+          safeFallbackMode: 'suggestion_only',
+          summary,
+          detail,
+          occurredAt: payment.updatedAt,
+          createdByUserId: authenticatedUser.id,
+          createdByEmail: authenticatedUser.email,
+        });
+
+        await this.captureAiGuardedExecutionMemory({
+          tenantSlug,
+          agentKey,
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          targetId: body.invoiceId,
+          eventType: 'rolled_back',
+          safeFallbackMode: 'suggestion_only',
+          occurredAt: payment.updatedAt,
+          actorUserId: authenticatedUser.id,
+          actorEmail: authenticatedUser.email,
+        });
+
+        return toAiGuardedExecutionRollbackExecutionResponseDto({
+          tenantSlug,
+          agentKey,
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          targetKind: 'invoice_payment',
+          rolledBackAt: payment.updatedAt,
+          summary,
+          detail,
+          invoice: updatedInvoiceDetail,
+          payment,
+        });
+      }
+
+      throw new BadRequestException(
+        `AI agent ${agentKey} does not support a guarded execution rollback lane yet.`,
+      );
     } catch (error) {
       if (
         error instanceof AiAgentNotFoundError ||
         error instanceof TenantNotFoundError ||
-        error instanceof GrowthOperationalCaseNotFoundError
+        error instanceof GrowthOperationalCaseNotFoundError ||
+        error instanceof InvoiceNotFoundError ||
+        error instanceof PaymentNotFoundError
       ) {
         throw new NotFoundException(error.message);
+      }
+
+      if (
+        error instanceof InvalidInvoicePaymentStateError ||
+        error instanceof InvoicePaymentExceedsBalanceError
+      ) {
+        throw new ConflictException(error.message);
       }
 
       throw error;
@@ -6549,6 +7269,38 @@ export class AiController {
     return type as AiActivityEventTypeResponseDto;
   }
 
+  private parseMemoryScopeFilter(
+    scope: string | undefined,
+  ): Array<'tenant' | 'domain' | 'agent'> | null {
+    if (!scope) {
+      return null;
+    }
+
+    if (!['tenant', 'domain', 'agent'].includes(scope)) {
+      throw new BadRequestException(
+        `Unsupported AI memory record scope "${scope}".`,
+      );
+    }
+
+    return [scope as 'tenant' | 'domain' | 'agent'];
+  }
+
+  private parseMemoryStatusFilter(
+    status: string | undefined,
+  ): Array<'active' | 'inactive'> | null {
+    if (!status || status === 'all') {
+      return null;
+    }
+
+    if (!['active', 'inactive'].includes(status)) {
+      throw new BadRequestException(
+        `Unsupported AI memory record status "${status}".`,
+      );
+    }
+
+    return [status as 'active' | 'inactive'];
+  }
+
   private getAccessibleReadyAiWorkspaceAgentKeys(
     permissionKeys: string[] | undefined,
   ): string[] {
@@ -6572,6 +7324,61 @@ export class AiController {
       : GROWTH_PERMISSIONS.CONVERSATIONS_READ;
   }
 
+  private getAccessibleDomainKeys(
+    permissionKeys: string[] | undefined,
+  ): Array<'growth' | 'invoicing' | 'ecommerce'> {
+    return Array.from(
+      new Set(
+        this.getAccessibleReadyAiWorkspaceAgentKeys(permissionKeys).map((entry) =>
+          this.getAgentDomainKey(entry),
+        ),
+      ),
+    );
+  }
+
+  private getAgentDomainKey(
+    agentKey: string,
+  ): 'growth' | 'invoicing' | 'ecommerce' {
+    const agent = this.listAiAgentCatalogUseCase
+      .execute()
+      .find((entry) => entry.key === agentKey);
+
+    if (!agent) {
+      throw new NotFoundException(`AI agent ${agentKey} was not found.`);
+    }
+
+    return agent.domainKey;
+  }
+
+  private isVisibleAiMemoryRecord(
+    record: {
+      scope: 'tenant' | 'domain' | 'agent';
+      domainKey: 'growth' | 'invoicing' | 'ecommerce' | null;
+      agentKey: string | null;
+    },
+    accessibleDomainKeys: Array<'growth' | 'invoicing' | 'ecommerce'>,
+    accessibleAgentKeys: string[],
+  ): boolean {
+    if (record.scope === 'tenant') {
+      return true;
+    }
+
+    if (record.scope === 'domain') {
+      return !!record.domainKey && accessibleDomainKeys.includes(record.domainKey);
+    }
+
+    return !!record.agentKey && accessibleAgentKeys.includes(record.agentKey);
+  }
+
+  private assertAtLeastOneAiPermission(
+    permissionKeys: string[] | undefined,
+    message: string,
+  ): void {
+    if (this.getAccessibleReadyAiWorkspaceAgentKeys(permissionKeys).length === 0) {
+      throw new ForbiddenException(message);
+    }
+  }
+
   private getGuardedExecutionCandidateToolKey(agentKey: string): string | null {
     return (
       this.getAiAgentToolAccessByAgentKeyUseCase
@@ -6582,5 +7389,90 @@ export class AiController {
             'guarded_execution_planned',
         )?.tool.key ?? null
     );
+  }
+
+  private async captureAiApprovalMemory(input: {
+    tenantSlug: string;
+    agentKey: string;
+    approvalRequestId: string;
+    suggestionRunId: string;
+    policyKey: string;
+    status: 'approved' | 'rejected';
+    reviewNote: string | null;
+    actorUserId: string;
+    actorEmail: string | null;
+  }): Promise<void> {
+    const decisionLabel = input.status === 'approved' ? 'approved' : 'rejected';
+
+    // Memory automation should never block the primary audited review path.
+    await this.createTenantAiMemoryRecordUseCase
+      .execute({
+        tenantSlug: input.tenantSlug,
+        scope: 'agent',
+        domainKey: this.getAgentDomainKey(input.agentKey),
+        agentKey: input.agentKey,
+        sourceKind: 'approval_memory',
+        freshness:
+          input.status === 'approved' ? 'durable_memory' : 'working_memory',
+        title: `Approval review: ${input.policyKey}`,
+        summary: `Human review ${decisionLabel} ${input.suggestionRunId} for ${input.agentKey} under ${input.policyKey}.`,
+        detail: input.reviewNote
+          ? `Approval request ${input.approvalRequestId} was ${decisionLabel} for suggestion run ${input.suggestionRunId}. Reviewer note: ${input.reviewNote}`
+          : `Approval request ${input.approvalRequestId} was ${decisionLabel} for suggestion run ${input.suggestionRunId} without an additional review note.`,
+        tags: [
+          `agent:${input.agentKey}`,
+          `policy:${input.policyKey}`,
+          `decision:${decisionLabel}`,
+          `run:${input.suggestionRunId}`,
+          `request:${input.approvalRequestId}`,
+        ],
+        createdByUserId: input.actorUserId,
+        createdByEmail: input.actorEmail,
+      })
+      .catch(() => undefined);
+  }
+
+  private async captureAiGuardedExecutionMemory(input: {
+    tenantSlug: string;
+    agentKey: string;
+    approvalRequestId: string;
+    suggestionRunId: string;
+    toolKey: string;
+    targetId: string;
+    eventType: 'executed' | 'rolled_back';
+    safeFallbackMode: string | null;
+    occurredAt: Date;
+    actorUserId: string;
+    actorEmail: string | null;
+  }): Promise<void> {
+    const eventLabel =
+      input.eventType === 'executed' ? 'executed' : 'rolled back';
+
+    // Memory automation should never block the primary audited execution path.
+    await this.createTenantAiMemoryRecordUseCase
+      .execute({
+        tenantSlug: input.tenantSlug,
+        scope: 'agent',
+        domainKey: this.getAgentDomainKey(input.agentKey),
+        agentKey: input.agentKey,
+        sourceKind: 'guarded_execution_memory',
+        freshness: 'working_memory',
+        title: `Guarded execution: ${input.toolKey}`,
+        summary: `Guarded execution ${eventLabel} ${input.toolKey} on ${input.targetId} after ${input.approvalRequestId}.`,
+        detail:
+          input.eventType === 'executed'
+            ? `Guarded execution ran ${input.toolKey} for suggestion run ${input.suggestionRunId} on target ${input.targetId} at ${input.occurredAt.toISOString()}.`
+            : `Guarded execution rolled back ${input.toolKey} for suggestion run ${input.suggestionRunId} on target ${input.targetId} at ${input.occurredAt.toISOString()}, returning to ${input.safeFallbackMode ?? 'unknown'} mode.`,
+        tags: [
+          `agent:${input.agentKey}`,
+          `tool:${input.toolKey}`,
+          `event:${input.eventType}`,
+          `target:${input.targetId}`,
+          `run:${input.suggestionRunId}`,
+        ],
+        createdByUserId: input.actorUserId,
+        createdByEmail: input.actorEmail,
+      })
+      .catch(() => undefined);
   }
 }

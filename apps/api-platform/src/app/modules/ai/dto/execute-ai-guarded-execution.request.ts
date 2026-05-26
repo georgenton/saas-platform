@@ -1,7 +1,13 @@
-import { IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class ExecuteAiGuardedExecutionRequestDto {
+  @IsOptional()
   @IsString()
   @MaxLength(120)
-  caseId!: string;
+  caseId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  invoiceId?: string;
 }

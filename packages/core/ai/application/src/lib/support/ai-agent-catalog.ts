@@ -215,6 +215,43 @@ export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
     },
   },
   {
+    key: 'invoice_payment_collection_execution',
+    title: 'Invoice payment collection execution',
+    summary:
+      'Would execute a narrow invoice payment posting step once guarded execution exists for invoicing.',
+    domainKey: 'invoicing',
+    availability: 'planned',
+    riskLevel: 'high',
+    actionKind: 'execute',
+    requiresApproval: true,
+    inputContract: {
+      sourceSurfaceKeys: ['invoice_document_drafting'],
+      primaryPayload:
+        'Tenant-scoped invoice detail and settlement state with deterministic outstanding balance signals.',
+      requiredContext: [
+        'invoice status',
+        'outstanding balance',
+        'payment settlement state',
+      ],
+    },
+    outputContract: {
+      primaryArtifact: 'Invoice payment posting intent.',
+      suggestedOutputKeys: ['payment_posting_intent'],
+      humanReviewFocus: [
+        'Validate that the invoice is the intended receivable before posting any payment.',
+        'Confirm the payment amount and settlement effect are explicitly approved before execution.',
+      ],
+    },
+    executionBoundary: {
+      executionMode: 'guarded_execution_planned',
+      stateMutation: 'planned',
+      externalSideEffects: 'planned',
+      reviewRequirement:
+        'This tool stays blocked until approval memory and guarded execution flows are operational for invoicing.',
+      blockedCapabilities: ['post_invoice_payment', 'reverse_invoice_payment'],
+    },
+  },
+  {
     key: 'ecommerce_launch_briefing',
     title: 'Ecommerce launch briefing',
     summary:
@@ -424,6 +461,13 @@ export const AI_AGENT_TOOL_ACCESS: AiAgentToolAccessEntry[] = [
     accessLevel: 'approval_required',
     rationale:
       'Invoice drafting suggestions are available, but they should stay behind explicit operator review before influencing invoicing work.',
+  },
+  {
+    agentKey: 'invoice-document-assistant',
+    toolKey: 'invoice_payment_collection_execution',
+    accessLevel: 'blocked',
+    rationale:
+      'Direct payment posting remains blocked until approval flows and guarded execution are in place for invoicing.',
   },
   {
     agentKey: 'ecommerce-launch-assistant',

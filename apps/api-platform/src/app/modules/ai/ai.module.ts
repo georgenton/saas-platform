@@ -2,18 +2,24 @@ import { Module } from '@nestjs/common';
 import {
   AI_APPROVAL_REQUEST_REPOSITORY,
   AI_GUARDED_EXECUTION_EVENT_REPOSITORY,
+  AI_MEMORY_RECORD_REPOSITORY,
   AI_SUGGESTION_RUN_REPOSITORY,
+  ApplyTenantAiMemoryArchivalPolicyUseCase,
   CreateTenantAiGuardedExecutionEventUseCase,
+  CreateTenantAiMemoryRecordUseCase,
   GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetAiToolRegistryEntryByKeyUseCase,
+  GetTenantAiMemoryRecordDetailUseCase,
+  GetTenantAiMemoryRetrievalUseCase,
   GetTenantAiSuggestionRunDetailUseCase,
   GetTenantAiSuggestionEnvelopeUseCase,
   GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
   GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
   ListTenantAiApprovalRequestsUseCase,
   ListTenantAiGuardedExecutionEventsUseCase,
+  ListTenantAiMemoryRecordsUseCase,
   ListTenantAiSuggestionRunsUseCase,
   ListAiApprovalPoliciesUseCase,
   ListAiAgentCatalogUseCase,
@@ -22,6 +28,7 @@ import {
   PrepareTenantAiSuggestionRunUseCase,
   RequestTenantAiSuggestionRunApprovalUseCase,
   ReviewTenantAiApprovalRequestUseCase,
+  UpdateTenantAiMemoryRecordUseCase,
 } from '@saas-platform/ai-application';
 import {
   GetTenantGrowthAssistDailyAgendaUseCase,
@@ -98,18 +105,32 @@ import { AiController } from './ai.controller';
     },
     {
       provide: GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
-      inject: [GetTenantGrowthAssistDailyAgendaUseCase],
-      useFactory: (getTenantGrowthAssistDailyAgendaUseCase) =>
+      inject: [
+        GetTenantGrowthAssistDailyAgendaUseCase,
+        GetTenantAiMemoryRetrievalUseCase,
+      ],
+      useFactory: (
+        getTenantGrowthAssistDailyAgendaUseCase,
+        getTenantAiMemoryRetrievalUseCase,
+      ) =>
         new GetTenantGrowthAssistAiSuggestionEnvelopeUseCase(
           getTenantGrowthAssistDailyAgendaUseCase,
+          getTenantAiMemoryRetrievalUseCase,
         ),
     },
     {
       provide: GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
-      inject: [GetTenantInvoiceDocumentDraftingAssistUseCase],
-      useFactory: (getTenantInvoiceDocumentDraftingAssistUseCase) =>
+      inject: [
+        GetTenantInvoiceDocumentDraftingAssistUseCase,
+        GetTenantAiMemoryRetrievalUseCase,
+      ],
+      useFactory: (
+        getTenantInvoiceDocumentDraftingAssistUseCase,
+        getTenantAiMemoryRetrievalUseCase,
+      ) =>
         new GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase(
           getTenantInvoiceDocumentDraftingAssistUseCase,
+          getTenantAiMemoryRetrievalUseCase,
         ),
     },
     {
@@ -125,6 +146,69 @@ import { AiController } from './ai.controller';
         new GetTenantAiSuggestionEnvelopeUseCase(
           getTenantGrowthAssistAiSuggestionEnvelopeUseCase,
           getTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
+        ),
+    },
+    {
+      provide: ApplyTenantAiMemoryArchivalPolicyUseCase,
+      inject: [TENANT_REPOSITORY, AI_MEMORY_RECORD_REPOSITORY],
+      useFactory: (tenantRepository, aiMemoryRecordRepository) =>
+        new ApplyTenantAiMemoryArchivalPolicyUseCase(
+          tenantRepository,
+          aiMemoryRecordRepository,
+        ),
+    },
+    {
+      provide: CreateTenantAiMemoryRecordUseCase,
+      inject: [TENANT_REPOSITORY, AI_MEMORY_RECORD_REPOSITORY],
+      useFactory: (tenantRepository, aiMemoryRecordRepository) =>
+        new CreateTenantAiMemoryRecordUseCase(
+          tenantRepository,
+          aiMemoryRecordRepository,
+        ),
+    },
+    {
+      provide: ListTenantAiMemoryRecordsUseCase,
+      inject: [TENANT_REPOSITORY, AI_MEMORY_RECORD_REPOSITORY],
+      useFactory: (tenantRepository, aiMemoryRecordRepository) =>
+        new ListTenantAiMemoryRecordsUseCase(
+          tenantRepository,
+          aiMemoryRecordRepository,
+        ),
+    },
+    {
+      provide: GetTenantAiMemoryRetrievalUseCase,
+      inject: [TENANT_REPOSITORY, AI_MEMORY_RECORD_REPOSITORY],
+      useFactory: (tenantRepository, aiMemoryRecordRepository) =>
+        new GetTenantAiMemoryRetrievalUseCase(
+          tenantRepository,
+          aiMemoryRecordRepository,
+        ),
+    },
+    {
+      provide: GetTenantAiMemoryRecordDetailUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        AI_MEMORY_RECORD_REPOSITORY,
+        AI_SUGGESTION_RUN_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        aiMemoryRecordRepository,
+        aiSuggestionRunRepository,
+      ) =>
+        new GetTenantAiMemoryRecordDetailUseCase(
+          tenantRepository,
+          aiMemoryRecordRepository,
+          aiSuggestionRunRepository,
+        ),
+    },
+    {
+      provide: UpdateTenantAiMemoryRecordUseCase,
+      inject: [TENANT_REPOSITORY, AI_MEMORY_RECORD_REPOSITORY],
+      useFactory: (tenantRepository, aiMemoryRecordRepository) =>
+        new UpdateTenantAiMemoryRecordUseCase(
+          tenantRepository,
+          aiMemoryRecordRepository,
         ),
     },
     {

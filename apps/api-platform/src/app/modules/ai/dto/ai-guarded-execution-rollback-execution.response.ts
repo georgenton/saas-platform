@@ -1,8 +1,18 @@
 import { GrowthOperationalCaseRecord } from '@saas-platform/growth-application';
+import { InvoiceDetailView } from '@saas-platform/invoicing-application';
+import { Payment } from '@saas-platform/invoicing-domain';
 import {
   GrowthOperationalCaseResponseDto,
   toGrowthOperationalCaseResponseDto,
 } from '../../growth/dto/growth-operational-case.response';
+import {
+  InvoiceDetailResponseDto,
+  toInvoiceDetailResponseDto,
+} from '../../invoicing/dto/invoice-detail.response';
+import {
+  PaymentResponseDto,
+  toPaymentResponseDto,
+} from '../../invoicing/dto/payment.response';
 
 export interface AiGuardedExecutionRollbackExecutionResponseDto {
   tenantSlug: string;
@@ -10,11 +20,14 @@ export interface AiGuardedExecutionRollbackExecutionResponseDto {
   approvalRequestId: string;
   suggestionRunId: string;
   toolKey: string;
+  targetKind: 'growth_operational_case' | 'invoice_payment';
   rolledBackAt: string;
   safeFallbackMode: 'suggestion_only';
   summary: string;
   detail: string;
-  operationalCase: GrowthOperationalCaseResponseDto;
+  operationalCase: GrowthOperationalCaseResponseDto | null;
+  invoice: InvoiceDetailResponseDto | null;
+  payment: PaymentResponseDto | null;
 }
 
 export function toAiGuardedExecutionRollbackExecutionResponseDto(input: {
@@ -23,10 +36,13 @@ export function toAiGuardedExecutionRollbackExecutionResponseDto(input: {
   approvalRequestId: string;
   suggestionRunId: string;
   toolKey: string;
+  targetKind: 'growth_operational_case' | 'invoice_payment';
   rolledBackAt: Date;
   summary: string;
   detail: string;
-  operationalCase: GrowthOperationalCaseRecord;
+  operationalCase?: GrowthOperationalCaseRecord | null;
+  invoice?: InvoiceDetailView | null;
+  payment?: Payment | null;
 }): AiGuardedExecutionRollbackExecutionResponseDto {
   return {
     tenantSlug: input.tenantSlug,
@@ -34,10 +50,15 @@ export function toAiGuardedExecutionRollbackExecutionResponseDto(input: {
     approvalRequestId: input.approvalRequestId,
     suggestionRunId: input.suggestionRunId,
     toolKey: input.toolKey,
+    targetKind: input.targetKind,
     rolledBackAt: input.rolledBackAt.toISOString(),
     safeFallbackMode: 'suggestion_only',
     summary: input.summary,
     detail: input.detail,
-    operationalCase: toGrowthOperationalCaseResponseDto(input.operationalCase),
+    operationalCase: input.operationalCase
+      ? toGrowthOperationalCaseResponseDto(input.operationalCase)
+      : null,
+    invoice: input.invoice ? toInvoiceDetailResponseDto(input.invoice) : null,
+    payment: input.payment ? toPaymentResponseDto(input.payment) : null,
   };
 }

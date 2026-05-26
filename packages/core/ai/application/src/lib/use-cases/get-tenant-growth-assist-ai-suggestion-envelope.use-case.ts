@@ -12,6 +12,7 @@ import {
   findAiPromptRegistryEntryByAgentKey,
   listAiAgentToolAccessByAgentKey,
 } from '../support/ai-agent-catalog';
+import { GetTenantAiMemoryRetrievalUseCase } from './get-tenant-ai-memory-retrieval.use-case';
 
 const GROWTH_ASSIST_AGENT_KEY = 'growth-assist-coach';
 const GROWTH_ASSIST_SURFACE_KEY = 'growth_assist_daily_agenda';
@@ -19,6 +20,7 @@ const GROWTH_ASSIST_SURFACE_KEY = 'growth_assist_daily_agenda';
 export class GetTenantGrowthAssistAiSuggestionEnvelopeUseCase {
   constructor(
     private readonly getTenantGrowthAssistDailyAgendaUseCase: GetTenantGrowthAssistDailyAgendaUseCase,
+    private readonly getTenantAiMemoryRetrievalUseCase: GetTenantAiMemoryRetrievalUseCase,
   ) {}
 
   async execute(
@@ -39,6 +41,10 @@ export class GetTenantGrowthAssistAiSuggestionEnvelopeUseCase {
 
     const agenda =
       await this.getTenantGrowthAssistDailyAgendaUseCase.execute(tenantSlug);
+    const retrieval = await this.getTenantAiMemoryRetrievalUseCase.execute(
+      tenantSlug,
+      agentKey,
+    );
 
     return {
       tenantSlug,
@@ -65,12 +71,16 @@ export class GetTenantGrowthAssistAiSuggestionEnvelopeUseCase {
         accessLevel: entry.accessLevel,
         rationale: entry.rationale,
       })),
-      contextBlocks: this.buildContextBlocks(agenda),
+      contextBlocks: this.buildContextBlocks(agenda, retrieval.records),
+      ...(retrieval.recordCount > 0 ? { retrieval } : {}),
     };
   }
 
   private buildContextBlocks(
     agenda: TenantGrowthAssistDailyAgendaView,
+    retrievedMemoryRecords: Awaited<
+      ReturnType<GetTenantAiMemoryRetrievalUseCase['execute']>
+    >['records'],
   ): AiSuggestionContextBlock[] {
     return [
       {
@@ -138,6 +148,18 @@ export class GetTenantGrowthAssistAiSuggestionEnvelopeUseCase {
           `Top action: ${agenda.channelHealth.topAlertRecommendedAction ?? 'No action required'}`,
         ],
       },
+      ...retrievedMemoryRecords.map((entry) => ({
+        key: `memory_${entry.id}`,
+        title: `Memory: ${entry.title}`,
+        detail: entry.summary,
+        bullets: [
+          entry.detail,
+          `Scope: ${entry.scope}`,
+          `Source: ${entry.sourceKind}`,
+          `Freshness: ${entry.freshness}`,
+          `Why included: ${entry.inclusionReason}`,
+        ],
+      })),
     ].map((block) => ({
       ...block,
       bullets:

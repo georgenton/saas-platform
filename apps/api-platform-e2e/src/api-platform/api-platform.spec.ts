@@ -43,14 +43,19 @@ import {
 import { FeatureFlag } from '@saas-platform/feature-flags-domain';
 import {
   CreateTenantAiGuardedExecutionEventUseCase,
+  CreateTenantAiMemoryRecordUseCase,
+  GetTenantAiMemoryRecordDetailUseCase,
+  GetTenantAiMemoryRetrievalUseCase,
   GetTenantAiSuggestionRunDetailUseCase,
   AiSuggestionRunNotFoundError,
   ListTenantAiApprovalRequestsUseCase,
   ListTenantAiGuardedExecutionEventsUseCase,
+  ListTenantAiMemoryRecordsUseCase,
   ListTenantAiSuggestionRunsUseCase,
   PrepareTenantAiSuggestionRunUseCase,
   RequestTenantAiSuggestionRunApprovalUseCase,
   ReviewTenantAiApprovalRequestUseCase,
+  UpdateTenantAiMemoryRecordUseCase,
 } from '@saas-platform/ai-application';
 import {
   AutoAssignTenantGrowthOperationalCasesUseCase,
@@ -244,12 +249,17 @@ describe('API', () => {
   let getTenantGrowthAssistDailyAgendaUseCase: { execute: jest.Mock };
   let listTenantAiApprovalRequestsUseCase: { execute: jest.Mock };
   let createTenantAiGuardedExecutionEventUseCase: { execute: jest.Mock };
+  let createTenantAiMemoryRecordUseCase: { execute: jest.Mock };
+  let getTenantAiMemoryRecordDetailUseCase: { execute: jest.Mock };
+  let getTenantAiMemoryRetrievalUseCase: { execute: jest.Mock };
   let getTenantAiSuggestionRunDetailUseCase: { execute: jest.Mock };
   let listTenantAiGuardedExecutionEventsUseCase: { execute: jest.Mock };
+  let listTenantAiMemoryRecordsUseCase: { execute: jest.Mock };
   let listTenantAiSuggestionRunsUseCase: { execute: jest.Mock };
   let prepareTenantAiSuggestionRunUseCase: { execute: jest.Mock };
   let requestTenantAiSuggestionRunApprovalUseCase: { execute: jest.Mock };
   let reviewTenantAiApprovalRequestUseCase: { execute: jest.Mock };
+  let updateTenantAiMemoryRecordUseCase: { execute: jest.Mock };
   let getTenantGrowthConversationWorkbenchUseCase: { execute: jest.Mock };
   let getTenantGrowthAssignmentWorkloadUseCase: { execute: jest.Mock };
   let getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase: {
@@ -2834,6 +2844,147 @@ describe('API', () => {
         createdAt: new Date('2026-05-20T10:12:00.000Z'),
       }),
     };
+    createTenantAiMemoryRecordUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        id: 'ai-memory-001',
+        tenantId: 'tenant_123',
+        tenantSlug: 'saas-platform',
+        scope: 'agent',
+        domainKey: 'growth',
+        agentKey: 'growth-assist-coach',
+        sourceKind: 'operator_note',
+        freshness: 'working_memory',
+        title: 'Lead routing preference',
+        summary: 'Priorizar reasignacion manual cuando el queue llegue caliente.',
+        detail: 'Cuando el lead ya esta caliente, Growth prefiere reasignacion manual antes de auto-routing.',
+        tags: ['routing', 'hot-leads'],
+        status: 'active',
+        createdByUserId: user.id,
+        createdByEmail: user.email,
+        createdAt: new Date('2026-05-20T10:05:00.000Z'),
+        updatedAt: new Date('2026-05-20T10:05:00.000Z'),
+      }),
+    };
+    getTenantAiMemoryRecordDetailUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        record: {
+          id: 'ai-memory-001',
+          tenantId: 'tenant_123',
+          tenantSlug: 'saas-platform',
+          scope: 'agent',
+          domainKey: 'growth',
+          agentKey: 'growth-assist-coach',
+          sourceKind: 'operator_note',
+          freshness: 'working_memory',
+          title: 'Lead routing preference',
+          summary: 'Priorizar reasignacion manual cuando el queue llegue caliente.',
+          detail:
+            'Cuando el lead ya esta caliente, Growth prefiere reasignacion manual antes de auto-routing.',
+          tags: ['routing', 'hot-leads'],
+          status: 'active',
+          createdByUserId: user.id,
+          createdByEmail: user.email,
+          createdAt: new Date('2026-05-20T10:05:00.000Z'),
+          updatedAt: new Date('2026-05-20T10:05:00.000Z'),
+        },
+        provenance: {
+          usageCount: 1,
+          agentsUsingCount: 1,
+          latestUsedAt: new Date('2026-05-20T10:37:00.000Z'),
+          recentSuggestionRuns: [
+            {
+              suggestionRunId: 'ai-run-001',
+              agentKey: 'growth-assist-coach',
+              surfaceKey: 'growth_assist_daily_agenda',
+              sourceContractKey: 'growth.assist.daily_agenda',
+              promptPackKey: 'growth-assist-coach-core',
+              promptPackVersion: 'v1',
+              generatedAt: new Date('2026-05-20T10:37:00.000Z'),
+              createdAt: new Date('2026-05-20T10:37:00.000Z'),
+              requestedByUserId: user.id,
+              requestedByEmail: user.email,
+              summary:
+                'Growth Assist Coach prepared a suggestion-mode handoff for Growth Assist daily agenda using prompt pack growth-assist-coach-core@v1.',
+              memoryScope: 'agent',
+              memoryInclusionReason:
+                'Agent-scoped memory attached directly to growth-assist-coach.',
+            },
+          ],
+          notes: [
+            '1 persisted suggestion run(s) already reference this memory record.',
+            'Provenance was scanned across 2 visible AI agent lane(s).',
+            'Active memory can still hydrate fresh retrieval contexts while this provenance trail remains available.',
+          ],
+        },
+      }),
+    };
+    getTenantAiMemoryRetrievalUseCase = {
+      execute: jest.fn().mockImplementation(async (_tenantSlug: string, agentKey: string) => {
+        if (agentKey === 'growth-assist-coach') {
+          return {
+            retrievedAt: new Date('2026-05-20T10:35:00.000Z'),
+            recordCount: 1,
+            policy: {
+              version: 'v1',
+              limit: 5,
+              suppressedDuplicateCount: 0,
+              archivedRecordCount: 0,
+              prioritizedRecordIds: ['ai-memory-001'],
+              archivalSummary:
+                'Operator notes are never auto-archived; working guarded-execution memory archives after 7 days; working approval memory archives after 14 days; durable automated memory archives after 45 days.',
+              rankingSummary:
+                'operator_note > guarded_execution_memory > approval_memory; agent > domain > tenant; working_memory > durable_memory; recency breaks ties.',
+            },
+            records: [
+              {
+                id: 'ai-memory-001',
+                scope: 'agent',
+                domainKey: 'growth',
+                agentKey: 'growth-assist-coach',
+                sourceKind: 'operator_note',
+                freshness: 'working_memory',
+                title: 'Lead routing preference',
+                summary:
+                  'Priorizar reasignacion manual cuando el queue llegue caliente.',
+                detail:
+                  'Cuando el lead ya esta caliente, Growth prefiere reasignacion manual antes de auto-routing.',
+                tags: ['routing', 'hot-leads'],
+                lastUpdatedAt: new Date('2026-05-20T10:05:00.000Z'),
+                inclusionReason:
+                  'Agent-scoped memory attached directly to growth-assist-coach.',
+              },
+            ],
+            notes: [
+              '1 persisted memory record(s) matched this agent context.',
+              'Retrieval considers tenant-wide, growth-scoped, and growth-assist-coach-scoped memory.',
+              'Records are ordered by most recently updated memory first.',
+            ],
+          };
+        }
+
+        return {
+          retrievedAt: new Date('2026-05-20T10:35:00.000Z'),
+          recordCount: 0,
+          policy: {
+            version: 'v1',
+            limit: 5,
+            suppressedDuplicateCount: 0,
+            archivedRecordCount: 0,
+            prioritizedRecordIds: [],
+            archivalSummary:
+              'Operator notes are never auto-archived; working guarded-execution memory archives after 7 days; working approval memory archives after 14 days; durable automated memory archives after 45 days.',
+            rankingSummary:
+              'operator_note > guarded_execution_memory > approval_memory; agent > domain > tenant; working_memory > durable_memory; recency breaks ties.',
+          },
+          records: [],
+          notes: [
+            'No persisted memory record matched this agent context yet.',
+            'Retrieval considers tenant-wide, invoicing-scoped, and invoice-document-assistant-scoped memory.',
+            'Records are ordered by most recently updated memory first.',
+          ],
+        };
+      }),
+    };
     getTenantAiSuggestionRunDetailUseCase = {
       execute: jest.fn().mockResolvedValue({
         ...growthAssistSuggestionRun,
@@ -2842,6 +2993,52 @@ describe('API', () => {
     };
     listTenantAiGuardedExecutionEventsUseCase = {
       execute: jest.fn().mockResolvedValue([]),
+    };
+    listTenantAiMemoryRecordsUseCase = {
+      execute: jest.fn().mockResolvedValue([
+        {
+          id: 'ai-memory-001',
+          tenantId: 'tenant_123',
+          tenantSlug: 'saas-platform',
+          scope: 'agent',
+          domainKey: 'growth',
+          agentKey: 'growth-assist-coach',
+          sourceKind: 'operator_note',
+          freshness: 'working_memory',
+          title: 'Lead routing preference',
+          summary: 'Priorizar reasignacion manual cuando el queue llegue caliente.',
+          detail:
+            'Cuando el lead ya esta caliente, Growth prefiere reasignacion manual antes de auto-routing.',
+          tags: ['routing', 'hot-leads'],
+          status: 'active',
+          createdByUserId: user.id,
+          createdByEmail: user.email,
+          createdAt: new Date('2026-05-20T10:05:00.000Z'),
+          updatedAt: new Date('2026-05-20T10:05:00.000Z'),
+        },
+      ]),
+    };
+    updateTenantAiMemoryRecordUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        id: 'ai-memory-001',
+        tenantId: 'tenant_123',
+        tenantSlug: 'saas-platform',
+        scope: 'agent',
+        domainKey: 'growth',
+        agentKey: 'growth-assist-coach',
+        sourceKind: 'operator_note',
+        freshness: 'durable_memory',
+        title: 'Lead routing preference v2',
+        summary: 'Nueva preferencia de routing con cola caliente.',
+        detail:
+          'Growth sigue priorizando reasignacion manual cuando el queue llega caliente y ahora deja esta memoria durable.',
+        tags: ['routing', 'hot-leads', 'durable'],
+        status: 'inactive',
+        createdByUserId: user.id,
+        createdByEmail: user.email,
+        createdAt: new Date('2026-05-20T10:05:00.000Z'),
+        updatedAt: new Date('2026-05-20T10:45:00.000Z'),
+      }),
     };
     listTenantAiSuggestionRunsUseCase = {
       execute: jest.fn().mockResolvedValue([growthAssistSuggestionRun]),
@@ -3712,10 +3909,18 @@ describe('API', () => {
       .useValue(listTenantAiApprovalRequestsUseCase)
       .overrideProvider(CreateTenantAiGuardedExecutionEventUseCase)
       .useValue(createTenantAiGuardedExecutionEventUseCase)
+      .overrideProvider(CreateTenantAiMemoryRecordUseCase)
+      .useValue(createTenantAiMemoryRecordUseCase)
+      .overrideProvider(GetTenantAiMemoryRecordDetailUseCase)
+      .useValue(getTenantAiMemoryRecordDetailUseCase)
+      .overrideProvider(GetTenantAiMemoryRetrievalUseCase)
+      .useValue(getTenantAiMemoryRetrievalUseCase)
       .overrideProvider(GetTenantAiSuggestionRunDetailUseCase)
       .useValue(getTenantAiSuggestionRunDetailUseCase)
       .overrideProvider(ListTenantAiGuardedExecutionEventsUseCase)
       .useValue(listTenantAiGuardedExecutionEventsUseCase)
+      .overrideProvider(ListTenantAiMemoryRecordsUseCase)
+      .useValue(listTenantAiMemoryRecordsUseCase)
       .overrideProvider(ListTenantAiSuggestionRunsUseCase)
       .useValue(listTenantAiSuggestionRunsUseCase)
       .overrideProvider(PrepareTenantAiSuggestionRunUseCase)
@@ -3724,6 +3929,8 @@ describe('API', () => {
       .useValue(requestTenantAiSuggestionRunApprovalUseCase)
       .overrideProvider(ReviewTenantAiApprovalRequestUseCase)
       .useValue(reviewTenantAiApprovalRequestUseCase)
+      .overrideProvider(UpdateTenantAiMemoryRecordUseCase)
+      .useValue(updateTenantAiMemoryRecordUseCase)
       .overrideProvider(GetTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase)
       .useValue(getTenantGrowthOperationalCaseAutoAssignmentSettingsUseCase)
       .overrideProvider(CreateTenantWhatsappAutomationRuleUseCase)
@@ -7762,6 +7969,360 @@ describe('API', () => {
       });
   });
 
+  it('POST /api/ai/tenants/:slug/memory-records should persist one tenant-scoped AI memory record', async () => {
+    await request(httpServer)
+      .post('/api/ai/tenants/saas-platform/memory-records')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        scope: 'agent',
+        agentKey: 'growth-assist-coach',
+        title: 'Lead routing preference',
+        summary: 'Priorizar reasignacion manual cuando el queue llegue caliente.',
+        detail:
+          'Cuando el lead ya esta caliente, Growth prefiere reasignacion manual antes de auto-routing.',
+        tags: ['routing', 'hot-leads'],
+      })
+      .expect(201)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          id: 'ai-memory-001',
+          tenantSlug: 'saas-platform',
+          scope: 'agent',
+          domainKey: 'growth',
+          agentKey: 'growth-assist-coach',
+          sourceKind: 'operator_note',
+          freshness: 'working_memory',
+          title: 'Lead routing preference',
+          summary: 'Priorizar reasignacion manual cuando el queue llegue caliente.',
+          detail:
+            'Cuando el lead ya esta caliente, Growth prefiere reasignacion manual antes de auto-routing.',
+          tags: ['routing', 'hot-leads'],
+          status: 'active',
+          createdByUserId: user.id,
+          createdByEmail: user.email,
+          createdAt: '2026-05-20T10:05:00.000Z',
+          updatedAt: '2026-05-20T10:05:00.000Z',
+        });
+      });
+
+    expect(createTenantAiMemoryRecordUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      scope: 'agent',
+      domainKey: 'growth',
+      agentKey: 'growth-assist-coach',
+      sourceKind: 'operator_note',
+      freshness: 'working_memory',
+      title: 'Lead routing preference',
+      summary: 'Priorizar reasignacion manual cuando el queue llegue caliente.',
+      detail:
+        'Cuando el lead ya esta caliente, Growth prefiere reasignacion manual antes de auto-routing.',
+      tags: ['routing', 'hot-leads'],
+      createdByUserId: user.id,
+      createdByEmail: user.email,
+    });
+  });
+
+  it('GET /api/ai/tenants/:slug/memory-records should return tenant-visible AI memory records', async () => {
+    await request(httpServer)
+      .get('/api/ai/tenants/saas-platform/memory-records?limit=10')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual([
+          {
+            id: 'ai-memory-001',
+            tenantSlug: 'saas-platform',
+            scope: 'agent',
+            domainKey: 'growth',
+            agentKey: 'growth-assist-coach',
+            sourceKind: 'operator_note',
+            freshness: 'working_memory',
+            title: 'Lead routing preference',
+            summary:
+              'Priorizar reasignacion manual cuando el queue llegue caliente.',
+            detail:
+              'Cuando el lead ya esta caliente, Growth prefiere reasignacion manual antes de auto-routing.',
+            tags: ['routing', 'hot-leads'],
+            status: 'active',
+            createdByUserId: user.id,
+            createdByEmail: user.email,
+            createdAt: '2026-05-20T10:05:00.000Z',
+            updatedAt: '2026-05-20T10:05:00.000Z',
+          },
+        ]);
+      });
+  });
+
+  it('GET /api/ai/tenants/:slug/memory-records/:recordId should return AI memory detail with provenance', async () => {
+    await request(httpServer)
+      .get('/api/ai/tenants/saas-platform/memory-records/ai-memory-001')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          tenantSlug: 'saas-platform',
+          generatedAt: expect.any(String),
+          record: {
+            id: 'ai-memory-001',
+            tenantSlug: 'saas-platform',
+            scope: 'agent',
+            domainKey: 'growth',
+            agentKey: 'growth-assist-coach',
+            sourceKind: 'operator_note',
+            freshness: 'working_memory',
+            title: 'Lead routing preference',
+            summary:
+              'Priorizar reasignacion manual cuando el queue llegue caliente.',
+            detail:
+              'Cuando el lead ya esta caliente, Growth prefiere reasignacion manual antes de auto-routing.',
+            tags: ['routing', 'hot-leads'],
+            status: 'active',
+            createdByUserId: user.id,
+            createdByEmail: user.email,
+            createdAt: '2026-05-20T10:05:00.000Z',
+            updatedAt: '2026-05-20T10:05:00.000Z',
+          },
+          currentRetrieval: {
+            agentCount: 1,
+            agents: [
+              {
+                agentKey: 'growth-assist-coach',
+                title: 'Growth Assist Coach',
+                domainKey: 'growth',
+                inclusionReason:
+                  'Agent-scoped memory attached directly to growth-assist-coach.',
+              },
+            ],
+            notes: [
+              '1 visible agent(s) would hydrate this memory record right now.',
+              'Active records remain eligible for live retrieval when they match tenant/domain/agent scope.',
+            ],
+          },
+          provenance: {
+            usageCount: 1,
+            agentsUsingCount: 1,
+            latestUsedAt: '2026-05-20T10:37:00.000Z',
+            recentSuggestionRuns: [
+              {
+                suggestionRunId: 'ai-run-001',
+                agentKey: 'growth-assist-coach',
+                surfaceKey: 'growth_assist_daily_agenda',
+                sourceContractKey: 'growth.assist.daily_agenda',
+                promptPackKey: 'growth-assist-coach-core',
+                promptPackVersion: 'v1',
+                generatedAt: '2026-05-20T10:37:00.000Z',
+                createdAt: '2026-05-20T10:37:00.000Z',
+                requestedByUserId: user.id,
+                requestedByEmail: user.email,
+                summary:
+                  'Growth Assist Coach prepared a suggestion-mode handoff for Growth Assist daily agenda using prompt pack growth-assist-coach-core@v1.',
+                memoryScope: 'agent',
+                memoryInclusionReason:
+                  'Agent-scoped memory attached directly to growth-assist-coach.',
+              },
+            ],
+            notes: [
+              '1 persisted suggestion run(s) already reference this memory record.',
+              'Provenance was scanned across 2 visible AI agent lane(s).',
+              'Active memory can still hydrate fresh retrieval contexts while this provenance trail remains available.',
+            ],
+          },
+        });
+      });
+
+    expect(getTenantAiMemoryRecordDetailUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'ai-memory-001',
+      {
+        accessibleAgentKeys: ['growth-assist-coach', 'invoice-document-assistant'],
+      },
+    );
+  });
+
+  it('PATCH /api/ai/tenants/:slug/memory-records/:recordId should update AI memory lifecycle and editable fields', async () => {
+    await request(httpServer)
+      .patch('/api/ai/tenants/saas-platform/memory-records/ai-memory-001')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        freshness: 'durable_memory',
+        title: 'Lead routing preference v2',
+        summary: 'Nueva preferencia de routing con cola caliente.',
+        detail:
+          'Growth sigue priorizando reasignacion manual cuando el queue llega caliente y ahora deja esta memoria durable.',
+        tags: ['routing', 'hot-leads', 'durable'],
+        status: 'inactive',
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          id: 'ai-memory-001',
+          tenantSlug: 'saas-platform',
+          scope: 'agent',
+          domainKey: 'growth',
+          agentKey: 'growth-assist-coach',
+          sourceKind: 'operator_note',
+          freshness: 'durable_memory',
+          title: 'Lead routing preference v2',
+          summary: 'Nueva preferencia de routing con cola caliente.',
+          detail:
+            'Growth sigue priorizando reasignacion manual cuando el queue llega caliente y ahora deja esta memoria durable.',
+          tags: ['routing', 'hot-leads', 'durable'],
+          status: 'inactive',
+          createdByUserId: user.id,
+          createdByEmail: user.email,
+          createdAt: '2026-05-20T10:05:00.000Z',
+          updatedAt: '2026-05-20T10:45:00.000Z',
+        });
+      });
+
+    expect(updateTenantAiMemoryRecordUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      recordId: 'ai-memory-001',
+      sourceKind: undefined,
+      freshness: 'durable_memory',
+      title: 'Lead routing preference v2',
+      summary: 'Nueva preferencia de routing con cola caliente.',
+      detail:
+        'Growth sigue priorizando reasignacion manual cuando el queue llega caliente y ahora deja esta memoria durable.',
+      tags: ['routing', 'hot-leads', 'durable'],
+      status: 'inactive',
+    });
+  });
+
+  it('GET /api/ai/tenants/:slug/retrieval-workspace should return the tenant-scoped transversal AI retrieval workspace', async () => {
+    await request(httpServer)
+      .get('/api/ai/tenants/saas-platform/retrieval-workspace')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          tenantSlug: 'saas-platform',
+          generatedAt: expect.any(String),
+          counts: {
+            totalAgents: 2,
+            agentsWithMemory: 1,
+            totalRetrievedRecords: 1,
+            uniqueRetrievedRecords: 1,
+          },
+          agents: [
+            {
+              agentKey: 'growth-assist-coach',
+              title: 'Growth Assist Coach',
+              domainKey: 'growth',
+              productKey: 'growth',
+              retrieval: {
+                retrievedAt: '2026-05-20T10:35:00.000Z',
+                recordCount: 1,
+                policy: {
+                  version: 'v1',
+                  limit: 5,
+                  suppressedDuplicateCount: 0,
+                  archivedRecordCount: 0,
+                  prioritizedRecordIds: ['ai-memory-001'],
+                  archivalSummary:
+                    'Operator notes are never auto-archived; working guarded-execution memory archives after 7 days; working approval memory archives after 14 days; durable automated memory archives after 45 days.',
+                  rankingSummary:
+                    'operator_note > guarded_execution_memory > approval_memory; agent > domain > tenant; working_memory > durable_memory; recency breaks ties.',
+                },
+                records: [
+                  {
+                    id: 'ai-memory-001',
+                    scope: 'agent',
+                    domainKey: 'growth',
+                    agentKey: 'growth-assist-coach',
+                    sourceKind: 'operator_note',
+                    freshness: 'working_memory',
+                    title: 'Lead routing preference',
+                    summary:
+                      'Priorizar reasignacion manual cuando el queue llegue caliente.',
+                    detail:
+                      'Cuando el lead ya esta caliente, Growth prefiere reasignacion manual antes de auto-routing.',
+                    tags: ['routing', 'hot-leads'],
+                    lastUpdatedAt: '2026-05-20T10:05:00.000Z',
+                    inclusionReason:
+                      'Agent-scoped memory attached directly to growth-assist-coach.',
+                  },
+                ],
+                notes: expect.arrayContaining([
+                  '1 persisted memory record(s) matched this agent context.',
+                ]),
+              },
+            },
+            {
+              agentKey: 'invoice-document-assistant',
+              title: 'Invoice Document Assistant',
+              domainKey: 'invoicing',
+              productKey: 'invoicing',
+              retrieval: {
+                retrievedAt: '2026-05-20T10:35:00.000Z',
+                recordCount: 0,
+                policy: {
+                  version: 'v1',
+                  limit: 5,
+                  suppressedDuplicateCount: 0,
+                  archivedRecordCount: 0,
+                  prioritizedRecordIds: [],
+                  archivalSummary:
+                    'Operator notes are never auto-archived; working guarded-execution memory archives after 7 days; working approval memory archives after 14 days; durable automated memory archives after 45 days.',
+                  rankingSummary:
+                    'operator_note > guarded_execution_memory > approval_memory; agent > domain > tenant; working_memory > durable_memory; recency breaks ties.',
+                },
+                records: [],
+                notes: expect.arrayContaining([
+                  'No persisted memory record matched this agent context yet.',
+                ]),
+              },
+            },
+          ],
+        });
+      });
+  });
+
+  it('GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-envelope should include retrieval provenance when memory exists', async () => {
+    await request(httpServer)
+      .get('/api/ai/tenants/saas-platform/agents/growth-assist-coach/suggestion-envelope')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.retrieval).toEqual({
+          retrievedAt: '2026-05-20T10:35:00.000Z',
+          recordCount: 1,
+          policy: {
+            version: 'v1',
+            limit: 5,
+            suppressedDuplicateCount: 0,
+            archivedRecordCount: 0,
+            prioritizedRecordIds: ['ai-memory-001'],
+            archivalSummary:
+              'Operator notes are never auto-archived; working guarded-execution memory archives after 7 days; working approval memory archives after 14 days; durable automated memory archives after 45 days.',
+            rankingSummary:
+              'operator_note > guarded_execution_memory > approval_memory; agent > domain > tenant; working_memory > durable_memory; recency breaks ties.',
+          },
+          records: [
+            expect.objectContaining({
+              id: 'ai-memory-001',
+              scope: 'agent',
+              agentKey: 'growth-assist-coach',
+              sourceKind: 'operator_note',
+              inclusionReason:
+                'Agent-scoped memory attached directly to growth-assist-coach.',
+            }),
+          ],
+          notes: expect.arrayContaining([
+            '1 persisted memory record(s) matched this agent context.',
+          ]),
+        });
+        expect(response.body.contextBlocks).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              key: 'memory_ai-memory-001',
+              title: 'Memory: Lead routing preference',
+            }),
+          ]),
+        );
+      });
+  });
+
   it('GET /api/ai/tenants/:slug/policy-simulation-workspace should return the tenant-scoped transversal AI policy simulation workspace', async () => {
     await request(httpServer)
       .get('/api/ai/tenants/saas-platform/policy-simulation-workspace')
@@ -11453,6 +12014,28 @@ describe('API', () => {
       reviewedByEmail: user.email,
       reviewNote: 'Se ve segura para uso guiado.',
     });
+    expect(createTenantAiMemoryRecordUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      scope: 'agent',
+      domainKey: 'growth',
+      agentKey: 'growth-assist-coach',
+      sourceKind: 'approval_memory',
+      freshness: 'durable_memory',
+      title: 'Approval review: growth-assist-suggestion-review',
+      summary:
+        'Human review approved ai-run-001 for growth-assist-coach under growth-assist-suggestion-review.',
+      detail:
+        'Approval request ai-approval-001 was approved for suggestion run ai-run-001. Reviewer note: Se ve segura para uso guiado.',
+      tags: [
+        'agent:growth-assist-coach',
+        'policy:growth-assist-suggestion-review',
+        'decision:approved',
+        'run:ai-run-001',
+        'request:ai-approval-001',
+      ],
+      createdByUserId: user.id,
+      createdByEmail: user.email,
+    });
   });
 
   it('POST /api/ai/tenants/:slug/agents/:agentKey/approval-requests/:requestId/guarded-execution should execute the first guarded lane after approved review', async () => {
@@ -11546,6 +12129,28 @@ describe('API', () => {
       createdByUserId: 'user_123',
       createdByEmail: 'hello@saas-platform.dev',
     });
+    expect(createTenantAiMemoryRecordUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      scope: 'agent',
+      domainKey: 'growth',
+      agentKey: 'growth-assist-coach',
+      sourceKind: 'guarded_execution_memory',
+      freshness: 'working_memory',
+      title: 'Guarded execution: growth_case_assignment_execution',
+      summary:
+        'Guarded execution executed growth_case_assignment_execution on op-case-001 after ai-approval-001.',
+      detail:
+        'Guarded execution ran growth_case_assignment_execution for suggestion run ai-run-001 on operational case op-case-001 at 2026-05-20T10:12:00.000Z.',
+      tags: [
+        'agent:growth-assist-coach',
+        'tool:growth_case_assignment_execution',
+        'event:executed',
+        'case:op-case-001',
+        'run:ai-run-001',
+      ],
+      createdByUserId: 'user_123',
+      createdByEmail: 'hello@saas-platform.dev',
+    });
   });
 
   it('POST /api/ai/tenants/:slug/agents/:agentKey/approval-requests/:requestId/guarded-execution-rollback should return the lane to explicit human-only handling', async () => {
@@ -11627,6 +12232,28 @@ describe('API', () => {
       detail:
         'Operational case op-case-001 returned to explicit human-only handling for hello@saas-platform.dev.',
       occurredAt: new Date('2026-05-20T10:14:00.000Z'),
+      createdByUserId: 'user_123',
+      createdByEmail: 'hello@saas-platform.dev',
+    });
+    expect(createTenantAiMemoryRecordUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      scope: 'agent',
+      domainKey: 'growth',
+      agentKey: 'growth-assist-coach',
+      sourceKind: 'guarded_execution_memory',
+      freshness: 'working_memory',
+      title: 'Guarded execution: growth_case_assignment_execution',
+      summary:
+        'Guarded execution rolled back growth_case_assignment_execution on op-case-001 after ai-approval-001.',
+      detail:
+        'Guarded execution rolled back growth_case_assignment_execution for suggestion run ai-run-001 on operational case op-case-001 at 2026-05-20T10:14:00.000Z, returning to suggestion_only mode.',
+      tags: [
+        'agent:growth-assist-coach',
+        'tool:growth_case_assignment_execution',
+        'event:rolled_back',
+        'case:op-case-001',
+        'run:ai-run-001',
+      ],
       createdByUserId: 'user_123',
       createdByEmail: 'hello@saas-platform.dev',
     });

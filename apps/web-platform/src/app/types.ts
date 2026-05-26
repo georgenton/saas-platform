@@ -1225,6 +1225,7 @@ export interface AiSuggestionEnvelopeResponse {
     detail: string;
     bullets: string[];
   }[];
+  retrieval?: AiMemoryRetrievalResponse;
 }
 
 export interface AiSuggestionRunResponse {
@@ -1344,6 +1345,109 @@ export interface AiActivityFeedResponse {
   tenantSlug: string;
   generatedAt: string;
   entries: AiActivityFeedEntryResponse[];
+}
+
+export interface AiMemoryRecordResponse {
+  id: string;
+  tenantSlug: string;
+  scope: 'tenant' | 'domain' | 'agent';
+  domainKey: 'growth' | 'invoicing' | 'ecommerce' | null;
+  agentKey: string | null;
+  sourceKind: 'operator_note' | 'approval_memory' | 'guarded_execution_memory';
+  freshness: 'working_memory' | 'durable_memory';
+  title: string;
+  summary: string;
+  detail: string;
+  tags: string[];
+  status: 'active' | 'inactive';
+  createdByUserId: string | null;
+  createdByEmail: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AiMemoryRecordDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  record: AiMemoryRecordResponse;
+  currentRetrieval: {
+    agentCount: number;
+    agents: Array<{
+      agentKey: string;
+      title: string;
+      domainKey: 'growth' | 'invoicing' | 'ecommerce';
+      inclusionReason: string;
+    }>;
+    notes: string[];
+  };
+  provenance: {
+    usageCount: number;
+    agentsUsingCount: number;
+    latestUsedAt: string | null;
+    recentSuggestionRuns: Array<{
+      suggestionRunId: string;
+      agentKey: string;
+      surfaceKey: string;
+      sourceContractKey: string;
+      promptPackKey: string;
+      promptPackVersion: string;
+      generatedAt: string;
+      createdAt: string;
+      requestedByUserId: string;
+      requestedByEmail: string | null;
+      summary: string;
+      memoryScope: 'tenant' | 'domain' | 'agent';
+      memoryInclusionReason: string | null;
+    }>;
+    notes: string[];
+  };
+}
+
+export interface AiMemoryRetrievalResponse {
+  retrievedAt: string;
+  recordCount: number;
+  policy: {
+    version: 'v1';
+    limit: number;
+    suppressedDuplicateCount: number;
+    archivedRecordCount: number;
+    prioritizedRecordIds: string[];
+    archivalSummary: string;
+    rankingSummary: string;
+  };
+  records: Array<{
+    id: string;
+    scope: 'tenant' | 'domain' | 'agent';
+    domainKey: 'growth' | 'invoicing' | 'ecommerce' | null;
+    agentKey: string | null;
+    sourceKind: 'operator_note' | 'approval_memory' | 'guarded_execution_memory';
+    freshness: 'working_memory' | 'durable_memory';
+    title: string;
+    summary: string;
+    detail: string;
+    tags: string[];
+    lastUpdatedAt: string;
+    inclusionReason: string;
+  }>;
+  notes: string[];
+}
+
+export interface AiRetrievalWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  counts: {
+    totalAgents: number;
+    agentsWithMemory: number;
+    totalRetrievedRecords: number;
+    uniqueRetrievedRecords: number;
+  };
+  agents: Array<{
+    agentKey: string;
+    title: string;
+    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    productKey: string;
+    retrieval: AiMemoryRetrievalResponse;
+  }>;
 }
 
 export interface AiMemoryWorkspaceAgentResponse {
@@ -2054,10 +2158,13 @@ export interface AiGuardedExecutionExecutionResponse {
   approvalRequestId: string;
   suggestionRunId: string;
   toolKey: string;
+  targetKind: 'growth_operational_case' | 'invoice_payment';
   executedAt: string;
   summary: string;
   detail: string;
-  operationalCase: GrowthOperationalCaseResponse;
+  operationalCase: GrowthOperationalCaseResponse | null;
+  invoice: InvoiceDetailResponse | null;
+  payment: PaymentResponse | null;
 }
 
 export interface AiGuardedExecutionRollbackExecutionResponse {
@@ -2066,11 +2173,14 @@ export interface AiGuardedExecutionRollbackExecutionResponse {
   approvalRequestId: string;
   suggestionRunId: string;
   toolKey: string;
+  targetKind: 'growth_operational_case' | 'invoice_payment';
   rolledBackAt: string;
   safeFallbackMode: 'suggestion_only';
   summary: string;
   detail: string;
-  operationalCase: GrowthOperationalCaseResponse;
+  operationalCase: GrowthOperationalCaseResponse | null;
+  invoice: InvoiceDetailResponse | null;
+  payment: PaymentResponse | null;
 }
 
 export type AiGuardedExecutionEventLogEntryType =

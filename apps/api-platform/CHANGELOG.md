@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.52.0
+
+### Minor Changes
+
+- d438b73: Promote ecommerce AI into a ready suggestion-only lane with real workspace, envelope, console support, and end-to-end smoke coverage.
+
 ## 0.51.0
 
 ### Minor Changes

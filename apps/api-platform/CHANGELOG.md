@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.54.0
+
+### Minor Changes
+
+- b19ac98: Add guarded execution lane metadata to the AI operating model and make the AI console orchestration more manifest-driven across tenant workspaces.
+
 ## 0.53.0
 
 ### Minor Changes

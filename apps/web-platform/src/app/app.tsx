@@ -555,17 +555,55 @@ function humanizeKey(value: string | null): string {
 
 function fallbackAiAgentTitle(agentKey: string): string {
   return isSupportedAiAgentKey(agentKey)
-    ? AI_AGENT_FALLBACK_TITLES[agentKey]
+    ? AI_AGENT_WEB_REGISTRY[agentKey].fallbackTitle
     : humanizeKey(agentKey);
 }
 
-const SUPPORTED_AI_AGENT_KEYS = [
-  'growth-assist-coach',
-  'invoice-document-assistant',
-  'ecommerce-launch-assistant',
-] as const;
+type AiAgentDedicatedActionKeyPrefixes = {
+  prepare: string;
+  requestApproval?: string;
+  reviewApproval?: string;
+  loadDetail?: string;
+};
 
-type SupportedAiAgentKey = (typeof SUPPORTED_AI_AGENT_KEYS)[number];
+const AI_AGENT_WEB_REGISTRY = {
+  'growth-assist-coach': {
+    fallbackTitle: 'Growth Assist Coach',
+    dedicatedActionKeyPrefixes: {
+      prepare: 'prepare-ai-suggestion-run',
+      requestApproval: 'request-ai-approval',
+      reviewApproval: 'review-ai-approval',
+      loadDetail: 'load-ai-run-detail',
+    },
+  },
+  'invoice-document-assistant': {
+    fallbackTitle: 'Invoice Document Assistant',
+    dedicatedActionKeyPrefixes: {
+      prepare: 'prepare-invoice-ai-suggestion-run',
+      requestApproval: 'request-invoice-ai-approval',
+      reviewApproval: 'review-invoice-ai-approval',
+      loadDetail: 'load-invoice-ai-run-detail',
+    },
+  },
+  'ecommerce-launch-assistant': {
+    fallbackTitle: 'Ecommerce Launch Assistant',
+    dedicatedActionKeyPrefixes: {
+      prepare: 'prepare-ecommerce-ai-suggestion-run',
+    },
+  },
+} as const satisfies Record<
+  string,
+  {
+    fallbackTitle: string;
+    dedicatedActionKeyPrefixes: AiAgentDedicatedActionKeyPrefixes;
+  }
+>;
+
+type SupportedAiAgentKey = keyof typeof AI_AGENT_WEB_REGISTRY;
+
+const SUPPORTED_AI_AGENT_KEYS = Object.keys(
+  AI_AGENT_WEB_REGISTRY,
+) as SupportedAiAgentKey[];
 
 type AiAgentWorkspaceSupportBundle = {
   approvalPolicies: AiApprovalPolicyResponse[];
@@ -584,40 +622,6 @@ type AiAgentWorkspaceSupportStateHandler = {
   syncPrepared?: (suggestionRun: AiSuggestionRunResponse) => void;
   syncPending?: (approvalRequest: AiApprovalRequestResponse) => void;
   syncReviewed?: (approvalRequest: AiApprovalRequestResponse) => void;
-};
-
-const AI_AGENT_FALLBACK_TITLES: Record<SupportedAiAgentKey, string> = {
-  'growth-assist-coach': 'Growth Assist Coach',
-  'invoice-document-assistant': 'Invoice Document Assistant',
-  'ecommerce-launch-assistant': 'Ecommerce Launch Assistant',
-};
-
-const AI_AGENT_DEDICATED_ACTION_KEY_PREFIXES: Partial<
-  Record<
-    SupportedAiAgentKey,
-    {
-      prepare: string;
-      requestApproval?: string;
-      reviewApproval?: string;
-      loadDetail?: string;
-    }
-  >
-> = {
-  'growth-assist-coach': {
-    prepare: 'prepare-ai-suggestion-run',
-    requestApproval: 'request-ai-approval',
-    reviewApproval: 'review-ai-approval',
-    loadDetail: 'load-ai-run-detail',
-  },
-  'invoice-document-assistant': {
-    prepare: 'prepare-invoice-ai-suggestion-run',
-    requestApproval: 'request-invoice-ai-approval',
-    reviewApproval: 'review-invoice-ai-approval',
-    loadDetail: 'load-invoice-ai-run-detail',
-  },
-  'ecommerce-launch-assistant': {
-    prepare: 'prepare-ecommerce-ai-suggestion-run',
-  },
 };
 
 function isSupportedAiAgentKey(agentKey: string): agentKey is SupportedAiAgentKey {
@@ -4297,9 +4301,10 @@ export function App() {
     agentKey: string,
     suggestionRunOrRequestId?: string,
   ): string => {
-    const actionKeyConfig = isSupportedAiAgentKey(agentKey)
-      ? AI_AGENT_DEDICATED_ACTION_KEY_PREFIXES[agentKey]
-      : undefined;
+    const actionKeyConfig: AiAgentDedicatedActionKeyPrefixes | undefined =
+      isSupportedAiAgentKey(agentKey)
+        ? AI_AGENT_WEB_REGISTRY[agentKey].dedicatedActionKeyPrefixes
+        : undefined;
 
     switch (action) {
       case 'prepare':

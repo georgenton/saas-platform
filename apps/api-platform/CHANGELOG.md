@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.57.0
+
+### Minor Changes
+
+- 76321aa: Expose `primaryApprovalPolicyKey` in the AI operating model manifest and use it as the named human gate across guarded-execution workspaces.
+
 ## 0.56.0
 
 ### Minor Changes

@@ -6,16 +6,14 @@ import {
   GetTenantGrowthAssistDailyAgendaUseCase,
   TenantGrowthAssistDailyAgendaView,
 } from '@saas-platform/growth-application';
-import { AiAgentNotFoundError } from '../errors/ai-agent-not-found.error';
+import { buildTenantAiSuggestionEnvelope } from '../support/ai-suggestion-envelope-factory';
 import {
-  findAiAgentByKey,
-  findAiPromptRegistryEntryByAgentKey,
-  listAiAgentToolAccessByAgentKey,
-} from '../support/ai-agent-catalog';
+  buildAiRetrievedMemoryContextBlocks,
+  finalizeAiSuggestionContextBlocks,
+} from '../support/ai-suggestion-context-blocks';
 import { GetTenantAiMemoryRetrievalUseCase } from './get-tenant-ai-memory-retrieval.use-case';
 
 const GROWTH_ASSIST_AGENT_KEY = 'growth-assist-coach';
-const GROWTH_ASSIST_SURFACE_KEY = 'growth_assist_daily_agenda';
 
 export class GetTenantGrowthAssistAiSuggestionEnvelopeUseCase {
   constructor(
@@ -27,18 +25,6 @@ export class GetTenantGrowthAssistAiSuggestionEnvelopeUseCase {
     tenantSlug: string,
     agentKey = GROWTH_ASSIST_AGENT_KEY,
   ): Promise<TenantAiSuggestionEnvelope> {
-    const agent = findAiAgentByKey(agentKey);
-
-    if (!agent || agent.key !== GROWTH_ASSIST_AGENT_KEY) {
-      throw new AiAgentNotFoundError(agentKey);
-    }
-
-    const promptPack = findAiPromptRegistryEntryByAgentKey(agentKey);
-
-    if (!promptPack) {
-      throw new AiAgentNotFoundError(agentKey);
-    }
-
     const agenda =
       await this.getTenantGrowthAssistDailyAgendaUseCase.execute(tenantSlug);
     const retrieval = await this.getTenantAiMemoryRetrievalUseCase.execute(
@@ -46,34 +32,16 @@ export class GetTenantGrowthAssistAiSuggestionEnvelopeUseCase {
       agentKey,
     );
 
-    return {
+    return buildTenantAiSuggestionEnvelope({
       tenantSlug,
+      agentKey,
+      expectedAgentKey: GROWTH_ASSIST_AGENT_KEY,
       generatedAt: agenda.generatedAt,
+      sourceGeneratedAt: agenda.generatedAt,
       mode: 'suggestion',
-      agent: {
-        ...agent,
-        supportedSurfaceKeys: [...agent.supportedSurfaceKeys],
-      },
-      surface: {
-        key: GROWTH_ASSIST_SURFACE_KEY,
-        title: 'Growth Assist daily agenda',
-        sourceContractKey: 'growth.assist.daily_agenda',
-        sourceGeneratedAt: agenda.generatedAt,
-      },
-      promptPack: {
-        ...promptPack,
-        styleGuidance: [...promptPack.styleGuidance],
-        constraints: [...promptPack.constraints],
-        suggestedOutputs: promptPack.suggestedOutputs.map((entry) => ({ ...entry })),
-      },
-      toolAccess: listAiAgentToolAccessByAgentKey(agentKey).map((entry) => ({
-        tool: { ...entry.tool },
-        accessLevel: entry.accessLevel,
-        rationale: entry.rationale,
-      })),
       contextBlocks: this.buildContextBlocks(agenda, retrieval.records),
       ...(retrieval.recordCount > 0 ? { retrieval } : {}),
-    };
+    });
   }
 
   private buildContextBlocks(
@@ -82,7 +50,7 @@ export class GetTenantGrowthAssistAiSuggestionEnvelopeUseCase {
       ReturnType<GetTenantAiMemoryRetrievalUseCase['execute']>
     >['records'],
   ): AiSuggestionContextBlock[] {
-    return [
+    return finalizeAiSuggestionContextBlocks([
       {
         key: 'agenda_summary',
         title: 'Agenda summary',
@@ -148,24 +116,7 @@ export class GetTenantGrowthAssistAiSuggestionEnvelopeUseCase {
           `Top action: ${agenda.channelHealth.topAlertRecommendedAction ?? 'No action required'}`,
         ],
       },
-      ...retrievedMemoryRecords.map((entry) => ({
-        key: `memory_${entry.id}`,
-        title: `Memory: ${entry.title}`,
-        detail: entry.summary,
-        bullets: [
-          entry.detail,
-          `Scope: ${entry.scope}`,
-          `Source: ${entry.sourceKind}`,
-          `Freshness: ${entry.freshness}`,
-          `Why included: ${entry.inclusionReason}`,
-        ],
-      })),
-    ].map((block) => ({
-      ...block,
-      bullets:
-        block.bullets.length > 0
-          ? block.bullets
-          : ['No deterministic signals were available for this block yet.'],
-    }));
+      ...buildAiRetrievedMemoryContextBlocks(retrievedMemoryRecords),
+    ]);
   }
 }

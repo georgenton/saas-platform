@@ -3,7 +3,6 @@ import styles from './app.module.css';
 import {
   fetchAiAgentApprovalPolicies,
   fetchAiAgentCatalog,
-  fetchAiApprovalPolicies,
   fetchAiAgentToolAccess,
   fetchAiOperatingModel,
   createTenantAiMemoryRecord,
@@ -36,11 +35,9 @@ import {
   fetchTenantAiMemoryWorkspace,
   fetchTenantAiOperationsSummary,
   fetchTenantAiPolicySimulationWorkspace,
-  fetchAiPromptRegistry,
   fetchTenantAiHandoffWorkspace,
   fetchTenantAiSuggestionWorkspaceDetail,
   fetchTenantAiSuggestionRunDetail,
-  fetchAiToolRegistry,
   fetchTenantAiApprovalRequests,
   fetchTenantAiApprovalWorkspaceSummary,
   fetchTenantAiEcommerceLaunchWorkspace,
@@ -164,11 +161,9 @@ import {
   AiAgentToolAccessResponse,
   AiHandoffWorkspaceResponse,
   AiOperationsSummaryResponse,
-  AiPromptRegistryResponse,
   AiSuggestionRunDetailResponse,
   AiSuggestionEnvelopeResponse,
   AiSuggestionRunResponse,
-  AiToolRegistryResponse,
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CustomerResponse,
@@ -1827,9 +1822,6 @@ export function App() {
     useState<GrowthConversationWorkbenchResponse | null>(null);
   const [growthAssistAgenda, setGrowthAssistAgenda] =
     useState<GrowthAssistDailyAgendaResponse | null>(null);
-  const [aiApprovalPolicyRegistry, setAiApprovalPolicyRegistry] = useState<
-    AiApprovalPolicyResponse[]
-  >([]);
   const [aiAgentCatalog, setAiAgentCatalog] = useState<AiAgentCatalogResponse[]>(
     [],
   );
@@ -1838,12 +1830,6 @@ export function App() {
   const [aiOperatingModelLoading, setAiOperatingModelLoading] = useState(false);
   const [aiOperatingModelError, setAiOperatingModelError] = useState<string | null>(
     null,
-  );
-  const [aiPromptRegistry, setAiPromptRegistry] = useState<
-    AiPromptRegistryResponse[]
-  >([]);
-  const [aiToolRegistry, setAiToolRegistry] = useState<AiToolRegistryResponse[]>(
-    [],
   );
   const [growthAssistAiEnvelope, setGrowthAssistAiEnvelope] =
     useState<AiSuggestionEnvelopeResponse | null>(null);
@@ -4299,29 +4285,32 @@ export function App() {
       new Map<string, AiApprovalPolicyResponse[]>([
         [
           'growth-assist-coach',
-          growthAssistAiApprovalPolicies.length > 0
+          aiOperatingModelAgentByKey.get('growth-assist-coach')?.approvalPolicies
+            .length
+            ? aiOperatingModelAgentByKey.get('growth-assist-coach')!
+                .approvalPolicies
+            : growthAssistAiApprovalPolicies.length > 0
             ? growthAssistAiApprovalPolicies
-            : aiApprovalPolicyRegistry.filter(
-                (entry) => entry.agentKey === 'growth-assist-coach',
-              ),
+            : [],
         ],
         [
           'invoice-document-assistant',
-          invoiceAssistantAiApprovalPolicies.length > 0
+          aiOperatingModelAgentByKey.get('invoice-document-assistant')
+            ?.approvalPolicies.length
+            ? aiOperatingModelAgentByKey.get('invoice-document-assistant')!
+                .approvalPolicies
+            : invoiceAssistantAiApprovalPolicies.length > 0
             ? invoiceAssistantAiApprovalPolicies
-            : aiApprovalPolicyRegistry.filter(
-                (entry) => entry.agentKey === 'invoice-document-assistant',
-              ),
+            : [],
         ],
         [
           'ecommerce-launch-assistant',
-          aiApprovalPolicyRegistry.filter(
-            (entry) => entry.agentKey === 'ecommerce-launch-assistant',
-          ),
+          aiOperatingModelAgentByKey.get('ecommerce-launch-assistant')
+            ?.approvalPolicies ?? [],
         ],
       ]),
     [
-      aiApprovalPolicyRegistry,
+      aiOperatingModelAgentByKey,
       growthAssistAiApprovalPolicies,
       invoiceAssistantAiApprovalPolicies,
     ],
@@ -4350,10 +4339,30 @@ export function App() {
     aiAgentCatalogByKey.get(agentKey) ??
     null;
   const resolveActiveAiPromptPack = (agentKey: string) =>
+    aiOperatingModelAgentByKey.get(agentKey)?.promptPack ??
     aiAgentEnvelopeByKey.get(agentKey)?.promptPack ??
-    aiPromptRegistry.find((entry) => entry.agentKey === agentKey) ??
     null;
+  const resolveActiveAiPrimarySurface = (agentKey: string) => {
+    const manifestSurface = aiOperatingModelAgentByKey.get(agentKey)?.primarySurface;
+
+    if (manifestSurface) {
+      return manifestSurface;
+    }
+
+    const envelope = aiAgentEnvelopeByKey.get(agentKey);
+
+    return envelope
+      ? {
+          key: envelope.surface.key,
+          title: envelope.surface.title,
+          sourceContractKey: envelope.surface.sourceContractKey,
+        }
+      : null;
+  };
   const resolveActiveAiToolAccess = (agentKey: string): AiAgentToolAccessResponse[] =>
+    (aiOperatingModelAgentByKey.get(agentKey)?.toolAccess as
+      | AiAgentToolAccessResponse[]
+      | undefined) ??
     aiAgentEnvelopeByKey.get(agentKey)?.toolAccess ??
     aiAgentDeclaredToolAccessByKey.get(agentKey) ??
     [];
@@ -4390,7 +4399,11 @@ export function App() {
   );
   const activeGrowthAiPromptPack = useMemo(
     () => resolveActiveAiPromptPack('growth-assist-coach'),
-    [aiAgentEnvelopeByKey, aiPromptRegistry],
+    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey],
+  );
+  const activeGrowthAiPrimarySurface = useMemo(
+    () => resolveActiveAiPrimarySurface('growth-assist-coach'),
+    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey],
   );
   const activeGrowthAiToolAccess = useMemo(
     () => resolveActiveAiToolAccess('growth-assist-coach'),
@@ -4452,7 +4465,15 @@ export function App() {
   );
   const activeEcommerceAiPromptPack = useMemo(
     () => resolveActiveAiPromptPack('ecommerce-launch-assistant'),
-    [aiAgentEnvelopeByKey, aiPromptRegistry],
+    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey],
+  );
+  const activeInvoiceAiPromptPack = useMemo(
+    () => resolveActiveAiPromptPack('invoice-document-assistant'),
+    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey],
+  );
+  const activeEcommerceAiPrimarySurface = useMemo(
+    () => resolveActiveAiPrimarySurface('ecommerce-launch-assistant'),
+    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey],
   );
   const activeEcommerceAiApprovalPolicies = useMemo(
     () => resolveActiveAiApprovalPolicies('ecommerce-launch-assistant'),
@@ -4473,6 +4494,10 @@ export function App() {
   const activeInvoiceAiToolAccess = useMemo(
     () => resolveActiveAiToolAccess('invoice-document-assistant'),
     [aiAgentDeclaredToolAccessByKey, aiAgentEnvelopeByKey],
+  );
+  const activeInvoiceAiPrimarySurface = useMemo(
+    () => resolveActiveAiPrimarySurface('invoice-document-assistant'),
+    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey],
   );
   const activeInvoiceAiApprovalPolicies = useMemo(
     () => resolveActiveAiApprovalPolicies('invoice-document-assistant'),
@@ -5376,9 +5401,6 @@ export function App() {
       setGrowthWorkbench(null);
       setGrowthAssistAgenda(null);
       setAiAgentCatalog([]);
-      setAiPromptRegistry([]);
-      setAiApprovalPolicyRegistry([]);
-      setAiToolRegistry([]);
       setGrowthAssistAiApprovalPolicies([]);
       setGrowthAssistAiApprovalRequests([]);
       setGrowthAssistAiToolAccess([]);
@@ -5414,10 +5436,7 @@ export function App() {
           nextOperationalCases,
           nextAutoAssignmentSettings,
           nextGrowthAiSupportBundle,
-          nextAiApprovalPolicyRegistry,
           nextAiAgentCatalog,
-          nextAiPromptRegistry,
-          nextAiToolRegistry,
         ] =
         await Promise.all([
           fetchGrowthConversationWorkbench(token, tenantSlug, {
@@ -5439,10 +5458,7 @@ export function App() {
             'growth-assist-coach',
             tenantSlug,
           ),
-          fetchAiApprovalPolicies(token).catch(() => []),
           fetchAiAgentCatalog(token).catch(() => []),
-          fetchAiPromptRegistry(token).catch(() => []),
-          fetchAiToolRegistry(token).catch(() => []),
         ]);
 
         if (cancelled) {
@@ -5452,10 +5468,7 @@ export function App() {
         startTransition(() => {
           setGrowthWorkbench(nextWorkbench);
           setGrowthAssistAgenda(nextAssistAgenda);
-          setAiApprovalPolicyRegistry(nextAiApprovalPolicyRegistry);
           setAiAgentCatalog(nextAiAgentCatalog);
-          setAiPromptRegistry(nextAiPromptRegistry);
-          setAiToolRegistry(nextAiToolRegistry);
           applyAiAgentWorkspaceSupportBundle(
             'growth-assist-coach',
             nextGrowthAiSupportBundle,
@@ -5480,9 +5493,6 @@ export function App() {
         setGrowthWorkbench(null);
         setGrowthAssistAgenda(null);
         setAiAgentCatalog([]);
-        setAiPromptRegistry([]);
-        setAiApprovalPolicyRegistry([]);
-        setAiToolRegistry([]);
         setGrowthAssistAiApprovalPolicies([]);
         setGrowthAssistAiApprovalRequests([]);
         setGrowthAssistAiToolAccess([]);
@@ -9310,10 +9320,7 @@ export function App() {
         nextOperationalCases,
         nextAutoAssignmentSettings,
         nextGrowthAiSupportBundle,
-        nextAiApprovalPolicyRegistry,
         nextAiAgentCatalog,
-        nextAiPromptRegistry,
-        nextAiToolRegistry,
       ] =
         await Promise.all([
         fetchGrowthConversationWorkbench(token, tenantSlug, {
@@ -9334,19 +9341,13 @@ export function App() {
           'growth-assist-coach',
           tenantSlug,
         ),
-        fetchAiApprovalPolicies(token).catch(() => []),
         fetchAiAgentCatalog(token).catch(() => []),
-        fetchAiPromptRegistry(token).catch(() => []),
-        fetchAiToolRegistry(token).catch(() => []),
       ]);
 
       startTransition(() => {
         setGrowthWorkbench(nextWorkbench);
         setGrowthAssistAgenda(nextAssistAgenda);
-        setAiApprovalPolicyRegistry(nextAiApprovalPolicyRegistry);
         setAiAgentCatalog(nextAiAgentCatalog);
-        setAiPromptRegistry(nextAiPromptRegistry);
-        setAiToolRegistry(nextAiToolRegistry);
         applyAiAgentWorkspaceSupportBundle(
           'growth-assist-coach',
           nextGrowthAiSupportBundle,
@@ -10313,9 +10314,6 @@ export function App() {
     setGrowthWorkbench(null);
     setGrowthAssistAgenda(null);
     setAiAgentCatalog([]);
-    setAiPromptRegistry([]);
-    setAiApprovalPolicyRegistry([]);
-    setAiToolRegistry([]);
     setGrowthAssistAiApprovalPolicies([]);
     setGrowthAssistAiApprovalRequests([]);
     setGrowthAssistAiToolAccess([]);
@@ -12305,11 +12303,15 @@ export function App() {
                         sugerencia y no publica nada por sí solo.
                       </p>
                       <div className={styles.badgeRow}>
+                        {activeEcommerceAiPrimarySurface ? (
+                          <span className={styles.badge}>
+                            Surface {activeEcommerceAiPrimarySurface.key}
+                          </span>
+                        ) : null}
                         <span className={styles.badge}>
-                          Surface {ecommerceLaunchAssistantAiEnvelope.surface.key}
-                        </span>
-                        <span className={styles.badge}>
-                          Prompt pack {ecommerceLaunchAssistantAiEnvelope.promptPack.key}
+                          Prompt pack{' '}
+                          {activeEcommerceAiPromptPack?.key ??
+                            ecommerceLaunchAssistantAiEnvelope.promptPack.key}
                         </span>
                         <span className={styles.badge}>
                           Mode {ecommerceLaunchAssistantAiEnvelope.mode}
@@ -12781,11 +12783,15 @@ export function App() {
                             agente queda restringido a modo sugerencia.
                           </p>
                           <div className={styles.badgeRow}>
+                            {activeGrowthAiPrimarySurface ? (
+                              <span className={styles.badge}>
+                                Surface {activeGrowthAiPrimarySurface.key}
+                              </span>
+                            ) : null}
                             <span className={styles.badge}>
-                              Surface {growthAssistAiEnvelope.surface.key}
-                            </span>
-                            <span className={styles.badge}>
-                              Prompt pack {growthAssistAiEnvelope.promptPack.key}
+                              Prompt pack{' '}
+                              {activeGrowthAiPromptPack?.key ??
+                                growthAssistAiEnvelope.promptPack.key}
                             </span>
                             <span className={styles.badge}>
                               Mode {growthAssistAiEnvelope.mode}
@@ -12793,7 +12799,10 @@ export function App() {
                           </div>
                           <div className={styles.assistReplyBox}>
                             <span className={styles.muted}>Objetivo del agente</span>
-                            <strong>{growthAssistAiEnvelope.promptPack.objective}</strong>
+                            <strong>
+                              {activeGrowthAiPromptPack?.objective ??
+                                growthAssistAiEnvelope.promptPack.objective}
+                            </strong>
                           </div>
                           {activeGrowthAiPromptPack ? (
                             <div className={styles.assistReplyBox}>
@@ -12966,12 +12975,6 @@ export function App() {
                                   <small>{entry.rationale}</small>
                                 </div>
                               ))}
-                              {aiToolRegistry.length > 0 ? (
-                                <small className={styles.muted}>
-                                  Registro transversal disponible: {aiToolRegistry.length}{' '}
-                                  tools en total.
-                                </small>
-                              ) : null}
                             </div>
                           ) : null}
                           <div className={styles.stack}>
@@ -13099,6 +13102,9 @@ export function App() {
                                           {entry.promptPack.version}
                                         </span>
                                         <span className={styles.badge}>
+                                          surface {entry.primarySurface.key}
+                                        </span>
+                                        <span className={styles.badge}>
                                           mode {entry.promptPack.mode}
                                         </span>
                                         <span className={styles.badge}>
@@ -13157,10 +13163,13 @@ export function App() {
                                             className={`${styles.statusPill} ${aiToolAccessLevelTone(
                                               tool.accessLevel,
                                             )}`}
-                                            key={`${entry.agent.key}:${tool.toolKey}`}
+                                            key={`${entry.agent.key}:${tool.tool.key}`}
                                           >
-                                            {tool.toolKey} · {humanizeKey(tool.accessLevel)} ·{' '}
-                                            {humanizeKey(tool.executionMode)}
+                                            {tool.tool.key} ·{' '}
+                                            {humanizeKey(tool.accessLevel)} ·{' '}
+                                            {humanizeKey(
+                                              tool.tool.executionBoundary.executionMode,
+                                            )}
                                           </span>
                                         ))}
                                       </div>
@@ -21711,11 +21720,15 @@ export function App() {
                           firma ni envía documentos.
                         </p>
                         <div className={styles.badgeRow}>
+                          {activeInvoiceAiPrimarySurface ? (
+                            <span className={styles.badge}>
+                              Surface {activeInvoiceAiPrimarySurface.key}
+                            </span>
+                          ) : null}
                           <span className={styles.badge}>
-                            Surface {invoiceAssistantAiEnvelope.surface.key}
-                          </span>
-                          <span className={styles.badge}>
-                            Prompt pack {invoiceAssistantAiEnvelope.promptPack.key}
+                            Prompt pack{' '}
+                            {activeInvoiceAiPromptPack?.key ??
+                              invoiceAssistantAiEnvelope.promptPack.key}
                           </span>
                           <span className={styles.badge}>
                             Mode {invoiceAssistantAiEnvelope.mode}
@@ -21723,7 +21736,8 @@ export function App() {
                         </div>
                         <p className={styles.muted}>
                           <strong>
-                            {invoiceAssistantAiEnvelope.promptPack.objective}
+                            {activeInvoiceAiPromptPack?.objective ??
+                              invoiceAssistantAiEnvelope.promptPack.objective}
                           </strong>
                         </p>
 

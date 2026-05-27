@@ -16,10 +16,32 @@ describe('AI operating model use case', () => {
             availability: 'ready',
           }),
           requiredPermissionKey: 'growth.conversations.read',
+          primarySurface: {
+            key: 'growth_assist_daily_agenda',
+            title: 'Growth Assist daily agenda',
+            sourceContractKey: 'growth.assist.daily_agenda',
+          },
           promptPack: expect.objectContaining({
             key: 'growth-assist-coach-core',
             version: 'v1',
+            summary:
+              'Prompt pack for turning deterministic Growth Assist agenda signals into commercial suggestions for non-expert operators.',
+            objective:
+              'Propose clear commercial suggestions for a non-expert operator using the deterministic Growth Assist agenda as the source of truth.',
           }),
+          approvalPolicies: [
+            {
+              policyKey: 'growth-assist-suggestion-review',
+              agentKey: 'growth-assist-coach',
+              scope: 'suggestion_review',
+              title: 'Growth Assist suggestion review',
+              summary:
+                'Requests human review before a Growth Assist suggestion handoff is treated as approved for operator use.',
+              reviewGuidance:
+                'Verify that the suggestion stays grounded in deterministic Growth signals, does not overreach beyond the tenant context, and still sounds safe for a human operator to adapt.',
+              approvalRequired: true,
+            },
+          ],
           approvalPolicyKeys: ['growth-assist-suggestion-review'],
           guardedExecutionCandidateToolKey: 'growth_case_assignment_execution',
           guardedExecutionCandidate: {
@@ -33,9 +55,14 @@ describe('AI operating model use case', () => {
           },
           toolAccess: expect.arrayContaining([
             expect.objectContaining({
-              toolKey: 'growth_case_assignment_execution',
               accessLevel: 'blocked',
-              executionMode: 'guarded_execution_planned',
+              rationale: expect.any(String),
+              tool: expect.objectContaining({
+                key: 'growth_case_assignment_execution',
+                executionBoundary: expect.objectContaining({
+                  executionMode: 'guarded_execution_planned',
+                }),
+              }),
             }),
           ]),
         }),
@@ -45,6 +72,32 @@ describe('AI operating model use case', () => {
             domainKey: 'invoicing',
           }),
           requiredPermissionKey: 'invoicing.reports.read',
+          primarySurface: {
+            key: 'invoice_document_drafting',
+            title: 'Invoice document drafting',
+            sourceContractKey: 'invoicing.assist.document_drafting',
+          },
+          promptPack: expect.objectContaining({
+            key: 'invoice-document-assistant-core',
+            version: 'v1',
+            summary:
+              'Prompt pack for document drafting, review, and checklist suggestions in Ecuador electronic invoicing.',
+            objective:
+              'Help operators draft and review tax document workflows without replacing fiscal validation owned by the invoicing domain.',
+          }),
+          approvalPolicies: [
+            {
+              policyKey: 'invoice-document-assistant-suggestion-review',
+              agentKey: 'invoice-document-assistant',
+              scope: 'suggestion_review',
+              title: 'Invoice suggestion review',
+              summary:
+                'Keeps document-drafting suggestions behind explicit operator review before they influence invoicing work.',
+              reviewGuidance:
+                'Confirm that the suggestion is only advisory, matches the fiscal document context, and does not replace domain validation or tax compliance checks.',
+              approvalRequired: true,
+            },
+          ],
           guardedExecutionCandidateToolKey:
             'invoice_payment_collection_execution',
           guardedExecutionCandidate: {
@@ -63,6 +116,32 @@ describe('AI operating model use case', () => {
             domainKey: 'ecommerce',
           }),
           requiredPermissionKey: 'tenant.entitlements.read',
+          primarySurface: {
+            key: 'ecommerce_launch_workspace',
+            title: 'Ecommerce launch workspace',
+            sourceContractKey: 'ecommerce.launch.workspace',
+          },
+          promptPack: expect.objectContaining({
+            key: 'ecommerce-launch-assistant-core',
+            version: 'v1',
+            summary:
+              'Prompt pack for ecommerce launch, landing, and campaign suggestions grounded in deterministic tenant context.',
+            objective:
+              'Propose launch content and structure suggestions without becoming the source of truth for catalog or storefront workflows.',
+          }),
+          approvalPolicies: [
+            {
+              policyKey: 'ecommerce-launch-assistant-suggestion-review',
+              agentKey: 'ecommerce-launch-assistant',
+              scope: 'suggestion_review',
+              title: 'Ecommerce launch suggestion review',
+              summary:
+                'Keeps launch and campaign suggestions behind operator review before they influence storefront work.',
+              reviewGuidance:
+                'Check that the suggestion stays grounded in product context, does not invent catalog facts, and is safe to translate into real launch work.',
+              approvalRequired: true,
+            },
+          ],
           guardedExecutionCandidateToolKey: null,
           guardedExecutionCandidate: null,
         }),

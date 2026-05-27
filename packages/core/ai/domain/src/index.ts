@@ -115,15 +115,30 @@ export interface AiOperatingModelAgentPromptPackReference {
   version: string;
   mode: 'suggestion' | 'guarded_execution';
   title: string;
+  summary: string;
+  objective: string;
+}
+
+export interface AiOperatingModelAgentPrimarySurfaceReference {
+  key: string;
+  title: string;
+  sourceContractKey: string;
+}
+
+export interface AiOperatingModelAgentApprovalPolicyReference {
+  policyKey: string;
+  agentKey: string;
+  scope: AiApprovalScope;
+  title: string;
+  summary: string;
+  reviewGuidance: string;
+  approvalRequired: boolean;
 }
 
 export interface AiOperatingModelAgentToolAccessEntry {
-  toolKey: string;
+  tool: AiToolDefinition;
   accessLevel: AiToolAccessLevel;
-  availability: AiToolAvailability;
-  actionKind: AiToolActionKind;
-  executionMode: AiToolExecutionMode;
-  requiresApproval: boolean;
+  rationale: string;
 }
 
 export interface AiGuardedExecutionCandidateDescriptor {
@@ -139,7 +154,9 @@ export interface AiGuardedExecutionCandidateDescriptor {
 export interface AiOperatingModelAgentEntry {
   agent: AiAgentCatalogEntry;
   requiredPermissionKey: string;
+  primarySurface: AiOperatingModelAgentPrimarySurfaceReference;
   promptPack: AiOperatingModelAgentPromptPackReference;
+  approvalPolicies: AiOperatingModelAgentApprovalPolicyReference[];
   approvalPolicyKeys: string[];
   toolAccess: AiOperatingModelAgentToolAccessEntry[];
   guardedExecutionCandidateToolKey: string | null;

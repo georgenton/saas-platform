@@ -12,20 +12,59 @@ export interface AiOperatingModelAgentResponseDto {
     supportedSurfaceKeys: string[];
   };
   requiredPermissionKey: string;
+  primarySurface: {
+    key: string;
+    title: string;
+    sourceContractKey: string;
+  };
   promptPack: {
     key: string;
     version: string;
     mode: 'suggestion' | 'guarded_execution';
     title: string;
+    summary: string;
+    objective: string;
   };
+  approvalPolicies: Array<{
+    policyKey: string;
+    agentKey: string;
+    scope: 'suggestion_review';
+    title: string;
+    summary: string;
+    reviewGuidance: string;
+    approvalRequired: boolean;
+  }>;
   approvalPolicyKeys: string[];
   toolAccess: Array<{
-    toolKey: string;
+    tool: {
+      key: string;
+      title: string;
+      summary: string;
+      domainKey: 'growth' | 'invoicing' | 'ecommerce';
+      availability: 'ready' | 'planned';
+      riskLevel: 'low' | 'medium' | 'high';
+      actionKind: 'read' | 'draft' | 'propose' | 'execute';
+      requiresApproval: boolean;
+      inputContract: {
+        sourceSurfaceKeys: string[];
+        primaryPayload: string;
+        requiredContext: string[];
+      };
+      outputContract: {
+        primaryArtifact: string;
+        suggestedOutputKeys: string[];
+        humanReviewFocus: string[];
+      };
+      executionBoundary: {
+        executionMode: 'suggestion_only' | 'guarded_execution_planned';
+        stateMutation: 'none' | 'planned';
+        externalSideEffects: 'none' | 'planned';
+        reviewRequirement: string;
+        blockedCapabilities: string[];
+      };
+    };
     accessLevel: 'allowed' | 'approval_required' | 'blocked';
-    availability: 'ready' | 'planned';
-    actionKind: 'read' | 'draft' | 'propose' | 'execute';
-    executionMode: 'suggestion_only' | 'guarded_execution_planned';
-    requiresApproval: boolean;
+    rationale: string;
   }>;
   guardedExecutionCandidateToolKey: string | null;
   guardedExecutionCandidate: {
@@ -65,11 +104,41 @@ export function toAiOperatingModelResponseDto(
         supportedSurfaceKeys: [...entry.agent.supportedSurfaceKeys],
       },
       requiredPermissionKey: entry.requiredPermissionKey,
+      primarySurface: {
+        ...entry.primarySurface,
+      },
       promptPack: {
         ...entry.promptPack,
       },
+      approvalPolicies: entry.approvalPolicies.map((policy) => ({ ...policy })),
       approvalPolicyKeys: [...entry.approvalPolicyKeys],
-      toolAccess: entry.toolAccess.map((tool) => ({ ...tool })),
+      toolAccess: entry.toolAccess.map((toolAccess) => ({
+        tool: {
+          ...toolAccess.tool,
+          inputContract: {
+            ...toolAccess.tool.inputContract,
+            sourceSurfaceKeys: [...toolAccess.tool.inputContract.sourceSurfaceKeys],
+            requiredContext: [...toolAccess.tool.inputContract.requiredContext],
+          },
+          outputContract: {
+            ...toolAccess.tool.outputContract,
+            suggestedOutputKeys: [
+              ...toolAccess.tool.outputContract.suggestedOutputKeys,
+            ],
+            humanReviewFocus: [
+              ...toolAccess.tool.outputContract.humanReviewFocus,
+            ],
+          },
+          executionBoundary: {
+            ...toolAccess.tool.executionBoundary,
+            blockedCapabilities: [
+              ...toolAccess.tool.executionBoundary.blockedCapabilities,
+            ],
+          },
+        },
+        accessLevel: toolAccess.accessLevel,
+        rationale: toolAccess.rationale,
+      })),
       guardedExecutionCandidateToolKey: entry.guardedExecutionCandidateToolKey,
       guardedExecutionCandidate: entry.guardedExecutionCandidate
         ? {

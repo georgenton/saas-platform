@@ -43,11 +43,23 @@ describe('AI operating model use case', () => {
             },
           ],
           approvalPolicyKeys: ['growth-assist-suggestion-review'],
+          handoffContract: {
+            requestApprovalRationale:
+              'Solicitar revision humana antes de tratar el handoff como aprobado.',
+            reviewNotes: {
+              approved: 'Aprobado desde la consola transversal de AI.',
+              rejected: 'Rechazado desde la consola transversal de AI.',
+            },
+          },
           guardedExecutionCandidateToolKey: 'growth_case_assignment_execution',
           guardedExecutionCandidate: {
             toolKey: 'growth_case_assignment_execution',
             title: 'Growth case assignment lane',
             targetKind: 'growth_operational_case',
+            operatingLane: 'operational_case_assignment_lane',
+            blastRadius: 'single_queue_lane',
+            safeFallbackMode: 'suggestion_only_with_manual_assignment',
+            preferredPilotTypeWhenReady: 'human_gate_then_execute',
             targetSelectionLabel: 'Operational case',
             emptyTargetSelectionLabel: 'No eligible operational cases',
             executeActionLabel: 'Execute take-case',
@@ -98,12 +110,26 @@ describe('AI operating model use case', () => {
               approvalRequired: true,
             },
           ],
+          handoffContract: {
+            requestApprovalRationale:
+              'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
+            reviewNotes: {
+              approved:
+                'Aprobado desde la consola transversal de AI para Invoice Document Assistant.',
+              rejected:
+                'Rechazado desde la consola transversal de AI para Invoice Document Assistant.',
+            },
+          },
           guardedExecutionCandidateToolKey:
             'invoice_payment_collection_execution',
           guardedExecutionCandidate: {
             toolKey: 'invoice_payment_collection_execution',
             title: 'Invoice payment collection lane',
             targetKind: 'invoice',
+            operatingLane: 'single_record_execution_lane',
+            blastRadius: 'single_record',
+            safeFallbackMode: 'suggestion_only',
+            preferredPilotTypeWhenReady: 'human_gate_then_execute',
             targetSelectionLabel: 'Invoice',
             emptyTargetSelectionLabel: 'No eligible invoices',
             executeActionLabel: 'Execute post-payment',
@@ -142,8 +168,30 @@ describe('AI operating model use case', () => {
               approvalRequired: true,
             },
           ],
-          guardedExecutionCandidateToolKey: null,
-          guardedExecutionCandidate: null,
+          handoffContract: {
+            requestApprovalRationale:
+              'Solicitar revision humana antes de usar la sugerencia de Ecommerce Launch Assistant.',
+            reviewNotes: {
+              approved:
+                'Aprobado desde la consola transversal de AI para Ecommerce Launch Assistant.',
+              rejected:
+                'Rechazado desde la consola transversal de AI para Ecommerce Launch Assistant.',
+            },
+          },
+          guardedExecutionCandidateToolKey: 'ecommerce_launch_publish_execution',
+          guardedExecutionCandidate: {
+            toolKey: 'ecommerce_launch_publish_execution',
+            title: 'Ecommerce launch publish lane',
+            targetKind: 'ecommerce_launch_plan',
+            operatingLane: 'single_record_execution_lane',
+            blastRadius: 'single_record',
+            safeFallbackMode: 'suggestion_only',
+            preferredPilotTypeWhenReady: 'shadow_review',
+            targetSelectionLabel: 'Launch plan',
+            emptyTargetSelectionLabel: 'No eligible launch plan',
+            executeActionLabel: 'Execute launch publish',
+            rollbackActionLabel: 'Rollback launch publish',
+          },
         }),
       ]),
       counts: {
@@ -151,10 +199,10 @@ describe('AI operating model use case', () => {
         readyAgents: 3,
         plannedAgents: 0,
         agentsWithApprovalPolicies: 3,
-        agentsWithGuardedExecutionCandidate: 2,
-        totalToolAccessEntries: 6,
+        agentsWithGuardedExecutionCandidate: 3,
+        totalToolAccessEntries: 7,
         approvalRequiredToolAccessEntries: 2,
-        blockedToolAccessEntries: 2,
+        blockedToolAccessEntries: 3,
       },
     });
   });

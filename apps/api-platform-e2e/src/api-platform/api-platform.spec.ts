@@ -5735,12 +5735,24 @@ describe('API', () => {
                 },
               ],
               approvalPolicyKeys: ['growth-assist-suggestion-review'],
+              handoffContract: {
+                requestApprovalRationale:
+                  'Solicitar revision humana antes de tratar el handoff como aprobado.',
+                reviewNotes: {
+                  approved: 'Aprobado desde la consola transversal de AI.',
+                  rejected: 'Rechazado desde la consola transversal de AI.',
+                },
+              },
               guardedExecutionCandidateToolKey:
                 'growth_case_assignment_execution',
               guardedExecutionCandidate: {
                 toolKey: 'growth_case_assignment_execution',
                 title: 'Growth case assignment lane',
                 targetKind: 'growth_operational_case',
+                operatingLane: 'operational_case_assignment_lane',
+                blastRadius: 'single_queue_lane',
+                safeFallbackMode: 'suggestion_only_with_manual_assignment',
+                preferredPilotTypeWhenReady: 'human_gate_then_execute',
                 targetSelectionLabel: 'Operational case',
                 emptyTargetSelectionLabel: 'No eligible operational cases',
                 executeActionLabel: 'Execute take-case',
@@ -5794,6 +5806,16 @@ describe('API', () => {
                   approvalRequired: true,
                 },
               ],
+              handoffContract: {
+                requestApprovalRationale:
+                  'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
+                reviewNotes: {
+                  approved:
+                    'Aprobado desde la consola transversal de AI para Invoice Document Assistant.',
+                  rejected:
+                    'Rechazado desde la consola transversal de AI para Invoice Document Assistant.',
+                },
+              },
               toolAccess: expect.arrayContaining([
                 expect.objectContaining({
                   accessLevel: 'approval_required',
@@ -5810,6 +5832,10 @@ describe('API', () => {
                 toolKey: 'invoice_payment_collection_execution',
                 title: 'Invoice payment collection lane',
                 targetKind: 'invoice',
+                operatingLane: 'single_record_execution_lane',
+                blastRadius: 'single_record',
+                safeFallbackMode: 'suggestion_only',
+                preferredPilotTypeWhenReady: 'human_gate_then_execute',
                 targetSelectionLabel: 'Invoice',
                 emptyTargetSelectionLabel: 'No eligible invoices',
                 executeActionLabel: 'Execute post-payment',
@@ -5848,6 +5874,16 @@ describe('API', () => {
                   approvalRequired: true,
                 },
               ],
+              handoffContract: {
+                requestApprovalRationale:
+                  'Solicitar revision humana antes de usar la sugerencia de Ecommerce Launch Assistant.',
+                reviewNotes: {
+                  approved:
+                    'Aprobado desde la consola transversal de AI para Ecommerce Launch Assistant.',
+                  rejected:
+                    'Rechazado desde la consola transversal de AI para Ecommerce Launch Assistant.',
+                },
+              },
               toolAccess: expect.arrayContaining([
                 expect.objectContaining({
                   accessLevel: 'approval_required',
@@ -5857,9 +5893,29 @@ describe('API', () => {
                     actionKind: 'propose',
                   }),
                 }),
+                expect.objectContaining({
+                  accessLevel: 'blocked',
+                  tool: expect.objectContaining({
+                    key: 'ecommerce_launch_publish_execution',
+                    availability: 'planned',
+                    actionKind: 'execute',
+                  }),
+                }),
               ]),
-              guardedExecutionCandidateToolKey: null,
-              guardedExecutionCandidate: null,
+              guardedExecutionCandidateToolKey: 'ecommerce_launch_publish_execution',
+              guardedExecutionCandidate: {
+                toolKey: 'ecommerce_launch_publish_execution',
+                title: 'Ecommerce launch publish lane',
+                targetKind: 'ecommerce_launch_plan',
+                operatingLane: 'single_record_execution_lane',
+                blastRadius: 'single_record',
+                safeFallbackMode: 'suggestion_only',
+                preferredPilotTypeWhenReady: 'shadow_review',
+                targetSelectionLabel: 'Launch plan',
+                emptyTargetSelectionLabel: 'No eligible launch plan',
+                executeActionLabel: 'Execute launch publish',
+                rollbackActionLabel: 'Rollback launch publish',
+              },
             }),
           ]),
           counts: {
@@ -5867,10 +5923,10 @@ describe('API', () => {
             readyAgents: 3,
             plannedAgents: 0,
             agentsWithApprovalPolicies: 3,
-            agentsWithGuardedExecutionCandidate: 2,
-            totalToolAccessEntries: 6,
+            agentsWithGuardedExecutionCandidate: 3,
+            totalToolAccessEntries: 7,
             approvalRequiredToolAccessEntries: 2,
-            blockedToolAccessEntries: 2,
+            blockedToolAccessEntries: 3,
           },
         });
       });
@@ -6016,7 +6072,7 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toHaveLength(6);
+        expect(response.body).toHaveLength(7);
         expect(response.body).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
@@ -6046,6 +6102,13 @@ describe('API', () => {
               key: 'ecommerce_launch_briefing',
               availability: 'ready',
               actionKind: 'propose',
+            }),
+            expect.objectContaining({
+              key: 'ecommerce_launch_publish_execution',
+              availability: 'planned',
+              actionKind: 'execute',
+              requiresApproval: true,
+              domainKey: 'ecommerce',
             }),
           ]),
         );
@@ -7487,7 +7550,7 @@ describe('API', () => {
               toolAccessSummary: {
                 allowedCount: 0,
                 approvalRequiredCount: 1,
-                blockedCount: 0,
+                blockedCount: 1,
               },
               pendingApprovalRequestsCount: 0,
               oldestPendingApprovalRequest: null,
@@ -7497,7 +7560,9 @@ describe('API', () => {
               memoryNotes: expect.arrayContaining([
                 'Prompt pack ecommerce-launch-assistant-core@v1 in suggestion mode.',
                 'No pending human reviews right now.',
-                'Tool posture: 0 allowed, 1 approval-required, 0 blocked.',
+                'No handoff prepared yet for this tenant.',
+                'No reviewed approvals recorded yet.',
+                'Tool posture: 0 allowed, 1 approval-required, 1 blocked.',
               ]),
             }),
           ],
@@ -7706,7 +7771,7 @@ describe('API', () => {
               toolAccessSummary: {
                 allowedCount: 0,
                 approvalRequiredCount: 1,
-                blockedCount: 0,
+                blockedCount: 1,
               },
               recentActivityAt: null,
               oldestPendingApprovalRequest: null,
@@ -7714,7 +7779,7 @@ describe('API', () => {
               notes: [
                 'No pending approvals right now.',
                 'No reviewable handoffs waiting for escalation.',
-                'Tool posture: 0 allowed, 1 approval-required, 0 blocked.',
+                'Tool posture: 0 allowed, 1 approval-required, 1 blocked.',
               ],
             }),
           ]),
@@ -7896,9 +7961,9 @@ describe('API', () => {
             counts: {
               totalAgents: 3,
               suggestionModeAgents: 3,
-              guardedExecutionPlannedAgents: 2,
+              guardedExecutionPlannedAgents: 3,
               approvalRequiredTools: 2,
-              blockedTools: 2,
+              blockedTools: 3,
             },
           }),
         );
@@ -7937,9 +8002,12 @@ describe('API', () => {
               toolAccessSummary: {
                 allowedCount: 0,
                 approvalRequiredCount: 1,
-                blockedCount: 0,
+                blockedCount: 1,
               },
-              executionModes: ['suggestion_only'],
+              executionModes: [
+                'guarded_execution_planned',
+                'suggestion_only',
+              ],
             }),
           ]),
         );
@@ -8341,8 +8409,8 @@ describe('API', () => {
             generatedAt: expect.any(String),
             counts: {
               totalAgents: 3,
-              agentsWithSimulationDelta: 2,
-              toolsPromotedToApprovalRequired: 2,
+              agentsWithSimulationDelta: 3,
+              toolsPromotedToApprovalRequired: 3,
               toolsStillBlocked: 0,
             },
           }),
@@ -8368,6 +8436,21 @@ describe('API', () => {
               },
               simulationStatus: 'more_reviewable',
               promotedToolKeys: ['invoice_payment_collection_execution'],
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              currentToolAccessSummary: {
+                allowedCount: 0,
+                approvalRequiredCount: 1,
+                blockedCount: 1,
+              },
+              simulatedToolAccessSummary: {
+                allowedCount: 0,
+                approvalRequiredCount: 2,
+                blockedCount: 0,
+              },
+              simulationStatus: 'more_reviewable',
+              promotedToolKeys: ['ecommerce_launch_publish_execution'],
             }),
           ]),
         );
@@ -8455,10 +8538,10 @@ describe('API', () => {
             generatedAt: expect.any(String),
             counts: {
               totalAgents: 3,
-              agentsWithHeavierReview: 2,
+              agentsWithHeavierReview: 3,
               currentExpectedHumanReviews: 2,
-              simulatedExpectedHumanReviews: 4,
-              addedHumanReviewTouches: 2,
+              simulatedExpectedHumanReviews: 5,
+              addedHumanReviewTouches: 3,
             },
           }),
         );
@@ -8475,6 +8558,15 @@ describe('API', () => {
               promotedToolKeys: ['invoice_payment_collection_execution'],
               simulatedExpectedReviewLoad: expect.objectContaining({
                 totalHumanReviewTouches: 2,
+                promotedToolReviewPoints: 1,
+              }),
+            }),
+            expect.objectContaining({
+              agentKey: 'ecommerce-launch-assistant',
+              designStatus: 'heavier_review',
+              promotedToolKeys: ['ecommerce_launch_publish_execution'],
+              simulatedExpectedReviewLoad: expect.objectContaining({
+                totalHumanReviewTouches: 1,
                 promotedToolReviewPoints: 1,
               }),
             }),
@@ -8564,10 +8656,10 @@ describe('API', () => {
             generatedAt: expect.any(String),
             counts: {
               totalAgents: 3,
-              agentsAtCapacityRisk: 2,
+              agentsAtCapacityRisk: 3,
               currentMinimumReviewsPerDay: 2,
-              simulatedMinimumReviewsPerDay: 4,
-              addedReviewsPerDay: 2,
+              simulatedMinimumReviewsPerDay: 5,
+              addedReviewsPerDay: 3,
             },
           }),
         );
@@ -8587,10 +8679,10 @@ describe('API', () => {
             }),
             expect.objectContaining({
               agentKey: 'ecommerce-launch-assistant',
-              capacityStatus: 'stable',
-              addedReviewsPerDay: 0,
-              promotedToolKeys: [],
-              simulatedMinimumReviewsPerDay: 0,
+              capacityStatus: 'watch',
+              addedReviewsPerDay: 1,
+              promotedToolKeys: ['ecommerce_launch_publish_execution'],
+              simulatedMinimumReviewsPerDay: 1,
             }),
           ]),
         );
@@ -8681,8 +8773,8 @@ describe('API', () => {
               agentsAtRisk: 2,
               agentsBreached: 0,
               currentBacklogTouches: 2,
-              simulatedBacklogTouches: 4,
-              addedBacklogTouches: 2,
+              simulatedBacklogTouches: 5,
+              addedBacklogTouches: 3,
             },
           }),
         );
@@ -8702,7 +8794,7 @@ describe('API', () => {
             expect.objectContaining({
               agentKey: 'ecommerce-launch-assistant',
               simulatedSlaStatus: 'on_track',
-              promotedToolKeys: [],
+              promotedToolKeys: ['ecommerce_launch_publish_execution'],
               simulatedEstimatedClearDays: 1,
             }),
           ]),
@@ -8816,7 +8908,7 @@ describe('API', () => {
               agentKey: 'ecommerce-launch-assistant',
               staffingStatus: 'sufficient',
               addedReviewerEquivalents: 0,
-              promotedToolKeys: [],
+              promotedToolKeys: ['ecommerce_launch_publish_execution'],
               simulatedRequiredReviewerEquivalents: 1,
             }),
           ]),
@@ -8930,7 +9022,7 @@ describe('API', () => {
               agentKey: 'ecommerce-launch-assistant',
               planStatus: 'maintain',
               additionalReviewerEquivalentsToAssign: 0,
-              promotedToolKeys: [],
+              promotedToolKeys: ['ecommerce_launch_publish_execution'],
               recommendedReviewerEquivalents: 1,
             }),
           ]),
@@ -9045,7 +9137,7 @@ describe('API', () => {
               rolloutPhase: 'phase_2',
               rolloutStatus: 'safe_to_rollout',
               additionalReviewerEquivalentsToAssign: 0,
-              promotedToolKeys: [],
+              promotedToolKeys: ['ecommerce_launch_publish_execution'],
             }),
           ]),
         );
@@ -9360,10 +9452,10 @@ describe('API', () => {
             generatedAt: expect.any(String),
             counts: {
               totalAgents: 3,
-              pilotCandidateAgents: 0,
+              pilotCandidateAgents: 1,
               needsLaunchReadinessAgents: 2,
-              suggestionOnlyAgents: 1,
-              executionCandidateTools: 2,
+              suggestionOnlyAgents: 0,
+              executionCandidateTools: 3,
             },
           }),
         );
@@ -9383,8 +9475,8 @@ describe('API', () => {
             }),
             expect.objectContaining({
               agentKey: 'ecommerce-launch-assistant',
-              guardedExecutionStatus: 'suggestion_only',
-              executionCandidateToolKeys: [],
+              guardedExecutionStatus: 'pilot_candidate',
+              executionCandidateToolKeys: ['ecommerce_launch_publish_execution'],
               rolloutPhase: 'phase_2',
             }),
           ]),
@@ -9473,10 +9565,10 @@ describe('API', () => {
             generatedAt: expect.any(String),
             counts: {
               totalAgents: 3,
-              readyForPilotAgents: 0,
+              readyForPilotAgents: 1,
               needsOperationalBackingAgents: 2,
-              noCandidateAgents: 1,
-              candidateToolPilots: 2,
+              noCandidateAgents: 0,
+              candidateToolPilots: 3,
             },
           }),
         );
@@ -9497,9 +9589,9 @@ describe('API', () => {
             }),
             expect.objectContaining({
               agentKey: 'ecommerce-launch-assistant',
-              candidateToolKey: null,
-              pilotStatus: 'no_candidate',
-              pilotType: 'not_available',
+              candidateToolKey: 'ecommerce_launch_publish_execution',
+              pilotStatus: 'ready_for_pilot',
+              pilotType: 'shadow_review',
               rolloutPhase: 'phase_2',
             }),
           ]),
@@ -9589,9 +9681,9 @@ describe('API', () => {
             counts: {
               totalAgents: 3,
               readyToDocumentAgents: 0,
-              needsDesignAgents: 2,
-              notAvailableAgents: 1,
-              candidateRunbooks: 2,
+              needsDesignAgents: 3,
+              notAvailableAgents: 0,
+              candidateRunbooks: 3,
             },
           }),
         );
@@ -9611,9 +9703,9 @@ describe('API', () => {
             }),
             expect.objectContaining({
               agentKey: 'ecommerce-launch-assistant',
-              runbookStatus: 'not_available',
-              candidateToolKey: null,
-              operatingLane: 'suggestion_only_lane',
+              runbookStatus: 'needs_design',
+              candidateToolKey: 'ecommerce_launch_publish_execution',
+              operatingLane: 'single_record_execution_lane',
             }),
           ]),
         );
@@ -9702,9 +9794,9 @@ describe('API', () => {
             counts: {
               totalAgents: 3,
               readyWithRollbackAgents: 0,
-              needsRollbackDesignAgents: 2,
-              notApplicableAgents: 1,
-              rollbackCandidateTools: 2,
+              needsRollbackDesignAgents: 3,
+              notApplicableAgents: 0,
+              rollbackCandidateTools: 3,
             },
           }),
         );
@@ -9724,9 +9816,9 @@ describe('API', () => {
             }),
             expect.objectContaining({
               agentKey: 'ecommerce-launch-assistant',
-              rollbackStatus: 'not_applicable',
-              candidateToolKey: null,
-              pilotType: 'not_available',
+              rollbackStatus: 'needs_rollback_design',
+              candidateToolKey: 'ecommerce_launch_publish_execution',
+              pilotType: 'shadow_review',
             }),
           ]),
         );
@@ -9815,9 +9907,9 @@ describe('API', () => {
             counts: {
               totalAgents: 3,
               readyForAuditAgents: 0,
-              needsEvidenceDesignAgents: 2,
-              notApplicableAgents: 1,
-              auditCandidateTools: 2,
+              needsEvidenceDesignAgents: 3,
+              notApplicableAgents: 0,
+              auditCandidateTools: 3,
             },
           }),
         );
@@ -9836,10 +9928,10 @@ describe('API', () => {
             }),
             expect.objectContaining({
               agentKey: 'ecommerce-launch-assistant',
-              auditStatus: 'not_applicable',
-              candidateToolKey: null,
-              runbookStatus: 'not_available',
-              rollbackStatus: 'not_applicable',
+              auditStatus: 'needs_evidence_design',
+              candidateToolKey: 'ecommerce_launch_publish_execution',
+              runbookStatus: 'needs_design',
+              rollbackStatus: 'needs_rollback_design',
             }),
           ]),
         );
@@ -9928,9 +10020,9 @@ describe('API', () => {
             counts: {
               totalAgents: 3,
               readyToLaunchAgents: 0,
-              pilotOnlyAgents: 2,
-              holdAgents: 1,
-              launchCandidateTools: 2,
+              pilotOnlyAgents: 3,
+              holdAgents: 0,
+              launchCandidateTools: 3,
             },
           }),
         );
@@ -9950,10 +10042,10 @@ describe('API', () => {
             }),
             expect.objectContaining({
               agentKey: 'ecommerce-launch-assistant',
-              launchStatus: 'hold',
-              candidateToolKey: null,
-              auditStatus: 'not_applicable',
-              rollbackStatus: 'not_applicable',
+              launchStatus: 'pilot_only',
+              candidateToolKey: 'ecommerce_launch_publish_execution',
+              auditStatus: 'needs_evidence_design',
+              rollbackStatus: 'needs_rollback_design',
             }),
           ]),
         );
@@ -10041,10 +10133,10 @@ describe('API', () => {
             generatedAt: expect.any(String),
             counts: {
               totalAgents: 3,
-              readyToMonitorAgents: 0,
+              readyToMonitorAgents: 1,
               monitorAfterLaunchAgents: 2,
-              notApplicableAgents: 1,
-              monitorCandidateTools: 2,
+              notApplicableAgents: 0,
+              monitorCandidateTools: 3,
             },
           }),
         );
@@ -10064,9 +10156,9 @@ describe('API', () => {
             }),
             expect.objectContaining({
               agentKey: 'ecommerce-launch-assistant',
-              monitorStatus: 'not_applicable',
-              candidateToolKey: null,
-              watchWindow: 'not_scheduled',
+              monitorStatus: 'ready_to_monitor',
+              candidateToolKey: 'ecommerce_launch_publish_execution',
+              watchWindow: 'day_0',
             }),
           ]),
         );
@@ -10154,10 +10246,10 @@ describe('API', () => {
             generatedAt: expect.any(String),
             counts: {
               totalAgents: 3,
-              openLaneAgents: 0,
+              openLaneAgents: 1,
               pilotThenOpenAgents: 2,
-              holdAgents: 1,
-              controlCandidateTools: 2,
+              holdAgents: 0,
+              controlCandidateTools: 3,
             },
           }),
         );
@@ -10176,10 +10268,10 @@ describe('API', () => {
             }),
             expect.objectContaining({
               agentKey: 'ecommerce-launch-assistant',
-              controlStatus: 'hold',
-              candidateToolKey: null,
-              monitorStatus: 'not_applicable',
-              launchStatus: 'hold',
+              controlStatus: 'open_lane',
+              candidateToolKey: 'ecommerce_launch_publish_execution',
+              monitorStatus: 'ready_to_monitor',
+              launchStatus: 'ready_to_launch',
             }),
           ]),
         );
@@ -10308,13 +10400,13 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalEvents: 9,
+              totalEvents: 10,
               suggestionRunPreparedEvents: 2,
               approvalRequestedEvents: 2,
               approvalReviewedEvents: 1,
               executedEvents: 1,
               rolledBackEvents: 1,
-              guardedExecutionStatusEvents: 2,
+              guardedExecutionStatusEvents: 3,
             },
           }),
         );
@@ -10332,6 +10424,11 @@ describe('API', () => {
               eventType: 'guarded_execution_pilot_only',
               agentKey: 'invoice-document-assistant',
               candidateToolKey: 'invoice_payment_collection_execution',
+            }),
+            expect.objectContaining({
+              eventType: 'guarded_execution_lane_ready',
+              agentKey: 'ecommerce-launch-assistant',
+              candidateToolKey: 'ecommerce_launch_publish_execution',
             }),
           ]),
         );

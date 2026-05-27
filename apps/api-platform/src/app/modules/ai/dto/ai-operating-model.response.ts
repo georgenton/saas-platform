@@ -66,11 +66,31 @@ export interface AiOperatingModelAgentResponseDto {
     accessLevel: 'allowed' | 'approval_required' | 'blocked';
     rationale: string;
   }>;
+  handoffContract: {
+    requestApprovalRationale: string;
+    reviewNotes: {
+      approved: string;
+      rejected: string;
+    };
+  };
   guardedExecutionCandidateToolKey: string | null;
   guardedExecutionCandidate: {
     toolKey: string;
     title: string;
-    targetKind: 'growth_operational_case' | 'invoice';
+    targetKind:
+      | 'growth_operational_case'
+      | 'invoice'
+      | 'ecommerce_launch_plan';
+    operatingLane:
+      | 'operational_case_assignment_lane'
+      | 'single_record_execution_lane';
+    blastRadius: 'single_record' | 'single_queue_lane';
+    safeFallbackMode:
+      | 'suggestion_only'
+      | 'suggestion_only_with_manual_assignment';
+    preferredPilotTypeWhenReady:
+      | 'human_gate_then_execute'
+      | 'shadow_review';
     targetSelectionLabel: string;
     emptyTargetSelectionLabel: string;
     executeActionLabel: string;
@@ -139,6 +159,14 @@ export function toAiOperatingModelResponseDto(
         accessLevel: toolAccess.accessLevel,
         rationale: toolAccess.rationale,
       })),
+      handoffContract: {
+        requestApprovalRationale:
+          entry.handoffContract.requestApprovalRationale,
+        reviewNotes: {
+          approved: entry.handoffContract.reviewNotes.approved,
+          rejected: entry.handoffContract.reviewNotes.rejected,
+        },
+      },
       guardedExecutionCandidateToolKey: entry.guardedExecutionCandidateToolKey,
       guardedExecutionCandidate: entry.guardedExecutionCandidate
         ? {

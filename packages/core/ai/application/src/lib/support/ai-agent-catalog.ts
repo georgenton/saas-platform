@@ -2,6 +2,7 @@ import {
   AiApprovalPolicyEntry,
   AiAgentToolAccessEntry,
   AiAgentCatalogEntry,
+  AiOperatingModelAgentHandoffContract,
   AiGuardedExecutionCandidateDescriptor,
   AiOperatingModelAgentEntry,
   AiOperatingModelAgentApprovalPolicyReference,
@@ -55,6 +56,40 @@ const AI_AGENT_REQUIRED_PERMISSION_KEYS: Record<string, string> = {
   'ecommerce-launch-assistant': 'tenant.entitlements.read',
 };
 
+const AI_AGENT_HANDOFF_CONTRACTS: Record<
+  string,
+  AiOperatingModelAgentHandoffContract
+> = {
+  'growth-assist-coach': {
+    requestApprovalRationale:
+      'Solicitar revision humana antes de tratar el handoff como aprobado.',
+    reviewNotes: {
+      approved: 'Aprobado desde la consola transversal de AI.',
+      rejected: 'Rechazado desde la consola transversal de AI.',
+    },
+  },
+  'invoice-document-assistant': {
+    requestApprovalRationale:
+      'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
+    reviewNotes: {
+      approved:
+        'Aprobado desde la consola transversal de AI para Invoice Document Assistant.',
+      rejected:
+        'Rechazado desde la consola transversal de AI para Invoice Document Assistant.',
+    },
+  },
+  'ecommerce-launch-assistant': {
+    requestApprovalRationale:
+      'Solicitar revision humana antes de usar la sugerencia de Ecommerce Launch Assistant.',
+    reviewNotes: {
+      approved:
+        'Aprobado desde la consola transversal de AI para Ecommerce Launch Assistant.',
+      rejected:
+        'Rechazado desde la consola transversal de AI para Ecommerce Launch Assistant.',
+    },
+  },
+};
+
 function cloneAiAgentCatalogEntry(entry: AiAgentCatalogEntry): AiAgentCatalogEntry {
   return {
     ...entry,
@@ -68,6 +103,24 @@ export function findAiAgentByKey(
   const entry = AI_AGENT_CATALOG.find((candidate) => candidate.key === agentKey);
 
   return entry ? cloneAiAgentCatalogEntry(entry) : null;
+}
+
+function getAiAgentHandoffContract(
+  agentKey: string,
+): AiOperatingModelAgentHandoffContract | null {
+  const contract = AI_AGENT_HANDOFF_CONTRACTS[agentKey];
+
+  if (!contract) {
+    return null;
+  }
+
+  return {
+    requestApprovalRationale: contract.requestApprovalRationale,
+    reviewNotes: {
+      approved: contract.reviewNotes.approved,
+      rejected: contract.reviewNotes.rejected,
+    },
+  };
 }
 
 export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
@@ -314,6 +367,47 @@ export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
       ],
     },
   },
+  {
+    key: 'ecommerce_launch_publish_execution',
+    title: 'Ecommerce launch publish execution',
+    summary:
+      'Would publish a narrow ecommerce launch plan once guarded execution exists for storefront rollout.',
+    domainKey: 'ecommerce',
+    availability: 'planned',
+    riskLevel: 'high',
+    actionKind: 'execute',
+    requiresApproval: true,
+    inputContract: {
+      sourceSurfaceKeys: ['ecommerce_launch_workspace'],
+      primaryPayload:
+        'Tenant-scoped ecommerce launch workspace with deterministic launch scope, catalog readiness, and campaign posture signals.',
+      requiredContext: [
+        'launch readiness',
+        'catalog scope',
+        'campaign posture',
+      ],
+    },
+    outputContract: {
+      primaryArtifact: 'Launch publish intent.',
+      suggestedOutputKeys: ['launch_publish_intent'],
+      humanReviewFocus: [
+        'Check that the publish scope stays inside the named launch plan.',
+        'Confirm no storefront, campaign, or catalog mutation is opened without explicit human gate approval.',
+      ],
+    },
+    executionBoundary: {
+      executionMode: 'guarded_execution_planned',
+      stateMutation: 'planned',
+      externalSideEffects: 'planned',
+      reviewRequirement:
+        'This tool stays blocked until approval memory and guarded execution flows are operational for ecommerce launch.',
+      blockedCapabilities: [
+        'publish_storefront_content',
+        'launch_campaign',
+        'activate_checkout',
+      ],
+    },
+  },
 ];
 
 function cloneAiToolDefinition(entry: AiToolDefinition): AiToolDefinition {
@@ -513,6 +607,13 @@ export const AI_AGENT_TOOL_ACCESS: AiAgentToolAccessEntry[] = [
     rationale:
       'Launch suggestions are expected to be reviewed by an operator before they influence storefront work.',
   },
+  {
+    agentKey: 'ecommerce-launch-assistant',
+    toolKey: 'ecommerce_launch_publish_execution',
+    accessLevel: 'blocked',
+    rationale:
+      'Direct storefront or campaign launch remains blocked until approval flows and guarded execution are in place for ecommerce.',
+  },
 ];
 
 export function listAiToolRegistry(): AiToolDefinition[] {
@@ -622,6 +723,10 @@ export function getAiGuardedExecutionCandidateDescriptor(
         toolKey,
         title: 'Growth case assignment lane',
         targetKind: 'growth_operational_case',
+        operatingLane: 'operational_case_assignment_lane',
+        blastRadius: 'single_queue_lane',
+        safeFallbackMode: 'suggestion_only_with_manual_assignment',
+        preferredPilotTypeWhenReady: 'human_gate_then_execute',
         targetSelectionLabel: 'Operational case',
         emptyTargetSelectionLabel: 'No eligible operational cases',
         executeActionLabel: 'Execute take-case',
@@ -632,10 +737,28 @@ export function getAiGuardedExecutionCandidateDescriptor(
         toolKey,
         title: 'Invoice payment collection lane',
         targetKind: 'invoice',
+        operatingLane: 'single_record_execution_lane',
+        blastRadius: 'single_record',
+        safeFallbackMode: 'suggestion_only',
+        preferredPilotTypeWhenReady: 'human_gate_then_execute',
         targetSelectionLabel: 'Invoice',
         emptyTargetSelectionLabel: 'No eligible invoices',
         executeActionLabel: 'Execute post-payment',
         rollbackActionLabel: 'Rollback payment',
+      };
+    case 'ecommerce_launch_publish_execution':
+      return {
+        toolKey,
+        title: 'Ecommerce launch publish lane',
+        targetKind: 'ecommerce_launch_plan',
+        operatingLane: 'single_record_execution_lane',
+        blastRadius: 'single_record',
+        safeFallbackMode: 'suggestion_only',
+        preferredPilotTypeWhenReady: 'shadow_review',
+        targetSelectionLabel: 'Launch plan',
+        emptyTargetSelectionLabel: 'No eligible launch plan',
+        executeActionLabel: 'Execute launch publish',
+        rollbackActionLabel: 'Rollback launch publish',
       };
     default:
       return null;
@@ -696,6 +819,14 @@ export function listAiOperatingModelManifest(): AiOperatingModelManifest {
       );
     }
 
+    const handoffContract = getAiAgentHandoffContract(agent.key);
+
+    if (!handoffContract) {
+      throw new Error(
+        `AI handoff contract is incomplete for agent ${agent.key}.`,
+      );
+    }
+
     const toolAccess = listAiAgentToolAccessByAgentKey(agent.key).map((entry) => ({
       tool: entry.tool,
       accessLevel: entry.accessLevel,
@@ -719,6 +850,7 @@ export function listAiOperatingModelManifest(): AiOperatingModelManifest {
         (entry) => entry.policyKey,
       ),
       toolAccess,
+      handoffContract,
       guardedExecutionCandidateToolKey:
         getAiGuardedExecutionCandidateToolKey(agent.key),
       guardedExecutionCandidate:

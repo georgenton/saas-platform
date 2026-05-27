@@ -1,5 +1,13 @@
 # api-platform
 
+## 0.55.0
+
+### Minor Changes
+
+- 81fe016: Enrich the AI operating model manifest so the console can resolve primary surfaces,
+  prompt-pack metadata, approval policies, and tool access contracts from a single
+  versioned source of truth.
+
 ## 0.54.0
 
 ### Minor Changes

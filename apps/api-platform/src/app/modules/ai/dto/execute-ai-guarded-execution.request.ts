@@ -10,4 +10,9 @@ export class ExecuteAiGuardedExecutionRequestDto {
   @IsString()
   @MaxLength(120)
   invoiceId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  launchPlanId?: string;
 }

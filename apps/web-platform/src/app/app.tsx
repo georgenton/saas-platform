@@ -2,15 +2,14 @@ import {
   Dispatch,
   FormEvent,
   SetStateAction,
+  Suspense,
+  lazy,
   startTransition,
   useEffect,
   useMemo,
   useState,
 } from 'react';
 import styles from './app.module.css';
-import { AiGuardedExecutionControl } from './ai-guarded-execution-control';
-import { AiGuardedExecutionEventLog } from './ai-guarded-execution-event-log';
-import { AiGuardedExecutionOverview } from './ai-guarded-execution-overview';
 import {
   AI_AGENT_WEB_REGISTRY,
   AiAgentDedicatedActionKeyPrefixes,
@@ -237,6 +236,37 @@ import {
   WhatsappOperationalMonitorRunResponse,
   WhatsappOutboundReportingSummaryResponse,
 } from './types';
+
+const LazyAiGuardedExecutionOverview = lazy(() =>
+  import('./ai-guarded-execution-overview').then((module) => ({
+    default: module.AiGuardedExecutionOverview,
+  })),
+);
+const LazyAiGuardedExecutionControl = lazy(() =>
+  import('./ai-guarded-execution-control').then((module) => ({
+    default: module.AiGuardedExecutionControl,
+  })),
+);
+const LazyAiGuardedExecutionEventLog = lazy(() =>
+  import('./ai-guarded-execution-event-log').then((module) => ({
+    default: module.AiGuardedExecutionEventLog,
+  })),
+);
+const LazyAiMemoryRetrievalSection = lazy(() =>
+  import('./ai-memory-retrieval-section').then((module) => ({
+    default: module.AiMemoryRetrievalSection,
+  })),
+);
+const LazyAiApprovalPlanningSection = lazy(() =>
+  import('./ai-approval-planning-section').then((module) => ({
+    default: module.AiApprovalPlanningSection,
+  })),
+);
+const LazyAiEcommerceLaunchSection = lazy(() =>
+  import('./ai-ecommerce-launch-section').then((module) => ({
+    default: module.AiEcommerceLaunchSection,
+  })),
+);
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:3000/api';
@@ -3792,10 +3822,19 @@ export function App() {
   const buildAiGuardedExecutionTargetBody = (
     agentKey: string,
     targetId: string,
-  ): { caseId: string } | { invoiceId: string } =>
-    resolveAiGuardedExecutionCandidate(agentKey)?.targetKind === 'invoice'
-      ? { invoiceId: targetId }
-      : { caseId: targetId };
+  ): { caseId: string } | { invoiceId: string } | { launchPlanId: string } => {
+    const targetKind = resolveAiGuardedExecutionCandidate(agentKey)?.targetKind;
+
+    if (targetKind === 'invoice') {
+      return { invoiceId: targetId };
+    }
+
+    if (targetKind === 'ecommerce_launch_plan') {
+      return { launchPlanId: targetId };
+    }
+
+    return { caseId: targetId };
+  };
   const refreshAiAgentActionSurfaces = async (
     agentKey: string,
     options?: {
@@ -11752,596 +11791,81 @@ export function App() {
           </article>
         </section>
 
-        <section className={styles.adminPanel}>
-          <div className={styles.sectionHeading}>
-            <div>
-              <span className={styles.label}>AI ecommerce launch</span>
-              <h2>Surface determinística para preparar el primer launch</h2>
-            </div>
-            {session && currentTenancy && canReadTenantEntitlements ? (
-              <button
-                className={styles.ghostButton}
-                disabled={tenantAiEcommerceLaunchWorkspaceLoading}
-                onClick={() => void refreshTenantAiEcommerceLaunchWorkspace()}
-                type="button"
-              >
-                {tenantAiEcommerceLaunchWorkspaceLoading
-                  ? 'Refrescando ecommerce AI...'
-                  : 'Refrescar ecommerce AI'}
-              </button>
-            ) : null}
-          </div>
-
-          {!session ? (
-            <div className={styles.emptyState}>
-              <p>Primero carguemos la sesión para abrir el workspace AI de ecommerce.</p>
-            </div>
-          ) : !currentTenancy ? (
-            <div className={styles.emptyState}>
-              <p>Selecciona un tenant actual para revisar el launch workspace de ecommerce.</p>
-            </div>
-          ) : !canReadTenantEntitlements ? (
-            <div className={styles.emptyState}>
-              <p>
-                Este tenant no expone <code>tenant.entitlements.read</code>, así que
-                todavía no podemos abrir la superficie AI de ecommerce.
-              </p>
-            </div>
-          ) : (
-            <div className={styles.stack}>
-              {ecommerceLaunchError ? (
-                <p className={styles.errorBanner}>{ecommerceLaunchError}</p>
-              ) : null}
-              {ecommerceLaunchActionMessage ? (
-                <p className={styles.successBanner}>{ecommerceLaunchActionMessage}</p>
-              ) : null}
-
-              <div className={styles.twoColumn}>
-                <div className={styles.detailCard}>
-                  <div className={styles.sectionHeading}>
-                    <div>
-                      <span className={styles.label}>Launch workspace</span>
-                      <h3>Base real para catálogo, landing y campaña</h3>
-                    </div>
-                    <span
-                      className={`${styles.statusPill} ${operationalStatusTone(
-                        tenantAiEcommerceLaunchWorkspace?.summary.tone ?? 'healthy',
-                      )}`}
-                    >
-                      {tenantAiEcommerceLaunchWorkspace
-                        ? operationalStatusLabel(
-                            tenantAiEcommerceLaunchWorkspace.summary.tone,
-                          )
-                        : 'sin workspace'}
-                    </span>
-                  </div>
-
-                  {tenantAiEcommerceLaunchWorkspace ? (
-                    <div className={styles.stack}>
-                      <p>{tenantAiEcommerceLaunchWorkspace.summary.headline}</p>
-                      <small>{tenantAiEcommerceLaunchWorkspace.summary.detail}</small>
-                      <small>
-                        Focus sugerido:{' '}
-                        {tenantAiEcommerceLaunchWorkspace.summary.suggestedFocus}
-                      </small>
-
-                      <div className={styles.invoiceKpiGrid}>
-                        <div className={styles.commercialCard}>
-                          <span className={styles.muted}>Readiness</span>
-                          <strong>
-                            {humanizeKey(
-                              tenantAiEcommerceLaunchWorkspace.summary
-                                .launchReadiness,
-                            )}
-                          </strong>
-                          <small>Estado base del launch actual.</small>
-                        </div>
-                        <div className={styles.commercialCard}>
-                          <span className={styles.muted}>Producto</span>
-                          <strong>
-                            {tenantAiEcommerceLaunchWorkspace.moduleSnapshot
-                              .productEnabled
-                              ? 'Activo'
-                              : 'Inactivo'}
-                          </strong>
-                          <small>Si ecommerce ya está habilitado para el tenant.</small>
-                        </div>
-                        <div className={styles.commercialCard}>
-                          <span className={styles.muted}>Módulos activos</span>
-                          <strong>
-                            {
-                              tenantAiEcommerceLaunchWorkspace.moduleSnapshot
-                                .activeModuleCount
-                            }
-                          </strong>
-                          <small>Base disponible para el primer brief.</small>
-                        </div>
-                        <div className={styles.commercialCard}>
-                          <span className={styles.muted}>Inactivos</span>
-                          <strong>
-                            {
-                              tenantAiEcommerceLaunchWorkspace.moduleSnapshot
-                                .inactiveModuleKeys.length
-                            }
-                          </strong>
-                          <small>Piezas que conviene dejar fuera del scope inicial.</small>
-                        </div>
-                      </div>
-
-                      <div className={styles.stack}>
-                        <div className={styles.sectionHeading}>
-                          <div>
-                            <span className={styles.label}>Checklist</span>
-                            <h3>Módulos y postura del launch</h3>
-                          </div>
-                        </div>
-                        {tenantAiEcommerceLaunchWorkspace.checklist.map((entry) => (
-                          <div
-                            className={styles.invoiceItemCard}
-                            key={`ecommerce-launch-check:${entry.key}`}
-                          >
-                            <div className={styles.invoiceCardHeader}>
-                              <strong>{entry.label}</strong>
-                              <span
-                                className={`${styles.statusPill} ${operationalStatusTone(
-                                  entry.status === 'blocked'
-                                    ? 'critical'
-                                    : entry.status === 'warning'
-                                      ? 'warning'
-                                      : 'healthy',
-                                )}`}
-                              >
-                                {entry.status}
-                              </span>
-                            </div>
-                            <small>
-                              {entry.isCore ? 'Core' : 'Optional'} · {entry.detail}
-                            </small>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className={styles.stack}>
-                        <div className={styles.sectionHeading}>
-                          <div>
-                            <span className={styles.label}>Launch lanes</span>
-                            <h3>Cómo bajar el brief sin inventar estructura</h3>
-                          </div>
-                        </div>
-                        {tenantAiEcommerceLaunchWorkspace.channelGuidance.map((entry) => (
-                          <div
-                            className={styles.assistCueCard}
-                            key={`ecommerce-launch-lane:${entry.key}`}
-                          >
-                            <div className={styles.invoiceCardHeader}>
-                              <strong>{entry.title}</strong>
-                              <span
-                                className={`${styles.statusPill} ${operationalStatusTone(
-                                  entry.status === 'blocked'
-                                    ? 'critical'
-                                    : entry.status === 'warning'
-                                      ? 'warning'
-                                      : 'healthy',
-                                )}`}
-                              >
-                                {entry.status}
-                              </span>
-                            </div>
-                            <small>{entry.detail}</small>
-                            <small>Uso recomendado: {entry.recommendedUse}</small>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : tenantAiEcommerceLaunchWorkspaceLoading ? (
-                    <small className={styles.muted}>
-                      Cargando workspace AI de ecommerce launch...
-                    </small>
-                  ) : (
-                    <div className={styles.emptyState}>
-                      <p>
-                        Todavía no hay suficiente contexto para hidratar el launch
-                        workspace de ecommerce.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className={styles.detailCard}>
-                  <div className={styles.sectionHeading}>
-                    <div>
-                      <span className={styles.label}>AI Capability Platform</span>
-                      <h3>Ecommerce Launch Assistant</h3>
-                    </div>
-                    {activeEcommerceAiAgent ? (
-                      <span
-                        className={`${styles.statusPill} ${aiAgentAvailabilityTone(
-                          activeEcommerceAiAgent.availability,
-                        )}`}
-                      >
-                        {aiAgentAvailabilityLabel(activeEcommerceAiAgent.availability)}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  {ecommerceLaunchAssistantAiEnvelope ? (
-                    <div className={styles.stack}>
-                      <p className={styles.muted}>
-                        <strong>{ecommerceLaunchAssistantAiEnvelope.agent.title}</strong>{' '}
-                        ya puede convertir esta superficie determinística en un brief
-                        reusable para catálogo, landing y campaña, pero sigue en modo
-                        sugerencia y no publica nada por sí solo.
-                      </p>
-                      <div className={styles.badgeRow}>
-                        {activeEcommerceAiPrimarySurface ? (
-                          <span className={styles.badge}>
-                            Surface {activeEcommerceAiPrimarySurface.key}
-                          </span>
-                        ) : null}
-                        <span className={styles.badge}>
-                          Prompt pack{' '}
-                          {activeEcommerceAiPromptPack?.key ??
-                            ecommerceLaunchAssistantAiEnvelope.promptPack.key}
-                        </span>
-                        <span className={styles.badge}>
-                          Mode {ecommerceLaunchAssistantAiEnvelope.mode}
-                        </span>
-                      </div>
-                      {activeEcommerceAiPromptPack ? (
-                        <div className={styles.assistReplyBox}>
-                          <span className={styles.muted}>Objetivo del agente</span>
-                          <strong>{activeEcommerceAiPromptPack.objective}</strong>
-                        </div>
-                      ) : null}
-
-                      <div className={styles.assistChecklist}>
-                        {ecommerceLaunchAssistantAiEnvelope.promptPack.suggestedOutputs.map(
-                          (entry) => (
-                            <span
-                              className={styles.badge}
-                              key={`ecommerce-output:${entry.key}`}
-                            >
-                              {entry.label}
-                            </span>
-                          ),
-                        )}
-                      </div>
-
-                      <div className={styles.actionRow}>
-                        <button
-                          className={styles.primaryButton}
-                          disabled={
-                            !canReadTenantEntitlements ||
-                            actionLoading === 'prepare-ecommerce-ai-suggestion-run'
-                          }
-                          onClick={() =>
-                            void aiDedicatedSuggestionRunActionHandlers[
-                              'ecommerce-launch-assistant'
-                            ]?.prepare?.()
-                          }
-                          type="button"
-                        >
-                          {actionLoading === 'prepare-ecommerce-ai-suggestion-run'
-                            ? 'Preparando...'
-                            : 'Preparar handoff AI'}
-                        </button>
-                      </div>
-
-                      <div className={styles.stack}>
-                        <div className={styles.sectionHeading}>
-                          <div>
-                            <span className={styles.label}>Tool access</span>
-                            <h3>Postura real de la capacidad AI</h3>
-                          </div>
-                        </div>
-                        {activeEcommerceAiToolAccess.map((entry) => (
-                          <div
-                            className={styles.invoiceItemCard}
-                            key={`ecommerce-tool:${entry.tool.key}`}
-                          >
-                            <div className={styles.invoiceCardHeader}>
-                              <strong>{entry.tool.title}</strong>
-                              <span className={styles.statusPill}>
-                                {entry.accessLevel}
-                              </span>
-                            </div>
-                            <small>{entry.rationale}</small>
-                            <small>
-                              Boundary {humanizeKey(
-                                entry.tool.executionBoundary.executionMode,
-                              )}
-                            </small>
-                          </div>
-                        ))}
-                      </div>
-
-                      {ecommerceLaunchAssistantAiEnvelope.retrieval ? (
-                        <div className={styles.stack}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Retrieved memory</span>
-                              <h3>Contexto persistido que ya entra al brief</h3>
-                            </div>
-                          </div>
-                          <small>
-                            {
-                              ecommerceLaunchAssistantAiEnvelope.retrieval
-                                .recordCount
-                            }{' '}
-                            record(s) visibles para este agente.
-                          </small>
-                          {ecommerceLaunchAssistantAiEnvelope.retrieval.notes.map(
-                            (note, index) => (
-                              <small key={`ecommerce-retrieval-note:${index}`}>
-                                {note}
-                              </small>
-                            ),
-                          )}
-                        </div>
-                      ) : null}
-
-                      {activeEcommerceAiApprovalPolicies.length > 0 ? (
-                        <div className={styles.stack}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Human gate</span>
-                              <h3>Cómo entra a revisión humana</h3>
-                            </div>
-                          </div>
-                          {activeEcommerceAiApprovalPolicies.map((entry) => (
-                            <div
-                              className={styles.assistCueCard}
-                              key={`ecommerce-policy:${entry.policyKey}`}
-                            >
-                              <div className={styles.invoiceCardHeader}>
-                                <strong>{entry.title}</strong>
-                                <span
-                                  className={`${styles.statusPill} ${styles.statusWarning}`}
-                                >
-                                  {entry.scope}
-                                </span>
-                              </div>
-                              <small>{entry.summary}</small>
-                              <small>{entry.reviewGuidance}</small>
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-
-                      {activeEcommerceAiSuggestionRuns.length > 0 ? (
-                        <div className={styles.stack}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Recent handoffs</span>
-                              <h3>Últimos briefs preparados</h3>
-                            </div>
-                          </div>
-                          {activeEcommerceAiSuggestionRuns
-                            .slice(0, 2)
-                            .map((entry) => (
-                              <div
-                                className={styles.timelineCard}
-                                key={`ecommerce-run:${entry.id}`}
-                              >
-                                <div className={styles.invoiceCardHeader}>
-                                  <strong>{entry.summary}</strong>
-                                  <span className={styles.statusPill}>
-                                    {humanizeKey(entry.approvalSummary.status)}
-                                  </span>
-                                </div>
-                                <small>
-                                  {formatDate(entry.createdAt)} · {entry.promptPackKey}@
-                                  {entry.promptPackVersion}
-                                </small>
-                                <div className={styles.inlineActions}>
-                                  <button
-                                    className={styles.secondaryButton}
-                                    type="button"
-                                    onClick={() =>
-                                      void aiDedicatedSuggestionRunActionHandlers[
-                                        'ecommerce-launch-assistant'
-                                      ]?.openDetail?.(entry.id)
-                                    }
-                                    disabled={
-                                      getAiAgentActionLoadingState(
-                                        'ecommerce-launch-assistant',
-                                      ) ===
-                                      getAiAgentDedicatedSuggestionRunActionKey(
-                                        'load_detail',
-                                        'ecommerce-launch-assistant',
-                                        entry.id,
-                                      )
-                                    }
-                                  >
-                                    Ver detalle
-                                  </button>
-                                  {entry.approvalSummary.status !== 'pending' &&
-                                  entry.approvalSummary.status !== 'approved' ? (
-                                    <button
-                                      className={styles.ghostButton}
-                                      type="button"
-                                      onClick={() =>
-                                        void aiDedicatedSuggestionRunActionHandlers[
-                                          'ecommerce-launch-assistant'
-                                        ]?.requestApproval?.(entry.id)
-                                      }
-                                      disabled={
-                                        getAiAgentActionLoadingState(
-                                          'ecommerce-launch-assistant',
-                                        ) ===
-                                        getAiAgentDedicatedSuggestionRunActionKey(
-                                          'request_approval',
-                                          'ecommerce-launch-assistant',
-                                          entry.id,
-                                        )
-                                      }
-                                    >
-                                      Pedir approval
-                                    </button>
-                                  ) : null}
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      ) : null}
-
-                      {selectedEcommerceAiSuggestionRunDetail ? (
-                        <div className={styles.stack}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Suggestion detail</span>
-                              <h3>Brief abierto para revisión humana</h3>
-                            </div>
-                          </div>
-                          <div className={styles.detailCard}>
-                            <div className={styles.stack}>
-                              <small>
-                                {selectedEcommerceAiSuggestionRunDetail.promptPackKey}@
-                                {
-                                  selectedEcommerceAiSuggestionRunDetail.promptPackVersion
-                                }
-                              </small>
-                              <strong>
-                                {selectedEcommerceAiSuggestionRunDetail.summary}
-                              </strong>
-                              <small>
-                                Outputs sugeridos:{' '}
-                                {selectedEcommerceAiSuggestionRunDetail.suggestedOutputKeys.join(
-                                  ', ',
-                                )}
-                              </small>
-                            </div>
-                            <div className={styles.stack}>
-                              {selectedEcommerceAiSuggestionRunDetail.approvalRequests.map(
-                                (entry) => (
-                                  <div
-                                    className={styles.assistCueCard}
-                                    key={`ecommerce-detail-approval:${entry.id}`}
-                                  >
-                                    <div className={styles.invoiceCardHeader}>
-                                      <strong>{entry.summary}</strong>
-                                      <span className={styles.statusPill}>
-                                        {humanizeKey(entry.status)}
-                                      </span>
-                                    </div>
-                                    <small>{entry.policyKey}</small>
-                                    <small>{entry.rationale}</small>
-                                    {entry.status === 'pending' ? (
-                                      <div className={styles.inlineActions}>
-                                        <button
-                                          className={styles.secondaryButton}
-                                          type="button"
-                                          onClick={() =>
-                                            void aiDedicatedSuggestionRunActionHandlers[
-                                              'ecommerce-launch-assistant'
-                                            ]?.reviewApproval?.(entry.id, 'approved')
-                                          }
-                                          disabled={
-                                            getAiAgentActionLoadingState(
-                                              'ecommerce-launch-assistant',
-                                            ) ===
-                                            getAiAgentDedicatedSuggestionRunActionKey(
-                                              'review_approval',
-                                              'ecommerce-launch-assistant',
-                                              entry.id,
-                                            )
-                                          }
-                                        >
-                                          Aprobar
-                                        </button>
-                                        <button
-                                          className={styles.ghostButton}
-                                          type="button"
-                                          onClick={() =>
-                                            void aiDedicatedSuggestionRunActionHandlers[
-                                              'ecommerce-launch-assistant'
-                                            ]?.reviewApproval?.(entry.id, 'rejected')
-                                          }
-                                          disabled={
-                                            getAiAgentActionLoadingState(
-                                              'ecommerce-launch-assistant',
-                                            ) ===
-                                            getAiAgentDedicatedSuggestionRunActionKey(
-                                              'review_approval',
-                                              'ecommerce-launch-assistant',
-                                              entry.id,
-                                            )
-                                          }
-                                        >
-                                          Rechazar
-                                        </button>
-                                      </div>
-                                    ) : null}
-                                  </div>
-                                ),
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {ecommerceLaunchAssistantAiApprovalRequests.length > 0 ? (
-                        <div className={styles.stack}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Approval queue</span>
-                              <h3>Solicitudes visibles para ecommerce launch</h3>
-                            </div>
-                          </div>
-                          {ecommerceLaunchAssistantAiApprovalRequests
-                            .slice(0, 3)
-                            .map((entry) => (
-                              <div
-                                className={styles.assistCueCard}
-                                key={`ecommerce-approval:${entry.id}`}
-                              >
-                                <div className={styles.invoiceCardHeader}>
-                                  <strong>{entry.summary}</strong>
-                                  <span className={styles.statusPill}>
-                                    {humanizeKey(entry.status)}
-                                  </span>
-                                </div>
-                                <small>{entry.policyKey}</small>
-                                <small>{entry.rationale}</small>
-                                <small>
-                                  Suggestion run {entry.suggestionRunId} · creada{' '}
-                                  {formatDate(entry.createdAt)}
-                                </small>
-                              </div>
-                            ))}
-                        </div>
-                      ) : null}
-
-                      {latestApprovedEcommerceAiApprovalRequest ? (
-                        <div className={styles.assistCueCard}>
-                          <strong>Última decisión humana</strong>
-                          <small>{latestApprovedEcommerceAiApprovalRequest.summary}</small>
-                          <small>
-                            Revisada{' '}
-                            {formatDate(
-                              latestApprovedEcommerceAiApprovalRequest.reviewedAt,
-                            )}
-                          </small>
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : tenantAiEcommerceLaunchWorkspaceLoading ? (
-                    <small className={styles.muted}>
-                      Cargando envelope AI de ecommerce launch...
-                    </small>
-                  ) : (
-                    <div className={styles.emptyState}>
-                      <p>
-                        Cuando el envelope AI esté disponible, aquí veremos el brief
-                        reusable del launch assistant.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
+        <Suspense
+          fallback={
+            <small className={styles.muted}>
+              Cargando superficie AI de ecommerce...
+            </small>
+          }
+        >
+          <LazyAiEcommerceLaunchSection
+            hasSession={Boolean(session)}
+            hasCurrentTenancy={Boolean(currentTenancy)}
+            canReadTenantEntitlements={canReadTenantEntitlements}
+            tenantAiEcommerceLaunchWorkspaceLoading={
+              tenantAiEcommerceLaunchWorkspaceLoading
+            }
+            tenantAiEcommerceLaunchWorkspace={tenantAiEcommerceLaunchWorkspace}
+            ecommerceLaunchError={ecommerceLaunchError}
+            ecommerceLaunchActionMessage={ecommerceLaunchActionMessage}
+            ecommerceLaunchAssistantAiEnvelope={ecommerceLaunchAssistantAiEnvelope}
+            activeEcommerceAiAgent={activeEcommerceAiAgent}
+            activeEcommerceAiPrimarySurface={activeEcommerceAiPrimarySurface}
+            activeEcommerceAiPromptPack={activeEcommerceAiPromptPack}
+            activeEcommerceAiApprovalPolicies={activeEcommerceAiApprovalPolicies}
+            activeEcommerceAiToolAccess={activeEcommerceAiToolAccess}
+            activeEcommerceAiSuggestionRuns={activeEcommerceAiSuggestionRuns}
+            selectedEcommerceAiSuggestionRunDetail={
+              selectedEcommerceAiSuggestionRunDetail
+            }
+            ecommerceLaunchAssistantAiApprovalRequests={
+              ecommerceLaunchAssistantAiApprovalRequests
+            }
+            latestApprovedEcommerceAiApprovalRequest={
+              latestApprovedEcommerceAiApprovalRequest
+            }
+            actionLoading={actionLoading}
+            ecommerceAgentActionLoadingState={getAiAgentActionLoadingState(
+              'ecommerce-launch-assistant',
+            )}
+            formatDate={formatDate}
+            humanizeKey={humanizeKey}
+            operationalStatusTone={operationalStatusTone}
+            operationalStatusLabel={operationalStatusLabel}
+            aiAgentAvailabilityTone={aiAgentAvailabilityTone}
+            aiAgentAvailabilityLabel={aiAgentAvailabilityLabel}
+            getDedicatedActionKey={(action, targetId) =>
+              getAiAgentDedicatedSuggestionRunActionKey(
+                action,
+                'ecommerce-launch-assistant',
+                targetId,
+              )
+            }
+            onRefresh={() => {
+              void refreshTenantAiEcommerceLaunchWorkspace();
+            }}
+            onPrepare={() => {
+              void aiDedicatedSuggestionRunActionHandlers[
+                'ecommerce-launch-assistant'
+              ]?.prepare?.();
+            }}
+            onOpenDetail={(runId) => {
+              void aiDedicatedSuggestionRunActionHandlers[
+                'ecommerce-launch-assistant'
+              ]?.openDetail?.(runId);
+            }}
+            onRequestApproval={(runId) => {
+              void aiDedicatedSuggestionRunActionHandlers[
+                'ecommerce-launch-assistant'
+              ]?.requestApproval?.(runId);
+            }}
+            onReviewApproval={(requestId, status) => {
+              void aiDedicatedSuggestionRunActionHandlers[
+                'ecommerce-launch-assistant'
+              ]?.reviewApproval?.(requestId, status);
+            }}
+          />
+        </Suspense>
 
         <section className={styles.adminPanel}>
           <div className={styles.sectionHeading}>
@@ -18208,1704 +17732,260 @@ export function App() {
                 </div>
               </div>
 
-              <div className={styles.detailCard}>
-                <div className={styles.sectionHeading}>
-                  <div>
-                    <span className={styles.label}>AI approval design</span>
-                    <h3>Carga humana esperada por escenario de approval</h3>
-                  </div>
-                  <span className={styles.statusPill}>
-                    {tenantAiApprovalDesignWorkspace
-                      ? formatDate(tenantAiApprovalDesignWorkspace.generatedAt)
-                      : 'sin diseno'}
-                  </span>
-                </div>
-
-                <div className={styles.commercialMetricsGrid}>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Human reviews actuales</span>
-                    <strong>
-                      {tenantAiApprovalDesignWorkspace?.counts
-                        .currentExpectedHumanReviews ?? 0}
-                    </strong>
-                    <small>Backlog y handoffs reviewables bajo la postura actual.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Human reviews simulados</span>
-                    <strong>
-                      {tenantAiApprovalDesignWorkspace?.counts
-                        .simulatedExpectedHumanReviews ?? 0}
-                    </strong>
-                    <small>Carga esperada si pasamos a un diseno mas review-first.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Touches extra</span>
-                    <strong>
-                      {tenantAiApprovalDesignWorkspace?.counts
-                        .addedHumanReviewTouches ?? 0}
-                    </strong>
-                    <small>Revision adicional que el nuevo diseno agregaria.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Agentes con mas revision</span>
-                    <strong>
-                      {tenantAiApprovalDesignWorkspace?.counts
-                        .agentsWithHeavierReview ?? 0}
-                    </strong>
-                    <small>Agentes cuyo diseno aumentaria el trabajo humano.</small>
-                  </div>
-                </div>
-
-                <div className={styles.stack}>
-                  {tenantAiApprovalDesignWorkspace?.agents.length ? (
-                    tenantAiApprovalDesignWorkspace.agents.map((agent) => (
-                      <div
-                        className={styles.assistCueCard}
-                        key={`ai-approval-design:${agent.agentKey}`}
-                      >
-                        <div className={styles.invoiceCardHeader}>
-                          <strong>{agent.title}</strong>
-                          <span
-                            className={`${styles.statusPill} ${approvalDesignStatusTone(
-                              agent.designStatus,
-                            )}`}
-                          >
-                            {approvalDesignStatusLabel(agent.designStatus)}
-                          </span>
-                        </div>
-                        <small>
-                          {humanizeKey(agent.domainKey)} · current load{' '}
-                          {agent.currentExpectedReviewLoad.totalHumanReviewTouches}{' '}
-                          {'->'} simulated load{' '}
-                          {agent.simulatedExpectedReviewLoad.totalHumanReviewTouches}
-                        </small>
-                        <small>
-                          Pending approvals {agent.currentExpectedReviewLoad.pendingApprovalRequests}
-                          {' · '}reviewable handoffs{' '}
-                          {agent.currentExpectedReviewLoad.reviewableSuggestionRuns}
-                          {' · '}extra tool checkpoints{' '}
-                          {agent.simulatedExpectedReviewLoad.promotedToolReviewPoints}
-                        </small>
-                        <div className={styles.stack}>
-                          {agent.notes.map((note, index) => (
-                            <small
-                              key={`ai-approval-design-note:${agent.agentKey}:${index}`}
-                            >
-                              {note}
-                            </small>
-                          ))}
-                        </div>
-                        <div className={styles.stack}>
-                          <small>
-                            Approval policies:{' '}
-                            {agent.approvalPolicyKeys.length
-                              ? agent.approvalPolicyKeys.join(', ')
-                              : 'none'}
-                          </small>
-                          <small>
-                            Promoted tools:{' '}
-                            {agent.promotedToolKeys.length
-                              ? agent.promotedToolKeys.join(', ')
-                              : 'none'}
-                          </small>
-                          <small>
-                            Still blocked tools:{' '}
-                            {agent.stillBlockedToolKeys.length
-                              ? agent.stillBlockedToolKeys.join(', ')
-                              : 'none'}
-                          </small>
-                        </div>
-                      </div>
-                    ))
-                  ) : tenantAiApprovalDesignWorkspaceLoading ? (
-                    <small className={styles.muted}>
-                      Cargando diseno de approvals de AI...
-                    </small>
-                  ) : (
-                    <div className={styles.emptyState}>
-                      <p>
-                        Todavia no hay suficiente contexto para disenar escenarios de
-                        approval en este tenant.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.detailCard}>
-                <div className={styles.sectionHeading}>
-                  <div>
-                    <span className={styles.label}>AI approval capacity</span>
-                    <h3>Capacidad minima diaria de revision por agente</h3>
-                  </div>
-                  <span className={styles.statusPill}>
-                    {tenantAiApprovalCapacityWorkspace
-                      ? formatDate(tenantAiApprovalCapacityWorkspace.generatedAt)
-                      : 'sin capacidad'}
-                  </span>
-                </div>
-
-                <div className={styles.commercialMetricsGrid}>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Reviews/dia actual</span>
-                    <strong>
-                      {tenantAiApprovalCapacityWorkspace?.counts
-                        .currentMinimumReviewsPerDay ?? 0}
-                    </strong>
-                    <small>Piso minimo de toques humanos con la postura actual.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Reviews/dia simulado</span>
-                    <strong>
-                      {tenantAiApprovalCapacityWorkspace?.counts
-                        .simulatedMinimumReviewsPerDay ?? 0}
-                    </strong>
-                    <small>Piso minimo si abrimos el escenario review-first.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Carga extra/dia</span>
-                    <strong>
-                      {tenantAiApprovalCapacityWorkspace?.counts.addedReviewsPerDay ?? 0}
-                    </strong>
-                    <small>Revision diaria adicional para sostener el cambio.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Agentes en riesgo</span>
-                    <strong>
-                      {tenantAiApprovalCapacityWorkspace?.counts
-                        .agentsAtCapacityRisk ?? 0}
-                    </strong>
-                    <small>Agentes que pedirian buffer humano o rediseño.</small>
-                  </div>
-                </div>
-
-                <div className={styles.stack}>
-                  {tenantAiApprovalCapacityWorkspace?.agents.length ? (
-                    tenantAiApprovalCapacityWorkspace.agents.map((agent) => (
-                      <div
-                        className={styles.assistCueCard}
-                        key={`ai-approval-capacity:${agent.agentKey}`}
-                      >
-                        <div className={styles.invoiceCardHeader}>
-                          <strong>{agent.title}</strong>
-                          <span
-                            className={`${styles.statusPill} ${approvalCapacityStatusTone(
-                              agent.capacityStatus,
-                            )}`}
-                          >
-                            {approvalCapacityStatusLabel(agent.capacityStatus)}
-                          </span>
-                        </div>
-                        <small>
-                          {humanizeKey(agent.domainKey)} · current{' '}
-                          {agent.currentMinimumReviewsPerDay} {'->'} simulated{' '}
-                          {agent.simulatedMinimumReviewsPerDay} review touch(es)/day
-                        </small>
-                        <small>
-                          Added load: {agent.addedReviewsPerDay} {'· '}Approval policies:{' '}
-                          {agent.approvalPolicyKeys.length
-                            ? agent.approvalPolicyKeys.join(', ')
-                            : 'none'}
-                        </small>
-                        <div className={styles.stack}>
-                          {agent.bottleneckReasons.map((reason, index) => (
-                            <small
-                              key={`ai-approval-capacity-bottleneck:${agent.agentKey}:${index}`}
-                            >
-                              {reason}
-                            </small>
-                          ))}
-                        </div>
-                        <div className={styles.stack}>
-                          {agent.notes.map((note, index) => (
-                            <small
-                              key={`ai-approval-capacity-note:${agent.agentKey}:${index}`}
-                            >
-                              {note}
-                            </small>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : tenantAiApprovalCapacityWorkspaceLoading ? (
-                    <small className={styles.muted}>
-                      Cargando capacidad de approvals de AI...
-                    </small>
-                  ) : (
-                    <div className={styles.emptyState}>
-                      <p>
-                        Todavia no hay suficiente contexto para estimar capacidad de
-                        approvals en este tenant.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.detailCard}>
-                <div className={styles.sectionHeading}>
-                  <div>
-                    <span className={styles.label}>AI approval SLA</span>
-                    <h3>Riesgo temporal del loop humano por agente</h3>
-                  </div>
-                  <span className={styles.statusPill}>
-                    {tenantAiApprovalSlaWorkspace
-                      ? formatDate(tenantAiApprovalSlaWorkspace.generatedAt)
-                      : 'sin SLA'}
-                  </span>
-                </div>
-
-                <div className={styles.commercialMetricsGrid}>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Backlog actual</span>
-                    <strong>
-                      {tenantAiApprovalSlaWorkspace?.counts.currentBacklogTouches ?? 0}
-                    </strong>
-                    <small>Touches humanos pendientes bajo la postura actual.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Backlog simulado</span>
-                    <strong>
-                      {tenantAiApprovalSlaWorkspace?.counts.simulatedBacklogTouches ??
-                        0}
-                    </strong>
-                    <small>Touches humanos si abrimos el escenario review-first.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Agentes en riesgo</span>
-                    <strong>
-                      {tenantAiApprovalSlaWorkspace?.counts.agentsAtRisk ?? 0}
-                    </strong>
-                    <small>Agentes que ya se acercan a incumplir same-day review.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Agentes breached</span>
-                    <strong>
-                      {tenantAiApprovalSlaWorkspace?.counts.agentsBreached ?? 0}
-                    </strong>
-                    <small>Agentes que ya necesitarian rediseño o buffer adicional.</small>
-                  </div>
-                </div>
-
-                <div className={styles.stack}>
-                  {tenantAiApprovalSlaWorkspace?.agents.length ? (
-                    tenantAiApprovalSlaWorkspace.agents.map((agent) => (
-                      <div
-                        className={styles.assistCueCard}
-                        key={`ai-approval-sla:${agent.agentKey}`}
-                      >
-                        <div className={styles.invoiceCardHeader}>
-                          <strong>{agent.title}</strong>
-                          <span
-                            className={`${styles.statusPill} ${approvalSlaStatusTone(
-                              agent.simulatedSlaStatus,
-                            )}`}
-                          >
-                            {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
-                          </span>
-                        </div>
-                        <small>
-                          {humanizeKey(agent.domainKey)} · current{' '}
-                          {agent.currentEstimatedClearDays}d {'->'} simulated{' '}
-                          {agent.simulatedEstimatedClearDays}d clear time
-                        </small>
-                        <small>
-                          Current status {approvalSlaStatusLabel(agent.currentSlaStatus)}
-                          {' · '}Pending approvals {agent.pendingApprovalRequests}
-                          {' · '}Reviewable handoffs {agent.reviewableSuggestionRuns}
-                        </small>
-                        <div className={styles.stack}>
-                          {agent.notes.map((note, index) => (
-                            <small key={`ai-approval-sla-note:${agent.agentKey}:${index}`}>
-                              {note}
-                            </small>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : tenantAiApprovalSlaWorkspaceLoading ? (
-                    <small className={styles.muted}>
-                      Cargando SLA de approvals de AI...
-                    </small>
-                  ) : (
-                    <div className={styles.emptyState}>
-                      <p>
-                        Todavia no hay suficiente contexto para estimar el SLA de
-                        approvals en este tenant.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.detailCard}>
-                <div className={styles.sectionHeading}>
-                  <div>
-                    <span className={styles.label}>AI approval staffing</span>
-                    <h3>Reviewer-equivalents minimos para sostener el loop</h3>
-                  </div>
-                  <span className={styles.statusPill}>
-                    {tenantAiApprovalStaffingWorkspace
-                      ? formatDate(tenantAiApprovalStaffingWorkspace.generatedAt)
-                      : 'sin staffing'}
-                  </span>
-                </div>
-
-                <div className={styles.commercialMetricsGrid}>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Reviewers actuales</span>
-                    <strong>
-                      {tenantAiApprovalStaffingWorkspace?.counts
-                        .currentRequiredReviewerEquivalents ?? 0}
-                    </strong>
-                    <small>Minimo equivalente para sostener same-day review hoy.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Reviewers simulados</span>
-                    <strong>
-                      {tenantAiApprovalStaffingWorkspace?.counts
-                        .simulatedRequiredReviewerEquivalents ?? 0}
-                    </strong>
-                    <small>Minimo equivalente si abrimos la postura review-first.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Cobertura extra</span>
-                    <strong>
-                      {tenantAiApprovalStaffingWorkspace?.counts
-                        .addedReviewerEquivalents ?? 0}
-                    </strong>
-                    <small>Reviewer-equivalents adicionales que harian falta.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Agentes con gap</span>
-                    <strong>
-                      {tenantAiApprovalStaffingWorkspace?.counts
-                        .agentsNeedingMoreCoverage ?? 0}
-                    </strong>
-                    <small>Agentes donde el staffing actual quedaria corto.</small>
-                  </div>
-                </div>
-
-                <div className={styles.stack}>
-                  {tenantAiApprovalStaffingWorkspace?.agents.length ? (
-                    tenantAiApprovalStaffingWorkspace.agents.map((agent) => (
-                      <div
-                        className={styles.assistCueCard}
-                        key={`ai-approval-staffing:${agent.agentKey}`}
-                      >
-                        <div className={styles.invoiceCardHeader}>
-                          <strong>{agent.title}</strong>
-                          <span
-                            className={`${styles.statusPill} ${approvalStaffingStatusTone(
-                              agent.staffingStatus,
-                            )}`}
-                          >
-                            {approvalStaffingStatusLabel(agent.staffingStatus)}
-                          </span>
-                        </div>
-                        <small>
-                          {humanizeKey(agent.domainKey)} · current{' '}
-                          {agent.currentRequiredReviewerEquivalents} {'->'} simulated{' '}
-                          {agent.simulatedRequiredReviewerEquivalents} reviewer-equivalent(s)
-                        </small>
-                        <small>
-                          Added coverage {agent.addedReviewerEquivalents}
-                          {' · '}Approval policies:{' '}
-                          {agent.approvalPolicyKeys.length
-                            ? agent.approvalPolicyKeys.join(', ')
-                            : 'none'}
-                        </small>
-                        <div className={styles.stack}>
-                          {agent.staffingReasons.map((reason, index) => (
-                            <small
-                              key={`ai-approval-staffing-reason:${agent.agentKey}:${index}`}
-                            >
-                              {reason}
-                            </small>
-                          ))}
-                        </div>
-                        <div className={styles.stack}>
-                          {agent.notes.map((note, index) => (
-                            <small
-                              key={`ai-approval-staffing-note:${agent.agentKey}:${index}`}
-                            >
-                              {note}
-                            </small>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : tenantAiApprovalStaffingWorkspaceLoading ? (
-                    <small className={styles.muted}>
-                      Cargando staffing de approvals de AI...
-                    </small>
-                  ) : (
-                    <div className={styles.emptyState}>
-                      <p>
-                        Todavia no hay suficiente contexto para estimar staffing de
-                        approvals en este tenant.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.detailCard}>
-                <div className={styles.sectionHeading}>
-                  <div>
-                    <span className={styles.label}>AI approval staffing plan</span>
-                    <h3>Reparto recomendado de cobertura por agente</h3>
-                  </div>
-                  <span className={styles.statusPill}>
-                    {tenantAiApprovalStaffingPlanWorkspace
-                      ? formatDate(tenantAiApprovalStaffingPlanWorkspace.generatedAt)
-                      : 'sin plan'}
-                  </span>
-                </div>
-
-                <div className={styles.commercialMetricsGrid}>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Coverage recomendada</span>
-                    <strong>
-                      {tenantAiApprovalStaffingPlanWorkspace?.counts
-                        .totalRecommendedReviewerEquivalents ?? 0}
-                    </strong>
-                    <small>Reviewer-equivalents totales recomendados por el plan.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Coverage extra</span>
-                    <strong>
-                      {tenantAiApprovalStaffingPlanWorkspace?.counts
-                        .totalAdditionalReviewerEquivalents ?? 0}
-                    </strong>
-                    <small>Reviewer-equivalents adicionales sobre la base actual.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Agentes a reforzar</span>
-                    <strong>
-                      {tenantAiApprovalStaffingPlanWorkspace?.counts
-                        .agentsRequiringIncrease ?? 0}
-                    </strong>
-                    <small>Agentes donde el plan pide aumentar cobertura.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Prioridades activas</span>
-                    <strong>
-                      {tenantAiApprovalStaffingPlanWorkspace?.counts
-                        .highestPriorityAgents ?? 0}
-                    </strong>
-                    <small>Agentes que deberían entrar primero al plan.</small>
-                  </div>
-                </div>
-
-                <div className={styles.stack}>
-                  {tenantAiApprovalStaffingPlanWorkspace?.agents.length ? (
-                    tenantAiApprovalStaffingPlanWorkspace.agents.map((agent) => (
-                      <div
-                        className={styles.assistCueCard}
-                        key={`ai-approval-staffing-plan:${agent.agentKey}`}
-                      >
-                        <div className={styles.invoiceCardHeader}>
-                          <strong>
-                            #{agent.priorityRank} {agent.title}
-                          </strong>
-                          <span
-                            className={`${styles.statusPill} ${approvalStaffingPlanStatusTone(
-                              agent.planStatus,
-                            )}`}
-                          >
-                            {approvalStaffingPlanStatusLabel(agent.planStatus)}
-                          </span>
-                        </div>
-                        <small>
-                          {humanizeKey(agent.domainKey)} · current{' '}
-                          {agent.currentRequiredReviewerEquivalents} {'->'} recommended{' '}
-                          {agent.recommendedReviewerEquivalents} reviewer-equivalent(s)
-                        </small>
-                        <small>
-                          Extra assignment {agent.additionalReviewerEquivalentsToAssign}
-                          {' · '}Approval policies:{' '}
-                          {agent.approvalPolicyKeys.length
-                            ? agent.approvalPolicyKeys.join(', ')
-                            : 'none'}
-                        </small>
-                        <div className={styles.stack}>
-                          {agent.planActions.map((action, index) => (
-                            <small
-                              key={`ai-approval-staffing-plan-action:${agent.agentKey}:${index}`}
-                            >
-                              {action}
-                            </small>
-                          ))}
-                        </div>
-                        <div className={styles.stack}>
-                          {agent.notes.map((note, index) => (
-                            <small
-                              key={`ai-approval-staffing-plan-note:${agent.agentKey}:${index}`}
-                            >
-                              {note}
-                            </small>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : tenantAiApprovalStaffingPlanWorkspaceLoading ? (
-                    <small className={styles.muted}>
-                      Cargando plan de staffing de approvals de AI...
-                    </small>
-                  ) : (
-                    <div className={styles.emptyState}>
-                      <p>
-                        Todavia no hay suficiente contexto para proponer un plan de
-                        staffing en este tenant.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.detailCard}>
-                <div className={styles.sectionHeading}>
-                  <div>
-                    <span className={styles.label}>AI approval rollout</span>
-                    <h3>Secuencia por fases para abrir review-first</h3>
-                  </div>
-                  <span className={styles.statusPill}>
-                    {tenantAiApprovalRolloutWorkspace
-                      ? formatDate(tenantAiApprovalRolloutWorkspace.generatedAt)
-                      : 'sin rollout'}
-                  </span>
-                </div>
-
-                <div className={styles.commercialMetricsGrid}>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Phase 1</span>
-                    <strong>
-                      {tenantAiApprovalRolloutWorkspace?.counts.phase1Agents ?? 0}
-                    </strong>
-                    <small>Agentes que piden refuerzo antes de abrir el path.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Phase 2</span>
-                    <strong>
-                      {tenantAiApprovalRolloutWorkspace?.counts.phase2Agents ?? 0}
-                    </strong>
-                    <small>Agentes que pueden entrar despues sin refuerzo extra.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Hold</span>
-                    <strong>
-                      {tenantAiApprovalRolloutWorkspace?.counts.holdAgents ?? 0}
-                    </strong>
-                    <small>Agentes que siguen bloqueados por restricciones de diseño.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Coverage extra</span>
-                    <strong>
-                      {tenantAiApprovalRolloutWorkspace?.counts
-                        .totalAdditionalReviewerEquivalents ?? 0}
-                    </strong>
-                    <small>Reviewer-equivalents extra a provisionar para el rollout.</small>
-                  </div>
-                </div>
-
-                <div className={styles.stack}>
-                  {tenantAiApprovalRolloutWorkspace?.agents.length ? (
-                    tenantAiApprovalRolloutWorkspace.agents.map((agent) => (
-                      <div
-                        className={styles.assistCueCard}
-                        key={`ai-approval-rollout:${agent.agentKey}`}
-                      >
-                        <div className={styles.invoiceCardHeader}>
-                          <strong>
-                            #{agent.priorityRank} {agent.title}
-                          </strong>
-                          <span
-                            className={`${styles.statusPill} ${approvalRolloutStatusTone(
-                              agent.rolloutStatus,
-                            )}`}
-                          >
-                            {approvalRolloutStatusLabel(agent.rolloutStatus)}
-                          </span>
-                        </div>
-                        <small>
-                          {humanizeKey(agent.domainKey)} · {humanizeKey(agent.rolloutPhase)} ·
-                          current {agent.currentRequiredReviewerEquivalents} {'->'} target{' '}
-                          {agent.recommendedReviewerEquivalents}
-                        </small>
-                        <small>
-                          Extra assignment {agent.additionalReviewerEquivalentsToAssign}
-                          {' · '}Approval policies:{' '}
-                          {agent.approvalPolicyKeys.length
-                            ? agent.approvalPolicyKeys.join(', ')
-                            : 'none'}
-                        </small>
-                        <div className={styles.stack}>
-                          {agent.rolloutActions.map((action, index) => (
-                            <small
-                              key={`ai-approval-rollout-action:${agent.agentKey}:${index}`}
-                            >
-                              {action}
-                            </small>
-                          ))}
-                        </div>
-                        <div className={styles.stack}>
-                          {agent.notes.map((note, index) => (
-                            <small
-                              key={`ai-approval-rollout-note:${agent.agentKey}:${index}`}
-                            >
-                              {note}
-                            </small>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : tenantAiApprovalRolloutWorkspaceLoading ? (
-                    <small className={styles.muted}>
-                      Cargando rollout de approvals de AI...
-                    </small>
-                  ) : (
-                    <div className={styles.emptyState}>
-                      <p>
-                        Todavia no hay suficiente contexto para ordenar un rollout de
-                        approvals en este tenant.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.detailCard}>
-                <div className={styles.sectionHeading}>
-                  <div>
-                    <span className={styles.label}>AI approval readiness</span>
-                    <h3>Que agente esta listo hoy para abrir review-first</h3>
-                  </div>
-                  <span className={styles.statusPill}>
-                    {tenantAiApprovalReadinessWorkspace
-                      ? formatDate(tenantAiApprovalReadinessWorkspace.generatedAt)
-                      : 'sin readiness'}
-                  </span>
-                </div>
-
-                <div className={styles.commercialMetricsGrid}>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Ready now</span>
-                    <strong>
-                      {tenantAiApprovalReadinessWorkspace?.counts.readyNowAgents ?? 0}
-                    </strong>
-                    <small>Agentes que ya pueden abrir el path con la cobertura actual.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Needs coverage</span>
-                    <strong>
-                      {tenantAiApprovalReadinessWorkspace?.counts
-                        .needsCoverageAgents ?? 0}
-                    </strong>
-                    <small>Agentes que primero necesitan refuerzo humano o bajar riesgo.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Blocked</span>
-                    <strong>
-                      {tenantAiApprovalReadinessWorkspace?.counts.blockedAgents ?? 0}
-                    </strong>
-                    <small>Agentes que siguen cerrados por guardrails de diseño.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Total</span>
-                    <strong>
-                      {tenantAiApprovalReadinessWorkspace?.counts.totalAgents ?? 0}
-                    </strong>
-                    <small>Agentes AI visibles en esta lectura compacta de readiness.</small>
-                  </div>
-                </div>
-
-                <div className={styles.stack}>
-                  {tenantAiApprovalReadinessWorkspace?.agents.length ? (
-                    tenantAiApprovalReadinessWorkspace.agents.map((agent) => (
-                      <div
-                        className={styles.assistCueCard}
-                        key={`ai-approval-readiness:${agent.agentKey}`}
-                      >
-                        <div className={styles.invoiceCardHeader}>
-                          <strong>{agent.title}</strong>
-                          <span
-                            className={`${styles.statusPill} ${approvalReadinessStatusTone(
-                              agent.readinessStatus,
-                            )}`}
-                          >
-                            {approvalReadinessStatusLabel(agent.readinessStatus)}
-                          </span>
-                        </div>
-                        <small>
-                          {humanizeKey(agent.domainKey)} · {humanizeKey(agent.rolloutPhase)} ·
-                          current {agent.currentRequiredReviewerEquivalents} {'->'} target{' '}
-                          {agent.recommendedReviewerEquivalents}
-                        </small>
-                        <small>
-                          SLA {approvalSlaStatusLabel(agent.currentSlaStatus)} {'->'}{' '}
-                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)} {' · '}
-                          extra coverage {agent.additionalReviewerEquivalentsToAssign}
-                        </small>
-                        <small>{agent.nextStep}</small>
-                        <div className={styles.stack}>
-                          {agent.readinessReasons.map((reason, index) => (
-                            <small
-                              key={`ai-approval-readiness-reason:${agent.agentKey}:${index}`}
-                            >
-                              {reason}
-                            </small>
-                          ))}
-                        </div>
-                        <div className={styles.stack}>
-                          {agent.notes.map((note, index) => (
-                            <small
-                              key={`ai-approval-readiness-note:${agent.agentKey}:${index}`}
-                            >
-                              {note}
-                            </small>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : tenantAiApprovalReadinessWorkspaceLoading ? (
-                    <small className={styles.muted}>
-                      Cargando readiness de approvals de AI...
-                    </small>
-                  ) : (
-                    <div className={styles.emptyState}>
-                      <p>
-                        Todavia no hay suficiente contexto para decidir readiness de
-                        approvals en este tenant.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.detailCard}>
-                <div className={styles.sectionHeading}>
-                  <div>
-                    <span className={styles.label}>AI approval launch</span>
-                    <h3>Recomendacion explicita para abrir el path por agente</h3>
-                  </div>
-                  <span className={styles.statusPill}>
-                    {tenantAiApprovalLaunchWorkspace
-                      ? formatDate(tenantAiApprovalLaunchWorkspace.generatedAt)
-                      : 'sin launch plan'}
-                  </span>
-                </div>
-
-                <div className={styles.commercialMetricsGrid}>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Launch now</span>
-                    <strong>
-                      {tenantAiApprovalLaunchWorkspace?.counts.launchNowAgents ?? 0}
-                    </strong>
-                    <small>Agentes que podemos abrir en la ventana actual.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Pilot next</span>
-                    <strong>
-                      {tenantAiApprovalLaunchWorkspace?.counts
-                        .pilotAfterCoverageAgents ?? 0}
-                    </strong>
-                    <small>Agentes que primero necesitan cobertura o estabilizar SLA.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Hold</span>
-                    <strong>
-                      {tenantAiApprovalLaunchWorkspace?.counts.holdAgents ?? 0}
-                    </strong>
-                    <small>Agentes que no deberiamos meter todavia en launch scope.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Coverage gap</span>
-                    <strong>
-                      {tenantAiApprovalLaunchWorkspace?.counts.totalCoverageGap ?? 0}
-                    </strong>
-                    <small>Reviewer-equivalents que faltan para el siguiente corte.</small>
-                  </div>
-                </div>
-
-                <div className={styles.stack}>
-                  {tenantAiApprovalLaunchWorkspace?.agents.length ? (
-                    tenantAiApprovalLaunchWorkspace.agents.map((agent) => (
-                      <div
-                        className={styles.assistCueCard}
-                        key={`ai-approval-launch:${agent.agentKey}`}
-                      >
-                        <div className={styles.invoiceCardHeader}>
-                          <strong>{agent.title}</strong>
-                          <span
-                            className={`${styles.statusPill} ${approvalLaunchStatusTone(
-                              agent.launchStatus,
-                            )}`}
-                          >
-                            {approvalLaunchStatusLabel(agent.launchStatus)}
-                          </span>
-                        </div>
-                        <small>
-                          {humanizeKey(agent.domainKey)} · {humanizeKey(agent.launchWindow)} ·
-                          {humanizeKey(agent.rolloutPhase)}
-                        </small>
-                        <small>
-                          Coverage {agent.currentRequiredReviewerEquivalents} {'->'}{' '}
-                          {agent.recommendedReviewerEquivalents} {' · '}SLA{' '}
-                          {approvalSlaStatusLabel(agent.simulatedSlaStatus)}
-                        </small>
-                        <small>{agent.recommendedAction}</small>
-                        <div className={styles.stack}>
-                          {agent.launchChecklist.map((item, index) => (
-                            <small
-                              key={`ai-approval-launch-check:${agent.agentKey}:${index}`}
-                            >
-                              {item}
-                            </small>
-                          ))}
-                        </div>
-                        <div className={styles.stack}>
-                          {agent.notes.map((note, index) => (
-                            <small
-                              key={`ai-approval-launch-note:${agent.agentKey}:${index}`}
-                            >
-                              {note}
-                            </small>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : tenantAiApprovalLaunchWorkspaceLoading ? (
-                    <small className={styles.muted}>
-                      Cargando launch workspace de approvals de AI...
-                    </small>
-                  ) : (
-                    <div className={styles.emptyState}>
-                      <p>
-                        Todavia no hay suficiente contexto para decidir launch de
-                        approvals en este tenant.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <AiGuardedExecutionOverview
-                formatDate={formatDate}
-                humanizeKey={humanizeKey}
-                approvalSlaStatusLabel={approvalSlaStatusLabel}
-                resolveAiGuardedExecutionCandidate={resolveAiGuardedExecutionCandidate}
-                tenantAiGuardedExecutionWorkspace={tenantAiGuardedExecutionWorkspace}
-                tenantAiGuardedExecutionWorkspaceLoading={
-                  tenantAiGuardedExecutionWorkspaceLoading
+              <Suspense
+                fallback={
+                  <small className={styles.muted}>
+                    Cargando secciones modulares de AI...
+                  </small>
                 }
-                tenantAiGuardedExecutionPilotWorkspace={
-                  tenantAiGuardedExecutionPilotWorkspace
-                }
-                tenantAiGuardedExecutionPilotWorkspaceLoading={
-                  tenantAiGuardedExecutionPilotWorkspaceLoading
-                }
-                tenantAiGuardedExecutionRunbookWorkspace={
-                  tenantAiGuardedExecutionRunbookWorkspace
-                }
-                tenantAiGuardedExecutionRunbookWorkspaceLoading={
-                  tenantAiGuardedExecutionRunbookWorkspaceLoading
-                }
-                tenantAiGuardedExecutionRollbackWorkspace={
-                  tenantAiGuardedExecutionRollbackWorkspace
-                }
-                tenantAiGuardedExecutionRollbackWorkspaceLoading={
-                  tenantAiGuardedExecutionRollbackWorkspaceLoading
-                }
-                tenantAiGuardedExecutionAuditWorkspace={
-                  tenantAiGuardedExecutionAuditWorkspace
-                }
-                tenantAiGuardedExecutionAuditWorkspaceLoading={
-                  tenantAiGuardedExecutionAuditWorkspaceLoading
-                }
-                tenantAiGuardedExecutionLaunchWorkspace={
-                  tenantAiGuardedExecutionLaunchWorkspace
-                }
-                tenantAiGuardedExecutionLaunchWorkspaceLoading={
-                  tenantAiGuardedExecutionLaunchWorkspaceLoading
-                }
-                tenantAiGuardedExecutionMonitorWorkspace={
-                  tenantAiGuardedExecutionMonitorWorkspace
-                }
-                tenantAiGuardedExecutionMonitorWorkspaceLoading={
-                  tenantAiGuardedExecutionMonitorWorkspaceLoading
-                }
-              />
+              >
+                <LazyAiApprovalPlanningSection
+                  formatDate={formatDate}
+                  humanizeKey={humanizeKey}
+                  approvalSlaStatusLabel={approvalSlaStatusLabel}
+                  approvalDesignStatusTone={approvalDesignStatusTone}
+                  approvalDesignStatusLabel={approvalDesignStatusLabel}
+                  approvalCapacityStatusTone={approvalCapacityStatusTone}
+                  approvalCapacityStatusLabel={approvalCapacityStatusLabel}
+                  approvalSlaStatusTone={approvalSlaStatusTone}
+                  approvalStaffingStatusTone={approvalStaffingStatusTone}
+                  approvalStaffingStatusLabel={approvalStaffingStatusLabel}
+                  approvalStaffingPlanStatusTone={approvalStaffingPlanStatusTone}
+                  approvalStaffingPlanStatusLabel={approvalStaffingPlanStatusLabel}
+                  approvalRolloutStatusTone={approvalRolloutStatusTone}
+                  approvalRolloutStatusLabel={approvalRolloutStatusLabel}
+                  approvalReadinessStatusTone={approvalReadinessStatusTone}
+                  approvalReadinessStatusLabel={approvalReadinessStatusLabel}
+                  approvalLaunchStatusTone={approvalLaunchStatusTone}
+                  approvalLaunchStatusLabel={approvalLaunchStatusLabel}
+                  tenantAiApprovalDesignWorkspace={tenantAiApprovalDesignWorkspace}
+                  tenantAiApprovalDesignWorkspaceLoading={
+                    tenantAiApprovalDesignWorkspaceLoading
+                  }
+                  tenantAiApprovalCapacityWorkspace={
+                    tenantAiApprovalCapacityWorkspace
+                  }
+                  tenantAiApprovalCapacityWorkspaceLoading={
+                    tenantAiApprovalCapacityWorkspaceLoading
+                  }
+                  tenantAiApprovalSlaWorkspace={tenantAiApprovalSlaWorkspace}
+                  tenantAiApprovalSlaWorkspaceLoading={
+                    tenantAiApprovalSlaWorkspaceLoading
+                  }
+                  tenantAiApprovalStaffingWorkspace={
+                    tenantAiApprovalStaffingWorkspace
+                  }
+                  tenantAiApprovalStaffingWorkspaceLoading={
+                    tenantAiApprovalStaffingWorkspaceLoading
+                  }
+                  tenantAiApprovalStaffingPlanWorkspace={
+                    tenantAiApprovalStaffingPlanWorkspace
+                  }
+                  tenantAiApprovalStaffingPlanWorkspaceLoading={
+                    tenantAiApprovalStaffingPlanWorkspaceLoading
+                  }
+                  tenantAiApprovalRolloutWorkspace={tenantAiApprovalRolloutWorkspace}
+                  tenantAiApprovalRolloutWorkspaceLoading={
+                    tenantAiApprovalRolloutWorkspaceLoading
+                  }
+                  tenantAiApprovalReadinessWorkspace={
+                    tenantAiApprovalReadinessWorkspace
+                  }
+                  tenantAiApprovalReadinessWorkspaceLoading={
+                    tenantAiApprovalReadinessWorkspaceLoading
+                  }
+                  tenantAiApprovalLaunchWorkspace={tenantAiApprovalLaunchWorkspace}
+                  tenantAiApprovalLaunchWorkspaceLoading={
+                    tenantAiApprovalLaunchWorkspaceLoading
+                  }
+                />
 
-              <AiGuardedExecutionControl
-                formatDate={formatDate}
-                formatMoney={formatMoney}
-                humanizeKey={humanizeKey}
-                tenantAiGuardedExecutionControlWorkspace={
-                  tenantAiGuardedExecutionControlWorkspace
-                }
-                tenantAiGuardedExecutionControlWorkspaceLoading={
-                  tenantAiGuardedExecutionControlWorkspaceLoading
-                }
-                lastGuardedExecutionResult={lastGuardedExecutionResult}
-                lastGuardedExecutionRollbackResult={lastGuardedExecutionRollbackResult}
-                latestApprovedAiApprovalRequestByAgent={
-                  latestApprovedAiApprovalRequestByAgent
-                }
-                guardedExecutionCaseSelectionByAgent={
-                  guardedExecutionCaseSelectionByAgent
-                }
-                availableGuardedExecutionGrowthCases={
-                  availableGuardedExecutionGrowthCases
-                }
-                availableGuardedExecutionInvoices={availableGuardedExecutionInvoices}
-                invoices={invoices}
-                selectedInvoiceId={selectedInvoiceId}
-                selectedInvoiceDetail={selectedInvoiceDetail}
-                canManageGrowthConversations={canManageGrowthConversations}
-                canReadInvoicingReports={canReadInvoicingReports}
-                growthActionLoading={growthActionLoading}
-                resolveAiGuardedExecutionCandidate={resolveAiGuardedExecutionCandidate}
-                onSelectGuardedExecutionTarget={(agentKey, targetId) => {
-                  setGuardedExecutionCaseSelectionByAgent((current) => ({
-                    ...current,
-                    [agentKey]: targetId,
-                  }));
-                }}
-                onExecuteGuardedExecution={(agentKey, requestId, targetId) => {
-                  void handleExecuteTenantAiGuardedExecution(
-                    agentKey,
-                    requestId,
-                    targetId,
-                  );
-                }}
-                onRollbackGuardedExecution={(agentKey, requestId, targetId) => {
-                  void handleRollbackTenantAiGuardedExecution(
-                    agentKey,
-                    requestId,
-                    targetId,
-                  );
-                }}
-              />
+                <LazyAiGuardedExecutionOverview
+                  formatDate={formatDate}
+                  humanizeKey={humanizeKey}
+                  approvalSlaStatusLabel={approvalSlaStatusLabel}
+                  resolveAiGuardedExecutionCandidate={resolveAiGuardedExecutionCandidate}
+                  tenantAiGuardedExecutionWorkspace={tenantAiGuardedExecutionWorkspace}
+                  tenantAiGuardedExecutionWorkspaceLoading={
+                    tenantAiGuardedExecutionWorkspaceLoading
+                  }
+                  tenantAiGuardedExecutionPilotWorkspace={
+                    tenantAiGuardedExecutionPilotWorkspace
+                  }
+                  tenantAiGuardedExecutionPilotWorkspaceLoading={
+                    tenantAiGuardedExecutionPilotWorkspaceLoading
+                  }
+                  tenantAiGuardedExecutionRunbookWorkspace={
+                    tenantAiGuardedExecutionRunbookWorkspace
+                  }
+                  tenantAiGuardedExecutionRunbookWorkspaceLoading={
+                    tenantAiGuardedExecutionRunbookWorkspaceLoading
+                  }
+                  tenantAiGuardedExecutionRollbackWorkspace={
+                    tenantAiGuardedExecutionRollbackWorkspace
+                  }
+                  tenantAiGuardedExecutionRollbackWorkspaceLoading={
+                    tenantAiGuardedExecutionRollbackWorkspaceLoading
+                  }
+                  tenantAiGuardedExecutionAuditWorkspace={
+                    tenantAiGuardedExecutionAuditWorkspace
+                  }
+                  tenantAiGuardedExecutionAuditWorkspaceLoading={
+                    tenantAiGuardedExecutionAuditWorkspaceLoading
+                  }
+                  tenantAiGuardedExecutionLaunchWorkspace={
+                    tenantAiGuardedExecutionLaunchWorkspace
+                  }
+                  tenantAiGuardedExecutionLaunchWorkspaceLoading={
+                    tenantAiGuardedExecutionLaunchWorkspaceLoading
+                  }
+                  tenantAiGuardedExecutionMonitorWorkspace={
+                    tenantAiGuardedExecutionMonitorWorkspace
+                  }
+                  tenantAiGuardedExecutionMonitorWorkspaceLoading={
+                    tenantAiGuardedExecutionMonitorWorkspaceLoading
+                  }
+                />
 
-              <AiGuardedExecutionEventLog
-                formatDate={formatDate}
-                humanizeKey={humanizeKey}
-                tenantAiGuardedExecutionEventLogWorkspace={
-                  tenantAiGuardedExecutionEventLogWorkspace
-                }
-                tenantAiGuardedExecutionEventLogWorkspaceLoading={
-                  tenantAiGuardedExecutionEventLogWorkspaceLoading
-                }
-                resolveAiGuardedExecutionCandidate={resolveAiGuardedExecutionCandidate}
-              />
+                <LazyAiGuardedExecutionControl
+                  formatDate={formatDate}
+                  formatMoney={formatMoney}
+                  humanizeKey={humanizeKey}
+                  tenantAiGuardedExecutionControlWorkspace={
+                    tenantAiGuardedExecutionControlWorkspace
+                  }
+                  tenantAiGuardedExecutionControlWorkspaceLoading={
+                    tenantAiGuardedExecutionControlWorkspaceLoading
+                  }
+                  lastGuardedExecutionResult={lastGuardedExecutionResult}
+                  lastGuardedExecutionRollbackResult={lastGuardedExecutionRollbackResult}
+                  latestApprovedAiApprovalRequestByAgent={
+                    latestApprovedAiApprovalRequestByAgent
+                  }
+                  guardedExecutionCaseSelectionByAgent={
+                    guardedExecutionCaseSelectionByAgent
+                  }
+                  availableGuardedExecutionGrowthCases={
+                    availableGuardedExecutionGrowthCases
+                  }
+                  availableGuardedExecutionInvoices={availableGuardedExecutionInvoices}
+                  tenantAiEcommerceLaunchWorkspace={
+                    tenantAiEcommerceLaunchWorkspace
+                  }
+                  invoices={invoices}
+                  selectedInvoiceId={selectedInvoiceId}
+                  selectedInvoiceDetail={selectedInvoiceDetail}
+                  canManageGrowthConversations={canManageGrowthConversations}
+                  canReadInvoicingReports={canReadInvoicingReports}
+                  growthActionLoading={growthActionLoading}
+                  resolveAiGuardedExecutionCandidate={
+                    resolveAiGuardedExecutionCandidate
+                  }
+                  onSelectGuardedExecutionTarget={(agentKey, targetId) => {
+                    setGuardedExecutionCaseSelectionByAgent((current) => ({
+                      ...current,
+                      [agentKey]: targetId,
+                    }));
+                  }}
+                  onExecuteGuardedExecution={(agentKey, requestId, targetId) => {
+                    void handleExecuteTenantAiGuardedExecution(
+                      agentKey,
+                      requestId,
+                      targetId,
+                    );
+                  }}
+                  onRollbackGuardedExecution={(agentKey, requestId, targetId) => {
+                    void handleRollbackTenantAiGuardedExecution(
+                      agentKey,
+                      requestId,
+                      targetId,
+                    );
+                  }}
+                />
 
-              <div className={styles.detailCard}>
-                <div className={styles.sectionHeading}>
-                  <div>
-                    <span className={styles.label}>Tenant AI memory</span>
-                    <h3>Memoria operativa por agente y dominio</h3>
-                  </div>
-                  <span className={styles.statusPill}>
-                    {tenantAiMemoryWorkspace
-                      ? formatDate(tenantAiMemoryWorkspace.generatedAt)
-                      : 'sin memoria'}
-                  </span>
-                </div>
+                <LazyAiGuardedExecutionEventLog
+                  formatDate={formatDate}
+                  humanizeKey={humanizeKey}
+                  tenantAiGuardedExecutionEventLogWorkspace={
+                    tenantAiGuardedExecutionEventLogWorkspace
+                  }
+                  tenantAiGuardedExecutionEventLogWorkspaceLoading={
+                    tenantAiGuardedExecutionEventLogWorkspaceLoading
+                  }
+                  resolveAiGuardedExecutionCandidate={
+                    resolveAiGuardedExecutionCandidate
+                  }
+                />
 
-                <div className={styles.commercialMetricsGrid}>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Agentes activos</span>
-                    <strong>{tenantAiMemoryWorkspace?.counts.totalAgents ?? 0}</strong>
-                    <small>Agentes AI listos y visibles en este tenant.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Con handoffs</span>
-                    <strong>
-                      {tenantAiMemoryWorkspace?.counts.agentsWithSuggestionRuns ?? 0}
-                    </strong>
-                    <small>Agentes que ya prepararon al menos un handoff.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Con approvals pendientes</span>
-                    <strong>
-                      {tenantAiMemoryWorkspace?.counts.agentsWithPendingApprovals ?? 0}
-                    </strong>
-                    <small>Agentes que hoy esperan revisión humana.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Pending approvals</span>
-                    <strong>
-                      {tenantAiMemoryWorkspace?.counts.totalPendingApprovalRequests ?? 0}
-                    </strong>
-                    <small>Backlog humano que la memoria operativa recuerda.</small>
-                  </div>
-                </div>
-
-                <form className={styles.stack} onSubmit={handleCreateTenantAiMemoryRecord}>
-                  <div className={styles.invoiceInlineGrid}>
-                    <label className={styles.field}>
-                      <span>Scope</span>
-                      <select
-                        className={styles.selectField}
-                        onChange={(event) =>
-                          setNewAiMemoryScope(
-                            event.target.value as 'tenant' | 'domain' | 'agent',
-                          )
-                        }
-                        value={newAiMemoryScope}
-                      >
-                        <option value="tenant">Tenant</option>
-                        <option value="domain">Domain</option>
-                        <option value="agent">Agent</option>
-                      </select>
-                    </label>
-                    <label className={styles.field}>
-                      <span>Freshness</span>
-                      <select
-                        className={styles.selectField}
-                        onChange={(event) =>
-                          setNewAiMemoryFreshness(
-                            event.target.value as
-                              | 'working_memory'
-                              | 'durable_memory',
-                          )
-                        }
-                        value={newAiMemoryFreshness}
-                      >
-                        <option value="working_memory">Working memory</option>
-                        <option value="durable_memory">Durable memory</option>
-                      </select>
-                    </label>
-                    <label className={styles.field}>
-                      <span>Source</span>
-                      <select
-                        className={styles.selectField}
-                        onChange={(event) =>
-                          setNewAiMemorySourceKind(
-                            event.target.value as
-                              | 'operator_note'
-                              | 'approval_memory'
-                              | 'guarded_execution_memory',
-                          )
-                        }
-                        value={newAiMemorySourceKind}
-                      >
-                        <option value="operator_note">Operator note</option>
-                        <option value="approval_memory">Approval memory</option>
-                        <option value="guarded_execution_memory">
-                          Guarded execution memory
-                        </option>
-                      </select>
-                    </label>
-                  </div>
-
-                  {(newAiMemoryScope === 'domain' || newAiMemoryScope === 'agent') && (
-                    <div className={styles.invoiceInlineGrid}>
-                      <label className={styles.field}>
-                        <span>Domain</span>
-                        <select
-                          className={styles.selectField}
-                          onChange={(event) =>
-                            setNewAiMemoryDomainKey(
-                              event.target.value as
-                                | 'growth'
-                                | 'invoicing'
-                                | 'ecommerce',
-                            )
-                          }
-                          value={newAiMemoryDomainKey}
-                        >
-                          {visibleAiMemoryDomainKeys.map((domainKey) => (
-                            <option key={`ai-memory-domain:${domainKey}`} value={domainKey}>
-                              {humanizeKey(domainKey)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      {newAiMemoryScope === 'agent' ? (
-                        <label className={styles.field}>
-                          <span>Agent</span>
-                          <select
-                            className={styles.selectField}
-                            onChange={(event) =>
-                              setNewAiMemoryAgentKey(event.target.value)
-                            }
-                            value={newAiMemoryAgentKey}
-                          >
-                            {visibleAiMemoryAgents
-                              .filter(
-                                (agent) => agent.domainKey === newAiMemoryDomainKey,
-                              )
-                              .map((agent) => (
-                                <option
-                                  key={`ai-memory-agent:${agent.agentKey}`}
-                                  value={agent.agentKey}
-                                >
-                                  {agent.title}
-                                </option>
-                              ))}
-                          </select>
-                        </label>
-                      ) : null}
-                    </div>
-                  )}
-
-                  <label className={styles.field}>
-                    <span>Titulo</span>
-                    <input
-                      onChange={(event) => setNewAiMemoryTitle(event.target.value)}
-                      placeholder="Lead routing preference"
-                      value={newAiMemoryTitle}
-                    />
-                  </label>
-                  <label className={styles.field}>
-                    <span>Resumen corto</span>
-                    <input
-                      onChange={(event) => setNewAiMemorySummary(event.target.value)}
-                      placeholder="Priorizar reasignacion manual cuando el queue llegue caliente."
-                      value={newAiMemorySummary}
-                    />
-                  </label>
-                  <label className={styles.field}>
-                    <span>Detalle operativo</span>
-                    <textarea
-                      onChange={(event) => setNewAiMemoryDetail(event.target.value)}
-                      placeholder="Explica la regla, el contexto y la razon de negocio que el agente debe recordar."
-                      value={newAiMemoryDetail}
-                    />
-                  </label>
-                  <label className={styles.field}>
-                    <span>Tags</span>
-                    <input
-                      onChange={(event) => setNewAiMemoryTags(event.target.value)}
-                      placeholder="routing, hot-leads"
-                      value={newAiMemoryTags}
-                    />
-                  </label>
-                  <div className={styles.inlineActions}>
-                    <button
-                      className={styles.primaryButton}
-                      disabled={
-                        !newAiMemoryTitle.trim() ||
-                        !newAiMemorySummary.trim() ||
-                        !newAiMemoryDetail.trim() ||
-                        actionLoading === 'create-ai-memory-record'
-                      }
-                      type="submit"
-                    >
-                      {actionLoading === 'create-ai-memory-record'
-                        ? 'Guardando memoria...'
-                        : 'Guardar memory record'}
-                    </button>
-                    <small className={styles.muted}>
-                      Esta nota queda persistida y luego puede entrar al retrieval de los
-                      agentes visibles para este tenant.
-                    </small>
-                  </div>
-                </form>
-
-                <div className={styles.stack}>
-                  {tenantAiMemoryRecords.length ? (
-                    tenantAiMemoryRecords.map((record) => (
-                      <div
-                        className={styles.timelineCard}
-                        key={`ai-memory-record:${record.id}`}
-                        onClick={() => setSelectedTenantAiMemoryRecordId(record.id)}
-                        role="button"
-                        style={{
-                          borderColor:
-                            selectedTenantAiMemoryRecordId === record.id
-                              ? 'rgba(0, 114, 178, 0.45)'
-                              : undefined,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div className={styles.invoiceCardHeader}>
-                          <strong>{record.title}</strong>
-                          <div className={styles.inlineActions}>
-                            <span className={styles.statusPill}>
-                              {humanizeKey(record.scope)}
-                            </span>
-                            <span className={styles.statusPill}>
-                              {humanizeKey(record.status)}
-                            </span>
-                          </div>
-                        </div>
-                        <small>{record.summary}</small>
-                        <small>
-                          {record.agentKey
-                            ? `Agent ${record.agentKey}`
-                            : record.domainKey
-                              ? `Domain ${record.domainKey}`
-                              : 'Tenant-wide memory'}
-                        </small>
-                        <small>
-                          Source {humanizeKey(record.sourceKind)} · freshness{' '}
-                          {humanizeKey(record.freshness)} · updated{' '}
-                          {formatDate(record.updatedAt)}
-                        </small>
-                      </div>
-                    ))
-                  ) : tenantAiMemoryRecordsLoading ? (
-                    <small className={styles.muted}>
-                      Cargando memory records de AI...
-                    </small>
-                  ) : (
-                    <small className={styles.muted}>
-                      Todavía no hay memory records persistidos desde la consola.
-                    </small>
-                  )}
-                </div>
-
-                <div className={styles.detailCard}>
-                  <div className={styles.sectionHeading}>
-                    <div>
-                      <span className={styles.label}>Memory Provenance</span>
-                      <h3>Donde se uso esta memoria y si sigue entrando al contexto</h3>
-                    </div>
-                    <span className={styles.statusPill}>
-                      {selectedTenantAiMemoryRecordDetail
-                        ? humanizeKey(selectedTenantAiMemoryRecordDetail.record.status)
-                        : 'sin detalle'}
-                    </span>
-                  </div>
-
-                  {selectedTenantAiMemoryRecordDetail ? (
-                    <div className={styles.stack}>
-                      <div className={styles.commercialMetricsGrid}>
-                        <div className={styles.commercialCard}>
-                          <span className={styles.muted}>Visible ahora</span>
-                          <strong>
-                            {selectedTenantAiMemoryRecordDetail.currentRetrieval.agentCount}
-                          </strong>
-                          <small>Agentes visibles que hidratarian este record hoy.</small>
-                        </div>
-                        <div className={styles.commercialCard}>
-                          <span className={styles.muted}>Usos persistidos</span>
-                          <strong>
-                            {selectedTenantAiMemoryRecordDetail.provenance.usageCount}
-                          </strong>
-                          <small>Suggestion runs ya guardados que lo referencian.</small>
-                        </div>
-                        <div className={styles.commercialCard}>
-                          <span className={styles.muted}>Agentes con uso</span>
-                          <strong>
-                            {selectedTenantAiMemoryRecordDetail.provenance.agentsUsingCount}
-                          </strong>
-                          <small>Agentes distintos donde ya aparecio esta memoria.</small>
-                        </div>
-                        <div className={styles.commercialCard}>
-                          <span className={styles.muted}>Ultimo uso</span>
-                          <strong>
-                            {selectedTenantAiMemoryRecordDetail.provenance.latestUsedAt
-                              ? formatDate(
-                                  selectedTenantAiMemoryRecordDetail.provenance.latestUsedAt,
-                                )
-                              : 'nunca'}
-                          </strong>
-                          <small>Trazabilidad de envelopes persistidos.</small>
-                        </div>
-                      </div>
-
-                      <div className={styles.invoiceInlineGrid}>
-                        <label className={styles.field}>
-                          <span>Title</span>
-                          <input
-                            onChange={(event) => setEditingAiMemoryTitle(event.target.value)}
-                            value={editingAiMemoryTitle}
-                          />
-                        </label>
-                        <label className={styles.field}>
-                          <span>Freshness</span>
-                          <select
-                            className={styles.selectField}
-                            onChange={(event) =>
-                              setEditingAiMemoryFreshness(
-                                event.target.value as
-                                  | 'working_memory'
-                                  | 'durable_memory',
-                              )
-                            }
-                            value={editingAiMemoryFreshness}
-                          >
-                            <option value="working_memory">Working memory</option>
-                            <option value="durable_memory">Durable memory</option>
-                          </select>
-                        </label>
-                        <label className={styles.field}>
-                          <span>Source</span>
-                          <select
-                            className={styles.selectField}
-                            onChange={(event) =>
-                              setEditingAiMemorySourceKind(
-                                event.target.value as
-                                  | 'operator_note'
-                                  | 'approval_memory'
-                                  | 'guarded_execution_memory',
-                              )
-                            }
-                            value={editingAiMemorySourceKind}
-                          >
-                            <option value="operator_note">Operator note</option>
-                            <option value="approval_memory">Approval memory</option>
-                            <option value="guarded_execution_memory">
-                              Guarded execution memory
-                            </option>
-                          </select>
-                        </label>
-                      </div>
-
-                      <label className={styles.field}>
-                        <span>Summary</span>
-                        <input
-                          onChange={(event) => setEditingAiMemorySummary(event.target.value)}
-                          value={editingAiMemorySummary}
-                        />
-                      </label>
-                      <label className={styles.field}>
-                        <span>Detail</span>
-                        <textarea
-                          onChange={(event) => setEditingAiMemoryDetail(event.target.value)}
-                          value={editingAiMemoryDetail}
-                        />
-                      </label>
-                      <label className={styles.field}>
-                        <span>Tags</span>
-                        <input
-                          onChange={(event) => setEditingAiMemoryTags(event.target.value)}
-                          value={editingAiMemoryTags}
-                        />
-                      </label>
-
-                      <div className={styles.inlineActions}>
-                        <button
-                          className={styles.primaryButton}
-                          type="button"
-                          onClick={() => {
-                            void handleUpdateTenantAiMemoryRecord();
-                          }}
-                          disabled={
-                            !editingAiMemoryTitle.trim() ||
-                            !editingAiMemorySummary.trim() ||
-                            !editingAiMemoryDetail.trim() ||
-                            actionLoading ===
-                              `update-ai-memory-record:${selectedTenantAiMemoryRecordDetail.record.id}`
-                          }
-                        >
-                          {actionLoading ===
-                          `update-ai-memory-record:${selectedTenantAiMemoryRecordDetail.record.id}`
-                            ? 'Guardando cambios...'
-                            : 'Guardar cambios'}
-                        </button>
-                        <button
-                          className={styles.secondaryButton}
-                          type="button"
-                          onClick={() => {
-                            void handleUpdateTenantAiMemoryRecord(
-                              selectedTenantAiMemoryRecordDetail.record.status === 'active'
-                                ? 'inactive'
-                                : 'active',
-                            );
-                          }}
-                          disabled={
-                            actionLoading ===
-                            `update-ai-memory-record:${selectedTenantAiMemoryRecordDetail.record.id}`
-                          }
-                        >
-                          {selectedTenantAiMemoryRecordDetail.record.status === 'active'
-                            ? 'Desactivar memoria'
-                            : 'Reactivar memoria'}
-                        </button>
-                        <small className={styles.muted}>
-                          El scope y el binding tenant/domain/agent quedan fijos para no
-                          romper provenance historico.
-                        </small>
-                      </div>
-
-                      <div className={styles.stack}>
-                        {selectedTenantAiMemoryRecordDetail.currentRetrieval.notes.map(
-                          (note, index) => (
-                            <small key={`ai-memory-current-note:${index}`}>{note}</small>
-                          ),
-                        )}
-                      </div>
-
-                      {selectedTenantAiMemoryRecordDetail.currentRetrieval.agents.length ? (
-                        <div className={styles.stack}>
-                          {selectedTenantAiMemoryRecordDetail.currentRetrieval.agents.map(
-                            (agent) => (
-                              <div
-                                className={styles.timelineCard}
-                                key={`ai-memory-current-agent:${agent.agentKey}`}
-                              >
-                                <div className={styles.invoiceCardHeader}>
-                                  <strong>{agent.title}</strong>
-                                  <span className={styles.statusPill}>
-                                    {humanizeKey(agent.domainKey)}
-                                  </span>
-                                </div>
-                                <small>{agent.inclusionReason}</small>
-                              </div>
-                            ),
-                          )}
-                        </div>
-                      ) : null}
-
-                      <div className={styles.stack}>
-                        {selectedTenantAiMemoryRecordDetail.provenance.notes.map(
-                          (note, index) => (
-                            <small key={`ai-memory-provenance-note:${index}`}>
-                              {note}
-                            </small>
-                          ),
-                        )}
-                      </div>
-
-                      {selectedTenantAiMemoryRecordDetail.provenance.recentSuggestionRuns
-                        .length ? (
-                        <div className={styles.stack}>
-                          {selectedTenantAiMemoryRecordDetail.provenance.recentSuggestionRuns.map(
-                            (entry) => (
-                              <div
-                                className={styles.timelineCard}
-                                key={`ai-memory-usage:${entry.suggestionRunId}`}
-                              >
-                                <div className={styles.invoiceCardHeader}>
-                                  <strong>{entry.agentKey}</strong>
-                                  <span className={styles.statusPill}>
-                                    {humanizeKey(entry.memoryScope)}
-                                  </span>
-                                </div>
-                                <small>{entry.summary}</small>
-                                <small>
-                                  Surface {entry.surfaceKey} · prompt pack{' '}
-                                  {entry.promptPackKey}@{entry.promptPackVersion}
-                                </small>
-                                <small>
-                                  {entry.memoryInclusionReason ??
-                                    'Sin razon de inclusion registrada.'}
-                                </small>
-                                <small>Persistido {formatDate(entry.createdAt)}</small>
-                              </div>
-                            ),
-                          )}
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : selectedTenantAiMemoryRecordDetailLoading ? (
-                    <small className={styles.muted}>
-                      Cargando detalle y provenance de memoria de AI...
-                    </small>
-                  ) : (
-                    <div className={styles.emptyState}>
-                      <p>
-                        Selecciona un memory record para ver su provenance y operar su lifecycle.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className={styles.stack}>
-                  {tenantAiMemoryWorkspace?.agents.length ? (
-                    tenantAiMemoryWorkspace.agents.map((agent) => (
-                      <div
-                        className={styles.assistCueCard}
-                        key={`ai-memory:${agent.agentKey}`}
-                      >
-                        <div className={styles.invoiceCardHeader}>
-                          <strong>{agent.title}</strong>
-                          <span className={styles.statusPill}>
-                            {humanizeKey(agent.domainKey)}
-                          </span>
-                        </div>
-                        <small>
-                          Prompt pack {agent.promptPack.key}@{agent.promptPack.version} ·{' '}
-                          {agent.promptPack.mode}
-                        </small>
-                        <small>
-                          Tool posture: {agent.toolAccessSummary.allowedCount} allowed,{' '}
-                          {agent.toolAccessSummary.approvalRequiredCount}{' '}
-                          approval-required, {agent.toolAccessSummary.blockedCount} blocked
-                        </small>
-                        {agent.recentActivityAt ? (
-                          <small>
-                            Última actividad {formatDate(agent.recentActivityAt)}
-                          </small>
-                        ) : null}
-                        <div className={styles.stack}>
-                          {agent.memoryNotes.map((note, index) => (
-                            <small key={`ai-memory-note:${agent.agentKey}:${index}`}>
-                              {note}
-                            </small>
-                          ))}
-                        </div>
-                        <div className={styles.inlineActions}>
-                          {agent.latestSuggestionRun ? (
-                            <button
-                              className={styles.ghostButton}
-                              type="button"
-                              onClick={() => {
-                                void handleOpenTenantAiWorkspaceSuggestionRunDetail(
-                                  agent.latestSuggestionRun!.id,
-                                );
-                              }}
-                              disabled={
-                                growthActionLoading ===
-                                `load-tenant-ai-run-detail:${agent.latestSuggestionRun.id}`
-                              }
-                            >
-                              Abrir último handoff
-                            </button>
-                          ) : null}
-                          {agent.oldestPendingApprovalRequest ? (
-                            <button
-                              className={styles.secondaryButton}
-                              type="button"
-                              onClick={() => {
-                                void handleReviewTenantAiApprovalWorkspaceRequest(
-                                  agent.agentKey,
-                                  agent.oldestPendingApprovalRequest!.id,
-                                  'approved',
-                                );
-                              }}
-                              disabled={
-                                getAiAgentActionLoadingState(agent.agentKey) ===
-                                getTenantAiWorkspaceApprovalReviewActionKey(
-                                  agent.agentKey,
-                                  agent.oldestPendingApprovalRequest.id,
-                                )
-                              }
-                            >
-                              Aprobar pendiente más antiguo
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-                    ))
-                  ) : tenantAiMemoryWorkspaceLoading ? (
-                    <small className={styles.muted}>
-                      Cargando memoria transversal de AI...
-                    </small>
-                  ) : (
-                    <div className={styles.emptyState}>
-                      <p>
-                        La memoria operativa todavía no tiene suficientes señales para este
-                        tenant.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.detailCard}>
-                <div className={styles.sectionHeading}>
-                  <div>
-                    <span className={styles.label}>Tenant AI retrieval</span>
-                    <h3>Qué memoria entra al contexto y por qué</h3>
-                  </div>
-                  <span className={styles.statusPill}>
-                    {tenantAiRetrievalWorkspace
-                      ? formatDate(tenantAiRetrievalWorkspace.generatedAt)
-                      : 'sin retrieval'}
-                  </span>
-                </div>
-
-                <div className={styles.commercialMetricsGrid}>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Agentes evaluados</span>
-                    <strong>{tenantAiRetrievalWorkspace?.counts.totalAgents ?? 0}</strong>
-                    <small>Agentes AI visibles para hydration contextual.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Con memoria</span>
-                    <strong>
-                      {tenantAiRetrievalWorkspace?.counts.agentsWithMemory ?? 0}
-                    </strong>
-                    <small>Agentes que ya reciben memoria persistida en su contexto.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Records recuperados</span>
-                    <strong>
-                      {tenantAiRetrievalWorkspace?.counts.totalRetrievedRecords ?? 0}
-                    </strong>
-                    <small>Entradas de memoria que hoy entran al retrieval.</small>
-                  </div>
-                  <div className={styles.commercialCard}>
-                    <span className={styles.muted}>Records únicos</span>
-                    <strong>
-                      {tenantAiRetrievalWorkspace?.counts.uniqueRetrievedRecords ?? 0}
-                    </strong>
-                    <small>Memoria persistida distinta, sin contar repeticiones por agente.</small>
-                  </div>
-                </div>
-
-                <div className={styles.stack}>
-                  {tenantAiRetrievalWorkspace?.agents.length ? (
-                    tenantAiRetrievalWorkspace.agents.map((agent) => (
-                      <div
-                        className={styles.assistCueCard}
-                        key={`ai-retrieval:${agent.agentKey}`}
-                      >
-                        <div className={styles.invoiceCardHeader}>
-                          <strong>{agent.title}</strong>
-                          <span className={styles.statusPill}>
-                            {humanizeKey(agent.domainKey)}
-                          </span>
-                        </div>
-                        <small>
-                          {agent.retrieval.recordCount} record(s) entran hoy al contexto de
-                          este agente.
-                        </small>
-                        <div className={styles.stack}>
-                          {agent.retrieval.notes.map((note, index) => (
-                            <small
-                              key={`ai-retrieval-note:${agent.agentKey}:${index}`}
-                            >
-                              {note}
-                            </small>
-                          ))}
-                        </div>
-                        {agent.retrieval.records.length ? (
-                          <div className={styles.stack}>
-                            {agent.retrieval.records.map((record) => (
-                              <div
-                                className={styles.timelineCard}
-                                key={`ai-retrieval-record:${agent.agentKey}:${record.id}`}
-                              >
-                                <div className={styles.invoiceCardHeader}>
-                                  <strong>{record.title}</strong>
-                                  <span className={styles.statusPill}>
-                                    {humanizeKey(record.scope)}
-                                  </span>
-                                </div>
-                                <small>{record.summary}</small>
-                                <small>{record.inclusionReason}</small>
-                                <small>
-                                  Source {humanizeKey(record.sourceKind)} · freshness{' '}
-                                  {humanizeKey(record.freshness)} · updated{' '}
-                                  {formatDate(record.lastUpdatedAt)}
-                                </small>
-                              </div>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    ))
-                  ) : tenantAiRetrievalWorkspaceLoading ? (
-                    <small className={styles.muted}>
-                      Cargando retrieval workspace transversal de AI...
-                    </small>
-                  ) : (
-                    <div className={styles.emptyState}>
-                      <p>
-                        Todavía no hay memoria persistida suficiente como para hidratar
-                        contexto reutilizable en este tenant.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+                <LazyAiMemoryRetrievalSection
+                  formatDate={formatDate}
+                  humanizeKey={humanizeKey}
+                  actionLoading={actionLoading}
+                  growthActionLoading={growthActionLoading}
+                  tenantAiMemoryWorkspace={tenantAiMemoryWorkspace}
+                  tenantAiMemoryWorkspaceLoading={tenantAiMemoryWorkspaceLoading}
+                  tenantAiMemoryRecords={tenantAiMemoryRecords}
+                  tenantAiMemoryRecordsLoading={tenantAiMemoryRecordsLoading}
+                  selectedTenantAiMemoryRecordId={selectedTenantAiMemoryRecordId}
+                  setSelectedTenantAiMemoryRecordId={setSelectedTenantAiMemoryRecordId}
+                  selectedTenantAiMemoryRecordDetail={selectedTenantAiMemoryRecordDetail}
+                  selectedTenantAiMemoryRecordDetailLoading={
+                    selectedTenantAiMemoryRecordDetailLoading
+                  }
+                  tenantAiRetrievalWorkspace={tenantAiRetrievalWorkspace}
+                  tenantAiRetrievalWorkspaceLoading={tenantAiRetrievalWorkspaceLoading}
+                  visibleAiMemoryDomainKeys={visibleAiMemoryDomainKeys}
+                  visibleAiMemoryAgents={visibleAiMemoryAgents}
+                  newAiMemoryScope={newAiMemoryScope}
+                  setNewAiMemoryScope={setNewAiMemoryScope}
+                  newAiMemoryDomainKey={newAiMemoryDomainKey}
+                  setNewAiMemoryDomainKey={setNewAiMemoryDomainKey}
+                  newAiMemoryAgentKey={newAiMemoryAgentKey}
+                  setNewAiMemoryAgentKey={setNewAiMemoryAgentKey}
+                  newAiMemoryTitle={newAiMemoryTitle}
+                  setNewAiMemoryTitle={setNewAiMemoryTitle}
+                  newAiMemorySummary={newAiMemorySummary}
+                  setNewAiMemorySummary={setNewAiMemorySummary}
+                  newAiMemoryDetail={newAiMemoryDetail}
+                  setNewAiMemoryDetail={setNewAiMemoryDetail}
+                  newAiMemoryTags={newAiMemoryTags}
+                  setNewAiMemoryTags={setNewAiMemoryTags}
+                  newAiMemoryFreshness={newAiMemoryFreshness}
+                  setNewAiMemoryFreshness={setNewAiMemoryFreshness}
+                  newAiMemorySourceKind={newAiMemorySourceKind}
+                  setNewAiMemorySourceKind={setNewAiMemorySourceKind}
+                  editingAiMemoryTitle={editingAiMemoryTitle}
+                  setEditingAiMemoryTitle={setEditingAiMemoryTitle}
+                  editingAiMemorySummary={editingAiMemorySummary}
+                  setEditingAiMemorySummary={setEditingAiMemorySummary}
+                  editingAiMemoryDetail={editingAiMemoryDetail}
+                  setEditingAiMemoryDetail={setEditingAiMemoryDetail}
+                  editingAiMemoryTags={editingAiMemoryTags}
+                  setEditingAiMemoryTags={setEditingAiMemoryTags}
+                  editingAiMemoryFreshness={editingAiMemoryFreshness}
+                  setEditingAiMemoryFreshness={setEditingAiMemoryFreshness}
+                  editingAiMemorySourceKind={editingAiMemorySourceKind}
+                  setEditingAiMemorySourceKind={setEditingAiMemorySourceKind}
+                  onCreateAiMemoryRecord={handleCreateTenantAiMemoryRecord}
+                  onUpdateAiMemoryRecord={(nextStatus) => {
+                    void handleUpdateTenantAiMemoryRecord(nextStatus);
+                  }}
+                  onOpenSuggestionRunDetail={(runId) => {
+                    void handleOpenTenantAiWorkspaceSuggestionRunDetail(runId);
+                  }}
+                  onReviewApprovalRequest={(agentKey, requestId, status) => {
+                    void handleReviewTenantAiApprovalWorkspaceRequest(
+                      agentKey,
+                      requestId,
+                      status,
+                    );
+                  }}
+                  getAiAgentActionLoadingState={getAiAgentActionLoadingState}
+                  getTenantAiWorkspaceApprovalReviewActionKey={
+                    getTenantAiWorkspaceApprovalReviewActionKey
+                  }
+                />
+              </Suspense>
             </div>
           )}
         </section>

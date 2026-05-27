@@ -2887,6 +2887,19 @@ describe('API', () => {
               'Prioriza una campaña de validacion con un solo angulo comercial antes de multiplicar canales o promesas.',
           },
         ],
+        launchPlans: [
+          {
+            id: 'saas-platform:launch-plan:initial',
+            title: 'Initial ecommerce launch plan',
+            status: 'warning',
+            guardedExecutionReadiness: 'shadow_review_ready',
+            scopeSummary:
+              'El launch puede avanzar con alcance estrecho mientras dejas fuera modulos no activos: promotions.',
+            selectedChannels: ['catalog', 'landing', 'campaign'],
+            nextStep:
+              'Usa este plan como target de approval y shadow review mientras el publish real sigue bloqueado.',
+          },
+        ],
         launchHints: [
           {
             key: 'launch-angle',
@@ -6601,6 +6614,19 @@ describe('API', () => {
                 'Conviene partir con una campaña simple antes de depender de promociones o mecanicas avanzadas.',
               recommendedUse:
                 'Prioriza una campaña de validacion con un solo angulo comercial antes de multiplicar canales o promesas.',
+            },
+          ],
+          launchPlans: [
+            {
+              id: 'saas-platform:launch-plan:initial',
+              title: 'Initial ecommerce launch plan',
+              status: 'warning',
+              guardedExecutionReadiness: 'shadow_review_ready',
+              scopeSummary:
+                'El launch puede avanzar con alcance estrecho mientras dejas fuera modulos no activos: promotions.',
+              selectedChannels: ['catalog', 'landing', 'campaign'],
+              nextStep:
+                'Usa este plan como target de approval y shadow review mientras el publish real sigue bloqueado.',
             },
           ],
           launchHints: [

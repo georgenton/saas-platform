@@ -31,6 +31,18 @@ export interface AiEcommerceLaunchWorkspaceResponseDto {
     detail: string;
     recommendedUse: string;
   }>;
+  launchPlans: Array<{
+    id: string;
+    title: string;
+    status: 'ready' | 'warning' | 'blocked';
+    guardedExecutionReadiness:
+      | 'shadow_review_ready'
+      | 'needs_activation'
+      | 'needs_core_modules';
+    scopeSummary: string;
+    selectedChannels: Array<'catalog' | 'landing' | 'campaign'>;
+    nextStep: string;
+  }>;
   launchHints: Array<{
     key: string;
     title: string;
@@ -58,6 +70,10 @@ export function toAiEcommerceLaunchWorkspaceResponseDto(
     },
     checklist: view.checklist.map((entry) => ({ ...entry })),
     channelGuidance: view.channelGuidance.map((entry) => ({ ...entry })),
+    launchPlans: view.launchPlans.map((entry) => ({
+      ...entry,
+      selectedChannels: [...entry.selectedChannels],
+    })),
     launchHints: view.launchHints.map((entry) => ({
       ...entry,
       recommendedInputs: [...entry.recommendedInputs],

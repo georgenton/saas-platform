@@ -5734,6 +5734,7 @@ describe('API', () => {
                   approvalRequired: true,
                 },
               ],
+              primaryApprovalPolicyKey: 'growth-assist-suggestion-review',
               approvalPolicyKeys: ['growth-assist-suggestion-review'],
               handoffContract: {
                 requestApprovalRationale:
@@ -5806,6 +5807,8 @@ describe('API', () => {
                   approvalRequired: true,
                 },
               ],
+              primaryApprovalPolicyKey:
+                'invoice-document-assistant-suggestion-review',
               handoffContract: {
                 requestApprovalRationale:
                   'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
@@ -5874,6 +5877,8 @@ describe('API', () => {
                   approvalRequired: true,
                 },
               ],
+              primaryApprovalPolicyKey:
+                'ecommerce-launch-assistant-suggestion-review',
               handoffContract: {
                 requestApprovalRationale:
                   'Solicitar revision humana antes de usar la sugerencia de Ecommerce Launch Assistant.',

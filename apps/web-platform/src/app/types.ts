@@ -1164,6 +1164,7 @@ export interface AiOperatingModelAgentResponse {
     reviewGuidance: string;
     approvalRequired: boolean;
   }>;
+  primaryApprovalPolicyKey: string | null;
   approvalPolicyKeys: string[];
   toolAccess: Array<{
     tool: {

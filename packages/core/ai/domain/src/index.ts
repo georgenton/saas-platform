@@ -186,6 +186,7 @@ export interface AiOperatingModelAgentEntry {
   primarySurface: AiOperatingModelAgentPrimarySurfaceReference;
   promptPack: AiOperatingModelAgentPromptPackReference;
   approvalPolicies: AiOperatingModelAgentApprovalPolicyReference[];
+  primaryApprovalPolicyKey: string | null;
   approvalPolicyKeys: string[];
   toolAccess: AiOperatingModelAgentToolAccessEntry[];
   handoffContract: AiOperatingModelAgentHandoffContract;

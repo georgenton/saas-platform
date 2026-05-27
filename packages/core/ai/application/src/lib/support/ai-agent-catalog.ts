@@ -876,6 +876,10 @@ export function listAiOperatingModelManifest(): AiOperatingModelManifest {
       accessLevel: entry.accessLevel,
       rationale: entry.rationale,
     }));
+    const approvalPolicies = listAiOperatingModelApprovalPoliciesByAgentKey(
+      agent.key,
+    );
+    const approvalPolicyKeys = approvalPolicies.map((entry) => entry.policyKey);
 
     return {
       agent: cloneAiAgentCatalogEntry(agent),
@@ -889,10 +893,9 @@ export function listAiOperatingModelManifest(): AiOperatingModelManifest {
         summary: promptPack.summary,
         objective: promptPack.objective,
       },
-      approvalPolicies: listAiOperatingModelApprovalPoliciesByAgentKey(agent.key),
-      approvalPolicyKeys: listAiApprovalPoliciesByAgentKey(agent.key).map(
-        (entry) => entry.policyKey,
-      ),
+      approvalPolicies,
+      primaryApprovalPolicyKey: approvalPolicyKeys[0] ?? null,
+      approvalPolicyKeys,
       toolAccess,
       handoffContract,
       guardedExecutionCandidateToolKey:

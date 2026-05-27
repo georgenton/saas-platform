@@ -4217,8 +4217,7 @@ export class AiController {
 
           const operatingLane =
             this.getGuardedExecutionOperatingLane(agent.key);
-          const namedHumanGate =
-            approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
+          const namedHumanGate = this.getPrimaryApprovalPolicyKey(agent.key);
           const blastRadius = this.getGuardedExecutionBlastRadius(agent.key);
 
           const entryChecklist = [
@@ -4500,8 +4499,7 @@ export class AiController {
                 ? 'ready_with_rollback'
                 : 'needs_rollback_design';
 
-          const rollbackOwner =
-            approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
+          const rollbackOwner = this.getPrimaryApprovalPolicyKey(agent.key);
           const blastRadius = this.getGuardedExecutionBlastRadius(agent.key);
           const safeFallbackMode =
             this.getGuardedExecutionSafeFallbackMode(agent.key);
@@ -4787,8 +4785,7 @@ export class AiController {
                 ? 'ready_for_audit'
                 : 'needs_evidence_design';
 
-          const auditOwner =
-            approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
+          const auditOwner = this.getPrimaryApprovalPolicyKey(agent.key);
           const safeFallbackMode =
             this.getGuardedExecutionSafeFallbackMode(agent.key);
 
@@ -5100,8 +5097,7 @@ export class AiController {
               : launchStatus === 'pilot_only'
                 ? 'next_window'
                 : 'defer';
-          const launchOwner =
-            approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
+          const launchOwner = this.getPrimaryApprovalPolicyKey(agent.key);
           const safeFallbackMode =
             this.getGuardedExecutionSafeFallbackMode(agent.key);
 
@@ -5369,8 +5365,7 @@ export class AiController {
               : launchStatus === 'ready_to_launch'
                 ? 'ready_to_monitor'
                 : 'monitor_after_launch';
-          const monitorOwner =
-            approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
+          const monitorOwner = this.getPrimaryApprovalPolicyKey(agent.key);
           const safeFallbackMode =
             this.getGuardedExecutionSafeFallbackMode(agent.key);
           const watchWindow: 'day_0' | 'next_window' | 'not_scheduled' =
@@ -5650,8 +5645,7 @@ export class AiController {
               : controlStatus === 'pilot_then_open'
                 ? 'next_window'
                 : 'defer';
-          const controlOwner =
-            approvalPolicies[0]?.policyKey ?? 'unassigned_human_gate';
+          const controlOwner = this.getPrimaryApprovalPolicyKey(agent.key);
           const escalationOwner = controlOwner;
           const safeFallbackMode =
             this.getGuardedExecutionSafeFallbackMode(agent.key);
@@ -7421,6 +7415,13 @@ export class AiController {
 
   private getGuardedExecutionCandidate(agentKey: string) {
     return this.getOperatingModelAgentEntry(agentKey).guardedExecutionCandidate;
+  }
+
+  private getPrimaryApprovalPolicyKey(agentKey: string): string {
+    return (
+      this.getOperatingModelAgentEntry(agentKey).primaryApprovalPolicyKey ??
+      'unassigned_human_gate'
+    );
   }
 
   private getGuardedExecutionTargetKind(

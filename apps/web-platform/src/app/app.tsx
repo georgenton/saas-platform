@@ -4478,10 +4478,6 @@ export function App() {
       ),
     [aiOperatingModelAgents, currentTenancy],
   );
-  const activeGrowthAiAgent = useMemo(
-    () => resolveActiveAiAgent('growth-assist-coach'),
-    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey, aiAgentCatalogByKey],
-  );
   const plannedAiAgents = useMemo(
     () =>
       aiOperatingModelAgents.length > 0
@@ -4490,22 +4486,6 @@ export function App() {
             .map((entry) => entry.agent)
         : aiAgentCatalog.filter((entry) => entry.availability === 'planned'),
     [aiAgentCatalog, aiOperatingModelAgents],
-  );
-  const activeGrowthAiPromptPack = useMemo(
-    () => resolveActiveAiPromptPack('growth-assist-coach'),
-    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey],
-  );
-  const activeGrowthAiPrimarySurface = useMemo(
-    () => resolveActiveAiPrimarySurface('growth-assist-coach'),
-    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey],
-  );
-  const activeGrowthAiToolAccess = useMemo(
-    () => resolveActiveAiToolAccess('growth-assist-coach'),
-    [aiAgentDeclaredToolAccessByKey, aiAgentEnvelopeByKey],
-  );
-  const activeGrowthAiApprovalPolicies = useMemo(
-    () => resolveActiveAiApprovalPolicies('growth-assist-coach'),
-    [aiAgentApprovalPoliciesByKey],
   );
   const latestApprovedAiApprovalRequestByAgent = useMemo(() => {
     const map = new Map<string, AiApprovalRequestResponse>();
@@ -4549,58 +4529,86 @@ export function App() {
       ),
     [invoices],
   );
-  const activeInvoiceAiAgent = useMemo(
-    () => resolveActiveAiAgent('invoice-document-assistant'),
-    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey, aiAgentCatalogByKey],
+  const aiActiveAgentStateByKey = useMemo(
+    () =>
+      new Map<
+        SupportedAiAgentKey,
+        {
+          agent: AiAgentCatalogResponse | null;
+          promptPack: AiOperatingModelAgentResponse['promptPack'] | AiSuggestionEnvelopeResponse['promptPack'] | null;
+          primarySurface:
+            | AiOperatingModelAgentResponse['primarySurface']
+            | {
+                key: string;
+                title: string;
+                sourceContractKey: string;
+              }
+            | null;
+          toolAccess: AiAgentToolAccessResponse[];
+          approvalPolicies: AiApprovalPolicyResponse[];
+          suggestionRuns: AiSuggestionRunResponse[];
+          latestApprovedApprovalRequest: AiApprovalRequestResponse | null;
+        }
+      >(
+        SUPPORTED_AI_AGENT_KEYS.map((agentKey) => [
+          agentKey,
+          {
+            agent: resolveActiveAiAgent(agentKey),
+            promptPack: resolveActiveAiPromptPack(agentKey),
+            primarySurface: resolveActiveAiPrimarySurface(agentKey),
+            toolAccess: resolveActiveAiToolAccess(agentKey),
+            approvalPolicies: resolveActiveAiApprovalPolicies(agentKey),
+            suggestionRuns: resolveAiSuggestionRunsForAgent(agentKey),
+            latestApprovedApprovalRequest:
+              resolveLatestApprovedAiApprovalRequest(agentKey),
+          },
+        ]),
+      ),
+    [
+      aiAgentApprovalPoliciesByKey,
+      aiAgentCatalogByKey,
+      aiAgentDeclaredToolAccessByKey,
+      aiAgentEnvelopeByKey,
+      aiAgentSuggestionRunsByKey,
+      aiOperatingModelAgentByKey,
+      latestApprovedAiApprovalRequestByAgent,
+    ],
   );
-  const activeEcommerceAiAgent = useMemo(
-    () => resolveActiveAiAgent('ecommerce-launch-assistant'),
-    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey, aiAgentCatalogByKey],
+  const activeGrowthAiState = aiActiveAgentStateByKey.get('growth-assist-coach');
+  const activeGrowthAiAgent = activeGrowthAiState?.agent ?? null;
+  const activeGrowthAiPromptPack = activeGrowthAiState?.promptPack ?? null;
+  const activeGrowthAiPrimarySurface = activeGrowthAiState?.primarySurface ?? null;
+  const activeGrowthAiToolAccess = activeGrowthAiState?.toolAccess ?? [];
+  const activeGrowthAiApprovalPolicies =
+    activeGrowthAiState?.approvalPolicies ?? [];
+  const activeInvoiceAiState = aiActiveAgentStateByKey.get(
+    'invoice-document-assistant',
   );
-  const activeEcommerceAiPromptPack = useMemo(
-    () => resolveActiveAiPromptPack('ecommerce-launch-assistant'),
-    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey],
+  const activeInvoiceAiAgent = activeInvoiceAiState?.agent ?? null;
+  const activeInvoiceAiPromptPack = activeInvoiceAiState?.promptPack ?? null;
+  const activeInvoiceAiPrimarySurface =
+    activeInvoiceAiState?.primarySurface ?? null;
+  const activeInvoiceAiToolAccess = activeInvoiceAiState?.toolAccess ?? [];
+  const activeInvoiceAiApprovalPolicies =
+    activeInvoiceAiState?.approvalPolicies ?? [];
+  const activeInvoiceAiSuggestionRuns =
+    activeInvoiceAiState?.suggestionRuns ?? [];
+  const activeEcommerceAiState = aiActiveAgentStateByKey.get(
+    'ecommerce-launch-assistant',
   );
-  const activeInvoiceAiPromptPack = useMemo(
-    () => resolveActiveAiPromptPack('invoice-document-assistant'),
-    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey],
-  );
-  const activeEcommerceAiPrimarySurface = useMemo(
-    () => resolveActiveAiPrimarySurface('ecommerce-launch-assistant'),
-    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey],
-  );
-  const activeEcommerceAiApprovalPolicies = useMemo(
-    () => resolveActiveAiApprovalPolicies('ecommerce-launch-assistant'),
-    [aiAgentApprovalPoliciesByKey],
-  );
-  const activeEcommerceAiToolAccess = useMemo(
-    () => resolveActiveAiToolAccess('ecommerce-launch-assistant'),
-    [aiAgentDeclaredToolAccessByKey, aiAgentEnvelopeByKey],
-  );
-  const ecommerceLaunchAssistantSuggestionRuns = useMemo(
-    () => resolveAiSuggestionRunsForAgent('ecommerce-launch-assistant'),
-    [aiAgentSuggestionRunsByKey],
-  );
-  const latestApprovedEcommerceAiApprovalRequest = useMemo(
-    () => resolveLatestApprovedAiApprovalRequest('ecommerce-launch-assistant'),
-    [latestApprovedAiApprovalRequestByAgent],
-  );
-  const activeInvoiceAiToolAccess = useMemo(
-    () => resolveActiveAiToolAccess('invoice-document-assistant'),
-    [aiAgentDeclaredToolAccessByKey, aiAgentEnvelopeByKey],
-  );
-  const activeInvoiceAiPrimarySurface = useMemo(
-    () => resolveActiveAiPrimarySurface('invoice-document-assistant'),
-    [aiAgentEnvelopeByKey, aiOperatingModelAgentByKey],
-  );
-  const activeInvoiceAiApprovalPolicies = useMemo(
-    () => resolveActiveAiApprovalPolicies('invoice-document-assistant'),
-    [aiAgentApprovalPoliciesByKey],
-  );
-  const activeInvoiceAiSuggestionRuns = useMemo(
-    () => resolveAiSuggestionRunsForAgent('invoice-document-assistant'),
-    [aiAgentSuggestionRunsByKey],
-  );
+  const activeEcommerceAiAgent = activeEcommerceAiState?.agent ?? null;
+  const activeEcommerceAiPromptPack =
+    activeEcommerceAiState?.promptPack ?? null;
+  const activeEcommerceAiPrimarySurface =
+    activeEcommerceAiState?.primarySurface ?? null;
+  const activeEcommerceAiApprovalPolicies =
+    activeEcommerceAiState?.approvalPolicies ?? [];
+  const activeEcommerceAiToolAccess =
+    activeEcommerceAiState?.toolAccess ?? [];
+  const ecommerceLaunchAssistantSuggestionRuns =
+    activeEcommerceAiState?.suggestionRuns ?? [];
+  const latestApprovedEcommerceAiApprovalRequest =
+    activeEcommerceAiState?.latestApprovedApprovalRequest ?? null;
   const visibleTenantAiSuggestionWorkspace = useMemo(() => {
     return tenantAiSuggestionWorkspace.filter((entry) =>
       tenantAiSuggestionWorkspaceAgentFilter === 'all'

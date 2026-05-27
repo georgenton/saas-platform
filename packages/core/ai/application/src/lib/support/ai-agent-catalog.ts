@@ -50,43 +50,110 @@ export const AI_AGENT_CATALOG: AiAgentCatalogEntry[] = [
   },
 ];
 
-const AI_AGENT_REQUIRED_PERMISSION_KEYS: Record<string, string> = {
-  'growth-assist-coach': 'growth.conversations.read',
-  'invoice-document-assistant': 'invoicing.reports.read',
-  'ecommerce-launch-assistant': 'tenant.entitlements.read',
-};
-
-const AI_AGENT_HANDOFF_CONTRACTS: Record<
+const AI_AGENT_OPERATING_MODEL_METADATA: Record<
   string,
-  AiOperatingModelAgentHandoffContract
+  {
+    requiredPermissionKey: string;
+    handoffContract: AiOperatingModelAgentHandoffContract;
+    primarySurface: AiOperatingModelAgentPrimarySurfaceReference;
+  }
 > = {
   'growth-assist-coach': {
-    requestApprovalRationale:
-      'Solicitar revision humana antes de tratar el handoff como aprobado.',
-    reviewNotes: {
-      approved: 'Aprobado desde la consola transversal de AI.',
-      rejected: 'Rechazado desde la consola transversal de AI.',
+    requiredPermissionKey: 'growth.conversations.read',
+    handoffContract: {
+      requestApprovalRationale:
+        'Solicitar revision humana antes de tratar el handoff como aprobado.',
+      reviewNotes: {
+        approved: 'Aprobado desde la consola transversal de AI.',
+        rejected: 'Rechazado desde la consola transversal de AI.',
+      },
+    },
+    primarySurface: {
+      key: 'growth_assist_daily_agenda',
+      title: 'Growth Assist daily agenda',
+      sourceContractKey: 'growth.assist.daily_agenda',
     },
   },
   'invoice-document-assistant': {
-    requestApprovalRationale:
-      'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
-    reviewNotes: {
-      approved:
-        'Aprobado desde la consola transversal de AI para Invoice Document Assistant.',
-      rejected:
-        'Rechazado desde la consola transversal de AI para Invoice Document Assistant.',
+    requiredPermissionKey: 'invoicing.reports.read',
+    handoffContract: {
+      requestApprovalRationale:
+        'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
+      reviewNotes: {
+        approved:
+          'Aprobado desde la consola transversal de AI para Invoice Document Assistant.',
+        rejected:
+          'Rechazado desde la consola transversal de AI para Invoice Document Assistant.',
+      },
+    },
+    primarySurface: {
+      key: 'invoice_document_drafting',
+      title: 'Invoice document drafting',
+      sourceContractKey: 'invoicing.assist.document_drafting',
     },
   },
   'ecommerce-launch-assistant': {
-    requestApprovalRationale:
-      'Solicitar revision humana antes de usar la sugerencia de Ecommerce Launch Assistant.',
-    reviewNotes: {
-      approved:
-        'Aprobado desde la consola transversal de AI para Ecommerce Launch Assistant.',
-      rejected:
-        'Rechazado desde la consola transversal de AI para Ecommerce Launch Assistant.',
+    requiredPermissionKey: 'tenant.entitlements.read',
+    handoffContract: {
+      requestApprovalRationale:
+        'Solicitar revision humana antes de usar la sugerencia de Ecommerce Launch Assistant.',
+      reviewNotes: {
+        approved:
+          'Aprobado desde la consola transversal de AI para Ecommerce Launch Assistant.',
+        rejected:
+          'Rechazado desde la consola transversal de AI para Ecommerce Launch Assistant.',
+      },
     },
+    primarySurface: {
+      key: 'ecommerce_launch_workspace',
+      title: 'Ecommerce launch workspace',
+      sourceContractKey: 'ecommerce.launch.workspace',
+    },
+  },
+};
+
+const AI_GUARDED_EXECUTION_CANDIDATE_DESCRIPTORS: Record<
+  string,
+  AiGuardedExecutionCandidateDescriptor
+> = {
+  growth_case_assignment_execution: {
+    toolKey: 'growth_case_assignment_execution',
+    title: 'Growth case assignment lane',
+    targetKind: 'growth_operational_case',
+    operatingLane: 'operational_case_assignment_lane',
+    blastRadius: 'single_queue_lane',
+    safeFallbackMode: 'suggestion_only_with_manual_assignment',
+    preferredPilotTypeWhenReady: 'human_gate_then_execute',
+    targetSelectionLabel: 'Operational case',
+    emptyTargetSelectionLabel: 'No eligible operational cases',
+    executeActionLabel: 'Execute take-case',
+    rollbackActionLabel: 'Rollback take-case',
+  },
+  invoice_payment_collection_execution: {
+    toolKey: 'invoice_payment_collection_execution',
+    title: 'Invoice payment collection lane',
+    targetKind: 'invoice',
+    operatingLane: 'single_record_execution_lane',
+    blastRadius: 'single_record',
+    safeFallbackMode: 'suggestion_only',
+    preferredPilotTypeWhenReady: 'human_gate_then_execute',
+    targetSelectionLabel: 'Invoice',
+    emptyTargetSelectionLabel: 'No eligible invoices',
+    executeActionLabel: 'Execute post-payment',
+    rollbackActionLabel: 'Rollback payment',
+  },
+  ecommerce_launch_publish_execution: {
+    toolKey: 'ecommerce_launch_publish_execution',
+    title: 'Ecommerce launch publish lane',
+    targetKind: 'ecommerce_launch_plan',
+    operatingLane: 'single_record_execution_lane',
+    blastRadius: 'single_record',
+    safeFallbackMode: 'suggestion_only',
+    preferredPilotTypeWhenReady: 'shadow_review',
+    targetSelectionLabel: 'Launch plan',
+    emptyTargetSelectionLabel: 'No eligible launch plan',
+    executeActionLabel: 'Execute launch publish',
+    rollbackActionLabel: 'Rollback launch publish',
   },
 };
 
@@ -94,6 +161,46 @@ function cloneAiAgentCatalogEntry(entry: AiAgentCatalogEntry): AiAgentCatalogEnt
   return {
     ...entry,
     supportedSurfaceKeys: [...entry.supportedSurfaceKeys],
+  };
+}
+
+function cloneAiAgentHandoffContract(
+  contract: AiOperatingModelAgentHandoffContract,
+): AiOperatingModelAgentHandoffContract {
+  return {
+    requestApprovalRationale: contract.requestApprovalRationale,
+    reviewNotes: {
+      approved: contract.reviewNotes.approved,
+      rejected: contract.reviewNotes.rejected,
+    },
+  };
+}
+
+function cloneAiAgentPrimarySurfaceDescriptor(
+  descriptor: AiOperatingModelAgentPrimarySurfaceReference,
+): AiOperatingModelAgentPrimarySurfaceReference {
+  return {
+    key: descriptor.key,
+    title: descriptor.title,
+    sourceContractKey: descriptor.sourceContractKey,
+  };
+}
+
+function cloneAiGuardedExecutionCandidateDescriptor(
+  descriptor: AiGuardedExecutionCandidateDescriptor,
+): AiGuardedExecutionCandidateDescriptor {
+  return {
+    toolKey: descriptor.toolKey,
+    title: descriptor.title,
+    targetKind: descriptor.targetKind,
+    operatingLane: descriptor.operatingLane,
+    blastRadius: descriptor.blastRadius,
+    safeFallbackMode: descriptor.safeFallbackMode,
+    preferredPilotTypeWhenReady: descriptor.preferredPilotTypeWhenReady,
+    targetSelectionLabel: descriptor.targetSelectionLabel,
+    emptyTargetSelectionLabel: descriptor.emptyTargetSelectionLabel,
+    executeActionLabel: descriptor.executeActionLabel,
+    rollbackActionLabel: descriptor.rollbackActionLabel,
   };
 }
 
@@ -108,19 +215,13 @@ export function findAiAgentByKey(
 function getAiAgentHandoffContract(
   agentKey: string,
 ): AiOperatingModelAgentHandoffContract | null {
-  const contract = AI_AGENT_HANDOFF_CONTRACTS[agentKey];
+  const contract = AI_AGENT_OPERATING_MODEL_METADATA[agentKey]?.handoffContract;
 
   if (!contract) {
     return null;
   }
 
-  return {
-    requestApprovalRationale: contract.requestApprovalRationale,
-    reviewNotes: {
-      approved: contract.reviewNotes.approved,
-      rejected: contract.reviewNotes.rejected,
-    },
-  };
+  return cloneAiAgentHandoffContract(contract);
 }
 
 export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
@@ -697,7 +798,7 @@ export function listAiApprovalPoliciesByAgentKey(
 }
 
 export function getAiAgentRequiredPermissionKey(agentKey: string): string | null {
-  return AI_AGENT_REQUIRED_PERMISSION_KEYS[agentKey] ?? null;
+  return AI_AGENT_OPERATING_MODEL_METADATA[agentKey]?.requiredPermissionKey ?? null;
 }
 
 export function getAiGuardedExecutionCandidateToolKey(
@@ -716,82 +817,25 @@ export function getAiGuardedExecutionCandidateDescriptor(
   agentKey: string,
 ): AiGuardedExecutionCandidateDescriptor | null {
   const toolKey = getAiGuardedExecutionCandidateToolKey(agentKey);
+  const descriptor = toolKey
+    ? AI_GUARDED_EXECUTION_CANDIDATE_DESCRIPTORS[toolKey]
+    : null;
 
-  switch (toolKey) {
-    case 'growth_case_assignment_execution':
-      return {
-        toolKey,
-        title: 'Growth case assignment lane',
-        targetKind: 'growth_operational_case',
-        operatingLane: 'operational_case_assignment_lane',
-        blastRadius: 'single_queue_lane',
-        safeFallbackMode: 'suggestion_only_with_manual_assignment',
-        preferredPilotTypeWhenReady: 'human_gate_then_execute',
-        targetSelectionLabel: 'Operational case',
-        emptyTargetSelectionLabel: 'No eligible operational cases',
-        executeActionLabel: 'Execute take-case',
-        rollbackActionLabel: 'Rollback take-case',
-      };
-    case 'invoice_payment_collection_execution':
-      return {
-        toolKey,
-        title: 'Invoice payment collection lane',
-        targetKind: 'invoice',
-        operatingLane: 'single_record_execution_lane',
-        blastRadius: 'single_record',
-        safeFallbackMode: 'suggestion_only',
-        preferredPilotTypeWhenReady: 'human_gate_then_execute',
-        targetSelectionLabel: 'Invoice',
-        emptyTargetSelectionLabel: 'No eligible invoices',
-        executeActionLabel: 'Execute post-payment',
-        rollbackActionLabel: 'Rollback payment',
-      };
-    case 'ecommerce_launch_publish_execution':
-      return {
-        toolKey,
-        title: 'Ecommerce launch publish lane',
-        targetKind: 'ecommerce_launch_plan',
-        operatingLane: 'single_record_execution_lane',
-        blastRadius: 'single_record',
-        safeFallbackMode: 'suggestion_only',
-        preferredPilotTypeWhenReady: 'shadow_review',
-        targetSelectionLabel: 'Launch plan',
-        emptyTargetSelectionLabel: 'No eligible launch plan',
-        executeActionLabel: 'Execute launch publish',
-        rollbackActionLabel: 'Rollback launch publish',
-      };
-    default:
-      return null;
-  }
+  return descriptor ? cloneAiGuardedExecutionCandidateDescriptor(descriptor) : null;
 }
 
 export function getAiAgentPrimarySurfaceDescriptor(
   agentKey: string,
 ): AiOperatingModelAgentPrimarySurfaceReference {
-  switch (agentKey) {
-    case 'growth-assist-coach':
-      return {
-        key: 'growth_assist_daily_agenda',
-        title: 'Growth Assist daily agenda',
-        sourceContractKey: 'growth.assist.daily_agenda',
-      };
-    case 'invoice-document-assistant':
-      return {
-        key: 'invoice_document_drafting',
-        title: 'Invoice document drafting',
-        sourceContractKey: 'invoicing.assist.document_drafting',
-      };
-    case 'ecommerce-launch-assistant':
-      return {
-        key: 'ecommerce_launch_workspace',
-        title: 'Ecommerce launch workspace',
-        sourceContractKey: 'ecommerce.launch.workspace',
-      };
-    default:
-      throw new Error(
-        `AI primary surface descriptor is not configured for agent ${agentKey}.`,
-      );
+  const descriptor = AI_AGENT_OPERATING_MODEL_METADATA[agentKey]?.primarySurface;
+
+  if (!descriptor) {
+    throw new Error(
+      `AI primary surface descriptor is not configured for agent ${agentKey}.`,
+    );
   }
+
+  return cloneAiAgentPrimarySurfaceDescriptor(descriptor);
 }
 
 export function listAiOperatingModelApprovalPoliciesByAgentKey(

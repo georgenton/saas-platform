@@ -648,6 +648,16 @@ type StandardAiAgentWorkspaceSupportStateHandlerInput = {
   >;
 };
 
+type AiDedicatedSuggestionRunActionHandlers = {
+  prepare?: () => Promise<void>;
+  requestApproval?: (suggestionRunId: string) => Promise<void>;
+  reviewApproval?: (
+    requestId: string,
+    status: 'approved' | 'rejected',
+  ) => Promise<void>;
+  openDetail?: (suggestionRunId: string) => Promise<void>;
+};
+
 function isSupportedAiAgentKey(agentKey: string): agentKey is SupportedAiAgentKey {
   return (
     SUPPORTED_AI_AGENT_KEYS as readonly string[]
@@ -4500,7 +4510,8 @@ export function App() {
       tenantAiSuggestionWorkspace,
     ],
   );
-  const activeGrowthAiState = aiActiveAgentStateByKey.get('growth-assist-coach');
+  const activeGrowthAiState =
+    aiActiveAgentStateByKey.get('growth-assist-coach') ?? null;
   const activeGrowthAiAgent = activeGrowthAiState?.agent ?? null;
   const activeGrowthAiPromptPack = activeGrowthAiState?.promptPack ?? null;
   const activeGrowthAiPrimarySurface = activeGrowthAiState?.primarySurface ?? null;
@@ -4509,7 +4520,7 @@ export function App() {
     activeGrowthAiState?.approvalPolicies ?? [];
   const activeInvoiceAiState = aiActiveAgentStateByKey.get(
     'invoice-document-assistant',
-  );
+  ) ?? null;
   const activeInvoiceAiAgent = activeInvoiceAiState?.agent ?? null;
   const activeInvoiceAiPromptPack = activeInvoiceAiState?.promptPack ?? null;
   const activeInvoiceAiPrimarySurface =
@@ -4521,7 +4532,7 @@ export function App() {
     activeInvoiceAiState?.suggestionRuns ?? [];
   const activeEcommerceAiState = aiActiveAgentStateByKey.get(
     'ecommerce-launch-assistant',
-  );
+  ) ?? null;
   const activeEcommerceAiAgent = activeEcommerceAiState?.agent ?? null;
   const activeEcommerceAiPromptPack =
     activeEcommerceAiState?.promptPack ?? null;
@@ -9927,84 +9938,97 @@ export function App() {
     }
   }
 
-  async function handlePrepareAiSuggestionRun() {
-    await handlePrepareAiSuggestionRunForAgent(
-      'growth-assist-coach',
-      'No se pudo preparar el handoff auditable de AI.',
-    );
-  }
-
-  async function handleRequestAiSuggestionRunApproval(suggestionRunId: string) {
-    await handleRequestAiSuggestionRunApprovalForAgent(
-      'growth-assist-coach',
-      suggestionRunId,
-      'No se pudo pedir la aprobación del handoff de AI.',
-    );
-  }
-
-  async function handleReviewAiApprovalRequest(
-    requestId: string,
-    status: 'approved' | 'rejected',
-  ) {
-    await handleReviewAiApprovalRequestForAgent(
-      'growth-assist-coach',
-      requestId,
-      status,
-      'No se pudo revisar la solicitud de aprobación de AI.',
-    );
-  }
-
-  async function handlePrepareInvoiceAiSuggestionRun() {
-    await handlePrepareAiSuggestionRunForAgent(
-      'invoice-document-assistant',
-      'No se pudo preparar el handoff auditable de AI para invoicing.',
-    );
-  }
-
-  async function handlePrepareEcommerceAiSuggestionRun() {
-    await handlePrepareAiSuggestionRunForAgent(
-      'ecommerce-launch-assistant',
-      'No se pudo preparar el handoff AI de ecommerce launch.',
-    );
-  }
-
-  async function handleRequestInvoiceAiSuggestionRunApproval(
-    suggestionRunId: string,
-  ) {
-    await handleRequestAiSuggestionRunApprovalForAgent(
-      'invoice-document-assistant',
-      suggestionRunId,
-      'No se pudo pedir la aprobación del handoff de AI para invoicing.',
-    );
-  }
-
-  async function handleReviewInvoiceAiApprovalRequest(
-    requestId: string,
-    status: 'approved' | 'rejected',
-  ) {
-    await handleReviewAiApprovalRequestForAgent(
-      'invoice-document-assistant',
-      requestId,
-      status,
-      'No se pudo revisar la aprobación del handoff de AI para invoicing.',
-    );
-  }
-
-  async function handleOpenGrowthAiSuggestionRunDetail(suggestionRunId: string) {
-    await handleOpenAiSuggestionRunDetailForAgent(
-      'growth-assist-coach',
-      suggestionRunId,
-      'No se pudo cargar el detalle del handoff de AI.',
-    );
-  }
-
-  async function handleOpenInvoiceAiSuggestionRunDetail(suggestionRunId: string) {
-    await handleOpenAiSuggestionRunDetailForAgent(
-      'invoice-document-assistant',
-      suggestionRunId,
-      'No se pudo cargar el detalle del handoff de AI para invoicing.',
-    );
-  }
+  const createDedicatedPrepareAiSuggestionRunHandler = (
+    agentKey: SupportedAiAgentKey,
+    fallbackErrorMessage: string,
+  ) => {
+    return async () => {
+      await handlePrepareAiSuggestionRunForAgent(agentKey, fallbackErrorMessage);
+    };
+  };
+  const createDedicatedRequestAiSuggestionRunApprovalHandler = (
+    agentKey: SupportedAiAgentKey,
+    fallbackErrorMessage: string,
+  ) => {
+    return async (suggestionRunId: string) => {
+      await handleRequestAiSuggestionRunApprovalForAgent(
+        agentKey,
+        suggestionRunId,
+        fallbackErrorMessage,
+      );
+    };
+  };
+  const createDedicatedReviewAiApprovalRequestHandler = (
+    agentKey: SupportedAiAgentKey,
+    fallbackErrorMessage: string,
+  ) => {
+    return async (requestId: string, status: 'approved' | 'rejected') => {
+      await handleReviewAiApprovalRequestForAgent(
+        agentKey,
+        requestId,
+        status,
+        fallbackErrorMessage,
+      );
+    };
+  };
+  const createDedicatedOpenAiSuggestionRunDetailHandler = (
+    agentKey: SupportedAiAgentKey,
+    fallbackErrorMessage: string,
+  ) => {
+    return async (suggestionRunId: string) => {
+      await handleOpenAiSuggestionRunDetailForAgent(
+        agentKey,
+        suggestionRunId,
+        fallbackErrorMessage,
+      );
+    };
+  };
+  const aiDedicatedSuggestionRunActionHandlers: Partial<
+    Record<SupportedAiAgentKey, AiDedicatedSuggestionRunActionHandlers>
+  > = {
+    'growth-assist-coach': {
+      prepare: createDedicatedPrepareAiSuggestionRunHandler(
+        'growth-assist-coach',
+        'No se pudo preparar el handoff auditable de AI.',
+      ),
+      requestApproval: createDedicatedRequestAiSuggestionRunApprovalHandler(
+        'growth-assist-coach',
+        'No se pudo pedir la aprobación del handoff de AI.',
+      ),
+      reviewApproval: createDedicatedReviewAiApprovalRequestHandler(
+        'growth-assist-coach',
+        'No se pudo revisar la solicitud de aprobación de AI.',
+      ),
+      openDetail: createDedicatedOpenAiSuggestionRunDetailHandler(
+        'growth-assist-coach',
+        'No se pudo cargar el detalle del handoff de AI.',
+      ),
+    },
+    'invoice-document-assistant': {
+      prepare: createDedicatedPrepareAiSuggestionRunHandler(
+        'invoice-document-assistant',
+        'No se pudo preparar el handoff auditable de AI para invoicing.',
+      ),
+      requestApproval: createDedicatedRequestAiSuggestionRunApprovalHandler(
+        'invoice-document-assistant',
+        'No se pudo pedir la aprobación del handoff de AI para invoicing.',
+      ),
+      reviewApproval: createDedicatedReviewAiApprovalRequestHandler(
+        'invoice-document-assistant',
+        'No se pudo revisar la aprobación del handoff de AI para invoicing.',
+      ),
+      openDetail: createDedicatedOpenAiSuggestionRunDetailHandler(
+        'invoice-document-assistant',
+        'No se pudo cargar el detalle del handoff de AI para invoicing.',
+      ),
+    },
+    'ecommerce-launch-assistant': {
+      prepare: createDedicatedPrepareAiSuggestionRunHandler(
+        'ecommerce-launch-assistant',
+        'No se pudo preparar el handoff AI de ecommerce launch.',
+      ),
+    },
+  };
 
   async function handleOpenTenantAiWorkspaceSuggestionRunDetail(
     suggestionRunId: string,
@@ -12343,7 +12367,11 @@ export function App() {
                             !canReadTenantEntitlements ||
                             actionLoading === 'prepare-ecommerce-ai-suggestion-run'
                           }
-                          onClick={() => void handlePrepareEcommerceAiSuggestionRun()}
+                          onClick={() =>
+                            void aiDedicatedSuggestionRunActionHandlers[
+                              'ecommerce-launch-assistant'
+                            ]?.prepare?.()
+                          }
                           type="button"
                         >
                           {actionLoading === 'prepare-ecommerce-ai-suggestion-run'
@@ -13211,7 +13239,9 @@ export function App() {
                               className={styles.secondaryButton}
                               type="button"
                               onClick={() => {
-                                void handlePrepareAiSuggestionRun();
+                                void aiDedicatedSuggestionRunActionHandlers[
+                                  'growth-assist-coach'
+                                ]?.prepare?.();
                               }}
                               disabled={
                                 growthActionLoading === 'prepare-ai-suggestion-run'
@@ -13934,9 +13964,9 @@ export function App() {
                                           className={styles.ghostButton}
                                           type="button"
                                           onClick={() => {
-                                            void handleOpenGrowthAiSuggestionRunDetail(
-                                              entry.id,
-                                            );
+                                            void aiDedicatedSuggestionRunActionHandlers[
+                                              'growth-assist-coach'
+                                            ]?.openDetail?.(entry.id);
                                           }}
                                           disabled={
                                             growthActionLoading ===
@@ -13953,9 +13983,9 @@ export function App() {
                                             className={styles.secondaryButton}
                                             type="button"
                                             onClick={() => {
-                                              void handleRequestAiSuggestionRunApproval(
-                                                entry.id,
-                                              );
+                                              void aiDedicatedSuggestionRunActionHandlers[
+                                                'growth-assist-coach'
+                                              ]?.requestApproval?.(entry.id);
                                             }}
                                             disabled={
                                               growthActionLoading ===
@@ -21766,7 +21796,11 @@ export function App() {
                               !canReadInvoicingReports ||
                               actionLoading === 'prepare-invoice-ai-suggestion-run'
                             }
-                            onClick={() => void handlePrepareInvoiceAiSuggestionRun()}
+                            onClick={() =>
+                              void aiDedicatedSuggestionRunActionHandlers[
+                                'invoice-document-assistant'
+                              ]?.prepare?.()
+                            }
                             type="button"
                           >
                             {actionLoading === 'prepare-invoice-ai-suggestion-run'
@@ -21843,9 +21877,9 @@ export function App() {
                                         `load-invoice-ai-run-detail:${entry.id}`
                                       }
                                       onClick={() =>
-                                        void handleOpenInvoiceAiSuggestionRunDetail(
-                                          entry.id,
-                                        )
+                                        void aiDedicatedSuggestionRunActionHandlers[
+                                          'invoice-document-assistant'
+                                        ]?.openDetail?.(entry.id)
                                       }
                                       type="button"
                                     >
@@ -21863,9 +21897,9 @@ export function App() {
                                           `request-invoice-ai-approval:${entry.id}`
                                       }
                                       onClick={() =>
-                                        void handleRequestInvoiceAiSuggestionRunApproval(
-                                          entry.id,
-                                        )
+                                        void aiDedicatedSuggestionRunActionHandlers[
+                                          'invoice-document-assistant'
+                                        ]?.requestApproval?.(entry.id)
                                       }
                                       type="button"
                                     >
@@ -22048,9 +22082,9 @@ export function App() {
                                       `load-invoice-ai-run-detail:${entry.suggestionRunId}`
                                     }
                                     onClick={() =>
-                                      void handleOpenInvoiceAiSuggestionRunDetail(
-                                        entry.suggestionRunId,
-                                      )
+                                      void aiDedicatedSuggestionRunActionHandlers[
+                                        'invoice-document-assistant'
+                                      ]?.openDetail?.(entry.suggestionRunId)
                                     }
                                     type="button"
                                   >
@@ -22069,10 +22103,9 @@ export function App() {
                                         `review-invoice-ai-approval:${entry.id}`
                                       }
                                       onClick={() =>
-                                        void handleReviewInvoiceAiApprovalRequest(
-                                          entry.id,
-                                          'approved',
-                                        )
+                                        void aiDedicatedSuggestionRunActionHandlers[
+                                          'invoice-document-assistant'
+                                        ]?.reviewApproval?.(entry.id, 'approved')
                                       }
                                       type="button"
                                     >
@@ -22085,10 +22118,9 @@ export function App() {
                                         `review-invoice-ai-approval:${entry.id}`
                                       }
                                       onClick={() =>
-                                        void handleReviewInvoiceAiApprovalRequest(
-                                          entry.id,
-                                          'rejected',
-                                        )
+                                        void aiDedicatedSuggestionRunActionHandlers[
+                                          'invoice-document-assistant'
+                                        ]?.reviewApproval?.(entry.id, 'rejected')
                                       }
                                       type="button"
                                     >

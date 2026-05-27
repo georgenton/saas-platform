@@ -3941,7 +3941,7 @@ export class AiController {
             | 'shadow_review'
             | 'not_available' =
             pilotStatus === 'ready_for_pilot'
-              ? 'human_gate_then_execute'
+              ? this.getGuardedExecutionPreferredPilotTypeWhenReady(agent.key)
               : pilotStatus === 'needs_operational_backing'
                 ? 'shadow_review'
                 : 'not_available';
@@ -4204,7 +4204,7 @@ export class AiController {
               : additionalReviewerEquivalentsToAssign > 0 ||
                   simulatedSlaStatus !== 'on_track'
                 ? 'shadow_review'
-                : 'human_gate_then_execute';
+                : this.getGuardedExecutionPreferredPilotTypeWhenReady(agent.key);
           const runbookStatus:
             | 'ready_to_document'
             | 'needs_design'
@@ -4480,7 +4480,7 @@ export class AiController {
               : additionalReviewerEquivalentsToAssign > 0 ||
                   simulatedSlaStatus !== 'on_track'
                 ? 'shadow_review'
-                : 'human_gate_then_execute';
+                : this.getGuardedExecutionPreferredPilotTypeWhenReady(agent.key);
           const runbookStatus:
             | 'ready_to_document'
             | 'needs_design'
@@ -4756,7 +4756,7 @@ export class AiController {
               : additionalReviewerEquivalentsToAssign > 0 ||
                   simulatedSlaStatus !== 'on_track'
                 ? 'shadow_review'
-                : 'human_gate_then_execute';
+                : this.getGuardedExecutionPreferredPilotTypeWhenReady(agent.key);
           const runbookStatus:
             | 'ready_to_document'
             | 'needs_design'
@@ -5053,7 +5053,7 @@ export class AiController {
               : additionalReviewerEquivalentsToAssign > 0 ||
                   simulatedSlaStatus !== 'on_track'
                 ? 'shadow_review'
-                : 'human_gate_then_execute';
+                : this.getGuardedExecutionPreferredPilotTypeWhenReady(agent.key);
           const runbookStatus:
             | 'ready_to_document'
             | 'needs_design'
@@ -7425,43 +7425,44 @@ export class AiController {
 
   private getGuardedExecutionTargetKind(
     agentKey: string,
-  ): 'growth_operational_case' | 'invoice' | null {
+  ): 'growth_operational_case' | 'invoice' | 'ecommerce_launch_plan' | null {
     return this.getGuardedExecutionCandidate(agentKey)?.targetKind ?? null;
   }
 
   private getGuardedExecutionOperatingLane(
     agentKey: string,
   ): 'operational_case_assignment_lane' | 'single_record_execution_lane' | 'suggestion_only_lane' {
-    switch (this.getGuardedExecutionTargetKind(agentKey)) {
-      case 'growth_operational_case':
-        return 'operational_case_assignment_lane';
-      case 'invoice':
-        return 'single_record_execution_lane';
-      default:
-        return 'suggestion_only_lane';
-    }
+    return (
+      this.getGuardedExecutionCandidate(agentKey)?.operatingLane ??
+      'suggestion_only_lane'
+    );
   }
 
   private getGuardedExecutionBlastRadius(
     agentKey: string,
   ): 'single_record' | 'single_queue_lane' | 'no_execution_scope' {
-    switch (this.getGuardedExecutionTargetKind(agentKey)) {
-      case 'growth_operational_case':
-        return 'single_queue_lane';
-      case 'invoice':
-        return 'single_record';
-      default:
-        return 'no_execution_scope';
-    }
+    return (
+      this.getGuardedExecutionCandidate(agentKey)?.blastRadius ??
+      'no_execution_scope'
+    );
   }
 
   private getGuardedExecutionSafeFallbackMode(
     agentKey: string,
   ): 'suggestion_only' | 'suggestion_only_with_manual_assignment' {
-    return this.getGuardedExecutionTargetKind(agentKey) ===
-      'growth_operational_case'
-      ? 'suggestion_only_with_manual_assignment'
-      : 'suggestion_only';
+    return (
+      this.getGuardedExecutionCandidate(agentKey)?.safeFallbackMode ??
+      'suggestion_only'
+    );
+  }
+
+  private getGuardedExecutionPreferredPilotTypeWhenReady(
+    agentKey: string,
+  ): 'human_gate_then_execute' | 'shadow_review' {
+    return (
+      this.getGuardedExecutionCandidate(agentKey)?.preferredPilotTypeWhenReady ??
+      'shadow_review'
+    );
   }
 
   private getOperatingModelAgentEntry(agentKey: string) {

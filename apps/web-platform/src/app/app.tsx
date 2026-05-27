@@ -149,6 +149,7 @@ import {
   AiHealthWorkspaceResponse,
   AiMemoryRecordDetailResponse,
   AiMemoryRecordResponse,
+  AiOperatingModelAgentResponse,
   AiOperatingModelResponse,
   AiRetrievalWorkspaceResponse,
   AiMemoryWorkspaceResponse,
@@ -3739,6 +3740,50 @@ export function App() {
     fallbackAiAgentTitle(agentKey);
   const resolveAiGuardedExecutionCandidate = (agentKey: string) =>
     aiOperatingModelAgentByKey.get(agentKey)?.guardedExecutionCandidate ?? null;
+  const resolveAiAgentHandoffContract = (
+    agentKey: string,
+  ): AiOperatingModelAgentResponse['handoffContract'] => {
+    const contract = aiOperatingModelAgentByKey.get(agentKey)?.handoffContract;
+
+    if (contract) {
+      return contract;
+    }
+
+    if (agentKey === 'growth-assist-coach') {
+      return {
+        requestApprovalRationale:
+          'Solicitar revision humana antes de tratar el handoff como aprobado.',
+        reviewNotes: {
+          approved: 'Aprobado desde la consola transversal de AI.',
+          rejected: 'Rechazado desde la consola transversal de AI.',
+        },
+      };
+    }
+
+    if (agentKey === 'invoice-document-assistant') {
+      return {
+        requestApprovalRationale:
+          'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
+        reviewNotes: {
+          approved:
+            'Aprobado desde la consola transversal de AI para Invoice Document Assistant.',
+          rejected:
+            'Rechazado desde la consola transversal de AI para Invoice Document Assistant.',
+        },
+      };
+    }
+
+    const agentTitle = resolveAiAgentTitle(agentKey);
+
+    return {
+      requestApprovalRationale:
+        `Solicitar revision humana antes de usar la sugerencia de ${agentTitle}.`,
+      reviewNotes: {
+        approved: `Aprobado desde la consola transversal de AI para ${agentTitle}.`,
+        rejected: `Rechazado desde la consola transversal de AI para ${agentTitle}.`,
+      },
+    };
+  };
   const resolveAiAgentDomainKey = (
     agentKey: string,
   ): AiAgentCatalogResponse['domainKey'] | null =>
@@ -4205,52 +4250,25 @@ export function App() {
     }
   };
   const getAiAgentSuggestionApprovalRationale = (agentKey: string): string => {
-    switch (agentKey) {
-      case 'growth-assist-coach':
-        return 'Solicitar revision humana antes de tratar el handoff como aprobado.';
-      case 'invoice-document-assistant':
-        return 'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.';
-      case 'ecommerce-launch-assistant':
-        return `Solicitar revision humana antes de usar la sugerencia de ${resolveAiAgentTitle(
-          agentKey,
-        )}.`;
-      default:
-        return `Solicitar revision humana antes de usar la sugerencia de ${resolveAiAgentTitle(
-          agentKey,
-        )}.`;
-    }
+    return resolveAiAgentHandoffContract(agentKey).requestApprovalRationale;
   };
   const getAiAgentSuggestionReviewNote = (
     agentKey: string,
     status: 'approved' | 'rejected',
   ): string => {
-    if (agentKey === 'growth-assist-coach') {
-      return status === 'approved'
-        ? 'Aprobado desde la consola transversal de AI.'
-        : 'Rechazado desde la consola transversal de AI.';
-    }
-
-    return status === 'approved'
-      ? `Aprobado desde la consola transversal de AI para ${resolveAiAgentTitle(
-          agentKey,
-        )}.`
-      : `Rechazado desde la consola transversal de AI para ${resolveAiAgentTitle(
-          agentKey,
-        )}.`;
+    return resolveAiAgentHandoffContract(agentKey).reviewNotes[status];
   };
   const getAiAgentSuggestionReviewSuccessMessage = (
     agentKey: string,
     status: 'approved' | 'rejected',
   ): string => {
-    if (agentKey === 'invoice-document-assistant') {
-      return status === 'approved'
-        ? 'Solicitud de aprobación de invoicing marcada como aprobada.'
-        : 'Solicitud de aprobación de invoicing marcada como rechazada.';
-    }
-
     return status === 'approved'
-      ? 'Solicitud de aprobación marcada como aprobada.'
-      : 'Solicitud de aprobación marcada como rechazada.';
+      ? `Solicitud de aprobación de ${resolveAiAgentTitle(
+          agentKey,
+        )} marcada como aprobada.`
+      : `Solicitud de aprobación de ${resolveAiAgentTitle(
+          agentKey,
+        )} marcada como rechazada.`;
   };
   const aiAgentEnvelopeByKey = useMemo(
     () =>
@@ -10065,10 +10083,7 @@ export function App() {
         requestId,
         {
           status,
-          reviewNote:
-            status === 'approved'
-              ? `Aprobado desde la consola transversal de AI para ${resolveAiAgentTitle(agentKey)}.`
-              : `Rechazado desde la consola transversal de AI para ${resolveAiAgentTitle(agentKey)}.`,
+          reviewNote: getAiAgentSuggestionReviewNote(agentKey, status),
         },
       );
 
@@ -10259,9 +10274,7 @@ export function App() {
         agentKey,
         suggestionRunId,
         {
-          rationale: `Solicitar revision humana antes de usar la sugerencia de ${resolveAiAgentTitle(
-            agentKey,
-          )}.`,
+          rationale: getAiAgentSuggestionApprovalRationale(agentKey),
         },
       );
 
@@ -13111,6 +13124,25 @@ export function App() {
                                           candidate lane{' '}
                                           {entry.guardedExecutionCandidate?.title ?? 'none'}
                                         </span>
+                                        {entry.guardedExecutionCandidate ? (
+                                          <>
+                                            <span className={styles.badge}>
+                                              operating lane{' '}
+                                              {entry.guardedExecutionCandidate.operatingLane}
+                                            </span>
+                                            <span className={styles.badge}>
+                                              blast radius{' '}
+                                              {entry.guardedExecutionCandidate.blastRadius}
+                                            </span>
+                                            <span className={styles.badge}>
+                                              fallback{' '}
+                                              {
+                                                entry.guardedExecutionCandidate
+                                                  .safeFallbackMode
+                                              }
+                                            </span>
+                                          </>
+                                        ) : null}
                                       </div>
                                       <small>
                                         Tool posture: {allowedCount} allowed,{' '}

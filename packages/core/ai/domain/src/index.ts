@@ -20,7 +20,21 @@ export type AiSuggestionRunApprovalStatus =
 export type AiGuardedExecutionEventType = 'executed' | 'rolled_back';
 export type AiGuardedExecutionTargetKind =
   | 'growth_operational_case'
-  | 'invoice';
+  | 'invoice'
+  | 'ecommerce_launch_plan';
+export type AiGuardedExecutionOperatingLane =
+  | 'operational_case_assignment_lane'
+  | 'single_record_execution_lane';
+export type AiGuardedExecutionBlastRadius =
+  | 'single_record'
+  | 'single_queue_lane';
+export type AiGuardedExecutionSafeFallbackMode =
+  | 'suggestion_only'
+  | 'suggestion_only_with_manual_assignment';
+export type AiGuardedExecutionPilotType =
+  | 'human_gate_then_execute'
+  | 'shadow_review'
+  | 'not_available';
 export type AiMemoryRecordScope = 'tenant' | 'domain' | 'agent';
 export type AiMemoryRecordStatus = 'active' | 'inactive';
 export type AiMemoryRecordSourceKind =
@@ -141,10 +155,25 @@ export interface AiOperatingModelAgentToolAccessEntry {
   rationale: string;
 }
 
+export interface AiOperatingModelAgentHandoffContract {
+  requestApprovalRationale: string;
+  reviewNotes: {
+    approved: string;
+    rejected: string;
+  };
+}
+
 export interface AiGuardedExecutionCandidateDescriptor {
   toolKey: string;
   title: string;
   targetKind: AiGuardedExecutionTargetKind;
+  operatingLane: AiGuardedExecutionOperatingLane;
+  blastRadius: AiGuardedExecutionBlastRadius;
+  safeFallbackMode: AiGuardedExecutionSafeFallbackMode;
+  preferredPilotTypeWhenReady: Exclude<
+    AiGuardedExecutionPilotType,
+    'not_available'
+  >;
   targetSelectionLabel: string;
   emptyTargetSelectionLabel: string;
   executeActionLabel: string;
@@ -159,6 +188,7 @@ export interface AiOperatingModelAgentEntry {
   approvalPolicies: AiOperatingModelAgentApprovalPolicyReference[];
   approvalPolicyKeys: string[];
   toolAccess: AiOperatingModelAgentToolAccessEntry[];
+  handoffContract: AiOperatingModelAgentHandoffContract;
   guardedExecutionCandidateToolKey: string | null;
   guardedExecutionCandidate: AiGuardedExecutionCandidateDescriptor | null;
 }

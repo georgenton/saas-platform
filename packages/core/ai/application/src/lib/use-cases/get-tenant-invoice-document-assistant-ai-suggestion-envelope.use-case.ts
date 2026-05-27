@@ -6,16 +6,14 @@ import {
   GetTenantInvoiceDocumentDraftingAssistUseCase,
   TenantInvoiceDocumentDraftingAssistView,
 } from '@saas-platform/invoicing-application';
-import { AiAgentNotFoundError } from '../errors/ai-agent-not-found.error';
+import { buildTenantAiSuggestionEnvelope } from '../support/ai-suggestion-envelope-factory';
 import {
-  findAiAgentByKey,
-  findAiPromptRegistryEntryByAgentKey,
-  listAiAgentToolAccessByAgentKey,
-} from '../support/ai-agent-catalog';
+  buildAiRetrievedMemoryContextBlocks,
+  finalizeAiSuggestionContextBlocks,
+} from '../support/ai-suggestion-context-blocks';
 import { GetTenantAiMemoryRetrievalUseCase } from './get-tenant-ai-memory-retrieval.use-case';
 
 const INVOICE_DOCUMENT_ASSISTANT_AGENT_KEY = 'invoice-document-assistant';
-const INVOICE_DOCUMENT_ASSISTANT_SURFACE_KEY = 'invoice_document_drafting';
 
 export class GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase {
   constructor(
@@ -27,18 +25,6 @@ export class GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase {
     tenantSlug: string,
     agentKey = INVOICE_DOCUMENT_ASSISTANT_AGENT_KEY,
   ): Promise<TenantAiSuggestionEnvelope> {
-    const agent = findAiAgentByKey(agentKey);
-
-    if (!agent || agent.key !== INVOICE_DOCUMENT_ASSISTANT_AGENT_KEY) {
-      throw new AiAgentNotFoundError(agentKey);
-    }
-
-    const promptPack = findAiPromptRegistryEntryByAgentKey(agentKey);
-
-    if (!promptPack) {
-      throw new AiAgentNotFoundError(agentKey);
-    }
-
     const assist =
       await this.getTenantInvoiceDocumentDraftingAssistUseCase.execute(
         tenantSlug,
@@ -48,34 +34,16 @@ export class GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase {
       agentKey,
     );
 
-    return {
+    return buildTenantAiSuggestionEnvelope({
       tenantSlug,
+      agentKey,
+      expectedAgentKey: INVOICE_DOCUMENT_ASSISTANT_AGENT_KEY,
       generatedAt: assist.generatedAt,
+      sourceGeneratedAt: assist.generatedAt,
       mode: 'suggestion',
-      agent: {
-        ...agent,
-        supportedSurfaceKeys: [...agent.supportedSurfaceKeys],
-      },
-      surface: {
-        key: INVOICE_DOCUMENT_ASSISTANT_SURFACE_KEY,
-        title: 'Invoice document drafting',
-        sourceContractKey: 'invoicing.assist.document_drafting',
-        sourceGeneratedAt: assist.generatedAt,
-      },
-      promptPack: {
-        ...promptPack,
-        styleGuidance: [...promptPack.styleGuidance],
-        constraints: [...promptPack.constraints],
-        suggestedOutputs: promptPack.suggestedOutputs.map((entry) => ({ ...entry })),
-      },
-      toolAccess: listAiAgentToolAccessByAgentKey(agentKey).map((entry) => ({
-        tool: { ...entry.tool },
-        accessLevel: entry.accessLevel,
-        rationale: entry.rationale,
-      })),
       contextBlocks: this.buildContextBlocks(assist, retrieval.records),
       ...(retrieval.recordCount > 0 ? { retrieval } : {}),
-    };
+    });
   }
 
   private buildContextBlocks(
@@ -84,7 +52,7 @@ export class GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase {
       ReturnType<GetTenantAiMemoryRetrievalUseCase['execute']>
     >['records'],
   ): AiSuggestionContextBlock[] {
-    return [
+    return finalizeAiSuggestionContextBlocks([
       {
         key: 'drafting_summary',
         title: 'Drafting summary',
@@ -133,24 +101,7 @@ export class GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase {
           'These actions stay blocked even if the assistant can already help with drafting or review guidance.',
         bullets: assist.blockedActions,
       },
-      ...retrievedMemoryRecords.map((entry) => ({
-        key: `memory_${entry.id}`,
-        title: `Memory: ${entry.title}`,
-        detail: entry.summary,
-        bullets: [
-          entry.detail,
-          `Scope: ${entry.scope}`,
-          `Source: ${entry.sourceKind}`,
-          `Freshness: ${entry.freshness}`,
-          `Why included: ${entry.inclusionReason}`,
-        ],
-      })),
-    ].map((block) => ({
-      ...block,
-      bullets:
-        block.bullets.length > 0
-          ? block.bullets
-          : ['No deterministic signals were available for this block yet.'],
-    }));
+      ...buildAiRetrievedMemoryContextBlocks(retrievedMemoryRecords),
+    ]);
   }
 }

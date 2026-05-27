@@ -2,12 +2,11 @@ import {
   AiSuggestionContextBlock,
   TenantAiSuggestionEnvelope,
 } from '@saas-platform/ai-domain';
-import { AiAgentNotFoundError } from '../errors/ai-agent-not-found.error';
+import { buildTenantAiSuggestionEnvelope } from '../support/ai-suggestion-envelope-factory';
 import {
-  findAiAgentByKey,
-  findAiPromptRegistryEntryByAgentKey,
-  listAiAgentToolAccessByAgentKey,
-} from '../support/ai-agent-catalog';
+  buildAiRetrievedMemoryContextBlocks,
+  finalizeAiSuggestionContextBlocks,
+} from '../support/ai-suggestion-context-blocks';
 import { GetTenantAiMemoryRetrievalUseCase } from './get-tenant-ai-memory-retrieval.use-case';
 import {
   GetTenantEcommerceLaunchWorkspaceUseCase,
@@ -15,7 +14,6 @@ import {
 } from './get-tenant-ecommerce-launch-workspace.use-case';
 
 const ECOMMERCE_LAUNCH_ASSISTANT_AGENT_KEY = 'ecommerce-launch-assistant';
-const ECOMMERCE_LAUNCH_SURFACE_KEY = 'ecommerce_launch_workspace';
 
 export class GetTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase {
   constructor(
@@ -27,18 +25,6 @@ export class GetTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase {
     tenantSlug: string,
     agentKey = ECOMMERCE_LAUNCH_ASSISTANT_AGENT_KEY,
   ): Promise<TenantAiSuggestionEnvelope> {
-    const agent = findAiAgentByKey(agentKey);
-
-    if (!agent || agent.key !== ECOMMERCE_LAUNCH_ASSISTANT_AGENT_KEY) {
-      throw new AiAgentNotFoundError(agentKey);
-    }
-
-    const promptPack = findAiPromptRegistryEntryByAgentKey(agentKey);
-
-    if (!promptPack) {
-      throw new AiAgentNotFoundError(agentKey);
-    }
-
     const workspace =
       await this.getTenantEcommerceLaunchWorkspaceUseCase.execute(tenantSlug);
     const retrieval = await this.getTenantAiMemoryRetrievalUseCase.execute(
@@ -46,34 +32,16 @@ export class GetTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase {
       agentKey,
     );
 
-    return {
+    return buildTenantAiSuggestionEnvelope({
       tenantSlug,
+      agentKey,
+      expectedAgentKey: ECOMMERCE_LAUNCH_ASSISTANT_AGENT_KEY,
       generatedAt: workspace.generatedAt,
+      sourceGeneratedAt: workspace.generatedAt,
       mode: 'suggestion',
-      agent: {
-        ...agent,
-        supportedSurfaceKeys: [...agent.supportedSurfaceKeys],
-      },
-      surface: {
-        key: ECOMMERCE_LAUNCH_SURFACE_KEY,
-        title: 'Ecommerce launch workspace',
-        sourceContractKey: 'ecommerce.launch.workspace',
-        sourceGeneratedAt: workspace.generatedAt,
-      },
-      promptPack: {
-        ...promptPack,
-        styleGuidance: [...promptPack.styleGuidance],
-        constraints: [...promptPack.constraints],
-        suggestedOutputs: promptPack.suggestedOutputs.map((entry) => ({ ...entry })),
-      },
-      toolAccess: listAiAgentToolAccessByAgentKey(agentKey).map((entry) => ({
-        tool: { ...entry.tool },
-        accessLevel: entry.accessLevel,
-        rationale: entry.rationale,
-      })),
       contextBlocks: this.buildContextBlocks(workspace, retrieval.records),
       ...(retrieval.recordCount > 0 ? { retrieval } : {}),
-    };
+    });
   }
 
   private buildContextBlocks(
@@ -82,7 +50,7 @@ export class GetTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase {
       ReturnType<GetTenantAiMemoryRetrievalUseCase['execute']>
     >['records'],
   ): AiSuggestionContextBlock[] {
-    return [
+    return finalizeAiSuggestionContextBlocks([
       {
         key: 'launch_summary',
         title: 'Launch summary',
@@ -134,24 +102,7 @@ export class GetTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase {
           'These actions stay blocked even if the assistant can already help with launch structure and messaging.',
         bullets: workspace.blockedActions,
       },
-      ...retrievedMemoryRecords.map((entry) => ({
-        key: `memory_${entry.id}`,
-        title: `Memory: ${entry.title}`,
-        detail: entry.summary,
-        bullets: [
-          entry.detail,
-          `Scope: ${entry.scope}`,
-          `Source: ${entry.sourceKind}`,
-          `Freshness: ${entry.freshness}`,
-          `Why included: ${entry.inclusionReason}`,
-        ],
-      })),
-    ].map((block) => ({
-      ...block,
-      bullets:
-        block.bullets.length > 0
-          ? block.bullets
-          : ['No deterministic signals were available for this block yet.'],
-    }));
+      ...buildAiRetrievedMemoryContextBlocks(retrievedMemoryRecords),
+    ]);
   }
 }

@@ -39,3 +39,4 @@ export * from './lib/use-cases/prepare-tenant-ai-suggestion-run.use-case';
 export * from './lib/use-cases/request-tenant-ai-suggestion-run-approval.use-case';
 export * from './lib/use-cases/review-tenant-ai-approval-request.use-case';
 export * from './lib/use-cases/update-tenant-ai-memory-record.use-case';
+export * from './lib/support/ai-suggestion-envelope-handler-registry';

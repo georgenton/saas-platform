@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.58.0
+
+### Minor Changes
+
+- 412534a: Expose ecommerce launch plans in the AI workspace and extend guarded execution readiness with explicit `launchPlanId` support for shadow-review-only ecommerce lanes.
+
 ## 0.57.0
 
 ### Minor Changes

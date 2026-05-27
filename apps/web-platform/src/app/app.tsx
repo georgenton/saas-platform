@@ -9,6 +9,35 @@ import {
 } from 'react';
 import styles from './app.module.css';
 import {
+  AI_AGENT_WEB_REGISTRY,
+  AiAgentDedicatedActionKeyPrefixes,
+  buildFallbackAiAgentHandoffContract,
+  fallbackAiAgentTitle,
+  guardedExecutionAuditStatusLabel,
+  guardedExecutionAuditStatusTone,
+  guardedExecutionControlStatusLabel,
+  guardedExecutionControlStatusTone,
+  guardedExecutionEventLogLabel,
+  guardedExecutionEventLogTone,
+  guardedExecutionLaunchStatusLabel,
+  guardedExecutionLaunchStatusTone,
+  guardedExecutionMonitorStatusLabel,
+  guardedExecutionMonitorStatusTone,
+  guardedExecutionPilotStatusLabel,
+  guardedExecutionPilotStatusTone,
+  guardedExecutionRollbackStatusLabel,
+  guardedExecutionRollbackStatusTone,
+  guardedExecutionRunbookStatusLabel,
+  guardedExecutionRunbookStatusTone,
+  guardedExecutionStatusLabel,
+  guardedExecutionStatusTone,
+  humanizeAiActivityFeedEventType,
+  isSupportedAiAgentKey,
+  shortAiAgentLabel,
+  SupportedAiAgentKey,
+  SUPPORTED_AI_AGENT_KEYS,
+} from './ai-console-support';
+import {
   fetchAiAgentApprovalPolicies,
   fetchAiAgentCatalog,
   fetchAiAgentToolAccess,
@@ -561,58 +590,6 @@ function humanizeKey(value: string | null): string {
   return value.split('_').join(' ');
 }
 
-function fallbackAiAgentTitle(agentKey: string): string {
-  return isSupportedAiAgentKey(agentKey)
-    ? AI_AGENT_WEB_REGISTRY[agentKey].fallbackTitle
-    : humanizeKey(agentKey);
-}
-
-type AiAgentDedicatedActionKeyPrefixes = {
-  prepare: string;
-  requestApproval?: string;
-  reviewApproval?: string;
-  loadDetail?: string;
-};
-
-const AI_AGENT_WEB_REGISTRY = {
-  'growth-assist-coach': {
-    fallbackTitle: 'Growth Assist Coach',
-    dedicatedActionKeyPrefixes: {
-      prepare: 'prepare-ai-suggestion-run',
-      requestApproval: 'request-ai-approval',
-      reviewApproval: 'review-ai-approval',
-      loadDetail: 'load-ai-run-detail',
-    },
-  },
-  'invoice-document-assistant': {
-    fallbackTitle: 'Invoice Document Assistant',
-    dedicatedActionKeyPrefixes: {
-      prepare: 'prepare-invoice-ai-suggestion-run',
-      requestApproval: 'request-invoice-ai-approval',
-      reviewApproval: 'review-invoice-ai-approval',
-      loadDetail: 'load-invoice-ai-run-detail',
-    },
-  },
-  'ecommerce-launch-assistant': {
-    fallbackTitle: 'Ecommerce Launch Assistant',
-    dedicatedActionKeyPrefixes: {
-      prepare: 'prepare-ecommerce-ai-suggestion-run',
-    },
-  },
-} as const satisfies Record<
-  string,
-  {
-    fallbackTitle: string;
-    dedicatedActionKeyPrefixes: AiAgentDedicatedActionKeyPrefixes;
-  }
->;
-
-type SupportedAiAgentKey = keyof typeof AI_AGENT_WEB_REGISTRY;
-
-const SUPPORTED_AI_AGENT_KEYS = Object.keys(
-  AI_AGENT_WEB_REGISTRY,
-) as SupportedAiAgentKey[];
-
 type AiAgentWorkspaceSupportBundle = {
   approvalPolicies: AiApprovalPolicyResponse[];
   approvalRequests: AiApprovalRequestResponse[];
@@ -657,78 +634,6 @@ type AiDedicatedSuggestionRunActionHandlers = {
   ) => Promise<void>;
   openDetail?: (suggestionRunId: string) => Promise<void>;
 };
-
-function isSupportedAiAgentKey(agentKey: string): agentKey is SupportedAiAgentKey {
-  return (
-    SUPPORTED_AI_AGENT_KEYS as readonly string[]
-  ).includes(agentKey);
-}
-
-function shortAiAgentLabel(input: {
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
-  title: string;
-}): string {
-  switch (input.domainKey) {
-    case 'growth':
-      return 'Growth';
-    case 'invoicing':
-      return 'Invoice';
-    case 'ecommerce':
-      return 'Ecommerce';
-    default:
-      return input.title;
-  }
-}
-
-function buildFallbackAiAgentHandoffContract(input: {
-  agentTitle: string;
-  domainKey: AiAgentCatalogResponse['domainKey'] | null;
-}): AiOperatingModelAgentResponse['handoffContract'] {
-  switch (input.domainKey) {
-    case 'growth':
-      return {
-        requestApprovalRationale:
-          'Solicitar revision humana antes de tratar el handoff como aprobado.',
-        reviewNotes: {
-          approved: 'Aprobado desde la consola transversal de AI.',
-          rejected: 'Rechazado desde la consola transversal de AI.',
-        },
-      };
-    case 'invoicing':
-      return {
-        requestApprovalRationale:
-          'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
-        reviewNotes: {
-          approved: `Aprobado desde la consola transversal de AI para ${input.agentTitle}.`,
-          rejected: `Rechazado desde la consola transversal de AI para ${input.agentTitle}.`,
-        },
-      };
-    default:
-      return {
-        requestApprovalRationale:
-          `Solicitar revision humana antes de usar la sugerencia de ${input.agentTitle}.`,
-        reviewNotes: {
-          approved: `Aprobado desde la consola transversal de AI para ${input.agentTitle}.`,
-          rejected: `Rechazado desde la consola transversal de AI para ${input.agentTitle}.`,
-        },
-      };
-  }
-}
-
-function humanizeAiActivityFeedEventType(
-  eventType: AiActivityFeedEventType,
-): string {
-  switch (eventType) {
-    case 'suggestion_run_prepared':
-      return 'Handoff preparado';
-    case 'approval_requested':
-      return 'Approval requested';
-    case 'approval_reviewed':
-      return 'Approval reviewed';
-    default:
-      return humanizeKey(eventType);
-  }
-}
 
 function matchesAiApprovalRequestStatusFilter(
   approvalRequest: AiApprovalRequestResponse,
@@ -1176,286 +1081,6 @@ function approvalLaunchStatusLabel(
   }
 }
 
-function guardedExecutionStatusTone(
-  status: 'pilot_candidate' | 'needs_launch_readiness' | 'suggestion_only',
-): string {
-  switch (status) {
-    case 'pilot_candidate':
-      return styles.healthy;
-    case 'needs_launch_readiness':
-      return styles.warning;
-    case 'suggestion_only':
-      return styles.muted;
-    default:
-      return '';
-  }
-}
-
-function guardedExecutionStatusLabel(
-  status: 'pilot_candidate' | 'needs_launch_readiness' | 'suggestion_only',
-): string {
-  switch (status) {
-    case 'pilot_candidate':
-      return 'Pilot candidate';
-    case 'needs_launch_readiness':
-      return 'Needs launch readiness';
-    case 'suggestion_only':
-      return 'Suggestion only';
-    default:
-      return status;
-  }
-}
-
-function guardedExecutionPilotStatusTone(
-  status: 'ready_for_pilot' | 'needs_operational_backing' | 'no_candidate',
-): string {
-  switch (status) {
-    case 'ready_for_pilot':
-      return styles.healthy;
-    case 'needs_operational_backing':
-      return styles.warning;
-    case 'no_candidate':
-      return styles.muted;
-    default:
-      return '';
-  }
-}
-
-function guardedExecutionPilotStatusLabel(
-  status: 'ready_for_pilot' | 'needs_operational_backing' | 'no_candidate',
-): string {
-  switch (status) {
-    case 'ready_for_pilot':
-      return 'Ready for pilot';
-    case 'needs_operational_backing':
-      return 'Needs operational backing';
-    case 'no_candidate':
-      return 'No candidate';
-    default:
-      return status;
-  }
-}
-
-function guardedExecutionRunbookStatusTone(
-  status: 'ready_to_document' | 'needs_design' | 'not_available',
-): string {
-  switch (status) {
-    case 'ready_to_document':
-      return styles.healthy;
-    case 'needs_design':
-      return styles.warning;
-    case 'not_available':
-      return styles.muted;
-    default:
-      return '';
-  }
-}
-
-function guardedExecutionRunbookStatusLabel(
-  status: 'ready_to_document' | 'needs_design' | 'not_available',
-): string {
-  switch (status) {
-    case 'ready_to_document':
-      return 'Ready to document';
-    case 'needs_design':
-      return 'Needs design';
-    case 'not_available':
-      return 'Not available';
-    default:
-      return status;
-  }
-}
-
-function guardedExecutionRollbackStatusTone(
-  status: 'ready_with_rollback' | 'needs_rollback_design' | 'not_applicable',
-): string {
-  switch (status) {
-    case 'ready_with_rollback':
-      return styles.healthy;
-    case 'needs_rollback_design':
-      return styles.warning;
-    case 'not_applicable':
-      return styles.muted;
-    default:
-      return '';
-  }
-}
-
-function guardedExecutionRollbackStatusLabel(
-  status: 'ready_with_rollback' | 'needs_rollback_design' | 'not_applicable',
-): string {
-  switch (status) {
-    case 'ready_with_rollback':
-      return 'Ready with rollback';
-    case 'needs_rollback_design':
-      return 'Needs rollback design';
-    case 'not_applicable':
-      return 'Not applicable';
-    default:
-      return status;
-  }
-}
-
-function guardedExecutionAuditStatusTone(
-  status: 'ready_for_audit' | 'needs_evidence_design' | 'not_applicable',
-): string {
-  switch (status) {
-    case 'ready_for_audit':
-      return styles.healthy;
-    case 'needs_evidence_design':
-      return styles.warning;
-    case 'not_applicable':
-      return styles.muted;
-    default:
-      return '';
-  }
-}
-
-function guardedExecutionAuditStatusLabel(
-  status: 'ready_for_audit' | 'needs_evidence_design' | 'not_applicable',
-): string {
-  switch (status) {
-    case 'ready_for_audit':
-      return 'Ready for audit';
-    case 'needs_evidence_design':
-      return 'Needs evidence design';
-    case 'not_applicable':
-      return 'Not applicable';
-    default:
-      return status;
-  }
-}
-
-function guardedExecutionLaunchStatusTone(
-  status: 'ready_to_launch' | 'pilot_only' | 'hold',
-): string {
-  switch (status) {
-    case 'ready_to_launch':
-      return styles.healthy;
-    case 'pilot_only':
-      return styles.warning;
-    case 'hold':
-      return styles.muted;
-    default:
-      return '';
-  }
-}
-
-function guardedExecutionLaunchStatusLabel(
-  status: 'ready_to_launch' | 'pilot_only' | 'hold',
-): string {
-  switch (status) {
-    case 'ready_to_launch':
-      return 'Ready to launch';
-    case 'pilot_only':
-      return 'Pilot only';
-    case 'hold':
-      return 'Hold';
-    default:
-      return status;
-  }
-}
-
-function guardedExecutionMonitorStatusTone(
-  status: 'ready_to_monitor' | 'monitor_after_launch' | 'not_applicable',
-): string {
-  switch (status) {
-    case 'ready_to_monitor':
-      return styles.healthy;
-    case 'monitor_after_launch':
-      return styles.warning;
-    case 'not_applicable':
-      return styles.muted;
-    default:
-      return '';
-  }
-}
-
-function guardedExecutionMonitorStatusLabel(
-  status: 'ready_to_monitor' | 'monitor_after_launch' | 'not_applicable',
-): string {
-  switch (status) {
-    case 'ready_to_monitor':
-      return 'Ready to monitor';
-    case 'monitor_after_launch':
-      return 'Monitor after launch';
-    case 'not_applicable':
-      return 'Not applicable';
-    default:
-      return status;
-  }
-}
-
-function guardedExecutionControlStatusTone(
-  status: 'open_lane' | 'pilot_then_open' | 'hold',
-): string {
-  switch (status) {
-    case 'open_lane':
-      return styles.healthy;
-    case 'pilot_then_open':
-      return styles.warning;
-    case 'hold':
-      return styles.muted;
-    default:
-      return '';
-  }
-}
-
-function guardedExecutionControlStatusLabel(
-  status: 'open_lane' | 'pilot_then_open' | 'hold',
-): string {
-  switch (status) {
-    case 'open_lane':
-      return 'Open lane';
-    case 'pilot_then_open':
-      return 'Pilot then open';
-    case 'hold':
-      return 'Hold';
-    default:
-      return status;
-  }
-}
-
-function guardedExecutionEventLogTone(
-  eventType: AiGuardedExecutionEventLogEntryType,
-): string {
-  switch (eventType) {
-    case 'guarded_execution_executed':
-    case 'approval_reviewed':
-    case 'guarded_execution_lane_ready':
-      return styles.healthy;
-    case 'guarded_execution_rolled_back':
-    case 'approval_requested':
-    case 'guarded_execution_pilot_only':
-      return styles.warning;
-    case 'suggestion_run_prepared':
-    default:
-      return styles.muted;
-  }
-}
-
-function guardedExecutionEventLogLabel(
-  eventType: AiGuardedExecutionEventLogEntryType,
-): string {
-  switch (eventType) {
-    case 'suggestion_run_prepared':
-      return 'Suggestion prepared';
-    case 'approval_requested':
-      return 'Approval requested';
-    case 'approval_reviewed':
-      return 'Approval reviewed';
-    case 'guarded_execution_executed':
-      return 'Executed';
-    case 'guarded_execution_rolled_back':
-      return 'Rolled back';
-    case 'guarded_execution_pilot_only':
-      return 'Pilot only';
-    case 'guarded_execution_lane_ready':
-      return 'Lane ready';
-    default:
-      return eventType;
-  }
-}
 
 function workbenchPriorityWeight(priority: string): number {
   switch (priority) {
@@ -1973,6 +1598,16 @@ export function App() {
     useState(false);
   const [ecommerceLaunchAssistantAiEnvelope, setEcommerceLaunchAssistantAiEnvelope] =
     useState<AiSuggestionEnvelopeResponse | null>(null);
+  const [ecommerceLaunchAssistantAiToolAccess, setEcommerceLaunchAssistantAiToolAccess] =
+    useState<AiAgentToolAccessResponse[]>([]);
+  const [ecommerceLaunchAssistantAiApprovalPolicies, setEcommerceLaunchAssistantAiApprovalPolicies] =
+    useState<AiApprovalPolicyResponse[]>([]);
+  const [ecommerceLaunchAssistantAiApprovalRequests, setEcommerceLaunchAssistantAiApprovalRequests] =
+    useState<AiApprovalRequestResponse[]>([]);
+  const [ecommerceLaunchAssistantAiSuggestionRuns, setEcommerceLaunchAssistantAiSuggestionRuns] =
+    useState<AiSuggestionRunResponse[]>([]);
+  const [selectedEcommerceAiSuggestionRunDetail, setSelectedEcommerceAiSuggestionRunDetail] =
+    useState<AiSuggestionRunDetailResponse | null>(null);
   const [ecommerceLaunchError, setEcommerceLaunchError] = useState<string | null>(
     null,
   );
@@ -4019,7 +3654,7 @@ export function App() {
     }),
     'invoice-document-assistant': createStandardAiAgentWorkspaceSupportStateHandler(
       {
-      approvalStatusFilter: invoiceAiApprovalStatusFilter,
+        approvalStatusFilter: invoiceAiApprovalStatusFilter,
         setApprovalPolicies: setInvoiceAssistantAiApprovalPolicies,
         setApprovalRequests: setInvoiceAssistantAiApprovalRequests,
         setToolAccess: setInvoiceAssistantAiToolAccess,
@@ -4028,17 +3663,17 @@ export function App() {
         setSuggestionRunDetail: setSelectedInvoiceAiSuggestionRunDetail,
       },
     ),
-    'ecommerce-launch-assistant': {
-      approvalStatusFilter: 'all',
-      applyBundle: (bundle) => {
-        setEcommerceLaunchAssistantAiEnvelope(bundle.suggestionEnvelope);
+    'ecommerce-launch-assistant': createStandardAiAgentWorkspaceSupportStateHandler(
+      {
+        approvalStatusFilter: 'all',
+        setApprovalPolicies: setEcommerceLaunchAssistantAiApprovalPolicies,
+        setApprovalRequests: setEcommerceLaunchAssistantAiApprovalRequests,
+        setToolAccess: setEcommerceLaunchAssistantAiToolAccess,
+        setSuggestionEnvelope: setEcommerceLaunchAssistantAiEnvelope,
+        setSuggestionRuns: setEcommerceLaunchAssistantAiSuggestionRuns,
+        setSuggestionRunDetail: setSelectedEcommerceAiSuggestionRunDetail,
       },
-      clearBundle: () => {
-        setEcommerceLaunchAssistantAiEnvelope(null);
-      },
-      applyApprovalQueue: () => {},
-      setSuggestionRunDetail: () => {},
-    },
+    ),
   };
   const resolveAiAgentWorkspaceSupportStateHandler = (agentKey: string) =>
     isSupportedAiAgentKey(agentKey)
@@ -4275,26 +3910,15 @@ export function App() {
     );
   };
   const fetchTenantAiEcommerceLaunchSurface = async (tenantSlug: string) => {
-    const [workspace, envelope] = await Promise.all([
-      fetchTenantAiEcommerceLaunchWorkspace(token!, tenantSlug),
-      fetchTenantAiSuggestionEnvelope(
-        token!,
-        tenantSlug,
-        'ecommerce-launch-assistant',
-      ),
-    ]);
-
-    return { workspace, envelope };
+    return fetchTenantAiEcommerceLaunchWorkspace(token!, tenantSlug);
   };
   const applyTenantAiEcommerceLaunchSurface = (
     surface: Awaited<ReturnType<typeof fetchTenantAiEcommerceLaunchSurface>>,
   ): void => {
-    setTenantAiEcommerceLaunchWorkspace(surface.workspace);
-    setEcommerceLaunchAssistantAiEnvelope(surface.envelope);
+    setTenantAiEcommerceLaunchWorkspace(surface);
   };
   const clearTenantAiEcommerceLaunchSurface = (): void => {
     setTenantAiEcommerceLaunchWorkspace(null);
-    setEcommerceLaunchAssistantAiEnvelope(null);
   };
   const getAiAgentDedicatedSuggestionRunActionKey = (
     action:
@@ -4372,6 +3996,7 @@ export function App() {
       ...tenantAiApprovalWorkspace,
       ...growthAssistAiApprovalRequests,
       ...invoiceAssistantAiApprovalRequests,
+      ...ecommerceLaunchAssistantAiApprovalRequests,
     ]
       .filter((entry) => entry.status === 'approved')
       .sort(
@@ -4388,6 +4013,7 @@ export function App() {
 
     return map;
   }, [
+    ecommerceLaunchAssistantAiApprovalRequests,
     growthAssistAiApprovalRequests,
     invoiceAssistantAiApprovalRequests,
     tenantAiApprovalWorkspace,
@@ -4448,11 +4074,10 @@ export function App() {
                   }
                 : {
                     envelope: ecommerceLaunchAssistantAiEnvelope,
-                    declaredToolAccess: [] as AiAgentToolAccessResponse[],
-                    fallbackApprovalPolicies: [] as AiApprovalPolicyResponse[],
-                    suggestionRuns: tenantAiSuggestionWorkspace.filter(
-                      (entry) => entry.agentKey === agentKey,
-                    ),
+                    declaredToolAccess: ecommerceLaunchAssistantAiToolAccess,
+                    fallbackApprovalPolicies:
+                      ecommerceLaunchAssistantAiApprovalPolicies,
+                    suggestionRuns: ecommerceLaunchAssistantAiSuggestionRuns,
                   };
 
           return [
@@ -4497,7 +4122,10 @@ export function App() {
     [
       aiAgentCatalogByKey,
       aiOperatingModelAgentByKey,
+      ecommerceLaunchAssistantAiApprovalPolicies,
       ecommerceLaunchAssistantAiEnvelope,
+      ecommerceLaunchAssistantAiSuggestionRuns,
+      ecommerceLaunchAssistantAiToolAccess,
       growthAssistAiApprovalPolicies,
       growthAssistAiEnvelope,
       growthAssistAiSuggestionRuns,
@@ -4507,7 +4135,6 @@ export function App() {
       invoiceAssistantAiSuggestionRuns,
       invoiceAssistantAiToolAccess,
       latestApprovedAiApprovalRequestByAgent,
-      tenantAiSuggestionWorkspace,
     ],
   );
   const activeGrowthAiState =
@@ -4542,7 +4169,7 @@ export function App() {
     activeEcommerceAiState?.approvalPolicies ?? [];
   const activeEcommerceAiToolAccess =
     activeEcommerceAiState?.toolAccess ?? [];
-  const ecommerceLaunchAssistantSuggestionRuns =
+  const activeEcommerceAiSuggestionRuns =
     activeEcommerceAiState?.suggestionRuns ?? [];
   const latestApprovedEcommerceAiApprovalRequest =
     activeEcommerceAiState?.latestApprovedApprovalRequest ?? null;
@@ -9209,6 +8836,7 @@ export function App() {
 
   async function refreshTenantAiEcommerceLaunchWorkspace() {
     if (!token || !currentTenancy || !canReadTenantEntitlements) {
+      clearAiAgentWorkspaceSupportBundle('ecommerce-launch-assistant');
       clearTenantAiEcommerceLaunchSurface();
       setTenantAiEcommerceLaunchWorkspaceLoading(false);
       return;
@@ -9219,12 +8847,20 @@ export function App() {
     setEcommerceLaunchError(null);
 
     try {
-      const surface = await fetchTenantAiEcommerceLaunchSurface(tenantSlug);
+      const [surface, bundle] = await Promise.all([
+        fetchTenantAiEcommerceLaunchSurface(tenantSlug),
+        fetchAiAgentWorkspaceSupportBundle(
+          'ecommerce-launch-assistant',
+          tenantSlug,
+        ),
+      ]);
 
       startTransition(() => {
         applyTenantAiEcommerceLaunchSurface(surface);
+        applyAiAgentWorkspaceSupportBundle('ecommerce-launch-assistant', bundle);
       });
     } catch (error) {
+      clearAiAgentWorkspaceSupportBundle('ecommerce-launch-assistant');
       clearTenantAiEcommerceLaunchSurface();
       setEcommerceLaunchError(
         error instanceof Error
@@ -10027,6 +9663,18 @@ export function App() {
         'ecommerce-launch-assistant',
         'No se pudo preparar el handoff AI de ecommerce launch.',
       ),
+      requestApproval: createDedicatedRequestAiSuggestionRunApprovalHandler(
+        'ecommerce-launch-assistant',
+        'No se pudo pedir la aprobación del handoff de AI para ecommerce launch.',
+      ),
+      reviewApproval: createDedicatedReviewAiApprovalRequestHandler(
+        'ecommerce-launch-assistant',
+        'No se pudo revisar la aprobación del handoff de AI para ecommerce launch.',
+      ),
+      openDetail: createDedicatedOpenAiSuggestionRunDetailHandler(
+        'ecommerce-launch-assistant',
+        'No se pudo cargar el detalle del handoff de AI para ecommerce launch.',
+      ),
     },
   };
 
@@ -10342,6 +9990,7 @@ export function App() {
     setAiAgentCatalog([]);
     clearAiAgentWorkspaceSupportBundle('growth-assist-coach');
     clearAiAgentWorkspaceSupportBundle('invoice-document-assistant');
+    clearAiAgentWorkspaceSupportBundle('ecommerce-launch-assistant');
     clearTenantAiEcommerceLaunchSurface();
     setTenantAiEcommerceLaunchWorkspaceLoading(false);
     setWhatsappSummary(null);
@@ -12461,7 +12110,7 @@ export function App() {
                         </div>
                       ) : null}
 
-                      {ecommerceLaunchAssistantSuggestionRuns.length > 0 ? (
+                      {activeEcommerceAiSuggestionRuns.length > 0 ? (
                         <div className={styles.stack}>
                           <div className={styles.sectionHeading}>
                             <div>
@@ -12469,7 +12118,7 @@ export function App() {
                               <h3>Últimos briefs preparados</h3>
                             </div>
                           </div>
-                          {ecommerceLaunchAssistantSuggestionRuns
+                          {activeEcommerceAiSuggestionRuns
                             .slice(0, 2)
                             .map((entry) => (
                               <div
@@ -12485,6 +12134,180 @@ export function App() {
                                 <small>
                                   {formatDate(entry.createdAt)} · {entry.promptPackKey}@
                                   {entry.promptPackVersion}
+                                </small>
+                                <div className={styles.inlineActions}>
+                                  <button
+                                    className={styles.secondaryButton}
+                                    type="button"
+                                    onClick={() =>
+                                      void aiDedicatedSuggestionRunActionHandlers[
+                                        'ecommerce-launch-assistant'
+                                      ]?.openDetail?.(entry.id)
+                                    }
+                                    disabled={
+                                      getAiAgentActionLoadingState(
+                                        'ecommerce-launch-assistant',
+                                      ) ===
+                                      getAiAgentDedicatedSuggestionRunActionKey(
+                                        'load_detail',
+                                        'ecommerce-launch-assistant',
+                                        entry.id,
+                                      )
+                                    }
+                                  >
+                                    Ver detalle
+                                  </button>
+                                  {entry.approvalSummary.status !== 'pending' &&
+                                  entry.approvalSummary.status !== 'approved' ? (
+                                    <button
+                                      className={styles.ghostButton}
+                                      type="button"
+                                      onClick={() =>
+                                        void aiDedicatedSuggestionRunActionHandlers[
+                                          'ecommerce-launch-assistant'
+                                        ]?.requestApproval?.(entry.id)
+                                      }
+                                      disabled={
+                                        getAiAgentActionLoadingState(
+                                          'ecommerce-launch-assistant',
+                                        ) ===
+                                        getAiAgentDedicatedSuggestionRunActionKey(
+                                          'request_approval',
+                                          'ecommerce-launch-assistant',
+                                          entry.id,
+                                        )
+                                      }
+                                    >
+                                      Pedir approval
+                                    </button>
+                                  ) : null}
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      ) : null}
+
+                      {selectedEcommerceAiSuggestionRunDetail ? (
+                        <div className={styles.stack}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Suggestion detail</span>
+                              <h3>Brief abierto para revisión humana</h3>
+                            </div>
+                          </div>
+                          <div className={styles.detailCard}>
+                            <div className={styles.stack}>
+                              <small>
+                                {selectedEcommerceAiSuggestionRunDetail.promptPackKey}@
+                                {
+                                  selectedEcommerceAiSuggestionRunDetail.promptPackVersion
+                                }
+                              </small>
+                              <strong>
+                                {selectedEcommerceAiSuggestionRunDetail.summary}
+                              </strong>
+                              <small>
+                                Outputs sugeridos:{' '}
+                                {selectedEcommerceAiSuggestionRunDetail.suggestedOutputKeys.join(
+                                  ', ',
+                                )}
+                              </small>
+                            </div>
+                            <div className={styles.stack}>
+                              {selectedEcommerceAiSuggestionRunDetail.approvalRequests.map(
+                                (entry) => (
+                                  <div
+                                    className={styles.assistCueCard}
+                                    key={`ecommerce-detail-approval:${entry.id}`}
+                                  >
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>{entry.summary}</strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(entry.status)}
+                                      </span>
+                                    </div>
+                                    <small>{entry.policyKey}</small>
+                                    <small>{entry.rationale}</small>
+                                    {entry.status === 'pending' ? (
+                                      <div className={styles.inlineActions}>
+                                        <button
+                                          className={styles.secondaryButton}
+                                          type="button"
+                                          onClick={() =>
+                                            void aiDedicatedSuggestionRunActionHandlers[
+                                              'ecommerce-launch-assistant'
+                                            ]?.reviewApproval?.(entry.id, 'approved')
+                                          }
+                                          disabled={
+                                            getAiAgentActionLoadingState(
+                                              'ecommerce-launch-assistant',
+                                            ) ===
+                                            getAiAgentDedicatedSuggestionRunActionKey(
+                                              'review_approval',
+                                              'ecommerce-launch-assistant',
+                                              entry.id,
+                                            )
+                                          }
+                                        >
+                                          Aprobar
+                                        </button>
+                                        <button
+                                          className={styles.ghostButton}
+                                          type="button"
+                                          onClick={() =>
+                                            void aiDedicatedSuggestionRunActionHandlers[
+                                              'ecommerce-launch-assistant'
+                                            ]?.reviewApproval?.(entry.id, 'rejected')
+                                          }
+                                          disabled={
+                                            getAiAgentActionLoadingState(
+                                              'ecommerce-launch-assistant',
+                                            ) ===
+                                            getAiAgentDedicatedSuggestionRunActionKey(
+                                              'review_approval',
+                                              'ecommerce-launch-assistant',
+                                              entry.id,
+                                            )
+                                          }
+                                        >
+                                          Rechazar
+                                        </button>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {ecommerceLaunchAssistantAiApprovalRequests.length > 0 ? (
+                        <div className={styles.stack}>
+                          <div className={styles.sectionHeading}>
+                            <div>
+                              <span className={styles.label}>Approval queue</span>
+                              <h3>Solicitudes visibles para ecommerce launch</h3>
+                            </div>
+                          </div>
+                          {ecommerceLaunchAssistantAiApprovalRequests
+                            .slice(0, 3)
+                            .map((entry) => (
+                              <div
+                                className={styles.assistCueCard}
+                                key={`ecommerce-approval:${entry.id}`}
+                              >
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>{entry.summary}</strong>
+                                  <span className={styles.statusPill}>
+                                    {humanizeKey(entry.status)}
+                                  </span>
+                                </div>
+                                <small>{entry.policyKey}</small>
+                                <small>{entry.rationale}</small>
+                                <small>
+                                  Suggestion run {entry.suggestionRunId} · creada{' '}
+                                  {formatDate(entry.createdAt)}
                                 </small>
                               </div>
                             ))}

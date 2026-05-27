@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.56.0
+
+### Minor Changes
+
+- 7850f79: Extend the AI operating model with an ecommerce guarded execution candidate lane and align transversal AI workspaces with the new manifest-driven lane posture.
+
 ## 0.55.0
 
 ### Minor Changes

@@ -4346,131 +4346,6 @@ export function App() {
           agentKey,
         )} marcada como rechazada.`;
   };
-  const aiAgentEnvelopeByKey = useMemo(
-    () =>
-      new Map(
-        [
-          growthAssistAiEnvelope,
-          invoiceAssistantAiEnvelope,
-          ecommerceLaunchAssistantAiEnvelope,
-        ]
-          .filter(
-            (entry): entry is NonNullable<typeof growthAssistAiEnvelope> =>
-              entry !== null,
-          )
-          .map((entry) => [entry.agent.key, entry] as const),
-      ),
-    [
-      ecommerceLaunchAssistantAiEnvelope,
-      growthAssistAiEnvelope,
-      invoiceAssistantAiEnvelope,
-    ],
-  );
-  const aiAgentDeclaredToolAccessByKey = useMemo(
-    () =>
-      new Map<string, AiAgentToolAccessResponse[]>([
-        ['growth-assist-coach', growthAssistAiToolAccess],
-        ['invoice-document-assistant', invoiceAssistantAiToolAccess],
-      ]),
-    [growthAssistAiToolAccess, invoiceAssistantAiToolAccess],
-  );
-  const aiAgentApprovalPoliciesByKey = useMemo(
-    () =>
-      new Map<string, AiApprovalPolicyResponse[]>([
-        [
-          'growth-assist-coach',
-          aiOperatingModelAgentByKey.get('growth-assist-coach')?.approvalPolicies
-            .length
-            ? aiOperatingModelAgentByKey.get('growth-assist-coach')!
-                .approvalPolicies
-            : growthAssistAiApprovalPolicies.length > 0
-            ? growthAssistAiApprovalPolicies
-            : [],
-        ],
-        [
-          'invoice-document-assistant',
-          aiOperatingModelAgentByKey.get('invoice-document-assistant')
-            ?.approvalPolicies.length
-            ? aiOperatingModelAgentByKey.get('invoice-document-assistant')!
-                .approvalPolicies
-            : invoiceAssistantAiApprovalPolicies.length > 0
-            ? invoiceAssistantAiApprovalPolicies
-            : [],
-        ],
-        [
-          'ecommerce-launch-assistant',
-          aiOperatingModelAgentByKey.get('ecommerce-launch-assistant')
-            ?.approvalPolicies ?? [],
-        ],
-      ]),
-    [
-      aiOperatingModelAgentByKey,
-      growthAssistAiApprovalPolicies,
-      invoiceAssistantAiApprovalPolicies,
-    ],
-  );
-  const aiAgentSuggestionRunsByKey = useMemo(
-    () =>
-      new Map<string, AiSuggestionRunResponse[]>([
-        ['growth-assist-coach', growthAssistAiSuggestionRuns],
-        ['invoice-document-assistant', invoiceAssistantAiSuggestionRuns],
-        [
-          'ecommerce-launch-assistant',
-          tenantAiSuggestionWorkspace.filter(
-            (entry) => entry.agentKey === 'ecommerce-launch-assistant',
-          ),
-        ],
-      ]),
-    [
-      growthAssistAiSuggestionRuns,
-      invoiceAssistantAiSuggestionRuns,
-      tenantAiSuggestionWorkspace,
-    ],
-  );
-  const resolveActiveAiAgent = (agentKey: string): AiAgentCatalogResponse | null =>
-    aiAgentEnvelopeByKey.get(agentKey)?.agent ??
-    aiOperatingModelAgentByKey.get(agentKey)?.agent ??
-    aiAgentCatalogByKey.get(agentKey) ??
-    null;
-  const resolveActiveAiPromptPack = (agentKey: string) =>
-    aiOperatingModelAgentByKey.get(agentKey)?.promptPack ??
-    aiAgentEnvelopeByKey.get(agentKey)?.promptPack ??
-    null;
-  const resolveActiveAiPrimarySurface = (agentKey: string) => {
-    const manifestSurface = aiOperatingModelAgentByKey.get(agentKey)?.primarySurface;
-
-    if (manifestSurface) {
-      return manifestSurface;
-    }
-
-    const envelope = aiAgentEnvelopeByKey.get(agentKey);
-
-    return envelope
-      ? {
-          key: envelope.surface.key,
-          title: envelope.surface.title,
-          sourceContractKey: envelope.surface.sourceContractKey,
-        }
-      : null;
-  };
-  const resolveActiveAiToolAccess = (agentKey: string): AiAgentToolAccessResponse[] =>
-    (aiOperatingModelAgentByKey.get(agentKey)?.toolAccess as
-      | AiAgentToolAccessResponse[]
-      | undefined) ??
-    aiAgentEnvelopeByKey.get(agentKey)?.toolAccess ??
-    aiAgentDeclaredToolAccessByKey.get(agentKey) ??
-    [];
-  const resolveActiveAiApprovalPolicies = (
-    agentKey: string,
-  ): AiApprovalPolicyResponse[] =>
-    aiAgentApprovalPoliciesByKey.get(agentKey) ?? [];
-  const resolveAiSuggestionRunsForAgent = (
-    agentKey: string,
-  ): AiSuggestionRunResponse[] => aiAgentSuggestionRunsByKey.get(agentKey) ?? [];
-  const resolveLatestApprovedAiApprovalRequest = (
-    agentKey: string,
-  ): AiApprovalRequestResponse | null =>
-    latestApprovedAiApprovalRequestByAgent.get(agentKey) ?? null;
   const currentTenantAccessibleAiOperatingModelAgents = useMemo(
     () =>
       aiOperatingModelAgents.filter((entry) =>
@@ -4550,28 +4425,85 @@ export function App() {
           latestApprovedApprovalRequest: AiApprovalRequestResponse | null;
         }
       >(
-        SUPPORTED_AI_AGENT_KEYS.map((agentKey) => [
-          agentKey,
-          {
-            agent: resolveActiveAiAgent(agentKey),
-            promptPack: resolveActiveAiPromptPack(agentKey),
-            primarySurface: resolveActiveAiPrimarySurface(agentKey),
-            toolAccess: resolveActiveAiToolAccess(agentKey),
-            approvalPolicies: resolveActiveAiApprovalPolicies(agentKey),
-            suggestionRuns: resolveAiSuggestionRunsForAgent(agentKey),
-            latestApprovedApprovalRequest:
-              resolveLatestApprovedAiApprovalRequest(agentKey),
-          },
-        ]),
+        SUPPORTED_AI_AGENT_KEYS.map((agentKey) => {
+          const operatingModelEntry = aiOperatingModelAgentByKey.get(agentKey);
+          const envelope =
+            agentKey === 'growth-assist-coach'
+              ? growthAssistAiEnvelope
+              : agentKey === 'invoice-document-assistant'
+              ? invoiceAssistantAiEnvelope
+              : ecommerceLaunchAssistantAiEnvelope;
+          const declaredToolAccess =
+            agentKey === 'growth-assist-coach'
+              ? growthAssistAiToolAccess
+              : agentKey === 'invoice-document-assistant'
+              ? invoiceAssistantAiToolAccess
+              : [];
+          const fallbackApprovalPolicies =
+            agentKey === 'growth-assist-coach'
+              ? growthAssistAiApprovalPolicies
+              : agentKey === 'invoice-document-assistant'
+              ? invoiceAssistantAiApprovalPolicies
+              : [];
+          const suggestionRuns =
+            agentKey === 'growth-assist-coach'
+              ? growthAssistAiSuggestionRuns
+              : agentKey === 'invoice-document-assistant'
+              ? invoiceAssistantAiSuggestionRuns
+              : tenantAiSuggestionWorkspace.filter(
+                  (entry) => entry.agentKey === agentKey,
+                );
+
+          return [
+            agentKey,
+            {
+              agent:
+                envelope?.agent ??
+                operatingModelEntry?.agent ??
+                aiAgentCatalogByKey.get(agentKey) ??
+                null,
+              promptPack:
+                operatingModelEntry?.promptPack ?? envelope?.promptPack ?? null,
+              primarySurface:
+                operatingModelEntry?.primarySurface ??
+                (envelope
+                  ? {
+                      key: envelope.surface.key,
+                      title: envelope.surface.title,
+                      sourceContractKey: envelope.surface.sourceContractKey,
+                    }
+                  : null),
+              toolAccess:
+                (operatingModelEntry?.toolAccess as
+                  | AiAgentToolAccessResponse[]
+                  | undefined) ??
+                envelope?.toolAccess ??
+                declaredToolAccess,
+              approvalPolicies:
+                operatingModelEntry?.approvalPolicies.length
+                  ? operatingModelEntry.approvalPolicies
+                  : fallbackApprovalPolicies,
+              suggestionRuns,
+              latestApprovedApprovalRequest:
+                latestApprovedAiApprovalRequestByAgent.get(agentKey) ?? null,
+            },
+          ] as const;
+        }),
       ),
     [
-      aiAgentApprovalPoliciesByKey,
       aiAgentCatalogByKey,
-      aiAgentDeclaredToolAccessByKey,
-      aiAgentEnvelopeByKey,
-      aiAgentSuggestionRunsByKey,
       aiOperatingModelAgentByKey,
+      ecommerceLaunchAssistantAiEnvelope,
+      growthAssistAiApprovalPolicies,
+      growthAssistAiEnvelope,
+      growthAssistAiSuggestionRuns,
+      growthAssistAiToolAccess,
+      invoiceAssistantAiApprovalPolicies,
+      invoiceAssistantAiEnvelope,
+      invoiceAssistantAiSuggestionRuns,
+      invoiceAssistantAiToolAccess,
       latestApprovedAiApprovalRequestByAgent,
+      tenantAiSuggestionWorkspace,
     ],
   );
   const activeGrowthAiState = aiActiveAgentStateByKey.get('growth-assist-coach');

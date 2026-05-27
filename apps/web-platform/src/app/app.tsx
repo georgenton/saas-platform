@@ -554,16 +554,99 @@ function humanizeKey(value: string | null): string {
 }
 
 function fallbackAiAgentTitle(agentKey: string): string {
-  switch (agentKey) {
-    case 'growth-assist-coach':
-      return 'Growth Assist Coach';
-    case 'invoice-document-assistant':
-      return 'Invoice Document Assistant';
-    case 'ecommerce-launch-assistant':
-      return 'Ecommerce Launch Assistant';
-    default:
-      return humanizeKey(agentKey);
-  }
+  return isSupportedAiAgentKey(agentKey)
+    ? AI_AGENT_FALLBACK_TITLES[agentKey]
+    : humanizeKey(agentKey);
+}
+
+const SUPPORTED_AI_AGENT_KEYS = [
+  'growth-assist-coach',
+  'invoice-document-assistant',
+  'ecommerce-launch-assistant',
+] as const;
+
+type SupportedAiAgentKey = (typeof SUPPORTED_AI_AGENT_KEYS)[number];
+
+type AiAgentWorkspaceSupportBundle = {
+  approvalPolicies: AiApprovalPolicyResponse[];
+  approvalRequests: AiApprovalRequestResponse[];
+  toolAccess: AiAgentToolAccessResponse[];
+  suggestionEnvelope: AiSuggestionEnvelopeResponse | null;
+  suggestionRuns: AiSuggestionRunResponse[];
+};
+
+type AiAgentWorkspaceSupportStateHandler = {
+  approvalStatusFilter: AiApprovalRequestStatusFilter;
+  applyBundle: (bundle: AiAgentWorkspaceSupportBundle) => void;
+  clearBundle: () => void;
+  applyApprovalQueue: (approvalRequests: AiApprovalRequestResponse[]) => void;
+  setSuggestionRunDetail: (detail: AiSuggestionRunDetailResponse | null) => void;
+  syncPrepared?: (suggestionRun: AiSuggestionRunResponse) => void;
+  syncPending?: (approvalRequest: AiApprovalRequestResponse) => void;
+  syncReviewed?: (approvalRequest: AiApprovalRequestResponse) => void;
+};
+
+const AI_AGENT_FALLBACK_TITLES: Record<SupportedAiAgentKey, string> = {
+  'growth-assist-coach': 'Growth Assist Coach',
+  'invoice-document-assistant': 'Invoice Document Assistant',
+  'ecommerce-launch-assistant': 'Ecommerce Launch Assistant',
+};
+
+const AI_AGENT_HANDOFF_FALLBACKS: Partial<
+  Record<SupportedAiAgentKey, AiOperatingModelAgentResponse['handoffContract']>
+> = {
+  'growth-assist-coach': {
+    requestApprovalRationale:
+      'Solicitar revision humana antes de tratar el handoff como aprobado.',
+    reviewNotes: {
+      approved: 'Aprobado desde la consola transversal de AI.',
+      rejected: 'Rechazado desde la consola transversal de AI.',
+    },
+  },
+  'invoice-document-assistant': {
+    requestApprovalRationale:
+      'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
+    reviewNotes: {
+      approved:
+        'Aprobado desde la consola transversal de AI para Invoice Document Assistant.',
+      rejected:
+        'Rechazado desde la consola transversal de AI para Invoice Document Assistant.',
+    },
+  },
+};
+
+const AI_AGENT_DEDICATED_ACTION_KEY_PREFIXES: Partial<
+  Record<
+    SupportedAiAgentKey,
+    {
+      prepare: string;
+      requestApproval?: string;
+      reviewApproval?: string;
+      loadDetail?: string;
+    }
+  >
+> = {
+  'growth-assist-coach': {
+    prepare: 'prepare-ai-suggestion-run',
+    requestApproval: 'request-ai-approval',
+    reviewApproval: 'review-ai-approval',
+    loadDetail: 'load-ai-run-detail',
+  },
+  'invoice-document-assistant': {
+    prepare: 'prepare-invoice-ai-suggestion-run',
+    requestApproval: 'request-invoice-ai-approval',
+    reviewApproval: 'review-invoice-ai-approval',
+    loadDetail: 'load-invoice-ai-run-detail',
+  },
+  'ecommerce-launch-assistant': {
+    prepare: 'prepare-ecommerce-ai-suggestion-run',
+  },
+};
+
+function isSupportedAiAgentKey(agentKey: string): agentKey is SupportedAiAgentKey {
+  return (
+    SUPPORTED_AI_AGENT_KEYS as readonly string[]
+  ).includes(agentKey);
 }
 
 function shortAiAgentLabel(input: {
@@ -3749,28 +3832,12 @@ export function App() {
       return contract;
     }
 
-    if (agentKey === 'growth-assist-coach') {
-      return {
-        requestApprovalRationale:
-          'Solicitar revision humana antes de tratar el handoff como aprobado.',
-        reviewNotes: {
-          approved: 'Aprobado desde la consola transversal de AI.',
-          rejected: 'Rechazado desde la consola transversal de AI.',
-        },
-      };
-    }
+    if (isSupportedAiAgentKey(agentKey)) {
+      const fallbackContract = AI_AGENT_HANDOFF_FALLBACKS[agentKey];
 
-    if (agentKey === 'invoice-document-assistant') {
-      return {
-        requestApprovalRationale:
-          'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
-        reviewNotes: {
-          approved:
-            'Aprobado desde la consola transversal de AI para Invoice Document Assistant.',
-          rejected:
-            'Rechazado desde la consola transversal de AI para Invoice Document Assistant.',
-        },
-      };
+      if (fallbackContract) {
+        return fallbackContract;
+      }
     }
 
     const agentTitle = resolveAiAgentTitle(agentKey);
@@ -3790,6 +3857,187 @@ export function App() {
     aiOperatingModelAgentByKey.get(agentKey)?.agent.domainKey ??
     aiAgentCatalogByKey.get(agentKey)?.domainKey ??
     null;
+  const aiAgentActionFeedbackByDomain: Record<
+    NonNullable<AiAgentCatalogResponse['domainKey']>,
+    {
+      getLoadingState: () => string | null;
+      setLoadingState: (value: string | null) => void;
+      clearFeedback: () => void;
+      setSuccessMessage: (message: string) => void;
+      setErrorMessage: (message: string) => void;
+    }
+  > = {
+    growth: {
+      getLoadingState: () => growthActionLoading,
+      setLoadingState: setGrowthActionLoading,
+      clearFeedback: () => {
+        setGrowthActionMessage(null);
+        setGrowthError(null);
+      },
+      setSuccessMessage: setGrowthActionMessage,
+      setErrorMessage: setGrowthError,
+    },
+    invoicing: {
+      getLoadingState: () => actionLoading,
+      setLoadingState: setActionLoading,
+      clearFeedback: () => {
+        setInvoicingActionMessage(null);
+        setInvoicingError(null);
+      },
+      setSuccessMessage: setInvoicingActionMessage,
+      setErrorMessage: setInvoicingError,
+    },
+    ecommerce: {
+      getLoadingState: () => actionLoading,
+      setLoadingState: setActionLoading,
+      clearFeedback: () => {
+        setEcommerceLaunchActionMessage(null);
+        setEcommerceLaunchError(null);
+      },
+      setSuccessMessage: setEcommerceLaunchActionMessage,
+      setErrorMessage: setEcommerceLaunchError,
+    },
+  };
+  const resolveAiAgentActionFeedbackHandlers = (agentKey: string) => {
+    const domainKey = resolveAiAgentDomainKey(agentKey);
+
+    return domainKey ? aiAgentActionFeedbackByDomain[domainKey] : null;
+  };
+  const aiAgentWorkspaceSupportStateHandlers: Partial<
+    Record<SupportedAiAgentKey, AiAgentWorkspaceSupportStateHandler>
+  > = {
+    'growth-assist-coach': {
+      approvalStatusFilter: growthAiApprovalStatusFilter,
+      applyBundle: (bundle) => {
+        setGrowthAssistAiApprovalPolicies(bundle.approvalPolicies);
+        setGrowthAssistAiApprovalRequests(bundle.approvalRequests);
+        setGrowthAssistAiToolAccess(bundle.toolAccess);
+        setGrowthAssistAiEnvelope(bundle.suggestionEnvelope);
+        setGrowthAssistAiSuggestionRuns(bundle.suggestionRuns);
+        setSelectedGrowthAiSuggestionRunDetail(null);
+      },
+      clearBundle: () => {
+        setGrowthAssistAiApprovalPolicies([]);
+        setGrowthAssistAiApprovalRequests([]);
+        setGrowthAssistAiToolAccess([]);
+        setGrowthAssistAiEnvelope(null);
+        setGrowthAssistAiSuggestionRuns([]);
+        setSelectedGrowthAiSuggestionRunDetail(null);
+      },
+      applyApprovalQueue: (approvalRequests) => {
+        setGrowthAssistAiApprovalRequests(approvalRequests);
+      },
+      setSuggestionRunDetail: setSelectedGrowthAiSuggestionRunDetail,
+      syncPrepared: (suggestionRun) => {
+        setGrowthAssistAiSuggestionRuns((current) =>
+          prependOrReplaceSuggestionRun(current, suggestionRun),
+        );
+      },
+      syncPending: (approvalRequest) => {
+        setGrowthAssistAiApprovalRequests((current) =>
+          syncApprovalRequestsWithFilter(
+            current,
+            approvalRequest,
+            growthAiApprovalStatusFilter,
+          ),
+        );
+        setGrowthAssistAiSuggestionRuns((current) =>
+          bumpSuggestionRunApprovalToPending(current, approvalRequest),
+        );
+        setSelectedGrowthAiSuggestionRunDetail((current) =>
+          bumpSuggestionRunDetailApprovalToPending(current, approvalRequest),
+        );
+      },
+      syncReviewed: (approvalRequest) => {
+        setGrowthAssistAiApprovalRequests((current) =>
+          syncApprovalRequestsWithFilter(
+            current,
+            approvalRequest,
+            growthAiApprovalStatusFilter,
+          ),
+        );
+        setGrowthAssistAiSuggestionRuns((current) =>
+          applyReviewedApprovalToSuggestionRuns(current, approvalRequest),
+        );
+        setSelectedGrowthAiSuggestionRunDetail((current) =>
+          applyReviewedApprovalToSuggestionRunDetail(current, approvalRequest),
+        );
+      },
+    },
+    'invoice-document-assistant': {
+      approvalStatusFilter: invoiceAiApprovalStatusFilter,
+      applyBundle: (bundle) => {
+        setInvoiceAssistantAiApprovalPolicies(bundle.approvalPolicies);
+        setInvoiceAssistantAiApprovalRequests(bundle.approvalRequests);
+        setInvoiceAssistantAiToolAccess(bundle.toolAccess);
+        setInvoiceAssistantAiEnvelope(bundle.suggestionEnvelope);
+        setInvoiceAssistantAiSuggestionRuns(bundle.suggestionRuns);
+        setSelectedInvoiceAiSuggestionRunDetail(null);
+      },
+      clearBundle: () => {
+        setInvoiceAssistantAiApprovalPolicies([]);
+        setInvoiceAssistantAiApprovalRequests([]);
+        setInvoiceAssistantAiToolAccess([]);
+        setInvoiceAssistantAiEnvelope(null);
+        setInvoiceAssistantAiSuggestionRuns([]);
+        setSelectedInvoiceAiSuggestionRunDetail(null);
+      },
+      applyApprovalQueue: (approvalRequests) => {
+        setInvoiceAssistantAiApprovalRequests(approvalRequests);
+      },
+      setSuggestionRunDetail: setSelectedInvoiceAiSuggestionRunDetail,
+      syncPrepared: (suggestionRun) => {
+        setInvoiceAssistantAiSuggestionRuns((current) =>
+          prependOrReplaceSuggestionRun(current, suggestionRun),
+        );
+      },
+      syncPending: (approvalRequest) => {
+        setInvoiceAssistantAiApprovalRequests((current) =>
+          syncApprovalRequestsWithFilter(
+            current,
+            approvalRequest,
+            invoiceAiApprovalStatusFilter,
+          ),
+        );
+        setInvoiceAssistantAiSuggestionRuns((current) =>
+          bumpSuggestionRunApprovalToPending(current, approvalRequest),
+        );
+        setSelectedInvoiceAiSuggestionRunDetail((current) =>
+          bumpSuggestionRunDetailApprovalToPending(current, approvalRequest),
+        );
+      },
+      syncReviewed: (approvalRequest) => {
+        setInvoiceAssistantAiApprovalRequests((current) =>
+          syncApprovalRequestsWithFilter(
+            current,
+            approvalRequest,
+            invoiceAiApprovalStatusFilter,
+          ),
+        );
+        setInvoiceAssistantAiSuggestionRuns((current) =>
+          applyReviewedApprovalToSuggestionRuns(current, approvalRequest),
+        );
+        setSelectedInvoiceAiSuggestionRunDetail((current) =>
+          applyReviewedApprovalToSuggestionRunDetail(current, approvalRequest),
+        );
+      },
+    },
+    'ecommerce-launch-assistant': {
+      approvalStatusFilter: 'all',
+      applyBundle: (bundle) => {
+        setEcommerceLaunchAssistantAiEnvelope(bundle.suggestionEnvelope);
+      },
+      clearBundle: () => {
+        setEcommerceLaunchAssistantAiEnvelope(null);
+      },
+      applyApprovalQueue: () => {},
+      setSuggestionRunDetail: () => {},
+    },
+  };
+  const resolveAiAgentWorkspaceSupportStateHandler = (agentKey: string) =>
+    isSupportedAiAgentKey(agentKey)
+      ? aiAgentWorkspaceSupportStateHandlers[agentKey] ?? null
+      : null;
   const canOperateAiAgent = (agentKey: string): boolean => {
     if (!currentTenancy) {
       return false;
@@ -3813,73 +4061,27 @@ export function App() {
     }
   };
   const getAiAgentActionLoadingState = (agentKey: string): string | null =>
-    resolveAiAgentDomainKey(agentKey) === 'growth'
-      ? growthActionLoading
-      : actionLoading;
+    resolveAiAgentActionFeedbackHandlers(agentKey)?.getLoadingState() ?? null;
   const setAiAgentActionLoadingState = (
     agentKey: string,
     value: string | null,
   ): void => {
-    if (resolveAiAgentDomainKey(agentKey) === 'growth') {
-      setGrowthActionLoading(value);
-      return;
-    }
-
-    setActionLoading(value);
+    resolveAiAgentActionFeedbackHandlers(agentKey)?.setLoadingState(value);
   };
   const clearAiAgentActionFeedback = (agentKey: string): void => {
-    switch (resolveAiAgentDomainKey(agentKey)) {
-      case 'growth':
-        setGrowthActionMessage(null);
-        setGrowthError(null);
-        break;
-      case 'invoicing':
-        setInvoicingActionMessage(null);
-        setInvoicingError(null);
-        break;
-      case 'ecommerce':
-        setEcommerceLaunchActionMessage(null);
-        setEcommerceLaunchError(null);
-        break;
-      default:
-        break;
-    }
+    resolveAiAgentActionFeedbackHandlers(agentKey)?.clearFeedback();
   };
   const setAiAgentActionSuccessMessage = (
     agentKey: string,
     message: string,
   ): void => {
-    switch (resolveAiAgentDomainKey(agentKey)) {
-      case 'growth':
-        setGrowthActionMessage(message);
-        break;
-      case 'invoicing':
-        setInvoicingActionMessage(message);
-        break;
-      case 'ecommerce':
-        setEcommerceLaunchActionMessage(message);
-        break;
-      default:
-        break;
-    }
+    resolveAiAgentActionFeedbackHandlers(agentKey)?.setSuccessMessage(message);
   };
   const setAiAgentActionErrorMessage = (
     agentKey: string,
     message: string,
   ): void => {
-    switch (resolveAiAgentDomainKey(agentKey)) {
-      case 'growth':
-        setGrowthError(message);
-        break;
-      case 'invoicing':
-        setInvoicingError(message);
-        break;
-      case 'ecommerce':
-        setEcommerceLaunchError(message);
-        break;
-      default:
-        break;
-    }
+    resolveAiAgentActionFeedbackHandlers(agentKey)?.setErrorMessage(message);
   };
   const getTenantAiWorkspaceApprovalRequestActionKey = (
     agentKey: string,
@@ -3897,21 +4099,9 @@ export function App() {
       setTenantAiSuggestionWorkspace((current) =>
         prependOrReplaceSuggestionRun(current, suggestionRun),
       );
-
-      switch (agentKey) {
-        case 'growth-assist-coach':
-          setGrowthAssistAiSuggestionRuns((current) =>
-            prependOrReplaceSuggestionRun(current, suggestionRun),
-          );
-          break;
-        case 'invoice-document-assistant':
-          setInvoiceAssistantAiSuggestionRuns((current) =>
-            prependOrReplaceSuggestionRun(current, suggestionRun),
-          );
-          break;
-        default:
-          break;
-      }
+      resolveAiAgentWorkspaceSupportStateHandler(agentKey)?.syncPrepared?.(
+        suggestionRun,
+      );
     });
   };
   const syncAiAgentApprovalRequestPending = (
@@ -3932,41 +4122,9 @@ export function App() {
       setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
         bumpSuggestionRunDetailApprovalToPending(current, approvalRequest),
       );
-
-      switch (agentKey) {
-        case 'growth-assist-coach':
-          setGrowthAssistAiApprovalRequests((current) =>
-            syncApprovalRequestsWithFilter(
-              current,
-              approvalRequest,
-              growthAiApprovalStatusFilter,
-            ),
-          );
-          setGrowthAssistAiSuggestionRuns((current) =>
-            bumpSuggestionRunApprovalToPending(current, approvalRequest),
-          );
-          setSelectedGrowthAiSuggestionRunDetail((current) =>
-            bumpSuggestionRunDetailApprovalToPending(current, approvalRequest),
-          );
-          break;
-        case 'invoice-document-assistant':
-          setInvoiceAssistantAiApprovalRequests((current) =>
-            syncApprovalRequestsWithFilter(
-              current,
-              approvalRequest,
-              invoiceAiApprovalStatusFilter,
-            ),
-          );
-          setInvoiceAssistantAiSuggestionRuns((current) =>
-            bumpSuggestionRunApprovalToPending(current, approvalRequest),
-          );
-          setSelectedInvoiceAiSuggestionRunDetail((current) =>
-            bumpSuggestionRunDetailApprovalToPending(current, approvalRequest),
-          );
-          break;
-        default:
-          break;
-      }
+      resolveAiAgentWorkspaceSupportStateHandler(agentKey)?.syncPending?.(
+        approvalRequest,
+      );
     });
   };
   const syncAiAgentApprovalRequestReviewed = (
@@ -3987,41 +4145,9 @@ export function App() {
       setSelectedTenantAiSuggestionWorkspaceDetail((current) =>
         applyReviewedApprovalToSuggestionRunDetail(current, approvalRequest),
       );
-
-      switch (agentKey) {
-        case 'growth-assist-coach':
-          setGrowthAssistAiApprovalRequests((current) =>
-            syncApprovalRequestsWithFilter(
-              current,
-              approvalRequest,
-              growthAiApprovalStatusFilter,
-            ),
-          );
-          setGrowthAssistAiSuggestionRuns((current) =>
-            applyReviewedApprovalToSuggestionRuns(current, approvalRequest),
-          );
-          setSelectedGrowthAiSuggestionRunDetail((current) =>
-            applyReviewedApprovalToSuggestionRunDetail(current, approvalRequest),
-          );
-          break;
-        case 'invoice-document-assistant':
-          setInvoiceAssistantAiApprovalRequests((current) =>
-            syncApprovalRequestsWithFilter(
-              current,
-              approvalRequest,
-              invoiceAiApprovalStatusFilter,
-            ),
-          );
-          setInvoiceAssistantAiSuggestionRuns((current) =>
-            applyReviewedApprovalToSuggestionRuns(current, approvalRequest),
-          );
-          setSelectedInvoiceAiSuggestionRunDetail((current) =>
-            applyReviewedApprovalToSuggestionRunDetail(current, approvalRequest),
-          );
-          break;
-        default:
-          break;
-      }
+      resolveAiAgentWorkspaceSupportStateHandler(agentKey)?.syncReviewed?.(
+        approvalRequest,
+      );
     });
   };
   const buildAiGuardedExecutionTargetBody = (
@@ -4076,16 +4202,9 @@ export function App() {
   };
   const getAiAgentApprovalStatusFilter = (
     agentKey: string,
-  ): AiApprovalRequestStatusFilter => {
-    switch (agentKey) {
-      case 'growth-assist-coach':
-        return growthAiApprovalStatusFilter;
-      case 'invoice-document-assistant':
-        return invoiceAiApprovalStatusFilter;
-      default:
-        return 'all';
-    }
-  };
+  ): AiApprovalRequestStatusFilter =>
+    resolveAiAgentWorkspaceSupportStateHandler(agentKey)?.approvalStatusFilter ??
+    'all';
   const fetchAiAgentWorkspaceSupportBundle = async (
     agentKey: string,
     tenantSlug: string,
@@ -4119,28 +4238,12 @@ export function App() {
   };
   const applyAiAgentWorkspaceSupportBundle = (
     agentKey: string,
-    bundle: Awaited<ReturnType<typeof fetchAiAgentWorkspaceSupportBundle>>,
+    bundle: AiAgentWorkspaceSupportBundle,
   ): void => {
-    switch (agentKey) {
-      case 'growth-assist-coach':
-        setGrowthAssistAiApprovalPolicies(bundle.approvalPolicies);
-        setGrowthAssistAiApprovalRequests(bundle.approvalRequests);
-        setGrowthAssistAiToolAccess(bundle.toolAccess);
-        setGrowthAssistAiEnvelope(bundle.suggestionEnvelope);
-        setGrowthAssistAiSuggestionRuns(bundle.suggestionRuns);
-        setSelectedGrowthAiSuggestionRunDetail(null);
-        break;
-      case 'invoice-document-assistant':
-        setInvoiceAssistantAiApprovalPolicies(bundle.approvalPolicies);
-        setInvoiceAssistantAiApprovalRequests(bundle.approvalRequests);
-        setInvoiceAssistantAiToolAccess(bundle.toolAccess);
-        setInvoiceAssistantAiEnvelope(bundle.suggestionEnvelope);
-        setInvoiceAssistantAiSuggestionRuns(bundle.suggestionRuns);
-        setSelectedInvoiceAiSuggestionRunDetail(null);
-        break;
-      default:
-        break;
-    }
+    resolveAiAgentWorkspaceSupportStateHandler(agentKey)?.applyBundle(bundle);
+  };
+  const clearAiAgentWorkspaceSupportBundle = (agentKey: string): void => {
+    resolveAiAgentWorkspaceSupportStateHandler(agentKey)?.clearBundle();
   };
   const fetchAiAgentApprovalQueue = async (
     agentKey: string,
@@ -4153,31 +4256,17 @@ export function App() {
     agentKey: string,
     approvalRequests: AiApprovalRequestResponse[],
   ): void => {
-    switch (agentKey) {
-      case 'growth-assist-coach':
-        setGrowthAssistAiApprovalRequests(approvalRequests);
-        break;
-      case 'invoice-document-assistant':
-        setInvoiceAssistantAiApprovalRequests(approvalRequests);
-        break;
-      default:
-        break;
-    }
+    resolveAiAgentWorkspaceSupportStateHandler(agentKey)?.applyApprovalQueue(
+      approvalRequests,
+    );
   };
   const setAiAgentSuggestionRunDetailState = (
     agentKey: string,
     detail: AiSuggestionRunDetailResponse | null,
   ): void => {
-    switch (agentKey) {
-      case 'growth-assist-coach':
-        setSelectedGrowthAiSuggestionRunDetail(detail);
-        break;
-      case 'invoice-document-assistant':
-        setSelectedInvoiceAiSuggestionRunDetail(detail);
-        break;
-      default:
-        break;
-    }
+    resolveAiAgentWorkspaceSupportStateHandler(agentKey)?.setSuggestionRunDetail(
+      detail,
+    );
   };
   const fetchTenantAiEcommerceLaunchSurface = async (tenantSlug: string) => {
     const [workspace, envelope] = await Promise.all([
@@ -4197,6 +4286,10 @@ export function App() {
     setTenantAiEcommerceLaunchWorkspace(surface.workspace);
     setEcommerceLaunchAssistantAiEnvelope(surface.envelope);
   };
+  const clearTenantAiEcommerceLaunchSurface = (): void => {
+    setTenantAiEcommerceLaunchWorkspace(null);
+    setEcommerceLaunchAssistantAiEnvelope(null);
+  };
   const getAiAgentDedicatedSuggestionRunActionKey = (
     action:
       | 'prepare'
@@ -4206,45 +4299,25 @@ export function App() {
     agentKey: string,
     suggestionRunOrRequestId?: string,
   ): string => {
+    const actionKeyConfig = isSupportedAiAgentKey(agentKey)
+      ? AI_AGENT_DEDICATED_ACTION_KEY_PREFIXES[agentKey]
+      : undefined;
+
     switch (action) {
       case 'prepare':
-        switch (agentKey) {
-          case 'growth-assist-coach':
-            return 'prepare-ai-suggestion-run';
-          case 'invoice-document-assistant':
-            return 'prepare-invoice-ai-suggestion-run';
-          case 'ecommerce-launch-assistant':
-            return 'prepare-ecommerce-ai-suggestion-run';
-          default:
-            return `prepare-${agentKey}`;
-        }
+        return actionKeyConfig?.prepare ?? `prepare-${agentKey}`;
       case 'request_approval':
-        switch (agentKey) {
-          case 'growth-assist-coach':
-            return `request-ai-approval:${suggestionRunOrRequestId ?? ''}`;
-          case 'invoice-document-assistant':
-            return `request-invoice-ai-approval:${suggestionRunOrRequestId ?? ''}`;
-          default:
-            return `request-ai-approval:${agentKey}:${suggestionRunOrRequestId ?? ''}`;
-        }
+        return actionKeyConfig?.requestApproval
+          ? `${actionKeyConfig.requestApproval}:${suggestionRunOrRequestId ?? ''}`
+          : `request-ai-approval:${agentKey}:${suggestionRunOrRequestId ?? ''}`;
       case 'review_approval':
-        switch (agentKey) {
-          case 'growth-assist-coach':
-            return `review-ai-approval:${suggestionRunOrRequestId ?? ''}`;
-          case 'invoice-document-assistant':
-            return `review-invoice-ai-approval:${suggestionRunOrRequestId ?? ''}`;
-          default:
-            return `review-ai-approval:${agentKey}:${suggestionRunOrRequestId ?? ''}`;
-        }
+        return actionKeyConfig?.reviewApproval
+          ? `${actionKeyConfig.reviewApproval}:${suggestionRunOrRequestId ?? ''}`
+          : `review-ai-approval:${agentKey}:${suggestionRunOrRequestId ?? ''}`;
       case 'load_detail':
-        switch (agentKey) {
-          case 'growth-assist-coach':
-            return `load-ai-run-detail:${suggestionRunOrRequestId ?? ''}`;
-          case 'invoice-document-assistant':
-            return `load-invoice-ai-run-detail:${suggestionRunOrRequestId ?? ''}`;
-          default:
-            return `load-ai-run-detail:${agentKey}:${suggestionRunOrRequestId ?? ''}`;
-        }
+        return actionKeyConfig?.loadDetail
+          ? `${actionKeyConfig.loadDetail}:${suggestionRunOrRequestId ?? ''}`
+          : `load-ai-run-detail:${agentKey}:${suggestionRunOrRequestId ?? ''}`;
       default:
         return `${action}:${agentKey}:${suggestionRunOrRequestId ?? ''}`;
     }
@@ -5077,11 +5150,7 @@ export function App() {
       setInvoiceNumberingSettings(null);
       setInvoicingReport(null);
       setInvoiceDocumentDraftingAssist(null);
-      setInvoiceAssistantAiEnvelope(null);
-      setInvoiceAssistantAiToolAccess([]);
-      setInvoiceAssistantAiApprovalPolicies([]);
-      setInvoiceAssistantAiApprovalRequests([]);
-      setInvoiceAssistantAiSuggestionRuns([]);
+      clearAiAgentWorkspaceSupportBundle('invoice-document-assistant');
       setSelectedInvoiceId(null);
       setSelectedInvoiceDetail(null);
       setSelectedInvoiceDocument(null);
@@ -5167,12 +5236,7 @@ export function App() {
         setInvoiceNumberingSettings(null);
         setInvoicingReport(null);
         setInvoiceDocumentDraftingAssist(null);
-        setInvoiceAssistantAiEnvelope(null);
-        setInvoiceAssistantAiToolAccess([]);
-        setInvoiceAssistantAiApprovalPolicies([]);
-        setInvoiceAssistantAiApprovalRequests([]);
-        setInvoiceAssistantAiSuggestionRuns([]);
-        setSelectedInvoiceAiSuggestionRunDetail(null);
+        clearAiAgentWorkspaceSupportBundle('invoice-document-assistant');
         setInvoices([]);
         setSelectedInvoiceId(null);
         setSelectedInvoiceDetail(null);
@@ -5247,8 +5311,7 @@ export function App() {
 
   useEffect(() => {
     if (!token || !currentTenancy || !canReadTenantEntitlements) {
-      setTenantAiEcommerceLaunchWorkspace(null);
-      setEcommerceLaunchAssistantAiEnvelope(null);
+      clearTenantAiEcommerceLaunchSurface();
       setTenantAiEcommerceLaunchWorkspaceLoading(false);
       setEcommerceLaunchError(null);
       return;
@@ -5276,8 +5339,7 @@ export function App() {
           return;
         }
 
-        setTenantAiEcommerceLaunchWorkspace(null);
-        setEcommerceLaunchAssistantAiEnvelope(null);
+        clearTenantAiEcommerceLaunchSurface();
         setEcommerceLaunchError(
           error instanceof Error
             ? error.message
@@ -5419,10 +5481,7 @@ export function App() {
       setGrowthWorkbench(null);
       setGrowthAssistAgenda(null);
       setAiAgentCatalog([]);
-      setGrowthAssistAiApprovalPolicies([]);
-      setGrowthAssistAiApprovalRequests([]);
-      setGrowthAssistAiToolAccess([]);
-      setGrowthAssistAiEnvelope(null);
+      clearAiAgentWorkspaceSupportBundle('growth-assist-coach');
       setWhatsappSummary(null);
       setWhatsappMonitorSummary(null);
       setWhatsappMonitorAnalytics(null);
@@ -5511,12 +5570,7 @@ export function App() {
         setGrowthWorkbench(null);
         setGrowthAssistAgenda(null);
         setAiAgentCatalog([]);
-        setGrowthAssistAiApprovalPolicies([]);
-        setGrowthAssistAiApprovalRequests([]);
-        setGrowthAssistAiToolAccess([]);
-        setGrowthAssistAiEnvelope(null);
-        setGrowthAssistAiSuggestionRuns([]);
-        setSelectedGrowthAiSuggestionRunDetail(null);
+        clearAiAgentWorkspaceSupportBundle('growth-assist-coach');
         setWhatsappSummary(null);
         setWhatsappMonitorSummary(null);
         setWhatsappMonitorAnalytics(null);
@@ -9207,8 +9261,7 @@ export function App() {
 
   async function refreshTenantAiEcommerceLaunchWorkspace() {
     if (!token || !currentTenancy || !canReadTenantEntitlements) {
-      setTenantAiEcommerceLaunchWorkspace(null);
-      setEcommerceLaunchAssistantAiEnvelope(null);
+      clearTenantAiEcommerceLaunchSurface();
       setTenantAiEcommerceLaunchWorkspaceLoading(false);
       return;
     }
@@ -9224,8 +9277,7 @@ export function App() {
         applyTenantAiEcommerceLaunchSurface(surface);
       });
     } catch (error) {
-      setTenantAiEcommerceLaunchWorkspace(null);
-      setEcommerceLaunchAssistantAiEnvelope(null);
+      clearTenantAiEcommerceLaunchSurface();
       setEcommerceLaunchError(
         error instanceof Error
           ? error.message
@@ -10327,13 +10379,10 @@ export function App() {
     setGrowthWorkbench(null);
     setGrowthAssistAgenda(null);
     setAiAgentCatalog([]);
-    setGrowthAssistAiApprovalPolicies([]);
-    setGrowthAssistAiApprovalRequests([]);
-    setGrowthAssistAiToolAccess([]);
-    setGrowthAssistAiEnvelope(null);
-    setGrowthAssistAiSuggestionRuns([]);
-    setSelectedGrowthAiSuggestionRunDetail(null);
-    setSelectedInvoiceAiSuggestionRunDetail(null);
+    clearAiAgentWorkspaceSupportBundle('growth-assist-coach');
+    clearAiAgentWorkspaceSupportBundle('invoice-document-assistant');
+    clearTenantAiEcommerceLaunchSurface();
+    setTenantAiEcommerceLaunchWorkspaceLoading(false);
     setWhatsappSummary(null);
     setWhatsappMonitorSummary(null);
     setWhatsappMonitorAnalytics(null);

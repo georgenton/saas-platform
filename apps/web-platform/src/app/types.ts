@@ -1595,6 +1595,18 @@ export interface AiEcommerceLaunchWorkspaceResponse {
     detail: string;
     recommendedUse: string;
   }>;
+  launchPlans: Array<{
+    id: string;
+    title: string;
+    status: 'ready' | 'warning' | 'blocked';
+    guardedExecutionReadiness:
+      | 'shadow_review_ready'
+      | 'needs_activation'
+      | 'needs_core_modules';
+    scopeSummary: string;
+    selectedChannels: Array<'catalog' | 'landing' | 'campaign'>;
+    nextStep: string;
+  }>;
   launchHints: Array<{
     key: string;
     title: string;

@@ -6,6 +6,7 @@ import {
 } from './ai-console-support';
 import {
   AiApprovalRequestResponse,
+  AiEcommerceLaunchWorkspaceResponse,
   AiGuardedExecutionControlWorkspaceResponse,
   AiGuardedExecutionExecutionResponse,
   AiGuardedExecutionRollbackExecutionResponse,
@@ -27,6 +28,7 @@ type Props = {
   guardedExecutionCaseSelectionByAgent: Record<string, string>;
   availableGuardedExecutionGrowthCases: GrowthOperationalCaseResponse[];
   availableGuardedExecutionInvoices: InvoiceSummaryResponse[];
+  tenantAiEcommerceLaunchWorkspace: AiEcommerceLaunchWorkspaceResponse | null;
   invoices: InvoiceSummaryResponse[];
   selectedInvoiceId: string | null;
   selectedInvoiceDetail: InvoiceDetailResponse | null;
@@ -61,6 +63,7 @@ export function AiGuardedExecutionControl({
   guardedExecutionCaseSelectionByAgent,
   availableGuardedExecutionGrowthCases,
   availableGuardedExecutionInvoices,
+  tenantAiEcommerceLaunchWorkspace,
   invoices,
   selectedInvoiceId,
   selectedInvoiceDetail,
@@ -207,16 +210,28 @@ export function AiGuardedExecutionControl({
               availableGuardedExecutionGrowthCases.find(
                 (entry) => entry.id === selectedCaseId,
               ) ?? null;
+            const selectedLaunchPlanId =
+              guardedExecutionCaseSelectionByAgent[agent.agentKey] ??
+              tenantAiEcommerceLaunchWorkspace?.launchPlans[0]?.id ??
+              '';
             const selectedInvoiceForGuardedExecution =
               invoices.find((entry) => entry.id === selectedInvoiceIdForGuardedExecution) ??
               null;
+            const selectedLaunchPlan =
+              tenantAiEcommerceLaunchWorkspace?.launchPlans.find(
+                (entry) => entry.id === selectedLaunchPlanId,
+              ) ?? null;
             const candidateLane = resolveAiGuardedExecutionCandidate(agent.agentKey);
             const isGrowthCaseCandidate =
               candidateLane?.targetKind === 'growth_operational_case';
             const isInvoicePaymentCandidate = candidateLane?.targetKind === 'invoice';
+            const isEcommerceLaunchCandidate =
+              candidateLane?.targetKind === 'ecommerce_launch_plan';
             const selectedGuardedExecutionTargetId = isInvoicePaymentCandidate
               ? selectedInvoiceIdForGuardedExecution
-              : selectedCaseId;
+              : isEcommerceLaunchCandidate
+                ? selectedLaunchPlanId
+                : selectedCaseId;
             const executeActionKey =
               approvedRequest && selectedGuardedExecutionTargetId
                 ? `execute-ai-guarded:${approvedRequest.id}:${selectedGuardedExecutionTargetId}`
@@ -262,6 +277,9 @@ export function AiGuardedExecutionControl({
               approvedRequest !== null &&
               selectedInvoiceForGuardedExecution !== null &&
               matchingInvoiceRollbackPayment !== null;
+            const ecommerceLaneInShadowReviewOnly =
+              isEcommerceLaunchCandidate &&
+              selectedLaunchPlan?.guardedExecutionReadiness === 'shadow_review_ready';
 
             return (
               <div
@@ -462,6 +480,70 @@ export function AiGuardedExecutionControl({
                       {matchingInvoiceRollbackPayment
                         ? `Pago reversible visible: ${matchingInvoiceRollbackPayment.id}.`
                         : 'Todavia no hay un pago reversible visible para esta factura y approval.'}
+                    </small>
+                  </>
+                ) : null}
+
+                {isEcommerceLaunchCandidate ? (
+                  <>
+                    <small>
+                      {approvedRequest
+                        ? `Approval aprobado visible: ${approvedRequest.id}.`
+                        : 'Todavia no hay un approval aprobado visible para abrir el shadow review de ecommerce.'}
+                    </small>
+                    <div className={styles.inlineActions}>
+                      <select
+                        className={styles.selectField}
+                        value={selectedLaunchPlanId}
+                        onChange={(event) => {
+                          onSelectGuardedExecutionTarget(
+                            agent.agentKey,
+                            event.target.value,
+                          );
+                        }}
+                        disabled={
+                          (tenantAiEcommerceLaunchWorkspace?.launchPlans.length ?? 0) ===
+                          0
+                        }
+                      >
+                        {(tenantAiEcommerceLaunchWorkspace?.launchPlans.length ?? 0) ===
+                        0 ? (
+                          <option value="">
+                            {candidateLane?.emptyTargetSelectionLabel ??
+                              'No eligible launch plan'}
+                          </option>
+                        ) : (
+                          tenantAiEcommerceLaunchWorkspace!.launchPlans.map((entry) => (
+                            <option key={entry.id} value={entry.id}>
+                              {entry.title} · {humanizeKey(entry.status)}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                      <button
+                        className={styles.secondaryButton}
+                        type="button"
+                        disabled
+                      >
+                        {candidateLane?.executeActionLabel ?? 'Execute launch publish'}
+                      </button>
+                      <button
+                        className={styles.ghostButton}
+                        type="button"
+                        disabled
+                      >
+                        {candidateLane?.rollbackActionLabel ?? 'Rollback launch publish'}
+                      </button>
+                    </div>
+                    <small>
+                      {selectedLaunchPlan
+                        ? `${selectedLaunchPlan.scopeSummary} · channels ${selectedLaunchPlan.selectedChannels.join(', ')}.`
+                        : 'Selecciona un launch plan elegible para preparar este lane.'}
+                    </small>
+                    <small>
+                      {ecommerceLaneInShadowReviewOnly
+                        ? 'Este lane ya puede entrar a approval y shadow review, pero el publish real sigue bloqueado hasta que exista la automatizacion operativa.'
+                        : 'Este lane todavia no llega a shadow review operativo.'}
                     </small>
                   </>
                 ) : null}

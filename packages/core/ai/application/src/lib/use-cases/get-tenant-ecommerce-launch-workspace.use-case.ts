@@ -26,6 +26,19 @@ export interface TenantEcommerceLaunchWorkspaceHintView {
   caution: string;
 }
 
+export interface TenantEcommerceLaunchPlanView {
+  id: string;
+  title: string;
+  status: 'ready' | 'warning' | 'blocked';
+  guardedExecutionReadiness:
+    | 'shadow_review_ready'
+    | 'needs_activation'
+    | 'needs_core_modules';
+  scopeSummary: string;
+  selectedChannels: Array<'catalog' | 'landing' | 'campaign'>;
+  nextStep: string;
+}
+
 export interface TenantEcommerceLaunchWorkspaceView {
   tenantSlug: string;
   generatedAt: Date;
@@ -45,6 +58,7 @@ export interface TenantEcommerceLaunchWorkspaceView {
   };
   checklist: TenantEcommerceLaunchWorkspaceChecklistItemView[];
   channelGuidance: TenantEcommerceLaunchWorkspaceChannelGuidanceView[];
+  launchPlans: TenantEcommerceLaunchPlanView[];
   launchHints: TenantEcommerceLaunchWorkspaceHintView[];
   safeActions: string[];
   blockedActions: string[];
@@ -114,6 +128,12 @@ export class GetTenantEcommerceLaunchWorkspaceUseCase {
         ecommerceEnabled,
         activeModuleKeys,
       ),
+      launchPlans: this.buildLaunchPlans(
+        tenantSlug,
+        ecommerceEnabled,
+        missingCoreModuleKeys,
+        inactiveModuleKeys,
+      ),
       launchHints: this.buildLaunchHints(ecommerceEnabled, inactiveModuleKeys),
       safeActions: [
         'Resumir el launch scope inicial usando solo productos y modulos activos del catalogo.',
@@ -128,6 +148,60 @@ export class GetTenantEcommerceLaunchWorkspaceUseCase {
         'Tratar este brief como reemplazo del dominio ecommerce operativo que todavia no existe.',
       ],
     };
+  }
+
+  private buildLaunchPlans(
+    tenantSlug: string,
+    ecommerceEnabled: boolean,
+    missingCoreModuleKeys: string[],
+    inactiveModuleKeys: string[],
+  ): TenantEcommerceLaunchPlanView[] {
+    if (!ecommerceEnabled) {
+      return [
+        {
+          id: `${tenantSlug}:launch-plan:initial`,
+          title: 'Initial ecommerce launch plan',
+          status: 'blocked',
+          guardedExecutionReadiness: 'needs_activation',
+          scopeSummary:
+            'El tenant todavia no tiene Ecommerce activo, asi que este plan solo sirve para preparar el brief inicial.',
+          selectedChannels: ['catalog', 'landing', 'campaign'],
+          nextStep:
+            'Activa Ecommerce para convertir este launch brief en un lane operativo con ownership real.',
+        },
+      ];
+    }
+
+    if (missingCoreModuleKeys.length > 0) {
+      return [
+        {
+          id: `${tenantSlug}:launch-plan:initial`,
+          title: 'Initial ecommerce launch plan',
+          status: 'blocked',
+          guardedExecutionReadiness: 'needs_core_modules',
+          scopeSummary: `Todavia faltan modulos core antes de publicar un launch estrecho: ${missingCoreModuleKeys.join(', ')}.`,
+          selectedChannels: ['catalog', 'landing', 'campaign'],
+          nextStep:
+            'Completa primero los modulos core y usa este plan solo como rehearsal de shadow review.',
+        },
+      ];
+    }
+
+    return [
+      {
+        id: `${tenantSlug}:launch-plan:initial`,
+        title: 'Initial ecommerce launch plan',
+        status: inactiveModuleKeys.length > 0 ? 'warning' : 'ready',
+        guardedExecutionReadiness: 'shadow_review_ready',
+        scopeSummary:
+          inactiveModuleKeys.length > 0
+            ? `El launch puede avanzar con alcance estrecho mientras dejas fuera modulos no activos: ${inactiveModuleKeys.join(', ')}.`
+            : 'El tenant ya tiene base suficiente para llevar este plan por shadow review antes de abrir publish real.',
+        selectedChannels: ['catalog', 'landing', 'campaign'],
+        nextStep:
+          'Usa este plan como target de approval y shadow review mientras el publish real sigue bloqueado.',
+      },
+    ];
   }
 
   private buildSummary(

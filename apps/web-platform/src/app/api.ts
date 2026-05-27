@@ -2023,6 +2023,7 @@ export async function executeTenantAiGuardedExecution(
   body: {
     caseId?: string;
     invoiceId?: string;
+    launchPlanId?: string;
   },
 ): Promise<AiGuardedExecutionExecutionResponse> {
   return request<AiGuardedExecutionExecutionResponse>(
@@ -2047,6 +2048,7 @@ export async function rollbackTenantAiGuardedExecution(
   body: {
     caseId?: string;
     invoiceId?: string;
+    launchPlanId?: string;
   },
 ): Promise<AiGuardedExecutionRollbackExecutionResponse> {
   return request<AiGuardedExecutionRollbackExecutionResponse>(

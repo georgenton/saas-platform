@@ -7008,6 +7008,18 @@ export class AiController {
         });
       }
 
+      if (candidateTargetKind === 'ecommerce_launch_plan') {
+        if (!body.launchPlanId) {
+          throw new BadRequestException(
+            'launchPlanId is required for ecommerce guarded execution readiness.',
+          );
+        }
+
+        throw new ConflictException(
+          `Ecommerce guarded execution for launch plan ${body.launchPlanId} remains in shadow review only until storefront publish automation becomes operational.`,
+        );
+      }
+
       throw new BadRequestException(
         `AI agent ${agentKey} does not support a guarded execution lane yet.`,
       );
@@ -7229,6 +7241,18 @@ export class AiController {
           invoice: updatedInvoiceDetail,
           payment,
         });
+      }
+
+      if (candidateTargetKind === 'ecommerce_launch_plan') {
+        if (!body.launchPlanId) {
+          throw new BadRequestException(
+            'launchPlanId is required for ecommerce guarded execution rollback readiness.',
+          );
+        }
+
+        throw new ConflictException(
+          `Ecommerce guarded execution rollback for launch plan ${body.launchPlanId} is not available because the publish lane still runs in shadow review only.`,
+        );
       }
 
       throw new BadRequestException(

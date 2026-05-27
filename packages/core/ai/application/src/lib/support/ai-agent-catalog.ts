@@ -4,6 +4,8 @@ import {
   AiAgentCatalogEntry,
   AiGuardedExecutionCandidateDescriptor,
   AiOperatingModelAgentEntry,
+  AiOperatingModelAgentApprovalPolicyReference,
+  AiOperatingModelAgentPrimarySurfaceReference,
   AiOperatingModelManifest,
   AiPromptRegistryEntry,
   AiToolDefinition,
@@ -640,6 +642,49 @@ export function getAiGuardedExecutionCandidateDescriptor(
   }
 }
 
+export function getAiAgentPrimarySurfaceDescriptor(
+  agentKey: string,
+): AiOperatingModelAgentPrimarySurfaceReference {
+  switch (agentKey) {
+    case 'growth-assist-coach':
+      return {
+        key: 'growth_assist_daily_agenda',
+        title: 'Growth Assist daily agenda',
+        sourceContractKey: 'growth.assist.daily_agenda',
+      };
+    case 'invoice-document-assistant':
+      return {
+        key: 'invoice_document_drafting',
+        title: 'Invoice document drafting',
+        sourceContractKey: 'invoicing.assist.document_drafting',
+      };
+    case 'ecommerce-launch-assistant':
+      return {
+        key: 'ecommerce_launch_workspace',
+        title: 'Ecommerce launch workspace',
+        sourceContractKey: 'ecommerce.launch.workspace',
+      };
+    default:
+      throw new Error(
+        `AI primary surface descriptor is not configured for agent ${agentKey}.`,
+      );
+  }
+}
+
+export function listAiOperatingModelApprovalPoliciesByAgentKey(
+  agentKey: string,
+): AiOperatingModelAgentApprovalPolicyReference[] {
+  return listAiApprovalPoliciesByAgentKey(agentKey).map((entry) => ({
+    policyKey: entry.policyKey,
+    agentKey: entry.agentKey,
+    scope: entry.scope,
+    title: entry.title,
+    summary: entry.summary,
+    reviewGuidance: entry.reviewGuidance,
+    approvalRequired: entry.approvalRequired,
+  }));
+}
+
 export function listAiOperatingModelManifest(): AiOperatingModelManifest {
   const agents: AiOperatingModelAgentEntry[] = AI_AGENT_CATALOG.map((agent) => {
     const promptPack = findAiPromptRegistryEntryByAgentKey(agent.key);
@@ -652,23 +697,24 @@ export function listAiOperatingModelManifest(): AiOperatingModelManifest {
     }
 
     const toolAccess = listAiAgentToolAccessByAgentKey(agent.key).map((entry) => ({
-      toolKey: entry.tool.key,
+      tool: entry.tool,
       accessLevel: entry.accessLevel,
-      availability: entry.tool.availability,
-      actionKind: entry.tool.actionKind,
-      executionMode: entry.tool.executionBoundary.executionMode,
-      requiresApproval: entry.tool.requiresApproval,
+      rationale: entry.rationale,
     }));
 
     return {
       agent: cloneAiAgentCatalogEntry(agent),
       requiredPermissionKey,
+      primarySurface: getAiAgentPrimarySurfaceDescriptor(agent.key),
       promptPack: {
         key: promptPack.key,
         version: promptPack.version,
         mode: promptPack.mode,
         title: promptPack.title,
+        summary: promptPack.summary,
+        objective: promptPack.objective,
       },
+      approvalPolicies: listAiOperatingModelApprovalPoliciesByAgentKey(agent.key),
       approvalPolicyKeys: listAiApprovalPoliciesByAgentKey(agent.key).map(
         (entry) => entry.policyKey,
       ),

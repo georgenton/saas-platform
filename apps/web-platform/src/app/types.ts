@@ -1142,20 +1142,59 @@ export interface AiOperatingModelAgentResponse {
     supportedSurfaceKeys: string[];
   };
   requiredPermissionKey: string;
+  primarySurface: {
+    key: string;
+    title: string;
+    sourceContractKey: string;
+  };
   promptPack: {
     key: string;
     version: string;
     mode: 'suggestion' | 'guarded_execution';
     title: string;
+    summary: string;
+    objective: string;
   };
+  approvalPolicies: Array<{
+    policyKey: string;
+    agentKey: string;
+    scope: 'suggestion_review';
+    title: string;
+    summary: string;
+    reviewGuidance: string;
+    approvalRequired: boolean;
+  }>;
   approvalPolicyKeys: string[];
   toolAccess: Array<{
-    toolKey: string;
+    tool: {
+      key: string;
+      title: string;
+      summary: string;
+      domainKey: 'growth' | 'invoicing' | 'ecommerce';
+      availability: 'ready' | 'planned';
+      riskLevel: 'low' | 'medium' | 'high';
+      actionKind: 'read' | 'draft' | 'propose' | 'execute';
+      requiresApproval: boolean;
+      inputContract: {
+        sourceSurfaceKeys: string[];
+        primaryPayload: string;
+        requiredContext: string[];
+      };
+      outputContract: {
+        primaryArtifact: string;
+        suggestedOutputKeys: string[];
+        humanReviewFocus: string[];
+      };
+      executionBoundary: {
+        executionMode: 'suggestion_only' | 'guarded_execution_planned';
+        stateMutation: 'none' | 'planned';
+        externalSideEffects: 'none' | 'planned';
+        reviewRequirement: string;
+        blockedCapabilities: string[];
+      };
+    };
     accessLevel: 'allowed' | 'approval_required' | 'blocked';
-    availability: 'ready' | 'planned';
-    actionKind: 'read' | 'draft' | 'propose' | 'execute';
-    executionMode: 'suggestion_only' | 'guarded_execution_planned';
-    requiresApproval: boolean;
+    rationale: string;
   }>;
   guardedExecutionCandidateToolKey: string | null;
   guardedExecutionCandidate: {

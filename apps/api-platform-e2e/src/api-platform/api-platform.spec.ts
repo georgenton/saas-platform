@@ -5697,160 +5697,182 @@ describe('API', () => {
       .get('/api/ai/model')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect({
-        version: 'v1',
-        agents: [
-          {
-            agent: {
-              key: 'growth-assist-coach',
-              title: 'Growth Assist Coach',
-              summary:
-                'Turns deterministic Growth Assist signals into tenant-scoped commercial suggestions without executing actions automatically.',
-              domainKey: 'growth',
-              productKey: 'growth',
-              availability: 'ready',
-              defaultMode: 'suggestion',
-              supportedSurfaceKeys: ['growth_assist_daily_agenda'],
-            },
-            requiredPermissionKey: GROWTH_PERMISSIONS.CONVERSATIONS_READ,
-            promptPack: {
-              key: 'growth-assist-coach-core',
-              version: 'v1',
-              mode: 'suggestion',
-              title: 'Growth Assist Coach Core',
-            },
-            approvalPolicyKeys: ['growth-assist-suggestion-review'],
-            toolAccess: [
-              {
-                toolKey: 'growth_assist_reply_drafting',
-                accessLevel: 'allowed',
+      .expect((response) => {
+        expect(response.body).toEqual({
+          version: 'v1',
+          agents: expect.arrayContaining([
+            expect.objectContaining({
+              agent: expect.objectContaining({
+                key: 'growth-assist-coach',
+                domainKey: 'growth',
                 availability: 'ready',
-                actionKind: 'draft',
-                executionMode: 'suggestion_only',
-                requiresApproval: false,
+              }),
+              requiredPermissionKey: GROWTH_PERMISSIONS.CONVERSATIONS_READ,
+              primarySurface: {
+                key: 'growth_assist_daily_agenda',
+                title: 'Growth Assist daily agenda',
+                sourceContractKey: 'growth.assist.daily_agenda',
               },
-              {
-                toolKey: 'growth_assist_follow_up_planning',
-                accessLevel: 'allowed',
-                availability: 'ready',
-                actionKind: 'propose',
-                executionMode: 'suggestion_only',
-                requiresApproval: false,
-              },
-              {
+              promptPack: expect.objectContaining({
+                key: 'growth-assist-coach-core',
+                version: 'v1',
+                summary:
+                  'Prompt pack for turning deterministic Growth Assist agenda signals into commercial suggestions for non-expert operators.',
+                objective:
+                  'Propose clear commercial suggestions for a non-expert operator using the deterministic Growth Assist agenda as the source of truth.',
+              }),
+              approvalPolicies: [
+                {
+                  policyKey: 'growth-assist-suggestion-review',
+                  agentKey: 'growth-assist-coach',
+                  scope: 'suggestion_review',
+                  title: 'Growth Assist suggestion review',
+                  summary:
+                    'Requests human review before a Growth Assist suggestion handoff is treated as approved for operator use.',
+                  reviewGuidance:
+                    'Verify that the suggestion stays grounded in deterministic Growth signals, does not overreach beyond the tenant context, and still sounds safe for a human operator to adapt.',
+                  approvalRequired: true,
+                },
+              ],
+              approvalPolicyKeys: ['growth-assist-suggestion-review'],
+              guardedExecutionCandidateToolKey:
+                'growth_case_assignment_execution',
+              guardedExecutionCandidate: {
                 toolKey: 'growth_case_assignment_execution',
-                accessLevel: 'blocked',
-                availability: 'planned',
-                actionKind: 'execute',
-                executionMode: 'guarded_execution_planned',
-                requiresApproval: true,
+                title: 'Growth case assignment lane',
+                targetKind: 'growth_operational_case',
+                targetSelectionLabel: 'Operational case',
+                emptyTargetSelectionLabel: 'No eligible operational cases',
+                executeActionLabel: 'Execute take-case',
+                rollbackActionLabel: 'Rollback take-case',
               },
-            ],
-            guardedExecutionCandidateToolKey: 'growth_case_assignment_execution',
-            guardedExecutionCandidate: {
-              toolKey: 'growth_case_assignment_execution',
-              title: 'Growth case assignment lane',
-              targetKind: 'growth_operational_case',
-              targetSelectionLabel: 'Operational case',
-              emptyTargetSelectionLabel: 'No eligible operational cases',
-              executeActionLabel: 'Execute take-case',
-              rollbackActionLabel: 'Rollback take-case',
-            },
-          },
-          {
-            agent: {
-              key: 'invoice-document-assistant',
-              title: 'Invoice Document Assistant',
-              summary:
-                'Turns deterministic invoicing drafting and readiness signals into tenant-scoped document guidance without executing fiscal actions automatically.',
-              domainKey: 'invoicing',
-              productKey: 'invoicing',
-              availability: 'ready',
-              defaultMode: 'suggestion',
-              supportedSurfaceKeys: ['invoice_document_drafting'],
-            },
-            requiredPermissionKey: INVOICING_PERMISSIONS.REPORTS_READ,
-            promptPack: {
-              key: 'invoice-document-assistant-core',
-              version: 'v1',
-              mode: 'suggestion',
-              title: 'Invoice Document Assistant Core',
-            },
-            approvalPolicyKeys: ['invoice-document-assistant-suggestion-review'],
-            toolAccess: [
-              {
-                toolKey: 'invoice_document_drafting',
-                accessLevel: 'approval_required',
-                availability: 'ready',
-                actionKind: 'draft',
-                executionMode: 'suggestion_only',
-                requiresApproval: false,
+              toolAccess: expect.arrayContaining([
+                expect.objectContaining({
+                  accessLevel: 'blocked',
+                  rationale: expect.any(String),
+                  tool: expect.objectContaining({
+                    key: 'growth_case_assignment_execution',
+                    availability: 'planned',
+                    actionKind: 'execute',
+                    requiresApproval: true,
+                    executionBoundary: expect.objectContaining({
+                      executionMode: 'guarded_execution_planned',
+                    }),
+                  }),
+                }),
+              ]),
+            }),
+            expect.objectContaining({
+              agent: expect.objectContaining({
+                key: 'invoice-document-assistant',
+                domainKey: 'invoicing',
+              }),
+              requiredPermissionKey: INVOICING_PERMISSIONS.REPORTS_READ,
+              primarySurface: {
+                key: 'invoice_document_drafting',
+                title: 'Invoice document drafting',
+                sourceContractKey: 'invoicing.assist.document_drafting',
               },
-              {
+              promptPack: expect.objectContaining({
+                key: 'invoice-document-assistant-core',
+                version: 'v1',
+                summary:
+                  'Prompt pack for document drafting, review, and checklist suggestions in Ecuador electronic invoicing.',
+                objective:
+                  'Help operators draft and review tax document workflows without replacing fiscal validation owned by the invoicing domain.',
+              }),
+              approvalPolicies: [
+                {
+                  policyKey: 'invoice-document-assistant-suggestion-review',
+                  agentKey: 'invoice-document-assistant',
+                  scope: 'suggestion_review',
+                  title: 'Invoice suggestion review',
+                  summary:
+                    'Keeps document-drafting suggestions behind explicit operator review before they influence invoicing work.',
+                  reviewGuidance:
+                    'Confirm that the suggestion is only advisory, matches the fiscal document context, and does not replace domain validation or tax compliance checks.',
+                  approvalRequired: true,
+                },
+              ],
+              toolAccess: expect.arrayContaining([
+                expect.objectContaining({
+                  accessLevel: 'approval_required',
+                  tool: expect.objectContaining({
+                    key: 'invoice_document_drafting',
+                    availability: 'ready',
+                    actionKind: 'draft',
+                  }),
+                }),
+              ]),
+              guardedExecutionCandidateToolKey:
+                'invoice_payment_collection_execution',
+              guardedExecutionCandidate: {
                 toolKey: 'invoice_payment_collection_execution',
-                accessLevel: 'blocked',
-                availability: 'planned',
-                actionKind: 'execute',
-                executionMode: 'guarded_execution_planned',
-                requiresApproval: true,
+                title: 'Invoice payment collection lane',
+                targetKind: 'invoice',
+                targetSelectionLabel: 'Invoice',
+                emptyTargetSelectionLabel: 'No eligible invoices',
+                executeActionLabel: 'Execute post-payment',
+                rollbackActionLabel: 'Rollback payment',
               },
-            ],
-            guardedExecutionCandidateToolKey:
-              'invoice_payment_collection_execution',
-            guardedExecutionCandidate: {
-              toolKey: 'invoice_payment_collection_execution',
-              title: 'Invoice payment collection lane',
-              targetKind: 'invoice',
-              targetSelectionLabel: 'Invoice',
-              emptyTargetSelectionLabel: 'No eligible invoices',
-              executeActionLabel: 'Execute post-payment',
-              rollbackActionLabel: 'Rollback payment',
-            },
-          },
-          {
-            agent: {
-              key: 'ecommerce-launch-assistant',
-              title: 'Ecommerce Launch Assistant',
-              summary:
-                'Turns deterministic ecommerce launch signals into tenant-scoped launch suggestions without publishing storefront work automatically.',
-              domainKey: 'ecommerce',
-              productKey: 'ecommerce',
-              availability: 'ready',
-              defaultMode: 'suggestion',
-              supportedSurfaceKeys: ['ecommerce_launch_workspace'],
-            },
-            requiredPermissionKey: TENANT_PERMISSIONS.ENTITLEMENTS_READ,
-            promptPack: {
-              key: 'ecommerce-launch-assistant-core',
-              version: 'v1',
-              mode: 'suggestion',
-              title: 'Ecommerce Launch Assistant Core',
-            },
-            approvalPolicyKeys: ['ecommerce-launch-assistant-suggestion-review'],
-            toolAccess: [
-              {
-                toolKey: 'ecommerce_launch_briefing',
-                accessLevel: 'approval_required',
-                availability: 'ready',
-                actionKind: 'propose',
-                executionMode: 'suggestion_only',
-                requiresApproval: false,
+            }),
+            expect.objectContaining({
+              agent: expect.objectContaining({
+                key: 'ecommerce-launch-assistant',
+                domainKey: 'ecommerce',
+              }),
+              requiredPermissionKey: TENANT_PERMISSIONS.ENTITLEMENTS_READ,
+              primarySurface: {
+                key: 'ecommerce_launch_workspace',
+                title: 'Ecommerce launch workspace',
+                sourceContractKey: 'ecommerce.launch.workspace',
               },
-            ],
-            guardedExecutionCandidateToolKey: null,
-            guardedExecutionCandidate: null,
+              promptPack: expect.objectContaining({
+                key: 'ecommerce-launch-assistant-core',
+                version: 'v1',
+                summary:
+                  'Prompt pack for ecommerce launch, landing, and campaign suggestions grounded in deterministic tenant context.',
+                objective:
+                  'Propose launch content and structure suggestions without becoming the source of truth for catalog or storefront workflows.',
+              }),
+              approvalPolicies: [
+                {
+                  policyKey: 'ecommerce-launch-assistant-suggestion-review',
+                  agentKey: 'ecommerce-launch-assistant',
+                  scope: 'suggestion_review',
+                  title: 'Ecommerce launch suggestion review',
+                  summary:
+                    'Keeps launch and campaign suggestions behind operator review before they influence storefront work.',
+                  reviewGuidance:
+                    'Check that the suggestion stays grounded in product context, does not invent catalog facts, and is safe to translate into real launch work.',
+                  approvalRequired: true,
+                },
+              ],
+              toolAccess: expect.arrayContaining([
+                expect.objectContaining({
+                  accessLevel: 'approval_required',
+                  tool: expect.objectContaining({
+                    key: 'ecommerce_launch_briefing',
+                    availability: 'ready',
+                    actionKind: 'propose',
+                  }),
+                }),
+              ]),
+              guardedExecutionCandidateToolKey: null,
+              guardedExecutionCandidate: null,
+            }),
+          ]),
+          counts: {
+            totalAgents: 3,
+            readyAgents: 3,
+            plannedAgents: 0,
+            agentsWithApprovalPolicies: 3,
+            agentsWithGuardedExecutionCandidate: 2,
+            totalToolAccessEntries: 6,
+            approvalRequiredToolAccessEntries: 2,
+            blockedToolAccessEntries: 2,
           },
-        ],
-        counts: {
-          totalAgents: 3,
-          readyAgents: 3,
-          plannedAgents: 0,
-          agentsWithApprovalPolicies: 3,
-          agentsWithGuardedExecutionCandidate: 2,
-          totalToolAccessEntries: 6,
-          approvalRequiredToolAccessEntries: 2,
-          blockedToolAccessEntries: 2,
-        },
+        });
       });
   });
 

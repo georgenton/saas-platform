@@ -42,6 +42,7 @@ describe('AI operating model use case', () => {
               approvalRequired: true,
             },
           ],
+          primaryApprovalPolicyKey: 'growth-assist-suggestion-review',
           approvalPolicyKeys: ['growth-assist-suggestion-review'],
           handoffContract: {
             requestApprovalRationale:
@@ -110,6 +111,8 @@ describe('AI operating model use case', () => {
               approvalRequired: true,
             },
           ],
+          primaryApprovalPolicyKey:
+            'invoice-document-assistant-suggestion-review',
           handoffContract: {
             requestApprovalRationale:
               'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
@@ -168,6 +171,8 @@ describe('AI operating model use case', () => {
               approvalRequired: true,
             },
           ],
+          primaryApprovalPolicyKey:
+            'ecommerce-launch-assistant-suggestion-review',
           handoffContract: {
             requestApprovalRationale:
               'Solicitar revision humana antes de usar la sugerencia de Ecommerce Launch Assistant.',

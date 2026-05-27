@@ -34,6 +34,7 @@ export interface AiOperatingModelAgentResponseDto {
     reviewGuidance: string;
     approvalRequired: boolean;
   }>;
+  primaryApprovalPolicyKey: string | null;
   approvalPolicyKeys: string[];
   toolAccess: Array<{
     tool: {
@@ -131,6 +132,7 @@ export function toAiOperatingModelResponseDto(
         ...entry.promptPack,
       },
       approvalPolicies: entry.approvalPolicies.map((policy) => ({ ...policy })),
+      primaryApprovalPolicyKey: entry.primaryApprovalPolicyKey,
       approvalPolicyKeys: [...entry.approvalPolicyKeys],
       toolAccess: entry.toolAccess.map((toolAccess) => ({
         tool: {

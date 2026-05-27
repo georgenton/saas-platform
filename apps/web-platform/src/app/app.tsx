@@ -1,4 +1,12 @@
-import { FormEvent, startTransition, useEffect, useMemo, useState } from 'react';
+import {
+  Dispatch,
+  FormEvent,
+  SetStateAction,
+  startTransition,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import styles from './app.module.css';
 import {
   fetchAiAgentApprovalPolicies,
@@ -622,6 +630,22 @@ type AiAgentWorkspaceSupportStateHandler = {
   syncPrepared?: (suggestionRun: AiSuggestionRunResponse) => void;
   syncPending?: (approvalRequest: AiApprovalRequestResponse) => void;
   syncReviewed?: (approvalRequest: AiApprovalRequestResponse) => void;
+};
+
+type StandardAiAgentWorkspaceSupportStateHandlerInput = {
+  approvalStatusFilter: AiApprovalRequestStatusFilter;
+  setApprovalPolicies: (approvalPolicies: AiApprovalPolicyResponse[]) => void;
+  setApprovalRequests: Dispatch<
+    SetStateAction<AiApprovalRequestResponse[]>
+  >;
+  setToolAccess: (toolAccess: AiAgentToolAccessResponse[]) => void;
+  setSuggestionEnvelope: (
+    envelope: AiSuggestionEnvelopeResponse | null,
+  ) => void;
+  setSuggestionRuns: Dispatch<SetStateAction<AiSuggestionRunResponse[]>>;
+  setSuggestionRunDetail: Dispatch<
+    SetStateAction<AiSuggestionRunDetailResponse | null>
+  >;
 };
 
 function isSupportedAiAgentKey(agentKey: string): agentKey is SupportedAiAgentKey {
@@ -3905,125 +3929,95 @@ export function App() {
 
     return domainKey ? aiAgentActionFeedbackByDomain[domainKey] : null;
   };
+  const createStandardAiAgentWorkspaceSupportStateHandler = ({
+    approvalStatusFilter,
+    setApprovalPolicies,
+    setApprovalRequests,
+    setToolAccess,
+    setSuggestionEnvelope,
+    setSuggestionRuns,
+    setSuggestionRunDetail,
+  }: StandardAiAgentWorkspaceSupportStateHandlerInput): AiAgentWorkspaceSupportStateHandler => ({
+    approvalStatusFilter,
+    applyBundle: (bundle) => {
+      setApprovalPolicies(bundle.approvalPolicies);
+      setApprovalRequests(bundle.approvalRequests);
+      setToolAccess(bundle.toolAccess);
+      setSuggestionEnvelope(bundle.suggestionEnvelope);
+      setSuggestionRuns(bundle.suggestionRuns);
+      setSuggestionRunDetail(null);
+    },
+    clearBundle: () => {
+      setApprovalPolicies([]);
+      setApprovalRequests([]);
+      setToolAccess([]);
+      setSuggestionEnvelope(null);
+      setSuggestionRuns([]);
+      setSuggestionRunDetail(null);
+    },
+    applyApprovalQueue: (approvalRequests) => {
+      setApprovalRequests(approvalRequests);
+    },
+    setSuggestionRunDetail,
+    syncPrepared: (suggestionRun) => {
+      setSuggestionRuns((current) =>
+        prependOrReplaceSuggestionRun(current, suggestionRun),
+      );
+    },
+    syncPending: (approvalRequest) => {
+      setApprovalRequests((current) =>
+        syncApprovalRequestsWithFilter(
+          current,
+          approvalRequest,
+          approvalStatusFilter,
+        ),
+      );
+      setSuggestionRuns((current) =>
+        bumpSuggestionRunApprovalToPending(current, approvalRequest),
+      );
+      setSuggestionRunDetail((current) =>
+        bumpSuggestionRunDetailApprovalToPending(current, approvalRequest),
+      );
+    },
+    syncReviewed: (approvalRequest) => {
+      setApprovalRequests((current) =>
+        syncApprovalRequestsWithFilter(
+          current,
+          approvalRequest,
+          approvalStatusFilter,
+        ),
+      );
+      setSuggestionRuns((current) =>
+        applyReviewedApprovalToSuggestionRuns(current, approvalRequest),
+      );
+      setSuggestionRunDetail((current) =>
+        applyReviewedApprovalToSuggestionRunDetail(current, approvalRequest),
+      );
+    },
+  });
   const aiAgentWorkspaceSupportStateHandlers: Partial<
     Record<SupportedAiAgentKey, AiAgentWorkspaceSupportStateHandler>
   > = {
-    'growth-assist-coach': {
+    'growth-assist-coach': createStandardAiAgentWorkspaceSupportStateHandler({
       approvalStatusFilter: growthAiApprovalStatusFilter,
-      applyBundle: (bundle) => {
-        setGrowthAssistAiApprovalPolicies(bundle.approvalPolicies);
-        setGrowthAssistAiApprovalRequests(bundle.approvalRequests);
-        setGrowthAssistAiToolAccess(bundle.toolAccess);
-        setGrowthAssistAiEnvelope(bundle.suggestionEnvelope);
-        setGrowthAssistAiSuggestionRuns(bundle.suggestionRuns);
-        setSelectedGrowthAiSuggestionRunDetail(null);
-      },
-      clearBundle: () => {
-        setGrowthAssistAiApprovalPolicies([]);
-        setGrowthAssistAiApprovalRequests([]);
-        setGrowthAssistAiToolAccess([]);
-        setGrowthAssistAiEnvelope(null);
-        setGrowthAssistAiSuggestionRuns([]);
-        setSelectedGrowthAiSuggestionRunDetail(null);
-      },
-      applyApprovalQueue: (approvalRequests) => {
-        setGrowthAssistAiApprovalRequests(approvalRequests);
-      },
+      setApprovalPolicies: setGrowthAssistAiApprovalPolicies,
+      setApprovalRequests: setGrowthAssistAiApprovalRequests,
+      setToolAccess: setGrowthAssistAiToolAccess,
+      setSuggestionEnvelope: setGrowthAssistAiEnvelope,
+      setSuggestionRuns: setGrowthAssistAiSuggestionRuns,
       setSuggestionRunDetail: setSelectedGrowthAiSuggestionRunDetail,
-      syncPrepared: (suggestionRun) => {
-        setGrowthAssistAiSuggestionRuns((current) =>
-          prependOrReplaceSuggestionRun(current, suggestionRun),
-        );
-      },
-      syncPending: (approvalRequest) => {
-        setGrowthAssistAiApprovalRequests((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            approvalRequest,
-            growthAiApprovalStatusFilter,
-          ),
-        );
-        setGrowthAssistAiSuggestionRuns((current) =>
-          bumpSuggestionRunApprovalToPending(current, approvalRequest),
-        );
-        setSelectedGrowthAiSuggestionRunDetail((current) =>
-          bumpSuggestionRunDetailApprovalToPending(current, approvalRequest),
-        );
-      },
-      syncReviewed: (approvalRequest) => {
-        setGrowthAssistAiApprovalRequests((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            approvalRequest,
-            growthAiApprovalStatusFilter,
-          ),
-        );
-        setGrowthAssistAiSuggestionRuns((current) =>
-          applyReviewedApprovalToSuggestionRuns(current, approvalRequest),
-        );
-        setSelectedGrowthAiSuggestionRunDetail((current) =>
-          applyReviewedApprovalToSuggestionRunDetail(current, approvalRequest),
-        );
-      },
-    },
-    'invoice-document-assistant': {
+    }),
+    'invoice-document-assistant': createStandardAiAgentWorkspaceSupportStateHandler(
+      {
       approvalStatusFilter: invoiceAiApprovalStatusFilter,
-      applyBundle: (bundle) => {
-        setInvoiceAssistantAiApprovalPolicies(bundle.approvalPolicies);
-        setInvoiceAssistantAiApprovalRequests(bundle.approvalRequests);
-        setInvoiceAssistantAiToolAccess(bundle.toolAccess);
-        setInvoiceAssistantAiEnvelope(bundle.suggestionEnvelope);
-        setInvoiceAssistantAiSuggestionRuns(bundle.suggestionRuns);
-        setSelectedInvoiceAiSuggestionRunDetail(null);
+        setApprovalPolicies: setInvoiceAssistantAiApprovalPolicies,
+        setApprovalRequests: setInvoiceAssistantAiApprovalRequests,
+        setToolAccess: setInvoiceAssistantAiToolAccess,
+        setSuggestionEnvelope: setInvoiceAssistantAiEnvelope,
+        setSuggestionRuns: setInvoiceAssistantAiSuggestionRuns,
+        setSuggestionRunDetail: setSelectedInvoiceAiSuggestionRunDetail,
       },
-      clearBundle: () => {
-        setInvoiceAssistantAiApprovalPolicies([]);
-        setInvoiceAssistantAiApprovalRequests([]);
-        setInvoiceAssistantAiToolAccess([]);
-        setInvoiceAssistantAiEnvelope(null);
-        setInvoiceAssistantAiSuggestionRuns([]);
-        setSelectedInvoiceAiSuggestionRunDetail(null);
-      },
-      applyApprovalQueue: (approvalRequests) => {
-        setInvoiceAssistantAiApprovalRequests(approvalRequests);
-      },
-      setSuggestionRunDetail: setSelectedInvoiceAiSuggestionRunDetail,
-      syncPrepared: (suggestionRun) => {
-        setInvoiceAssistantAiSuggestionRuns((current) =>
-          prependOrReplaceSuggestionRun(current, suggestionRun),
-        );
-      },
-      syncPending: (approvalRequest) => {
-        setInvoiceAssistantAiApprovalRequests((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            approvalRequest,
-            invoiceAiApprovalStatusFilter,
-          ),
-        );
-        setInvoiceAssistantAiSuggestionRuns((current) =>
-          bumpSuggestionRunApprovalToPending(current, approvalRequest),
-        );
-        setSelectedInvoiceAiSuggestionRunDetail((current) =>
-          bumpSuggestionRunDetailApprovalToPending(current, approvalRequest),
-        );
-      },
-      syncReviewed: (approvalRequest) => {
-        setInvoiceAssistantAiApprovalRequests((current) =>
-          syncApprovalRequestsWithFilter(
-            current,
-            approvalRequest,
-            invoiceAiApprovalStatusFilter,
-          ),
-        );
-        setInvoiceAssistantAiSuggestionRuns((current) =>
-          applyReviewedApprovalToSuggestionRuns(current, approvalRequest),
-        );
-        setSelectedInvoiceAiSuggestionRunDetail((current) =>
-          applyReviewedApprovalToSuggestionRunDetail(current, approvalRequest),
-        );
-      },
-    },
+    ),
     'ecommerce-launch-assistant': {
       approvalStatusFilter: 'all',
       applyBundle: (bundle) => {
@@ -4427,63 +4421,63 @@ export function App() {
       >(
         SUPPORTED_AI_AGENT_KEYS.map((agentKey) => {
           const operatingModelEntry = aiOperatingModelAgentByKey.get(agentKey);
-          const envelope =
+          const dedicatedAgentState =
             agentKey === 'growth-assist-coach'
-              ? growthAssistAiEnvelope
+              ? {
+                  envelope: growthAssistAiEnvelope,
+                  declaredToolAccess: growthAssistAiToolAccess,
+                  fallbackApprovalPolicies: growthAssistAiApprovalPolicies,
+                  suggestionRuns: growthAssistAiSuggestionRuns,
+                }
               : agentKey === 'invoice-document-assistant'
-              ? invoiceAssistantAiEnvelope
-              : ecommerceLaunchAssistantAiEnvelope;
-          const declaredToolAccess =
-            agentKey === 'growth-assist-coach'
-              ? growthAssistAiToolAccess
-              : agentKey === 'invoice-document-assistant'
-              ? invoiceAssistantAiToolAccess
-              : [];
-          const fallbackApprovalPolicies =
-            agentKey === 'growth-assist-coach'
-              ? growthAssistAiApprovalPolicies
-              : agentKey === 'invoice-document-assistant'
-              ? invoiceAssistantAiApprovalPolicies
-              : [];
-          const suggestionRuns =
-            agentKey === 'growth-assist-coach'
-              ? growthAssistAiSuggestionRuns
-              : agentKey === 'invoice-document-assistant'
-              ? invoiceAssistantAiSuggestionRuns
-              : tenantAiSuggestionWorkspace.filter(
-                  (entry) => entry.agentKey === agentKey,
-                );
+                ? {
+                    envelope: invoiceAssistantAiEnvelope,
+                    declaredToolAccess: invoiceAssistantAiToolAccess,
+                    fallbackApprovalPolicies: invoiceAssistantAiApprovalPolicies,
+                    suggestionRuns: invoiceAssistantAiSuggestionRuns,
+                  }
+                : {
+                    envelope: ecommerceLaunchAssistantAiEnvelope,
+                    declaredToolAccess: [] as AiAgentToolAccessResponse[],
+                    fallbackApprovalPolicies: [] as AiApprovalPolicyResponse[],
+                    suggestionRuns: tenantAiSuggestionWorkspace.filter(
+                      (entry) => entry.agentKey === agentKey,
+                    ),
+                  };
 
           return [
             agentKey,
             {
               agent:
-                envelope?.agent ??
+                dedicatedAgentState.envelope?.agent ??
                 operatingModelEntry?.agent ??
                 aiAgentCatalogByKey.get(agentKey) ??
                 null,
               promptPack:
-                operatingModelEntry?.promptPack ?? envelope?.promptPack ?? null,
+                operatingModelEntry?.promptPack ??
+                dedicatedAgentState.envelope?.promptPack ??
+                null,
               primarySurface:
                 operatingModelEntry?.primarySurface ??
-                (envelope
+                (dedicatedAgentState.envelope
                   ? {
-                      key: envelope.surface.key,
-                      title: envelope.surface.title,
-                      sourceContractKey: envelope.surface.sourceContractKey,
+                      key: dedicatedAgentState.envelope.surface.key,
+                      title: dedicatedAgentState.envelope.surface.title,
+                      sourceContractKey:
+                        dedicatedAgentState.envelope.surface.sourceContractKey,
                     }
                   : null),
               toolAccess:
                 (operatingModelEntry?.toolAccess as
                   | AiAgentToolAccessResponse[]
                   | undefined) ??
-                envelope?.toolAccess ??
-                declaredToolAccess,
+                dedicatedAgentState.envelope?.toolAccess ??
+                dedicatedAgentState.declaredToolAccess,
               approvalPolicies:
                 operatingModelEntry?.approvalPolicies.length
                   ? operatingModelEntry.approvalPolicies
-                  : fallbackApprovalPolicies,
-              suggestionRuns,
+                  : dedicatedAgentState.fallbackApprovalPolicies,
+              suggestionRuns: dedicatedAgentState.suggestionRuns,
               latestApprovedApprovalRequest:
                 latestApprovedAiApprovalRequestByAgent.get(agentKey) ?? null,
             },

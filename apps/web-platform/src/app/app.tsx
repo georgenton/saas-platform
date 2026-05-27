@@ -592,29 +592,6 @@ const AI_AGENT_FALLBACK_TITLES: Record<SupportedAiAgentKey, string> = {
   'ecommerce-launch-assistant': 'Ecommerce Launch Assistant',
 };
 
-const AI_AGENT_HANDOFF_FALLBACKS: Partial<
-  Record<SupportedAiAgentKey, AiOperatingModelAgentResponse['handoffContract']>
-> = {
-  'growth-assist-coach': {
-    requestApprovalRationale:
-      'Solicitar revision humana antes de tratar el handoff como aprobado.',
-    reviewNotes: {
-      approved: 'Aprobado desde la consola transversal de AI.',
-      rejected: 'Rechazado desde la consola transversal de AI.',
-    },
-  },
-  'invoice-document-assistant': {
-    requestApprovalRationale:
-      'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
-    reviewNotes: {
-      approved:
-        'Aprobado desde la consola transversal de AI para Invoice Document Assistant.',
-      rejected:
-        'Rechazado desde la consola transversal de AI para Invoice Document Assistant.',
-    },
-  },
-};
-
 const AI_AGENT_DEDICATED_ACTION_KEY_PREFIXES: Partial<
   Record<
     SupportedAiAgentKey,
@@ -662,6 +639,41 @@ function shortAiAgentLabel(input: {
       return 'Ecommerce';
     default:
       return input.title;
+  }
+}
+
+function buildFallbackAiAgentHandoffContract(input: {
+  agentTitle: string;
+  domainKey: AiAgentCatalogResponse['domainKey'] | null;
+}): AiOperatingModelAgentResponse['handoffContract'] {
+  switch (input.domainKey) {
+    case 'growth':
+      return {
+        requestApprovalRationale:
+          'Solicitar revision humana antes de tratar el handoff como aprobado.',
+        reviewNotes: {
+          approved: 'Aprobado desde la consola transversal de AI.',
+          rejected: 'Rechazado desde la consola transversal de AI.',
+        },
+      };
+    case 'invoicing':
+      return {
+        requestApprovalRationale:
+          'Solicitar revision humana antes de usar la sugerencia sobre documentos tributarios.',
+        reviewNotes: {
+          approved: `Aprobado desde la consola transversal de AI para ${input.agentTitle}.`,
+          rejected: `Rechazado desde la consola transversal de AI para ${input.agentTitle}.`,
+        },
+      };
+    default:
+      return {
+        requestApprovalRationale:
+          `Solicitar revision humana antes de usar la sugerencia de ${input.agentTitle}.`,
+        reviewNotes: {
+          approved: `Aprobado desde la consola transversal de AI para ${input.agentTitle}.`,
+          rejected: `Rechazado desde la consola transversal de AI para ${input.agentTitle}.`,
+        },
+      };
   }
 }
 
@@ -3832,24 +3844,10 @@ export function App() {
       return contract;
     }
 
-    if (isSupportedAiAgentKey(agentKey)) {
-      const fallbackContract = AI_AGENT_HANDOFF_FALLBACKS[agentKey];
-
-      if (fallbackContract) {
-        return fallbackContract;
-      }
-    }
-
-    const agentTitle = resolveAiAgentTitle(agentKey);
-
-    return {
-      requestApprovalRationale:
-        `Solicitar revision humana antes de usar la sugerencia de ${agentTitle}.`,
-      reviewNotes: {
-        approved: `Aprobado desde la consola transversal de AI para ${agentTitle}.`,
-        rejected: `Rechazado desde la consola transversal de AI para ${agentTitle}.`,
-      },
-    };
+    return buildFallbackAiAgentHandoffContract({
+      agentTitle: resolveAiAgentTitle(agentKey),
+      domainKey: resolveAiAgentDomainKey(agentKey),
+    });
   };
   const resolveAiAgentDomainKey = (
     agentKey: string,

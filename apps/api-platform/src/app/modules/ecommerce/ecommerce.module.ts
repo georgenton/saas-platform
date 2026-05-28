@@ -8,7 +8,12 @@ import {
   ENTITLEMENT_REPOSITORY,
   ListTenantEnabledProductsUseCase,
 } from '@saas-platform/commercial-application';
-import { GetTenantEcommerceLaunchWorkspaceUseCase } from '@saas-platform/ecommerce-application';
+import {
+  GetTenantEcommerceLaunchPlanDetailUseCase,
+  GetTenantEcommerceLaunchWorkspaceUseCase,
+  ListTenantEcommerceLaunchPlansUseCase,
+  RequestTenantEcommerceLaunchPlanActivationReadinessUseCase,
+} from '@saas-platform/ecommerce-application';
 import { FEATURE_FLAG_REPOSITORY } from '@saas-platform/feature-flags-application';
 import {
   CatalogPersistenceModule,
@@ -76,6 +81,30 @@ import { EcommerceController } from './ecommerce.controller';
         new GetTenantEcommerceLaunchWorkspaceUseCase(
           listTenantEnabledProductsUseCase,
           listProductModulesUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceLaunchPlanDetailUseCase,
+      inject: [GetTenantEcommerceLaunchWorkspaceUseCase],
+      useFactory: (getTenantEcommerceLaunchWorkspaceUseCase) =>
+        new GetTenantEcommerceLaunchPlanDetailUseCase(
+          getTenantEcommerceLaunchWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: ListTenantEcommerceLaunchPlansUseCase,
+      inject: [GetTenantEcommerceLaunchWorkspaceUseCase],
+      useFactory: (getTenantEcommerceLaunchWorkspaceUseCase) =>
+        new ListTenantEcommerceLaunchPlansUseCase(
+          getTenantEcommerceLaunchWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceLaunchPlanActivationReadinessUseCase,
+      inject: [GetTenantEcommerceLaunchPlanDetailUseCase],
+      useFactory: (getTenantEcommerceLaunchPlanDetailUseCase) =>
+        new RequestTenantEcommerceLaunchPlanActivationReadinessUseCase(
+          getTenantEcommerceLaunchPlanDetailUseCase,
         ),
     },
     {

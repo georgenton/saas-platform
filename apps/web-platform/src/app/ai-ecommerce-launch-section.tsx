@@ -3,11 +3,14 @@ import {
   AiAgentCatalogResponse,
   AiApprovalPolicyResponse,
   AiApprovalRequestResponse,
-  AiEcommerceLaunchWorkspaceResponse,
   AiOperatingModelAgentResponse,
   AiSuggestionEnvelopeResponse,
   AiSuggestionRunDetailResponse,
   AiSuggestionRunResponse,
+  EcommerceLaunchPlanDetailResponse,
+  EcommerceLaunchPlanRegistryResponse,
+  EcommerceLaunchWorkspaceResponse,
+  RequestEcommerceLaunchPlanActivationReadinessResponse,
 } from './types';
 
 type Props = {
@@ -15,7 +18,14 @@ type Props = {
   hasCurrentTenancy: boolean;
   canReadTenantEntitlements: boolean;
   tenantAiEcommerceLaunchWorkspaceLoading: boolean;
-  tenantAiEcommerceLaunchWorkspace: AiEcommerceLaunchWorkspaceResponse | null;
+  tenantAiEcommerceLaunchWorkspace: EcommerceLaunchWorkspaceResponse | null;
+  tenantEcommerceLaunchPlanRegistry: EcommerceLaunchPlanRegistryResponse | null;
+  selectedTenantEcommerceLaunchPlanDetail: EcommerceLaunchPlanDetailResponse | null;
+  tenantEcommerceLaunchPlanDetailLoading: boolean;
+  lastEcommerceLaunchActivationReadiness:
+    | RequestEcommerceLaunchPlanActivationReadinessResponse
+    | null;
+  ecommerceLaunchPlanActionLoading: boolean;
   ecommerceLaunchError: string | null;
   ecommerceLaunchActionMessage: string | null;
   ecommerceLaunchAssistantAiEnvelope: AiSuggestionEnvelopeResponse | null;
@@ -51,6 +61,8 @@ type Props = {
     targetId: string,
   ) => string;
   onRefresh: () => void;
+  onSelectLaunchPlan: (launchPlanId: string) => void;
+  onRequestActivationReadiness: () => void;
   onPrepare: () => void;
   onOpenDetail: (runId: string) => void;
   onRequestApproval: (runId: string) => void;
@@ -68,6 +80,11 @@ export function AiEcommerceLaunchSection({
   canReadTenantEntitlements,
   tenantAiEcommerceLaunchWorkspaceLoading,
   tenantAiEcommerceLaunchWorkspace,
+  tenantEcommerceLaunchPlanRegistry,
+  selectedTenantEcommerceLaunchPlanDetail,
+  tenantEcommerceLaunchPlanDetailLoading,
+  lastEcommerceLaunchActivationReadiness,
+  ecommerceLaunchPlanActionLoading,
   ecommerceLaunchError,
   ecommerceLaunchActionMessage,
   ecommerceLaunchAssistantAiEnvelope,
@@ -90,6 +107,8 @@ export function AiEcommerceLaunchSection({
   aiAgentAvailabilityLabel,
   getDedicatedActionKey,
   onRefresh,
+  onSelectLaunchPlan,
+  onRequestActivationReadiness,
   onPrepare,
   onOpenDetail,
   onRequestApproval,
@@ -282,10 +301,40 @@ export function AiEcommerceLaunchSection({
                         <h3>Targets concretos para approval y shadow review</h3>
                       </div>
                     </div>
-                    {tenantAiEcommerceLaunchWorkspace.launchPlans.map((entry) => (
-                      <div
+                    {tenantEcommerceLaunchPlanRegistry ? (
+                      <div className={styles.invoiceKpiGrid}>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Total</span>
+                          <strong>{tenantEcommerceLaunchPlanRegistry.counts.totalPlans}</strong>
+                          <small>Launch plans visibles para este tenant.</small>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Shadow review ready</span>
+                          <strong>
+                            {
+                              tenantEcommerceLaunchPlanRegistry.counts
+                                .shadowReviewReadyPlans
+                            }
+                          </strong>
+                          <small>Planes que ya pueden entrar al piloto auditado.</small>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Blocked</span>
+                          <strong>
+                            {tenantEcommerceLaunchPlanRegistry.counts.blockedPlans}
+                          </strong>
+                          <small>Planes que siguen frenados por activación o core.</small>
+                        </div>
+                      </div>
+                    ) : null}
+                    {(tenantEcommerceLaunchPlanRegistry?.plans ??
+                      tenantAiEcommerceLaunchWorkspace.launchPlans
+                    ).map((entry) => (
+                      <button
                         className={styles.assistCueCard}
                         key={`ecommerce-launch-plan:${entry.id}`}
+                        onClick={() => onSelectLaunchPlan(entry.id)}
+                        type="button"
                       >
                         <div className={styles.invoiceCardHeader}>
                           <strong>{entry.title}</strong>
@@ -307,8 +356,119 @@ export function AiEcommerceLaunchSection({
                           · channels {entry.selectedChannels.join(', ')}
                         </small>
                         <small>{entry.nextStep}</small>
-                      </div>
+                        <small className={styles.muted}>
+                          {selectedTenantEcommerceLaunchPlanDetail?.plan.id === entry.id
+                            ? 'Detalle cargado abajo'
+                            : 'Haz clic para abrir detalle'}
+                        </small>
+                      </button>
                     ))}
+
+                    {tenantEcommerceLaunchPlanDetailLoading ? (
+                      <small className={styles.muted}>
+                        Cargando detalle del launch plan...
+                      </small>
+                    ) : selectedTenantEcommerceLaunchPlanDetail ? (
+                      <div className={styles.detailCard}>
+                        <div className={styles.sectionHeading}>
+                          <div>
+                            <span className={styles.label}>Launch plan detail</span>
+                            <h3>{selectedTenantEcommerceLaunchPlanDetail.plan.title}</h3>
+                          </div>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              selectedTenantEcommerceLaunchPlanDetail.plan.status ===
+                                'blocked'
+                                ? 'critical'
+                                : selectedTenantEcommerceLaunchPlanDetail.plan
+                                      .status === 'warning'
+                                  ? 'warning'
+                                  : 'healthy',
+                            )}`}
+                          >
+                            {humanizeKey(
+                              selectedTenantEcommerceLaunchPlanDetail.plan.status,
+                            )}
+                          </span>
+                        </div>
+                        <small>
+                          {selectedTenantEcommerceLaunchPlanDetail.plan.scopeSummary}
+                        </small>
+                        <small>
+                          Workspace: {
+                            selectedTenantEcommerceLaunchPlanDetail.workspaceSummary
+                              .headline
+                          }
+                        </small>
+                        <div className={styles.badgeRow}>
+                          {selectedTenantEcommerceLaunchPlanDetail.plan.selectedChannels.map(
+                            (entry) => (
+                              <span
+                                className={styles.badge}
+                                key={`ecommerce-launch-plan-channel:${entry}`}
+                              >
+                                {humanizeKey(entry)}
+                              </span>
+                            ),
+                          )}
+                        </div>
+                        <button
+                          className={styles.secondaryButton}
+                          disabled={ecommerceLaunchPlanActionLoading}
+                          onClick={onRequestActivationReadiness}
+                          type="button"
+                        >
+                          {ecommerceLaunchPlanActionLoading
+                            ? 'Solicitando readiness...'
+                            : 'Solicitar activation readiness'}
+                        </button>
+                        <div className={styles.stack}>
+                          <small>
+                            Próximo paso:{' '}
+                            {selectedTenantEcommerceLaunchPlanDetail.plan.nextStep}
+                          </small>
+                          <small>
+                            Safe actions:{' '}
+                            {selectedTenantEcommerceLaunchPlanDetail.safeActions.join(
+                              ' · ',
+                            )}
+                          </small>
+                          <small>
+                            Bloqueado:{' '}
+                            {selectedTenantEcommerceLaunchPlanDetail.blockedActions.join(
+                              ' · ',
+                            )}
+                          </small>
+                        </div>
+                        {lastEcommerceLaunchActivationReadiness ? (
+                          <div className={styles.assistCueCard}>
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>Activation readiness</strong>
+                              <span className={styles.badge}>
+                                {humanizeKey(
+                                  lastEcommerceLaunchActivationReadiness.activationStatus,
+                                )}
+                              </span>
+                            </div>
+                            <small>
+                              {lastEcommerceLaunchActivationReadiness.summary}
+                            </small>
+                            <small>
+                              Required actions:{' '}
+                              {lastEcommerceLaunchActivationReadiness.requiredActions.join(
+                                ' · ',
+                              ) || 'ninguna'}
+                            </small>
+                            <small>
+                              Guardrails:{' '}
+                              {lastEcommerceLaunchActivationReadiness.guardrails.join(
+                                ' · ',
+                              )}
+                            </small>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ) : tenantAiEcommerceLaunchWorkspaceLoading ? (

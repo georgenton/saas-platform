@@ -1621,6 +1621,90 @@ export interface AiEcommerceLaunchPlanResponse {
   nextStep: string;
 }
 
+export type EcommerceLaunchPlanResponse = AiEcommerceLaunchPlanResponse;
+
+export type EcommerceLaunchWorkspaceResponse = AiEcommerceLaunchWorkspaceResponse;
+
+export interface EcommerceLaunchPlanRegistryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  workspaceSummary: {
+    tone: 'healthy' | 'warning' | 'critical';
+    launchReadiness: 'launch_ready' | 'needs_activation' | 'needs_core_modules';
+    headline: string;
+    detail: string;
+    suggestedFocus: string;
+  };
+  counts: {
+    totalPlans: number;
+    readyPlans: number;
+    warningPlans: number;
+    blockedPlans: number;
+    shadowReviewReadyPlans: number;
+    activationBlockedPlans: number;
+    coreModuleBlockedPlans: number;
+  };
+  plans: EcommerceLaunchPlanResponse[];
+}
+
+export interface EcommerceLaunchPlanDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  workspaceSummary: {
+    tone: 'healthy' | 'warning' | 'critical';
+    launchReadiness: 'launch_ready' | 'needs_activation' | 'needs_core_modules';
+    headline: string;
+    detail: string;
+    suggestedFocus: string;
+  };
+  moduleSnapshot: {
+    productEnabled: boolean;
+    activeModuleCount: number;
+    coreModuleCount: number;
+    optionalModuleCount: number;
+    inactiveModuleKeys: string[];
+  };
+  checklist: Array<{
+    key: string;
+    label: string;
+    isCore: boolean;
+    status: 'ready' | 'warning' | 'blocked';
+    detail: string;
+  }>;
+  channelGuidance: Array<{
+    key: 'catalog' | 'landing' | 'campaign' | 'operations';
+    title: string;
+    status: 'ready' | 'warning' | 'blocked';
+    detail: string;
+    recommendedUse: string;
+  }>;
+  launchHints: Array<{
+    key: string;
+    title: string;
+    objective: string;
+    whenToUse: string;
+    recommendedInputs: string[];
+    caution: string;
+  }>;
+  safeActions: string[];
+  blockedActions: string[];
+  plan: EcommerceLaunchPlanResponse;
+}
+
+export interface RequestEcommerceLaunchPlanActivationReadinessResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  activationStatus:
+    | 'ready_for_shadow_review'
+    | 'needs_activation'
+    | 'needs_core_modules';
+  summary: string;
+  requiredActions: string[];
+  blockedBy: string[];
+  guardrails: string[];
+  plan: EcommerceLaunchPlanResponse;
+}
+
 export interface AiMemoryWorkspaceAgentResponse {
   agentKey: string;
   title: string;

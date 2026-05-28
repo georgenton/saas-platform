@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.59.0
+
+### Minor Changes
+
+- e6a0e76: Record an auditable ecommerce publish pilot through AI guarded execution without triggering real storefront publication, and return launch-plan targets in guarded execution responses.
+
 ## 0.58.0
 
 ### Minor Changes

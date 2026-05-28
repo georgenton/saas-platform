@@ -1,6 +1,7 @@
 import { GrowthOperationalCaseRecord } from '@saas-platform/growth-application';
 import { InvoiceDetailView } from '@saas-platform/invoicing-application';
 import { Payment } from '@saas-platform/invoicing-domain';
+import { TenantEcommerceLaunchPlanView } from '@saas-platform/ai-application';
 import {
   GrowthOperationalCaseResponseDto,
   toGrowthOperationalCaseResponseDto,
@@ -13,6 +14,10 @@ import {
   PaymentResponseDto,
   toPaymentResponseDto,
 } from '../../invoicing/dto/payment.response';
+import {
+  AiEcommerceLaunchPlanResponseDto,
+  toAiEcommerceLaunchPlanResponseDto,
+} from './ai-ecommerce-launch-workspace.response';
 
 export interface AiGuardedExecutionRollbackExecutionResponseDto {
   tenantSlug: string;
@@ -20,7 +25,10 @@ export interface AiGuardedExecutionRollbackExecutionResponseDto {
   approvalRequestId: string;
   suggestionRunId: string;
   toolKey: string;
-  targetKind: 'growth_operational_case' | 'invoice_payment';
+  targetKind:
+    | 'growth_operational_case'
+    | 'invoice_payment'
+    | 'ecommerce_launch_plan';
   rolledBackAt: string;
   safeFallbackMode: 'suggestion_only';
   summary: string;
@@ -28,6 +36,7 @@ export interface AiGuardedExecutionRollbackExecutionResponseDto {
   operationalCase: GrowthOperationalCaseResponseDto | null;
   invoice: InvoiceDetailResponseDto | null;
   payment: PaymentResponseDto | null;
+  launchPlan: AiEcommerceLaunchPlanResponseDto | null;
 }
 
 export function toAiGuardedExecutionRollbackExecutionResponseDto(input: {
@@ -36,13 +45,17 @@ export function toAiGuardedExecutionRollbackExecutionResponseDto(input: {
   approvalRequestId: string;
   suggestionRunId: string;
   toolKey: string;
-  targetKind: 'growth_operational_case' | 'invoice_payment';
+  targetKind:
+    | 'growth_operational_case'
+    | 'invoice_payment'
+    | 'ecommerce_launch_plan';
   rolledBackAt: Date;
   summary: string;
   detail: string;
   operationalCase?: GrowthOperationalCaseRecord | null;
   invoice?: InvoiceDetailView | null;
   payment?: Payment | null;
+  launchPlan?: TenantEcommerceLaunchPlanView | null;
 }): AiGuardedExecutionRollbackExecutionResponseDto {
   return {
     tenantSlug: input.tenantSlug,
@@ -60,5 +73,8 @@ export function toAiGuardedExecutionRollbackExecutionResponseDto(input: {
       : null,
     invoice: input.invoice ? toInvoiceDetailResponseDto(input.invoice) : null,
     payment: input.payment ? toPaymentResponseDto(input.payment) : null,
+    launchPlan: input.launchPlan
+      ? toAiEcommerceLaunchPlanResponseDto(input.launchPlan)
+      : null,
   };
 }

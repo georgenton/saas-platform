@@ -9865,6 +9865,8 @@ export function App() {
       setGrowthActionMessage(
         result.targetKind === 'invoice_payment'
           ? `Guarded execution ejecutada sobre la factura ${result.invoice?.number ?? targetId} con ${result.toolKey}.`
+          : result.targetKind === 'ecommerce_launch_plan'
+            ? `Publish pilot auditado sobre ${result.launchPlan?.title ?? targetId} con ${result.toolKey}; el storefront real sigue en shadow review.`
           : `Guarded execution ejecutada sobre ${result.operationalCase?.id ?? targetId} con ${result.toolKey}.`,
       );
     } catch (error) {
@@ -9936,6 +9938,8 @@ export function App() {
       setGrowthActionMessage(
         result.targetKind === 'invoice_payment'
           ? `Guarded rollback ejecutado sobre la factura ${result.invoice?.number ?? targetId}; lane devuelto a suggestion_only.`
+          : result.targetKind === 'ecommerce_launch_plan'
+            ? `Publish pilot revertido sobre ${result.launchPlan?.title ?? targetId}; lane devuelto a suggestion_only.`
           : `Guarded rollback ejecutado sobre ${result.operationalCase?.id ?? targetId}; lane devuelto a suggestion_only.`,
       );
     } catch (error) {

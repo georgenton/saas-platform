@@ -21,6 +21,16 @@ function findAgentBreakdownEntry(entries, agentKey) {
   return entries.find((entry) => entry.agentKey === agentKey) ?? null;
 }
 
+function findEventEntry(entries, eventType, approvalRequestId) {
+  return (
+    entries.find(
+      (entry) =>
+        entry.eventType === eventType &&
+        entry.approvalRequestId === approvalRequestId,
+    ) ?? null
+  );
+}
+
 function inferPlanKeyFromSubscriptionId(planId) {
   if (typeof planId !== 'string' || planId.length === 0) {
     return null;
@@ -141,6 +151,17 @@ async function main() {
 
     if (!campaignGuidance) {
       throw new Error('Ecommerce launch workspace is missing campaign guidance.');
+    }
+
+    const launchPlan =
+      ecommerceWorkspace.launchPlans?.find(
+        (entry) => entry.guardedExecutionReadiness === 'shadow_review_ready',
+      ) ?? null;
+
+    if (!launchPlan) {
+      throw new Error(
+        'Ecommerce launch workspace is missing a shadow-review-ready launch plan.',
+      );
     }
 
     const suggestionEnvelope = await apiRequest({
@@ -358,11 +379,122 @@ async function main() {
     );
   }
 
+    const execution = await apiRequest({
+      baseUrl,
+      path: `/ai/tenants/${encodeURIComponent(
+        tenantSlug,
+      )}/agents/${encodeURIComponent(agentKey)}/approval-requests/${encodeURIComponent(
+        approvalRequest.id,
+      )}/guarded-execution`,
+      token,
+      method: 'POST',
+      body: {
+        launchPlanId: launchPlan.id,
+      },
+    });
+
+    if (execution.targetKind !== 'ecommerce_launch_plan') {
+      throw new Error(
+        `Guarded execution targetKind=${execution.targetKind}, expected ecommerce_launch_plan.`,
+      );
+    }
+
+    if (execution.toolKey !== 'ecommerce_launch_publish_execution') {
+      throw new Error(
+        `Guarded execution toolKey=${execution.toolKey}, expected ecommerce_launch_publish_execution.`,
+      );
+    }
+
+    if (execution.launchPlan?.id !== launchPlan.id) {
+      throw new Error(
+        `Guarded execution launchPlanId=${execution.launchPlan?.id}, expected ${launchPlan.id}.`,
+      );
+    }
+
+    const rollback = await apiRequest({
+      baseUrl,
+      path: `/ai/tenants/${encodeURIComponent(
+        tenantSlug,
+      )}/agents/${encodeURIComponent(agentKey)}/approval-requests/${encodeURIComponent(
+        approvalRequest.id,
+      )}/guarded-execution-rollback`,
+      token,
+      method: 'POST',
+      body: {
+        launchPlanId: launchPlan.id,
+      },
+    });
+
+    if (rollback.targetKind !== 'ecommerce_launch_plan') {
+      throw new Error(
+        `Guarded rollback targetKind=${rollback.targetKind}, expected ecommerce_launch_plan.`,
+      );
+    }
+
+    if (rollback.safeFallbackMode !== 'suggestion_only') {
+      throw new Error(
+        `Guarded rollback returned safeFallbackMode=${rollback.safeFallbackMode}, expected suggestion_only.`,
+      );
+    }
+
+    if (rollback.launchPlan?.id !== launchPlan.id) {
+      throw new Error(
+        `Guarded rollback launchPlanId=${rollback.launchPlan?.id}, expected ${launchPlan.id}.`,
+      );
+    }
+
+    const eventLog = await apiRequest({
+      baseUrl,
+      path: `/ai/tenants/${encodeURIComponent(
+        tenantSlug,
+      )}/guarded-execution-event-log-workspace`,
+      token,
+      method: 'GET',
+    });
+
+    const executedEntry = findEventEntry(
+      eventLog.entries,
+      'guarded_execution_executed',
+      approvalRequest.id,
+    );
+    const rolledBackEntry = findEventEntry(
+      eventLog.entries,
+      'guarded_execution_rolled_back',
+      approvalRequest.id,
+    );
+
+    if (!executedEntry) {
+      throw new Error(
+        `Guarded execution event log is missing executed entry for approvalRequestId=${approvalRequest.id}.`,
+      );
+    }
+
+    if (!rolledBackEntry) {
+      throw new Error(
+        `Guarded execution event log is missing rolled back entry for approvalRequestId=${approvalRequest.id}.`,
+      );
+    }
+
+    if (executedEntry.candidateToolKey !== 'ecommerce_launch_publish_execution') {
+      throw new Error(
+        `Executed event candidateToolKey=${executedEntry.candidateToolKey}, expected ecommerce_launch_publish_execution.`,
+      );
+    }
+
+    if (
+      rolledBackEntry.candidateToolKey !== 'ecommerce_launch_publish_execution'
+    ) {
+      throw new Error(
+        `Rolled back event candidateToolKey=${rolledBackEntry.candidateToolKey}, expected ecommerce_launch_publish_execution.`,
+      );
+    }
+
     printSection('AI Ecommerce Launch Smoke');
     printLine('tenantSlug', tenantSlug);
     printLine('agentKey', agentKey);
     printLine('suggestionRunId', suggestionRun.id);
     printLine('approvalRequestId', approvalRequest.id);
+    printLine('launchPlanId', launchPlan.id);
 
     printSection('Workspace');
     printLine('launchReadiness', ecommerceWorkspace.summary?.launchReadiness);
@@ -402,6 +534,14 @@ async function main() {
       'approvalApprovedRequests',
       ecommerceApproval.approvedApprovalRequests,
     );
+
+    printSection('Publish Pilot');
+    printLine('executedAt', execution.executedAt);
+    printLine('launchPlanTitle', execution.launchPlan?.title);
+    printLine('rolledBackAt', rollback.rolledBackAt);
+    printLine('safeFallbackMode', rollback.safeFallbackMode);
+    printLine('executedEventId', executedEntry.id);
+    printLine('rolledBackEventId', rolledBackEntry.id);
 
     printSection('Result');
     printLine('status', 'ok');

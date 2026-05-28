@@ -1,10 +1,5 @@
 import { Module } from '@nestjs/common';
 import {
-  PLATFORM_MODULE_REPOSITORY,
-  PRODUCT_REPOSITORY,
-  ListProductModulesUseCase,
-} from '@saas-platform/catalog-application';
-import {
   AI_APPROVAL_REQUEST_REPOSITORY,
   AI_GUARDED_EXECUTION_EVENT_REPOSITORY,
   AI_MEMORY_RECORD_REPOSITORY,
@@ -37,12 +32,7 @@ import {
   ReviewTenantAiApprovalRequestUseCase,
   UpdateTenantAiMemoryRecordUseCase,
 } from '@saas-platform/ai-application';
-import {
-  ENTITLEMENT_REPOSITORY,
-  ListTenantEnabledProductsUseCase,
-} from '@saas-platform/commercial-application';
 import { GetTenantEcommerceLaunchWorkspaceUseCase } from '@saas-platform/ecommerce-application';
-import { FEATURE_FLAG_REPOSITORY } from '@saas-platform/feature-flags-application';
 import {
   GetTenantGrowthAssistDailyAgendaUseCase,
   GROWTH_OPERATIONAL_CASE_REPOSITORY,
@@ -54,9 +44,6 @@ import {
 } from '@saas-platform/invoicing-application';
 import {
   AiPersistenceModule,
-  CatalogPersistenceModule,
-  CommercialPersistenceModule,
-  FeatureFlagsPersistenceModule,
   GrowthPersistenceModule,
   IdentityPersistenceModule,
   InvoicingPersistenceModule,
@@ -68,6 +55,7 @@ import {
   TENANT_REPOSITORY,
 } from '@saas-platform/tenancy-application';
 import { AuthModule } from '../auth/auth.module';
+import { EcommerceModule } from '../ecommerce/ecommerce.module';
 import { GrowthModule } from '../growth/growth.module';
 import { InvoicingModule } from '../invoicing/invoicing.module';
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
@@ -78,9 +66,7 @@ import { AiController } from './ai.controller';
   imports: [
     AuthModule,
     AiPersistenceModule,
-    CatalogPersistenceModule,
-    CommercialPersistenceModule,
-    FeatureFlagsPersistenceModule,
+    EcommerceModule,
     GrowthModule,
     GrowthPersistenceModule,
     IdentityPersistenceModule,
@@ -125,48 +111,6 @@ import { AiController } from './ai.controller';
     {
       provide: GetAiOperatingModelManifestUseCase,
       useFactory: () => new GetAiOperatingModelManifestUseCase(),
-    },
-    {
-      provide: ListTenantEnabledProductsUseCase,
-      inject: [
-        TENANT_REPOSITORY,
-        ENTITLEMENT_REPOSITORY,
-        PRODUCT_REPOSITORY,
-        FEATURE_FLAG_REPOSITORY,
-      ],
-      useFactory: (
-        tenantRepository,
-        entitlementRepository,
-        productRepository,
-        featureFlagRepository,
-      ) =>
-        new ListTenantEnabledProductsUseCase(
-          tenantRepository,
-          entitlementRepository,
-          productRepository,
-          featureFlagRepository,
-        ),
-    },
-    {
-      provide: ListProductModulesUseCase,
-      inject: [PRODUCT_REPOSITORY, PLATFORM_MODULE_REPOSITORY],
-      useFactory: (productRepository, platformModuleRepository) =>
-        new ListProductModulesUseCase(
-          productRepository,
-          platformModuleRepository,
-        ),
-    },
-    {
-      provide: GetTenantEcommerceLaunchWorkspaceUseCase,
-      inject: [ListTenantEnabledProductsUseCase, ListProductModulesUseCase],
-      useFactory: (
-        listTenantEnabledProductsUseCase,
-        listProductModulesUseCase,
-      ) =>
-        new GetTenantEcommerceLaunchWorkspaceUseCase(
-          listTenantEnabledProductsUseCase,
-          listProductModulesUseCase,
-        ),
     },
     {
       provide: GetTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase,

@@ -6660,6 +6660,120 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/ecommerce/tenants/:slug/launch-workspace should return the tenant-scoped ecommerce launch workspace', async () => {
+    await request(httpServer)
+      .get('/api/ecommerce/tenants/saas-platform/launch-workspace')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          tenantSlug: 'saas-platform',
+          generatedAt: '2026-05-24T11:00:00.000Z',
+          summary: {
+            tone: 'warning',
+            launchReadiness: 'launch_ready',
+            headline:
+              'Ya existe una base suficiente para un launch inicial, aunque todavia conviene empezar con un alcance estrecho.',
+            detail:
+              'La superficie actual favorece un catalogo simple, una landing compacta y una campaña controlada antes de abrir extras.',
+            suggestedFocus:
+              'Empieza por un launch simple y deja para despues los modulos no activos: promotions.',
+          },
+          moduleSnapshot: {
+            productEnabled: true,
+            activeModuleCount: 5,
+            coreModuleCount: 5,
+            optionalModuleCount: 0,
+            inactiveModuleKeys: ['promotions'],
+          },
+          checklist: [
+            {
+              key: 'catalog',
+              label: 'Catalog',
+              isCore: true,
+              status: 'ready',
+              detail: 'Disponible para el launch base del tenant.',
+            },
+            {
+              key: 'checkout',
+              label: 'Checkout',
+              isCore: true,
+              status: 'ready',
+              detail: 'Disponible para el launch base del tenant.',
+            },
+            {
+              key: 'promotions',
+              label: 'Promotions',
+              isCore: false,
+              status: 'warning',
+              detail:
+                'Este modulo esta fuera del scope inicial y puede quedar para una fase posterior.',
+            },
+          ],
+          channelGuidance: [
+            {
+              key: 'catalog',
+              title: 'Catalog scope',
+              status: 'ready',
+              detail:
+                'Ya puedes estructurar un catalogo inicial sin inventar modulos base.',
+              recommendedUse:
+                'Empieza por un set corto de productos ancla, categorias simples y nomenclatura estable.',
+            },
+            {
+              key: 'campaign',
+              title: 'Campaign scope',
+              status: 'warning',
+              detail:
+                'Conviene partir con una campaña simple antes de depender de promociones o mecanicas avanzadas.',
+              recommendedUse:
+                'Prioriza una campaña de validacion con un solo angulo comercial antes de multiplicar canales o promesas.',
+            },
+          ],
+          launchPlans: [
+            {
+              id: 'saas-platform:launch-plan:initial',
+              title: 'Initial ecommerce launch plan',
+              status: 'warning',
+              guardedExecutionReadiness: 'shadow_review_ready',
+              scopeSummary:
+                'El launch puede avanzar con alcance estrecho mientras dejas fuera modulos no activos: promotions.',
+              selectedChannels: ['catalog', 'landing', 'campaign'],
+              nextStep:
+                'Usa este plan como target de approval y shadow review mientras el publish real sigue bloqueado.',
+            },
+          ],
+          launchHints: [
+            {
+              key: 'launch-angle',
+              title: 'Launch angle',
+              objective:
+                'Bajar el lanzamiento a una promesa comercial concreta y entendible para un small-business operator.',
+              whenToUse:
+                'Cuando ya hay base para escribir el primer brief comercial.',
+              recommendedInputs: [
+                'Enabled product list',
+                'Active ecommerce modules',
+                'Primary conversion goal',
+              ],
+              caution:
+                'No conviertas el angle en promesas de catalogo o promociones que todavia no existen en la superficie deterministica.',
+            },
+          ],
+          safeActions: [
+            'Resumir el launch scope inicial usando solo productos y modulos activos del catalogo.',
+          ],
+          blockedActions: [
+            'Publicar catalogo, landing o checkout automaticamente.',
+          ],
+        });
+      });
+
+    expect(getTenantEcommerceLaunchWorkspaceUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
   it('GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-envelope should return a tenant-scoped Ecommerce Launch Assistant suggestion envelope', async () => {
     await request(httpServer)
       .get(

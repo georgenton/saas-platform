@@ -74,7 +74,10 @@ import {
   fetchTenantAiSuggestionRunDetail,
   fetchTenantAiApprovalRequests,
   fetchTenantAiApprovalWorkspaceSummary,
-  fetchTenantAiEcommerceLaunchWorkspace,
+  fetchTenantEcommerceLaunchPlanDetail,
+  fetchTenantEcommerceLaunchPlans,
+  fetchTenantEcommerceLaunchWorkspace,
+  requestTenantEcommerceLaunchPlanActivationReadiness,
   fetchTenantAiSuggestionEnvelope,
   fetchTenantAiSuggestionRuns,
   acceptInvitation,
@@ -178,7 +181,6 @@ import {
   AiGuardedExecutionWorkspaceResponse,
   AiGuardedExecutionPilotWorkspaceResponse,
   AiEvaluationWorkspaceResponse,
-  AiEcommerceLaunchWorkspaceResponse,
   AiGovernanceWorkspaceResponse,
   AiHealthWorkspaceResponse,
   AiMemoryRecordDetailResponse,
@@ -202,6 +204,9 @@ import {
   AuthenticatedInvitationResponse,
   AuthenticatedSessionResponse,
   CustomerResponse,
+  EcommerceLaunchPlanDetailResponse,
+  EcommerceLaunchPlanRegistryResponse,
+  EcommerceLaunchWorkspaceResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSignatureMaterialInspectionResponse,
   ElectronicSubmissionSettingsResponse,
@@ -230,6 +235,7 @@ import {
   SessionPendingInvitation,
   SessionEntitlement,
   SessionTenancy,
+  RequestEcommerceLaunchPlanActivationReadinessResponse,
   WhatsappOperationalAlertAcknowledgementResponse,
   WhatsappOperationalMonitorAnalyticsResponse,
   WhatsappOperationalMonitorSummaryResponse,
@@ -1621,8 +1627,18 @@ export function App() {
   const [growthAssistAiEnvelope, setGrowthAssistAiEnvelope] =
     useState<AiSuggestionEnvelopeResponse | null>(null);
   const [tenantAiEcommerceLaunchWorkspace, setTenantAiEcommerceLaunchWorkspace] =
-    useState<AiEcommerceLaunchWorkspaceResponse | null>(null);
+    useState<EcommerceLaunchWorkspaceResponse | null>(null);
   const [tenantAiEcommerceLaunchWorkspaceLoading, setTenantAiEcommerceLaunchWorkspaceLoading] =
+    useState(false);
+  const [tenantEcommerceLaunchPlanRegistry, setTenantEcommerceLaunchPlanRegistry] =
+    useState<EcommerceLaunchPlanRegistryResponse | null>(null);
+  const [selectedTenantEcommerceLaunchPlanDetail, setSelectedTenantEcommerceLaunchPlanDetail] =
+    useState<EcommerceLaunchPlanDetailResponse | null>(null);
+  const [tenantEcommerceLaunchPlanDetailLoading, setTenantEcommerceLaunchPlanDetailLoading] =
+    useState(false);
+  const [lastEcommerceLaunchActivationReadiness, setLastEcommerceLaunchActivationReadiness] =
+    useState<RequestEcommerceLaunchPlanActivationReadinessResponse | null>(null);
+  const [ecommerceLaunchPlanActionLoading, setEcommerceLaunchPlanActionLoading] =
     useState(false);
   const [ecommerceLaunchAssistantAiEnvelope, setEcommerceLaunchAssistantAiEnvelope] =
     useState<AiSuggestionEnvelopeResponse | null>(null);
@@ -3947,15 +3963,41 @@ export function App() {
     );
   };
   const fetchTenantAiEcommerceLaunchSurface = async (tenantSlug: string) => {
-    return fetchTenantAiEcommerceLaunchWorkspace(token!, tenantSlug);
+    return fetchTenantEcommerceLaunchWorkspace(token!, tenantSlug);
+  };
+  const fetchTenantEcommerceLaunchPlanRegistrySurface = async (
+    tenantSlug: string,
+  ) => {
+    return fetchTenantEcommerceLaunchPlans(token!, tenantSlug);
+  };
+  const fetchTenantEcommerceLaunchPlanDetailSurface = async (
+    tenantSlug: string,
+    launchPlanId: string,
+  ) => {
+    return fetchTenantEcommerceLaunchPlanDetail(token!, tenantSlug, launchPlanId);
   };
   const applyTenantAiEcommerceLaunchSurface = (
     surface: Awaited<ReturnType<typeof fetchTenantAiEcommerceLaunchSurface>>,
   ): void => {
     setTenantAiEcommerceLaunchWorkspace(surface);
   };
+  const applyTenantEcommerceLaunchPlanRegistrySurface = (
+    registry: Awaited<ReturnType<typeof fetchTenantEcommerceLaunchPlanRegistrySurface>>,
+  ): void => {
+    setTenantEcommerceLaunchPlanRegistry(registry);
+  };
+  const applyTenantEcommerceLaunchPlanDetailSurface = (
+    detail:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceLaunchPlanDetailSurface>>
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceLaunchPlanDetail(detail);
+  };
   const clearTenantAiEcommerceLaunchSurface = (): void => {
     setTenantAiEcommerceLaunchWorkspace(null);
+    setTenantEcommerceLaunchPlanRegistry(null);
+    setSelectedTenantEcommerceLaunchPlanDetail(null);
+    setLastEcommerceLaunchActivationReadiness(null);
   };
   const getAiAgentDedicatedSuggestionRunActionKey = (
     action:
@@ -4925,6 +4967,7 @@ export function App() {
     if (!token || !currentTenancy || !canReadTenantEntitlements) {
       clearTenantAiEcommerceLaunchSurface();
       setTenantAiEcommerceLaunchWorkspaceLoading(false);
+      setTenantEcommerceLaunchPlanDetailLoading(false);
       setEcommerceLaunchError(null);
       return;
     }
@@ -4934,10 +4977,21 @@ export function App() {
 
     async function loadTenantAiEcommerceLaunchWorkspace() {
       setTenantAiEcommerceLaunchWorkspaceLoading(true);
+      setTenantEcommerceLaunchPlanDetailLoading(true);
       setEcommerceLaunchError(null);
 
       try {
-        const surface = await fetchTenantAiEcommerceLaunchSurface(tenantSlug);
+        const [surface, registry] = await Promise.all([
+          fetchTenantAiEcommerceLaunchSurface(tenantSlug),
+          fetchTenantEcommerceLaunchPlanRegistrySurface(tenantSlug),
+        ]);
+        const selectedPlanId = registry.plans[0]?.id ?? null;
+        const detail = selectedPlanId
+          ? await fetchTenantEcommerceLaunchPlanDetailSurface(
+              tenantSlug,
+              selectedPlanId,
+            )
+          : null;
 
         if (cancelled) {
           return;
@@ -4945,6 +4999,8 @@ export function App() {
 
         startTransition(() => {
           applyTenantAiEcommerceLaunchSurface(surface);
+          applyTenantEcommerceLaunchPlanRegistrySurface(registry);
+          applyTenantEcommerceLaunchPlanDetailSurface(detail);
         });
       } catch (error) {
         if (cancelled) {
@@ -4960,6 +5016,7 @@ export function App() {
       } finally {
         if (!cancelled) {
           setTenantAiEcommerceLaunchWorkspaceLoading(false);
+          setTenantEcommerceLaunchPlanDetailLoading(false);
         }
       }
     }
@@ -8876,24 +8933,39 @@ export function App() {
       clearAiAgentWorkspaceSupportBundle('ecommerce-launch-assistant');
       clearTenantAiEcommerceLaunchSurface();
       setTenantAiEcommerceLaunchWorkspaceLoading(false);
+      setTenantEcommerceLaunchPlanDetailLoading(false);
       return;
     }
 
     const tenantSlug = currentTenancy.tenant.slug;
     setTenantAiEcommerceLaunchWorkspaceLoading(true);
+    setTenantEcommerceLaunchPlanDetailLoading(true);
     setEcommerceLaunchError(null);
 
     try {
-      const [surface, bundle] = await Promise.all([
+      const [surface, registry, bundle] = await Promise.all([
         fetchTenantAiEcommerceLaunchSurface(tenantSlug),
+        fetchTenantEcommerceLaunchPlanRegistrySurface(tenantSlug),
         fetchAiAgentWorkspaceSupportBundle(
           'ecommerce-launch-assistant',
           tenantSlug,
         ),
       ]);
+      const selectedPlanId =
+        selectedTenantEcommerceLaunchPlanDetail?.plan.id ??
+        registry.plans[0]?.id ??
+        null;
+      const detail = selectedPlanId
+        ? await fetchTenantEcommerceLaunchPlanDetailSurface(
+            tenantSlug,
+            selectedPlanId,
+          )
+        : null;
 
       startTransition(() => {
         applyTenantAiEcommerceLaunchSurface(surface);
+        applyTenantEcommerceLaunchPlanRegistrySurface(registry);
+        applyTenantEcommerceLaunchPlanDetailSurface(detail);
         applyAiAgentWorkspaceSupportBundle('ecommerce-launch-assistant', bundle);
       });
     } catch (error) {
@@ -8906,6 +8978,82 @@ export function App() {
       );
     } finally {
       setTenantAiEcommerceLaunchWorkspaceLoading(false);
+      setTenantEcommerceLaunchPlanDetailLoading(false);
+    }
+  }
+
+  async function loadTenantEcommerceLaunchPlanDetail(launchPlanId: string) {
+    if (!token || !currentTenancy || !canReadTenantEntitlements) {
+      applyTenantEcommerceLaunchPlanDetailSurface(null);
+      setLastEcommerceLaunchActivationReadiness(null);
+      setTenantEcommerceLaunchPlanDetailLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantEcommerceLaunchPlanDetailLoading(true);
+    setLastEcommerceLaunchActivationReadiness(null);
+    setEcommerceLaunchError(null);
+
+    try {
+      const detail = await fetchTenantEcommerceLaunchPlanDetailSurface(
+        tenantSlug,
+        launchPlanId,
+      );
+
+      startTransition(() => {
+        applyTenantEcommerceLaunchPlanDetailSurface(detail);
+      });
+    } catch (error) {
+      applyTenantEcommerceLaunchPlanDetailSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el detalle del launch plan de ecommerce.',
+      );
+    } finally {
+      setTenantEcommerceLaunchPlanDetailLoading(false);
+    }
+  }
+
+  async function handleRequestTenantEcommerceLaunchPlanActivationReadiness() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceLaunchPlanDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const launchPlanId = selectedTenantEcommerceLaunchPlanDetail.plan.id;
+    setEcommerceLaunchPlanActionLoading(true);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await requestTenantEcommerceLaunchPlanActivationReadiness(
+        token,
+        tenantSlug,
+        launchPlanId,
+      );
+
+      startTransition(() => {
+        setLastEcommerceLaunchActivationReadiness(result);
+        setEcommerceLaunchActionMessage(
+          `Activation readiness ${humanizeKey(result.activationStatus)} para ${result.plan.title}.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceLaunchActivationReadiness(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el activation readiness del launch plan de ecommerce.',
+      );
+    } finally {
+      setEcommerceLaunchPlanActionLoading(false);
     }
   }
 
@@ -11810,6 +11958,17 @@ export function App() {
               tenantAiEcommerceLaunchWorkspaceLoading
             }
             tenantAiEcommerceLaunchWorkspace={tenantAiEcommerceLaunchWorkspace}
+            tenantEcommerceLaunchPlanRegistry={tenantEcommerceLaunchPlanRegistry}
+            selectedTenantEcommerceLaunchPlanDetail={
+              selectedTenantEcommerceLaunchPlanDetail
+            }
+            tenantEcommerceLaunchPlanDetailLoading={
+              tenantEcommerceLaunchPlanDetailLoading
+            }
+            lastEcommerceLaunchActivationReadiness={
+              lastEcommerceLaunchActivationReadiness
+            }
+            ecommerceLaunchPlanActionLoading={ecommerceLaunchPlanActionLoading}
             ecommerceLaunchError={ecommerceLaunchError}
             ecommerceLaunchActionMessage={ecommerceLaunchActionMessage}
             ecommerceLaunchAssistantAiEnvelope={ecommerceLaunchAssistantAiEnvelope}
@@ -11847,6 +12006,12 @@ export function App() {
             }
             onRefresh={() => {
               void refreshTenantAiEcommerceLaunchWorkspace();
+            }}
+            onSelectLaunchPlan={(launchPlanId) => {
+              void loadTenantEcommerceLaunchPlanDetail(launchPlanId);
+            }}
+            onRequestActivationReadiness={() => {
+              void handleRequestTenantEcommerceLaunchPlanActivationReadiness();
             }}
             onPrepare={() => {
               void aiDedicatedSuggestionRunActionHandlers[

@@ -60,3 +60,46 @@ export interface TenantEcommerceLaunchWorkspaceView {
   safeActions: string[];
   blockedActions: string[];
 }
+
+export interface TenantEcommerceLaunchPlanDetailView {
+  tenantSlug: string;
+  generatedAt: Date;
+  workspaceSummary: TenantEcommerceLaunchWorkspaceView['summary'];
+  moduleSnapshot: TenantEcommerceLaunchWorkspaceView['moduleSnapshot'];
+  checklist: TenantEcommerceLaunchWorkspaceView['checklist'];
+  channelGuidance: TenantEcommerceLaunchWorkspaceView['channelGuidance'];
+  launchHints: TenantEcommerceLaunchWorkspaceView['launchHints'];
+  safeActions: string[];
+  blockedActions: string[];
+  plan: TenantEcommerceLaunchPlanView;
+}
+
+export interface TenantEcommerceLaunchPlanRegistryView {
+  tenantSlug: string;
+  generatedAt: Date;
+  workspaceSummary: TenantEcommerceLaunchWorkspaceView['summary'];
+  counts: {
+    totalPlans: number;
+    readyPlans: number;
+    warningPlans: number;
+    blockedPlans: number;
+    shadowReviewReadyPlans: number;
+    activationBlockedPlans: number;
+    coreModuleBlockedPlans: number;
+  };
+  plans: TenantEcommerceLaunchPlanView[];
+}
+
+export interface TenantEcommerceLaunchPlanActivationReadinessView {
+  tenantSlug: string;
+  generatedAt: Date;
+  plan: TenantEcommerceLaunchPlanView;
+  activationStatus:
+    | 'ready_for_shadow_review'
+    | 'needs_activation'
+    | 'needs_core_modules';
+  summary: string;
+  requiredActions: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}

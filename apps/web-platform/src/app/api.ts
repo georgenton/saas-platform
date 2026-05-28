@@ -32,6 +32,10 @@ import {
   AiOperatingModelResponse,
   AiRetrievalWorkspaceResponse,
   AiOperationsSummaryResponse,
+  EcommerceLaunchPlanDetailResponse,
+  EcommerceLaunchPlanRegistryResponse,
+  EcommerceLaunchWorkspaceResponse,
+  RequestEcommerceLaunchPlanActivationReadinessResponse,
   AiApprovalPolicyResponse,
   AiApprovalRequestResponse,
   AiApprovalRequestStatusFilter,
@@ -1510,6 +1514,66 @@ export async function fetchTenantAiEcommerceLaunchWorkspace(
     `/ai/tenants/${encodeURIComponent(tenantSlug)}/ecommerce-launch-workspace`,
     {
       method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceLaunchWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<EcommerceLaunchWorkspaceResponse> {
+  return request<EcommerceLaunchWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(tenantSlug)}/launch-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceLaunchPlans(
+  token: string,
+  tenantSlug: string,
+): Promise<EcommerceLaunchPlanRegistryResponse> {
+  return request<EcommerceLaunchPlanRegistryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(tenantSlug)}/launch-plans`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceLaunchPlanDetail(
+  token: string,
+  tenantSlug: string,
+  launchPlanId: string,
+): Promise<EcommerceLaunchPlanDetailResponse> {
+  return request<EcommerceLaunchPlanDetailResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/launch-plans/${encodeURIComponent(launchPlanId)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceLaunchPlanActivationReadiness(
+  token: string,
+  tenantSlug: string,
+  launchPlanId: string,
+): Promise<RequestEcommerceLaunchPlanActivationReadinessResponse> {
+  return request<RequestEcommerceLaunchPlanActivationReadinessResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/launch-plans/${encodeURIComponent(
+      launchPlanId,
+    )}/request-activation-readiness`,
+    {
+      method: 'POST',
       token,
     },
   );

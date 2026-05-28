@@ -6774,6 +6774,211 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/ecommerce/tenants/:slug/launch-plans/:planId should return one tenant-scoped ecommerce launch plan detail', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/launch-plans/saas-platform%3Alaunch-plan%3Ainitial',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          tenantSlug: 'saas-platform',
+          generatedAt: '2026-05-24T11:00:00.000Z',
+          workspaceSummary: {
+            tone: 'warning',
+            launchReadiness: 'launch_ready',
+            headline:
+              'Ya existe una base suficiente para un launch inicial, aunque todavia conviene empezar con un alcance estrecho.',
+            detail:
+              'La superficie actual favorece un catalogo simple, una landing compacta y una campaña controlada antes de abrir extras.',
+            suggestedFocus:
+              'Empieza por un launch simple y deja para despues los modulos no activos: promotions.',
+          },
+          moduleSnapshot: {
+            productEnabled: true,
+            activeModuleCount: 5,
+            coreModuleCount: 5,
+            optionalModuleCount: 0,
+            inactiveModuleKeys: ['promotions'],
+          },
+          checklist: [
+            {
+              key: 'catalog',
+              label: 'Catalog',
+              isCore: true,
+              status: 'ready',
+              detail: 'Disponible para el launch base del tenant.',
+            },
+            {
+              key: 'checkout',
+              label: 'Checkout',
+              isCore: true,
+              status: 'ready',
+              detail: 'Disponible para el launch base del tenant.',
+            },
+            {
+              key: 'promotions',
+              label: 'Promotions',
+              isCore: false,
+              status: 'warning',
+              detail:
+                'Este modulo esta fuera del scope inicial y puede quedar para una fase posterior.',
+            },
+          ],
+          channelGuidance: [
+            {
+              key: 'catalog',
+              title: 'Catalog scope',
+              status: 'ready',
+              detail:
+                'Ya puedes estructurar un catalogo inicial sin inventar modulos base.',
+              recommendedUse:
+                'Empieza por un set corto de productos ancla, categorias simples y nomenclatura estable.',
+            },
+            {
+              key: 'campaign',
+              title: 'Campaign scope',
+              status: 'warning',
+              detail:
+                'Conviene partir con una campaña simple antes de depender de promociones o mecanicas avanzadas.',
+              recommendedUse:
+                'Prioriza una campaña de validacion con un solo angulo comercial antes de multiplicar canales o promesas.',
+            },
+          ],
+          launchHints: [
+            {
+              key: 'launch-angle',
+              title: 'Launch angle',
+              objective:
+                'Bajar el lanzamiento a una promesa comercial concreta y entendible para un small-business operator.',
+              whenToUse:
+                'Cuando ya hay base para escribir el primer brief comercial.',
+              recommendedInputs: [
+                'Enabled product list',
+                'Active ecommerce modules',
+                'Primary conversion goal',
+              ],
+              caution:
+                'No conviertas el angle en promesas de catalogo o promociones que todavia no existen en la superficie deterministica.',
+            },
+          ],
+          safeActions: [
+            'Resumir el launch scope inicial usando solo productos y modulos activos del catalogo.',
+          ],
+          blockedActions: [
+            'Publicar catalogo, landing o checkout automaticamente.',
+          ],
+          plan: {
+            id: 'saas-platform:launch-plan:initial',
+            title: 'Initial ecommerce launch plan',
+            status: 'warning',
+            guardedExecutionReadiness: 'shadow_review_ready',
+            scopeSummary:
+              'El launch puede avanzar con alcance estrecho mientras dejas fuera modulos no activos: promotions.',
+            selectedChannels: ['catalog', 'landing', 'campaign'],
+            nextStep:
+              'Usa este plan como target de approval y shadow review mientras el publish real sigue bloqueado.',
+          },
+        });
+      });
+
+    expect(getTenantEcommerceLaunchWorkspaceUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/launch-plans should return the tenant-scoped ecommerce launch plan registry', async () => {
+    await request(httpServer)
+      .get('/api/ecommerce/tenants/saas-platform/launch-plans')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          tenantSlug: 'saas-platform',
+          generatedAt: '2026-05-24T11:00:00.000Z',
+          workspaceSummary: {
+            tone: 'warning',
+            launchReadiness: 'launch_ready',
+            headline:
+              'Ya existe una base suficiente para un launch inicial, aunque todavia conviene empezar con un alcance estrecho.',
+            detail:
+              'La superficie actual favorece un catalogo simple, una landing compacta y una campaña controlada antes de abrir extras.',
+            suggestedFocus:
+              'Empieza por un launch simple y deja para despues los modulos no activos: promotions.',
+          },
+          counts: {
+            totalPlans: 1,
+            readyPlans: 0,
+            warningPlans: 1,
+            blockedPlans: 0,
+            shadowReviewReadyPlans: 1,
+            activationBlockedPlans: 0,
+            coreModuleBlockedPlans: 0,
+          },
+          plans: [
+            {
+              id: 'saas-platform:launch-plan:initial',
+              title: 'Initial ecommerce launch plan',
+              status: 'warning',
+              guardedExecutionReadiness: 'shadow_review_ready',
+              scopeSummary:
+                'El launch puede avanzar con alcance estrecho mientras dejas fuera modulos no activos: promotions.',
+              selectedChannels: ['catalog', 'landing', 'campaign'],
+              nextStep:
+                'Usa este plan como target de approval y shadow review mientras el publish real sigue bloqueado.',
+            },
+          ],
+        });
+      });
+
+    expect(getTenantEcommerceLaunchWorkspaceUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('POST /api/ecommerce/tenants/:slug/launch-plans/:planId/request-activation-readiness should return one tenant-scoped launch plan activation packet', async () => {
+    await request(httpServer)
+      .post(
+        '/api/ecommerce/tenants/saas-platform/launch-plans/saas-platform%3Alaunch-plan%3Ainitial/request-activation-readiness',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          tenantSlug: 'saas-platform',
+          generatedAt: expect.any(String),
+          activationStatus: 'ready_for_shadow_review',
+          summary:
+            'El launch plan ya tiene base suficiente para pedir activation readiness del publish pilot en shadow review.',
+          requiredActions: [
+            'Confirmar owner humano del piloto antes de ejecutar el lane.',
+            'Mantener el launch scope estrecho y sin storefront publish real.',
+          ],
+          blockedBy: [],
+          guardrails: [
+            'El publish pilot sigue siendo auditado y no publica storefront real.',
+            'No ampliar el scope fuera de los canales seleccionados por el plan.',
+          ],
+          plan: {
+            id: 'saas-platform:launch-plan:initial',
+            title: 'Initial ecommerce launch plan',
+            status: 'warning',
+            guardedExecutionReadiness: 'shadow_review_ready',
+            scopeSummary:
+              'El launch puede avanzar con alcance estrecho mientras dejas fuera modulos no activos: promotions.',
+            selectedChannels: ['catalog', 'landing', 'campaign'],
+            nextStep:
+              'Usa este plan como target de approval y shadow review mientras el publish real sigue bloqueado.',
+          },
+        });
+      });
+
+    expect(getTenantEcommerceLaunchWorkspaceUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
   it('GET /api/ai/tenants/:slug/agents/:agentKey/suggestion-envelope should return a tenant-scoped Ecommerce Launch Assistant suggestion envelope', async () => {
     await request(httpServer)
       .get(

@@ -6,6 +6,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { CommercialModule } from './modules/commercial/commercial.module';
+import { EcommerceModule } from './modules/ecommerce/ecommerce.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
 import { GrowthModule } from './modules/growth/growth.module';
 import { IdentityModule } from './modules/identity/identity.module';
@@ -20,6 +21,7 @@ import { TenancyModule } from './modules/tenancy/tenancy.module';
     AuthModule,
     CatalogModule,
     CommercialModule,
+    EcommerceModule,
     FeatureFlagsModule,
     GrowthModule,
     IdentityModule,

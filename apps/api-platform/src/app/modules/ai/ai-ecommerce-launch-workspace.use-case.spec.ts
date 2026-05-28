@@ -1,4 +1,4 @@
-import { GetTenantEcommerceLaunchWorkspaceUseCase } from '@saas-platform/ai-application';
+import { GetTenantEcommerceLaunchWorkspaceUseCase } from '@saas-platform/ecommerce-application';
 import { PlatformModule, Product } from '@saas-platform/catalog-domain';
 
 describe('AI ecommerce launch workspace use case', () => {

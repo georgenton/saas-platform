@@ -17,7 +17,6 @@ import {
   GetAiOperatingModelManifestUseCase,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase,
-  GetTenantEcommerceLaunchWorkspaceUseCase,
   GetAiToolRegistryEntryByKeyUseCase,
   GetTenantAiMemoryRecordDetailUseCase,
   GetTenantAiMemoryRetrievalUseCase,
@@ -42,6 +41,7 @@ import {
   ENTITLEMENT_REPOSITORY,
   ListTenantEnabledProductsUseCase,
 } from '@saas-platform/commercial-application';
+import { GetTenantEcommerceLaunchWorkspaceUseCase } from '@saas-platform/ecommerce-application';
 import { FEATURE_FLAG_REPOSITORY } from '@saas-platform/feature-flags-application';
 import {
   GetTenantGrowthAssistDailyAgendaUseCase,

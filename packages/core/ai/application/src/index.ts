@@ -23,7 +23,6 @@ export * from './lib/use-cases/get-tenant-ai-memory-record-detail.use-case';
 export * from './lib/use-cases/get-tenant-ai-memory-retrieval.use-case';
 export * from './lib/use-cases/get-tenant-ai-suggestion-run-detail.use-case';
 export * from './lib/use-cases/get-tenant-ai-suggestion-envelope.use-case';
-export * from './lib/use-cases/get-tenant-ecommerce-launch-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-launch-assistant-ai-suggestion-envelope.use-case';
 export * from './lib/use-cases/get-tenant-growth-assist-ai-suggestion-envelope.use-case';
 export * from './lib/use-cases/get-tenant-invoice-document-assistant-ai-suggestion-envelope.use-case';

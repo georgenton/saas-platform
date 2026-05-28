@@ -32,6 +32,12 @@
       "@saas-platform/commercial-domain": [
         "packages/core/commercial/domain/src/index.ts"
       ],
+      "@saas-platform/ecommerce-application": [
+        "packages/core/ecommerce/application/src/index.ts"
+      ],
+      "@saas-platform/ecommerce-domain": [
+        "packages/core/ecommerce/domain/src/index.ts"
+      ],
       "@saas-platform/feature-flags-application": [
         "packages/core/feature-flags/application/src/index.ts"
       ],

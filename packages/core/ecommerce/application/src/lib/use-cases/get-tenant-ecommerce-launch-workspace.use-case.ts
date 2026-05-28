@@ -1,68 +1,6 @@
 import { ListProductModulesUseCase } from '@saas-platform/catalog-application';
 import { ListTenantEnabledProductsUseCase } from '@saas-platform/commercial-application';
-
-export interface TenantEcommerceLaunchWorkspaceChecklistItemView {
-  key: string;
-  label: string;
-  isCore: boolean;
-  status: 'ready' | 'warning' | 'blocked';
-  detail: string;
-}
-
-export interface TenantEcommerceLaunchWorkspaceChannelGuidanceView {
-  key: 'catalog' | 'landing' | 'campaign' | 'operations';
-  title: string;
-  status: 'ready' | 'warning' | 'blocked';
-  detail: string;
-  recommendedUse: string;
-}
-
-export interface TenantEcommerceLaunchWorkspaceHintView {
-  key: string;
-  title: string;
-  objective: string;
-  whenToUse: string;
-  recommendedInputs: string[];
-  caution: string;
-}
-
-export interface TenantEcommerceLaunchPlanView {
-  id: string;
-  title: string;
-  status: 'ready' | 'warning' | 'blocked';
-  guardedExecutionReadiness:
-    | 'shadow_review_ready'
-    | 'needs_activation'
-    | 'needs_core_modules';
-  scopeSummary: string;
-  selectedChannels: Array<'catalog' | 'landing' | 'campaign'>;
-  nextStep: string;
-}
-
-export interface TenantEcommerceLaunchWorkspaceView {
-  tenantSlug: string;
-  generatedAt: Date;
-  summary: {
-    tone: 'healthy' | 'warning' | 'critical';
-    launchReadiness: 'launch_ready' | 'needs_activation' | 'needs_core_modules';
-    headline: string;
-    detail: string;
-    suggestedFocus: string;
-  };
-  moduleSnapshot: {
-    productEnabled: boolean;
-    activeModuleCount: number;
-    coreModuleCount: number;
-    optionalModuleCount: number;
-    inactiveModuleKeys: string[];
-  };
-  checklist: TenantEcommerceLaunchWorkspaceChecklistItemView[];
-  channelGuidance: TenantEcommerceLaunchWorkspaceChannelGuidanceView[];
-  launchPlans: TenantEcommerceLaunchPlanView[];
-  launchHints: TenantEcommerceLaunchWorkspaceHintView[];
-  safeActions: string[];
-  blockedActions: string[];
-}
+import { TenantEcommerceLaunchPlanView, TenantEcommerceLaunchWorkspaceView } from '@saas-platform/ecommerce-domain';
 
 const ECOMMERCE_PRODUCT_KEY = 'ecommerce';
 const REQUIRED_CORE_MODULE_KEYS = [
@@ -260,130 +198,85 @@ export class GetTenantEcommerceLaunchWorkspaceUseCase {
 
   private buildChecklist(
     ecommerceEnabled: boolean,
-    modules: Array<{
+    catalogModules: Array<{
       key: string;
       name: string;
       isCore: boolean;
       isActive: boolean;
     }>,
     missingCoreModuleKeys: string[],
-  ): TenantEcommerceLaunchWorkspaceChecklistItemView[] {
-    return modules.map((entry) => {
-      if (!ecommerceEnabled) {
-        return {
-          key: entry.key,
-          label: entry.name,
-          isCore: entry.isCore,
-          status: entry.isCore ? 'blocked' : 'warning',
-          detail: entry.isCore
-            ? 'Este modulo seria parte del launch base, pero el producto Ecommerce aun no esta habilitado para el tenant.'
-            : 'Este modulo puede esperar hasta despues de activar Ecommerce y validar el launch inicial.',
-        };
-      }
-
-      if (!entry.isActive && entry.isCore) {
-        return {
-          key: entry.key,
-          label: entry.name,
-          isCore: true,
-          status: 'blocked',
-          detail: 'El launch no deberia avanzar mientras este modulo core siga inactivo en el catalogo.',
-        };
-      }
-
-      if (!entry.isActive) {
-        return {
-          key: entry.key,
-          label: entry.name,
-          isCore: false,
-          status: 'warning',
-          detail: 'Este modulo esta fuera del scope inicial y puede quedar para una fase posterior.',
-        };
-      }
-
-      return {
-        key: entry.key,
-        label: entry.name,
-        isCore: entry.isCore,
-        status:
-          entry.isCore && missingCoreModuleKeys.includes(entry.key)
+  ): TenantEcommerceLaunchWorkspaceView['checklist'] {
+    return catalogModules.map((entry) => ({
+      key: entry.key,
+      label: entry.name,
+      isCore: entry.isCore,
+      status: !ecommerceEnabled
+        ? 'blocked'
+        : entry.isActive
+          ? 'ready'
+          : entry.isCore
             ? 'blocked'
-            : 'ready',
-        detail: entry.isCore
+            : 'warning',
+      detail: !ecommerceEnabled
+        ? 'Este modulo todavia no tiene un producto Ecommerce habilitado en el tenant.'
+        : entry.isActive
           ? 'Disponible para el launch base del tenant.'
-          : 'Disponible como expansion opcional del launch.',
-      };
-    });
+          : entry.isCore
+            ? `Hace falta habilitar este modulo core antes de abrir un launch operativo: ${missingCoreModuleKeys.join(', ')}.`
+            : 'Este modulo esta fuera del scope inicial y puede quedar para una fase posterior.',
+    }));
   }
 
   private buildChannelGuidance(
     ecommerceEnabled: boolean,
     activeModuleKeys: Set<string>,
-  ): TenantEcommerceLaunchWorkspaceChannelGuidanceView[] {
+  ): TenantEcommerceLaunchWorkspaceView['channelGuidance'] {
     return [
       {
         key: 'catalog',
         title: 'Catalog scope',
         status:
-          ecommerceEnabled &&
-          activeModuleKeys.has('catalog') &&
-          activeModuleKeys.has('products')
-            ? 'ready'
-            : 'blocked',
-        detail:
-          ecommerceEnabled &&
-          activeModuleKeys.has('catalog') &&
-          activeModuleKeys.has('products')
-            ? 'Ya puedes estructurar un catalogo inicial sin inventar modulos base.'
-            : 'No conviene prometer catalogo hasta que Ecommerce y sus modulos base esten listos.',
+          ecommerceEnabled && activeModuleKeys.has('catalog') ? 'ready' : 'blocked',
+        detail: ecommerceEnabled
+          ? 'Ya puedes estructurar un catalogo inicial sin inventar modulos base.'
+          : 'Sin Ecommerce activo, catalogo sigue solo como planning surface.',
         recommendedUse:
           'Empieza por un set corto de productos ancla, categorias simples y nomenclatura estable.',
       },
       {
         key: 'landing',
         title: 'Landing scope',
-        status: ecommerceEnabled ? 'ready' : 'blocked',
-        detail: ecommerceEnabled
-          ? 'La landing puede nacer como una pagina compacta orientada a conversion y aprendizaje.'
-          : 'La landing deberia esperar a que el producto Ecommerce quede habilitado para el tenant.',
+        status:
+          ecommerceEnabled && activeModuleKeys.has('checkout') ? 'ready' : 'warning',
+        detail:
+          ecommerceEnabled && activeModuleKeys.has('checkout')
+            ? 'La landing puede enfocarse en conversion simple y checkout claro.'
+            : 'La landing se puede bosquejar, pero conviene no prometer flujos finales todavia.',
         recommendedUse:
-          'Usa una propuesta unica de valor, prueba social concreta y un CTA alineado con checkout real.',
+          'Diseña una landing corta con una sola promesa comercial y CTA claro.',
       },
       {
         key: 'campaign',
         title: 'Campaign scope',
         status:
-          ecommerceEnabled && activeModuleKeys.has('promotions')
-            ? 'ready'
-            : ecommerceEnabled
-              ? 'warning'
-              : 'blocked',
+          ecommerceEnabled && activeModuleKeys.has('orders') ? 'warning' : 'blocked',
         detail:
-          ecommerceEnabled && activeModuleKeys.has('promotions')
-            ? 'Ya existe base para pensar una campaña con oferta mas estructurada.'
-            : ecommerceEnabled
-              ? 'Conviene partir con una campaña simple antes de depender de promociones o mecanicas avanzadas.'
-              : 'No abras campaña mientras el carril Ecommerce siga apagado para el tenant.',
+          ecommerceEnabled && activeModuleKeys.has('orders')
+            ? 'Conviene partir con una campaña simple antes de depender de promociones o mecanicas avanzadas.'
+            : 'La campaña todavia deberia quedarse en planning hasta que exista la base operativa.',
         recommendedUse:
           'Prioriza una campaña de validacion con un solo angulo comercial antes de multiplicar canales o promesas.',
       },
       {
         key: 'operations',
         title: 'Operational handoff',
-        status:
-          ecommerceEnabled &&
-          activeModuleKeys.has('orders') &&
-          activeModuleKeys.has('checkout')
-            ? 'ready'
-            : 'blocked',
+        status: ecommerceEnabled ? 'warning' : 'blocked',
         detail:
-          ecommerceEnabled &&
-          activeModuleKeys.has('orders') &&
-          activeModuleKeys.has('checkout')
-            ? 'Existe base suficiente para conectar el brief con un cierre de venta controlado.'
-            : 'Sin orders y checkout activos, el launch se queda en discurso y no en operacion.',
+          ecommerceEnabled
+            ? 'El handoff ya puede bajar un brief operativo, pero la publicacion real sigue fuera del lane automatizado.'
+            : 'Sin Ecommerce activo no conviene tratar este brief como handoff operacional.',
         recommendedUse:
-          'Asegura que el CTA y el checkout prometido correspondan a un cierre real y no solo a una idea de campaña.',
+          'Entrega un brief estrecho, con responsables claros y sin asumir publicacion automatica.',
       },
     ];
   }
@@ -391,7 +284,7 @@ export class GetTenantEcommerceLaunchWorkspaceUseCase {
   private buildLaunchHints(
     ecommerceEnabled: boolean,
     inactiveModuleKeys: string[],
-  ): TenantEcommerceLaunchWorkspaceHintView[] {
+  ): TenantEcommerceLaunchWorkspaceView['launchHints'] {
     return [
       {
         key: 'launch-angle',
@@ -399,9 +292,7 @@ export class GetTenantEcommerceLaunchWorkspaceUseCase {
         objective:
           'Bajar el lanzamiento a una promesa comercial concreta y entendible para un small-business operator.',
         whenToUse:
-          ecommerceEnabled
-            ? 'Cuando ya hay base para escribir el primer brief comercial.'
-            : 'Cuando el equipo necesita preparar el launch antes de activar Ecommerce formalmente.',
+          'Cuando ya hay base para escribir el primer brief comercial.',
         recommendedInputs: [
           'Enabled product list',
           'Active ecommerce modules',
@@ -411,36 +302,23 @@ export class GetTenantEcommerceLaunchWorkspaceUseCase {
           'No conviertas el angle en promesas de catalogo o promociones que todavia no existen en la superficie deterministica.',
       },
       {
-        key: 'catalog-first',
-        title: 'Catalog-first sequencing',
+        key: 'launch-scope',
+        title: 'Scope discipline',
         objective:
-          'Mantener el launch estrecho: primero catalogo y landing, luego extras operativos o promocionales.',
+          'Mantener el primer launch dentro de un alcance estrecho antes de sumar extras o automatizaciones.',
         whenToUse:
-          inactiveModuleKeys.length > 0
-            ? 'Especialmente util cuando ecommerce todavia opera sin modulos opcionales activos.'
-            : 'Util cuando el equipo quiere evitar sobrecargar el primer release comercial.',
+          ecommerceEnabled
+            ? 'Cuando el tenant ya tiene Ecommerce activo y toca decidir que queda fuera del primer release.'
+            : 'Cuando todavia toca preparar el brief antes de activar el producto.',
         recommendedInputs: [
-          'Module checklist',
+          'Inactive module list',
           'Core module coverage',
-          'Draft landing structure',
+          'Desired launch window',
         ],
         caution:
-          'Si promociones o variantes no estan activas, evita que el brief dependa de bundles, descuentos complejos o catalogos demasiado profundos.',
-      },
-      {
-        key: 'campaign-guardrails',
-        title: 'Campaign guardrails',
-        objective:
-          'Traducir el launch a una primera campaña verificable sin tratar la IA como publicador automatico.',
-        whenToUse:
-          'Cuando el brief ya necesita una recomendacion de canal, mensaje y CTA para validacion humana.',
-        recommendedInputs: [
-          'Launch angle',
-          'Landing CTA',
-          'Operational handoff assumptions',
-        ],
-        caution:
-          'La IA puede sugerir estructura de campaña, pero no debe asumir presupuesto, publicaciones ni activacion real.',
+          inactiveModuleKeys.length > 0
+            ? `Deja explicitamente fuera los modulos inactivos (${inactiveModuleKeys.join(', ')}) para que el plan no se desborde.`
+            : 'Aunque no falten modulos, evita saltar directo a una experiencia demasiado amplia para el primer corte.',
       },
     ];
   }

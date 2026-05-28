@@ -7,11 +7,11 @@ import {
   buildAiRetrievedMemoryContextBlocks,
   finalizeAiSuggestionContextBlocks,
 } from '../support/ai-suggestion-context-blocks';
-import { GetTenantAiMemoryRetrievalUseCase } from './get-tenant-ai-memory-retrieval.use-case';
 import {
   GetTenantEcommerceLaunchWorkspaceUseCase,
-  TenantEcommerceLaunchWorkspaceView,
-} from './get-tenant-ecommerce-launch-workspace.use-case';
+} from '@saas-platform/ecommerce-application';
+import { TenantEcommerceLaunchWorkspaceView } from '@saas-platform/ecommerce-domain';
+import { GetTenantAiMemoryRetrievalUseCase } from './get-tenant-ai-memory-retrieval.use-case';
 
 const ECOMMERCE_LAUNCH_ASSISTANT_AGENT_KEY = 'ecommerce-launch-assistant';
 

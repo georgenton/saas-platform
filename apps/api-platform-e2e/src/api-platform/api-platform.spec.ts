@@ -45,7 +45,6 @@ import {
   ApplyTenantAiMemoryArchivalPolicyUseCase,
   CreateTenantAiGuardedExecutionEventUseCase,
   CreateTenantAiMemoryRecordUseCase,
-  GetTenantEcommerceLaunchWorkspaceUseCase,
   GetTenantAiMemoryRecordDetailUseCase,
   GetTenantAiMemoryRetrievalUseCase,
   GetTenantAiSuggestionRunDetailUseCase,
@@ -59,6 +58,7 @@ import {
   ReviewTenantAiApprovalRequestUseCase,
   UpdateTenantAiMemoryRecordUseCase,
 } from '@saas-platform/ai-application';
+import { GetTenantEcommerceLaunchWorkspaceUseCase } from '@saas-platform/ecommerce-application';
 import {
   AutoAssignTenantGrowthOperationalCasesUseCase,
   AssignTenantConversationThreadUseCase,

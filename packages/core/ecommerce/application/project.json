@@ -1,0 +1,7 @@
+{
+  "name": "ecommerce-application",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/ecommerce/application/src",
+  "projectType": "library",
+  "tags": ["scope:core", "domain:ecommerce", "type:application", "layer:application"]
+}

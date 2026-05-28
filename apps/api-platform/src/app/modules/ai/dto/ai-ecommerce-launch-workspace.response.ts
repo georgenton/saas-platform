@@ -1,7 +1,7 @@
 import {
   TenantEcommerceLaunchPlanView,
   TenantEcommerceLaunchWorkspaceView,
-} from '@saas-platform/ai-application';
+} from '@saas-platform/ecommerce-domain';
 
 export interface AiEcommerceLaunchPlanResponseDto {
   id: string;

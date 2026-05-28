@@ -1,7 +1,7 @@
 import { GrowthOperationalCaseRecord } from '@saas-platform/growth-application';
 import { InvoiceDetailView } from '@saas-platform/invoicing-application';
 import { Payment } from '@saas-platform/invoicing-domain';
-import { TenantEcommerceLaunchPlanView } from '@saas-platform/ai-application';
+import { TenantEcommerceLaunchPlanView } from '@saas-platform/ecommerce-domain';
 import {
   GrowthOperationalCaseResponseDto,
   toGrowthOperationalCaseResponseDto,

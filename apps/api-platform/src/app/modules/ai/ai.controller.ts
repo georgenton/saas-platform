@@ -32,7 +32,6 @@ import {
   GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
-  GetTenantEcommerceLaunchWorkspaceUseCase,
   GetAiToolRegistryEntryByKeyUseCase,
   GetTenantAiMemoryRecordDetailUseCase,
   GetTenantAiMemoryRetrievalUseCase,
@@ -50,12 +49,13 @@ import {
   PrepareTenantAiSuggestionRunUseCase,
   RequestTenantAiSuggestionRunApprovalUseCase,
   ReviewTenantAiApprovalRequestUseCase,
-  TenantEcommerceLaunchPlanView,
   UpdateTenantAiMemoryRecordUseCase,
   AiSuggestionRunNotFoundError,
   buildInitialAiSuggestionRunApprovalSummary,
 } from '@saas-platform/ai-application';
 import { AiApprovalRequestStatus } from '@saas-platform/ai-domain';
+import { GetTenantEcommerceLaunchWorkspaceUseCase } from '@saas-platform/ecommerce-application';
+import { TenantEcommerceLaunchPlanView } from '@saas-platform/ecommerce-domain';
 import {
   GROWTH_PERMISSIONS,
   GrowthOperationalCaseNotFoundError,

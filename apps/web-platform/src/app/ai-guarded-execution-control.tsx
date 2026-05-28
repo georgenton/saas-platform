@@ -144,6 +144,20 @@ export function AiGuardedExecutionControl({
                 · Pago {lastGuardedExecutionResult.payment?.id ?? 'sin pago'} · Tool{' '}
                 {lastGuardedExecutionResult.toolKey}
               </small>
+            ) : lastGuardedExecutionResult.targetKind ===
+              'ecommerce_launch_plan' ? (
+              <small>
+                Launch plan{' '}
+                {lastGuardedExecutionResult.launchPlan?.title ??
+                  lastGuardedExecutionResult.launchPlan?.id ??
+                  'sin plan'}{' '}
+                · Readiness{' '}
+                {humanizeKey(
+                  lastGuardedExecutionResult.launchPlan
+                    ?.guardedExecutionReadiness ?? 'unknown',
+                )}{' '}
+                · Tool {lastGuardedExecutionResult.toolKey}
+              </small>
             ) : (
               <small>
                 Caso {lastGuardedExecutionResult.operationalCase?.id ?? 'sin caso'} ·
@@ -177,6 +191,20 @@ export function AiGuardedExecutionControl({
                 · Pago{' '}
                 {lastGuardedExecutionRollbackResult.payment?.id ?? 'sin pago'} ·
                 Fallback {lastGuardedExecutionRollbackResult.safeFallbackMode}
+              </small>
+            ) : lastGuardedExecutionRollbackResult.targetKind ===
+              'ecommerce_launch_plan' ? (
+              <small>
+                Launch plan{' '}
+                {lastGuardedExecutionRollbackResult.launchPlan?.title ??
+                  lastGuardedExecutionRollbackResult.launchPlan?.id ??
+                  'sin plan'}{' '}
+                · Readiness{' '}
+                {humanizeKey(
+                  lastGuardedExecutionRollbackResult.launchPlan
+                    ?.guardedExecutionReadiness ?? 'unknown',
+                )}{' '}
+                · Fallback {lastGuardedExecutionRollbackResult.safeFallbackMode}
               </small>
             ) : (
               <small>
@@ -280,6 +308,12 @@ export function AiGuardedExecutionControl({
             const ecommerceLaneInShadowReviewOnly =
               isEcommerceLaunchCandidate &&
               selectedLaunchPlan?.guardedExecutionReadiness === 'shadow_review_ready';
+            const canExecuteEcommerceLane =
+              isEcommerceLaunchCandidate &&
+              approvedRequest !== null &&
+              selectedLaunchPlan !== null &&
+              ecommerceLaneInShadowReviewOnly;
+            const canRollbackEcommerceLane = canExecuteEcommerceLane;
 
             return (
               <div
@@ -523,14 +557,38 @@ export function AiGuardedExecutionControl({
                       <button
                         className={styles.secondaryButton}
                         type="button"
-                        disabled
+                        onClick={() => {
+                          if (approvedRequest && selectedLaunchPlanId) {
+                            onExecuteGuardedExecution(
+                              agent.agentKey,
+                              approvedRequest.id,
+                              selectedLaunchPlanId,
+                            );
+                          }
+                        }}
+                        disabled={
+                          !canExecuteEcommerceLane ||
+                          growthActionLoading === executeActionKey
+                        }
                       >
                         {candidateLane?.executeActionLabel ?? 'Execute launch publish'}
                       </button>
                       <button
                         className={styles.ghostButton}
                         type="button"
-                        disabled
+                        onClick={() => {
+                          if (approvedRequest && selectedLaunchPlanId) {
+                            onRollbackGuardedExecution(
+                              agent.agentKey,
+                              approvedRequest.id,
+                              selectedLaunchPlanId,
+                            );
+                          }
+                        }}
+                        disabled={
+                          !canRollbackEcommerceLane ||
+                          growthActionLoading === rollbackActionKey
+                        }
                       >
                         {candidateLane?.rollbackActionLabel ?? 'Rollback launch publish'}
                       </button>
@@ -542,7 +600,7 @@ export function AiGuardedExecutionControl({
                     </small>
                     <small>
                       {ecommerceLaneInShadowReviewOnly
-                        ? 'Este lane ya puede entrar a approval y shadow review, pero el publish real sigue bloqueado hasta que exista la automatizacion operativa.'
+                        ? 'Este lane ya puede registrar un publish pilot auditado en shadow review, pero el publish real sigue bloqueado hasta que exista la automatizacion operativa.'
                         : 'Este lane todavia no llega a shadow review operativo.'}
                     </small>
                   </>

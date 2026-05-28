@@ -11706,6 +11706,248 @@ describe('API', () => {
     );
   });
 
+  it('POST /api/ai/tenants/:slug/agents/:agentKey/approval-requests/:requestId/guarded-execution should record the ecommerce publish pilot after approved review', async () => {
+    const ecommerceApprovedApprovalRequest = {
+      ...growthAssistApprovalRequest,
+      id: 'ai-approval-003',
+      agentKey: 'ecommerce-launch-assistant',
+      policyKey: 'ecommerce-launch-assistant-suggestion-review',
+      suggestionRunId: 'ai-run-003',
+      rationale: 'Necesito approval antes de abrir el publish pilot.',
+      summary:
+        'Ecommerce Launch Assistant requested human review for suggestion handoff ai-run-003 under policy ecommerce-launch-assistant-suggestion-review.',
+      status: 'approved' as const,
+      reviewedAt: new Date('2026-05-20T10:43:00.000Z'),
+      reviewedByUserId: user.id,
+      reviewedByEmail: user.email,
+      reviewNote: 'Se puede abrir el publish pilot en shadow review.',
+      createdAt: new Date('2026-05-20T10:42:00.000Z'),
+      updatedAt: new Date('2026-05-20T10:43:00.000Z'),
+    };
+
+    listTenantAiApprovalRequestsUseCase.execute.mockResolvedValueOnce([
+      ecommerceApprovedApprovalRequest,
+    ]);
+
+    await request(httpServer)
+      .post(
+        '/api/ai/tenants/saas-platform/agents/ecommerce-launch-assistant/approval-requests/ai-approval-003/guarded-execution',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        launchPlanId: 'saas-platform:launch-plan:initial',
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            agentKey: 'ecommerce-launch-assistant',
+            approvalRequestId: 'ai-approval-003',
+            suggestionRunId: 'ai-run-003',
+            toolKey: 'ecommerce_launch_publish_execution',
+            targetKind: 'ecommerce_launch_plan',
+            executedAt: expect.any(String),
+            operationalCase: null,
+            invoice: null,
+            payment: null,
+            launchPlan: {
+              id: 'saas-platform:launch-plan:initial',
+              title: 'Initial ecommerce launch plan',
+              status: 'warning',
+              guardedExecutionReadiness: 'shadow_review_ready',
+              scopeSummary:
+                'El launch puede avanzar con alcance estrecho mientras dejas fuera modulos no activos: promotions.',
+              selectedChannels: ['catalog', 'landing', 'campaign'],
+              nextStep:
+                'Usa este plan como target de approval y shadow review mientras el publish real sigue bloqueado.',
+            },
+          }),
+        );
+        expect(response.body.summary).toBe(
+          'Guarded execution pilot recorded for ecommerce_launch_publish_execution after approved request ai-approval-003.',
+        );
+        expect(response.body.detail).toContain(
+          'Launch plan saas-platform:launch-plan:initial remains in shadow review only',
+        );
+      });
+
+    expect(getTenantEcommerceLaunchWorkspaceUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+    expect(createTenantAiGuardedExecutionEventUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantSlug: 'saas-platform',
+        agentKey: 'ecommerce-launch-assistant',
+        eventType: 'executed',
+        approvalRequestId: 'ai-approval-003',
+        suggestionRunId: 'ai-run-003',
+        toolKey: 'ecommerce_launch_publish_execution',
+        caseId: 'saas-platform:launch-plan:initial',
+        safeFallbackMode: null,
+        summary:
+          'Guarded execution pilot recorded for ecommerce_launch_publish_execution after approved request ai-approval-003.',
+        createdByUserId: 'user_123',
+        createdByEmail: 'hello@saas-platform.dev',
+      }),
+    );
+    expect(createTenantAiMemoryRecordUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantSlug: 'saas-platform',
+        scope: 'agent',
+        domainKey: 'ecommerce',
+        agentKey: 'ecommerce-launch-assistant',
+        sourceKind: 'guarded_execution_memory',
+        freshness: 'working_memory',
+        title: 'Guarded execution: ecommerce_launch_publish_execution',
+        summary:
+          'Guarded execution executed ecommerce_launch_publish_execution on saas-platform:launch-plan:initial after ai-approval-003.',
+        detail: expect.stringContaining(
+          'target saas-platform:launch-plan:initial',
+        ),
+        tags: expect.arrayContaining([
+          'agent:ecommerce-launch-assistant',
+          'tool:ecommerce_launch_publish_execution',
+          'event:executed',
+          'target:saas-platform:launch-plan:initial',
+          'run:ai-run-003',
+        ]),
+        createdByUserId: 'user_123',
+        createdByEmail: 'hello@saas-platform.dev',
+      }),
+    );
+  });
+
+  it('POST /api/ai/tenants/:slug/agents/:agentKey/approval-requests/:requestId/guarded-execution-rollback should roll back the ecommerce publish pilot to suggestion-only handling', async () => {
+    const ecommerceApprovedApprovalRequest = {
+      ...growthAssistApprovalRequest,
+      id: 'ai-approval-003',
+      agentKey: 'ecommerce-launch-assistant',
+      policyKey: 'ecommerce-launch-assistant-suggestion-review',
+      suggestionRunId: 'ai-run-003',
+      rationale: 'Necesito approval antes de abrir el publish pilot.',
+      summary:
+        'Ecommerce Launch Assistant requested human review for suggestion handoff ai-run-003 under policy ecommerce-launch-assistant-suggestion-review.',
+      status: 'approved' as const,
+      reviewedAt: new Date('2026-05-20T10:43:00.000Z'),
+      reviewedByUserId: user.id,
+      reviewedByEmail: user.email,
+      reviewNote: 'Se puede abrir el publish pilot en shadow review.',
+      createdAt: new Date('2026-05-20T10:42:00.000Z'),
+      updatedAt: new Date('2026-05-20T10:43:00.000Z'),
+    };
+
+    listTenantAiApprovalRequestsUseCase.execute.mockResolvedValueOnce([
+      ecommerceApprovedApprovalRequest,
+    ]);
+    listTenantAiGuardedExecutionEventsUseCase.execute.mockResolvedValueOnce([
+      {
+        id: 'ai-guarded-event-003',
+        tenantId: 'tenant_123',
+        tenantSlug: 'saas-platform',
+        agentKey: 'ecommerce-launch-assistant',
+        eventType: 'executed',
+        approvalRequestId: 'ai-approval-003',
+        suggestionRunId: 'ai-run-003',
+        toolKey: 'ecommerce_launch_publish_execution',
+        caseId: 'saas-platform:launch-plan:initial',
+        safeFallbackMode: null,
+        summary:
+          'Guarded execution pilot recorded for ecommerce_launch_publish_execution after approved request ai-approval-003.',
+        detail:
+          'Launch plan saas-platform:launch-plan:initial remains in shadow review only; no storefront publish was triggered for saas-platform.',
+        occurredAt: new Date('2026-05-20T10:44:00.000Z'),
+        createdByUserId: 'user_123',
+        createdByEmail: 'hello@saas-platform.dev',
+        createdAt: new Date('2026-05-20T10:44:00.000Z'),
+      },
+    ]);
+
+    await request(httpServer)
+      .post(
+        '/api/ai/tenants/saas-platform/agents/ecommerce-launch-assistant/approval-requests/ai-approval-003/guarded-execution-rollback',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        launchPlanId: 'saas-platform:launch-plan:initial',
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            tenantSlug: 'saas-platform',
+            agentKey: 'ecommerce-launch-assistant',
+            approvalRequestId: 'ai-approval-003',
+            suggestionRunId: 'ai-run-003',
+            toolKey: 'ecommerce_launch_publish_execution',
+            targetKind: 'ecommerce_launch_plan',
+            rolledBackAt: expect.any(String),
+            safeFallbackMode: 'suggestion_only',
+            operationalCase: null,
+            invoice: null,
+            payment: null,
+            launchPlan: {
+              id: 'saas-platform:launch-plan:initial',
+              title: 'Initial ecommerce launch plan',
+              status: 'warning',
+              guardedExecutionReadiness: 'shadow_review_ready',
+              scopeSummary:
+                'El launch puede avanzar con alcance estrecho mientras dejas fuera modulos no activos: promotions.',
+              selectedChannels: ['catalog', 'landing', 'campaign'],
+              nextStep:
+                'Usa este plan como target de approval y shadow review mientras el publish real sigue bloqueado.',
+            },
+          }),
+        );
+        expect(response.body.summary).toBe(
+          'Guarded execution pilot rolled back for ecommerce_launch_publish_execution after approved request ai-approval-003.',
+        );
+        expect(response.body.detail).toContain(
+          'returned to explicit suggestion-only handling',
+        );
+      });
+
+    expect(createTenantAiGuardedExecutionEventUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantSlug: 'saas-platform',
+        agentKey: 'ecommerce-launch-assistant',
+        eventType: 'rolled_back',
+        approvalRequestId: 'ai-approval-003',
+        suggestionRunId: 'ai-run-003',
+        toolKey: 'ecommerce_launch_publish_execution',
+        caseId: 'saas-platform:launch-plan:initial',
+        safeFallbackMode: 'suggestion_only',
+        summary:
+          'Guarded execution pilot rolled back for ecommerce_launch_publish_execution after approved request ai-approval-003.',
+        createdByUserId: 'user_123',
+        createdByEmail: 'hello@saas-platform.dev',
+      }),
+    );
+    expect(createTenantAiMemoryRecordUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantSlug: 'saas-platform',
+        scope: 'agent',
+        domainKey: 'ecommerce',
+        agentKey: 'ecommerce-launch-assistant',
+        sourceKind: 'guarded_execution_memory',
+        freshness: 'working_memory',
+        title: 'Guarded execution: ecommerce_launch_publish_execution',
+        summary:
+          'Guarded execution rolled back ecommerce_launch_publish_execution on saas-platform:launch-plan:initial after ai-approval-003.',
+        detail: expect.stringContaining('returning to suggestion_only mode'),
+        tags: expect.arrayContaining([
+          'agent:ecommerce-launch-assistant',
+          'tool:ecommerce_launch_publish_execution',
+          'event:rolled_back',
+          'target:saas-platform:launch-plan:initial',
+          'run:ai-run-003',
+        ]),
+        createdByUserId: 'user_123',
+        createdByEmail: 'hello@saas-platform.dev',
+      }),
+    );
+  });
+
   it('AI guarded execution loop should stay auditable from prepare to rollback', async () => {
     const originalPrepareImplementation =
       prepareTenantAiSuggestionRunUseCase.execute.getMockImplementation();

@@ -1595,18 +1595,7 @@ export interface AiEcommerceLaunchWorkspaceResponse {
     detail: string;
     recommendedUse: string;
   }>;
-  launchPlans: Array<{
-    id: string;
-    title: string;
-    status: 'ready' | 'warning' | 'blocked';
-    guardedExecutionReadiness:
-      | 'shadow_review_ready'
-      | 'needs_activation'
-      | 'needs_core_modules';
-    scopeSummary: string;
-    selectedChannels: Array<'catalog' | 'landing' | 'campaign'>;
-    nextStep: string;
-  }>;
+  launchPlans: AiEcommerceLaunchPlanResponse[];
   launchHints: Array<{
     key: string;
     title: string;
@@ -1617,6 +1606,19 @@ export interface AiEcommerceLaunchWorkspaceResponse {
   }>;
   safeActions: string[];
   blockedActions: string[];
+}
+
+export interface AiEcommerceLaunchPlanResponse {
+  id: string;
+  title: string;
+  status: 'ready' | 'warning' | 'blocked';
+  guardedExecutionReadiness:
+    | 'shadow_review_ready'
+    | 'needs_activation'
+    | 'needs_core_modules';
+  scopeSummary: string;
+  selectedChannels: Array<'catalog' | 'landing' | 'campaign'>;
+  nextStep: string;
 }
 
 export interface AiMemoryWorkspaceAgentResponse {
@@ -2327,13 +2329,17 @@ export interface AiGuardedExecutionExecutionResponse {
   approvalRequestId: string;
   suggestionRunId: string;
   toolKey: string;
-  targetKind: 'growth_operational_case' | 'invoice_payment';
+  targetKind:
+    | 'growth_operational_case'
+    | 'invoice_payment'
+    | 'ecommerce_launch_plan';
   executedAt: string;
   summary: string;
   detail: string;
   operationalCase: GrowthOperationalCaseResponse | null;
   invoice: InvoiceDetailResponse | null;
   payment: PaymentResponse | null;
+  launchPlan: AiEcommerceLaunchPlanResponse | null;
 }
 
 export interface AiGuardedExecutionRollbackExecutionResponse {
@@ -2342,7 +2348,10 @@ export interface AiGuardedExecutionRollbackExecutionResponse {
   approvalRequestId: string;
   suggestionRunId: string;
   toolKey: string;
-  targetKind: 'growth_operational_case' | 'invoice_payment';
+  targetKind:
+    | 'growth_operational_case'
+    | 'invoice_payment'
+    | 'ecommerce_launch_plan';
   rolledBackAt: string;
   safeFallbackMode: 'suggestion_only';
   summary: string;
@@ -2350,6 +2359,7 @@ export interface AiGuardedExecutionRollbackExecutionResponse {
   operationalCase: GrowthOperationalCaseResponse | null;
   invoice: InvoiceDetailResponse | null;
   payment: PaymentResponse | null;
+  launchPlan: AiEcommerceLaunchPlanResponse | null;
 }
 
 export type AiGuardedExecutionEventLogEntryType =

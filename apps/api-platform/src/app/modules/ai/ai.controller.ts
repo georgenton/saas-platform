@@ -50,6 +50,7 @@ import {
   PrepareTenantAiSuggestionRunUseCase,
   RequestTenantAiSuggestionRunApprovalUseCase,
   ReviewTenantAiApprovalRequestUseCase,
+  TenantEcommerceLaunchPlanView,
   UpdateTenantAiMemoryRecordUseCase,
   AiSuggestionRunNotFoundError,
   buildInitialAiSuggestionRunApprovalSummary,
@@ -7015,9 +7016,58 @@ export class AiController {
           );
         }
 
-        throw new ConflictException(
-          `Ecommerce guarded execution for launch plan ${body.launchPlanId} remains in shadow review only until storefront publish automation becomes operational.`,
+        const launchPlan = await this.getTenantEcommerceLaunchPlanOrThrow(
+          tenantSlug,
+          body.launchPlanId,
         );
+        this.assertEcommerceLaunchPlanPilotReady(launchPlan);
+
+        const executedAt = new Date();
+        const summary = `Guarded execution pilot recorded for ${candidateToolKey} after approved request ${approvalRequest.id}.`;
+        const detail = `Launch plan ${launchPlan.id} remains in shadow review only; no storefront publish was triggered for ${tenantSlug}.`;
+
+        await this.createTenantAiGuardedExecutionEventUseCase.execute({
+          tenantSlug,
+          agentKey,
+          eventType: 'executed',
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          caseId: launchPlan.id,
+          safeFallbackMode: null,
+          summary,
+          detail,
+          occurredAt: executedAt,
+          createdByUserId: authenticatedUser.id,
+          createdByEmail: authenticatedUser.email,
+        });
+
+        await this.captureAiGuardedExecutionMemory({
+          tenantSlug,
+          agentKey,
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          targetId: launchPlan.id,
+          eventType: 'executed',
+          safeFallbackMode: null,
+          occurredAt: executedAt,
+          actorUserId: authenticatedUser.id,
+          actorEmail: authenticatedUser.email,
+        });
+
+        return toAiGuardedExecutionExecutionResponseDto({
+          tenantSlug,
+          agentKey,
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          targetKind: 'ecommerce_launch_plan',
+          executedAt,
+          summary,
+          detail,
+          launchPlan,
+        });
       }
 
       throw new BadRequestException(
@@ -7250,9 +7300,66 @@ export class AiController {
           );
         }
 
-        throw new ConflictException(
-          `Ecommerce guarded execution rollback for launch plan ${body.launchPlanId} is not available because the publish lane still runs in shadow review only.`,
+        const launchPlan = await this.getTenantEcommerceLaunchPlanOrThrow(
+          tenantSlug,
+          body.launchPlanId,
         );
+        this.assertEcommerceLaunchPlanPilotReady(launchPlan);
+
+        await this.assertApprovalRequestExecutedGuardedLaneTarget(
+          tenantSlug,
+          agentKey,
+          approvalRequest.id,
+          candidateToolKey,
+          launchPlan.id,
+        );
+
+        const rolledBackAt = new Date();
+        const summary = `Guarded execution pilot rolled back for ${candidateToolKey} after approved request ${approvalRequest.id}.`;
+        const detail = `Launch plan ${launchPlan.id} returned to explicit suggestion-only handling; no storefront publish was triggered for ${tenantSlug}.`;
+
+        await this.createTenantAiGuardedExecutionEventUseCase.execute({
+          tenantSlug,
+          agentKey,
+          eventType: 'rolled_back',
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          caseId: launchPlan.id,
+          safeFallbackMode: 'suggestion_only',
+          summary,
+          detail,
+          occurredAt: rolledBackAt,
+          createdByUserId: authenticatedUser.id,
+          createdByEmail: authenticatedUser.email,
+        });
+
+        await this.captureAiGuardedExecutionMemory({
+          tenantSlug,
+          agentKey,
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          targetId: launchPlan.id,
+          eventType: 'rolled_back',
+          safeFallbackMode: 'suggestion_only',
+          occurredAt: rolledBackAt,
+          actorUserId: authenticatedUser.id,
+          actorEmail: authenticatedUser.email,
+        });
+
+        return toAiGuardedExecutionRollbackExecutionResponseDto({
+          tenantSlug,
+          agentKey,
+          approvalRequestId: approvalRequest.id,
+          suggestionRunId: approvalRequest.suggestionRunId,
+          toolKey: candidateToolKey,
+          targetKind: 'ecommerce_launch_plan',
+          rolledBackAt,
+          summary,
+          detail,
+          launchPlan,
+        });
       }
 
       throw new BadRequestException(
@@ -7529,6 +7636,69 @@ export class AiController {
         `AI approval request ${approvalRequestId} already executed ${toolKey} on ${existingExecution.caseId} at ${existingExecution.occurredAt.toISOString()}. Request a new approval before re-running this guarded lane.`,
       );
     }
+  }
+
+  private async assertApprovalRequestExecutedGuardedLaneTarget(
+    tenantSlug: string,
+    agentKey: string,
+    approvalRequestId: string,
+    toolKey: string | null,
+    targetId: string,
+  ): Promise<void> {
+    if (!toolKey) {
+      throw new ConflictException(
+        `AI agent ${agentKey} does not expose a guarded execution tool for target ${targetId}.`,
+      );
+    }
+
+    const executedEvents =
+      await this.listTenantAiGuardedExecutionEventsUseCase.execute(tenantSlug, {
+        agentKeys: [agentKey],
+        limit: null,
+        eventTypes: ['executed'],
+      });
+    const existingExecution = executedEvents.find(
+      (entry) =>
+        entry.approvalRequestId === approvalRequestId &&
+        entry.toolKey === toolKey &&
+        entry.caseId === targetId,
+    );
+
+    if (!existingExecution) {
+      throw new ConflictException(
+        `No guarded execution pilot for ${toolKey} on ${targetId} was recorded under approval request ${approvalRequestId}. Execute the pilot before rolling it back.`,
+      );
+    }
+  }
+
+  private async getTenantEcommerceLaunchPlanOrThrow(
+    tenantSlug: string,
+    launchPlanId: string,
+  ): Promise<TenantEcommerceLaunchPlanView> {
+    const workspace =
+      await this.getTenantEcommerceLaunchWorkspaceUseCase.execute(tenantSlug);
+    const launchPlan =
+      workspace.launchPlans.find((entry) => entry.id === launchPlanId) ?? null;
+
+    if (!launchPlan) {
+      throw new NotFoundException(
+        `Ecommerce launch plan ${launchPlanId} was not found for tenant ${tenantSlug}.`,
+      );
+    }
+
+    return launchPlan;
+  }
+
+  private assertEcommerceLaunchPlanPilotReady(
+    launchPlan: TenantEcommerceLaunchPlanView,
+  ): void {
+    if (launchPlan.guardedExecutionReadiness === 'shadow_review_ready') {
+      return;
+    }
+
+    throw new ConflictException(
+      `Ecommerce launch plan ${launchPlan.id} is not ready for the publish pilot yet. ${launchPlan.nextStep}`,
+    );
   }
 
   private async captureAiApprovalMemory(input: {

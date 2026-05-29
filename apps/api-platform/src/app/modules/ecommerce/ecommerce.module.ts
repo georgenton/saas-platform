@@ -9,22 +9,72 @@ import {
   ListTenantEnabledProductsUseCase,
 } from '@saas-platform/commercial-application';
 import {
+  ECOMMERCE_PRODUCT_DRAFT_REPOSITORY,
+  ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
+  GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
+  GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+  GetTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase,
+  GetTenantEcommerceProductEntityChannelReleaseCandidateDetailUseCase,
+  ECOMMERCE_PRODUCT_ENTITY_REPOSITORY,
+  ECOMMERCE_PRODUCT_SETUP_REPOSITORY,
+  GetTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase,
+  GetTenantEcommerceProductEntityChannelDraftDetailUseCase,
+  GetTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceUseCase,
+  GetTenantEcommerceSavedProductEntityChannelDraftDetailUseCase,
+  GetTenantEcommerceProductEntityDetailUseCase,
+  GetTenantEcommerceProductAuthoringDraftDetailUseCase,
+  GetTenantEcommerceProductAuthoringWorkspaceUseCase,
+  GetTenantEcommerceProductSetupDetailUseCase,
+  GetTenantEcommerceProductWorkspaceDetailUseCase,
   GetTenantEcommerceLaunchPlanDetailUseCase,
+  GetTenantEcommerceStoreProfileWorkspaceUseCase,
+  GetTenantEcommerceStoreSetupWorkspaceUseCase,
   GetTenantEcommerceLaunchWorkspaceUseCase,
+  ListTenantEcommerceProductWorkspacesUseCase,
+  ListTenantEcommerceSavedProductDraftsUseCase,
   ListTenantEcommerceLaunchPlansUseCase,
+  ListTenantEcommerceProductSetupsUseCase,
+  ListTenantEcommerceProductEntitiesUseCase,
+  ListTenantEcommerceProductEntityChannelAssetWorkspacesUseCase,
+  ListTenantEcommerceProductEntityChannelAssetEntitiesUseCase,
+  ListTenantEcommerceProductEntityChannelReleaseCandidatesUseCase,
+  ListTenantEcommerceSavedProductEntityChannelDraftsUseCase,
+  PromoteTenantEcommerceProductSetupToProductEntityUseCase,
+  PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
+  PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
+  PromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
+  PromoteTenantEcommerceProductWorkspaceToProductSetupUseCase,
+  PromoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
+  RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
+  RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
+  RequestTenantEcommerceProductEntityChannelDraftActionPacketUseCase,
+  RequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase,
+  RequestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase,
+  RequestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase,
+  RequestTenantEcommerceProductEntityCommercializationPacketUseCase,
+  RequestTenantEcommerceProductSetupDefinitionPacketUseCase,
+  RequestTenantEcommerceProductWorkspaceReadinessPacketUseCase,
   RequestTenantEcommerceLaunchPlanActivationReadinessUseCase,
+  SaveTenantEcommerceProductAuthoringDraftUseCase,
+  SaveTenantEcommerceProductEntityChannelDraftUseCase,
+  UpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase,
+  UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
+  UpdateTenantEcommerceProductSetupEditableSnapshotUseCase,
+  UpdateTenantEcommerceProductWorkspaceEditableSnapshotUseCase,
 } from '@saas-platform/ecommerce-application';
 import { FEATURE_FLAG_REPOSITORY } from '@saas-platform/feature-flags-application';
 import {
   CatalogPersistenceModule,
   CommercialPersistenceModule,
+  EcommercePersistenceModule,
   FeatureFlagsPersistenceModule,
   TenancyPersistenceModule,
 } from '@saas-platform/infra-prisma';
 import {
+  GetTenantBySlugUseCase,
+  TENANT_REPOSITORY,
   ResolveTenantAccessUseCase,
   TENANT_ACCESS_REPOSITORY,
-  TENANT_REPOSITORY,
 } from '@saas-platform/tenancy-application';
 import { AuthModule } from '../auth/auth.module';
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
@@ -36,6 +86,7 @@ import { EcommerceController } from './ecommerce.controller';
     AuthModule,
     CatalogPersistenceModule,
     CommercialPersistenceModule,
+    EcommercePersistenceModule,
     FeatureFlagsPersistenceModule,
     TenancyPersistenceModule,
   ],
@@ -81,6 +132,556 @@ import { EcommerceController } from './ecommerce.controller';
         new GetTenantEcommerceLaunchWorkspaceUseCase(
           listTenantEnabledProductsUseCase,
           listProductModulesUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceStoreSetupWorkspaceUseCase,
+      inject: [
+        GetTenantEcommerceLaunchWorkspaceUseCase,
+        ListTenantEnabledProductsUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceLaunchWorkspaceUseCase,
+        listTenantEnabledProductsUseCase,
+      ) =>
+        new GetTenantEcommerceStoreSetupWorkspaceUseCase(
+          getTenantEcommerceLaunchWorkspaceUseCase,
+          listTenantEnabledProductsUseCase,
+        ),
+    },
+    {
+      provide: GetTenantBySlugUseCase,
+      inject: [TENANT_REPOSITORY],
+      useFactory: (tenantRepository) => new GetTenantBySlugUseCase(tenantRepository),
+    },
+    {
+      provide: GetTenantEcommerceStoreProfileWorkspaceUseCase,
+      inject: [
+        GetTenantBySlugUseCase,
+        GetTenantEcommerceStoreSetupWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantBySlugUseCase,
+        getTenantEcommerceStoreSetupWorkspaceUseCase,
+      ) =>
+        new GetTenantEcommerceStoreProfileWorkspaceUseCase(
+          getTenantBySlugUseCase,
+          getTenantEcommerceStoreSetupWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceProductAuthoringWorkspaceUseCase,
+      inject: [GetTenantEcommerceStoreProfileWorkspaceUseCase],
+      useFactory: (getTenantEcommerceStoreProfileWorkspaceUseCase) =>
+        new GetTenantEcommerceProductAuthoringWorkspaceUseCase(
+          getTenantEcommerceStoreProfileWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceProductAuthoringDraftDetailUseCase,
+      inject: [
+        GetTenantEcommerceProductAuthoringWorkspaceUseCase,
+        ECOMMERCE_PRODUCT_DRAFT_REPOSITORY,
+      ],
+      useFactory: (
+        getTenantEcommerceProductAuthoringWorkspaceUseCase,
+        ecommerceProductDraftRepository,
+      ) =>
+        new GetTenantEcommerceProductAuthoringDraftDetailUseCase(
+          getTenantEcommerceProductAuthoringWorkspaceUseCase,
+          ecommerceProductDraftRepository,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
+      inject: [GetTenantEcommerceProductAuthoringDraftDetailUseCase],
+      useFactory: (getTenantEcommerceProductAuthoringDraftDetailUseCase) =>
+        new RequestTenantEcommerceProductAuthoringDraftBriefUseCase(
+          getTenantEcommerceProductAuthoringDraftDetailUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
+      inject: [GetTenantEcommerceProductAuthoringDraftDetailUseCase],
+      useFactory: (getTenantEcommerceProductAuthoringDraftDetailUseCase) =>
+        new RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase(
+          getTenantEcommerceProductAuthoringDraftDetailUseCase,
+        ),
+    },
+    {
+      provide: SaveTenantEcommerceProductAuthoringDraftUseCase,
+      inject: [
+        GetTenantBySlugUseCase,
+        GetTenantEcommerceProductAuthoringDraftDetailUseCase,
+        RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
+        RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
+        ECOMMERCE_PRODUCT_DRAFT_REPOSITORY,
+      ],
+      useFactory: (
+        getTenantBySlugUseCase,
+        getTenantEcommerceProductAuthoringDraftDetailUseCase,
+        requestTenantEcommerceProductAuthoringDraftBriefUseCase,
+        requestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
+        ecommerceProductDraftRepository,
+      ) =>
+        new SaveTenantEcommerceProductAuthoringDraftUseCase(
+          getTenantBySlugUseCase,
+          getTenantEcommerceProductAuthoringDraftDetailUseCase,
+          requestTenantEcommerceProductAuthoringDraftBriefUseCase,
+          requestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
+          ecommerceProductDraftRepository,
+        ),
+    },
+    {
+      provide: ListTenantEcommerceSavedProductDraftsUseCase,
+      inject: [ECOMMERCE_PRODUCT_DRAFT_REPOSITORY],
+      useFactory: (ecommerceProductDraftRepository) =>
+        new ListTenantEcommerceSavedProductDraftsUseCase(
+          ecommerceProductDraftRepository,
+        ),
+    },
+    {
+      provide: PromoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
+      inject: [ECOMMERCE_PRODUCT_DRAFT_REPOSITORY],
+      useFactory: (ecommerceProductDraftRepository) =>
+        new PromoteTenantEcommerceSavedDraftToProductWorkspaceUseCase(
+          ecommerceProductDraftRepository,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceProductWorkspaceDetailUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_DRAFT_REPOSITORY,
+        PromoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
+      ],
+      useFactory: (
+        ecommerceProductDraftRepository,
+        promoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
+      ) =>
+        new GetTenantEcommerceProductWorkspaceDetailUseCase(
+          ecommerceProductDraftRepository,
+          promoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: ListTenantEcommerceProductWorkspacesUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_DRAFT_REPOSITORY,
+        PromoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
+      ],
+      useFactory: (
+        ecommerceProductDraftRepository,
+        promoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
+      ) =>
+        new ListTenantEcommerceProductWorkspacesUseCase(
+          ecommerceProductDraftRepository,
+          promoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: PromoteTenantEcommerceProductSetupToProductEntityUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_SETUP_REPOSITORY,
+        ECOMMERCE_PRODUCT_ENTITY_REPOSITORY,
+      ],
+      useFactory: (
+        ecommerceProductSetupRepository,
+        ecommerceProductEntityRepository,
+      ) =>
+        new PromoteTenantEcommerceProductSetupToProductEntityUseCase(
+          ecommerceProductSetupRepository,
+          ecommerceProductEntityRepository,
+        ),
+    },
+    {
+      provide: ListTenantEcommerceProductEntitiesUseCase,
+      inject: [ECOMMERCE_PRODUCT_ENTITY_REPOSITORY],
+      useFactory: (ecommerceProductEntityRepository) =>
+        new ListTenantEcommerceProductEntitiesUseCase(
+          ecommerceProductEntityRepository,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceProductEntityDetailUseCase,
+      inject: [ECOMMERCE_PRODUCT_ENTITY_REPOSITORY],
+      useFactory: (ecommerceProductEntityRepository) =>
+        new GetTenantEcommerceProductEntityDetailUseCase(
+          ecommerceProductEntityRepository,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceProductEntityCommercializationPacketUseCase,
+      inject: [GetTenantEcommerceProductEntityDetailUseCase],
+      useFactory: (getTenantEcommerceProductEntityDetailUseCase) =>
+        new RequestTenantEcommerceProductEntityCommercializationPacketUseCase(
+          getTenantEcommerceProductEntityDetailUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase,
+      inject: [GetTenantEcommerceProductEntityDetailUseCase],
+      useFactory: (getTenantEcommerceProductEntityDetailUseCase) =>
+        new GetTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase(
+          getTenantEcommerceProductEntityDetailUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
+      inject: [GetTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase],
+      useFactory: (getTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase) =>
+        new GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase(
+          getTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceProductEntityChannelDraftDetailUseCase,
+      inject: [GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase],
+      useFactory: (
+        getTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
+      ) =>
+        new GetTenantEcommerceProductEntityChannelDraftDetailUseCase(
+          getTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceProductEntityChannelDraftActionPacketUseCase,
+      inject: [GetTenantEcommerceProductEntityChannelDraftDetailUseCase],
+      useFactory: (getTenantEcommerceProductEntityChannelDraftDetailUseCase) =>
+        new RequestTenantEcommerceProductEntityChannelDraftActionPacketUseCase(
+          getTenantEcommerceProductEntityChannelDraftDetailUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase,
+      inject: [GetTenantEcommerceProductEntityChannelDraftDetailUseCase],
+      useFactory: (getTenantEcommerceProductEntityChannelDraftDetailUseCase) =>
+        new RequestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase(
+          getTenantEcommerceProductEntityChannelDraftDetailUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceUseCase,
+      inject: [
+        GetTenantEcommerceProductEntityChannelDraftDetailUseCase,
+        RequestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceProductEntityChannelDraftDetailUseCase,
+        requestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase,
+      ) =>
+        new GetTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceUseCase(
+          getTenantEcommerceProductEntityChannelDraftDetailUseCase,
+          requestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase,
+        ),
+    },
+    {
+      provide: SaveTenantEcommerceProductEntityChannelDraftUseCase,
+      inject: [
+        GetTenantBySlugUseCase,
+        GetTenantEcommerceProductEntityChannelDraftDetailUseCase,
+        GetTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceUseCase,
+        ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
+      ],
+      useFactory: (
+        getTenantBySlugUseCase,
+        getTenantEcommerceProductEntityChannelDraftDetailUseCase,
+        getTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceUseCase,
+        ecommerceProductEntityChannelDraftRepository,
+      ) =>
+        new SaveTenantEcommerceProductEntityChannelDraftUseCase(
+          getTenantBySlugUseCase,
+          getTenantEcommerceProductEntityChannelDraftDetailUseCase,
+          getTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceUseCase,
+          ecommerceProductEntityChannelDraftRepository,
+        ),
+    },
+    {
+      provide: ListTenantEcommerceSavedProductEntityChannelDraftsUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
+        GetTenantEcommerceProductEntityDetailUseCase,
+      ],
+      useFactory: (
+        ecommerceProductEntityChannelDraftRepository,
+        getTenantEcommerceProductEntityDetailUseCase,
+      ) =>
+        new ListTenantEcommerceSavedProductEntityChannelDraftsUseCase(
+          ecommerceProductEntityChannelDraftRepository,
+          getTenantEcommerceProductEntityDetailUseCase,
+        ),
+    },
+    {
+      provide: PromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
+      inject: [ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY],
+      useFactory: (ecommerceProductEntityChannelDraftRepository) =>
+        new PromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase(
+          ecommerceProductEntityChannelDraftRepository,
+        ),
+    },
+    {
+      provide: PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
+      inject: [ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY],
+      useFactory: (ecommerceProductEntityChannelDraftRepository) =>
+        new PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase(
+          ecommerceProductEntityChannelDraftRepository,
+        ),
+    },
+    {
+      provide: ListTenantEcommerceProductEntityChannelAssetWorkspacesUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
+        GetTenantEcommerceProductEntityDetailUseCase,
+        PromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
+      ],
+      useFactory: (
+        ecommerceProductEntityChannelDraftRepository,
+        getTenantEcommerceProductEntityDetailUseCase,
+        promoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
+      ) =>
+        new ListTenantEcommerceProductEntityChannelAssetWorkspacesUseCase(
+          ecommerceProductEntityChannelDraftRepository,
+          getTenantEcommerceProductEntityDetailUseCase,
+          promoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: ListTenantEcommerceProductEntityChannelAssetEntitiesUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
+        GetTenantEcommerceProductEntityDetailUseCase,
+        PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
+      ],
+      useFactory: (
+        ecommerceProductEntityChannelDraftRepository,
+        getTenantEcommerceProductEntityDetailUseCase,
+        promoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
+      ) =>
+        new ListTenantEcommerceProductEntityChannelAssetEntitiesUseCase(
+          ecommerceProductEntityChannelDraftRepository,
+          getTenantEcommerceProductEntityDetailUseCase,
+          promoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
+        GetTenantEcommerceProductEntityDetailUseCase,
+        PromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
+      ],
+      useFactory: (
+        ecommerceProductEntityChannelDraftRepository,
+        getTenantEcommerceProductEntityDetailUseCase,
+        promoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
+      ) =>
+        new GetTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase(
+          ecommerceProductEntityChannelDraftRepository,
+          getTenantEcommerceProductEntityDetailUseCase,
+          promoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
+        GetTenantEcommerceProductEntityDetailUseCase,
+        PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
+      ],
+      useFactory: (
+        ecommerceProductEntityChannelDraftRepository,
+        getTenantEcommerceProductEntityDetailUseCase,
+        promoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
+      ) =>
+        new GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase(
+          ecommerceProductEntityChannelDraftRepository,
+          getTenantEcommerceProductEntityDetailUseCase,
+          promoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
+        ),
+    },
+    {
+      provide: UpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
+        GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+      ],
+      useFactory: (
+        ecommerceProductEntityChannelDraftRepository,
+        getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+      ) =>
+        new UpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase(
+          ecommerceProductEntityChannelDraftRepository,
+          getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase,
+      inject: [GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase],
+      useFactory: (
+        getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+      ) =>
+        new RequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase(
+          getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+        ),
+    },
+    {
+      provide: PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
+      inject: [ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY],
+      useFactory: (ecommerceProductEntityChannelDraftRepository) =>
+        new PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase(
+          ecommerceProductEntityChannelDraftRepository,
+        ),
+    },
+    {
+      provide: ListTenantEcommerceProductEntityChannelReleaseCandidatesUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
+        GetTenantEcommerceProductEntityDetailUseCase,
+        PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
+      ],
+      useFactory: (
+        ecommerceProductEntityChannelDraftRepository,
+        getTenantEcommerceProductEntityDetailUseCase,
+        promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
+      ) =>
+        new ListTenantEcommerceProductEntityChannelReleaseCandidatesUseCase(
+          ecommerceProductEntityChannelDraftRepository,
+          getTenantEcommerceProductEntityDetailUseCase,
+          promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceProductEntityChannelReleaseCandidateDetailUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
+        GetTenantEcommerceProductEntityDetailUseCase,
+        PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
+      ],
+      useFactory: (
+        ecommerceProductEntityChannelDraftRepository,
+        getTenantEcommerceProductEntityDetailUseCase,
+        promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
+      ) =>
+        new GetTenantEcommerceProductEntityChannelReleaseCandidateDetailUseCase(
+          ecommerceProductEntityChannelDraftRepository,
+          getTenantEcommerceProductEntityDetailUseCase,
+          promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase,
+      inject: [GetTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase],
+      useFactory: (
+        getTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase,
+      ) =>
+        new RequestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase(
+          getTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceSavedProductEntityChannelDraftDetailUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
+        GetTenantEcommerceProductEntityDetailUseCase,
+      ],
+      useFactory: (
+        ecommerceProductEntityChannelDraftRepository,
+        getTenantEcommerceProductEntityDetailUseCase,
+      ) =>
+        new GetTenantEcommerceSavedProductEntityChannelDraftDetailUseCase(
+          ecommerceProductEntityChannelDraftRepository,
+          getTenantEcommerceProductEntityDetailUseCase,
+        ),
+    },
+    {
+      provide: UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
+        GetTenantEcommerceSavedProductEntityChannelDraftDetailUseCase,
+      ],
+      useFactory: (
+        ecommerceProductEntityChannelDraftRepository,
+        getTenantEcommerceSavedProductEntityChannelDraftDetailUseCase,
+      ) =>
+        new UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase(
+          ecommerceProductEntityChannelDraftRepository,
+          getTenantEcommerceSavedProductEntityChannelDraftDetailUseCase,
+        ),
+    },
+    {
+      provide: PromoteTenantEcommerceProductWorkspaceToProductSetupUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_DRAFT_REPOSITORY,
+        ECOMMERCE_PRODUCT_SETUP_REPOSITORY,
+      ],
+      useFactory: (
+        ecommerceProductDraftRepository,
+        ecommerceProductSetupRepository,
+      ) =>
+        new PromoteTenantEcommerceProductWorkspaceToProductSetupUseCase(
+          ecommerceProductDraftRepository,
+          ecommerceProductSetupRepository,
+        ),
+    },
+    {
+      provide: ListTenantEcommerceProductSetupsUseCase,
+      inject: [ECOMMERCE_PRODUCT_SETUP_REPOSITORY],
+      useFactory: (ecommerceProductSetupRepository) =>
+        new ListTenantEcommerceProductSetupsUseCase(
+          ecommerceProductSetupRepository,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceProductSetupDetailUseCase,
+      inject: [ECOMMERCE_PRODUCT_SETUP_REPOSITORY],
+      useFactory: (ecommerceProductSetupRepository) =>
+        new GetTenantEcommerceProductSetupDetailUseCase(
+          ecommerceProductSetupRepository,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceProductSetupDefinitionPacketUseCase,
+      inject: [GetTenantEcommerceProductSetupDetailUseCase],
+      useFactory: (getTenantEcommerceProductSetupDetailUseCase) =>
+        new RequestTenantEcommerceProductSetupDefinitionPacketUseCase(
+          getTenantEcommerceProductSetupDetailUseCase,
+        ),
+    },
+    {
+      provide: UpdateTenantEcommerceProductSetupEditableSnapshotUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_SETUP_REPOSITORY,
+        GetTenantEcommerceProductSetupDetailUseCase,
+      ],
+      useFactory: (
+        ecommerceProductSetupRepository,
+        getTenantEcommerceProductSetupDetailUseCase,
+      ) =>
+        new UpdateTenantEcommerceProductSetupEditableSnapshotUseCase(
+          ecommerceProductSetupRepository,
+          getTenantEcommerceProductSetupDetailUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceProductWorkspaceReadinessPacketUseCase,
+      inject: [GetTenantEcommerceProductWorkspaceDetailUseCase],
+      useFactory: (getTenantEcommerceProductWorkspaceDetailUseCase) =>
+        new RequestTenantEcommerceProductWorkspaceReadinessPacketUseCase(
+          getTenantEcommerceProductWorkspaceDetailUseCase,
+        ),
+    },
+    {
+      provide: UpdateTenantEcommerceProductWorkspaceEditableSnapshotUseCase,
+      inject: [
+        ECOMMERCE_PRODUCT_DRAFT_REPOSITORY,
+        GetTenantEcommerceProductWorkspaceDetailUseCase,
+      ],
+      useFactory: (
+        ecommerceProductDraftRepository,
+        getTenantEcommerceProductWorkspaceDetailUseCase,
+      ) =>
+        new UpdateTenantEcommerceProductWorkspaceEditableSnapshotUseCase(
+          ecommerceProductDraftRepository,
+          getTenantEcommerceProductWorkspaceDetailUseCase,
         ),
     },
     {

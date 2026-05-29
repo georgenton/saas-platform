@@ -1705,6 +1705,799 @@ export interface RequestEcommerceLaunchPlanActivationReadinessResponse {
   plan: EcommerceLaunchPlanResponse;
 }
 
+export interface EcommerceStoreSetupWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  summary: {
+    tone: 'healthy' | 'warning' | 'critical';
+    setupReadiness:
+      | 'ready_to_configure'
+      | 'needs_activation'
+      | 'needs_store_foundation';
+    headline: string;
+    detail: string;
+    suggestedFocus: string;
+  };
+  productSnapshot: {
+    ecommerceEnabled: boolean;
+    invoicingEnabled: boolean;
+    enabledProductKeys: string[];
+  };
+  moduleSnapshot: {
+    productEnabled: boolean;
+    activeModuleCount: number;
+    coreModuleCount: number;
+    optionalModuleCount: number;
+    inactiveModuleKeys: string[];
+  };
+  capabilities: Array<{
+    key:
+      | 'store_identity'
+      | 'catalog_authoring'
+      | 'landing_readiness'
+      | 'invoicing_connection'
+      | 'whatsapp_sales_flow';
+    title: string;
+    status: 'ready' | 'warning' | 'blocked';
+    detail: string;
+    nextStep: string;
+  }>;
+  safeActions: string[];
+  blockedActions: string[];
+}
+
+export interface EcommerceStoreProfileWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  summary: {
+    tone: 'healthy' | 'warning' | 'critical';
+    profileReadiness:
+      | 'draft_ready'
+      | 'needs_activation'
+      | 'needs_commercial_connections';
+    headline: string;
+    detail: string;
+    suggestedFocus: string;
+  };
+  identityDraft: {
+    storeName: string;
+    storefrontSlug: string;
+    launchNarrative: string;
+    primaryChannel: 'catalog' | 'landing' | 'whatsapp';
+  };
+  connections: Array<{
+    key: 'ecommerce' | 'invoicing' | 'growth' | 'ai_assistant';
+    title: string;
+    status: 'ready' | 'warning' | 'blocked';
+    detail: string;
+  }>;
+  recommendedAssets: string[];
+  safeActions: string[];
+  blockedActions: string[];
+}
+
+export interface EcommerceProductAuthoringWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  summary: {
+    tone: 'healthy' | 'warning' | 'critical';
+    authoringReadiness:
+      | 'starter_set_ready'
+      | 'needs_activation'
+      | 'needs_store_profile';
+    headline: string;
+    detail: string;
+    suggestedFocus: string;
+  };
+  draftCollection: {
+    profileStoreName: string;
+    collectionLabel: string;
+    primaryChannel: 'catalog' | 'landing' | 'whatsapp';
+    draftCount: number;
+  };
+  readinessChecklist: Array<{
+    key:
+      | 'store_profile'
+      | 'catalog_foundation'
+      | 'invoicing_connection'
+      | 'growth_handoff';
+    title: string;
+    status: 'ready' | 'warning' | 'blocked';
+    detail: string;
+  }>;
+  drafts: Array<{
+    id: string;
+    title: string;
+    productType: 'core_offer' | 'entry_offer' | 'upsell';
+    status: 'draft' | 'blocked';
+    rationale: string;
+    suggestedChannels: Array<'catalog' | 'landing' | 'whatsapp'>;
+  }>;
+  safeActions: string[];
+  blockedActions: string[];
+}
+
+export interface EcommerceProductAuthoringDraftResponse {
+  id: string;
+  title: string;
+  productType: 'core_offer' | 'entry_offer' | 'upsell';
+  status: 'draft' | 'blocked';
+  rationale: string;
+  suggestedChannels: Array<'catalog' | 'landing' | 'whatsapp'>;
+}
+
+export interface SavedEcommerceProductAuthoringDraftResponse {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  sourceDraftId: string;
+  title: string;
+  productType: 'core_offer' | 'entry_offer' | 'upsell';
+  status: 'saved_draft';
+  rationale: string;
+  suggestedChannels: Array<'catalog' | 'landing' | 'whatsapp'>;
+  briefingStatus:
+    | 'ready_for_ai_brief'
+    | 'needs_commercial_connections'
+    | 'needs_activation'
+    | null;
+  briefSummary: string | null;
+  briefRequiredInputs: string[];
+  briefGuardrails: string[];
+  refinementStatus:
+    | 'ready_for_refinement'
+    | 'needs_commercial_connections'
+    | 'needs_activation'
+    | null;
+  refinementSummary: string | null;
+  pricingBand: string | null;
+  offerAngle: string | null;
+  primaryCta: string | null;
+  channelSequence: string[];
+  refinementGuardrails: string[];
+  promotedToWorkspaceAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EcommerceProductAuthoringDraftDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  workspaceSummary: EcommerceProductAuthoringWorkspaceResponse['summary'];
+  draftCollection: EcommerceProductAuthoringWorkspaceResponse['draftCollection'];
+  readinessChecklist: EcommerceProductAuthoringWorkspaceResponse['readinessChecklist'];
+  safeActions: string[];
+  blockedActions: string[];
+  draft: EcommerceProductAuthoringDraftResponse;
+  savedDraft: SavedEcommerceProductAuthoringDraftResponse | null;
+}
+
+export interface RequestEcommerceProductAuthoringDraftBriefResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  briefingStatus:
+    | 'ready_for_ai_brief'
+    | 'needs_commercial_connections'
+    | 'needs_activation';
+  summary: string;
+  requiredInputs: string[];
+  guardrails: string[];
+  draft: EcommerceProductAuthoringDraftResponse;
+}
+
+export interface RequestEcommerceProductAuthoringDraftRefinementPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  refinementStatus:
+    | 'ready_for_refinement'
+    | 'needs_commercial_connections'
+    | 'needs_activation';
+  summary: string;
+  pricingBand: string;
+  offerAngle: string;
+  primaryCta: string;
+  channelSequence: string[];
+  guardrails: string[];
+  draft: EcommerceProductAuthoringDraftResponse;
+}
+
+export interface SaveEcommerceProductAuthoringDraftResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  summary: string;
+  savedDraft: SavedEcommerceProductAuthoringDraftResponse;
+}
+
+export interface EcommerceSavedProductDraftRegistryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  summary: {
+    totalSavedDrafts: number;
+    readyForRefinementCount: number;
+    needsCommercialConnectionsCount: number;
+    needsActivationCount: number;
+    headline: string;
+    detail: string;
+  };
+  drafts: SavedEcommerceProductAuthoringDraftResponse[];
+}
+
+export interface EcommerceProductWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  savedDraftId: string;
+  promotedAt: string;
+  status:
+    | 'ready_for_copy_edit'
+    | 'needs_commercial_connections'
+    | 'needs_activation';
+  headline: string;
+  detail: string;
+  editableSnapshot: {
+    title: string;
+    pricingBand: string | null;
+    offerAngle: string | null;
+    primaryCta: string | null;
+    suggestedChannels: Array<'catalog' | 'landing' | 'whatsapp'>;
+    channelSequence: string[];
+  };
+  guardrails: string[];
+  nextActions: string[];
+}
+
+export interface EcommerceProductWorkspaceRegistryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  summary: {
+    totalProductWorkspaces: number;
+    readyForCopyEditCount: number;
+    needsCommercialConnectionsCount: number;
+    needsActivationCount: number;
+    headline: string;
+    detail: string;
+  };
+  workspaces: EcommerceProductWorkspaceResponse[];
+}
+
+export interface EcommerceProductWorkspaceDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  workspace: EcommerceProductWorkspaceResponse;
+  sourceDraftId: string;
+  readiness: {
+    briefingStatus:
+      | 'ready_for_ai_brief'
+      | 'needs_commercial_connections'
+      | 'needs_activation'
+      | null;
+    refinementStatus:
+      | 'ready_for_refinement'
+      | 'needs_commercial_connections'
+      | 'needs_activation'
+      | null;
+    lastSavedAt: string;
+  };
+}
+
+export interface PromoteEcommerceSavedDraftToProductWorkspaceResponse {
+  workspace: EcommerceProductWorkspaceResponse;
+}
+
+export interface UpdateEcommerceProductWorkspaceEditableSnapshotResponse {
+  workspace: EcommerceProductWorkspaceDetailResponse;
+}
+
+export interface RequestEcommerceProductWorkspaceReadinessPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  workspace: EcommerceProductWorkspaceResponse;
+  readinessStatus:
+    | 'ready_for_product_setup'
+    | 'needs_commercial_connections'
+    | 'needs_activation';
+  summary: string;
+  requiredDecisions: string[];
+  blockedBy: string[];
+  recommendedArtifacts: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceProductSetupResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productSetupId: string;
+  savedDraftId: string;
+  sourceDraftId: string;
+  status:
+    | 'draft_setup'
+    | 'needs_commercial_connections'
+    | 'needs_activation';
+  title: string;
+  productType: 'core_offer' | 'entry_offer' | 'upsell';
+  pricingBand: string | null;
+  offerAngle: string | null;
+  primaryCta: string | null;
+  suggestedChannels: Array<'catalog' | 'landing' | 'whatsapp'>;
+  channelSequence: string[];
+  promotedFromWorkspaceAt: string;
+}
+
+export interface EcommerceProductSetupRegistryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  summary: {
+    totalProductSetups: number;
+    draftSetupCount: number;
+    needsCommercialConnectionsCount: number;
+    needsActivationCount: number;
+    headline: string;
+    detail: string;
+  };
+  productSetups: EcommerceProductSetupResponse[];
+}
+
+export interface EcommerceProductSetupDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productSetup: EcommerceProductSetupResponse;
+  summary: string;
+  nextActions: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface PromoteEcommerceProductWorkspaceToProductSetupResponse {
+  productSetup: EcommerceProductSetupResponse;
+}
+
+export interface RequestEcommerceProductSetupDefinitionPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productSetup: EcommerceProductSetupResponse;
+  definitionStatus:
+    | 'ready_for_product_definition'
+    | 'needs_commercial_connections'
+    | 'needs_activation';
+  summary: string;
+  requiredDecisions: string[];
+  blockedBy: string[];
+  recommendedArtifacts: string[];
+  guardrails: string[];
+}
+
+export interface UpdateEcommerceProductSetupEditableSnapshotResponse {
+  setup: EcommerceProductSetupDetailResponse;
+}
+
+export interface EcommerceProductEntityResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntityId: string;
+  productSetupId: string;
+  savedDraftId: string;
+  sourceDraftId: string;
+  status:
+    | 'draft_catalog_product'
+    | 'needs_channel_assets'
+    | 'needs_activation';
+  title: string;
+  productType: 'core_offer' | 'entry_offer' | 'upsell';
+  pricingBand: string | null;
+  offerAngle: string | null;
+  primaryCta: string | null;
+  suggestedChannels: Array<'catalog' | 'landing' | 'whatsapp'>;
+  channelSequence: string[];
+  promotedFromSetupAt: string;
+}
+
+export interface EcommerceProductEntityRegistryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  summary: {
+    totalProductEntities: number;
+    draftCatalogProductCount: number;
+    needsChannelAssetsCount: number;
+    needsActivationCount: number;
+    headline: string;
+    detail: string;
+  };
+  productEntities: EcommerceProductEntityResponse[];
+}
+
+export interface EcommerceProductEntityDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: string;
+  nextActions: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface PromoteEcommerceProductSetupToProductEntityResponse {
+  productEntity: EcommerceProductEntityResponse;
+}
+
+export interface RequestEcommerceProductEntityCommercializationPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  commercializationStatus:
+    | 'ready_for_channel_rollout'
+    | 'needs_channel_assets'
+    | 'needs_activation';
+  summary: string;
+  requiredDecisions: string[];
+  blockedBy: string[];
+  recommendedArtifacts: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceProductEntityChannelAssetsWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  workspaceStatus:
+    | 'ready_to_draft_assets'
+    | 'needs_channel_assets'
+    | 'needs_activation';
+  summary: string;
+  channels: {
+    landing: {
+      status: 'ready_to_draft' | 'needs_core_copy' | 'blocked';
+      headline: string;
+      recommendedAssets: string[];
+    };
+    catalog: {
+      status: 'ready_to_draft' | 'needs_core_copy' | 'blocked';
+      headline: string;
+      recommendedAssets: string[];
+    };
+    whatsapp: {
+      status: 'ready_to_draft' | 'needs_core_copy' | 'blocked';
+      headline: string;
+      recommendedAssets: string[];
+    };
+  };
+  nextActions: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceProductEntityChannelAssetDraftsWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  workspaceStatus:
+    | 'ready_to_prepare_drafts'
+    | 'needs_channel_assets'
+    | 'needs_activation';
+  summary: string;
+  drafts: {
+    landing: {
+      status: 'ready_to_prepare' | 'needs_core_copy' | 'blocked';
+      headline: string;
+      sections: string[];
+      recommendedOwner: 'ecommerce' | 'growth' | 'shared';
+    };
+    catalog: {
+      status: 'ready_to_prepare' | 'needs_core_copy' | 'blocked';
+      headline: string;
+      blocks: string[];
+      recommendedOwner: 'ecommerce' | 'growth' | 'shared';
+    };
+    whatsapp: {
+      status: 'ready_to_prepare' | 'needs_core_copy' | 'blocked';
+      headline: string;
+      sequence: string[];
+      recommendedOwner: 'growth' | 'shared';
+    };
+  };
+  nextActions: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceProductEntityChannelDraftDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  channelKey: 'landing' | 'catalog' | 'whatsapp';
+  draftStatus: 'ready_to_prepare' | 'needs_core_copy' | 'blocked';
+  summary: string;
+  headline: string;
+  recommendedOwner: 'ecommerce' | 'growth' | 'shared';
+  structure: string[];
+  requiredInputs: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface RequestEcommerceProductEntityChannelDraftActionPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  channelKey: 'landing' | 'catalog' | 'whatsapp';
+  actionStatus: 'ready_to_prepare' | 'needs_core_copy' | 'blocked';
+  summary: string;
+  requiredInputs: string[];
+  recommendedArtifacts: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface RequestEcommerceProductEntityChannelDraftPublishReadinessPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  channelKey: 'landing' | 'catalog' | 'whatsapp';
+  readinessStatus:
+    | 'ready_for_publish_preparation'
+    | 'needs_core_copy'
+    | 'blocked';
+  summary: string;
+  requiredChecks: string[];
+  recommendedArtifacts: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceProductEntityChannelDraftPublishPreparationWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  channelKey: 'landing' | 'catalog' | 'whatsapp';
+  preparationStatus: 'ready_to_stage' | 'needs_core_copy' | 'blocked';
+  summary: string;
+  handoffOwner: 'ecommerce' | 'growth' | 'shared';
+  draftBlueprint: string[];
+  publishChecklist: string[];
+  recommendedArtifacts: string[];
+  nextMilestone: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceSavedProductEntityChannelDraftResponse {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  productEntityId: string;
+  channelKey: 'landing' | 'catalog' | 'whatsapp';
+  status: 'saved_channel_draft';
+  preparationStatus: 'ready_to_stage' | 'needs_core_copy' | 'blocked';
+  handoffOwner: 'ecommerce' | 'growth' | 'shared';
+  title: string;
+  summary: string;
+  headline: string;
+  draftBlueprint: string[];
+  publishChecklist: string[];
+  recommendedArtifacts: string[];
+  nextMilestone: string;
+  blockedBy: string[];
+  guardrails: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EcommerceSavedProductEntityChannelDraftRegistryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: {
+    totalSavedDrafts: number;
+    readyToStageCount: number;
+    needsCoreCopyCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  drafts: EcommerceSavedProductEntityChannelDraftResponse[];
+}
+
+export interface SaveEcommerceProductEntityChannelDraftResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  summary: string;
+  savedChannelDraft: EcommerceSavedProductEntityChannelDraftResponse;
+}
+
+export interface EcommerceSavedProductEntityChannelDraftDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  savedChannelDraft: EcommerceSavedProductEntityChannelDraftResponse;
+  summary: string;
+  nextActions: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface UpdateEcommerceSavedProductEntityChannelDraftEditableSnapshotResponse {
+  savedChannelDraft: EcommerceSavedProductEntityChannelDraftDetailResponse;
+}
+
+export interface EcommerceProductEntityChannelAssetWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntityId: string;
+  channelKey: 'landing' | 'catalog' | 'whatsapp';
+  promotedAt: string;
+  status: 'ready_for_asset_edit' | 'needs_core_copy' | 'blocked';
+  handoffOwner: 'ecommerce' | 'growth' | 'shared';
+  headline: string;
+  detail: string;
+  editableSnapshot: {
+    title: string;
+    headline: string;
+    draftBlueprint: string[];
+    publishChecklist: string[];
+    recommendedArtifacts: string[];
+    nextMilestone: string;
+  };
+  guardrails: string[];
+  nextActions: string[];
+}
+
+export interface EcommerceProductEntityChannelAssetWorkspaceRegistryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: {
+    totalWorkspaces: number;
+    readyForAssetEditCount: number;
+    needsCoreCopyCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  workspaces: EcommerceProductEntityChannelAssetWorkspaceResponse[];
+}
+
+export interface EcommerceProductEntityChannelAssetWorkspaceDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  workspace: EcommerceProductEntityChannelAssetWorkspaceResponse;
+  sourceSavedChannelDraftId: string;
+  blockedBy: string[];
+}
+
+export interface PromoteEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceResponse {
+  workspace: EcommerceProductEntityChannelAssetWorkspaceResponse;
+}
+
+export interface RequestEcommerceProductEntityChannelAssetPublishPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  channelKey: 'landing' | 'catalog' | 'whatsapp';
+  publishStatus: 'ready_for_staging' | 'needs_core_copy' | 'blocked';
+  handoffOwner: 'ecommerce' | 'growth' | 'shared';
+  summary: string;
+  requiredChecks: string[];
+  recommendedArtifacts: string[];
+  nextMilestone: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceProductEntityChannelAssetEntityResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  assetEntityId: string;
+  productEntityId: string;
+  sourceSavedChannelDraftId: string;
+  channelKey: 'landing' | 'catalog' | 'whatsapp';
+  promotedAt: string;
+  status: 'draft_asset_entity' | 'needs_publish_copy' | 'blocked';
+  handoffOwner: 'ecommerce' | 'growth' | 'shared';
+  title: string;
+  headline: string;
+  summary: string;
+  draftBlueprint: string[];
+  publishChecklist: string[];
+  recommendedArtifacts: string[];
+  nextMilestone: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceProductEntityChannelAssetEntityRegistryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: {
+    totalAssetEntities: number;
+    draftAssetEntityCount: number;
+    needsPublishCopyCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  assetEntities: EcommerceProductEntityChannelAssetEntityResponse[];
+}
+
+export interface EcommerceProductEntityChannelAssetEntityDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponse;
+}
+
+export interface UpdateEcommerceProductEntityChannelAssetEntityEditableSnapshotResponse {
+  assetEntity: EcommerceProductEntityChannelAssetEntityDetailResponse;
+}
+
+export interface RequestEcommerceProductEntityChannelAssetEntityPublishPreparationPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  channelKey: 'landing' | 'catalog' | 'whatsapp';
+  preparationStatus:
+    | 'ready_for_release_candidate'
+    | 'needs_publish_copy'
+    | 'blocked';
+  handoffOwner: 'ecommerce' | 'growth' | 'shared';
+  summary: string;
+  requiredChecks: string[];
+  recommendedArtifacts: string[];
+  nextMilestone: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface PromoteEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityResponse {
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponse;
+}
+
+export interface EcommerceProductEntityChannelReleaseCandidateResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  releaseCandidateId: string;
+  productEntityId: string;
+  sourceAssetEntityId: string;
+  channelKey: 'landing' | 'catalog' | 'whatsapp';
+  promotedAt: string;
+  status: 'candidate_ready' | 'needs_publish_copy' | 'blocked';
+  handoffOwner: 'ecommerce' | 'growth' | 'shared';
+  title: string;
+  headline: string;
+  summary: string;
+  publishChecklist: string[];
+  recommendedArtifacts: string[];
+  nextMilestone: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceProductEntityChannelReleaseCandidateRegistryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: {
+    totalCandidates: number;
+    readyCount: number;
+    needsPublishCopyCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  releaseCandidates: EcommerceProductEntityChannelReleaseCandidateResponse[];
+}
+
+export interface EcommerceProductEntityChannelReleaseCandidateDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  releaseCandidate: EcommerceProductEntityChannelReleaseCandidateResponse;
+}
+
+export interface PromoteEcommerceProductEntityChannelAssetEntityToReleaseCandidateResponse {
+  releaseCandidate: EcommerceProductEntityChannelReleaseCandidateResponse;
+}
+
 export interface AiMemoryWorkspaceAgentResponse {
   agentKey: string;
   title: string;

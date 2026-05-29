@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import styles from './app.module.css';
 import {
   AiAgentCatalogResponse,
@@ -9,6 +10,41 @@ import {
   AiSuggestionRunResponse,
   EcommerceLaunchPlanDetailResponse,
   EcommerceLaunchPlanRegistryResponse,
+  EcommerceProductAuthoringDraftDetailResponse,
+  EcommerceProductEntityChannelAssetDraftsWorkspaceResponse,
+  EcommerceProductEntityChannelAssetEntityDetailResponse,
+  EcommerceProductEntityChannelAssetEntityRegistryResponse,
+  EcommerceProductEntityChannelReleaseCandidateDetailResponse,
+  EcommerceProductEntityChannelReleaseCandidateRegistryResponse,
+  EcommerceProductEntityChannelAssetWorkspaceDetailResponse,
+  EcommerceProductEntityChannelAssetWorkspaceRegistryResponse,
+  EcommerceProductEntityChannelAssetsWorkspaceResponse,
+  EcommerceProductEntityChannelDraftDetailResponse,
+  EcommerceProductEntityChannelDraftPublishPreparationWorkspaceResponse,
+  EcommerceProductEntityDetailResponse,
+  EcommerceSavedProductEntityChannelDraftRegistryResponse,
+  EcommerceSavedProductEntityChannelDraftDetailResponse,
+  EcommerceProductEntityRegistryResponse,
+  EcommerceProductSetupDetailResponse,
+  EcommerceProductSetupRegistryResponse,
+  PromoteEcommerceProductSetupToProductEntityResponse,
+  PromoteEcommerceProductEntityChannelAssetEntityToReleaseCandidateResponse,
+  PromoteEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityResponse,
+  RequestEcommerceProductEntityChannelAssetEntityPublishPreparationPacketResponse,
+  RequestEcommerceProductEntityChannelAssetPublishPacketResponse,
+  RequestEcommerceProductEntityCommercializationPacketResponse,
+  RequestEcommerceProductEntityChannelDraftActionPacketResponse,
+  RequestEcommerceProductEntityChannelDraftPublishReadinessPacketResponse,
+  EcommerceProductWorkspaceDetailResponse,
+  EcommerceProductWorkspaceRegistryResponse,
+  EcommerceSavedProductDraftRegistryResponse,
+  RequestEcommerceProductSetupDefinitionPacketResponse,
+  RequestEcommerceProductWorkspaceReadinessPacketResponse,
+  RequestEcommerceProductAuthoringDraftBriefResponse,
+  RequestEcommerceProductAuthoringDraftRefinementPacketResponse,
+  EcommerceProductAuthoringWorkspaceResponse,
+  EcommerceStoreProfileWorkspaceResponse,
+  EcommerceStoreSetupWorkspaceResponse,
   EcommerceLaunchWorkspaceResponse,
   RequestEcommerceLaunchPlanActivationReadinessResponse,
 } from './types';
@@ -18,6 +54,125 @@ type Props = {
   hasCurrentTenancy: boolean;
   canReadTenantEntitlements: boolean;
   tenantAiEcommerceLaunchWorkspaceLoading: boolean;
+  tenantEcommerceProductAuthoringWorkspace: EcommerceProductAuthoringWorkspaceResponse | null;
+  tenantEcommerceSavedProductDraftRegistry: EcommerceSavedProductDraftRegistryResponse | null;
+  tenantEcommerceProductWorkspaceRegistry: EcommerceProductWorkspaceRegistryResponse | null;
+  tenantEcommerceProductSetupRegistry: EcommerceProductSetupRegistryResponse | null;
+  tenantEcommerceProductEntityRegistry: EcommerceProductEntityRegistryResponse | null;
+  selectedTenantEcommerceProductWorkspaceDetail:
+    | EcommerceProductWorkspaceDetailResponse
+    | null;
+  tenantEcommerceProductWorkspaceDetailLoading: boolean;
+  selectedTenantEcommerceProductSetupDetail:
+    | EcommerceProductSetupDetailResponse
+    | null;
+  tenantEcommerceProductSetupDetailLoading: boolean;
+  selectedTenantEcommerceProductEntityDetail:
+    | EcommerceProductEntityDetailResponse
+    | null;
+  selectedTenantEcommerceProductEntityChannelAssetsWorkspace:
+    | EcommerceProductEntityChannelAssetsWorkspaceResponse
+    | null;
+  selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace:
+    | EcommerceProductEntityChannelAssetDraftsWorkspaceResponse
+    | null;
+  tenantEcommerceProductEntityChannelAssetWorkspaceRegistry:
+    | EcommerceProductEntityChannelAssetWorkspaceRegistryResponse
+    | null;
+  selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail:
+    | EcommerceProductEntityChannelAssetWorkspaceDetailResponse
+    | null;
+  tenantEcommerceProductEntityChannelAssetEntityRegistry:
+    | EcommerceProductEntityChannelAssetEntityRegistryResponse
+    | null;
+  selectedTenantEcommerceProductEntityChannelAssetEntityDetail:
+    | EcommerceProductEntityChannelAssetEntityDetailResponse
+    | null;
+  tenantEcommerceProductEntityChannelReleaseCandidateRegistry:
+    | EcommerceProductEntityChannelReleaseCandidateRegistryResponse
+    | null;
+  selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail:
+    | EcommerceProductEntityChannelReleaseCandidateDetailResponse
+    | null;
+  lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket:
+    | RequestEcommerceProductEntityChannelAssetEntityPublishPreparationPacketResponse
+    | null;
+  lastEcommerceProductEntityChannelAssetPublishPacket:
+    | RequestEcommerceProductEntityChannelAssetPublishPacketResponse
+    | null;
+  selectedTenantEcommerceProductEntityChannelDraftDetail:
+    | EcommerceProductEntityChannelDraftDetailResponse
+    | null;
+  tenantEcommerceProductEntityDetailLoading: boolean;
+  tenantEcommerceProductEntityChannelAssetsWorkspaceLoading: boolean;
+  tenantEcommerceProductEntityChannelAssetDraftsWorkspaceLoading: boolean;
+  tenantEcommerceProductEntityChannelAssetWorkspaceDetailLoading: boolean;
+  tenantEcommerceProductEntityChannelAssetEntityDetailLoading: boolean;
+  tenantEcommerceProductEntityChannelReleaseCandidateDetailLoading: boolean;
+  tenantEcommerceProductEntityChannelDraftDetailLoading: boolean;
+  lastEcommerceProductEntityCommercializationPacket:
+    | RequestEcommerceProductEntityCommercializationPacketResponse
+    | null;
+  lastEcommerceProductEntityChannelDraftActionPacket:
+    | RequestEcommerceProductEntityChannelDraftActionPacketResponse
+    | null;
+  lastEcommerceProductEntityChannelDraftPublishReadinessPacket:
+    | RequestEcommerceProductEntityChannelDraftPublishReadinessPacketResponse
+    | null;
+  selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace:
+    | EcommerceProductEntityChannelDraftPublishPreparationWorkspaceResponse
+    | null;
+  tenantEcommerceSavedProductEntityChannelDraftRegistry:
+    | EcommerceSavedProductEntityChannelDraftRegistryResponse
+    | null;
+  selectedTenantEcommerceSavedProductEntityChannelDraftDetail:
+    | EcommerceSavedProductEntityChannelDraftDetailResponse
+    | null;
+  lastEcommerceProductSetupDefinitionPacket:
+    | RequestEcommerceProductSetupDefinitionPacketResponse
+    | null;
+  lastEcommerceProductWorkspaceReadinessPacket:
+    | RequestEcommerceProductWorkspaceReadinessPacketResponse
+    | null;
+  selectedTenantEcommerceProductAuthoringDraftDetail:
+    | EcommerceProductAuthoringDraftDetailResponse
+    | null;
+  tenantEcommerceProductAuthoringDraftDetailLoading: boolean;
+  lastEcommerceProductAuthoringDraftBrief:
+    | RequestEcommerceProductAuthoringDraftBriefResponse
+    | null;
+  lastEcommerceProductAuthoringDraftRefinementPacket:
+    | RequestEcommerceProductAuthoringDraftRefinementPacketResponse
+    | null;
+  ecommerceProductAuthoringActionLoading: boolean;
+  ecommerceProductAuthoringRefinementActionLoading: boolean;
+  ecommerceProductAuthoringSaveActionLoading: boolean;
+  ecommerceProductWorkspacePromotionActionLoading: string | null;
+  ecommerceProductWorkspaceSaveActionLoading: string | null;
+  ecommerceProductSetupPromotionActionLoading: string | null;
+  ecommerceProductSetupSaveActionLoading: string | null;
+  ecommerceProductEntityPromotionActionLoading: string | null;
+  ecommerceProductEntityCommercializationActionLoading: string | null;
+  ecommerceProductEntityChannelDraftActionPacketLoading: string | null;
+  ecommerceProductEntityChannelDraftPublishReadinessPacketLoading: string | null;
+  tenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading: boolean;
+  ecommerceProductEntityChannelDraftSaveActionLoading: string | null;
+  tenantEcommerceSavedProductEntityChannelDraftDetailLoading: boolean;
+  ecommerceSavedProductEntityChannelDraftSaveActionLoading: string | null;
+  ecommerceProductEntityChannelAssetWorkspacePromotionActionLoading: string | null;
+  ecommerceProductEntityChannelAssetPublishPacketLoading: string | null;
+  ecommerceProductEntityChannelAssetEntityPromotionActionLoading: string | null;
+  ecommerceProductEntityChannelAssetEntitySaveActionLoading: string | null;
+  ecommerceProductEntityChannelAssetEntityPublishPreparationPacketLoading:
+    | string
+    | null;
+  ecommerceProductEntityChannelReleaseCandidatePromotionActionLoading:
+    | string
+    | null;
+  ecommerceProductSetupDefinitionActionLoading: string | null;
+  ecommerceProductWorkspaceReadinessActionLoading: string | null;
+  tenantEcommerceStoreProfileWorkspace: EcommerceStoreProfileWorkspaceResponse | null;
+  tenantEcommerceStoreSetupWorkspace: EcommerceStoreSetupWorkspaceResponse | null;
   tenantAiEcommerceLaunchWorkspace: EcommerceLaunchWorkspaceResponse | null;
   tenantEcommerceLaunchPlanRegistry: EcommerceLaunchPlanRegistryResponse | null;
   selectedTenantEcommerceLaunchPlanDetail: EcommerceLaunchPlanDetailResponse | null;
@@ -61,6 +216,71 @@ type Props = {
     targetId: string,
   ) => string;
   onRefresh: () => void;
+  onSelectProductDraft: (draftId: string) => void;
+  onRequestProductDraftBrief: () => void;
+  onRequestProductDraftRefinementPacket: () => void;
+  onSaveProductDraft: () => void;
+  onPromoteSavedDraftToProductWorkspace: (savedDraftId: string) => void;
+  onSelectProductWorkspace: (savedDraftId: string) => void;
+  onUpdateProductWorkspaceEditableSnapshot: (patch: {
+    title: string;
+    pricingBand: string | null;
+    offerAngle: string | null;
+    primaryCta: string | null;
+    channelSequence: string[];
+  }) => void;
+  onPromoteProductWorkspaceToProductSetup: () => void;
+  onRequestProductWorkspaceReadinessPacket: () => void;
+  onSelectProductSetup: (productSetupId: string) => void;
+  onRequestProductSetupDefinitionPacket: () => void;
+  onUpdateProductSetupEditableSnapshot: (patch: {
+    title: string;
+    pricingBand: string | null;
+    offerAngle: string | null;
+    primaryCta: string | null;
+    channelSequence: string[];
+  }) => void;
+  onPromoteProductSetupToProductEntity: () => void;
+  onSelectProductEntity: (productEntityId: string) => void;
+  onRequestProductEntityCommercializationPacket: () => void;
+  onSelectProductEntityChannelDraft: (
+    channelKey: 'landing' | 'catalog' | 'whatsapp',
+  ) => void;
+  onRequestProductEntityChannelDraftActionPacket: () => void;
+  onRequestProductEntityChannelDraftPublishReadinessPacket: () => void;
+  onSelectProductEntityChannelDraftPublishPreparationWorkspace: () => void;
+  onSaveProductEntityChannelDraft: () => void;
+  onSelectSavedProductEntityChannelDraft: (
+    channelKey: 'landing' | 'catalog' | 'whatsapp',
+  ) => void;
+  onUpdateSavedProductEntityChannelDraftEditableSnapshot: (patch: {
+    title: string;
+    headline: string;
+    draftBlueprint: string[];
+    recommendedArtifacts: string[];
+    nextMilestone: string;
+  }) => void;
+  onPromoteSavedProductEntityChannelDraftToChannelAssetWorkspace: () => void;
+  onSelectProductEntityChannelAssetWorkspace: (
+    channelKey: 'landing' | 'catalog' | 'whatsapp',
+  ) => void;
+  onRequestProductEntityChannelAssetPublishPacket: () => void;
+  onPromoteProductEntityChannelAssetWorkspaceToChannelAssetEntity: () => void;
+  onUpdateProductEntityChannelAssetEntityEditableSnapshot: (patch: {
+    title: string;
+    headline: string;
+    draftBlueprint: string[];
+    recommendedArtifacts: string[];
+    nextMilestone: string;
+  }) => void;
+  onRequestProductEntityChannelAssetEntityPublishPreparationPacket: () => void;
+  onSelectProductEntityChannelAssetEntity: (
+    channelKey: 'landing' | 'catalog' | 'whatsapp',
+  ) => void;
+  onPromoteProductEntityChannelAssetEntityToReleaseCandidate: () => void;
+  onSelectProductEntityChannelReleaseCandidate: (
+    channelKey: 'landing' | 'catalog' | 'whatsapp',
+  ) => void;
   onSelectLaunchPlan: (launchPlanId: string) => void;
   onRequestActivationReadiness: () => void;
   onPrepare: () => void;
@@ -79,6 +299,71 @@ export function AiEcommerceLaunchSection({
   hasCurrentTenancy,
   canReadTenantEntitlements,
   tenantAiEcommerceLaunchWorkspaceLoading,
+  tenantEcommerceProductAuthoringWorkspace,
+  tenantEcommerceSavedProductDraftRegistry,
+  tenantEcommerceProductWorkspaceRegistry,
+  tenantEcommerceProductSetupRegistry,
+  tenantEcommerceProductEntityRegistry,
+  selectedTenantEcommerceProductWorkspaceDetail,
+  tenantEcommerceProductWorkspaceDetailLoading,
+  selectedTenantEcommerceProductSetupDetail,
+  tenantEcommerceProductSetupDetailLoading,
+  selectedTenantEcommerceProductEntityDetail,
+  selectedTenantEcommerceProductEntityChannelAssetsWorkspace,
+  selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace,
+  tenantEcommerceProductEntityChannelAssetWorkspaceRegistry,
+  selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail,
+  tenantEcommerceProductEntityChannelAssetEntityRegistry,
+  selectedTenantEcommerceProductEntityChannelAssetEntityDetail,
+  tenantEcommerceProductEntityChannelReleaseCandidateRegistry,
+  selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail,
+  lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket,
+  lastEcommerceProductEntityChannelAssetPublishPacket,
+  selectedTenantEcommerceProductEntityChannelDraftDetail,
+  tenantEcommerceProductEntityDetailLoading,
+  tenantEcommerceProductEntityChannelAssetsWorkspaceLoading,
+  tenantEcommerceProductEntityChannelAssetDraftsWorkspaceLoading,
+  tenantEcommerceProductEntityChannelAssetWorkspaceDetailLoading,
+  tenantEcommerceProductEntityChannelAssetEntityDetailLoading,
+  tenantEcommerceProductEntityChannelReleaseCandidateDetailLoading,
+  tenantEcommerceProductEntityChannelDraftDetailLoading,
+  lastEcommerceProductEntityCommercializationPacket,
+  lastEcommerceProductEntityChannelDraftActionPacket,
+  lastEcommerceProductEntityChannelDraftPublishReadinessPacket,
+  selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace,
+  tenantEcommerceSavedProductEntityChannelDraftRegistry,
+  selectedTenantEcommerceSavedProductEntityChannelDraftDetail,
+  lastEcommerceProductSetupDefinitionPacket,
+  lastEcommerceProductWorkspaceReadinessPacket,
+  selectedTenantEcommerceProductAuthoringDraftDetail,
+  tenantEcommerceProductAuthoringDraftDetailLoading,
+  lastEcommerceProductAuthoringDraftBrief,
+  lastEcommerceProductAuthoringDraftRefinementPacket,
+  ecommerceProductAuthoringActionLoading,
+  ecommerceProductAuthoringRefinementActionLoading,
+  ecommerceProductAuthoringSaveActionLoading,
+  ecommerceProductWorkspacePromotionActionLoading,
+  ecommerceProductWorkspaceSaveActionLoading,
+  ecommerceProductSetupPromotionActionLoading,
+  ecommerceProductSetupSaveActionLoading,
+  ecommerceProductEntityPromotionActionLoading,
+  ecommerceProductEntityCommercializationActionLoading,
+  ecommerceProductEntityChannelDraftActionPacketLoading,
+  ecommerceProductEntityChannelDraftPublishReadinessPacketLoading,
+  tenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading,
+  ecommerceProductEntityChannelDraftSaveActionLoading,
+  tenantEcommerceSavedProductEntityChannelDraftDetailLoading,
+  ecommerceSavedProductEntityChannelDraftSaveActionLoading,
+  ecommerceProductEntityChannelAssetWorkspacePromotionActionLoading,
+  ecommerceProductEntityChannelAssetPublishPacketLoading,
+  ecommerceProductEntityChannelAssetEntityPromotionActionLoading,
+  ecommerceProductEntityChannelAssetEntitySaveActionLoading,
+  ecommerceProductEntityChannelAssetEntityPublishPreparationPacketLoading,
+  ecommerceProductEntityChannelReleaseCandidatePromotionActionLoading,
+  ecommerceProductSetupDefinitionActionLoading,
+  ecommerceProductWorkspaceReadinessActionLoading,
+  tenantEcommerceStoreProfileWorkspace,
+  tenantEcommerceStoreSetupWorkspace,
   tenantAiEcommerceLaunchWorkspace,
   tenantEcommerceLaunchPlanRegistry,
   selectedTenantEcommerceLaunchPlanDetail,
@@ -107,6 +392,37 @@ export function AiEcommerceLaunchSection({
   aiAgentAvailabilityLabel,
   getDedicatedActionKey,
   onRefresh,
+  onSelectProductDraft,
+  onRequestProductDraftBrief,
+  onRequestProductDraftRefinementPacket,
+  onSaveProductDraft,
+  onPromoteSavedDraftToProductWorkspace,
+  onSelectProductWorkspace,
+  onUpdateProductWorkspaceEditableSnapshot,
+  onPromoteProductWorkspaceToProductSetup,
+  onRequestProductWorkspaceReadinessPacket,
+  onSelectProductSetup,
+  onRequestProductSetupDefinitionPacket,
+  onUpdateProductSetupEditableSnapshot,
+  onPromoteProductSetupToProductEntity,
+  onSelectProductEntity,
+  onRequestProductEntityCommercializationPacket,
+  onSelectProductEntityChannelDraft,
+  onRequestProductEntityChannelDraftActionPacket,
+  onRequestProductEntityChannelDraftPublishReadinessPacket,
+  onSelectProductEntityChannelDraftPublishPreparationWorkspace,
+  onSaveProductEntityChannelDraft,
+  onSelectSavedProductEntityChannelDraft,
+  onUpdateSavedProductEntityChannelDraftEditableSnapshot,
+  onPromoteSavedProductEntityChannelDraftToChannelAssetWorkspace,
+  onSelectProductEntityChannelAssetWorkspace,
+  onRequestProductEntityChannelAssetPublishPacket,
+  onPromoteProductEntityChannelAssetWorkspaceToChannelAssetEntity,
+  onUpdateProductEntityChannelAssetEntityEditableSnapshot,
+  onRequestProductEntityChannelAssetEntityPublishPreparationPacket,
+  onSelectProductEntityChannelAssetEntity,
+  onPromoteProductEntityChannelAssetEntityToReleaseCandidate,
+  onSelectProductEntityChannelReleaseCandidate,
   onSelectLaunchPlan,
   onRequestActivationReadiness,
   onPrepare,
@@ -114,6 +430,121 @@ export function AiEcommerceLaunchSection({
   onRequestApproval,
   onReviewApproval,
 }: Props) {
+  const [productWorkspaceTitle, setProductWorkspaceTitle] = useState('');
+  const [productWorkspacePricingBand, setProductWorkspacePricingBand] =
+    useState('');
+  const [productWorkspaceOfferAngle, setProductWorkspaceOfferAngle] =
+    useState('');
+  const [productWorkspacePrimaryCta, setProductWorkspacePrimaryCta] =
+    useState('');
+  const [productWorkspaceChannelSequence, setProductWorkspaceChannelSequence] =
+    useState('');
+  const [productSetupTitle, setProductSetupTitle] = useState('');
+  const [productSetupPricingBand, setProductSetupPricingBand] = useState('');
+  const [productSetupOfferAngle, setProductSetupOfferAngle] = useState('');
+  const [productSetupPrimaryCta, setProductSetupPrimaryCta] = useState('');
+  const [productSetupChannelSequence, setProductSetupChannelSequence] =
+    useState('');
+  const [savedChannelDraftTitle, setSavedChannelDraftTitle] = useState('');
+  const [savedChannelDraftHeadline, setSavedChannelDraftHeadline] = useState('');
+  const [savedChannelDraftBlueprint, setSavedChannelDraftBlueprint] =
+    useState('');
+  const [
+    savedChannelDraftRecommendedArtifacts,
+    setSavedChannelDraftRecommendedArtifacts,
+  ] = useState('');
+  const [savedChannelDraftNextMilestone, setSavedChannelDraftNextMilestone] =
+    useState('');
+  const [assetEntityTitle, setAssetEntityTitle] = useState('');
+  const [assetEntityHeadline, setAssetEntityHeadline] = useState('');
+  const [assetEntityBlueprint, setAssetEntityBlueprint] = useState('');
+  const [assetEntityRecommendedArtifacts, setAssetEntityRecommendedArtifacts] =
+    useState('');
+  const [assetEntityNextMilestone, setAssetEntityNextMilestone] = useState('');
+
+  useEffect(() => {
+    const snapshot =
+      selectedTenantEcommerceProductWorkspaceDetail?.workspace.editableSnapshot;
+
+    if (!snapshot) {
+      setProductWorkspaceTitle('');
+      setProductWorkspacePricingBand('');
+      setProductWorkspaceOfferAngle('');
+      setProductWorkspacePrimaryCta('');
+      setProductWorkspaceChannelSequence('');
+      return;
+    }
+
+    setProductWorkspaceTitle(snapshot.title);
+    setProductWorkspacePricingBand(snapshot.pricingBand ?? '');
+    setProductWorkspaceOfferAngle(snapshot.offerAngle ?? '');
+    setProductWorkspacePrimaryCta(snapshot.primaryCta ?? '');
+    setProductWorkspaceChannelSequence(snapshot.channelSequence.join('\n'));
+  }, [selectedTenantEcommerceProductWorkspaceDetail]);
+
+  useEffect(() => {
+    const setup = selectedTenantEcommerceProductSetupDetail?.productSetup;
+
+    if (!setup) {
+      setProductSetupTitle('');
+      setProductSetupPricingBand('');
+      setProductSetupOfferAngle('');
+      setProductSetupPrimaryCta('');
+      setProductSetupChannelSequence('');
+      return;
+    }
+
+    setProductSetupTitle(setup.title);
+    setProductSetupPricingBand(setup.pricingBand ?? '');
+    setProductSetupOfferAngle(setup.offerAngle ?? '');
+    setProductSetupPrimaryCta(setup.primaryCta ?? '');
+    setProductSetupChannelSequence(setup.channelSequence.join('\n'));
+  }, [selectedTenantEcommerceProductSetupDetail]);
+
+  useEffect(() => {
+    const savedDraft =
+      selectedTenantEcommerceSavedProductEntityChannelDraftDetail?.savedChannelDraft;
+
+    if (!savedDraft) {
+      setSavedChannelDraftTitle('');
+      setSavedChannelDraftHeadline('');
+      setSavedChannelDraftBlueprint('');
+      setSavedChannelDraftRecommendedArtifacts('');
+      setSavedChannelDraftNextMilestone('');
+      return;
+    }
+
+    setSavedChannelDraftTitle(savedDraft.title);
+    setSavedChannelDraftHeadline(savedDraft.headline);
+    setSavedChannelDraftBlueprint(savedDraft.draftBlueprint.join('\n'));
+    setSavedChannelDraftRecommendedArtifacts(
+      savedDraft.recommendedArtifacts.join('\n'),
+    );
+    setSavedChannelDraftNextMilestone(savedDraft.nextMilestone);
+  }, [selectedTenantEcommerceSavedProductEntityChannelDraftDetail]);
+
+  useEffect(() => {
+    const assetEntity =
+      selectedTenantEcommerceProductEntityChannelAssetEntityDetail?.assetEntity;
+
+    if (!assetEntity) {
+      setAssetEntityTitle('');
+      setAssetEntityHeadline('');
+      setAssetEntityBlueprint('');
+      setAssetEntityRecommendedArtifacts('');
+      setAssetEntityNextMilestone('');
+      return;
+    }
+
+    setAssetEntityTitle(assetEntity.title);
+    setAssetEntityHeadline(assetEntity.headline);
+    setAssetEntityBlueprint(assetEntity.draftBlueprint.join('\n'));
+    setAssetEntityRecommendedArtifacts(
+      assetEntity.recommendedArtifacts.join('\n'),
+    );
+    setAssetEntityNextMilestone(assetEntity.nextMilestone);
+  }, [selectedTenantEcommerceProductEntityChannelAssetEntityDetail]);
+
   return (
     <section className={styles.adminPanel}>
       <div className={styles.sectionHeading}>
@@ -160,6 +591,2292 @@ export function AiEcommerceLaunchSection({
           ) : null}
 
           <div className={styles.twoColumn}>
+            <div className={styles.detailCard}>
+              <div className={styles.sectionHeading}>
+                <div>
+                  <span className={styles.label}>
+                    Product authoring workspace
+                  </span>
+                  <h3>Starter set de productos draft</h3>
+                </div>
+                <span
+                  className={`${styles.statusPill} ${operationalStatusTone(
+                    tenantEcommerceProductAuthoringWorkspace?.summary.tone ??
+                      'healthy',
+                  )}`}
+                >
+                  {tenantEcommerceProductAuthoringWorkspace
+                    ? operationalStatusLabel(
+                        tenantEcommerceProductAuthoringWorkspace.summary.tone,
+                      )
+                    : 'sin authoring'}
+                </span>
+              </div>
+
+              {tenantEcommerceProductAuthoringWorkspace ? (
+                <div className={styles.stack}>
+                  <p>{tenantEcommerceProductAuthoringWorkspace.summary.headline}</p>
+                  <small>
+                    {tenantEcommerceProductAuthoringWorkspace.summary.detail}
+                  </small>
+                  <small>
+                    Focus sugerido:{' '}
+                    {
+                      tenantEcommerceProductAuthoringWorkspace.summary
+                        .suggestedFocus
+                    }
+                  </small>
+
+                  <div className={styles.invoiceKpiGrid}>
+                    <div className={styles.commercialCard}>
+                      <span className={styles.muted}>Collection</span>
+                      <strong>
+                        {
+                          tenantEcommerceProductAuthoringWorkspace.draftCollection
+                            .collectionLabel
+                        }
+                      </strong>
+                      <small>Nombre del primer set draft.</small>
+                    </div>
+                    <div className={styles.commercialCard}>
+                      <span className={styles.muted}>Primary channel</span>
+                      <strong>
+                        {humanizeKey(
+                          tenantEcommerceProductAuthoringWorkspace.draftCollection
+                            .primaryChannel,
+                        )}
+                      </strong>
+                      <small>Canal sugerido para bajar el primer set.</small>
+                    </div>
+                    <div className={styles.commercialCard}>
+                      <span className={styles.muted}>Draft count</span>
+                      <strong>
+                        {
+                          tenantEcommerceProductAuthoringWorkspace.draftCollection
+                            .draftCount
+                        }
+                      </strong>
+                      <small>Productos ancla del starter set.</small>
+                    </div>
+                  </div>
+
+                  <ul className={styles.featureList}>
+                    {tenantEcommerceProductAuthoringWorkspace.drafts.map(
+                      (entry) => (
+                        <li key={entry.id}>
+                          <strong>
+                            {entry.title}{' '}
+                            <span className={styles.muted}>
+                              ({humanizeKey(entry.productType)})
+                            </span>
+                          </strong>
+                          <div>{entry.rationale}</div>
+                          <small>
+                            Canales sugeridos:{' '}
+                            {entry.suggestedChannels.map(humanizeKey).join(', ')}
+                          </small>
+                          <div className={styles.inlineActions}>
+                            <button
+                              className={styles.ghostButton}
+                              onClick={() => onSelectProductDraft(entry.id)}
+                              type="button"
+                            >
+                              Ver detalle
+                            </button>
+                          </div>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+
+                  {selectedTenantEcommerceProductAuthoringDraftDetail ? (
+                    <div className={styles.commercialCard}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Draft detail</span>
+                          <h4>
+                            {
+                              selectedTenantEcommerceProductAuthoringDraftDetail
+                                .draft.title
+                            }
+                          </h4>
+                        </div>
+                        <span className={styles.badge}>
+                          {humanizeKey(
+                            selectedTenantEcommerceProductAuthoringDraftDetail
+                              .draft.productType,
+                          )}
+                        </span>
+                      </div>
+                      <p>
+                        {
+                          selectedTenantEcommerceProductAuthoringDraftDetail
+                            .draft.rationale
+                        }
+                      </p>
+                      <small>
+                        Canales:{' '}
+                        {selectedTenantEcommerceProductAuthoringDraftDetail.draft.suggestedChannels
+                          .map(humanizeKey)
+                          .join(', ')}
+                      </small>
+                      <div className={styles.inlineActions}>
+                        <button
+                          className={styles.primaryButton}
+                          disabled={
+                            ecommerceProductAuthoringActionLoading ||
+                            tenantEcommerceProductAuthoringDraftDetailLoading
+                          }
+                          onClick={onRequestProductDraftBrief}
+                          type="button"
+                        >
+                          {ecommerceProductAuthoringActionLoading
+                            ? 'Preparando brief...'
+                            : 'Solicitar AI brief'}
+                        </button>
+                        <button
+                          className={styles.ghostButton}
+                          disabled={
+                            ecommerceProductAuthoringRefinementActionLoading ||
+                            tenantEcommerceProductAuthoringDraftDetailLoading
+                          }
+                          onClick={onRequestProductDraftRefinementPacket}
+                          type="button"
+                        >
+                          {ecommerceProductAuthoringRefinementActionLoading
+                            ? 'Refinando...'
+                            : 'Solicitar refinement packet'}
+                        </button>
+                        <button
+                          className={styles.secondaryButton}
+                          disabled={
+                            ecommerceProductAuthoringSaveActionLoading ||
+                            tenantEcommerceProductAuthoringDraftDetailLoading
+                          }
+                          onClick={onSaveProductDraft}
+                          type="button"
+                        >
+                          {ecommerceProductAuthoringSaveActionLoading
+                            ? 'Guardando...'
+                            : 'Guardar catalog candidate'}
+                        </button>
+                      </div>
+                      {lastEcommerceProductAuthoringDraftBrief ? (
+                        <div className={styles.stack}>
+                          <small>
+                            {
+                              lastEcommerceProductAuthoringDraftBrief.summary
+                            }
+                          </small>
+                          <small>
+                            Inputs requeridos:{' '}
+                            {lastEcommerceProductAuthoringDraftBrief.requiredInputs.join(
+                              ', ',
+                            )}
+                          </small>
+                          <small>
+                            Guardrails:{' '}
+                            {lastEcommerceProductAuthoringDraftBrief.guardrails.join(
+                              ' | ',
+                            )}
+                          </small>
+                        </div>
+                      ) : null}
+                      {lastEcommerceProductAuthoringDraftRefinementPacket ? (
+                        <div className={styles.stack}>
+                          <small>
+                            {
+                              lastEcommerceProductAuthoringDraftRefinementPacket.summary
+                            }
+                          </small>
+                          <small>
+                            Pricing band:{' '}
+                            {
+                              lastEcommerceProductAuthoringDraftRefinementPacket.pricingBand
+                            }
+                          </small>
+                          <small>
+                            Offer angle:{' '}
+                            {
+                              lastEcommerceProductAuthoringDraftRefinementPacket.offerAngle
+                            }
+                          </small>
+                          <small>
+                            Primary CTA:{' '}
+                            {
+                              lastEcommerceProductAuthoringDraftRefinementPacket.primaryCta
+                            }
+                          </small>
+                          <small>
+                            Channel sequence:{' '}
+                            {lastEcommerceProductAuthoringDraftRefinementPacket.channelSequence.join(
+                              ' -> ',
+                            )}
+                          </small>
+                        </div>
+                      ) : null}
+                      {selectedTenantEcommerceProductAuthoringDraftDetail.savedDraft ? (
+                        <div className={styles.stack}>
+                          <small>
+                            Guardado como catalog candidate el{' '}
+                            {formatDate(
+                              selectedTenantEcommerceProductAuthoringDraftDetail.savedDraft.updatedAt,
+                            )}
+                          </small>
+                          <small>
+                            Brief status:{' '}
+                            {humanizeKey(
+                              selectedTenantEcommerceProductAuthoringDraftDetail.savedDraft
+                                .briefingStatus,
+                            )}
+                          </small>
+                          <small>
+                            Refinement status:{' '}
+                            {humanizeKey(
+                              selectedTenantEcommerceProductAuthoringDraftDetail.savedDraft
+                                .refinementStatus,
+                            )}
+                          </small>
+                          <small>
+                            Saved CTA:{' '}
+                            {selectedTenantEcommerceProductAuthoringDraftDetail.savedDraft
+                              .primaryCta ?? 'Sin CTA'}
+                          </small>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : tenantEcommerceProductAuthoringDraftDetailLoading ? (
+                    <p className={styles.muted}>
+                      Cargando el detalle del draft seleccionado...
+                    </p>
+                  ) : null}
+
+                  <div className={styles.commercialCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Saved draft registry</span>
+                        <h4>Catalog candidates persistidos</h4>
+                      </div>
+                      <span className={styles.badge}>
+                        {tenantEcommerceSavedProductDraftRegistry?.summary
+                          .totalSavedDrafts ?? 0}
+                      </span>
+                    </div>
+                    {tenantEcommerceSavedProductDraftRegistry ? (
+                      <div className={styles.stack}>
+                        <small>
+                          {
+                            tenantEcommerceSavedProductDraftRegistry.summary
+                              .headline
+                          }
+                        </small>
+                        <small>
+                          {
+                            tenantEcommerceSavedProductDraftRegistry.summary
+                              .detail
+                          }
+                        </small>
+                        {tenantEcommerceSavedProductDraftRegistry.drafts.length ===
+                        0 ? (
+                          <small>
+                            Todavía no hay drafts guardados como catalog
+                            candidates.
+                          </small>
+                        ) : (
+                          <ul className={styles.customerList}>
+                            {tenantEcommerceSavedProductDraftRegistry.drafts.map(
+                              (entry) => (
+                                <li
+                                  className={styles.customerListItem}
+                                  key={entry.id}
+                                >
+                                  <div className={styles.customerListPrimary}>
+                                    <strong>{entry.title}</strong>
+                                    <small>
+                                      {humanizeKey(entry.productType)} ·{' '}
+                                      {humanizeKey(entry.refinementStatus)}
+                                    </small>
+                                  </div>
+                                  <div className={styles.inlineActions}>
+                                    <button
+                                      className={styles.ghostButton}
+                                      onClick={() =>
+                                        onSelectProductDraft(entry.sourceDraftId)
+                                      }
+                                      type="button"
+                                    >
+                                      Abrir draft base
+                                    </button>
+                                    <button
+                                      className={styles.secondaryButton}
+                                      disabled={
+                                        ecommerceProductWorkspacePromotionActionLoading ===
+                                        entry.id
+                                      }
+                                      onClick={() =>
+                                        onPromoteSavedDraftToProductWorkspace(
+                                          entry.id,
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      {ecommerceProductWorkspacePromotionActionLoading ===
+                                      entry.id
+                                        ? 'Promoviendo...'
+                                        : entry.promotedToWorkspaceAt
+                                          ? 'Reabrir product workspace'
+                                          : 'Promover a product workspace'}
+                                    </button>
+                                    {entry.promotedToWorkspaceAt ? (
+                                      <button
+                                        className={styles.ghostButton}
+                                        onClick={() =>
+                                          onSelectProductWorkspace(entry.id)
+                                        }
+                                        type="button"
+                                      >
+                                        Ver product workspace
+                                      </button>
+                                    ) : null}
+                                  </div>
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        )}
+                      </div>
+                    ) : (
+                      <small className={styles.muted}>
+                        Cargando registry de catalog candidates...
+                      </small>
+                    )}
+                  </div>
+
+                  <div className={styles.commercialCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Product workspace registry</span>
+                        <h4>Workspaces promovidos</h4>
+                      </div>
+                      <span className={styles.badge}>
+                        {tenantEcommerceProductWorkspaceRegistry?.summary
+                          .totalProductWorkspaces ?? 0}
+                      </span>
+                    </div>
+                    {tenantEcommerceProductWorkspaceRegistry ? (
+                      <div className={styles.stack}>
+                        <small>
+                          {
+                            tenantEcommerceProductWorkspaceRegistry.summary
+                              .headline
+                          }
+                        </small>
+                        <small>
+                          {
+                            tenantEcommerceProductWorkspaceRegistry.summary
+                              .detail
+                          }
+                        </small>
+                        {tenantEcommerceProductWorkspaceRegistry.workspaces
+                          .length === 0 ? (
+                          <small>
+                            Todavía no hay product workspaces promovidos.
+                          </small>
+                        ) : (
+                          <ul className={styles.customerList}>
+                            {tenantEcommerceProductWorkspaceRegistry.workspaces.map(
+                              (entry) => (
+                                <li
+                                  className={styles.customerListItem}
+                                  key={entry.savedDraftId}
+                                >
+                                  <div className={styles.customerListPrimary}>
+                                    <strong>
+                                      {entry.editableSnapshot.title}
+                                    </strong>
+                                    <small>
+                                      {humanizeKey(entry.status)} · promovido{' '}
+                                      {formatDate(entry.promotedAt)}
+                                    </small>
+                                    <small>{entry.detail}</small>
+                                  </div>
+                                  <div className={styles.badgeRow}>
+                                    {entry.editableSnapshot.pricingBand ? (
+                                      <span className={styles.badge}>
+                                        {entry.editableSnapshot.pricingBand}
+                                      </span>
+                                    ) : null}
+                                    {entry.editableSnapshot.primaryCta ? (
+                                      <span className={styles.badge}>
+                                        {entry.editableSnapshot.primaryCta}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <div className={styles.inlineActions}>
+                                    <button
+                                      className={styles.ghostButton}
+                                      onClick={() =>
+                                        onSelectProductWorkspace(
+                                          entry.savedDraftId,
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      Ver detalle
+                                    </button>
+                                  </div>
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        )}
+                      </div>
+                    ) : (
+                      <small className={styles.muted}>
+                        Cargando registry de product workspaces...
+                      </small>
+                    )}
+                  </div>
+
+                  {selectedTenantEcommerceProductWorkspaceDetail ? (
+                    <div className={styles.commercialCard}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Product workspace detail</span>
+                          <h4>
+                            {
+                              selectedTenantEcommerceProductWorkspaceDetail
+                                .workspace.editableSnapshot.title
+                            }
+                          </h4>
+                        </div>
+                        <span className={styles.badge}>
+                          {humanizeKey(
+                            selectedTenantEcommerceProductWorkspaceDetail
+                              .workspace.status,
+                          )}
+                        </span>
+                      </div>
+                      <p>
+                        {
+                          selectedTenantEcommerceProductWorkspaceDetail.workspace
+                            .headline
+                        }
+                      </p>
+                      <small>
+                        Source draft:{' '}
+                        {selectedTenantEcommerceProductWorkspaceDetail.sourceDraftId}
+                      </small>
+                      <small>
+                        Último guardado:{' '}
+                        {formatDate(
+                          selectedTenantEcommerceProductWorkspaceDetail
+                            .readiness.lastSavedAt,
+                        )}
+                      </small>
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Title</span>
+                          <input
+                            onChange={(event) =>
+                              setProductWorkspaceTitle(event.target.value)
+                            }
+                            value={productWorkspaceTitle}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Pricing band</span>
+                          <input
+                            onChange={(event) =>
+                              setProductWorkspacePricingBand(event.target.value)
+                            }
+                            value={productWorkspacePricingBand}
+                          />
+                        </label>
+                      </div>
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Offer angle</span>
+                          <textarea
+                            onChange={(event) =>
+                              setProductWorkspaceOfferAngle(event.target.value)
+                            }
+                            rows={3}
+                            value={productWorkspaceOfferAngle}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Primary CTA</span>
+                          <input
+                            onChange={(event) =>
+                              setProductWorkspacePrimaryCta(event.target.value)
+                            }
+                            value={productWorkspacePrimaryCta}
+                          />
+                        </label>
+                      </div>
+                      <label className={styles.field}>
+                        <span>Channel sequence</span>
+                        <textarea
+                          onChange={(event) =>
+                            setProductWorkspaceChannelSequence(
+                              event.target.value,
+                            )
+                          }
+                          rows={4}
+                          value={productWorkspaceChannelSequence}
+                        />
+                      </label>
+                      <div className={styles.inlineActions}>
+                        <button
+                          className={styles.secondaryButton}
+                          disabled={
+                            ecommerceProductWorkspaceSaveActionLoading ===
+                            selectedTenantEcommerceProductWorkspaceDetail.workspace
+                              .savedDraftId
+                          }
+                          onClick={() =>
+                            onUpdateProductWorkspaceEditableSnapshot({
+                              title: productWorkspaceTitle,
+                              pricingBand:
+                                productWorkspacePricingBand.trim().length > 0
+                                  ? productWorkspacePricingBand
+                                  : null,
+                              offerAngle:
+                                productWorkspaceOfferAngle.trim().length > 0
+                                  ? productWorkspaceOfferAngle
+                                  : null,
+                              primaryCta:
+                                productWorkspacePrimaryCta.trim().length > 0
+                                  ? productWorkspacePrimaryCta
+                                  : null,
+                              channelSequence:
+                                productWorkspaceChannelSequence.split('\n'),
+                            })
+                          }
+                          type="button"
+                        >
+                          {ecommerceProductWorkspaceSaveActionLoading ===
+                          selectedTenantEcommerceProductWorkspaceDetail.workspace
+                            .savedDraftId
+                            ? 'Guardando workspace...'
+                            : 'Guardar snapshot editable'}
+                        </button>
+                        <button
+                          className={styles.secondaryButton}
+                          disabled={
+                            ecommerceProductSetupPromotionActionLoading ===
+                            selectedTenantEcommerceProductWorkspaceDetail.workspace
+                              .savedDraftId
+                          }
+                          onClick={onPromoteProductWorkspaceToProductSetup}
+                          type="button"
+                        >
+                          {ecommerceProductSetupPromotionActionLoading ===
+                          selectedTenantEcommerceProductWorkspaceDetail.workspace
+                            .savedDraftId
+                            ? 'Abriendo setup...'
+                            : 'Promover a product setup'}
+                        </button>
+                        <button
+                          className={styles.ghostButton}
+                          disabled={
+                            ecommerceProductWorkspaceReadinessActionLoading ===
+                            selectedTenantEcommerceProductWorkspaceDetail.workspace
+                              .savedDraftId
+                          }
+                          onClick={onRequestProductWorkspaceReadinessPacket}
+                          type="button"
+                        >
+                          {ecommerceProductWorkspaceReadinessActionLoading ===
+                          selectedTenantEcommerceProductWorkspaceDetail.workspace
+                            .savedDraftId
+                            ? 'Preparando readiness...'
+                            : 'Solicitar readiness packet'}
+                        </button>
+                      </div>
+                      <small>
+                        Brief status:{' '}
+                        {humanizeKey(
+                          selectedTenantEcommerceProductWorkspaceDetail
+                            .readiness.briefingStatus,
+                        )}
+                      </small>
+                      <small>
+                        Refinement status:{' '}
+                        {humanizeKey(
+                          selectedTenantEcommerceProductWorkspaceDetail
+                            .readiness.refinementStatus,
+                        )}
+                      </small>
+                      {lastEcommerceProductWorkspaceReadinessPacket ? (
+                        <div className={styles.stack}>
+                          <small>
+                            {
+                              lastEcommerceProductWorkspaceReadinessPacket.summary
+                            }
+                          </small>
+                          <small>
+                            Decisions:{' '}
+                            {lastEcommerceProductWorkspaceReadinessPacket.requiredDecisions.join(
+                              ' | ',
+                            )}
+                          </small>
+                          <small>
+                            Artifacts:{' '}
+                            {lastEcommerceProductWorkspaceReadinessPacket.recommendedArtifacts.join(
+                              ' | ',
+                            )}
+                          </small>
+                          {lastEcommerceProductWorkspaceReadinessPacket.blockedBy
+                            .length > 0 ? (
+                            <small>
+                              Blocked by:{' '}
+                              {lastEcommerceProductWorkspaceReadinessPacket.blockedBy.join(
+                                ' | ',
+                              )}
+                            </small>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : tenantEcommerceProductWorkspaceDetailLoading ? (
+                    <p className={styles.muted}>
+                      Cargando el detalle del product workspace...
+                    </p>
+                  ) : null}
+
+                  <div className={styles.commercialCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Product setup registry</span>
+                        <h4>Setups persistidos</h4>
+                      </div>
+                      <span className={styles.badge}>
+                        {tenantEcommerceProductSetupRegistry?.summary
+                          .totalProductSetups ?? 0}
+                      </span>
+                    </div>
+                    {tenantEcommerceProductSetupRegistry ? (
+                      <div className={styles.stack}>
+                        <small>
+                          {tenantEcommerceProductSetupRegistry.summary.headline}
+                        </small>
+                        <small>
+                          {tenantEcommerceProductSetupRegistry.summary.detail}
+                        </small>
+                        {tenantEcommerceProductSetupRegistry.productSetups
+                          .length === 0 ? (
+                          <small>
+                            Todavía no hay product setups persistidos.
+                          </small>
+                        ) : (
+                          <ul className={styles.customerList}>
+                            {tenantEcommerceProductSetupRegistry.productSetups.map(
+                              (entry) => (
+                                <li
+                                  className={styles.customerListItem}
+                                  key={entry.productSetupId}
+                                >
+                                  <div className={styles.customerListPrimary}>
+                                    <strong>{entry.title}</strong>
+                                    <small>
+                                      {humanizeKey(entry.status)} ·{' '}
+                                      {humanizeKey(entry.productType)}
+                                    </small>
+                                  </div>
+                                  <div className={styles.inlineActions}>
+                                    <button
+                                      className={styles.ghostButton}
+                                      onClick={() =>
+                                        onSelectProductSetup(
+                                          entry.productSetupId,
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      Ver product setup
+                                    </button>
+                                  </div>
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        )}
+                      </div>
+                    ) : (
+                      <small className={styles.muted}>
+                        Cargando registry de product setups...
+                      </small>
+                    )}
+                  </div>
+
+                  {selectedTenantEcommerceProductSetupDetail ? (
+                    <div className={styles.commercialCard}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Product setup detail</span>
+                          <h4>
+                            {
+                              selectedTenantEcommerceProductSetupDetail
+                                .productSetup.title
+                            }
+                          </h4>
+                        </div>
+                        <span className={styles.badge}>
+                          {humanizeKey(
+                            selectedTenantEcommerceProductSetupDetail
+                              .productSetup.status,
+                          )}
+                        </span>
+                      </div>
+                      <p>{selectedTenantEcommerceProductSetupDetail.summary}</p>
+                      <small>
+                        Source draft:{' '}
+                        {
+                          selectedTenantEcommerceProductSetupDetail.productSetup
+                            .sourceDraftId
+                        }
+                      </small>
+                      <small>
+                        Pricing band:{' '}
+                        {selectedTenantEcommerceProductSetupDetail.productSetup
+                          .pricingBand ?? 'Sin banda'}
+                      </small>
+                      <small>
+                        CTA principal:{' '}
+                        {selectedTenantEcommerceProductSetupDetail.productSetup
+                          .primaryCta ?? 'Sin CTA'}
+                      </small>
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Title</span>
+                          <input
+                            onChange={(event) =>
+                              setProductSetupTitle(event.target.value)
+                            }
+                            value={productSetupTitle}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Pricing band</span>
+                          <input
+                            onChange={(event) =>
+                              setProductSetupPricingBand(event.target.value)
+                            }
+                            value={productSetupPricingBand}
+                          />
+                        </label>
+                      </div>
+                      <div className={styles.invoiceInlineGrid}>
+                        <label className={styles.field}>
+                          <span>Offer angle</span>
+                          <textarea
+                            onChange={(event) =>
+                              setProductSetupOfferAngle(event.target.value)
+                            }
+                            rows={3}
+                            value={productSetupOfferAngle}
+                          />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Primary CTA</span>
+                          <input
+                            onChange={(event) =>
+                              setProductSetupPrimaryCta(event.target.value)
+                            }
+                            value={productSetupPrimaryCta}
+                          />
+                        </label>
+                      </div>
+                      <label className={styles.field}>
+                        <span>Channel sequence</span>
+                        <textarea
+                          onChange={(event) =>
+                            setProductSetupChannelSequence(event.target.value)
+                          }
+                          rows={4}
+                          value={productSetupChannelSequence}
+                        />
+                      </label>
+                      <div className={styles.inlineActions}>
+                        <button
+                          className={styles.secondaryButton}
+                          disabled={
+                            ecommerceProductSetupSaveActionLoading ===
+                            selectedTenantEcommerceProductSetupDetail.productSetup
+                              .productSetupId
+                          }
+                          onClick={() =>
+                            onUpdateProductSetupEditableSnapshot({
+                              title: productSetupTitle,
+                              pricingBand:
+                                productSetupPricingBand.trim().length > 0
+                                  ? productSetupPricingBand
+                                  : null,
+                              offerAngle:
+                                productSetupOfferAngle.trim().length > 0
+                                  ? productSetupOfferAngle
+                                  : null,
+                              primaryCta:
+                                productSetupPrimaryCta.trim().length > 0
+                                  ? productSetupPrimaryCta
+                                  : null,
+                              channelSequence:
+                                productSetupChannelSequence.split('\n'),
+                            })
+                          }
+                          type="button"
+                        >
+                          {ecommerceProductSetupSaveActionLoading ===
+                          selectedTenantEcommerceProductSetupDetail.productSetup
+                            .productSetupId
+                            ? 'Guardando setup...'
+                            : 'Guardar snapshot editable'}
+                        </button>
+                        <button
+                          className={styles.secondaryButton}
+                          disabled={
+                            ecommerceProductEntityPromotionActionLoading ===
+                            selectedTenantEcommerceProductSetupDetail.productSetup
+                              .productSetupId
+                          }
+                          onClick={onPromoteProductSetupToProductEntity}
+                          type="button"
+                        >
+                          {ecommerceProductEntityPromotionActionLoading ===
+                          selectedTenantEcommerceProductSetupDetail.productSetup
+                            .productSetupId
+                            ? 'Abriendo entity...'
+                            : 'Promover a product entity'}
+                        </button>
+                        <button
+                          className={styles.ghostButton}
+                          disabled={
+                            ecommerceProductSetupDefinitionActionLoading ===
+                            selectedTenantEcommerceProductSetupDetail.productSetup
+                              .productSetupId
+                          }
+                          onClick={onRequestProductSetupDefinitionPacket}
+                          type="button"
+                        >
+                          {ecommerceProductSetupDefinitionActionLoading ===
+                          selectedTenantEcommerceProductSetupDetail.productSetup
+                            .productSetupId
+                            ? 'Preparando definition...'
+                            : 'Solicitar definition packet'}
+                        </button>
+                      </div>
+                      <small>
+                        Next actions:{' '}
+                        {selectedTenantEcommerceProductSetupDetail.nextActions.join(
+                          ' | ',
+                        )}
+                      </small>
+                      {lastEcommerceProductSetupDefinitionPacket ? (
+                        <div className={styles.stack}>
+                          <small>
+                            {lastEcommerceProductSetupDefinitionPacket.summary}
+                          </small>
+                          <small>
+                            Decisions:{' '}
+                            {lastEcommerceProductSetupDefinitionPacket.requiredDecisions.join(
+                              ' | ',
+                            )}
+                          </small>
+                          <small>
+                            Artifacts:{' '}
+                            {lastEcommerceProductSetupDefinitionPacket.recommendedArtifacts.join(
+                              ' | ',
+                            )}
+                          </small>
+                          {lastEcommerceProductSetupDefinitionPacket.blockedBy
+                            .length > 0 ? (
+                            <small>
+                              Blocked by:{' '}
+                              {lastEcommerceProductSetupDefinitionPacket.blockedBy.join(
+                                ' | ',
+                              )}
+                            </small>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {selectedTenantEcommerceProductSetupDetail.blockedBy.length >
+                      0 ? (
+                        <small>
+                          Blocked by:{' '}
+                          {selectedTenantEcommerceProductSetupDetail.blockedBy.join(
+                            ' | ',
+                          )}
+                        </small>
+                      ) : null}
+                    </div>
+                  ) : tenantEcommerceProductSetupDetailLoading ? (
+                    <p className={styles.muted}>
+                      Cargando el detalle del product setup...
+                    </p>
+                  ) : null}
+
+                  <div className={styles.commercialCard}>
+                    <div className={styles.sectionHeading}>
+                      <div>
+                        <span className={styles.label}>Product entity registry</span>
+                        <h4>Entidades de producto</h4>
+                      </div>
+                      <span className={styles.badge}>
+                        {tenantEcommerceProductEntityRegistry?.summary
+                          .totalProductEntities ?? 0}
+                      </span>
+                    </div>
+                    {tenantEcommerceProductEntityRegistry ? (
+                      <div className={styles.stack}>
+                        <small>
+                          {tenantEcommerceProductEntityRegistry.summary.headline}
+                        </small>
+                        <small>
+                          {tenantEcommerceProductEntityRegistry.summary.detail}
+                        </small>
+                        {tenantEcommerceProductEntityRegistry.productEntities
+                          .length === 0 ? (
+                          <small>
+                            Todavía no hay product entities persistidas.
+                          </small>
+                        ) : (
+                          <ul className={styles.customerList}>
+                            {tenantEcommerceProductEntityRegistry.productEntities.map(
+                              (entry) => (
+                                <li
+                                  className={styles.customerListItem}
+                                  key={entry.productEntityId}
+                                >
+                                  <div className={styles.customerListPrimary}>
+                                    <strong>{entry.title}</strong>
+                                    <small>
+                                      {humanizeKey(entry.status)} ·{' '}
+                                      {humanizeKey(entry.productType)}
+                                    </small>
+                                  </div>
+                                  <div className={styles.inlineActions}>
+                                    <button
+                                      className={styles.ghostButton}
+                                      onClick={() =>
+                                        onSelectProductEntity(
+                                          entry.productEntityId,
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      Ver product entity
+                                    </button>
+                                  </div>
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        )}
+                      </div>
+                    ) : (
+                      <small className={styles.muted}>
+                        Cargando registry de product entities...
+                      </small>
+                    )}
+                  </div>
+
+                  {selectedTenantEcommerceProductEntityDetail ? (
+                    <div className={styles.commercialCard}>
+                      <div className={styles.sectionHeading}>
+                        <div>
+                          <span className={styles.label}>Product entity detail</span>
+                          <h4>
+                            {
+                              selectedTenantEcommerceProductEntityDetail
+                                .productEntity.title
+                            }
+                          </h4>
+                        </div>
+                        <span className={styles.badge}>
+                          {humanizeKey(
+                            selectedTenantEcommerceProductEntityDetail
+                              .productEntity.status,
+                          )}
+                        </span>
+                      </div>
+                      <p>{selectedTenantEcommerceProductEntityDetail.summary}</p>
+                      <small>
+                        Source draft:{' '}
+                        {
+                          selectedTenantEcommerceProductEntityDetail.productEntity
+                            .sourceDraftId
+                        }
+                      </small>
+                      <small>
+                        Pricing band:{' '}
+                        {selectedTenantEcommerceProductEntityDetail.productEntity
+                          .pricingBand ?? 'Sin banda'}
+                      </small>
+                      <small>
+                        CTA principal:{' '}
+                        {selectedTenantEcommerceProductEntityDetail.productEntity
+                          .primaryCta ?? 'Sin CTA'}
+                      </small>
+                      <div className={styles.inlineActions}>
+                        <button
+                          className={styles.ghostButton}
+                          disabled={
+                            ecommerceProductEntityCommercializationActionLoading ===
+                            selectedTenantEcommerceProductEntityDetail.productEntity
+                              .productEntityId
+                          }
+                          onClick={onRequestProductEntityCommercializationPacket}
+                          type="button"
+                        >
+                          {ecommerceProductEntityCommercializationActionLoading ===
+                          selectedTenantEcommerceProductEntityDetail.productEntity
+                            .productEntityId
+                            ? 'Preparando commercialization...'
+                            : 'Solicitar commercialization packet'}
+                        </button>
+                      </div>
+                      <small>
+                        Next actions:{' '}
+                        {selectedTenantEcommerceProductEntityDetail.nextActions.join(
+                          ' | ',
+                        )}
+                      </small>
+                      {selectedTenantEcommerceProductEntityChannelAssetsWorkspace ? (
+                        <div className={styles.stack}>
+                          <small>
+                            {
+                              selectedTenantEcommerceProductEntityChannelAssetsWorkspace.summary
+                            }
+                          </small>
+                          <small>
+                            Landing:{' '}
+                            {humanizeKey(
+                              selectedTenantEcommerceProductEntityChannelAssetsWorkspace
+                                .channels.landing.status,
+                            )}{' '}
+                            ·{' '}
+                            {
+                              selectedTenantEcommerceProductEntityChannelAssetsWorkspace
+                                .channels.landing.headline
+                            }
+                          </small>
+                          <small>
+                            Catalog:{' '}
+                            {humanizeKey(
+                              selectedTenantEcommerceProductEntityChannelAssetsWorkspace
+                                .channels.catalog.status,
+                            )}{' '}
+                            ·{' '}
+                            {
+                              selectedTenantEcommerceProductEntityChannelAssetsWorkspace
+                                .channels.catalog.headline
+                            }
+                          </small>
+                          <small>
+                            WhatsApp:{' '}
+                            {humanizeKey(
+                              selectedTenantEcommerceProductEntityChannelAssetsWorkspace
+                                .channels.whatsapp.status,
+                            )}{' '}
+                            ·{' '}
+                            {
+                              selectedTenantEcommerceProductEntityChannelAssetsWorkspace
+                                .channels.whatsapp.headline
+                            }
+                          </small>
+                          <small>
+                            Assets:{' '}
+                            {[
+                              ...selectedTenantEcommerceProductEntityChannelAssetsWorkspace
+                                .channels.landing.recommendedAssets,
+                              ...selectedTenantEcommerceProductEntityChannelAssetsWorkspace
+                                .channels.catalog.recommendedAssets,
+                              ...selectedTenantEcommerceProductEntityChannelAssetsWorkspace
+                                .channels.whatsapp.recommendedAssets,
+                            ].join(' | ')}
+                          </small>
+                        </div>
+                      ) : tenantEcommerceProductEntityChannelAssetsWorkspaceLoading ? (
+                        <small className={styles.muted}>
+                          Cargando channel assets workspace...
+                        </small>
+                      ) : null}
+                      {selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace ? (
+                        <div className={styles.stack}>
+                          <small>
+                            {
+                              selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace.summary
+                            }
+                          </small>
+                          <small>
+                            Landing draft:{' '}
+                            {humanizeKey(
+                              selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace
+                                .drafts.landing.status,
+                            )}{' '}
+                            ·{' '}
+                            {
+                              selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace
+                                .drafts.landing.headline
+                            }
+                          </small>
+                          <small>
+                            Catalog draft:{' '}
+                            {humanizeKey(
+                              selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace
+                                .drafts.catalog.status,
+                            )}{' '}
+                            ·{' '}
+                            {
+                              selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace
+                                .drafts.catalog.headline
+                            }
+                          </small>
+                          <small>
+                            WhatsApp draft:{' '}
+                            {humanizeKey(
+                              selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace
+                                .drafts.whatsapp.status,
+                            )}{' '}
+                            ·{' '}
+                            {
+                              selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace
+                                .drafts.whatsapp.headline
+                            }
+                          </small>
+                          <small>
+                            Draft blocks:{' '}
+                            {[
+                              ...selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace
+                                .drafts.landing.sections,
+                              ...selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace
+                                .drafts.catalog.blocks,
+                              ...selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace
+                                .drafts.whatsapp.sequence,
+                            ].join(' | ')}
+                          </small>
+                          <div className={styles.inlineActions}>
+                            <button
+                              className={styles.ghostButton}
+                              onClick={() => onSelectProductEntityChannelDraft('landing')}
+                              type="button"
+                            >
+                              Ver landing draft
+                            </button>
+                            <button
+                              className={styles.ghostButton}
+                              onClick={() => onSelectProductEntityChannelDraft('catalog')}
+                              type="button"
+                            >
+                              Ver catalog draft
+                            </button>
+                            <button
+                              className={styles.ghostButton}
+                              onClick={() => onSelectProductEntityChannelDraft('whatsapp')}
+                              type="button"
+                            >
+                              Ver WhatsApp draft
+                            </button>
+                          </div>
+                        </div>
+                      ) : tenantEcommerceProductEntityChannelAssetDraftsWorkspaceLoading ? (
+                        <small className={styles.muted}>
+                          Cargando channel asset drafts workspace...
+                        </small>
+                      ) : null}
+                      {selectedTenantEcommerceProductEntityChannelDraftDetail ? (
+                        <div className={styles.stack}>
+                          <small>
+                            {selectedTenantEcommerceProductEntityChannelDraftDetail.summary}
+                          </small>
+                          <small>
+                            Headline:{' '}
+                            {selectedTenantEcommerceProductEntityChannelDraftDetail.headline}
+                          </small>
+                          <small>
+                            Owner:{' '}
+                            {humanizeKey(
+                              selectedTenantEcommerceProductEntityChannelDraftDetail.recommendedOwner,
+                            )}
+                          </small>
+                          <small>
+                            Structure:{' '}
+                            {selectedTenantEcommerceProductEntityChannelDraftDetail.structure.join(
+                              ' | ',
+                            )}
+                          </small>
+                          <small>
+                            Inputs:{' '}
+                            {selectedTenantEcommerceProductEntityChannelDraftDetail.requiredInputs.join(
+                              ' | ',
+                            )}
+                          </small>
+                          <div className={styles.inlineActions}>
+                            <button
+                              className={styles.ghostButton}
+                              disabled={
+                                ecommerceProductEntityChannelDraftActionPacketLoading ===
+                                selectedTenantEcommerceProductEntityChannelDraftDetail.channelKey
+                              }
+                              onClick={onRequestProductEntityChannelDraftActionPacket}
+                              type="button"
+                            >
+                              {ecommerceProductEntityChannelDraftActionPacketLoading ===
+                              selectedTenantEcommerceProductEntityChannelDraftDetail.channelKey
+                                ? 'Preparando draft packet...'
+                                : 'Solicitar draft action packet'}
+                            </button>
+                            <button
+                              className={styles.ghostButton}
+                              disabled={
+                                ecommerceProductEntityChannelDraftPublishReadinessPacketLoading ===
+                                selectedTenantEcommerceProductEntityChannelDraftDetail.channelKey
+                              }
+                              onClick={
+                                onRequestProductEntityChannelDraftPublishReadinessPacket
+                              }
+                              type="button"
+                            >
+                              {ecommerceProductEntityChannelDraftPublishReadinessPacketLoading ===
+                              selectedTenantEcommerceProductEntityChannelDraftDetail.channelKey
+                                ? 'Preparando publish packet...'
+                                : 'Solicitar publish-readiness packet'}
+                            </button>
+                            <button
+                              className={styles.ghostButton}
+                              disabled={
+                                tenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading
+                              }
+                              onClick={
+                                onSelectProductEntityChannelDraftPublishPreparationWorkspace
+                              }
+                              type="button"
+                            >
+                              {tenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading
+                                ? 'Cargando publish prep...'
+                                : 'Ver publish preparation workspace'}
+                            </button>
+                          </div>
+                          {lastEcommerceProductEntityChannelDraftActionPacket ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  lastEcommerceProductEntityChannelDraftActionPacket.summary
+                                }
+                              </small>
+                              <small>
+                                Artifacts:{' '}
+                                {lastEcommerceProductEntityChannelDraftActionPacket.recommendedArtifacts.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Next step:{' '}
+                                {
+                                  lastEcommerceProductEntityChannelDraftActionPacket.nextStep
+                                }
+                              </small>
+                            </div>
+                          ) : null}
+                          {lastEcommerceProductEntityChannelDraftPublishReadinessPacket ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  lastEcommerceProductEntityChannelDraftPublishReadinessPacket.summary
+                                }
+                              </small>
+                              <small>
+                                Checks:{' '}
+                                {lastEcommerceProductEntityChannelDraftPublishReadinessPacket.requiredChecks.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Artifacts:{' '}
+                                {lastEcommerceProductEntityChannelDraftPublishReadinessPacket.recommendedArtifacts.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace.summary
+                                }
+                              </small>
+                              <small>
+                                Owner:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace.handoffOwner,
+                                )}
+                              </small>
+                              <small>
+                                Blueprint:{' '}
+                                {selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace.draftBlueprint.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Checklist:{' '}
+                                {selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace.publishChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Artifacts:{' '}
+                                {selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace.recommendedArtifacts.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Next milestone:{' '}
+                                {
+                                  selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace.nextMilestone
+                                }
+                              </small>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.ghostButton}
+                                  disabled={
+                                    ecommerceProductEntityChannelDraftSaveActionLoading ===
+                                    selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace.channelKey
+                                  }
+                                  onClick={onSaveProductEntityChannelDraft}
+                                  type="button"
+                                >
+                                  {ecommerceProductEntityChannelDraftSaveActionLoading ===
+                                  selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace.channelKey
+                                    ? 'Guardando channel draft...'
+                                    : 'Guardar channel draft'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                          {tenantEcommerceSavedProductEntityChannelDraftRegistry ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  tenantEcommerceSavedProductEntityChannelDraftRegistry.summary.headline
+                                }
+                              </small>
+                              <small>
+                                {
+                                  tenantEcommerceSavedProductEntityChannelDraftRegistry.summary.detail
+                                }
+                              </small>
+                              {tenantEcommerceSavedProductEntityChannelDraftRegistry.drafts
+                                .length === 0 ? (
+                                <small>
+                                  Todavía no hay saved channel drafts persistidos.
+                                </small>
+                              ) : (
+                                <ul className={styles.customerList}>
+                                  {tenantEcommerceSavedProductEntityChannelDraftRegistry.drafts.map(
+                                    (draft) => (
+                                      <li
+                                        className={styles.customerListItem}
+                                        key={draft.channelKey}
+                                      >
+                                        <div className={styles.customerListPrimary}>
+                                          <strong>
+                                            {humanizeKey(draft.channelKey)}
+                                          </strong>
+                                          <small>
+                                            {humanizeKey(
+                                              draft.preparationStatus,
+                                            )}{' '}
+                                            · {draft.title}
+                                          </small>
+                                        </div>
+                                        <div className={styles.inlineActions}>
+                                          <button
+                                            className={styles.ghostButton}
+                                            onClick={() =>
+                                              onSelectSavedProductEntityChannelDraft(
+                                                draft.channelKey,
+                                              )
+                                            }
+                                            type="button"
+                                          >
+                                            Ver saved draft
+                                          </button>
+                                        </div>
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              )}
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceSavedProductEntityChannelDraftDetail ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  selectedTenantEcommerceSavedProductEntityChannelDraftDetail.summary
+                                }
+                              </small>
+                              <small>
+                                Next actions:{' '}
+                                {selectedTenantEcommerceSavedProductEntityChannelDraftDetail.nextActions.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Title</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setSavedChannelDraftTitle(
+                                        event.target.value,
+                                      )
+                                    }
+                                    value={savedChannelDraftTitle}
+                                  />
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Headline</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setSavedChannelDraftHeadline(
+                                        event.target.value,
+                                      )
+                                    }
+                                    value={savedChannelDraftHeadline}
+                                  />
+                                </label>
+                              </div>
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Draft blueprint</span>
+                                  <textarea
+                                    onChange={(event) =>
+                                      setSavedChannelDraftBlueprint(
+                                        event.target.value,
+                                      )
+                                    }
+                                    rows={4}
+                                    value={savedChannelDraftBlueprint}
+                                  />
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Recommended artifacts</span>
+                                  <textarea
+                                    onChange={(event) =>
+                                      setSavedChannelDraftRecommendedArtifacts(
+                                        event.target.value,
+                                      )
+                                    }
+                                    rows={4}
+                                    value={
+                                      savedChannelDraftRecommendedArtifacts
+                                    }
+                                  />
+                                </label>
+                              </div>
+                              <label className={styles.field}>
+                                <span>Next milestone</span>
+                                <textarea
+                                  onChange={(event) =>
+                                    setSavedChannelDraftNextMilestone(
+                                      event.target.value,
+                                    )
+                                  }
+                                  rows={3}
+                                  value={savedChannelDraftNextMilestone}
+                                />
+                              </label>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceSavedProductEntityChannelDraftSaveActionLoading ===
+                                    selectedTenantEcommerceSavedProductEntityChannelDraftDetail
+                                      .savedChannelDraft.channelKey
+                                  }
+                                  onClick={() =>
+                                    onUpdateSavedProductEntityChannelDraftEditableSnapshot(
+                                      {
+                                        title: savedChannelDraftTitle,
+                                        headline: savedChannelDraftHeadline,
+                                        draftBlueprint:
+                                          savedChannelDraftBlueprint.split('\n'),
+                                        recommendedArtifacts:
+                                          savedChannelDraftRecommendedArtifacts.split(
+                                            '\n',
+                                          ),
+                                        nextMilestone:
+                                          savedChannelDraftNextMilestone,
+                                      },
+                                    )
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceSavedProductEntityChannelDraftSaveActionLoading ===
+                                  selectedTenantEcommerceSavedProductEntityChannelDraftDetail
+                                    .savedChannelDraft.channelKey
+                                    ? 'Guardando saved draft...'
+                                    : 'Guardar snapshot editable'}
+                                </button>
+                                <button
+                                  className={styles.ghostButton}
+                                  disabled={
+                                    ecommerceProductEntityChannelAssetWorkspacePromotionActionLoading ===
+                                    selectedTenantEcommerceSavedProductEntityChannelDraftDetail
+                                      .savedChannelDraft.channelKey
+                                  }
+                                  onClick={
+                                    onPromoteSavedProductEntityChannelDraftToChannelAssetWorkspace
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceProductEntityChannelAssetWorkspacePromotionActionLoading ===
+                                  selectedTenantEcommerceSavedProductEntityChannelDraftDetail
+                                    .savedChannelDraft.channelKey
+                                    ? 'Abriendo asset workspace...'
+                                    : 'Promover a channel asset workspace'}
+                                </button>
+                              </div>
+                              {selectedTenantEcommerceSavedProductEntityChannelDraftDetail
+                                .blockedBy.length > 0 ? (
+                                <small>
+                                  Blocked by:{' '}
+                                  {selectedTenantEcommerceSavedProductEntityChannelDraftDetail.blockedBy.join(
+                                    ' | ',
+                                  )}
+                                </small>
+                              ) : null}
+                            </div>
+                          ) : tenantEcommerceSavedProductEntityChannelDraftDetailLoading ? (
+                            <small className={styles.muted}>
+                              Cargando el saved channel draft...
+                            </small>
+                          ) : null}
+                          {tenantEcommerceProductEntityChannelAssetWorkspaceRegistry ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  tenantEcommerceProductEntityChannelAssetWorkspaceRegistry.summary.headline
+                                }
+                              </small>
+                              <small>
+                                {
+                                  tenantEcommerceProductEntityChannelAssetWorkspaceRegistry.summary.detail
+                                }
+                              </small>
+                              {tenantEcommerceProductEntityChannelAssetWorkspaceRegistry.workspaces
+                                .length === 0 ? (
+                                <small>
+                                  Todavía no hay channel asset workspaces promovidos.
+                                </small>
+                              ) : (
+                                <ul className={styles.customerList}>
+                                  {tenantEcommerceProductEntityChannelAssetWorkspaceRegistry.workspaces.map(
+                                    (workspace) => (
+                                      <li
+                                        className={styles.customerListItem}
+                                        key={workspace.channelKey}
+                                      >
+                                        <div className={styles.customerListPrimary}>
+                                          <strong>
+                                            {humanizeKey(workspace.channelKey)}
+                                          </strong>
+                                          <small>
+                                            {humanizeKey(workspace.status)} ·{' '}
+                                            {workspace.editableSnapshot.title}
+                                          </small>
+                                        </div>
+                                        <div className={styles.inlineActions}>
+                                          <button
+                                            className={styles.ghostButton}
+                                            onClick={() =>
+                                              onSelectProductEntityChannelAssetWorkspace(
+                                                workspace.channelKey,
+                                              )
+                                            }
+                                            type="button"
+                                          >
+                                            Ver asset workspace
+                                          </button>
+                                        </div>
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              )}
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail.workspace.headline
+                                }
+                              </small>
+                              <small>
+                                {
+                                  selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail.workspace.detail
+                                }
+                              </small>
+                              <small>
+                                Next actions:{' '}
+                                {selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail.workspace.nextActions.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Checklist:{' '}
+                                {selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail.workspace.editableSnapshot.publishChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceProductEntityChannelAssetPublishPacketLoading ===
+                                    selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail
+                                      .workspace.channelKey
+                                  }
+                                  onClick={
+                                    onRequestProductEntityChannelAssetPublishPacket
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceProductEntityChannelAssetPublishPacketLoading ===
+                                  selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail
+                                    .workspace.channelKey
+                                    ? 'Solicitando publish packet...'
+                                    : 'Solicitar publish packet'}
+                                </button>
+                                <button
+                                  className={styles.ghostButton}
+                                  disabled={
+                                    ecommerceProductEntityChannelAssetEntityPromotionActionLoading ===
+                                    selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail
+                                      .workspace.channelKey
+                                  }
+                                  onClick={
+                                    onPromoteProductEntityChannelAssetWorkspaceToChannelAssetEntity
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceProductEntityChannelAssetEntityPromotionActionLoading ===
+                                  selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail
+                                    .workspace.channelKey
+                                    ? 'Promoviendo asset entity...'
+                                    : 'Promover a channel asset entity'}
+                                </button>
+                              </div>
+                              {selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail
+                                .blockedBy.length > 0 ? (
+                                <small>
+                                  Blocked by:{' '}
+                                  {selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail.blockedBy.join(
+                                    ' | ',
+                                  )}
+                                </small>
+                              ) : null}
+                            </div>
+                          ) : tenantEcommerceProductEntityChannelAssetWorkspaceDetailLoading ? (
+                            <small className={styles.muted}>
+                              Cargando el channel asset workspace...
+                            </small>
+                          ) : null}
+                          {lastEcommerceProductEntityChannelAssetPublishPacket ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  lastEcommerceProductEntityChannelAssetPublishPacket.summary
+                                }
+                              </small>
+                              <small>
+                                Checks:{' '}
+                                {lastEcommerceProductEntityChannelAssetPublishPacket.requiredChecks.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Artifacts:{' '}
+                                {lastEcommerceProductEntityChannelAssetPublishPacket.recommendedArtifacts.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Next milestone:{' '}
+                                {
+                                  lastEcommerceProductEntityChannelAssetPublishPacket.nextMilestone
+                                }
+                              </small>
+                              {lastEcommerceProductEntityChannelAssetPublishPacket
+                                .blockedBy.length > 0 ? (
+                                <small>
+                                  Blocked by:{' '}
+                                  {lastEcommerceProductEntityChannelAssetPublishPacket.blockedBy.join(
+                                    ' | ',
+                                  )}
+                                </small>
+                              ) : null}
+                            </div>
+                          ) : null}
+                          {tenantEcommerceProductEntityChannelAssetEntityRegistry ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  tenantEcommerceProductEntityChannelAssetEntityRegistry.summary.headline
+                                }
+                              </small>
+                              <small>
+                                {
+                                  tenantEcommerceProductEntityChannelAssetEntityRegistry.summary.detail
+                                }
+                              </small>
+                              {tenantEcommerceProductEntityChannelAssetEntityRegistry
+                                .assetEntities.length === 0 ? (
+                                <small>
+                                  Todavía no hay channel asset entities promovidas.
+                                </small>
+                              ) : (
+                                <ul className={styles.customerList}>
+                                  {tenantEcommerceProductEntityChannelAssetEntityRegistry.assetEntities.map(
+                                    (assetEntity) => (
+                                      <li
+                                        className={styles.customerListItem}
+                                        key={assetEntity.channelKey}
+                                      >
+                                        <div className={styles.customerListPrimary}>
+                                          <strong>
+                                            {humanizeKey(assetEntity.channelKey)}
+                                          </strong>
+                                          <small>
+                                            {humanizeKey(assetEntity.status)} ·{' '}
+                                            {assetEntity.title}
+                                          </small>
+                                        </div>
+                                        <div className={styles.inlineActions}>
+                                          <button
+                                            className={styles.ghostButton}
+                                            onClick={() =>
+                                              onSelectProductEntityChannelAssetEntity(
+                                                assetEntity.channelKey,
+                                              )
+                                            }
+                                            type="button"
+                                          >
+                                            Ver asset entity
+                                          </button>
+                                        </div>
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              )}
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceProductEntityChannelAssetEntityDetail ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  selectedTenantEcommerceProductEntityChannelAssetEntityDetail.assetEntity.summary
+                                }
+                              </small>
+                              <label className={styles.field}>
+                                <span>Asset entity title</span>
+                                <input
+                                  onChange={(event) =>
+                                    setAssetEntityTitle(event.target.value)
+                                  }
+                                  value={assetEntityTitle}
+                                />
+                              </label>
+                              <label className={styles.field}>
+                                <span>Asset entity headline</span>
+                                <textarea
+                                  onChange={(event) =>
+                                    setAssetEntityHeadline(event.target.value)
+                                  }
+                                  rows={3}
+                                  value={assetEntityHeadline}
+                                />
+                              </label>
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Draft blueprint</span>
+                                  <textarea
+                                    onChange={(event) =>
+                                      setAssetEntityBlueprint(
+                                        event.target.value,
+                                      )
+                                    }
+                                    rows={4}
+                                    value={assetEntityBlueprint}
+                                  />
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Recommended artifacts</span>
+                                  <textarea
+                                    onChange={(event) =>
+                                      setAssetEntityRecommendedArtifacts(
+                                        event.target.value,
+                                      )
+                                    }
+                                    rows={4}
+                                    value={assetEntityRecommendedArtifacts}
+                                  />
+                                </label>
+                              </div>
+                              <label className={styles.field}>
+                                <span>Next milestone</span>
+                                <textarea
+                                  onChange={(event) =>
+                                    setAssetEntityNextMilestone(
+                                      event.target.value,
+                                    )
+                                  }
+                                  rows={3}
+                                  value={assetEntityNextMilestone}
+                                />
+                              </label>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceProductEntityChannelAssetEntitySaveActionLoading ===
+                                    selectedTenantEcommerceProductEntityChannelAssetEntityDetail
+                                      .assetEntity.channelKey
+                                  }
+                                  onClick={() =>
+                                    onUpdateProductEntityChannelAssetEntityEditableSnapshot(
+                                      {
+                                        title: assetEntityTitle,
+                                        headline: assetEntityHeadline,
+                                        draftBlueprint:
+                                          assetEntityBlueprint.split('\n'),
+                                        recommendedArtifacts:
+                                          assetEntityRecommendedArtifacts.split(
+                                            '\n',
+                                          ),
+                                        nextMilestone:
+                                          assetEntityNextMilestone,
+                                      },
+                                    )
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceProductEntityChannelAssetEntitySaveActionLoading ===
+                                  selectedTenantEcommerceProductEntityChannelAssetEntityDetail
+                                    .assetEntity.channelKey
+                                    ? 'Guardando asset entity...'
+                                    : 'Guardar snapshot editable'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceProductEntityChannelAssetEntityPublishPreparationPacketLoading ===
+                                    selectedTenantEcommerceProductEntityChannelAssetEntityDetail
+                                      .assetEntity.channelKey
+                                  }
+                                  onClick={
+                                    onRequestProductEntityChannelAssetEntityPublishPreparationPacket
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceProductEntityChannelAssetEntityPublishPreparationPacketLoading ===
+                                  selectedTenantEcommerceProductEntityChannelAssetEntityDetail
+                                    .assetEntity.channelKey
+                                    ? 'Solicitando publish preparation...'
+                                    : 'Solicitar publish preparation'}
+                                </button>
+                                <button
+                                  className={styles.ghostButton}
+                                  disabled={
+                                    ecommerceProductEntityChannelReleaseCandidatePromotionActionLoading ===
+                                    selectedTenantEcommerceProductEntityChannelAssetEntityDetail
+                                      .assetEntity.channelKey
+                                  }
+                                  onClick={
+                                    onPromoteProductEntityChannelAssetEntityToReleaseCandidate
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceProductEntityChannelReleaseCandidatePromotionActionLoading ===
+                                  selectedTenantEcommerceProductEntityChannelAssetEntityDetail
+                                    .assetEntity.channelKey
+                                    ? 'Promoviendo release candidate...'
+                                    : 'Promover a release candidate'}
+                                </button>
+                              </div>
+                              {selectedTenantEcommerceProductEntityChannelAssetEntityDetail
+                                .assetEntity.blockedBy.length > 0 ? (
+                                <small>
+                                  Blocked by:{' '}
+                                  {selectedTenantEcommerceProductEntityChannelAssetEntityDetail.assetEntity.blockedBy.join(
+                                    ' | ',
+                                  )}
+                                </small>
+                              ) : null}
+                            </div>
+                          ) : tenantEcommerceProductEntityChannelAssetEntityDetailLoading ? (
+                            <small className={styles.muted}>
+                              Cargando la channel asset entity...
+                            </small>
+                          ) : null}
+                          {lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket.summary
+                                }
+                              </small>
+                              <small>
+                                Checks:{' '}
+                                {lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket.requiredChecks.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Artifacts:{' '}
+                                {lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket.recommendedArtifacts.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Next milestone:{' '}
+                                {
+                                  lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket.nextMilestone
+                                }
+                              </small>
+                            </div>
+                          ) : null}
+                          {tenantEcommerceProductEntityChannelReleaseCandidateRegistry ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  tenantEcommerceProductEntityChannelReleaseCandidateRegistry.summary.headline
+                                }
+                              </small>
+                              <small>
+                                {
+                                  tenantEcommerceProductEntityChannelReleaseCandidateRegistry.summary.detail
+                                }
+                              </small>
+                              {tenantEcommerceProductEntityChannelReleaseCandidateRegistry
+                                .releaseCandidates.length === 0 ? (
+                                <small>
+                                  Todavía no hay release candidates promovidos.
+                                </small>
+                              ) : (
+                                <ul className={styles.customerList}>
+                                  {tenantEcommerceProductEntityChannelReleaseCandidateRegistry.releaseCandidates.map(
+                                    (releaseCandidate) => (
+                                      <li
+                                        className={styles.customerListItem}
+                                        key={releaseCandidate.channelKey}
+                                      >
+                                        <div className={styles.customerListPrimary}>
+                                          <strong>
+                                            {humanizeKey(
+                                              releaseCandidate.channelKey,
+                                            )}
+                                          </strong>
+                                          <small>
+                                            {humanizeKey(
+                                              releaseCandidate.status,
+                                            )}{' '}
+                                            · {releaseCandidate.title}
+                                          </small>
+                                        </div>
+                                        <div className={styles.inlineActions}>
+                                          <button
+                                            className={styles.ghostButton}
+                                            onClick={() =>
+                                              onSelectProductEntityChannelReleaseCandidate(
+                                                releaseCandidate.channelKey,
+                                              )
+                                            }
+                                            type="button"
+                                          >
+                                            Ver release candidate
+                                          </button>
+                                        </div>
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              )}
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail.releaseCandidate.summary
+                                }
+                              </small>
+                              <small>
+                                Checklist:{' '}
+                                {selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail.releaseCandidate.publishChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Artifacts:{' '}
+                                {selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail.releaseCandidate.recommendedArtifacts.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Next milestone:{' '}
+                                {
+                                  selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail.releaseCandidate.nextMilestone
+                                }
+                              </small>
+                            </div>
+                          ) : tenantEcommerceProductEntityChannelReleaseCandidateDetailLoading ? (
+                            <small className={styles.muted}>
+                              Cargando el release candidate...
+                            </small>
+                          ) : null}
+                        </div>
+                      ) : tenantEcommerceProductEntityChannelDraftDetailLoading ? (
+                        <small className={styles.muted}>
+                          Cargando channel draft detail...
+                        </small>
+                      ) : null}
+                      {lastEcommerceProductEntityCommercializationPacket ? (
+                        <div className={styles.stack}>
+                          <small>
+                            {
+                              lastEcommerceProductEntityCommercializationPacket.summary
+                            }
+                          </small>
+                          <small>
+                            Decisions:{' '}
+                            {lastEcommerceProductEntityCommercializationPacket.requiredDecisions.join(
+                              ' | ',
+                            )}
+                          </small>
+                          <small>
+                            Artifacts:{' '}
+                            {lastEcommerceProductEntityCommercializationPacket.recommendedArtifacts.join(
+                              ' | ',
+                            )}
+                          </small>
+                          {lastEcommerceProductEntityCommercializationPacket.blockedBy
+                            .length > 0 ? (
+                            <small>
+                              Blocked by:{' '}
+                              {lastEcommerceProductEntityCommercializationPacket.blockedBy.join(
+                                ' | ',
+                              )}
+                            </small>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {selectedTenantEcommerceProductEntityDetail.blockedBy.length >
+                      0 ? (
+                        <small>
+                          Blocked by:{' '}
+                          {selectedTenantEcommerceProductEntityDetail.blockedBy.join(
+                            ' | ',
+                          )}
+                        </small>
+                      ) : null}
+                    </div>
+                  ) : tenantEcommerceProductEntityDetailLoading ? (
+                    <p className={styles.muted}>
+                      Cargando el detalle de la product entity...
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <p className={styles.muted}>
+                  Cargando el starter set draft de productos...
+                </p>
+              )}
+            </div>
+
+            <div className={styles.detailCard}>
+              <div className={styles.sectionHeading}>
+                <div>
+                  <span className={styles.label}>Store profile workspace</span>
+                  <h3>Identidad draft de la tienda</h3>
+                </div>
+                <span
+                  className={`${styles.statusPill} ${operationalStatusTone(
+                    tenantEcommerceStoreProfileWorkspace?.summary.tone ??
+                      'healthy',
+                  )}`}
+                >
+                  {tenantEcommerceStoreProfileWorkspace
+                    ? operationalStatusLabel(
+                        tenantEcommerceStoreProfileWorkspace.summary.tone,
+                      )
+                    : 'sin perfil'}
+                </span>
+              </div>
+
+              {tenantEcommerceStoreProfileWorkspace ? (
+                <div className={styles.stack}>
+                  <p>{tenantEcommerceStoreProfileWorkspace.summary.headline}</p>
+                  <small>
+                    {tenantEcommerceStoreProfileWorkspace.summary.detail}
+                  </small>
+                  <small>
+                    Focus sugerido:{' '}
+                    {tenantEcommerceStoreProfileWorkspace.summary.suggestedFocus}
+                  </small>
+
+                  <div className={styles.invoiceKpiGrid}>
+                    <div className={styles.commercialCard}>
+                      <span className={styles.muted}>Store name</span>
+                      <strong>
+                        {
+                          tenantEcommerceStoreProfileWorkspace.identityDraft
+                            .storeName
+                        }
+                      </strong>
+                      <small>Nombre comercial draft de la tienda.</small>
+                    </div>
+                    <div className={styles.commercialCard}>
+                      <span className={styles.muted}>Storefront slug</span>
+                      <strong>
+                        {
+                          tenantEcommerceStoreProfileWorkspace.identityDraft
+                            .storefrontSlug
+                        }
+                      </strong>
+                      <small>Slug operativo inicial, no publish final.</small>
+                    </div>
+                    <div className={styles.commercialCard}>
+                      <span className={styles.muted}>Primary channel</span>
+                      <strong>
+                        {humanizeKey(
+                          tenantEcommerceStoreProfileWorkspace.identityDraft
+                            .primaryChannel,
+                        )}
+                      </strong>
+                      <small>Canal sugerido para el primer release.</small>
+                    </div>
+                  </div>
+
+                  <p className={styles.muted}>
+                    {
+                      tenantEcommerceStoreProfileWorkspace.identityDraft
+                        .launchNarrative
+                    }
+                  </p>
+
+                  <ul className={styles.featureList}>
+                    {tenantEcommerceStoreProfileWorkspace.connections.map(
+                      (entry) => (
+                        <li key={entry.key}>
+                          <strong>
+                            {entry.title}{' '}
+                            <span className={styles.muted}>
+                              ({humanizeKey(entry.status)})
+                            </span>
+                          </strong>
+                          <div>{entry.detail}</div>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                </div>
+              ) : (
+                <p className={styles.muted}>
+                  Cargando el profile draft de Ecommerce...
+                </p>
+              )}
+            </div>
+
+            <div className={styles.detailCard}>
+              <div className={styles.sectionHeading}>
+                <div>
+                  <span className={styles.label}>Store setup workspace</span>
+                  <h3>Base operativa para abrir la tienda</h3>
+                </div>
+                <span
+                  className={`${styles.statusPill} ${operationalStatusTone(
+                    tenantEcommerceStoreSetupWorkspace?.summary.tone ?? 'healthy',
+                  )}`}
+                >
+                  {tenantEcommerceStoreSetupWorkspace
+                    ? operationalStatusLabel(
+                        tenantEcommerceStoreSetupWorkspace.summary.tone,
+                      )
+                    : 'sin setup'}
+                </span>
+              </div>
+
+              {tenantEcommerceStoreSetupWorkspace ? (
+                <div className={styles.stack}>
+                  <p>{tenantEcommerceStoreSetupWorkspace.summary.headline}</p>
+                  <small>{tenantEcommerceStoreSetupWorkspace.summary.detail}</small>
+                  <small>
+                    Focus sugerido:{' '}
+                    {tenantEcommerceStoreSetupWorkspace.summary.suggestedFocus}
+                  </small>
+
+                  <div className={styles.invoiceKpiGrid}>
+                    <div className={styles.commercialCard}>
+                      <span className={styles.muted}>Setup readiness</span>
+                      <strong>
+                        {humanizeKey(
+                          tenantEcommerceStoreSetupWorkspace.summary
+                            .setupReadiness,
+                        )}
+                      </strong>
+                      <small>Estado de base para abrir la tienda.</small>
+                    </div>
+                    <div className={styles.commercialCard}>
+                      <span className={styles.muted}>Productos activos</span>
+                      <strong>
+                        {tenantEcommerceStoreSetupWorkspace.productSnapshot.enabledProductKeys.join(
+                          ', ',
+                        ) || 'sin productos'}
+                      </strong>
+                      <small>Stack comercial visible para el tenant.</small>
+                    </div>
+                    <div className={styles.commercialCard}>
+                      <span className={styles.muted}>Facturación</span>
+                      <strong>
+                        {tenantEcommerceStoreSetupWorkspace.productSnapshot
+                          .invoicingEnabled
+                          ? 'Conectada'
+                          : 'Pendiente'}
+                      </strong>
+                      <small>Si Invoicing ya acompaña la tienda.</small>
+                    </div>
+                  </div>
+
+                  <ul className={styles.featureList}>
+                    {tenantEcommerceStoreSetupWorkspace.capabilities.map(
+                      (capability) => (
+                        <li key={capability.key}>
+                          <strong>
+                            {capability.title}{' '}
+                            <span className={styles.muted}>
+                              ({humanizeKey(capability.status)})
+                            </span>
+                          </strong>
+                          <div>{capability.detail}</div>
+                          <small>{capability.nextStep}</small>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                </div>
+              ) : (
+                <p className={styles.muted}>
+                  Cargando el workspace de setup operativo de Ecommerce...
+                </p>
+              )}
+            </div>
+
             <div className={styles.detailCard}>
               <div className={styles.sectionHeading}>
                 <div>

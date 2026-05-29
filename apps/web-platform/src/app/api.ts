@@ -34,6 +34,50 @@ import {
   AiOperationsSummaryResponse,
   EcommerceLaunchPlanDetailResponse,
   EcommerceLaunchPlanRegistryResponse,
+  EcommerceProductAuthoringDraftDetailResponse,
+  EcommerceProductEntityChannelDraftDetailResponse,
+  EcommerceProductEntityChannelAssetWorkspaceDetailResponse,
+  EcommerceProductEntityChannelAssetWorkspaceRegistryResponse,
+  EcommerceProductEntityChannelAssetEntityDetailResponse,
+  EcommerceProductEntityChannelAssetEntityRegistryResponse,
+  EcommerceProductEntityChannelReleaseCandidateDetailResponse,
+  EcommerceProductEntityChannelReleaseCandidateRegistryResponse,
+  PromoteEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceResponse,
+  PromoteEcommerceProductEntityChannelAssetEntityToReleaseCandidateResponse,
+  PromoteEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityResponse,
+  RequestEcommerceProductEntityChannelAssetEntityPublishPreparationPacketResponse,
+  RequestEcommerceProductEntityChannelAssetPublishPacketResponse,
+  EcommerceProductEntityChannelDraftPublishPreparationWorkspaceResponse,
+  EcommerceProductEntityDetailResponse,
+  EcommerceSavedProductEntityChannelDraftDetailResponse,
+  EcommerceSavedProductEntityChannelDraftRegistryResponse,
+  EcommerceProductEntityChannelAssetDraftsWorkspaceResponse,
+  EcommerceProductEntityChannelAssetsWorkspaceResponse,
+  EcommerceProductEntityRegistryResponse,
+  EcommerceProductSetupDetailResponse,
+  EcommerceProductSetupRegistryResponse,
+  PromoteEcommerceProductSetupToProductEntityResponse,
+  RequestEcommerceProductEntityChannelDraftActionPacketResponse,
+  RequestEcommerceProductEntityChannelDraftPublishReadinessPacketResponse,
+  RequestEcommerceProductEntityCommercializationPacketResponse,
+  SaveEcommerceProductEntityChannelDraftResponse,
+  UpdateEcommerceProductEntityChannelAssetEntityEditableSnapshotResponse,
+  UpdateEcommerceSavedProductEntityChannelDraftEditableSnapshotResponse,
+  PromoteEcommerceProductWorkspaceToProductSetupResponse,
+  RequestEcommerceProductSetupDefinitionPacketResponse,
+  UpdateEcommerceProductSetupEditableSnapshotResponse,
+  EcommerceProductWorkspaceDetailResponse,
+  EcommerceProductWorkspaceRegistryResponse,
+  EcommerceProductAuthoringWorkspaceResponse,
+  PromoteEcommerceSavedDraftToProductWorkspaceResponse,
+  RequestEcommerceProductWorkspaceReadinessPacketResponse,
+  RequestEcommerceProductAuthoringDraftBriefResponse,
+  EcommerceSavedProductDraftRegistryResponse,
+  SaveEcommerceProductAuthoringDraftResponse,
+  UpdateEcommerceProductWorkspaceEditableSnapshotResponse,
+  RequestEcommerceProductAuthoringDraftRefinementPacketResponse,
+  EcommerceStoreProfileWorkspaceResponse,
+  EcommerceStoreSetupWorkspaceResponse,
   EcommerceLaunchWorkspaceResponse,
   RequestEcommerceLaunchPlanActivationReadinessResponse,
   AiApprovalPolicyResponse,
@@ -1527,6 +1571,819 @@ export async function fetchTenantEcommerceLaunchWorkspace(
     `/ecommerce/tenants/${encodeURIComponent(tenantSlug)}/launch-workspace`,
     {
       method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceStoreSetupWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<EcommerceStoreSetupWorkspaceResponse> {
+  return request<EcommerceStoreSetupWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(tenantSlug)}/store-setup-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceStoreProfileWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<EcommerceStoreProfileWorkspaceResponse> {
+  return request<EcommerceStoreProfileWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(tenantSlug)}/store-profile-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductAuthoringWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<EcommerceProductAuthoringWorkspaceResponse> {
+  return request<EcommerceProductAuthoringWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(tenantSlug)}/product-authoring-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceSavedProductDrafts(
+  token: string,
+  tenantSlug: string,
+): Promise<EcommerceSavedProductDraftRegistryResponse> {
+  return request<EcommerceSavedProductDraftRegistryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(tenantSlug)}/saved-product-drafts`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductWorkspaces(
+  token: string,
+  tenantSlug: string,
+): Promise<EcommerceProductWorkspaceRegistryResponse> {
+  return request<EcommerceProductWorkspaceRegistryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(tenantSlug)}/product-workspaces`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductWorkspaceDetail(
+  token: string,
+  tenantSlug: string,
+  savedDraftId: string,
+): Promise<EcommerceProductWorkspaceDetailResponse> {
+  return request<EcommerceProductWorkspaceDetailResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-workspaces/${encodeURIComponent(savedDraftId)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductSetups(
+  token: string,
+  tenantSlug: string,
+): Promise<EcommerceProductSetupRegistryResponse> {
+  return request<EcommerceProductSetupRegistryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(tenantSlug)}/product-setups`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductSetupDetail(
+  token: string,
+  tenantSlug: string,
+  productSetupId: string,
+): Promise<EcommerceProductSetupDetailResponse> {
+  return request<EcommerceProductSetupDetailResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-setups/${encodeURIComponent(productSetupId)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductEntities(
+  token: string,
+  tenantSlug: string,
+): Promise<EcommerceProductEntityRegistryResponse> {
+  return request<EcommerceProductEntityRegistryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(tenantSlug)}/product-entities`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductEntityDetail(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceProductEntityDetailResponse> {
+  return request<EcommerceProductEntityDetailResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(productEntityId)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductEntityChannelAssetsWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceProductEntityChannelAssetsWorkspaceResponse> {
+  return request<EcommerceProductEntityChannelAssetsWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-assets-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductEntityChannelAssetDraftsWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceProductEntityChannelAssetDraftsWorkspaceResponse> {
+  return request<EcommerceProductEntityChannelAssetDraftsWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-asset-drafts-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductEntityChannelDraftDetail(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<EcommerceProductEntityChannelDraftDetailResponse> {
+  return request<EcommerceProductEntityChannelDraftDetailResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-drafts/${encodeURIComponent(channelKey)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductAuthoringDraftDetail(
+  token: string,
+  tenantSlug: string,
+  draftId: string,
+): Promise<EcommerceProductAuthoringDraftDetailResponse> {
+  return request<EcommerceProductAuthoringDraftDetailResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-authoring-drafts/${encodeURIComponent(draftId)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceProductAuthoringDraftBrief(
+  token: string,
+  tenantSlug: string,
+  draftId: string,
+): Promise<RequestEcommerceProductAuthoringDraftBriefResponse> {
+  return request<RequestEcommerceProductAuthoringDraftBriefResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-authoring-drafts/${encodeURIComponent(draftId)}/request-ai-brief`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceProductAuthoringDraftRefinementPacket(
+  token: string,
+  tenantSlug: string,
+  draftId: string,
+): Promise<RequestEcommerceProductAuthoringDraftRefinementPacketResponse> {
+  return request<RequestEcommerceProductAuthoringDraftRefinementPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-authoring-drafts/${encodeURIComponent(
+      draftId,
+    )}/request-refinement-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function saveTenantEcommerceProductAuthoringDraft(
+  token: string,
+  tenantSlug: string,
+  draftId: string,
+): Promise<SaveEcommerceProductAuthoringDraftResponse> {
+  return request<SaveEcommerceProductAuthoringDraftResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-authoring-drafts/${encodeURIComponent(draftId)}/save`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function promoteTenantEcommerceSavedDraftToProductWorkspace(
+  token: string,
+  tenantSlug: string,
+  savedDraftId: string,
+): Promise<PromoteEcommerceSavedDraftToProductWorkspaceResponse> {
+  return request<PromoteEcommerceSavedDraftToProductWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/saved-product-drafts/${encodeURIComponent(
+      savedDraftId,
+    )}/promote-to-product-workspace`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function updateTenantEcommerceProductWorkspaceEditableSnapshot(
+  token: string,
+  tenantSlug: string,
+  savedDraftId: string,
+  body: {
+    title: string;
+    pricingBand: string | null;
+    offerAngle: string | null;
+    primaryCta: string | null;
+    channelSequence: string[];
+  },
+): Promise<UpdateEcommerceProductWorkspaceEditableSnapshotResponse> {
+  return request<UpdateEcommerceProductWorkspaceEditableSnapshotResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-workspaces/${encodeURIComponent(
+      savedDraftId,
+    )}/update-editable-snapshot`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function promoteTenantEcommerceProductWorkspaceToProductSetup(
+  token: string,
+  tenantSlug: string,
+  savedDraftId: string,
+): Promise<PromoteEcommerceProductWorkspaceToProductSetupResponse> {
+  return request<PromoteEcommerceProductWorkspaceToProductSetupResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-workspaces/${encodeURIComponent(
+      savedDraftId,
+    )}/promote-to-product-setup`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceProductWorkspaceReadinessPacket(
+  token: string,
+  tenantSlug: string,
+  savedDraftId: string,
+): Promise<RequestEcommerceProductWorkspaceReadinessPacketResponse> {
+  return request<RequestEcommerceProductWorkspaceReadinessPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-workspaces/${encodeURIComponent(
+      savedDraftId,
+    )}/request-readiness-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceProductSetupDefinitionPacket(
+  token: string,
+  tenantSlug: string,
+  productSetupId: string,
+): Promise<RequestEcommerceProductSetupDefinitionPacketResponse> {
+  return request<RequestEcommerceProductSetupDefinitionPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-setups/${encodeURIComponent(
+      productSetupId,
+    )}/request-definition-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function updateTenantEcommerceProductSetupEditableSnapshot(
+  token: string,
+  tenantSlug: string,
+  productSetupId: string,
+  body: {
+    title: string;
+    pricingBand: string | null;
+    offerAngle: string | null;
+    primaryCta: string | null;
+    channelSequence: string[];
+  },
+): Promise<UpdateEcommerceProductSetupEditableSnapshotResponse> {
+  return request<UpdateEcommerceProductSetupEditableSnapshotResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-setups/${encodeURIComponent(
+      productSetupId,
+    )}/update-editable-snapshot`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function promoteTenantEcommerceProductSetupToProductEntity(
+  token: string,
+  tenantSlug: string,
+  productSetupId: string,
+): Promise<PromoteEcommerceProductSetupToProductEntityResponse> {
+  return request<PromoteEcommerceProductSetupToProductEntityResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-setups/${encodeURIComponent(
+      productSetupId,
+    )}/promote-to-product-entity`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceProductEntityCommercializationPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<RequestEcommerceProductEntityCommercializationPacketResponse> {
+  return request<RequestEcommerceProductEntityCommercializationPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/request-commercialization-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceProductEntityChannelDraftActionPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<RequestEcommerceProductEntityChannelDraftActionPacketResponse> {
+  return request<RequestEcommerceProductEntityChannelDraftActionPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-drafts/${encodeURIComponent(
+      channelKey,
+    )}/request-action-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceProductEntityChannelDraftPublishReadinessPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<RequestEcommerceProductEntityChannelDraftPublishReadinessPacketResponse> {
+  return request<RequestEcommerceProductEntityChannelDraftPublishReadinessPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-drafts/${encodeURIComponent(
+      channelKey,
+    )}/request-publish-readiness-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<EcommerceProductEntityChannelDraftPublishPreparationWorkspaceResponse> {
+  return request<EcommerceProductEntityChannelDraftPublishPreparationWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-drafts/${encodeURIComponent(
+      channelKey,
+    )}/publish-preparation-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceSavedProductEntityChannelDrafts(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceSavedProductEntityChannelDraftRegistryResponse> {
+  return request<EcommerceSavedProductEntityChannelDraftRegistryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/saved-channel-drafts`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function saveTenantEcommerceProductEntityChannelDraft(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<SaveEcommerceProductEntityChannelDraftResponse> {
+  return request<SaveEcommerceProductEntityChannelDraftResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-drafts/${encodeURIComponent(channelKey)}/save`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceSavedProductEntityChannelDraftDetail(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<EcommerceSavedProductEntityChannelDraftDetailResponse> {
+  return request<EcommerceSavedProductEntityChannelDraftDetailResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/saved-channel-drafts/${encodeURIComponent(channelKey)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function updateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshot(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+  patch: {
+    title: string;
+    headline: string;
+    draftBlueprint: string[];
+    recommendedArtifacts: string[];
+    nextMilestone: string;
+  },
+): Promise<UpdateEcommerceSavedProductEntityChannelDraftEditableSnapshotResponse> {
+  return request<UpdateEcommerceSavedProductEntityChannelDraftEditableSnapshotResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/saved-channel-drafts/${encodeURIComponent(
+      channelKey,
+    )}/update-editable-snapshot`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(patch),
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductEntityChannelAssetWorkspaces(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceProductEntityChannelAssetWorkspaceRegistryResponse> {
+  return request<EcommerceProductEntityChannelAssetWorkspaceRegistryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-asset-workspaces`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductEntityChannelAssetWorkspaceDetail(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<EcommerceProductEntityChannelAssetWorkspaceDetailResponse> {
+  return request<EcommerceProductEntityChannelAssetWorkspaceDetailResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-asset-workspaces/${encodeURIComponent(channelKey)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function promoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<PromoteEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceResponse> {
+  return request<PromoteEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/saved-channel-drafts/${encodeURIComponent(
+      channelKey,
+    )}/promote-to-channel-asset-workspace`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceProductEntityChannelAssetPublishPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<RequestEcommerceProductEntityChannelAssetPublishPacketResponse> {
+  return request<RequestEcommerceProductEntityChannelAssetPublishPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-asset-workspaces/${encodeURIComponent(
+      channelKey,
+    )}/request-publish-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductEntityChannelAssetEntities(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceProductEntityChannelAssetEntityRegistryResponse> {
+  return request<EcommerceProductEntityChannelAssetEntityRegistryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-asset-entities`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductEntityChannelAssetEntityDetail(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<EcommerceProductEntityChannelAssetEntityDetailResponse> {
+  return request<EcommerceProductEntityChannelAssetEntityDetailResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-asset-entities/${encodeURIComponent(channelKey)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function promoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntity(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<PromoteEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityResponse> {
+  return request<PromoteEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-asset-workspaces/${encodeURIComponent(
+      channelKey,
+    )}/promote-to-channel-asset-entity`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function updateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshot(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+  patch: {
+    title: string;
+    headline: string;
+    draftBlueprint: string[];
+    recommendedArtifacts: string[];
+    nextMilestone: string;
+  },
+): Promise<UpdateEcommerceProductEntityChannelAssetEntityEditableSnapshotResponse> {
+  return request<UpdateEcommerceProductEntityChannelAssetEntityEditableSnapshotResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-asset-entities/${encodeURIComponent(
+      channelKey,
+    )}/update-editable-snapshot`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(patch),
+    },
+  );
+}
+
+export async function requestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<RequestEcommerceProductEntityChannelAssetEntityPublishPreparationPacketResponse> {
+  return request<RequestEcommerceProductEntityChannelAssetEntityPublishPreparationPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-asset-entities/${encodeURIComponent(
+      channelKey,
+    )}/request-publish-preparation-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductEntityChannelReleaseCandidates(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceProductEntityChannelReleaseCandidateRegistryResponse> {
+  return request<EcommerceProductEntityChannelReleaseCandidateRegistryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-release-candidates`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceProductEntityChannelReleaseCandidateDetail(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<EcommerceProductEntityChannelReleaseCandidateDetailResponse> {
+  return request<EcommerceProductEntityChannelReleaseCandidateDetailResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-release-candidates/${encodeURIComponent(channelKey)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidate(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  channelKey: 'landing' | 'catalog' | 'whatsapp',
+): Promise<PromoteEcommerceProductEntityChannelAssetEntityToReleaseCandidateResponse> {
+  return request<PromoteEcommerceProductEntityChannelAssetEntityToReleaseCandidateResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-asset-entities/${encodeURIComponent(
+      channelKey,
+    )}/promote-to-release-candidate`,
+    {
+      method: 'POST',
       token,
     },
   );

@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   NotFoundException,
@@ -7,11 +8,56 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  EcommerceProductAuthoringDraftNotFoundError,
   EcommerceLaunchPlanNotFoundError,
+  GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
+  GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+  GetTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase,
+  GetTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase,
+  GetTenantEcommerceProductEntityChannelDraftDetailUseCase,
+  GetTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceUseCase,
+  GetTenantEcommerceProductEntityChannelReleaseCandidateDetailUseCase,
+  GetTenantEcommerceSavedProductEntityChannelDraftDetailUseCase,
+  GetTenantEcommerceProductEntityDetailUseCase,
+  GetTenantEcommerceProductAuthoringDraftDetailUseCase,
+  GetTenantEcommerceProductSetupDetailUseCase,
+  GetTenantEcommerceProductWorkspaceDetailUseCase,
+  RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
+  RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
+  SaveTenantEcommerceProductEntityChannelDraftUseCase,
+  UpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase,
+  UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
+  RequestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase,
+  RequestTenantEcommerceProductEntityChannelDraftActionPacketUseCase,
+  RequestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase,
+  RequestTenantEcommerceProductEntityCommercializationPacketUseCase,
+  RequestTenantEcommerceProductSetupDefinitionPacketUseCase,
+  SaveTenantEcommerceProductAuthoringDraftUseCase,
+  UpdateTenantEcommerceProductSetupEditableSnapshotUseCase,
+  GetTenantEcommerceProductAuthoringWorkspaceUseCase,
   GetTenantEcommerceLaunchPlanDetailUseCase,
+  GetTenantEcommerceStoreProfileWorkspaceUseCase,
+  GetTenantEcommerceStoreSetupWorkspaceUseCase,
   GetTenantEcommerceLaunchWorkspaceUseCase,
+  ListTenantEcommerceProductSetupsUseCase,
+  ListTenantEcommerceProductEntitiesUseCase,
+  ListTenantEcommerceProductEntityChannelAssetEntitiesUseCase,
+  ListTenantEcommerceProductEntityChannelAssetWorkspacesUseCase,
+  ListTenantEcommerceProductEntityChannelReleaseCandidatesUseCase,
+  ListTenantEcommerceSavedProductEntityChannelDraftsUseCase,
+  PromoteTenantEcommerceProductSetupToProductEntityUseCase,
+  PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
+  PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
+  PromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
+  RequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase,
+  ListTenantEcommerceProductWorkspacesUseCase,
+  ListTenantEcommerceSavedProductDraftsUseCase,
   ListTenantEcommerceLaunchPlansUseCase,
+  PromoteTenantEcommerceProductWorkspaceToProductSetupUseCase,
+  PromoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
+  RequestTenantEcommerceProductWorkspaceReadinessPacketUseCase,
   RequestTenantEcommerceLaunchPlanActivationReadinessUseCase,
+  UpdateTenantEcommerceProductWorkspaceEditableSnapshotUseCase,
 } from '@saas-platform/ecommerce-application';
 import {
   ProductNotFoundError,
@@ -35,9 +81,155 @@ import {
   toEcommerceLaunchPlanRegistryResponseDto,
 } from './dto/ecommerce-launch-plan-registry.response';
 import {
+  EcommerceProductAuthoringDraftDetailResponseDto,
+  toEcommerceProductAuthoringDraftDetailResponseDto,
+} from './dto/ecommerce-product-authoring-draft-detail.response';
+import {
+  EcommerceProductAuthoringWorkspaceResponseDto,
+  toEcommerceProductAuthoringWorkspaceResponseDto,
+} from './dto/ecommerce-product-authoring-workspace.response';
+import {
+  EcommerceProductEntityChannelAssetDraftsWorkspaceResponseDto,
+  toEcommerceProductEntityChannelAssetDraftsWorkspaceResponseDto,
+} from './dto/ecommerce-product-entity-channel-asset-drafts-workspace.response';
+import {
+  EcommerceProductEntityChannelAssetEntityDetailResponseDto,
+  EcommerceProductEntityChannelAssetEntityRegistryResponseDto,
+  RequestEcommerceProductEntityChannelAssetEntityPublishPreparationPacketResponseDto,
+  PromoteEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityResponseDto,
+  UpdateEcommerceProductEntityChannelAssetEntityEditableSnapshotRequestDto,
+  UpdateEcommerceProductEntityChannelAssetEntityEditableSnapshotResponseDto,
+  toEcommerceProductEntityChannelAssetEntityDetailResponseDto,
+  toEcommerceProductEntityChannelAssetEntityRegistryResponseDto,
+  toPromoteEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityResponseDto,
+  toRequestEcommerceProductEntityChannelAssetEntityPublishPreparationPacketResponseDto,
+  toUpdateEcommerceProductEntityChannelAssetEntityEditableSnapshotResponseDto,
+} from './dto/ecommerce-product-entity-channel-asset-entity.response';
+import {
+  EcommerceProductEntityChannelReleaseCandidateDetailResponseDto,
+  EcommerceProductEntityChannelReleaseCandidateRegistryResponseDto,
+  PromoteEcommerceProductEntityChannelAssetEntityToReleaseCandidateResponseDto,
+  toEcommerceProductEntityChannelReleaseCandidateDetailResponseDto,
+  toEcommerceProductEntityChannelReleaseCandidateRegistryResponseDto,
+  toPromoteEcommerceProductEntityChannelAssetEntityToReleaseCandidateResponseDto,
+} from './dto/ecommerce-product-entity-channel-release-candidate.response';
+import {
+  EcommerceProductEntityChannelAssetWorkspaceDetailResponseDto,
+  EcommerceProductEntityChannelAssetWorkspaceRegistryResponseDto,
+  PromoteEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceResponseDto,
+  RequestEcommerceProductEntityChannelAssetPublishPacketResponseDto,
+  toEcommerceProductEntityChannelAssetWorkspaceDetailResponseDto,
+  toEcommerceProductEntityChannelAssetWorkspaceRegistryResponseDto,
+  toPromoteEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceResponseDto,
+  toRequestEcommerceProductEntityChannelAssetPublishPacketResponseDto,
+} from './dto/ecommerce-product-entity-channel-asset-workspace.response';
+import {
+  EcommerceSavedProductEntityChannelDraftDetailResponseDto,
+  EcommerceSavedProductEntityChannelDraftRegistryResponseDto,
+  SaveEcommerceProductEntityChannelDraftResponseDto,
+  UpdateEcommerceSavedProductEntityChannelDraftEditableSnapshotRequestDto,
+  UpdateEcommerceSavedProductEntityChannelDraftEditableSnapshotResponseDto,
+  toEcommerceSavedProductEntityChannelDraftDetailResponseDto,
+  toEcommerceSavedProductEntityChannelDraftRegistryResponseDto,
+  toSaveEcommerceProductEntityChannelDraftResponseDto,
+  toUpdateEcommerceSavedProductEntityChannelDraftEditableSnapshotResponseDto,
+} from './dto/ecommerce-product-entity-saved-channel-draft.response';
+import {
+  EcommerceProductEntityChannelDraftPublishPreparationWorkspaceResponseDto,
+  EcommerceProductEntityChannelDraftDetailResponseDto,
+  RequestEcommerceProductEntityChannelDraftActionPacketResponseDto,
+  RequestEcommerceProductEntityChannelDraftPublishReadinessPacketResponseDto,
+  toEcommerceProductEntityChannelDraftPublishPreparationWorkspaceResponseDto,
+  toEcommerceProductEntityChannelDraftDetailResponseDto,
+  toRequestEcommerceProductEntityChannelDraftActionPacketResponseDto,
+  toRequestEcommerceProductEntityChannelDraftPublishReadinessPacketResponseDto,
+} from './dto/ecommerce-product-entity-channel-draft.response';
+import {
+  EcommerceProductEntityChannelAssetsWorkspaceResponseDto,
+  toEcommerceProductEntityChannelAssetsWorkspaceResponseDto,
+} from './dto/ecommerce-product-entity-channel-assets-workspace.response';
+import {
+  EcommerceProductSetupDetailResponseDto,
+  EcommerceProductSetupRegistryResponseDto,
+  toEcommerceProductSetupDetailResponseDto,
+  toEcommerceProductSetupRegistryResponseDto,
+} from './dto/ecommerce-product-setup.response';
+import {
+  EcommerceProductEntityDetailResponseDto,
+  EcommerceProductEntityRegistryResponseDto,
+  toEcommerceProductEntityDetailResponseDto,
+  toEcommerceProductEntityRegistryResponseDto,
+} from './dto/ecommerce-product-entity.response';
+import {
+  EcommerceProductWorkspaceDetailResponseDto,
+  toEcommerceProductWorkspaceDetailResponseDto,
+} from './dto/ecommerce-product-workspace-detail.response';
+import {
+  EcommerceProductWorkspaceRegistryResponseDto,
+  toEcommerceProductWorkspaceRegistryResponseDto,
+} from './dto/ecommerce-product-workspace.response';
+import {
+  EcommerceSavedProductDraftRegistryResponseDto,
+  toEcommerceSavedProductDraftRegistryResponseDto,
+} from './dto/ecommerce-saved-product-draft-registry.response';
+import {
+  PromoteEcommerceProductWorkspaceToProductSetupResponseDto,
+  toPromoteEcommerceProductWorkspaceToProductSetupResponseDto,
+} from './dto/promote-ecommerce-product-workspace-to-product-setup.response';
+import {
+  PromoteEcommerceProductSetupToProductEntityResponseDto,
+  toPromoteEcommerceProductSetupToProductEntityResponseDto,
+} from './dto/promote-ecommerce-product-setup-to-product-entity.response';
+import {
+  PromoteEcommerceSavedDraftToProductWorkspaceResponseDto,
+  toPromoteEcommerceSavedDraftToProductWorkspaceResponseDto,
+} from './dto/promote-ecommerce-saved-draft-to-product-workspace.response';
+import {
+  EcommerceStoreProfileWorkspaceResponseDto,
+  toEcommerceStoreProfileWorkspaceResponseDto,
+} from './dto/ecommerce-store-profile-workspace.response';
+import {
+  EcommerceStoreSetupWorkspaceResponseDto,
+  toEcommerceStoreSetupWorkspaceResponseDto,
+} from './dto/ecommerce-store-setup-workspace.response';
+import {
   EcommerceLaunchWorkspaceResponseDto,
   toEcommerceLaunchWorkspaceResponseDto,
 } from './dto/ecommerce-launch-workspace.response';
+import {
+  RequestEcommerceProductAuthoringDraftBriefResponseDto,
+  toRequestEcommerceProductAuthoringDraftBriefResponseDto,
+} from './dto/request-ecommerce-product-authoring-draft-brief.response';
+import {
+  RequestEcommerceProductEntityCommercializationPacketResponseDto,
+  toRequestEcommerceProductEntityCommercializationPacketResponseDto,
+} from './dto/request-ecommerce-product-entity-commercialization-packet.response';
+import {
+  RequestEcommerceProductWorkspaceReadinessPacketResponseDto,
+  toRequestEcommerceProductWorkspaceReadinessPacketResponseDto,
+} from './dto/request-ecommerce-product-workspace-readiness-packet.response';
+import {
+  RequestEcommerceProductSetupDefinitionPacketResponseDto,
+  toRequestEcommerceProductSetupDefinitionPacketResponseDto,
+} from './dto/request-ecommerce-product-setup-definition-packet.response';
+import {
+  RequestEcommerceProductAuthoringDraftRefinementPacketResponseDto,
+  toRequestEcommerceProductAuthoringDraftRefinementPacketResponseDto,
+} from './dto/request-ecommerce-product-authoring-draft-refinement-packet.response';
+import {
+  SaveEcommerceProductAuthoringDraftResponseDto,
+  toSaveEcommerceProductAuthoringDraftResponseDto,
+} from './dto/save-ecommerce-product-authoring-draft.response';
+import { UpdateEcommerceProductWorkspaceEditableSnapshotRequestDto } from './dto/update-ecommerce-product-workspace-editable-snapshot.request';
+import {
+  UpdateEcommerceProductWorkspaceEditableSnapshotResponseDto,
+  toUpdateEcommerceProductWorkspaceEditableSnapshotResponseDto,
+} from './dto/update-ecommerce-product-workspace-editable-snapshot.response';
+import { UpdateEcommerceProductSetupEditableSnapshotRequestDto } from './dto/update-ecommerce-product-setup-editable-snapshot.request';
+import {
+  UpdateEcommerceProductSetupEditableSnapshotResponseDto,
+  toUpdateEcommerceProductSetupEditableSnapshotResponseDto,
+} from './dto/update-ecommerce-product-setup-editable-snapshot.response';
 import {
   RequestEcommerceLaunchPlanActivationReadinessResponseDto,
   toRequestEcommerceLaunchPlanActivationReadinessResponseDto,
@@ -46,11 +238,1432 @@ import {
 @Controller('ecommerce/tenants')
 export class EcommerceController {
   constructor(
+    private readonly getTenantEcommerceProductAuthoringDraftDetailUseCase: GetTenantEcommerceProductAuthoringDraftDetailUseCase,
+    private readonly getTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase: GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
+    private readonly getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase: GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+    private readonly getTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase: GetTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase,
+    private readonly getTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase: GetTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase,
+    private readonly getTenantEcommerceProductEntityChannelDraftDetailUseCase: GetTenantEcommerceProductEntityChannelDraftDetailUseCase,
+    private readonly getTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceUseCase: GetTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceUseCase,
+    private readonly getTenantEcommerceProductEntityChannelReleaseCandidateDetailUseCase: GetTenantEcommerceProductEntityChannelReleaseCandidateDetailUseCase,
+    private readonly getTenantEcommerceSavedProductEntityChannelDraftDetailUseCase: GetTenantEcommerceSavedProductEntityChannelDraftDetailUseCase,
+    private readonly getTenantEcommerceProductEntityDetailUseCase: GetTenantEcommerceProductEntityDetailUseCase,
+    private readonly getTenantEcommerceProductSetupDetailUseCase: GetTenantEcommerceProductSetupDetailUseCase,
+    private readonly getTenantEcommerceProductWorkspaceDetailUseCase: GetTenantEcommerceProductWorkspaceDetailUseCase,
+    private readonly requestTenantEcommerceProductAuthoringDraftBriefUseCase: RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
+    private readonly requestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase: RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
+    private readonly saveTenantEcommerceProductEntityChannelDraftUseCase: SaveTenantEcommerceProductEntityChannelDraftUseCase,
+    private readonly updateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase: UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
+    private readonly updateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase: UpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase,
+    private readonly requestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase: RequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase,
+    private readonly requestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase: RequestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase,
+    private readonly requestTenantEcommerceProductEntityChannelDraftActionPacketUseCase: RequestTenantEcommerceProductEntityChannelDraftActionPacketUseCase,
+    private readonly requestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase: RequestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase,
+    private readonly requestTenantEcommerceProductEntityCommercializationPacketUseCase: RequestTenantEcommerceProductEntityCommercializationPacketUseCase,
+    private readonly requestTenantEcommerceProductSetupDefinitionPacketUseCase: RequestTenantEcommerceProductSetupDefinitionPacketUseCase,
+    private readonly saveTenantEcommerceProductAuthoringDraftUseCase: SaveTenantEcommerceProductAuthoringDraftUseCase,
+    private readonly updateTenantEcommerceProductSetupEditableSnapshotUseCase: UpdateTenantEcommerceProductSetupEditableSnapshotUseCase,
+    private readonly getTenantEcommerceProductAuthoringWorkspaceUseCase: GetTenantEcommerceProductAuthoringWorkspaceUseCase,
+    private readonly listTenantEcommerceProductEntityChannelAssetEntitiesUseCase: ListTenantEcommerceProductEntityChannelAssetEntitiesUseCase,
+    private readonly listTenantEcommerceProductEntityChannelAssetWorkspacesUseCase: ListTenantEcommerceProductEntityChannelAssetWorkspacesUseCase,
+    private readonly listTenantEcommerceProductEntityChannelReleaseCandidatesUseCase: ListTenantEcommerceProductEntityChannelReleaseCandidatesUseCase,
+    private readonly listTenantEcommerceProductEntitiesUseCase: ListTenantEcommerceProductEntitiesUseCase,
+    private readonly listTenantEcommerceSavedProductEntityChannelDraftsUseCase: ListTenantEcommerceSavedProductEntityChannelDraftsUseCase,
+    private readonly listTenantEcommerceProductSetupsUseCase: ListTenantEcommerceProductSetupsUseCase,
+    private readonly listTenantEcommerceProductWorkspacesUseCase: ListTenantEcommerceProductWorkspacesUseCase,
+    private readonly listTenantEcommerceSavedProductDraftsUseCase: ListTenantEcommerceSavedProductDraftsUseCase,
+    private readonly promoteTenantEcommerceProductSetupToProductEntityUseCase: PromoteTenantEcommerceProductSetupToProductEntityUseCase,
+    private readonly promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase: PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
+    private readonly promoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase: PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
+    private readonly promoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase: PromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
+    private readonly promoteTenantEcommerceProductWorkspaceToProductSetupUseCase: PromoteTenantEcommerceProductWorkspaceToProductSetupUseCase,
+    private readonly promoteTenantEcommerceSavedDraftToProductWorkspaceUseCase: PromoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
+    private readonly requestTenantEcommerceProductWorkspaceReadinessPacketUseCase: RequestTenantEcommerceProductWorkspaceReadinessPacketUseCase,
+    private readonly updateTenantEcommerceProductWorkspaceEditableSnapshotUseCase: UpdateTenantEcommerceProductWorkspaceEditableSnapshotUseCase,
     private readonly getTenantEcommerceLaunchPlanDetailUseCase: GetTenantEcommerceLaunchPlanDetailUseCase,
+    private readonly getTenantEcommerceStoreProfileWorkspaceUseCase: GetTenantEcommerceStoreProfileWorkspaceUseCase,
+    private readonly getTenantEcommerceStoreSetupWorkspaceUseCase: GetTenantEcommerceStoreSetupWorkspaceUseCase,
     private readonly getTenantEcommerceLaunchWorkspaceUseCase: GetTenantEcommerceLaunchWorkspaceUseCase,
     private readonly listTenantEcommerceLaunchPlansUseCase: ListTenantEcommerceLaunchPlansUseCase,
     private readonly requestTenantEcommerceLaunchPlanActivationReadinessUseCase: RequestTenantEcommerceLaunchPlanActivationReadinessUseCase,
   ) {}
+
+  @Get(':slug/store-setup-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantStoreSetupWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceStoreSetupWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantEcommerceStoreSetupWorkspaceUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toEcommerceStoreSetupWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof ProductNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/store-profile-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantStoreProfileWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceStoreProfileWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantEcommerceStoreProfileWorkspaceUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toEcommerceStoreProfileWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof ProductNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/product-authoring-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantProductAuthoringWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductAuthoringWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantEcommerceProductAuthoringWorkspaceUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toEcommerceProductAuthoringWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof ProductNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/saved-product-drafts')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async listTenantSavedProductDrafts(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceSavedProductDraftRegistryResponseDto> {
+    const registry =
+      await this.listTenantEcommerceSavedProductDraftsUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+      );
+
+    return toEcommerceSavedProductDraftRegistryResponseDto(registry);
+  }
+
+  @Get(':slug/product-workspaces')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async listTenantProductWorkspaces(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductWorkspaceRegistryResponseDto> {
+    const registry =
+      await this.listTenantEcommerceProductWorkspacesUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+      );
+
+    return toEcommerceProductWorkspaceRegistryResponseDto(registry);
+  }
+
+  @Get(':slug/product-setups')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async listTenantProductSetups(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductSetupRegistryResponseDto> {
+    const registry =
+      await this.listTenantEcommerceProductSetupsUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+      );
+
+    return toEcommerceProductSetupRegistryResponseDto(registry);
+  }
+
+  @Get(':slug/product-entities')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async listTenantProductEntities(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductEntityRegistryResponseDto> {
+    const registry =
+      await this.listTenantEcommerceProductEntitiesUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+      );
+
+    return toEcommerceProductEntityRegistryResponseDto(registry);
+  }
+
+  @Get(':slug/product-setups/:productSetupId')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantProductSetupDetail(
+    @Param('slug') slug: string,
+    @Param('productSetupId') productSetupId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductSetupDetailResponseDto> {
+    const detail =
+      await this.getTenantEcommerceProductSetupDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productSetupId,
+      );
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Product setup ${productSetupId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceProductSetupDetailResponseDto(detail);
+  }
+
+  @Get(':slug/product-entities/:productEntityId')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantProductEntityDetail(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductEntityDetailResponseDto> {
+    const detail =
+      await this.getTenantEcommerceProductEntityDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceProductEntityDetailResponseDto(detail);
+  }
+
+  @Get(':slug/product-entities/:productEntityId/channel-assets-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantProductEntityChannelAssetsWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductEntityChannelAssetsWorkspaceResponseDto> {
+    const workspace =
+      await this.getTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceProductEntityChannelAssetsWorkspaceResponseDto(
+      workspace,
+    );
+  }
+
+  @Get(':slug/product-entities/:productEntityId/channel-asset-drafts-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantProductEntityChannelAssetDraftsWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductEntityChannelAssetDraftsWorkspaceResponseDto> {
+    const workspace =
+      await this.getTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceProductEntityChannelAssetDraftsWorkspaceResponseDto(
+      workspace,
+    );
+  }
+
+  @Get(':slug/product-entities/:productEntityId/channel-asset-workspaces')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async listTenantProductEntityChannelAssetWorkspaces(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductEntityChannelAssetWorkspaceRegistryResponseDto> {
+    const registry =
+      await this.listTenantEcommerceProductEntityChannelAssetWorkspacesUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!registry) {
+      throw new NotFoundException(
+        `Product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceProductEntityChannelAssetWorkspaceRegistryResponseDto(
+      registry,
+    );
+  }
+
+  @Get(':slug/product-entities/:productEntityId/channel-asset-workspaces/:channelKey')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantProductEntityChannelAssetWorkspaceDetail(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: 'landing' | 'catalog' | 'whatsapp',
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductEntityChannelAssetWorkspaceDetailResponseDto> {
+    const detail =
+      await this.getTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Channel asset workspace ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceProductEntityChannelAssetWorkspaceDetailResponseDto(
+      detail,
+    );
+  }
+
+  @Post(
+    ':slug/product-entities/:productEntityId/channel-asset-workspaces/:channelKey/request-publish-packet'
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantProductEntityChannelAssetPublishPacket(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: 'landing' | 'catalog' | 'whatsapp',
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<RequestEcommerceProductEntityChannelAssetPublishPacketResponseDto> {
+    const packet =
+      await this.requestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    if (!packet) {
+      throw new NotFoundException(
+        `Channel asset workspace ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toRequestEcommerceProductEntityChannelAssetPublishPacketResponseDto(
+      packet,
+    );
+  }
+
+  @Get(':slug/product-entities/:productEntityId/channel-asset-entities')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async listTenantProductEntityChannelAssetEntities(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductEntityChannelAssetEntityRegistryResponseDto> {
+    const registry =
+      await this.listTenantEcommerceProductEntityChannelAssetEntitiesUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!registry) {
+      throw new NotFoundException(
+        `Product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceProductEntityChannelAssetEntityRegistryResponseDto(
+      registry,
+    );
+  }
+
+  @Get(':slug/product-entities/:productEntityId/channel-asset-entities/:channelKey')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantProductEntityChannelAssetEntityDetail(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: 'landing' | 'catalog' | 'whatsapp',
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductEntityChannelAssetEntityDetailResponseDto> {
+    const detail =
+      await this.getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Channel asset entity ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceProductEntityChannelAssetEntityDetailResponseDto(detail);
+  }
+
+  @Post(
+    ':slug/product-entities/:productEntityId/channel-asset-entities/:channelKey/update-editable-snapshot'
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async updateTenantProductEntityChannelAssetEntityEditableSnapshot(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: 'landing' | 'catalog' | 'whatsapp',
+    @Body()
+    body: UpdateEcommerceProductEntityChannelAssetEntityEditableSnapshotRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<UpdateEcommerceProductEntityChannelAssetEntityEditableSnapshotResponseDto> {
+    const detail =
+      await this.updateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+        body,
+      );
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Channel asset entity ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toUpdateEcommerceProductEntityChannelAssetEntityEditableSnapshotResponseDto(
+      detail,
+    );
+  }
+
+  @Post(
+    ':slug/product-entities/:productEntityId/channel-asset-entities/:channelKey/request-publish-preparation-packet'
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantProductEntityChannelAssetEntityPublishPreparationPacket(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: 'landing' | 'catalog' | 'whatsapp',
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<RequestEcommerceProductEntityChannelAssetEntityPublishPreparationPacketResponseDto> {
+    const packet =
+      await this.requestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    if (!packet) {
+      throw new NotFoundException(
+        `Channel asset entity ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toRequestEcommerceProductEntityChannelAssetEntityPublishPreparationPacketResponseDto(
+      packet,
+    );
+  }
+
+  @Post(
+    ':slug/product-entities/:productEntityId/channel-asset-workspaces/:channelKey/promote-to-channel-asset-entity'
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async promoteTenantProductEntityChannelAssetWorkspaceToChannelAssetEntity(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: 'landing' | 'catalog' | 'whatsapp',
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PromoteEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityResponseDto> {
+    const assetEntity =
+      await this.promoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    if (!assetEntity) {
+      throw new NotFoundException(
+        `Channel asset workspace ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toPromoteEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityResponseDto(
+      assetEntity,
+    );
+  }
+
+  @Get(':slug/product-entities/:productEntityId/channel-release-candidates')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async listTenantProductEntityChannelReleaseCandidates(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductEntityChannelReleaseCandidateRegistryResponseDto> {
+    const registry =
+      await this.listTenantEcommerceProductEntityChannelReleaseCandidatesUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!registry) {
+      throw new NotFoundException(
+        `Product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceProductEntityChannelReleaseCandidateRegistryResponseDto(
+      registry,
+    );
+  }
+
+  @Get(':slug/product-entities/:productEntityId/channel-release-candidates/:channelKey')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantProductEntityChannelReleaseCandidateDetail(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: 'landing' | 'catalog' | 'whatsapp',
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductEntityChannelReleaseCandidateDetailResponseDto> {
+    const detail =
+      await this.getTenantEcommerceProductEntityChannelReleaseCandidateDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Channel release candidate ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceProductEntityChannelReleaseCandidateDetailResponseDto(
+      detail,
+    );
+  }
+
+  @Post(
+    ':slug/product-entities/:productEntityId/channel-asset-entities/:channelKey/promote-to-release-candidate'
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async promoteTenantProductEntityChannelAssetEntityToReleaseCandidate(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: 'landing' | 'catalog' | 'whatsapp',
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PromoteEcommerceProductEntityChannelAssetEntityToReleaseCandidateResponseDto> {
+    const releaseCandidate =
+      await this.promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    if (!releaseCandidate) {
+      throw new NotFoundException(
+        `Channel asset entity ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toPromoteEcommerceProductEntityChannelAssetEntityToReleaseCandidateResponseDto(
+      releaseCandidate,
+    );
+  }
+
+  @Get(':slug/product-entities/:productEntityId/channel-drafts/:channelKey')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantProductEntityChannelDraftDetail(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductEntityChannelDraftDetailResponseDto> {
+    const detail =
+      await this.getTenantEcommerceProductEntityChannelDraftDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Channel draft ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceProductEntityChannelDraftDetailResponseDto(detail);
+  }
+
+  @Post(
+    ':slug/product-entities/:productEntityId/channel-drafts/:channelKey/request-action-packet'
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantProductEntityChannelDraftActionPacket(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<RequestEcommerceProductEntityChannelDraftActionPacketResponseDto> {
+    const packet =
+      await this.requestTenantEcommerceProductEntityChannelDraftActionPacketUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    if (!packet) {
+      throw new NotFoundException(
+        `Channel draft ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toRequestEcommerceProductEntityChannelDraftActionPacketResponseDto(
+      packet,
+    );
+  }
+
+  @Post(
+    ':slug/product-entities/:productEntityId/channel-drafts/:channelKey/request-publish-readiness-packet'
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantProductEntityChannelDraftPublishReadinessPacket(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<RequestEcommerceProductEntityChannelDraftPublishReadinessPacketResponseDto> {
+    const packet =
+      await this.requestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    if (!packet) {
+      throw new NotFoundException(
+        `Channel draft ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toRequestEcommerceProductEntityChannelDraftPublishReadinessPacketResponseDto(
+      packet,
+    );
+  }
+
+  @Get(
+    ':slug/product-entities/:productEntityId/channel-drafts/:channelKey/publish-preparation-workspace'
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantProductEntityChannelDraftPublishPreparationWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductEntityChannelDraftPublishPreparationWorkspaceResponseDto> {
+    const workspace =
+      await this.getTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Channel draft ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceProductEntityChannelDraftPublishPreparationWorkspaceResponseDto(
+      workspace,
+    );
+  }
+
+  @Get(':slug/product-entities/:productEntityId/saved-channel-drafts')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async listTenantSavedProductEntityChannelDrafts(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceSavedProductEntityChannelDraftRegistryResponseDto> {
+    const registry =
+      await this.listTenantEcommerceSavedProductEntityChannelDraftsUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!registry) {
+      throw new NotFoundException(
+        `Product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceSavedProductEntityChannelDraftRegistryResponseDto(
+      registry,
+    );
+  }
+
+  @Get(':slug/product-entities/:productEntityId/saved-channel-drafts/:channelKey')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantSavedProductEntityChannelDraftDetail(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: 'landing' | 'catalog' | 'whatsapp',
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceSavedProductEntityChannelDraftDetailResponseDto> {
+    const detail =
+      await this.getTenantEcommerceSavedProductEntityChannelDraftDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Saved channel draft ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceSavedProductEntityChannelDraftDetailResponseDto(detail);
+  }
+
+  @Post(':slug/product-entities/:productEntityId/channel-drafts/:channelKey/save')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async saveTenantProductEntityChannelDraft(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: 'landing' | 'catalog' | 'whatsapp',
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<SaveEcommerceProductEntityChannelDraftResponseDto> {
+    const result =
+      await this.saveTenantEcommerceProductEntityChannelDraftUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    return toSaveEcommerceProductEntityChannelDraftResponseDto(result);
+  }
+
+  @Post(
+    ':slug/product-entities/:productEntityId/saved-channel-drafts/:channelKey/promote-to-channel-asset-workspace'
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async promoteTenantSavedProductEntityChannelDraftToChannelAssetWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: 'landing' | 'catalog' | 'whatsapp',
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PromoteEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceResponseDto> {
+    const workspace =
+      await this.promoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Saved channel draft ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toPromoteEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceResponseDto(
+      workspace,
+    );
+  }
+
+  @Post(
+    ':slug/product-entities/:productEntityId/saved-channel-drafts/:channelKey/update-editable-snapshot'
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async updateTenantSavedProductEntityChannelDraftEditableSnapshot(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('channelKey') channelKey: 'landing' | 'catalog' | 'whatsapp',
+    @Body()
+    body: UpdateEcommerceSavedProductEntityChannelDraftEditableSnapshotRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<UpdateEcommerceSavedProductEntityChannelDraftEditableSnapshotResponseDto> {
+    const detail =
+      await this.updateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        channelKey,
+        {
+          title: body.title,
+          headline: body.headline,
+          draftBlueprint: body.draftBlueprint,
+          recommendedArtifacts: body.recommendedArtifacts,
+          nextMilestone: body.nextMilestone,
+        },
+      );
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Saved channel draft ${channelKey} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toUpdateEcommerceSavedProductEntityChannelDraftEditableSnapshotResponseDto(
+      detail,
+    );
+  }
+
+  @Post(':slug/product-entities/:productEntityId/request-commercialization-packet')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantProductEntityCommercializationPacket(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<RequestEcommerceProductEntityCommercializationPacketResponseDto> {
+    const packet =
+      await this.requestTenantEcommerceProductEntityCommercializationPacketUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!packet) {
+      throw new NotFoundException(
+        `Product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toRequestEcommerceProductEntityCommercializationPacketResponseDto(
+      packet,
+    );
+  }
+
+  @Post(':slug/product-setups/:productSetupId/request-definition-packet')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantProductSetupDefinitionPacket(
+    @Param('slug') slug: string,
+    @Param('productSetupId') productSetupId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<RequestEcommerceProductSetupDefinitionPacketResponseDto> {
+    const packet =
+      await this.requestTenantEcommerceProductSetupDefinitionPacketUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productSetupId,
+      );
+
+    if (!packet) {
+      throw new NotFoundException(
+        `Product setup ${productSetupId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toRequestEcommerceProductSetupDefinitionPacketResponseDto(packet);
+  }
+
+  @Post(':slug/product-setups/:productSetupId/update-editable-snapshot')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async updateTenantProductSetupEditableSnapshot(
+    @Param('slug') slug: string,
+    @Param('productSetupId') productSetupId: string,
+    @Body() body: UpdateEcommerceProductSetupEditableSnapshotRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<UpdateEcommerceProductSetupEditableSnapshotResponseDto> {
+    const detail =
+      await this.updateTenantEcommerceProductSetupEditableSnapshotUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productSetupId,
+        {
+          title: body.title,
+          pricingBand: body.pricingBand ?? null,
+          offerAngle: body.offerAngle ?? null,
+          primaryCta: body.primaryCta ?? null,
+          channelSequence: body.channelSequence,
+        },
+      );
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Product setup ${productSetupId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toUpdateEcommerceProductSetupEditableSnapshotResponseDto(detail);
+  }
+
+  @Post(':slug/product-setups/:productSetupId/promote-to-product-entity')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async promoteTenantProductSetupToProductEntity(
+    @Param('slug') slug: string,
+    @Param('productSetupId') productSetupId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PromoteEcommerceProductSetupToProductEntityResponseDto> {
+    const productEntity =
+      await this.promoteTenantEcommerceProductSetupToProductEntityUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productSetupId,
+      );
+
+    if (!productEntity) {
+      throw new NotFoundException(
+        `Product setup ${productSetupId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toPromoteEcommerceProductSetupToProductEntityResponseDto(
+      productEntity,
+    );
+  }
+
+  @Get(':slug/product-workspaces/:savedDraftId')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantProductWorkspaceDetail(
+    @Param('slug') slug: string,
+    @Param('savedDraftId') savedDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductWorkspaceDetailResponseDto> {
+    const detail =
+      await this.getTenantEcommerceProductWorkspaceDetailUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        savedDraftId,
+      );
+
+    if (!detail) {
+      throw new NotFoundException(
+        `Product workspace ${savedDraftId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceProductWorkspaceDetailResponseDto(detail);
+  }
+
+  @Get(':slug/product-authoring-drafts/:draftId')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantProductAuthoringDraftDetail(
+    @Param('slug') slug: string,
+    @Param('draftId') draftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceProductAuthoringDraftDetailResponseDto> {
+    try {
+      const detail =
+        await this.getTenantEcommerceProductAuthoringDraftDetailUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+          draftId,
+        );
+
+      return toEcommerceProductAuthoringDraftDetailResponseDto(detail);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof ProductNotFoundError ||
+        error instanceof EcommerceProductAuthoringDraftNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/product-authoring-drafts/:draftId/request-ai-brief')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantProductAuthoringDraftBrief(
+    @Param('slug') slug: string,
+    @Param('draftId') draftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<RequestEcommerceProductAuthoringDraftBriefResponseDto> {
+    try {
+      const result =
+        await this.requestTenantEcommerceProductAuthoringDraftBriefUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+          draftId,
+        );
+
+      return toRequestEcommerceProductAuthoringDraftBriefResponseDto(result);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof ProductNotFoundError ||
+        error instanceof EcommerceProductAuthoringDraftNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/product-authoring-drafts/:draftId/request-refinement-packet')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantProductAuthoringDraftRefinementPacket(
+    @Param('slug') slug: string,
+    @Param('draftId') draftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<RequestEcommerceProductAuthoringDraftRefinementPacketResponseDto> {
+    try {
+      const result =
+        await this.requestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+          draftId,
+        );
+
+      return toRequestEcommerceProductAuthoringDraftRefinementPacketResponseDto(
+        result,
+      );
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof ProductNotFoundError ||
+        error instanceof EcommerceProductAuthoringDraftNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/product-authoring-drafts/:draftId/save')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async saveTenantProductAuthoringDraft(
+    @Param('slug') slug: string,
+    @Param('draftId') draftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<SaveEcommerceProductAuthoringDraftResponseDto> {
+    try {
+      const saved =
+        await this.saveTenantEcommerceProductAuthoringDraftUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+          draftId,
+        );
+
+      return toSaveEcommerceProductAuthoringDraftResponseDto(saved);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof ProductNotFoundError ||
+        error instanceof EcommerceProductAuthoringDraftNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/saved-product-drafts/:savedDraftId/promote-to-product-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async promoteTenantSavedDraftToProductWorkspace(
+    @Param('slug') slug: string,
+    @Param('savedDraftId') savedDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PromoteEcommerceSavedDraftToProductWorkspaceResponseDto> {
+    const workspace =
+      await this.promoteTenantEcommerceSavedDraftToProductWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        savedDraftId,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Saved ecommerce draft ${savedDraftId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toPromoteEcommerceSavedDraftToProductWorkspaceResponseDto(
+      workspace,
+    );
+  }
+
+  @Post(':slug/product-workspaces/:savedDraftId/promote-to-product-setup')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async promoteTenantProductWorkspaceToProductSetup(
+    @Param('slug') slug: string,
+    @Param('savedDraftId') savedDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PromoteEcommerceProductWorkspaceToProductSetupResponseDto> {
+    const productSetup =
+      await this.promoteTenantEcommerceProductWorkspaceToProductSetupUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        savedDraftId,
+      );
+
+    if (!productSetup) {
+      throw new NotFoundException(
+        `Product workspace ${savedDraftId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toPromoteEcommerceProductWorkspaceToProductSetupResponseDto(
+      productSetup,
+    );
+  }
+
+  @Post(':slug/product-workspaces/:savedDraftId/update-editable-snapshot')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async updateTenantProductWorkspaceEditableSnapshot(
+    @Param('slug') slug: string,
+    @Param('savedDraftId') savedDraftId: string,
+    @Body() body: UpdateEcommerceProductWorkspaceEditableSnapshotRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<UpdateEcommerceProductWorkspaceEditableSnapshotResponseDto> {
+    const workspace =
+      await this.updateTenantEcommerceProductWorkspaceEditableSnapshotUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        savedDraftId,
+        {
+          title: body.title,
+          pricingBand: body.pricingBand ?? null,
+          offerAngle: body.offerAngle ?? null,
+          primaryCta: body.primaryCta ?? null,
+          channelSequence: body.channelSequence,
+        },
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Product workspace ${savedDraftId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toUpdateEcommerceProductWorkspaceEditableSnapshotResponseDto(
+      workspace,
+    );
+  }
+
+  @Post(':slug/product-workspaces/:savedDraftId/request-readiness-packet')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantProductWorkspaceReadinessPacket(
+    @Param('slug') slug: string,
+    @Param('savedDraftId') savedDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<RequestEcommerceProductWorkspaceReadinessPacketResponseDto> {
+    const packet =
+      await this.requestTenantEcommerceProductWorkspaceReadinessPacketUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        savedDraftId,
+      );
+
+    if (!packet) {
+      throw new NotFoundException(
+        `Product workspace ${savedDraftId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toRequestEcommerceProductWorkspaceReadinessPacketResponseDto(
+      packet,
+    );
+  }
 
   @Get(':slug/launch-workspace')
   @UseGuards(

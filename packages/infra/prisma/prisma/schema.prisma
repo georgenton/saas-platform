@@ -52,6 +52,10 @@ model Tenant {
   aiMemoryRecords  AiMemoryRecord[]
   aiSuggestionRuns AiSuggestionRun[]
   aiGuardedExecutionEvents AiGuardedExecutionEvent[]
+  ecommerceProductDrafts EcommerceProductDraft[]
+  ecommerceProductSetups EcommerceProductSetup[]
+  ecommerceProductEntityChannelDrafts EcommerceProductEntityChannelDraft[]
+  ecommerceProductEntities EcommerceProductEntity[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
@@ -699,6 +703,116 @@ model Payment {
   updatedAt     DateTime @updatedAt
 
   @@index([tenantId, invoiceId, paidAt])
+}
+
+model EcommerceProductDraft {
+  id                       String   @id
+  tenantId                 String
+  tenantSlug               String
+  sourceDraftId            String
+  title                    String
+  productType              String
+  status                   String
+  rationale                String
+  suggestedChannelsJson    String   @db.Text
+  briefingStatus           String?
+  briefSummary             String?
+  briefRequiredInputsJson  String   @db.Text
+  briefGuardrailsJson      String   @db.Text
+  refinementStatus         String?
+  refinementSummary        String?
+  pricingBand              String?
+  offerAngle               String?
+  primaryCta               String?
+  channelSequenceJson      String   @db.Text
+  refinementGuardrailsJson String   @db.Text
+  promotedToWorkspaceAt    DateTime?
+  tenant                   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@unique([tenantId, sourceDraftId])
+  @@index([tenantSlug, sourceDraftId])
+  @@index([tenantId, createdAt])
+}
+
+model EcommerceProductSetup {
+  id                     String   @id
+  tenantId               String
+  tenantSlug             String
+  savedDraftId           String
+  sourceDraftId          String
+  title                  String
+  productType            String
+  status                 String
+  pricingBand            String?
+  offerAngle             String?
+  primaryCta             String?
+  suggestedChannelsJson  String   @db.Text
+  channelSequenceJson    String   @db.Text
+  promotedFromWorkspaceAt DateTime
+  tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@unique([tenantId, savedDraftId])
+  @@index([tenantSlug, savedDraftId])
+  @@index([tenantId, createdAt])
+}
+
+model EcommerceProductEntity {
+  id                    String   @id
+  tenantId              String
+  tenantSlug            String
+  productSetupId        String
+  savedDraftId          String
+  sourceDraftId         String
+  title                 String
+  productType           String
+  status                String
+  pricingBand           String?
+  offerAngle            String?
+  primaryCta            String?
+  suggestedChannelsJson String   @db.Text
+  channelSequenceJson   String   @db.Text
+  promotedFromSetupAt   DateTime
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([tenantId, productSetupId])
+  @@index([tenantSlug, productSetupId])
+  @@index([tenantId, createdAt])
+}
+
+model EcommerceProductEntityChannelDraft {
+  id                       String   @id
+  tenantId                 String
+  tenantSlug               String
+  productEntityId          String
+  channelKey               String
+  status                   String
+  preparationStatus        String
+  handoffOwner             String
+  title                    String
+  summary                  String
+  headline                 String
+  draftBlueprintJson       String   @db.Text
+  publishChecklistJson     String   @db.Text
+  recommendedArtifactsJson String   @db.Text
+  nextMilestone            String
+  blockedByJson            String   @db.Text
+  guardrailsJson           String   @db.Text
+  promotedToAssetWorkspaceAt DateTime?
+  promotedToAssetEntityAt  DateTime?
+  promotedToReleaseCandidateAt DateTime?
+  tenant                   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@unique([tenantId, productEntityId, channelKey])
+  @@index([tenantSlug, productEntityId])
+  @@index([tenantId, createdAt])
 }
 
 model Product {

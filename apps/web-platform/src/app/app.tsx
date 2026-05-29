@@ -76,6 +76,50 @@ import {
   fetchTenantAiApprovalWorkspaceSummary,
   fetchTenantEcommerceLaunchPlanDetail,
   fetchTenantEcommerceLaunchPlans,
+  fetchTenantEcommerceProductAuthoringDraftDetail,
+  fetchTenantEcommerceProductEntityChannelAssetDraftsWorkspace,
+  fetchTenantEcommerceProductEntityChannelAssetEntities,
+  fetchTenantEcommerceProductEntityChannelAssetEntityDetail,
+  fetchTenantEcommerceProductEntityChannelReleaseCandidateDetail,
+  fetchTenantEcommerceProductEntityChannelReleaseCandidates,
+  fetchTenantEcommerceProductEntityChannelAssetWorkspaceDetail,
+  fetchTenantEcommerceProductEntityChannelAssetWorkspaces,
+  fetchTenantEcommerceProductEntityChannelAssetsWorkspace,
+  fetchTenantEcommerceProductEntityChannelDraftDetail,
+  fetchTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace,
+  fetchTenantEcommerceProductEntityDetail,
+  fetchTenantEcommerceProductEntities,
+  fetchTenantEcommerceSavedProductEntityChannelDraftDetail,
+  fetchTenantEcommerceSavedProductEntityChannelDrafts,
+  fetchTenantEcommerceProductWorkspaceDetail,
+  fetchTenantEcommerceProductSetupDetail,
+  fetchTenantEcommerceProductSetups,
+  fetchTenantEcommerceProductWorkspaces,
+  fetchTenantEcommerceSavedProductDrafts,
+  fetchTenantEcommerceProductAuthoringWorkspace,
+  promoteTenantEcommerceSavedDraftToProductWorkspace,
+  promoteTenantEcommerceProductWorkspaceToProductSetup,
+  promoteTenantEcommerceProductSetupToProductEntity,
+  promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidate,
+  promoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntity,
+  promoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspace,
+  requestTenantEcommerceProductEntityChannelAssetPublishPacket,
+  requestTenantEcommerceProductEntityChannelDraftActionPacket,
+  requestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacket,
+  requestTenantEcommerceProductEntityChannelDraftPublishReadinessPacket,
+  requestTenantEcommerceProductEntityCommercializationPacket,
+  saveTenantEcommerceProductEntityChannelDraft,
+  updateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshot,
+  updateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshot,
+  requestTenantEcommerceProductSetupDefinitionPacket,
+  requestTenantEcommerceProductWorkspaceReadinessPacket,
+  requestTenantEcommerceProductAuthoringDraftBrief,
+  requestTenantEcommerceProductAuthoringDraftRefinementPacket,
+  saveTenantEcommerceProductAuthoringDraft,
+  updateTenantEcommerceProductSetupEditableSnapshot,
+  updateTenantEcommerceProductWorkspaceEditableSnapshot,
+  fetchTenantEcommerceStoreProfileWorkspace,
+  fetchTenantEcommerceStoreSetupWorkspace,
   fetchTenantEcommerceLaunchWorkspace,
   requestTenantEcommerceLaunchPlanActivationReadiness,
   fetchTenantAiSuggestionEnvelope,
@@ -206,6 +250,47 @@ import {
   CustomerResponse,
   EcommerceLaunchPlanDetailResponse,
   EcommerceLaunchPlanRegistryResponse,
+  EcommerceProductAuthoringDraftDetailResponse,
+  EcommerceProductEntityChannelAssetDraftsWorkspaceResponse,
+  EcommerceProductEntityChannelAssetEntityDetailResponse,
+  EcommerceProductEntityChannelAssetEntityRegistryResponse,
+  EcommerceProductEntityChannelReleaseCandidateDetailResponse,
+  EcommerceProductEntityChannelReleaseCandidateRegistryResponse,
+  EcommerceProductEntityChannelAssetWorkspaceDetailResponse,
+  EcommerceProductEntityChannelAssetWorkspaceRegistryResponse,
+  EcommerceProductEntityChannelAssetsWorkspaceResponse,
+  EcommerceProductEntityChannelDraftDetailResponse,
+  EcommerceProductEntityChannelDraftPublishPreparationWorkspaceResponse,
+  EcommerceProductEntityDetailResponse,
+  EcommerceProductEntityRegistryResponse,
+  EcommerceSavedProductEntityChannelDraftDetailResponse,
+  EcommerceSavedProductEntityChannelDraftRegistryResponse,
+  PromoteEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceResponse,
+  PromoteEcommerceProductEntityChannelAssetEntityToReleaseCandidateResponse,
+  PromoteEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityResponse,
+  RequestEcommerceProductEntityChannelAssetEntityPublishPreparationPacketResponse,
+  RequestEcommerceProductEntityChannelAssetPublishPacketResponse,
+  EcommerceProductSetupDetailResponse,
+  EcommerceProductSetupRegistryResponse,
+  EcommerceProductWorkspaceDetailResponse,
+  EcommerceProductWorkspaceRegistryResponse,
+  EcommerceSavedProductDraftRegistryResponse,
+  EcommerceProductAuthoringWorkspaceResponse,
+  PromoteEcommerceProductSetupToProductEntityResponse,
+  RequestEcommerceProductEntityChannelDraftActionPacketResponse,
+  RequestEcommerceProductEntityChannelDraftPublishReadinessPacketResponse,
+  RequestEcommerceProductEntityCommercializationPacketResponse,
+  SaveEcommerceProductEntityChannelDraftResponse,
+  UpdateEcommerceProductEntityChannelAssetEntityEditableSnapshotResponse,
+  UpdateEcommerceSavedProductEntityChannelDraftEditableSnapshotResponse,
+  PromoteEcommerceProductWorkspaceToProductSetupResponse,
+  RequestEcommerceProductSetupDefinitionPacketResponse,
+  UpdateEcommerceProductSetupEditableSnapshotResponse,
+  RequestEcommerceProductWorkspaceReadinessPacketResponse,
+  RequestEcommerceProductAuthoringDraftBriefResponse,
+  RequestEcommerceProductAuthoringDraftRefinementPacketResponse,
+  EcommerceStoreProfileWorkspaceResponse,
+  EcommerceStoreSetupWorkspaceResponse,
   EcommerceLaunchWorkspaceResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSignatureMaterialInspectionResponse,
@@ -1626,6 +1711,293 @@ export function App() {
   );
   const [growthAssistAiEnvelope, setGrowthAssistAiEnvelope] =
     useState<AiSuggestionEnvelopeResponse | null>(null);
+  const [tenantEcommerceProductAuthoringWorkspace, setTenantEcommerceProductAuthoringWorkspace] =
+    useState<EcommerceProductAuthoringWorkspaceResponse | null>(null);
+  const [tenantEcommerceSavedProductDraftRegistry, setTenantEcommerceSavedProductDraftRegistry] =
+    useState<EcommerceSavedProductDraftRegistryResponse | null>(null);
+  const [tenantEcommerceProductWorkspaceRegistry, setTenantEcommerceProductWorkspaceRegistry] =
+    useState<EcommerceProductWorkspaceRegistryResponse | null>(null);
+  const [tenantEcommerceProductSetupRegistry, setTenantEcommerceProductSetupRegistry] =
+    useState<EcommerceProductSetupRegistryResponse | null>(null);
+  const [tenantEcommerceProductEntityRegistry, setTenantEcommerceProductEntityRegistry] =
+    useState<EcommerceProductEntityRegistryResponse | null>(null);
+  const [
+    selectedTenantEcommerceProductWorkspaceDetail,
+    setSelectedTenantEcommerceProductWorkspaceDetail,
+  ] = useState<EcommerceProductWorkspaceDetailResponse | null>(null);
+  const [
+    selectedTenantEcommerceProductSetupDetail,
+    setSelectedTenantEcommerceProductSetupDetail,
+  ] = useState<EcommerceProductSetupDetailResponse | null>(null);
+  const [
+    selectedTenantEcommerceProductEntityDetail,
+    setSelectedTenantEcommerceProductEntityDetail,
+  ] = useState<EcommerceProductEntityDetailResponse | null>(null);
+  const [
+    selectedTenantEcommerceProductEntityChannelAssetsWorkspace,
+    setSelectedTenantEcommerceProductEntityChannelAssetsWorkspace,
+  ] = useState<EcommerceProductEntityChannelAssetsWorkspaceResponse | null>(
+    null,
+  );
+  const [
+    selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace,
+    setSelectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace,
+  ] = useState<EcommerceProductEntityChannelAssetDraftsWorkspaceResponse | null>(
+    null,
+  );
+  const [
+    tenantEcommerceProductEntityChannelAssetWorkspaceRegistry,
+    setTenantEcommerceProductEntityChannelAssetWorkspaceRegistry,
+  ] = useState<EcommerceProductEntityChannelAssetWorkspaceRegistryResponse | null>(
+    null,
+  );
+  const [
+    selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail,
+    setSelectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail,
+  ] = useState<EcommerceProductEntityChannelAssetWorkspaceDetailResponse | null>(
+    null,
+  );
+  const [
+    tenantEcommerceProductEntityChannelAssetEntityRegistry,
+    setTenantEcommerceProductEntityChannelAssetEntityRegistry,
+  ] = useState<EcommerceProductEntityChannelAssetEntityRegistryResponse | null>(
+    null,
+  );
+  const [
+    selectedTenantEcommerceProductEntityChannelAssetEntityDetail,
+    setSelectedTenantEcommerceProductEntityChannelAssetEntityDetail,
+  ] = useState<EcommerceProductEntityChannelAssetEntityDetailResponse | null>(
+    null,
+  );
+  const [
+    tenantEcommerceProductEntityChannelReleaseCandidateRegistry,
+    setTenantEcommerceProductEntityChannelReleaseCandidateRegistry,
+  ] = useState<EcommerceProductEntityChannelReleaseCandidateRegistryResponse | null>(
+    null,
+  );
+  const [
+    selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail,
+    setSelectedTenantEcommerceProductEntityChannelReleaseCandidateDetail,
+  ] = useState<EcommerceProductEntityChannelReleaseCandidateDetailResponse | null>(
+    null,
+  );
+  const [
+    lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket,
+    setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket,
+  ] =
+    useState<RequestEcommerceProductEntityChannelAssetEntityPublishPreparationPacketResponse | null>(
+      null,
+    );
+  const [
+    lastEcommerceProductEntityChannelAssetPublishPacket,
+    setLastEcommerceProductEntityChannelAssetPublishPacket,
+  ] =
+    useState<RequestEcommerceProductEntityChannelAssetPublishPacketResponse | null>(
+      null,
+    );
+  const [
+    selectedTenantEcommerceProductEntityChannelDraftDetail,
+    setSelectedTenantEcommerceProductEntityChannelDraftDetail,
+  ] = useState<EcommerceProductEntityChannelDraftDetailResponse | null>(null);
+  const [
+    selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace,
+    setSelectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace,
+  ] =
+    useState<EcommerceProductEntityChannelDraftPublishPreparationWorkspaceResponse | null>(
+      null,
+    );
+  const [
+    tenantEcommerceSavedProductEntityChannelDraftRegistry,
+    setTenantEcommerceSavedProductEntityChannelDraftRegistry,
+  ] = useState<EcommerceSavedProductEntityChannelDraftRegistryResponse | null>(
+    null,
+  );
+  const [
+    selectedTenantEcommerceSavedProductEntityChannelDraftDetail,
+    setSelectedTenantEcommerceSavedProductEntityChannelDraftDetail,
+  ] = useState<EcommerceSavedProductEntityChannelDraftDetailResponse | null>(
+    null,
+  );
+  const [
+    tenantEcommerceProductWorkspaceDetailLoading,
+    setTenantEcommerceProductWorkspaceDetailLoading,
+  ] = useState(false);
+  const [
+    tenantEcommerceProductSetupDetailLoading,
+    setTenantEcommerceProductSetupDetailLoading,
+  ] = useState(false);
+  const [
+    tenantEcommerceProductEntityDetailLoading,
+    setTenantEcommerceProductEntityDetailLoading,
+  ] = useState(false);
+  const [
+    tenantEcommerceProductEntityChannelAssetsWorkspaceLoading,
+    setTenantEcommerceProductEntityChannelAssetsWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantEcommerceProductEntityChannelAssetDraftsWorkspaceLoading,
+    setTenantEcommerceProductEntityChannelAssetDraftsWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantEcommerceProductEntityChannelDraftDetailLoading,
+    setTenantEcommerceProductEntityChannelDraftDetailLoading,
+  ] = useState(false);
+  const [
+    tenantEcommerceProductEntityChannelAssetWorkspaceDetailLoading,
+    setTenantEcommerceProductEntityChannelAssetWorkspaceDetailLoading,
+  ] = useState(false);
+  const [
+    tenantEcommerceProductEntityChannelAssetEntityDetailLoading,
+    setTenantEcommerceProductEntityChannelAssetEntityDetailLoading,
+  ] = useState(false);
+  const [
+    tenantEcommerceProductEntityChannelReleaseCandidateDetailLoading,
+    setTenantEcommerceProductEntityChannelReleaseCandidateDetailLoading,
+  ] = useState(false);
+  const [
+    tenantEcommerceSavedProductEntityChannelDraftDetailLoading,
+    setTenantEcommerceSavedProductEntityChannelDraftDetailLoading,
+  ] = useState(false);
+  const [
+    tenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading,
+    setTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading,
+  ] = useState(false);
+  const [
+    selectedTenantEcommerceProductAuthoringDraftDetail,
+    setSelectedTenantEcommerceProductAuthoringDraftDetail,
+  ] = useState<EcommerceProductAuthoringDraftDetailResponse | null>(null);
+  const [
+    tenantEcommerceProductAuthoringDraftDetailLoading,
+    setTenantEcommerceProductAuthoringDraftDetailLoading,
+  ] = useState(false);
+  const [
+    lastEcommerceProductAuthoringDraftBrief,
+    setLastEcommerceProductAuthoringDraftBrief,
+  ] = useState<RequestEcommerceProductAuthoringDraftBriefResponse | null>(null);
+  const [
+    lastEcommerceProductAuthoringDraftRefinementPacket,
+    setLastEcommerceProductAuthoringDraftRefinementPacket,
+  ] = useState<RequestEcommerceProductAuthoringDraftRefinementPacketResponse | null>(
+    null,
+  );
+  const [ecommerceProductAuthoringActionLoading, setEcommerceProductAuthoringActionLoading] =
+    useState(false);
+  const [
+    ecommerceProductAuthoringRefinementActionLoading,
+    setEcommerceProductAuthoringRefinementActionLoading,
+  ] = useState(false);
+  const [
+    ecommerceProductAuthoringSaveActionLoading,
+    setEcommerceProductAuthoringSaveActionLoading,
+  ] = useState(false);
+  const [
+    ecommerceProductWorkspacePromotionActionLoading,
+    setEcommerceProductWorkspacePromotionActionLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceProductWorkspaceSaveActionLoading,
+    setEcommerceProductWorkspaceSaveActionLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceProductSetupPromotionActionLoading,
+    setEcommerceProductSetupPromotionActionLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceProductSetupSaveActionLoading,
+    setEcommerceProductSetupSaveActionLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceProductEntityPromotionActionLoading,
+    setEcommerceProductEntityPromotionActionLoading,
+  ] = useState<string | null>(null);
+  const [
+    lastEcommerceProductEntityCommercializationPacket,
+    setLastEcommerceProductEntityCommercializationPacket,
+  ] = useState<RequestEcommerceProductEntityCommercializationPacketResponse | null>(
+    null,
+  );
+  const [
+    ecommerceProductEntityCommercializationActionLoading,
+    setEcommerceProductEntityCommercializationActionLoading,
+  ] = useState<string | null>(null);
+  const [
+    lastEcommerceProductEntityChannelDraftActionPacket,
+    setLastEcommerceProductEntityChannelDraftActionPacket,
+  ] =
+    useState<RequestEcommerceProductEntityChannelDraftActionPacketResponse | null>(
+      null,
+    );
+  const [
+    lastEcommerceProductEntityChannelDraftPublishReadinessPacket,
+    setLastEcommerceProductEntityChannelDraftPublishReadinessPacket,
+  ] =
+    useState<RequestEcommerceProductEntityChannelDraftPublishReadinessPacketResponse | null>(
+      null,
+    );
+  const [
+    ecommerceProductEntityChannelDraftActionPacketLoading,
+    setEcommerceProductEntityChannelDraftActionPacketLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceProductEntityChannelDraftPublishReadinessPacketLoading,
+    setEcommerceProductEntityChannelDraftPublishReadinessPacketLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceProductEntityChannelDraftSaveActionLoading,
+    setEcommerceProductEntityChannelDraftSaveActionLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceSavedProductEntityChannelDraftSaveActionLoading,
+    setEcommerceSavedProductEntityChannelDraftSaveActionLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceProductEntityChannelAssetWorkspacePromotionActionLoading,
+    setEcommerceProductEntityChannelAssetWorkspacePromotionActionLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceProductEntityChannelAssetPublishPacketLoading,
+    setEcommerceProductEntityChannelAssetPublishPacketLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceProductEntityChannelAssetEntityPromotionActionLoading,
+    setEcommerceProductEntityChannelAssetEntityPromotionActionLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceProductEntityChannelAssetEntitySaveActionLoading,
+    setEcommerceProductEntityChannelAssetEntitySaveActionLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceProductEntityChannelAssetEntityPublishPreparationPacketLoading,
+    setEcommerceProductEntityChannelAssetEntityPublishPreparationPacketLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceProductEntityChannelReleaseCandidatePromotionActionLoading,
+    setEcommerceProductEntityChannelReleaseCandidatePromotionActionLoading,
+  ] = useState<string | null>(null);
+  const [
+    lastEcommerceProductSetupDefinitionPacket,
+    setLastEcommerceProductSetupDefinitionPacket,
+  ] = useState<RequestEcommerceProductSetupDefinitionPacketResponse | null>(
+    null,
+  );
+  const [
+    ecommerceProductSetupDefinitionActionLoading,
+    setEcommerceProductSetupDefinitionActionLoading,
+  ] = useState<string | null>(null);
+  const [
+    lastEcommerceProductWorkspaceReadinessPacket,
+    setLastEcommerceProductWorkspaceReadinessPacket,
+  ] = useState<RequestEcommerceProductWorkspaceReadinessPacketResponse | null>(
+    null,
+  );
+  const [
+    ecommerceProductWorkspaceReadinessActionLoading,
+    setEcommerceProductWorkspaceReadinessActionLoading,
+  ] = useState<string | null>(null);
+  const [tenantEcommerceStoreProfileWorkspace, setTenantEcommerceStoreProfileWorkspace] =
+    useState<EcommerceStoreProfileWorkspaceResponse | null>(null);
+  const [tenantEcommerceStoreSetupWorkspace, setTenantEcommerceStoreSetupWorkspace] =
+    useState<EcommerceStoreSetupWorkspaceResponse | null>(null);
   const [tenantAiEcommerceLaunchWorkspace, setTenantAiEcommerceLaunchWorkspace] =
     useState<EcommerceLaunchWorkspaceResponse | null>(null);
   const [tenantAiEcommerceLaunchWorkspaceLoading, setTenantAiEcommerceLaunchWorkspaceLoading] =
@@ -3965,6 +4337,220 @@ export function App() {
   const fetchTenantAiEcommerceLaunchSurface = async (tenantSlug: string) => {
     return fetchTenantEcommerceLaunchWorkspace(token!, tenantSlug);
   };
+  const fetchTenantEcommerceProductAuthoringWorkspaceSurface = async (
+    tenantSlug: string,
+  ) => {
+    return fetchTenantEcommerceProductAuthoringWorkspace(token!, tenantSlug);
+  };
+  const fetchTenantEcommerceSavedProductDraftRegistrySurface = async (
+    tenantSlug: string,
+  ) => {
+    return fetchTenantEcommerceSavedProductDrafts(token!, tenantSlug);
+  };
+  const fetchTenantEcommerceProductWorkspaceRegistrySurface = async (
+    tenantSlug: string,
+  ) => {
+    return fetchTenantEcommerceProductWorkspaces(token!, tenantSlug);
+  };
+  const fetchTenantEcommerceProductSetupRegistrySurface = async (
+    tenantSlug: string,
+  ) => {
+    return fetchTenantEcommerceProductSetups(token!, tenantSlug);
+  };
+  const fetchTenantEcommerceProductEntityRegistrySurface = async (
+    tenantSlug: string,
+  ) => {
+    return fetchTenantEcommerceProductEntities(token!, tenantSlug);
+  };
+  const fetchTenantEcommerceProductWorkspaceDetailSurface = async (
+    tenantSlug: string,
+    savedDraftId: string,
+  ) => {
+    return fetchTenantEcommerceProductWorkspaceDetail(
+      token!,
+      tenantSlug,
+      savedDraftId,
+    );
+  };
+  const fetchTenantEcommerceProductSetupDetailSurface = async (
+    tenantSlug: string,
+    productSetupId: string,
+  ) => {
+    return fetchTenantEcommerceProductSetupDetail(
+      token!,
+      tenantSlug,
+      productSetupId,
+    );
+  };
+  const fetchTenantEcommerceProductEntityDetailSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+  ) => {
+    return fetchTenantEcommerceProductEntityDetail(
+      token!,
+      tenantSlug,
+      productEntityId,
+    );
+  };
+  const fetchTenantEcommerceProductEntityChannelAssetsWorkspaceSurface =
+    async (tenantSlug: string, productEntityId: string) => {
+      return fetchTenantEcommerceProductEntityChannelAssetsWorkspace(
+        token!,
+        tenantSlug,
+        productEntityId,
+      );
+    };
+  const fetchTenantEcommerceProductEntityChannelAssetDraftsWorkspaceSurface =
+    async (tenantSlug: string, productEntityId: string) => {
+      return fetchTenantEcommerceProductEntityChannelAssetDraftsWorkspace(
+        token!,
+        tenantSlug,
+        productEntityId,
+      );
+    };
+  const fetchTenantEcommerceProductEntityChannelAssetWorkspaceRegistrySurface =
+    async (tenantSlug: string, productEntityId: string) => {
+      return fetchTenantEcommerceProductEntityChannelAssetWorkspaces(
+        token!,
+        tenantSlug,
+        productEntityId,
+      );
+    };
+  const fetchTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface =
+    async (
+      tenantSlug: string,
+      productEntityId: string,
+      channelKey: 'landing' | 'catalog' | 'whatsapp',
+    ) => {
+      return fetchTenantEcommerceProductEntityChannelAssetWorkspaceDetail(
+        token!,
+        tenantSlug,
+        productEntityId,
+        channelKey,
+      );
+    };
+  const fetchTenantEcommerceProductEntityChannelAssetEntityRegistrySurface =
+    async (tenantSlug: string, productEntityId: string) => {
+      return fetchTenantEcommerceProductEntityChannelAssetEntities(
+        token!,
+        tenantSlug,
+        productEntityId,
+      );
+    };
+  const fetchTenantEcommerceProductEntityChannelAssetEntityDetailSurface =
+    async (
+      tenantSlug: string,
+      productEntityId: string,
+      channelKey: 'landing' | 'catalog' | 'whatsapp',
+    ) => {
+      return fetchTenantEcommerceProductEntityChannelAssetEntityDetail(
+        token!,
+        tenantSlug,
+        productEntityId,
+        channelKey,
+      );
+    };
+  const fetchTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface =
+    async (tenantSlug: string, productEntityId: string) => {
+      return fetchTenantEcommerceProductEntityChannelReleaseCandidates(
+        token!,
+        tenantSlug,
+        productEntityId,
+      );
+    };
+  const fetchTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface =
+    async (
+      tenantSlug: string,
+      productEntityId: string,
+      channelKey: 'landing' | 'catalog' | 'whatsapp',
+    ) => {
+      return fetchTenantEcommerceProductEntityChannelReleaseCandidateDetail(
+        token!,
+        tenantSlug,
+        productEntityId,
+        channelKey,
+      );
+    };
+  const requestTenantEcommerceProductEntityChannelAssetPublishPacketSurface =
+    async (
+      tenantSlug: string,
+      productEntityId: string,
+      channelKey: 'landing' | 'catalog' | 'whatsapp',
+    ) => {
+      return requestTenantEcommerceProductEntityChannelAssetPublishPacket(
+        token!,
+        tenantSlug,
+        productEntityId,
+        channelKey,
+      );
+    };
+  const fetchTenantEcommerceProductEntityChannelDraftDetailSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+    channelKey: 'landing' | 'catalog' | 'whatsapp',
+  ) => {
+    return fetchTenantEcommerceProductEntityChannelDraftDetail(
+      token!,
+      tenantSlug,
+      productEntityId,
+      channelKey,
+    );
+  };
+  const fetchTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface =
+    async (
+      tenantSlug: string,
+      productEntityId: string,
+      channelKey: 'landing' | 'catalog' | 'whatsapp',
+    ) => {
+      return fetchTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace(
+        token!,
+        tenantSlug,
+        productEntityId,
+        channelKey,
+      );
+    };
+  const fetchTenantEcommerceSavedProductEntityChannelDraftRegistrySurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+  ) => {
+    return fetchTenantEcommerceSavedProductEntityChannelDrafts(
+      token!,
+      tenantSlug,
+      productEntityId,
+    );
+  };
+  const fetchTenantEcommerceSavedProductEntityChannelDraftDetailSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+    channelKey: 'landing' | 'catalog' | 'whatsapp',
+  ) => {
+    return fetchTenantEcommerceSavedProductEntityChannelDraftDetail(
+      token!,
+      tenantSlug,
+      productEntityId,
+      channelKey,
+    );
+  };
+  const fetchTenantEcommerceProductAuthoringDraftDetailSurface = async (
+    tenantSlug: string,
+    draftId: string,
+  ) => {
+    return fetchTenantEcommerceProductAuthoringDraftDetail(
+      token!,
+      tenantSlug,
+      draftId,
+    );
+  };
+  const fetchTenantEcommerceStoreProfileWorkspaceSurface = async (
+    tenantSlug: string,
+  ) => {
+    return fetchTenantEcommerceStoreProfileWorkspace(token!, tenantSlug);
+  };
+  const fetchTenantEcommerceStoreSetupWorkspaceSurface = async (
+    tenantSlug: string,
+  ) => {
+    return fetchTenantEcommerceStoreSetupWorkspace(token!, tenantSlug);
+  };
   const fetchTenantEcommerceLaunchPlanRegistrySurface = async (
     tenantSlug: string,
   ) => {
@@ -3981,6 +4567,219 @@ export function App() {
   ): void => {
     setTenantAiEcommerceLaunchWorkspace(surface);
   };
+  const applyTenantEcommerceStoreSetupWorkspaceSurface = (
+    surface:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceStoreSetupWorkspaceSurface>>
+      | null,
+  ): void => {
+    setTenantEcommerceStoreSetupWorkspace(surface);
+  };
+  const applyTenantEcommerceStoreProfileWorkspaceSurface = (
+    surface:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceStoreProfileWorkspaceSurface>>
+      | null,
+  ): void => {
+    setTenantEcommerceStoreProfileWorkspace(surface);
+  };
+  const applyTenantEcommerceProductAuthoringWorkspaceSurface = (
+    surface:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceProductAuthoringWorkspaceSurface>>
+      | null,
+  ): void => {
+    setTenantEcommerceProductAuthoringWorkspace(surface);
+  };
+  const applyTenantEcommerceSavedProductDraftRegistrySurface = (
+    surface:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceSavedProductDraftRegistrySurface>>
+      | null,
+  ): void => {
+    setTenantEcommerceSavedProductDraftRegistry(surface);
+  };
+  const applyTenantEcommerceProductWorkspaceRegistrySurface = (
+    surface:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceProductWorkspaceRegistrySurface>>
+      | null,
+  ): void => {
+    setTenantEcommerceProductWorkspaceRegistry(surface);
+  };
+  const applyTenantEcommerceProductSetupRegistrySurface = (
+    surface:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceProductSetupRegistrySurface>>
+      | null,
+  ): void => {
+    setTenantEcommerceProductSetupRegistry(surface);
+  };
+  const applyTenantEcommerceProductEntityRegistrySurface = (
+    surface:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceProductEntityRegistrySurface>>
+      | null,
+  ): void => {
+    setTenantEcommerceProductEntityRegistry(surface);
+  };
+  const applyTenantEcommerceProductWorkspaceDetailSurface = (
+    detail:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceProductWorkspaceDetailSurface>>
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceProductWorkspaceDetail(detail);
+  };
+  const applyTenantEcommerceProductSetupDetailSurface = (
+    detail:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceProductSetupDetailSurface>>
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceProductSetupDetail(detail);
+  };
+  const applyTenantEcommerceProductEntityDetailSurface = (
+    detail:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceProductEntityDetailSurface>>
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceProductEntityDetail(detail);
+  };
+  const applyTenantEcommerceProductEntityChannelAssetsWorkspaceSurface = (
+    workspace:
+      | Awaited<
+          ReturnType<
+            typeof fetchTenantEcommerceProductEntityChannelAssetsWorkspaceSurface
+          >
+        >
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceProductEntityChannelAssetsWorkspace(workspace);
+  };
+  const applyTenantEcommerceProductEntityChannelAssetDraftsWorkspaceSurface = (
+    workspace:
+      | Awaited<
+          ReturnType<
+            typeof fetchTenantEcommerceProductEntityChannelAssetDraftsWorkspaceSurface
+          >
+        >
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace(
+      workspace,
+    );
+  };
+  const applyTenantEcommerceProductEntityChannelAssetWorkspaceRegistrySurface = (
+    registry:
+      | Awaited<
+          ReturnType<
+            typeof fetchTenantEcommerceProductEntityChannelAssetWorkspaceRegistrySurface
+          >
+        >
+      | null,
+  ): void => {
+    setTenantEcommerceProductEntityChannelAssetWorkspaceRegistry(registry);
+  };
+  const applyTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface = (
+    detail:
+      | Awaited<
+          ReturnType<
+            typeof fetchTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface
+          >
+        >
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail(detail);
+  };
+  const applyTenantEcommerceProductEntityChannelAssetEntityRegistrySurface = (
+    registry:
+      | Awaited<
+          ReturnType<
+            typeof fetchTenantEcommerceProductEntityChannelAssetEntityRegistrySurface
+          >
+        >
+      | null,
+  ): void => {
+    setTenantEcommerceProductEntityChannelAssetEntityRegistry(registry);
+  };
+  const applyTenantEcommerceProductEntityChannelAssetEntityDetailSurface = (
+    detail:
+      | Awaited<
+          ReturnType<
+            typeof fetchTenantEcommerceProductEntityChannelAssetEntityDetailSurface
+          >
+        >
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceProductEntityChannelAssetEntityDetail(detail);
+  };
+  const applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface =
+    (
+      registry:
+        | Awaited<
+            ReturnType<
+              typeof fetchTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface
+            >
+          >
+        | null,
+    ): void => {
+      setTenantEcommerceProductEntityChannelReleaseCandidateRegistry(registry);
+    };
+  const applyTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface = (
+    detail:
+      | Awaited<
+          ReturnType<
+            typeof fetchTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface
+          >
+        >
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceProductEntityChannelReleaseCandidateDetail(detail);
+  };
+  const applyTenantEcommerceProductEntityChannelDraftDetailSurface = (
+    detail:
+      | Awaited<
+          ReturnType<typeof fetchTenantEcommerceProductEntityChannelDraftDetailSurface>
+        >
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceProductEntityChannelDraftDetail(detail);
+  };
+  const applyTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface =
+    (
+      workspace:
+        | Awaited<
+            ReturnType<
+              typeof fetchTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface
+            >
+          >
+        | null,
+    ): void => {
+      setSelectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace(
+        workspace,
+      );
+    };
+  const applyTenantEcommerceSavedProductEntityChannelDraftRegistrySurface = (
+    registry:
+      | Awaited<
+          ReturnType<
+            typeof fetchTenantEcommerceSavedProductEntityChannelDraftRegistrySurface
+          >
+        >
+      | null,
+  ): void => {
+    setTenantEcommerceSavedProductEntityChannelDraftRegistry(registry);
+  };
+  const applyTenantEcommerceSavedProductEntityChannelDraftDetailSurface = (
+    detail:
+      | Awaited<
+          ReturnType<
+            typeof fetchTenantEcommerceSavedProductEntityChannelDraftDetailSurface
+          >
+        >
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceSavedProductEntityChannelDraftDetail(detail);
+  };
+  const applyTenantEcommerceProductAuthoringDraftDetailSurface = (
+    detail:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceProductAuthoringDraftDetailSurface>>
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceProductAuthoringDraftDetail(detail);
+  };
   const applyTenantEcommerceLaunchPlanRegistrySurface = (
     registry: Awaited<ReturnType<typeof fetchTenantEcommerceLaunchPlanRegistrySurface>>,
   ): void => {
@@ -3994,6 +4793,40 @@ export function App() {
     setSelectedTenantEcommerceLaunchPlanDetail(detail);
   };
   const clearTenantAiEcommerceLaunchSurface = (): void => {
+    setTenantEcommerceProductAuthoringWorkspace(null);
+    setTenantEcommerceSavedProductDraftRegistry(null);
+    setTenantEcommerceProductWorkspaceRegistry(null);
+    setTenantEcommerceProductSetupRegistry(null);
+    setTenantEcommerceProductEntityRegistry(null);
+    setSelectedTenantEcommerceProductWorkspaceDetail(null);
+    setSelectedTenantEcommerceProductSetupDetail(null);
+    setSelectedTenantEcommerceProductEntityDetail(null);
+    setSelectedTenantEcommerceProductEntityChannelAssetsWorkspace(null);
+    setSelectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace(null);
+    setTenantEcommerceProductEntityChannelAssetWorkspaceRegistry(null);
+    setSelectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail(null);
+    setTenantEcommerceProductEntityChannelAssetEntityRegistry(null);
+    setSelectedTenantEcommerceProductEntityChannelAssetEntityDetail(null);
+    setTenantEcommerceProductEntityChannelReleaseCandidateRegistry(null);
+    setSelectedTenantEcommerceProductEntityChannelReleaseCandidateDetail(null);
+    setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket(null);
+    setLastEcommerceProductEntityChannelAssetPublishPacket(null);
+    setSelectedTenantEcommerceProductEntityChannelDraftDetail(null);
+    setSelectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace(
+      null,
+    );
+    setTenantEcommerceSavedProductEntityChannelDraftRegistry(null);
+    setSelectedTenantEcommerceSavedProductEntityChannelDraftDetail(null);
+    setLastEcommerceProductEntityCommercializationPacket(null);
+    setLastEcommerceProductEntityChannelDraftActionPacket(null);
+    setLastEcommerceProductEntityChannelDraftPublishReadinessPacket(null);
+    setLastEcommerceProductSetupDefinitionPacket(null);
+    setLastEcommerceProductWorkspaceReadinessPacket(null);
+    setSelectedTenantEcommerceProductAuthoringDraftDetail(null);
+    setLastEcommerceProductAuthoringDraftBrief(null);
+    setLastEcommerceProductAuthoringDraftRefinementPacket(null);
+    setTenantEcommerceStoreProfileWorkspace(null);
+    setTenantEcommerceStoreSetupWorkspace(null);
     setTenantAiEcommerceLaunchWorkspace(null);
     setTenantEcommerceLaunchPlanRegistry(null);
     setSelectedTenantEcommerceLaunchPlanDetail(null);
@@ -8933,17 +9766,48 @@ export function App() {
       clearAiAgentWorkspaceSupportBundle('ecommerce-launch-assistant');
       clearTenantAiEcommerceLaunchSurface();
       setTenantAiEcommerceLaunchWorkspaceLoading(false);
+      setTenantEcommerceProductWorkspaceDetailLoading(false);
+      setTenantEcommerceProductSetupDetailLoading(false);
+      setTenantEcommerceProductEntityDetailLoading(false);
+      setTenantEcommerceProductEntityChannelDraftDetailLoading(false);
+      setTenantEcommerceProductEntityChannelReleaseCandidateDetailLoading(false);
+      setTenantEcommerceSavedProductEntityChannelDraftDetailLoading(false);
       setTenantEcommerceLaunchPlanDetailLoading(false);
       return;
     }
 
     const tenantSlug = currentTenancy.tenant.slug;
     setTenantAiEcommerceLaunchWorkspaceLoading(true);
+    setTenantEcommerceProductAuthoringDraftDetailLoading(true);
+    setTenantEcommerceProductWorkspaceDetailLoading(true);
+    setTenantEcommerceProductSetupDetailLoading(true);
+    setTenantEcommerceProductEntityDetailLoading(true);
+    setTenantEcommerceProductEntityChannelDraftDetailLoading(true);
+    setTenantEcommerceProductEntityChannelReleaseCandidateDetailLoading(true);
+    setTenantEcommerceSavedProductEntityChannelDraftDetailLoading(true);
     setTenantEcommerceLaunchPlanDetailLoading(true);
     setEcommerceLaunchError(null);
 
     try {
-      const [surface, registry, bundle] = await Promise.all([
+      const [
+        productAuthoring,
+        savedDraftRegistry,
+        productWorkspaceRegistry,
+        productSetupRegistry,
+        productEntityRegistry,
+        storeProfile,
+        storeSetup,
+        surface,
+        registry,
+        bundle,
+      ] = await Promise.all([
+        fetchTenantEcommerceProductAuthoringWorkspaceSurface(tenantSlug),
+        fetchTenantEcommerceSavedProductDraftRegistrySurface(tenantSlug),
+        fetchTenantEcommerceProductWorkspaceRegistrySurface(tenantSlug),
+        fetchTenantEcommerceProductSetupRegistrySurface(tenantSlug),
+        fetchTenantEcommerceProductEntityRegistrySurface(tenantSlug),
+        fetchTenantEcommerceStoreProfileWorkspaceSurface(tenantSlug),
+        fetchTenantEcommerceStoreSetupWorkspaceSurface(tenantSlug),
         fetchTenantAiEcommerceLaunchSurface(tenantSlug),
         fetchTenantEcommerceLaunchPlanRegistrySurface(tenantSlug),
         fetchAiAgentWorkspaceSupportBundle(
@@ -8951,6 +9815,146 @@ export function App() {
           tenantSlug,
         ),
       ]);
+      const selectedDraftId =
+        selectedTenantEcommerceProductAuthoringDraftDetail?.draft.id ??
+        productAuthoring.drafts[0]?.id ??
+        null;
+      const draftDetail = selectedDraftId
+        ? await fetchTenantEcommerceProductAuthoringDraftDetailSurface(
+            tenantSlug,
+            selectedDraftId,
+          )
+        : null;
+      const selectedWorkspaceSavedDraftId =
+        selectedTenantEcommerceProductWorkspaceDetail?.workspace.savedDraftId ??
+        productWorkspaceRegistry.workspaces[0]?.savedDraftId ??
+        null;
+      const productWorkspaceDetail = selectedWorkspaceSavedDraftId
+        ? await fetchTenantEcommerceProductWorkspaceDetailSurface(
+            tenantSlug,
+            selectedWorkspaceSavedDraftId,
+          )
+        : null;
+      const selectedProductSetupId =
+        selectedTenantEcommerceProductSetupDetail?.productSetup.productSetupId ??
+        productSetupRegistry.productSetups[0]?.productSetupId ??
+        null;
+      const productSetupDetail = selectedProductSetupId
+        ? await fetchTenantEcommerceProductSetupDetailSurface(
+            tenantSlug,
+            selectedProductSetupId,
+          )
+        : null;
+      const selectedProductEntityId =
+        selectedTenantEcommerceProductEntityDetail?.productEntity.productEntityId ??
+        productEntityRegistry.productEntities[0]?.productEntityId ??
+        null;
+      const productEntityDetail = selectedProductEntityId
+        ? await fetchTenantEcommerceProductEntityDetailSurface(
+            tenantSlug,
+            selectedProductEntityId,
+          )
+        : null;
+      const productEntityChannelAssetsWorkspace = selectedProductEntityId
+        ? await fetchTenantEcommerceProductEntityChannelAssetsWorkspaceSurface(
+            tenantSlug,
+            selectedProductEntityId,
+          )
+        : null;
+      const productEntityChannelAssetDraftsWorkspace = selectedProductEntityId
+        ? await fetchTenantEcommerceProductEntityChannelAssetDraftsWorkspaceSurface(
+            tenantSlug,
+            selectedProductEntityId,
+          )
+        : null;
+      const productEntityChannelAssetWorkspaceRegistry = selectedProductEntityId
+        ? await fetchTenantEcommerceProductEntityChannelAssetWorkspaceRegistrySurface(
+            tenantSlug,
+            selectedProductEntityId,
+          )
+        : null;
+      const productEntityChannelAssetEntityRegistry = selectedProductEntityId
+        ? await fetchTenantEcommerceProductEntityChannelAssetEntityRegistrySurface(
+            tenantSlug,
+            selectedProductEntityId,
+          )
+        : null;
+      const productEntityChannelReleaseCandidateRegistry = selectedProductEntityId
+        ? await fetchTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
+            tenantSlug,
+            selectedProductEntityId,
+          )
+        : null;
+      const selectedChannelAssetWorkspaceChannelKey =
+        selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail?.workspace
+          .channelKey ??
+        productEntityChannelAssetWorkspaceRegistry?.workspaces[0]?.channelKey ??
+        null;
+      const productEntityChannelAssetWorkspaceDetail =
+        selectedProductEntityId && selectedChannelAssetWorkspaceChannelKey
+          ? await fetchTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface(
+              tenantSlug,
+              selectedProductEntityId,
+              selectedChannelAssetWorkspaceChannelKey,
+            )
+          : null;
+      const selectedChannelAssetEntityChannelKey =
+        selectedTenantEcommerceProductEntityChannelAssetEntityDetail?.assetEntity
+          .channelKey ??
+        productEntityChannelAssetEntityRegistry?.assetEntities[0]?.channelKey ??
+        null;
+      const productEntityChannelAssetEntityDetail =
+        selectedProductEntityId && selectedChannelAssetEntityChannelKey
+          ? await fetchTenantEcommerceProductEntityChannelAssetEntityDetailSurface(
+              tenantSlug,
+              selectedProductEntityId,
+              selectedChannelAssetEntityChannelKey,
+            )
+          : null;
+      const selectedChannelReleaseCandidateChannelKey =
+        selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail
+          ?.releaseCandidate.channelKey ??
+        productEntityChannelReleaseCandidateRegistry?.releaseCandidates[0]
+          ?.channelKey ??
+        null;
+      const productEntityChannelReleaseCandidateDetail =
+        selectedProductEntityId && selectedChannelReleaseCandidateChannelKey
+          ? await fetchTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(
+              tenantSlug,
+              selectedProductEntityId,
+              selectedChannelReleaseCandidateChannelKey,
+            )
+          : null;
+      const savedProductEntityChannelDraftRegistry = selectedProductEntityId
+        ? await fetchTenantEcommerceSavedProductEntityChannelDraftRegistrySurface(
+            tenantSlug,
+            selectedProductEntityId,
+          )
+        : null;
+      const selectedSavedProductEntityChannelDraftChannelKey =
+        selectedTenantEcommerceSavedProductEntityChannelDraftDetail
+          ?.savedChannelDraft.channelKey ??
+        savedProductEntityChannelDraftRegistry?.drafts[0]?.channelKey ??
+        null;
+      const savedProductEntityChannelDraftDetail =
+        selectedProductEntityId &&
+        selectedSavedProductEntityChannelDraftChannelKey
+          ? await fetchTenantEcommerceSavedProductEntityChannelDraftDetailSurface(
+              tenantSlug,
+              selectedProductEntityId,
+              selectedSavedProductEntityChannelDraftChannelKey,
+            )
+          : null;
+      const selectedProductEntityChannelKey =
+        selectedTenantEcommerceProductEntityChannelDraftDetail?.channelKey ?? null;
+      const productEntityChannelDraftDetail =
+        selectedProductEntityId && selectedProductEntityChannelKey
+          ? await fetchTenantEcommerceProductEntityChannelDraftDetailSurface(
+              tenantSlug,
+              selectedProductEntityId,
+              selectedProductEntityChannelKey,
+            )
+          : null;
       const selectedPlanId =
         selectedTenantEcommerceLaunchPlanDetail?.plan.id ??
         registry.plans[0]?.id ??
@@ -8963,6 +9967,64 @@ export function App() {
         : null;
 
       startTransition(() => {
+        applyTenantEcommerceProductAuthoringWorkspaceSurface(productAuthoring);
+        applyTenantEcommerceSavedProductDraftRegistrySurface(savedDraftRegistry);
+        applyTenantEcommerceProductWorkspaceRegistrySurface(
+          productWorkspaceRegistry,
+        );
+        applyTenantEcommerceProductSetupRegistrySurface(productSetupRegistry);
+        applyTenantEcommerceProductEntityRegistrySurface(productEntityRegistry);
+        applyTenantEcommerceProductWorkspaceDetailSurface(
+          productWorkspaceDetail,
+        );
+        applyTenantEcommerceProductSetupDetailSurface(productSetupDetail);
+        applyTenantEcommerceProductEntityDetailSurface(productEntityDetail);
+        applyTenantEcommerceProductEntityChannelAssetsWorkspaceSurface(
+          productEntityChannelAssetsWorkspace,
+        );
+        applyTenantEcommerceProductEntityChannelAssetDraftsWorkspaceSurface(
+          productEntityChannelAssetDraftsWorkspace,
+        );
+        applyTenantEcommerceProductEntityChannelAssetWorkspaceRegistrySurface(
+          productEntityChannelAssetWorkspaceRegistry,
+        );
+        applyTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface(
+          productEntityChannelAssetWorkspaceDetail,
+        );
+        applyTenantEcommerceProductEntityChannelAssetEntityRegistrySurface(
+          productEntityChannelAssetEntityRegistry,
+        );
+        applyTenantEcommerceProductEntityChannelAssetEntityDetailSurface(
+          productEntityChannelAssetEntityDetail,
+        );
+        applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
+          productEntityChannelReleaseCandidateRegistry,
+        );
+        applyTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(
+          productEntityChannelReleaseCandidateDetail,
+        );
+        setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket(
+          null,
+        );
+        setLastEcommerceProductEntityChannelAssetPublishPacket(null);
+        applyTenantEcommerceProductEntityChannelDraftDetailSurface(
+          productEntityChannelDraftDetail,
+        );
+        applyTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface(
+          null,
+        );
+        applyTenantEcommerceSavedProductEntityChannelDraftRegistrySurface(
+          savedProductEntityChannelDraftRegistry,
+        );
+        applyTenantEcommerceSavedProductEntityChannelDraftDetailSurface(
+          savedProductEntityChannelDraftDetail,
+        );
+        setLastEcommerceProductEntityChannelAssetPublishPacket(null);
+        setLastEcommerceProductEntityChannelDraftActionPacket(null);
+        setLastEcommerceProductEntityChannelDraftPublishReadinessPacket(null);
+        applyTenantEcommerceProductAuthoringDraftDetailSurface(draftDetail);
+        applyTenantEcommerceStoreProfileWorkspaceSurface(storeProfile);
+        applyTenantEcommerceStoreSetupWorkspaceSurface(storeSetup);
         applyTenantAiEcommerceLaunchSurface(surface);
         applyTenantEcommerceLaunchPlanRegistrySurface(registry);
         applyTenantEcommerceLaunchPlanDetailSurface(detail);
@@ -8978,7 +10040,1753 @@ export function App() {
       );
     } finally {
       setTenantAiEcommerceLaunchWorkspaceLoading(false);
+      setTenantEcommerceProductAuthoringDraftDetailLoading(false);
+      setTenantEcommerceProductWorkspaceDetailLoading(false);
+      setTenantEcommerceProductSetupDetailLoading(false);
+      setTenantEcommerceProductEntityDetailLoading(false);
+      setTenantEcommerceProductEntityChannelAssetsWorkspaceLoading(false);
+      setTenantEcommerceProductEntityChannelAssetDraftsWorkspaceLoading(false);
+      setTenantEcommerceProductEntityChannelDraftDetailLoading(false);
+      setTenantEcommerceProductEntityChannelAssetEntityDetailLoading(false);
+      setTenantEcommerceProductEntityChannelReleaseCandidateDetailLoading(false);
+      setTenantEcommerceSavedProductEntityChannelDraftDetailLoading(false);
       setTenantEcommerceLaunchPlanDetailLoading(false);
+    }
+  }
+
+  async function loadTenantEcommerceProductAuthoringDraftDetail(draftId: string) {
+    if (!token || !currentTenancy || !canReadTenantEntitlements) {
+      applyTenantEcommerceProductAuthoringDraftDetailSurface(null);
+      setLastEcommerceProductAuthoringDraftBrief(null);
+      setTenantEcommerceProductAuthoringDraftDetailLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantEcommerceProductAuthoringDraftDetailLoading(true);
+    setLastEcommerceProductAuthoringDraftBrief(null);
+    setLastEcommerceProductAuthoringDraftRefinementPacket(null);
+    setEcommerceLaunchError(null);
+
+    try {
+      const detail = await fetchTenantEcommerceProductAuthoringDraftDetailSurface(
+        tenantSlug,
+        draftId,
+      );
+
+      startTransition(() => {
+        applyTenantEcommerceProductAuthoringDraftDetailSurface(detail);
+      });
+    } catch (error) {
+      applyTenantEcommerceProductAuthoringDraftDetailSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el detalle del draft de ecommerce.',
+      );
+    } finally {
+      setTenantEcommerceProductAuthoringDraftDetailLoading(false);
+    }
+  }
+
+  async function handleRequestTenantEcommerceProductAuthoringDraftBrief() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductAuthoringDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const draftId = selectedTenantEcommerceProductAuthoringDraftDetail.draft.id;
+    setEcommerceProductAuthoringActionLoading(true);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await requestTenantEcommerceProductAuthoringDraftBrief(
+        token,
+        tenantSlug,
+        draftId,
+      );
+
+      startTransition(() => {
+        setLastEcommerceProductAuthoringDraftBrief(result);
+        setEcommerceLaunchActionMessage(
+          `AI brief ${humanizeKey(result.briefingStatus)} para ${result.draft.title}.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceProductAuthoringDraftBrief(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el brief AI del draft de ecommerce.',
+      );
+    } finally {
+      setEcommerceProductAuthoringActionLoading(false);
+    }
+  }
+
+  async function handleRequestTenantEcommerceProductAuthoringDraftRefinementPacket() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductAuthoringDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const draftId = selectedTenantEcommerceProductAuthoringDraftDetail.draft.id;
+    setEcommerceProductAuthoringRefinementActionLoading(true);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await requestTenantEcommerceProductAuthoringDraftRefinementPacket(
+          token,
+          tenantSlug,
+          draftId,
+        );
+
+      startTransition(() => {
+        setLastEcommerceProductAuthoringDraftRefinementPacket(result);
+        setEcommerceLaunchActionMessage(
+          `Refinement packet ${humanizeKey(result.refinementStatus)} para ${result.draft.title}.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceProductAuthoringDraftRefinementPacket(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el refinement packet del draft de ecommerce.',
+      );
+    } finally {
+      setEcommerceProductAuthoringRefinementActionLoading(false);
+    }
+  }
+
+  async function handleSaveTenantEcommerceProductAuthoringDraft() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductAuthoringDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const draftId = selectedTenantEcommerceProductAuthoringDraftDetail.draft.id;
+    setEcommerceProductAuthoringSaveActionLoading(true);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await saveTenantEcommerceProductAuthoringDraft(
+        token,
+        tenantSlug,
+        draftId,
+      );
+      const savedDraftRegistry =
+        await fetchTenantEcommerceSavedProductDraftRegistrySurface(tenantSlug);
+      const productWorkspaceRegistry =
+        await fetchTenantEcommerceProductWorkspaceRegistrySurface(tenantSlug);
+      const refreshedDetail =
+        await fetchTenantEcommerceProductAuthoringDraftDetailSurface(
+          tenantSlug,
+          draftId,
+        );
+
+      startTransition(() => {
+        applyTenantEcommerceSavedProductDraftRegistrySurface(savedDraftRegistry);
+        applyTenantEcommerceProductWorkspaceRegistrySurface(
+          productWorkspaceRegistry,
+        );
+        applyTenantEcommerceProductAuthoringDraftDetailSurface(refreshedDetail);
+        setEcommerceLaunchActionMessage(
+          `Catalog candidate guardado para ${result.savedDraft.title}.`,
+        );
+      });
+    } catch (error) {
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo guardar el draft de ecommerce como catalog candidate.',
+      );
+    } finally {
+      setEcommerceProductAuthoringSaveActionLoading(false);
+    }
+  }
+
+  async function loadTenantEcommerceProductWorkspaceDetail(savedDraftId: string) {
+    if (!token || !currentTenancy || !canReadTenantEntitlements) {
+      applyTenantEcommerceProductWorkspaceDetailSurface(null);
+      setTenantEcommerceProductWorkspaceDetailLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantEcommerceProductWorkspaceDetailLoading(true);
+    setEcommerceLaunchError(null);
+
+    try {
+      const detail = await fetchTenantEcommerceProductWorkspaceDetailSurface(
+        tenantSlug,
+        savedDraftId,
+      );
+
+      startTransition(() => {
+        applyTenantEcommerceProductWorkspaceDetailSurface(detail);
+        setLastEcommerceProductWorkspaceReadinessPacket(null);
+      });
+    } catch (error) {
+      applyTenantEcommerceProductWorkspaceDetailSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el product workspace de ecommerce.',
+      );
+    } finally {
+      setTenantEcommerceProductWorkspaceDetailLoading(false);
+    }
+  }
+
+  async function loadTenantEcommerceProductSetupDetail(productSetupId: string) {
+    if (!token || !currentTenancy || !canReadTenantEntitlements) {
+      applyTenantEcommerceProductSetupDetailSurface(null);
+      setTenantEcommerceProductSetupDetailLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantEcommerceProductSetupDetailLoading(true);
+    setEcommerceLaunchError(null);
+
+    try {
+      const detail = await fetchTenantEcommerceProductSetupDetailSurface(
+        tenantSlug,
+        productSetupId,
+      );
+
+      startTransition(() => {
+        applyTenantEcommerceProductSetupDetailSurface(detail);
+        setLastEcommerceProductSetupDefinitionPacket(null);
+      });
+    } catch (error) {
+      applyTenantEcommerceProductSetupDetailSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el product setup de ecommerce.',
+      );
+    } finally {
+      setTenantEcommerceProductSetupDetailLoading(false);
+    }
+  }
+
+  async function loadTenantEcommerceProductEntityDetail(productEntityId: string) {
+    if (!token || !currentTenancy || !canReadTenantEntitlements) {
+      applyTenantEcommerceProductEntityDetailSurface(null);
+      applyTenantEcommerceProductEntityChannelAssetsWorkspaceSurface(null);
+      applyTenantEcommerceProductEntityChannelAssetDraftsWorkspaceSurface(null);
+      applyTenantEcommerceProductEntityChannelAssetWorkspaceRegistrySurface(
+        null,
+      );
+      applyTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface(null);
+      applyTenantEcommerceProductEntityChannelAssetEntityRegistrySurface(null);
+      applyTenantEcommerceProductEntityChannelAssetEntityDetailSurface(null);
+      applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
+        null,
+      );
+      applyTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(
+        null,
+      );
+      setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket(
+        null,
+      );
+      applyTenantEcommerceProductEntityChannelDraftDetailSurface(null);
+      applyTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface(
+        null,
+      );
+      applyTenantEcommerceSavedProductEntityChannelDraftRegistrySurface(null);
+      applyTenantEcommerceSavedProductEntityChannelDraftDetailSurface(null);
+      setLastEcommerceProductEntityChannelDraftActionPacket(null);
+      setLastEcommerceProductEntityChannelDraftPublishReadinessPacket(null);
+      setTenantEcommerceProductEntityDetailLoading(false);
+      setTenantEcommerceProductEntityChannelAssetsWorkspaceLoading(false);
+      setTenantEcommerceProductEntityChannelAssetDraftsWorkspaceLoading(false);
+      setTenantEcommerceProductEntityChannelDraftDetailLoading(false);
+      setTenantEcommerceProductEntityChannelAssetWorkspaceDetailLoading(false);
+      setTenantEcommerceProductEntityChannelAssetEntityDetailLoading(false);
+      setTenantEcommerceProductEntityChannelReleaseCandidateDetailLoading(false);
+      setTenantEcommerceSavedProductEntityChannelDraftDetailLoading(false);
+      setTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading(
+        false,
+      );
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setTenantEcommerceProductEntityDetailLoading(true);
+    setTenantEcommerceProductEntityChannelAssetsWorkspaceLoading(true);
+    setTenantEcommerceProductEntityChannelAssetDraftsWorkspaceLoading(true);
+    setTenantEcommerceProductEntityChannelDraftDetailLoading(false);
+    setTenantEcommerceSavedProductEntityChannelDraftDetailLoading(false);
+    setTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading(
+      false,
+    );
+    setEcommerceLaunchError(null);
+
+    try {
+      const [
+        detail,
+        channelAssetsWorkspace,
+        channelAssetDraftsWorkspace,
+        channelAssetWorkspaceRegistry,
+        channelAssetEntityRegistry,
+        channelReleaseCandidateRegistry,
+        savedChannelDraftRegistry,
+      ] =
+        await Promise.all([
+        fetchTenantEcommerceProductEntityDetailSurface(tenantSlug, productEntityId),
+        fetchTenantEcommerceProductEntityChannelAssetsWorkspaceSurface(
+          tenantSlug,
+          productEntityId,
+        ),
+        fetchTenantEcommerceProductEntityChannelAssetDraftsWorkspaceSurface(
+          tenantSlug,
+          productEntityId,
+        ),
+        fetchTenantEcommerceProductEntityChannelAssetWorkspaceRegistrySurface(
+          tenantSlug,
+          productEntityId,
+        ),
+        fetchTenantEcommerceProductEntityChannelAssetEntityRegistrySurface(
+          tenantSlug,
+          productEntityId,
+        ),
+        fetchTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
+          tenantSlug,
+          productEntityId,
+        ),
+        fetchTenantEcommerceSavedProductEntityChannelDraftRegistrySurface(
+          tenantSlug,
+          productEntityId,
+        ),
+      ]);
+
+      startTransition(() => {
+        applyTenantEcommerceProductEntityDetailSurface(detail);
+        applyTenantEcommerceProductEntityChannelAssetsWorkspaceSurface(
+          channelAssetsWorkspace,
+        );
+        applyTenantEcommerceProductEntityChannelAssetDraftsWorkspaceSurface(
+          channelAssetDraftsWorkspace,
+        );
+        applyTenantEcommerceProductEntityChannelAssetWorkspaceRegistrySurface(
+          channelAssetWorkspaceRegistry,
+        );
+        applyTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface(
+          null,
+        );
+        applyTenantEcommerceProductEntityChannelAssetEntityRegistrySurface(
+          channelAssetEntityRegistry,
+        );
+        applyTenantEcommerceProductEntityChannelAssetEntityDetailSurface(null);
+        applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
+          channelReleaseCandidateRegistry,
+        );
+        applyTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(
+          null,
+        );
+        setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket(
+          null,
+        );
+        setLastEcommerceProductEntityChannelAssetPublishPacket(null);
+        applyTenantEcommerceProductEntityChannelDraftDetailSurface(null);
+        applyTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface(
+          null,
+        );
+        applyTenantEcommerceSavedProductEntityChannelDraftRegistrySurface(
+          savedChannelDraftRegistry,
+        );
+        applyTenantEcommerceSavedProductEntityChannelDraftDetailSurface(null);
+        setLastEcommerceProductEntityChannelAssetPublishPacket(null);
+        setLastEcommerceProductEntityCommercializationPacket(null);
+        setLastEcommerceProductEntityChannelDraftActionPacket(null);
+        setLastEcommerceProductEntityChannelDraftPublishReadinessPacket(null);
+      });
+    } catch (error) {
+      applyTenantEcommerceProductEntityDetailSurface(null);
+      applyTenantEcommerceProductEntityChannelAssetsWorkspaceSurface(null);
+      applyTenantEcommerceProductEntityChannelAssetDraftsWorkspaceSurface(null);
+      applyTenantEcommerceProductEntityChannelAssetWorkspaceRegistrySurface(
+        null,
+      );
+      applyTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface(null);
+      applyTenantEcommerceProductEntityChannelAssetEntityRegistrySurface(null);
+      applyTenantEcommerceProductEntityChannelAssetEntityDetailSurface(null);
+      applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
+        null,
+      );
+      applyTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(
+        null,
+      );
+      setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket(
+        null,
+      );
+      setLastEcommerceProductEntityChannelAssetPublishPacket(null);
+      applyTenantEcommerceProductEntityChannelDraftDetailSurface(null);
+      applyTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface(
+        null,
+      );
+      applyTenantEcommerceSavedProductEntityChannelDraftRegistrySurface(null);
+      applyTenantEcommerceSavedProductEntityChannelDraftDetailSurface(null);
+      setLastEcommerceProductEntityChannelDraftActionPacket(null);
+      setLastEcommerceProductEntityChannelDraftPublishReadinessPacket(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar la product entity de ecommerce.',
+      );
+    } finally {
+      setTenantEcommerceProductEntityDetailLoading(false);
+      setTenantEcommerceProductEntityChannelAssetsWorkspaceLoading(false);
+      setTenantEcommerceProductEntityChannelAssetDraftsWorkspaceLoading(false);
+      setTenantEcommerceProductEntityChannelDraftDetailLoading(false);
+      setTenantEcommerceProductEntityChannelAssetWorkspaceDetailLoading(false);
+      setTenantEcommerceProductEntityChannelAssetEntityDetailLoading(false);
+      setTenantEcommerceProductEntityChannelReleaseCandidateDetailLoading(false);
+      setTenantEcommerceSavedProductEntityChannelDraftDetailLoading(false);
+      setTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading(
+        false,
+      );
+    }
+  }
+
+  async function handlePromoteTenantEcommerceSavedDraftToProductWorkspace(
+    savedDraftId: string,
+  ) {
+    if (!token || !currentTenancy || !canReadTenantEntitlements) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    setEcommerceProductWorkspacePromotionActionLoading(savedDraftId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await promoteTenantEcommerceSavedDraftToProductWorkspace(
+        token,
+        tenantSlug,
+        savedDraftId,
+      );
+      const [
+        savedDraftRegistry,
+        productWorkspaceRegistry,
+        productWorkspaceDetail,
+        refreshedDetail,
+      ] =
+        await Promise.all([
+          fetchTenantEcommerceSavedProductDraftRegistrySurface(tenantSlug),
+          fetchTenantEcommerceProductWorkspaceRegistrySurface(tenantSlug),
+          fetchTenantEcommerceProductWorkspaceDetailSurface(
+            tenantSlug,
+            savedDraftId,
+          ),
+          selectedTenantEcommerceProductAuthoringDraftDetail?.savedDraft?.id ===
+            savedDraftId
+            ? fetchTenantEcommerceProductAuthoringDraftDetailSurface(
+                tenantSlug,
+                selectedTenantEcommerceProductAuthoringDraftDetail.draft.id,
+              )
+            : Promise.resolve(
+                selectedTenantEcommerceProductAuthoringDraftDetail,
+              ),
+        ]);
+
+      startTransition(() => {
+        applyTenantEcommerceSavedProductDraftRegistrySurface(savedDraftRegistry);
+        applyTenantEcommerceProductWorkspaceRegistrySurface(
+          productWorkspaceRegistry,
+        );
+        applyTenantEcommerceProductWorkspaceDetailSurface(
+          productWorkspaceDetail,
+        );
+        applyTenantEcommerceProductAuthoringDraftDetailSurface(refreshedDetail);
+        setEcommerceLaunchActionMessage(
+          `Product workspace abierto para ${result.workspace.editableSnapshot.title}.`,
+        );
+      });
+    } catch (error) {
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo promover el catalog candidate a product workspace.',
+      );
+    } finally {
+      setEcommerceProductWorkspacePromotionActionLoading(null);
+    }
+  }
+
+  async function handleUpdateTenantEcommerceProductWorkspaceEditableSnapshot(
+    patch: {
+      title: string;
+      pricingBand: string | null;
+      offerAngle: string | null;
+      primaryCta: string | null;
+      channelSequence: string[];
+    },
+  ) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductWorkspaceDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const savedDraftId =
+      selectedTenantEcommerceProductWorkspaceDetail.workspace.savedDraftId;
+    setEcommerceProductWorkspaceSaveActionLoading(savedDraftId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await updateTenantEcommerceProductWorkspaceEditableSnapshot(
+          token,
+          tenantSlug,
+          savedDraftId,
+          patch,
+        );
+      const [savedDraftRegistry, productWorkspaceRegistry, refreshedDetail] =
+        await Promise.all([
+          fetchTenantEcommerceSavedProductDraftRegistrySurface(tenantSlug),
+          fetchTenantEcommerceProductWorkspaceRegistrySurface(tenantSlug),
+          fetchTenantEcommerceProductWorkspaceDetailSurface(
+            tenantSlug,
+            savedDraftId,
+          ),
+        ]);
+
+      startTransition(() => {
+        applyTenantEcommerceSavedProductDraftRegistrySurface(savedDraftRegistry);
+        applyTenantEcommerceProductWorkspaceRegistrySurface(
+          productWorkspaceRegistry,
+        );
+        applyTenantEcommerceProductWorkspaceDetailSurface(refreshedDetail);
+        setEcommerceLaunchActionMessage(
+          `Product workspace actualizado para ${result.workspace.workspace.editableSnapshot.title}.`,
+        );
+      });
+    } catch (error) {
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar el snapshot editable del product workspace.',
+      );
+    } finally {
+      setEcommerceProductWorkspaceSaveActionLoading(null);
+    }
+  }
+
+  async function handlePromoteTenantEcommerceProductWorkspaceToProductSetup() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductWorkspaceDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const savedDraftId =
+      selectedTenantEcommerceProductWorkspaceDetail.workspace.savedDraftId;
+    setEcommerceProductSetupPromotionActionLoading(savedDraftId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await promoteTenantEcommerceProductWorkspaceToProductSetup(
+        token,
+        tenantSlug,
+        savedDraftId,
+      );
+      const [productSetupRegistry, productSetupDetail] = await Promise.all([
+        fetchTenantEcommerceProductSetupRegistrySurface(tenantSlug),
+        fetchTenantEcommerceProductSetupDetailSurface(
+          tenantSlug,
+          result.productSetup.productSetupId,
+        ),
+      ]);
+
+      startTransition(() => {
+        applyTenantEcommerceProductSetupRegistrySurface(productSetupRegistry);
+        applyTenantEcommerceProductSetupDetailSurface(productSetupDetail);
+        setEcommerceLaunchActionMessage(
+          `Product setup abierto para ${result.productSetup.title}.`,
+        );
+      });
+    } catch (error) {
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo promover el product workspace a product setup.',
+      );
+    } finally {
+      setEcommerceProductSetupPromotionActionLoading(null);
+    }
+  }
+
+  async function handleRequestTenantEcommerceProductWorkspaceReadinessPacket() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductWorkspaceDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const savedDraftId =
+      selectedTenantEcommerceProductWorkspaceDetail.workspace.savedDraftId;
+    setEcommerceProductWorkspaceReadinessActionLoading(savedDraftId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await requestTenantEcommerceProductWorkspaceReadinessPacket(
+          token,
+          tenantSlug,
+          savedDraftId,
+        );
+
+      startTransition(() => {
+        setLastEcommerceProductWorkspaceReadinessPacket(result);
+        setEcommerceLaunchActionMessage(
+          `Readiness packet ${humanizeKey(result.readinessStatus)} para ${result.workspace.editableSnapshot.title}.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceProductWorkspaceReadinessPacket(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el readiness packet del product workspace.',
+      );
+    } finally {
+      setEcommerceProductWorkspaceReadinessActionLoading(null);
+    }
+  }
+
+  async function handleRequestTenantEcommerceProductSetupDefinitionPacket() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductSetupDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productSetupId =
+      selectedTenantEcommerceProductSetupDetail.productSetup.productSetupId;
+    setEcommerceProductSetupDefinitionActionLoading(productSetupId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await requestTenantEcommerceProductSetupDefinitionPacket(
+        token,
+        tenantSlug,
+        productSetupId,
+      );
+
+      startTransition(() => {
+        setLastEcommerceProductSetupDefinitionPacket(result);
+        setEcommerceLaunchActionMessage(
+          `Definition packet ${humanizeKey(result.definitionStatus)} para ${result.productSetup.title}.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceProductSetupDefinitionPacket(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el definition packet del product setup.',
+      );
+    } finally {
+      setEcommerceProductSetupDefinitionActionLoading(null);
+    }
+  }
+
+  async function handleUpdateTenantEcommerceProductSetupEditableSnapshot(
+    patch: {
+      title: string;
+      pricingBand: string | null;
+      offerAngle: string | null;
+      primaryCta: string | null;
+      channelSequence: string[];
+    },
+  ) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductSetupDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productSetupId =
+      selectedTenantEcommerceProductSetupDetail.productSetup.productSetupId;
+    setEcommerceProductSetupSaveActionLoading(productSetupId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await updateTenantEcommerceProductSetupEditableSnapshot(
+        token,
+        tenantSlug,
+        productSetupId,
+        patch,
+      );
+      const [productSetupRegistry, productSetupDetail] = await Promise.all([
+        fetchTenantEcommerceProductSetupRegistrySurface(tenantSlug),
+        fetchTenantEcommerceProductSetupDetailSurface(tenantSlug, productSetupId),
+      ]);
+
+      startTransition(() => {
+        applyTenantEcommerceProductSetupRegistrySurface(productSetupRegistry);
+        applyTenantEcommerceProductSetupDetailSurface(productSetupDetail);
+        setLastEcommerceProductSetupDefinitionPacket(null);
+        setEcommerceLaunchActionMessage(
+          `Product setup actualizado para ${result.setup.productSetup.title}.`,
+        );
+      });
+    } catch (error) {
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar el snapshot editable del product setup.',
+      );
+    } finally {
+      setEcommerceProductSetupSaveActionLoading(null);
+    }
+  }
+
+  async function handlePromoteTenantEcommerceProductSetupToProductEntity() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductSetupDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productSetupId =
+      selectedTenantEcommerceProductSetupDetail.productSetup.productSetupId;
+    setEcommerceProductEntityPromotionActionLoading(productSetupId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await promoteTenantEcommerceProductSetupToProductEntity(
+        token,
+        tenantSlug,
+        productSetupId,
+      );
+      const [productEntityRegistry, productEntityDetail] = await Promise.all([
+        fetchTenantEcommerceProductEntityRegistrySurface(tenantSlug),
+        fetchTenantEcommerceProductEntityDetailSurface(
+          tenantSlug,
+          result.productEntity.productEntityId,
+        ),
+      ]);
+
+      startTransition(() => {
+        applyTenantEcommerceProductEntityRegistrySurface(productEntityRegistry);
+        applyTenantEcommerceProductEntityDetailSurface(productEntityDetail);
+        setEcommerceLaunchActionMessage(
+          `Product entity abierta para ${result.productEntity.title}.`,
+        );
+      });
+    } catch (error) {
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo promover el product setup a product entity.',
+      );
+    } finally {
+      setEcommerceProductEntityPromotionActionLoading(null);
+    }
+  }
+
+  async function handleRequestTenantEcommerceProductEntityCommercializationPacket() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setEcommerceProductEntityCommercializationActionLoading(productEntityId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await requestTenantEcommerceProductEntityCommercializationPacket(
+          token,
+          tenantSlug,
+          productEntityId,
+        );
+
+      startTransition(() => {
+        setLastEcommerceProductEntityCommercializationPacket(result);
+        setEcommerceLaunchActionMessage(
+          `Commercialization packet ${humanizeKey(result.commercializationStatus)} para ${result.productEntity.title}.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceProductEntityCommercializationPacket(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el commercialization packet de la product entity.',
+      );
+    } finally {
+      setEcommerceProductEntityCommercializationActionLoading(null);
+    }
+  }
+
+  async function loadTenantEcommerceProductEntityChannelDraftDetail(
+    channelKey: 'landing' | 'catalog' | 'whatsapp',
+  ) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      applyTenantEcommerceProductEntityChannelDraftDetailSurface(null);
+      applyTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface(
+        null,
+      );
+      applyTenantEcommerceSavedProductEntityChannelDraftDetailSurface(null);
+      setTenantEcommerceProductEntityChannelDraftDetailLoading(false);
+      setTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading(
+        false,
+      );
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setTenantEcommerceProductEntityChannelDraftDetailLoading(true);
+    setTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading(
+      false,
+    );
+    setLastEcommerceProductEntityChannelDraftActionPacket(null);
+    setLastEcommerceProductEntityChannelDraftPublishReadinessPacket(null);
+    applyTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface(
+      null,
+    );
+    applyTenantEcommerceSavedProductEntityChannelDraftDetailSurface(null);
+    setEcommerceLaunchError(null);
+
+    try {
+      const detail = await fetchTenantEcommerceProductEntityChannelDraftDetailSurface(
+        tenantSlug,
+        productEntityId,
+        channelKey,
+      );
+
+      startTransition(() => {
+        applyTenantEcommerceProductEntityChannelDraftDetailSurface(detail);
+      });
+    } catch (error) {
+      applyTenantEcommerceProductEntityChannelDraftDetailSurface(null);
+      applyTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface(
+        null,
+      );
+      applyTenantEcommerceSavedProductEntityChannelDraftDetailSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el channel draft de ecommerce.',
+      );
+    } finally {
+      setTenantEcommerceProductEntityChannelDraftDetailLoading(false);
+    }
+  }
+
+  async function loadTenantEcommerceSavedProductEntityChannelDraftDetail(
+    channelKey: 'landing' | 'catalog' | 'whatsapp',
+  ) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      applyTenantEcommerceSavedProductEntityChannelDraftDetailSurface(null);
+      setTenantEcommerceSavedProductEntityChannelDraftDetailLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setTenantEcommerceSavedProductEntityChannelDraftDetailLoading(true);
+    setEcommerceLaunchError(null);
+
+    try {
+      const detail =
+        await fetchTenantEcommerceSavedProductEntityChannelDraftDetailSurface(
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        );
+
+      startTransition(() => {
+        applyTenantEcommerceSavedProductEntityChannelDraftDetailSurface(detail);
+      });
+    } catch (error) {
+      applyTenantEcommerceSavedProductEntityChannelDraftDetailSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el saved channel draft de ecommerce.',
+      );
+    } finally {
+      setTenantEcommerceSavedProductEntityChannelDraftDetailLoading(false);
+    }
+  }
+
+  async function loadTenantEcommerceProductEntityChannelAssetWorkspaceDetail(
+    channelKey: 'landing' | 'catalog' | 'whatsapp',
+  ) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      applyTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface(null);
+      setTenantEcommerceProductEntityChannelAssetWorkspaceDetailLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setTenantEcommerceProductEntityChannelAssetWorkspaceDetailLoading(true);
+    setEcommerceLaunchError(null);
+
+    try {
+      const detail =
+        await fetchTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface(
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        );
+
+      startTransition(() => {
+        applyTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface(
+          detail,
+        );
+        applyTenantEcommerceProductEntityChannelAssetEntityDetailSurface(null);
+        applyTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(
+          null,
+        );
+        setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket(
+          null,
+        );
+        setLastEcommerceProductEntityChannelAssetPublishPacket(null);
+      });
+    } catch (error) {
+      applyTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface(null);
+      applyTenantEcommerceProductEntityChannelAssetEntityDetailSurface(null);
+      applyTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(null);
+      setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket(
+        null,
+      );
+      setLastEcommerceProductEntityChannelAssetPublishPacket(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el channel asset workspace de ecommerce.',
+      );
+    } finally {
+      setTenantEcommerceProductEntityChannelAssetWorkspaceDetailLoading(false);
+    }
+  }
+
+  async function loadTenantEcommerceProductEntityChannelAssetEntityDetail(
+    channelKey: 'landing' | 'catalog' | 'whatsapp',
+  ) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      applyTenantEcommerceProductEntityChannelAssetEntityDetailSurface(null);
+      setTenantEcommerceProductEntityChannelAssetEntityDetailLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setTenantEcommerceProductEntityChannelAssetEntityDetailLoading(true);
+    setEcommerceLaunchError(null);
+
+    try {
+      const detail =
+        await fetchTenantEcommerceProductEntityChannelAssetEntityDetailSurface(
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        );
+
+      startTransition(() => {
+        applyTenantEcommerceProductEntityChannelAssetEntityDetailSurface(detail);
+        applyTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(
+          null,
+        );
+        setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket(
+          null,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceProductEntityChannelAssetEntityDetailSurface(null);
+      applyTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(null);
+      setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket(
+        null,
+      );
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar la channel asset entity de ecommerce.',
+      );
+    } finally {
+      setTenantEcommerceProductEntityChannelAssetEntityDetailLoading(false);
+    }
+  }
+
+  async function loadTenantEcommerceProductEntityChannelReleaseCandidateDetail(
+    channelKey: 'landing' | 'catalog' | 'whatsapp',
+  ) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      applyTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(
+        null,
+      );
+      setTenantEcommerceProductEntityChannelReleaseCandidateDetailLoading(false);
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setTenantEcommerceProductEntityChannelReleaseCandidateDetailLoading(true);
+    setEcommerceLaunchError(null);
+
+    try {
+      const detail =
+        await fetchTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        );
+
+      startTransition(() => {
+        applyTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(
+          detail,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(
+        null,
+      );
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el release candidate de ecommerce.',
+      );
+    } finally {
+      setTenantEcommerceProductEntityChannelReleaseCandidateDetailLoading(false);
+    }
+  }
+
+  async function handleRequestTenantEcommerceProductEntityChannelDraftActionPacket() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceProductEntityChannelDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const channelKey =
+      selectedTenantEcommerceProductEntityChannelDraftDetail.channelKey;
+    setEcommerceProductEntityChannelDraftActionPacketLoading(channelKey);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await requestTenantEcommerceProductEntityChannelDraftActionPacket(
+          token,
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        );
+
+      startTransition(() => {
+        setLastEcommerceProductEntityChannelDraftActionPacket(result);
+        setEcommerceLaunchActionMessage(
+          `Channel draft action packet ${humanizeKey(result.actionStatus)} para ${result.channelKey}.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceProductEntityChannelDraftActionPacket(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el action packet del channel draft.',
+      );
+    } finally {
+      setEcommerceProductEntityChannelDraftActionPacketLoading(null);
+    }
+  }
+
+  async function handleRequestTenantEcommerceProductEntityChannelDraftPublishReadinessPacket() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceProductEntityChannelDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const channelKey =
+      selectedTenantEcommerceProductEntityChannelDraftDetail.channelKey;
+    setEcommerceProductEntityChannelDraftPublishReadinessPacketLoading(
+      channelKey,
+    );
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await requestTenantEcommerceProductEntityChannelDraftPublishReadinessPacket(
+          token,
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        );
+
+      startTransition(() => {
+        setLastEcommerceProductEntityChannelDraftPublishReadinessPacket(result);
+        setEcommerceLaunchActionMessage(
+          `Publish readiness ${humanizeKey(result.readinessStatus)} para ${result.channelKey}.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceProductEntityChannelDraftPublishReadinessPacket(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el publish-readiness packet del channel draft.',
+      );
+    } finally {
+      setEcommerceProductEntityChannelDraftPublishReadinessPacketLoading(null);
+    }
+  }
+
+  async function loadTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceProductEntityChannelDraftDetail
+    ) {
+      applyTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface(
+        null,
+      );
+      setTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading(
+        false,
+      );
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const channelKey =
+      selectedTenantEcommerceProductEntityChannelDraftDetail.channelKey;
+    setTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading(
+      true,
+    );
+    setEcommerceLaunchError(null);
+
+    try {
+      const workspace =
+        await fetchTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface(
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        );
+
+      startTransition(() => {
+        applyTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface(
+          workspace,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceSurface(
+        null,
+      );
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el publish preparation workspace del channel draft.',
+      );
+    } finally {
+      setTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading(
+        false,
+      );
+    }
+  }
+
+  async function handleSaveTenantEcommerceProductEntityChannelDraft() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceProductEntityChannelDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const channelKey =
+      selectedTenantEcommerceProductEntityChannelDraftDetail.channelKey;
+    setEcommerceProductEntityChannelDraftSaveActionLoading(channelKey);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await saveTenantEcommerceProductEntityChannelDraft(
+        token,
+        tenantSlug,
+        productEntityId,
+        channelKey,
+      );
+      const registry =
+        await fetchTenantEcommerceSavedProductEntityChannelDraftRegistrySurface(
+          tenantSlug,
+          productEntityId,
+        );
+      const detail =
+        await fetchTenantEcommerceSavedProductEntityChannelDraftDetailSurface(
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        );
+
+      startTransition(() => {
+        applyTenantEcommerceSavedProductEntityChannelDraftRegistrySurface(
+          registry,
+        );
+        applyTenantEcommerceSavedProductEntityChannelDraftDetailSurface(detail);
+        setEcommerceLaunchActionMessage(result.summary);
+      });
+    } catch (error) {
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo guardar el channel draft de ecommerce.',
+      );
+    } finally {
+      setEcommerceProductEntityChannelDraftSaveActionLoading(null);
+    }
+  }
+
+  async function handleUpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshot(
+    patch: {
+      title: string;
+      headline: string;
+      draftBlueprint: string[];
+      recommendedArtifacts: string[];
+      nextMilestone: string;
+    },
+  ) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceSavedProductEntityChannelDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const channelKey =
+      selectedTenantEcommerceSavedProductEntityChannelDraftDetail.savedChannelDraft
+        .channelKey;
+    setEcommerceSavedProductEntityChannelDraftSaveActionLoading(channelKey);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await updateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshot(
+          token,
+          tenantSlug,
+          productEntityId,
+          channelKey,
+          patch,
+        );
+      const registry =
+        await fetchTenantEcommerceSavedProductEntityChannelDraftRegistrySurface(
+          tenantSlug,
+          productEntityId,
+        );
+
+      startTransition(() => {
+        applyTenantEcommerceSavedProductEntityChannelDraftDetailSurface(
+          result.savedChannelDraft,
+        );
+        applyTenantEcommerceSavedProductEntityChannelDraftRegistrySurface(
+          registry,
+        );
+        setEcommerceLaunchActionMessage(
+          `Saved channel draft ${channelKey} actualizado para seguir preparando staging controlado.`,
+        );
+      });
+    } catch (error) {
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar el snapshot editable del saved channel draft.',
+      );
+    } finally {
+      setEcommerceSavedProductEntityChannelDraftSaveActionLoading(null);
+    }
+  }
+
+  async function handlePromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceSavedProductEntityChannelDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const channelKey =
+      selectedTenantEcommerceSavedProductEntityChannelDraftDetail.savedChannelDraft
+        .channelKey;
+    setEcommerceProductEntityChannelAssetWorkspacePromotionActionLoading(
+      channelKey,
+    );
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await promoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspace(
+          token,
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        );
+      const [registry, detail] = await Promise.all([
+        fetchTenantEcommerceProductEntityChannelAssetWorkspaceRegistrySurface(
+          tenantSlug,
+          productEntityId,
+        ),
+        fetchTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface(
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        ),
+      ]);
+
+      startTransition(() => {
+        applyTenantEcommerceProductEntityChannelAssetWorkspaceRegistrySurface(
+          registry,
+        );
+        applyTenantEcommerceProductEntityChannelAssetWorkspaceDetailSurface(
+          detail,
+        );
+        setLastEcommerceProductEntityChannelAssetPublishPacket(null);
+        setEcommerceLaunchActionMessage(
+          `Channel asset workspace abierto para ${result.workspace.channelKey}.`,
+        );
+      });
+    } catch (error) {
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo promover el saved channel draft a channel asset workspace.',
+      );
+    } finally {
+      setEcommerceProductEntityChannelAssetWorkspacePromotionActionLoading(
+        null,
+      );
+    }
+  }
+
+  async function handleRequestTenantEcommerceProductEntityChannelAssetPublishPacket() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const channelKey =
+      selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail.workspace
+        .channelKey;
+    setEcommerceProductEntityChannelAssetPublishPacketLoading(channelKey);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await requestTenantEcommerceProductEntityChannelAssetPublishPacketSurface(
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        );
+
+      startTransition(() => {
+        setLastEcommerceProductEntityChannelAssetPublishPacket(result);
+        setEcommerceLaunchActionMessage(
+          `Publish packet listo para ${result.channelKey}.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceProductEntityChannelAssetPublishPacket(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el publish packet del channel asset workspace.',
+      );
+    } finally {
+      setEcommerceProductEntityChannelAssetPublishPacketLoading(null);
+    }
+  }
+
+  async function handlePromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntity() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const channelKey =
+      selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail.workspace
+        .channelKey;
+    setEcommerceProductEntityChannelAssetEntityPromotionActionLoading(
+      channelKey,
+    );
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await promoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntity(
+          token,
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        );
+      const [registry, detail] = await Promise.all([
+        fetchTenantEcommerceProductEntityChannelAssetEntityRegistrySurface(
+          tenantSlug,
+          productEntityId,
+        ),
+        fetchTenantEcommerceProductEntityChannelAssetEntityDetailSurface(
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        ),
+      ]);
+
+      startTransition(() => {
+        applyTenantEcommerceProductEntityChannelAssetEntityRegistrySurface(
+          registry,
+        );
+        applyTenantEcommerceProductEntityChannelAssetEntityDetailSurface(detail);
+        setEcommerceLaunchActionMessage(
+          `Channel asset entity abierta para ${result.assetEntity.channelKey}.`,
+        );
+      });
+    } catch (error) {
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo promover el channel asset workspace a channel asset entity.',
+      );
+    } finally {
+      setEcommerceProductEntityChannelAssetEntityPromotionActionLoading(null);
+    }
+  }
+
+  async function handleUpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshot(
+    patch: {
+      title: string;
+      headline: string;
+      draftBlueprint: string[];
+      recommendedArtifacts: string[];
+      nextMilestone: string;
+    },
+  ) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceProductEntityChannelAssetEntityDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const channelKey =
+      selectedTenantEcommerceProductEntityChannelAssetEntityDetail.assetEntity
+        .channelKey;
+    setEcommerceProductEntityChannelAssetEntitySaveActionLoading(channelKey);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const [result, registry] = await Promise.all([
+        updateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshot(
+          token,
+          tenantSlug,
+          productEntityId,
+          channelKey,
+          patch,
+        ),
+        fetchTenantEcommerceProductEntityChannelAssetEntityRegistrySurface(
+          tenantSlug,
+          productEntityId,
+        ),
+      ]);
+
+      startTransition(() => {
+        applyTenantEcommerceProductEntityChannelAssetEntityDetailSurface(
+          result.assetEntity,
+        );
+        applyTenantEcommerceProductEntityChannelAssetEntityRegistrySurface(
+          registry,
+        );
+        setEcommerceLaunchActionMessage(
+          `Channel asset entity ${channelKey} actualizada para preparar la siguiente promoción.`,
+        );
+      });
+    } catch (error) {
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar el snapshot editable de la channel asset entity.',
+      );
+    } finally {
+      setEcommerceProductEntityChannelAssetEntitySaveActionLoading(null);
+    }
+  }
+
+  async function handleRequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacket() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceProductEntityChannelAssetEntityDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const channelKey =
+      selectedTenantEcommerceProductEntityChannelAssetEntityDetail.assetEntity
+        .channelKey;
+    setEcommerceProductEntityChannelAssetEntityPublishPreparationPacketLoading(
+      channelKey,
+    );
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await requestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacket(
+          token,
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        );
+
+      startTransition(() => {
+        setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket(
+          result,
+        );
+        setEcommerceLaunchActionMessage(
+          `Publish preparation ${humanizeKey(result.preparationStatus)} para ${result.channelKey}.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket(
+        null,
+      );
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el publish preparation packet de la channel asset entity.',
+      );
+    } finally {
+      setEcommerceProductEntityChannelAssetEntityPublishPreparationPacketLoading(
+        null,
+      );
+    }
+  }
+
+  async function handlePromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidate() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceProductEntityChannelAssetEntityDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const channelKey =
+      selectedTenantEcommerceProductEntityChannelAssetEntityDetail.assetEntity
+        .channelKey;
+    setEcommerceProductEntityChannelReleaseCandidatePromotionActionLoading(
+      channelKey,
+    );
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const [result, registry, detail] = await Promise.all([
+        promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidate(
+          token,
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        ),
+        fetchTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
+          tenantSlug,
+          productEntityId,
+        ),
+        fetchTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(
+          tenantSlug,
+          productEntityId,
+          channelKey,
+        ),
+      ]);
+
+      startTransition(() => {
+        applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
+          registry,
+        );
+        applyTenantEcommerceProductEntityChannelReleaseCandidateDetailSurface(
+          detail,
+        );
+        setEcommerceLaunchActionMessage(
+          `Release candidate abierto para ${result.releaseCandidate.channelKey}.`,
+        );
+      });
+    } catch (error) {
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo promover la channel asset entity a release candidate.',
+      );
+    } finally {
+      setEcommerceProductEntityChannelReleaseCandidatePromotionActionLoading(
+        null,
+      );
     }
   }
 
@@ -11957,6 +14765,201 @@ export function App() {
             tenantAiEcommerceLaunchWorkspaceLoading={
               tenantAiEcommerceLaunchWorkspaceLoading
             }
+            tenantEcommerceProductAuthoringWorkspace={
+              tenantEcommerceProductAuthoringWorkspace
+            }
+            tenantEcommerceSavedProductDraftRegistry={
+              tenantEcommerceSavedProductDraftRegistry
+            }
+            tenantEcommerceProductWorkspaceRegistry={
+              tenantEcommerceProductWorkspaceRegistry
+            }
+            tenantEcommerceProductSetupRegistry={
+              tenantEcommerceProductSetupRegistry
+            }
+            tenantEcommerceProductEntityRegistry={
+              tenantEcommerceProductEntityRegistry
+            }
+            selectedTenantEcommerceProductWorkspaceDetail={
+              selectedTenantEcommerceProductWorkspaceDetail
+            }
+            tenantEcommerceProductWorkspaceDetailLoading={
+              tenantEcommerceProductWorkspaceDetailLoading
+            }
+            selectedTenantEcommerceProductSetupDetail={
+              selectedTenantEcommerceProductSetupDetail
+            }
+            tenantEcommerceProductSetupDetailLoading={
+              tenantEcommerceProductSetupDetailLoading
+            }
+            selectedTenantEcommerceProductEntityDetail={
+              selectedTenantEcommerceProductEntityDetail
+            }
+            selectedTenantEcommerceProductEntityChannelAssetsWorkspace={
+              selectedTenantEcommerceProductEntityChannelAssetsWorkspace
+            }
+            selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace={
+              selectedTenantEcommerceProductEntityChannelAssetDraftsWorkspace
+            }
+            tenantEcommerceProductEntityChannelAssetWorkspaceRegistry={
+              tenantEcommerceProductEntityChannelAssetWorkspaceRegistry
+            }
+            selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail={
+              selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail
+            }
+            tenantEcommerceProductEntityChannelAssetEntityRegistry={
+              tenantEcommerceProductEntityChannelAssetEntityRegistry
+            }
+            selectedTenantEcommerceProductEntityChannelAssetEntityDetail={
+              selectedTenantEcommerceProductEntityChannelAssetEntityDetail
+            }
+            tenantEcommerceProductEntityChannelReleaseCandidateRegistry={
+              tenantEcommerceProductEntityChannelReleaseCandidateRegistry
+            }
+            selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail={
+              selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail
+            }
+            lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket={
+              lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket
+            }
+            lastEcommerceProductEntityChannelAssetPublishPacket={
+              lastEcommerceProductEntityChannelAssetPublishPacket
+            }
+            selectedTenantEcommerceProductEntityChannelDraftDetail={
+              selectedTenantEcommerceProductEntityChannelDraftDetail
+            }
+            tenantEcommerceProductEntityDetailLoading={
+              tenantEcommerceProductEntityDetailLoading
+            }
+            tenantEcommerceProductEntityChannelAssetsWorkspaceLoading={
+              tenantEcommerceProductEntityChannelAssetsWorkspaceLoading
+            }
+            tenantEcommerceProductEntityChannelAssetDraftsWorkspaceLoading={
+              tenantEcommerceProductEntityChannelAssetDraftsWorkspaceLoading
+            }
+            tenantEcommerceProductEntityChannelAssetWorkspaceDetailLoading={
+              tenantEcommerceProductEntityChannelAssetWorkspaceDetailLoading
+            }
+            tenantEcommerceProductEntityChannelAssetEntityDetailLoading={
+              tenantEcommerceProductEntityChannelAssetEntityDetailLoading
+            }
+            tenantEcommerceProductEntityChannelReleaseCandidateDetailLoading={
+              tenantEcommerceProductEntityChannelReleaseCandidateDetailLoading
+            }
+            tenantEcommerceProductEntityChannelDraftDetailLoading={
+              tenantEcommerceProductEntityChannelDraftDetailLoading
+            }
+            lastEcommerceProductSetupDefinitionPacket={
+              lastEcommerceProductSetupDefinitionPacket
+            }
+            lastEcommerceProductWorkspaceReadinessPacket={
+              lastEcommerceProductWorkspaceReadinessPacket
+            }
+            selectedTenantEcommerceProductAuthoringDraftDetail={
+              selectedTenantEcommerceProductAuthoringDraftDetail
+            }
+            tenantEcommerceProductAuthoringDraftDetailLoading={
+              tenantEcommerceProductAuthoringDraftDetailLoading
+            }
+            lastEcommerceProductAuthoringDraftBrief={
+              lastEcommerceProductAuthoringDraftBrief
+            }
+            lastEcommerceProductAuthoringDraftRefinementPacket={
+              lastEcommerceProductAuthoringDraftRefinementPacket
+            }
+            ecommerceProductAuthoringActionLoading={
+              ecommerceProductAuthoringActionLoading
+            }
+            ecommerceProductAuthoringRefinementActionLoading={
+              ecommerceProductAuthoringRefinementActionLoading
+            }
+            ecommerceProductAuthoringSaveActionLoading={
+              ecommerceProductAuthoringSaveActionLoading
+            }
+            ecommerceProductWorkspacePromotionActionLoading={
+              ecommerceProductWorkspacePromotionActionLoading
+            }
+            ecommerceProductWorkspaceSaveActionLoading={
+              ecommerceProductWorkspaceSaveActionLoading
+            }
+            ecommerceProductSetupPromotionActionLoading={
+              ecommerceProductSetupPromotionActionLoading
+            }
+            ecommerceProductSetupSaveActionLoading={
+              ecommerceProductSetupSaveActionLoading
+            }
+            ecommerceProductEntityPromotionActionLoading={
+              ecommerceProductEntityPromotionActionLoading
+            }
+            lastEcommerceProductEntityCommercializationPacket={
+              lastEcommerceProductEntityCommercializationPacket
+            }
+            lastEcommerceProductEntityChannelDraftActionPacket={
+              lastEcommerceProductEntityChannelDraftActionPacket
+            }
+            lastEcommerceProductEntityChannelDraftPublishReadinessPacket={
+              lastEcommerceProductEntityChannelDraftPublishReadinessPacket
+            }
+            selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace={
+              selectedTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace
+            }
+            tenantEcommerceSavedProductEntityChannelDraftRegistry={
+              tenantEcommerceSavedProductEntityChannelDraftRegistry
+            }
+            selectedTenantEcommerceSavedProductEntityChannelDraftDetail={
+              selectedTenantEcommerceSavedProductEntityChannelDraftDetail
+            }
+            ecommerceProductEntityCommercializationActionLoading={
+              ecommerceProductEntityCommercializationActionLoading
+            }
+            ecommerceProductEntityChannelDraftActionPacketLoading={
+              ecommerceProductEntityChannelDraftActionPacketLoading
+            }
+            ecommerceProductEntityChannelDraftPublishReadinessPacketLoading={
+              ecommerceProductEntityChannelDraftPublishReadinessPacketLoading
+            }
+            tenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading={
+              tenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading
+            }
+            ecommerceProductEntityChannelDraftSaveActionLoading={
+              ecommerceProductEntityChannelDraftSaveActionLoading
+            }
+            tenantEcommerceSavedProductEntityChannelDraftDetailLoading={
+              tenantEcommerceSavedProductEntityChannelDraftDetailLoading
+            }
+            ecommerceSavedProductEntityChannelDraftSaveActionLoading={
+              ecommerceSavedProductEntityChannelDraftSaveActionLoading
+            }
+            ecommerceProductEntityChannelAssetWorkspacePromotionActionLoading={
+              ecommerceProductEntityChannelAssetWorkspacePromotionActionLoading
+            }
+            ecommerceProductEntityChannelAssetPublishPacketLoading={
+              ecommerceProductEntityChannelAssetPublishPacketLoading
+            }
+            ecommerceProductEntityChannelAssetEntityPromotionActionLoading={
+              ecommerceProductEntityChannelAssetEntityPromotionActionLoading
+            }
+            ecommerceProductEntityChannelAssetEntitySaveActionLoading={
+              ecommerceProductEntityChannelAssetEntitySaveActionLoading
+            }
+            ecommerceProductEntityChannelAssetEntityPublishPreparationPacketLoading={
+              ecommerceProductEntityChannelAssetEntityPublishPreparationPacketLoading
+            }
+            ecommerceProductEntityChannelReleaseCandidatePromotionActionLoading={
+              ecommerceProductEntityChannelReleaseCandidatePromotionActionLoading
+            }
+            ecommerceProductSetupDefinitionActionLoading={
+              ecommerceProductSetupDefinitionActionLoading
+            }
+            ecommerceProductWorkspaceReadinessActionLoading={
+              ecommerceProductWorkspaceReadinessActionLoading
+            }
+            tenantEcommerceStoreProfileWorkspace={
+              tenantEcommerceStoreProfileWorkspace
+            }
+            tenantEcommerceStoreSetupWorkspace={
+              tenantEcommerceStoreSetupWorkspace
+            }
             tenantAiEcommerceLaunchWorkspace={tenantAiEcommerceLaunchWorkspace}
             tenantEcommerceLaunchPlanRegistry={tenantEcommerceLaunchPlanRegistry}
             selectedTenantEcommerceLaunchPlanDetail={
@@ -12006,6 +15009,117 @@ export function App() {
             }
             onRefresh={() => {
               void refreshTenantAiEcommerceLaunchWorkspace();
+            }}
+            onSelectProductDraft={(draftId) => {
+              void loadTenantEcommerceProductAuthoringDraftDetail(draftId);
+            }}
+            onRequestProductDraftBrief={() => {
+              void handleRequestTenantEcommerceProductAuthoringDraftBrief();
+            }}
+            onRequestProductDraftRefinementPacket={() => {
+              void handleRequestTenantEcommerceProductAuthoringDraftRefinementPacket();
+            }}
+            onSaveProductDraft={() => {
+              void handleSaveTenantEcommerceProductAuthoringDraft();
+            }}
+            onPromoteSavedDraftToProductWorkspace={(savedDraftId) => {
+              void handlePromoteTenantEcommerceSavedDraftToProductWorkspace(
+                savedDraftId,
+              );
+            }}
+            onSelectProductWorkspace={(savedDraftId) => {
+              void loadTenantEcommerceProductWorkspaceDetail(savedDraftId);
+            }}
+            onUpdateProductWorkspaceEditableSnapshot={(patch) => {
+              void handleUpdateTenantEcommerceProductWorkspaceEditableSnapshot(
+                patch,
+              );
+            }}
+            onPromoteProductWorkspaceToProductSetup={() => {
+              void handlePromoteTenantEcommerceProductWorkspaceToProductSetup();
+            }}
+            onRequestProductWorkspaceReadinessPacket={() => {
+              void handleRequestTenantEcommerceProductWorkspaceReadinessPacket();
+            }}
+            onSelectProductSetup={(productSetupId) => {
+              void loadTenantEcommerceProductSetupDetail(productSetupId);
+            }}
+            onRequestProductSetupDefinitionPacket={() => {
+              void handleRequestTenantEcommerceProductSetupDefinitionPacket();
+            }}
+            onUpdateProductSetupEditableSnapshot={(patch) => {
+              void handleUpdateTenantEcommerceProductSetupEditableSnapshot(
+                patch,
+              );
+            }}
+            onPromoteProductSetupToProductEntity={() => {
+              void handlePromoteTenantEcommerceProductSetupToProductEntity();
+            }}
+            onSelectProductEntity={(productEntityId) => {
+              void loadTenantEcommerceProductEntityDetail(productEntityId);
+            }}
+            onRequestProductEntityCommercializationPacket={() => {
+              void handleRequestTenantEcommerceProductEntityCommercializationPacket();
+            }}
+            onSelectProductEntityChannelDraft={(channelKey) => {
+              void loadTenantEcommerceProductEntityChannelDraftDetail(channelKey);
+            }}
+            onRequestProductEntityChannelDraftActionPacket={() => {
+              void handleRequestTenantEcommerceProductEntityChannelDraftActionPacket();
+            }}
+            onRequestProductEntityChannelDraftPublishReadinessPacket={() => {
+              void handleRequestTenantEcommerceProductEntityChannelDraftPublishReadinessPacket();
+            }}
+            onSelectProductEntityChannelDraftPublishPreparationWorkspace={() => {
+              void loadTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspace();
+            }}
+            onSaveProductEntityChannelDraft={() => {
+              void handleSaveTenantEcommerceProductEntityChannelDraft();
+            }}
+            onSelectSavedProductEntityChannelDraft={(channelKey) => {
+              void loadTenantEcommerceSavedProductEntityChannelDraftDetail(
+                channelKey,
+              );
+            }}
+            onUpdateSavedProductEntityChannelDraftEditableSnapshot={(patch) => {
+              void handleUpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshot(
+                patch,
+              );
+            }}
+            onPromoteSavedProductEntityChannelDraftToChannelAssetWorkspace={() => {
+              void handlePromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspace();
+            }}
+            onSelectProductEntityChannelAssetWorkspace={(channelKey) => {
+              void loadTenantEcommerceProductEntityChannelAssetWorkspaceDetail(
+                channelKey,
+              );
+            }}
+            onRequestProductEntityChannelAssetPublishPacket={() => {
+              void handleRequestTenantEcommerceProductEntityChannelAssetPublishPacket();
+            }}
+            onPromoteProductEntityChannelAssetWorkspaceToChannelAssetEntity={() => {
+              void handlePromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntity();
+            }}
+            onUpdateProductEntityChannelAssetEntityEditableSnapshot={(patch) => {
+              void handleUpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshot(
+                patch,
+              );
+            }}
+            onRequestProductEntityChannelAssetEntityPublishPreparationPacket={() => {
+              void handleRequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacket();
+            }}
+            onSelectProductEntityChannelAssetEntity={(channelKey) => {
+              void loadTenantEcommerceProductEntityChannelAssetEntityDetail(
+                channelKey,
+              );
+            }}
+            onPromoteProductEntityChannelAssetEntityToReleaseCandidate={() => {
+              void handlePromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidate();
+            }}
+            onSelectProductEntityChannelReleaseCandidate={(channelKey) => {
+              void loadTenantEcommerceProductEntityChannelReleaseCandidateDetail(
+                channelKey,
+              );
             }}
             onSelectLaunchPlan={(launchPlanId) => {
               void loadTenantEcommerceLaunchPlanDetail(launchPlanId);

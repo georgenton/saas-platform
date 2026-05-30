@@ -10,6 +10,11 @@ import {
 import {
   EcommerceProductAuthoringDraftNotFoundError,
   EcommerceLaunchPlanNotFoundError,
+  GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
+  GetTenantEcommerceChannelReleaseExecutionReadinessUseCase,
+  GetTenantEcommerceChannelReleaseWorkbenchUseCase,
+  GetTenantEcommerceLandingAssetEntityWorkspaceUseCase,
+  GetTenantEcommerceLandingPageStructureUseCase,
   GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
   GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
   GetTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase,
@@ -22,6 +27,8 @@ import {
   GetTenantEcommerceProductAuthoringDraftDetailUseCase,
   GetTenantEcommerceProductSetupDetailUseCase,
   GetTenantEcommerceProductWorkspaceDetailUseCase,
+  GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
+  GetTenantEcommerceWhatsappSalesFlowUseCase,
   RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
   RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
   SaveTenantEcommerceProductEntityChannelDraftUseCase,
@@ -113,6 +120,22 @@ import {
   toEcommerceProductEntityChannelReleaseCandidateRegistryResponseDto,
   toPromoteEcommerceProductEntityChannelAssetEntityToReleaseCandidateResponseDto,
 } from './dto/ecommerce-product-entity-channel-release-candidate.response';
+import {
+  EcommerceChannelReleaseExecutionReadinessResponseDto,
+  EcommerceCatalogAssetEntityWorkspaceResponseDto,
+  EcommerceLandingPageStructureResponseDto,
+  EcommerceChannelReleaseWorkbenchResponseDto,
+  EcommerceLandingAssetEntityWorkspaceResponseDto,
+  EcommerceWhatsappSalesFlowResponseDto,
+  EcommerceWhatsappChannelSequenceWorkspaceResponseDto,
+  toEcommerceChannelReleaseExecutionReadinessResponseDto,
+  toEcommerceCatalogAssetEntityWorkspaceResponseDto,
+  toEcommerceLandingPageStructureResponseDto,
+  toEcommerceChannelReleaseWorkbenchResponseDto,
+  toEcommerceLandingAssetEntityWorkspaceResponseDto,
+  toEcommerceWhatsappSalesFlowResponseDto,
+  toEcommerceWhatsappChannelSequenceWorkspaceResponseDto,
+} from './dto/ecommerce-product-entity-channel-realization.response';
 import {
   EcommerceProductEntityChannelAssetWorkspaceDetailResponseDto,
   EcommerceProductEntityChannelAssetWorkspaceRegistryResponseDto,
@@ -239,6 +262,13 @@ import {
 export class EcommerceController {
   constructor(
     private readonly getTenantEcommerceProductAuthoringDraftDetailUseCase: GetTenantEcommerceProductAuthoringDraftDetailUseCase,
+    private readonly getTenantEcommerceLandingAssetEntityWorkspaceUseCase: GetTenantEcommerceLandingAssetEntityWorkspaceUseCase,
+    private readonly getTenantEcommerceCatalogAssetEntityWorkspaceUseCase: GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
+    private readonly getTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase: GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
+    private readonly getTenantEcommerceChannelReleaseWorkbenchUseCase: GetTenantEcommerceChannelReleaseWorkbenchUseCase,
+    private readonly getTenantEcommerceChannelReleaseExecutionReadinessUseCase: GetTenantEcommerceChannelReleaseExecutionReadinessUseCase,
+    private readonly getTenantEcommerceLandingPageStructureUseCase: GetTenantEcommerceLandingPageStructureUseCase,
+    private readonly getTenantEcommerceWhatsappSalesFlowUseCase: GetTenantEcommerceWhatsappSalesFlowUseCase,
     private readonly getTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase: GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
     private readonly getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase: GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
     private readonly getTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase: GetTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase,
@@ -940,6 +970,208 @@ export class EcommerceController {
     return toPromoteEcommerceProductEntityChannelAssetEntityToReleaseCandidateResponseDto(
       releaseCandidate,
     );
+  }
+
+  @Get(':slug/product-entities/:productEntityId/landing-asset-entity-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantLandingAssetEntityWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceLandingAssetEntityWorkspaceResponseDto> {
+    const workspace =
+      await this.getTenantEcommerceLandingAssetEntityWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Landing asset entity workspace for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceLandingAssetEntityWorkspaceResponseDto(workspace);
+  }
+
+  @Get(':slug/product-entities/:productEntityId/catalog-asset-entity-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantCatalogAssetEntityWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceCatalogAssetEntityWorkspaceResponseDto> {
+    const workspace =
+      await this.getTenantEcommerceCatalogAssetEntityWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Catalog asset entity workspace for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceCatalogAssetEntityWorkspaceResponseDto(workspace);
+  }
+
+  @Get(':slug/product-entities/:productEntityId/whatsapp-channel-sequence-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantWhatsappChannelSequenceWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceWhatsappChannelSequenceWorkspaceResponseDto> {
+    const workspace =
+      await this.getTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Whatsapp channel sequence workspace for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceWhatsappChannelSequenceWorkspaceResponseDto(workspace);
+  }
+
+  @Get(':slug/product-entities/:productEntityId/channel-release-workbench')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantChannelReleaseWorkbench(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceChannelReleaseWorkbenchResponseDto> {
+    const workbench =
+      await this.getTenantEcommerceChannelReleaseWorkbenchUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!workbench) {
+      throw new NotFoundException(
+        `Channel release workbench for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceChannelReleaseWorkbenchResponseDto(workbench);
+  }
+
+  @Get(':slug/product-entities/:productEntityId/channel-release-execution-readiness')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantChannelReleaseExecutionReadiness(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceChannelReleaseExecutionReadinessResponseDto> {
+    const readiness =
+      await this.getTenantEcommerceChannelReleaseExecutionReadinessUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!readiness) {
+      throw new NotFoundException(
+        `Channel release execution readiness for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceChannelReleaseExecutionReadinessResponseDto(readiness);
+  }
+
+  @Get(':slug/product-entities/:productEntityId/landing-page-structure')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantLandingPageStructure(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceLandingPageStructureResponseDto> {
+    const structure =
+      await this.getTenantEcommerceLandingPageStructureUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!structure) {
+      throw new NotFoundException(
+        `Landing page structure for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceLandingPageStructureResponseDto(structure);
+  }
+
+  @Get(':slug/product-entities/:productEntityId/whatsapp-sales-flow')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantWhatsappSalesFlow(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceWhatsappSalesFlowResponseDto> {
+    const flow = await this.getTenantEcommerceWhatsappSalesFlowUseCase.execute(
+      tenantAccess?.tenantSlug ?? slug,
+      productEntityId,
+    );
+
+    if (!flow) {
+      throw new NotFoundException(
+        `Whatsapp sales flow for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceWhatsappSalesFlowResponseDto(flow);
   }
 
   @Get(':slug/product-entities/:productEntityId/channel-drafts/:channelKey')

@@ -59,6 +59,11 @@ import {
   UpdateTenantAiMemoryRecordUseCase,
 } from '@saas-platform/ai-application';
 import {
+  GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
+  GetTenantEcommerceChannelReleaseExecutionReadinessUseCase,
+  GetTenantEcommerceChannelReleaseWorkbenchUseCase,
+  GetTenantEcommerceLandingAssetEntityWorkspaceUseCase,
+  GetTenantEcommerceLandingPageStructureUseCase,
   GetTenantEcommerceProductAuthoringDraftDetailUseCase,
   GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
   GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
@@ -104,6 +109,8 @@ import {
   GetTenantEcommerceLaunchWorkspaceUseCase,
   GetTenantEcommerceStoreProfileWorkspaceUseCase,
   GetTenantEcommerceStoreSetupWorkspaceUseCase,
+  GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
+  GetTenantEcommerceWhatsappSalesFlowUseCase,
 } from '@saas-platform/ecommerce-application';
 import {
   AutoAssignTenantGrowthOperationalCasesUseCase,
@@ -336,6 +343,27 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let getTenantEcommerceProductEntityChannelDraftDetailUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcommerceLandingAssetEntityWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcommerceCatalogAssetEntityWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcommerceChannelReleaseWorkbenchUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcommerceChannelReleaseExecutionReadinessUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcommerceLandingPageStructureUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcommerceWhatsappSalesFlowUseCase: {
     execute: jest.Mock;
   };
   let requestTenantEcommerceProductEntityCommercializationPacketUseCase: {
@@ -3733,6 +3761,478 @@ describe('API', () => {
         ],
       }),
     };
+    getTenantEcommerceLandingAssetEntityWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:01:00.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        assetEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:53:00.000Z'),
+          assetEntityId: 'channel_draft_001',
+          productEntityId: 'product_entity_001',
+          sourceSavedChannelDraftId: 'channel_draft_001',
+          channelKey: 'landing',
+          promotedAt: new Date('2026-05-28T16:53:00.000Z'),
+          status: 'needs_publish_copy',
+          handoffOwner: 'shared',
+          title: 'Landing asset entity final',
+          headline: 'Headline final',
+          summary:
+            'La entity de asset de landing ya existe, pero todavía necesita copy base antes de tratarla como artifact operable.',
+          draftBlueprint: ['Hero final', 'CTA final'],
+          publishChecklist: ['Hero QA'],
+          recommendedArtifacts: ['Landing packet'],
+          nextMilestone: 'QA final de landing',
+          blockedBy: ['Pending copy review'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+            'No tratar esta entity de asset como publicación viva ni checkout real todavía.',
+          ],
+        },
+        workspaceStatus: 'needs_publish_copy',
+        hero: {
+          headline: 'Headline final',
+          subheadline:
+            'La entity de asset de landing ya existe, pero todavía necesita copy base antes de tratarla como artifact operable.',
+          primaryCta: 'Activar producto base',
+        },
+        proofBlocks: [
+          'SaaS Platform Store flagship offer setup v2 como oferta principal',
+          'Landing packet',
+        ],
+        offerSections: ['Hero final', 'CTA final'],
+        publishChecklist: ['Hero QA'],
+        nextMilestone: 'QA final de landing',
+        blockedBy: ['Pending copy review'],
+        guardrails: [
+          'No tratar esta entidad como checkout ni inventario final todavia.',
+          'No tratar esta entity de asset como publicación viva ni checkout real todavía.',
+          'No tratar este workspace como landing publicada ni checkout vivo todavía.',
+        ],
+      }),
+    };
+    getTenantEcommerceCatalogAssetEntityWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:02:00.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        assetEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:53:00.000Z'),
+          assetEntityId: 'channel_draft_002',
+          productEntityId: 'product_entity_001',
+          sourceSavedChannelDraftId: 'channel_draft_002',
+          channelKey: 'catalog',
+          promotedAt: new Date('2026-05-28T16:53:00.000Z'),
+          status: 'draft_asset_entity',
+          handoffOwner: 'ecommerce',
+          title: 'Catalog asset entity final',
+          headline: 'Catalog headline final',
+          summary:
+            'La entity de asset de catalogo ya existe y ya puede bajar a una ficha comercial mas concreta.',
+          draftBlueprint: ['Offer bullets', 'Pricing snapshot'],
+          publishChecklist: ['Pricing QA'],
+          recommendedArtifacts: ['Catalog pricing card'],
+          nextMilestone: 'QA final de catalogo',
+          blockedBy: [],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+            'No tratar esta entity de asset como publicación viva ni checkout real todavía.',
+          ],
+        },
+        workspaceStatus: 'ready_for_catalog_assembly',
+        merchandisingCard: {
+          title: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+        },
+        offerBullets: ['Offer bullets', 'Pricing snapshot'],
+        merchandisingChecks: ['Pricing QA'],
+        nextMilestone: 'QA final de catalogo',
+        blockedBy: [],
+        guardrails: [
+          'No tratar esta entidad como checkout ni inventario final todavia.',
+          'No tratar esta entity de asset como publicación viva ni checkout real todavía.',
+          'No tratar este workspace como catálogo publicado ni ficha definitiva todavía.',
+        ],
+      }),
+    };
+    getTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:03:00.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        assetEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:53:00.000Z'),
+          assetEntityId: 'channel_draft_003',
+          productEntityId: 'product_entity_001',
+          sourceSavedChannelDraftId: 'channel_draft_003',
+          channelKey: 'whatsapp',
+          promotedAt: new Date('2026-05-28T16:53:00.000Z'),
+          status: 'draft_asset_entity',
+          handoffOwner: 'growth',
+          title: 'Whatsapp asset entity final',
+          headline: 'Mensaje de apertura final',
+          summary:
+            'La entity de asset de WhatsApp ya existe y puede bajar a secuencia comercial operable.',
+          draftBlueprint: ['Follow-up angle', 'Recovery CTA'],
+          publishChecklist: ['Sequence QA'],
+          recommendedArtifacts: ['Recovery branch', 'Close note'],
+          nextMilestone: 'QA final de whatsapp',
+          blockedBy: [],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+            'No tratar esta entity de asset como publicación viva ni checkout real todavía.',
+          ],
+        },
+        workspaceStatus: 'ready_for_sequence_assembly',
+        opener: 'Mensaje de apertura final',
+        followUpSequence: [
+          'Mensaje de apertura final',
+          'Follow-up 1: Follow-up angle',
+          'Follow-up 2: Recovery CTA',
+        ],
+        recoveryBranch: ['Recovery: Recovery branch', 'Recovery: Close note'],
+        closeCta: 'Activar producto base',
+        operatorNotes: ['Sequence QA'],
+        nextMilestone: 'QA final de whatsapp',
+        blockedBy: [],
+        guardrails: [
+          'No tratar esta entidad como checkout ni inventario final todavia.',
+          'No tratar esta entity de asset como publicación viva ni checkout real todavía.',
+          'No tratar esta secuencia como automatización viva de WhatsApp todavía.',
+        ],
+      }),
+    };
+    getTenantEcommerceChannelReleaseWorkbenchUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:04:00.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        summary: {
+          totalCandidates: 1,
+          readyCount: 0,
+          needsPublishCopyCount: 1,
+          blockedCount: 0,
+          headline: 'Ecommerce ya puede revisar release final por canal.',
+          detail:
+            'Este workbench consolida readiness, huecos y artifacts antes de mover un canal hacia publicación controlada.',
+        },
+        channels: [
+          {
+            channelKey: 'landing',
+            status: 'needs_publish_copy',
+            handoffOwner: 'shared',
+            title: 'Landing asset entity final',
+            nextMilestone: 'QA final de landing',
+            blockedBy: ['Pending copy review'],
+          },
+          {
+            channelKey: 'catalog',
+            status: 'missing',
+            handoffOwner: 'shared',
+            title: 'catalog candidate pendiente',
+            nextMilestone: 'Promover channel asset entity antes de QA final.',
+            blockedBy: ['Todavía no existe release candidate para este canal.'],
+          },
+          {
+            channelKey: 'whatsapp',
+            status: 'missing',
+            handoffOwner: 'shared',
+            title: 'whatsapp candidate pendiente',
+            nextMilestone: 'Promover channel asset entity antes de QA final.',
+            blockedBy: ['Todavía no existe release candidate para este canal.'],
+          },
+        ],
+        qaChecklist: [
+          'Verificar copy final y CTA por canal',
+          'Confirmar artifacts mínimos de landing, catálogo y WhatsApp',
+          'Mantener rollout como controlado, no como publicación viva automática',
+        ],
+        finalArtifacts: ['Landing packet'],
+        guardrails: [
+          'No tratar este workbench como publicación viva ni go-live automático todavía.',
+          'Mantener approval y QA final por canal antes de cualquier activación real.',
+        ],
+      }),
+    };
+    getTenantEcommerceChannelReleaseExecutionReadinessUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:05:00.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        overallStatus: 'needs_channel_completion',
+        summary:
+          'Todavía conviene cerrar algunos canales antes de abrir release controlado.',
+        channels: [
+          {
+            channelKey: 'landing',
+            releaseStatus: 'needs_publish_copy',
+            executionOwner: 'shared',
+            executionChecklist: ['Hero QA'],
+            launchWindow: 'Ajustar copy y artifacts antes de release controlado',
+            blockedBy: ['Pending copy review'],
+          },
+          {
+            channelKey: 'catalog',
+            releaseStatus: 'missing',
+            executionOwner: 'shared',
+            executionChecklist: ['Promover release candidate para este canal'],
+            launchWindow: 'Pendiente de candidate y QA final',
+            blockedBy: ['Todavía no existe release candidate para este canal.'],
+          },
+          {
+            channelKey: 'whatsapp',
+            releaseStatus: 'missing',
+            executionOwner: 'shared',
+            executionChecklist: ['Promover release candidate para este canal'],
+            launchWindow: 'Pendiente de candidate y QA final',
+            blockedBy: ['Todavía no existe release candidate para este canal.'],
+          },
+        ],
+        finalChecklist: [
+          'Verificar copy final y CTA por canal',
+          'Confirmar artifacts mínimos para landing, catálogo y WhatsApp',
+          'Mantener el rollout como controlado con owner explícito por canal',
+        ],
+        blockedBy: [
+          'Pending copy review',
+          'Todavía no existe release candidate para este canal.',
+          'Todavía no existe release candidate para este canal.',
+        ],
+        guardrails: [
+          'No tratar este readiness como publicación viva ni go-live automático todavía.',
+          'Mantener QA final y handoff explícito por canal antes de cualquier activación real.',
+        ],
+      }),
+    };
+    getTenantEcommerceLandingPageStructureUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:06:00.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        assetEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:53:00.000Z'),
+          assetEntityId: 'channel_draft_001',
+          productEntityId: 'product_entity_001',
+          sourceSavedChannelDraftId: 'channel_draft_001',
+          channelKey: 'landing',
+          promotedAt: new Date('2026-05-28T16:53:00.000Z'),
+          status: 'needs_publish_copy',
+          handoffOwner: 'shared',
+          title: 'Landing asset entity final',
+          headline: 'Headline final',
+          summary:
+            'La entity de asset de landing ya existe, pero todavía necesita copy base antes de tratarla como artifact operable.',
+          draftBlueprint: ['Hero final', 'CTA final'],
+          publishChecklist: ['Hero QA'],
+          recommendedArtifacts: ['Landing packet'],
+          nextMilestone: 'QA final de landing',
+          blockedBy: ['Pending copy review'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+            'No tratar esta entity de asset como publicación viva ni checkout real todavía.',
+          ],
+        },
+        structureStatus: 'needs_publish_copy',
+        hero: {
+          headline: 'Headline final',
+          subheadline:
+            'La entity de asset de landing ya existe, pero todavía necesita copy base antes de tratarla como artifact operable.',
+          primaryCta: 'Activar producto base',
+        },
+        proofStrip: [
+          'SaaS Platform Store flagship offer setup v2 como oferta principal',
+          'Landing packet',
+        ],
+        offerStack: [
+          { title: 'Offer block 1', detail: 'Hero final' },
+          { title: 'Offer block 2', detail: 'CTA final' },
+        ],
+        ctaBand: {
+          primaryCta: 'Activar producto base',
+          supportLabel:
+            'Resolver objeciones y reforzar promesa antes de publish',
+        },
+        faqSeed: [
+          '¿Qué problema principal resuelve esta oferta?',
+          '¿Cómo se activa o implementa?',
+          '¿Qué resultado se puede esperar en el primer tramo?',
+        ],
+        previewGuardrails: [
+          'No tratar esta entidad como checkout ni inventario final todavia.',
+          'No tratar esta entity de asset como publicación viva ni checkout real todavía.',
+          'No tratar este workspace como landing publicada ni checkout vivo todavía.',
+          'No tratar esta estructura como landing publicada ni checkout vivo todavía.',
+        ],
+      }),
+    };
+    getTenantEcommerceWhatsappSalesFlowUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:07:00.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        assetEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:53:00.000Z'),
+          assetEntityId: 'channel_draft_003',
+          productEntityId: 'product_entity_001',
+          sourceSavedChannelDraftId: 'channel_draft_003',
+          channelKey: 'whatsapp',
+          promotedAt: new Date('2026-05-28T16:53:00.000Z'),
+          status: 'draft_asset_entity',
+          handoffOwner: 'growth',
+          title: 'Whatsapp asset entity final',
+          headline: 'Mensaje de apertura final',
+          summary:
+            'La entity de asset de WhatsApp ya existe y puede bajar a secuencia comercial operable.',
+          draftBlueprint: ['Follow-up angle', 'Recovery CTA'],
+          publishChecklist: ['Sequence QA'],
+          recommendedArtifacts: ['Recovery branch', 'Close note'],
+          nextMilestone: 'QA final de whatsapp',
+          blockedBy: [],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+            'No tratar esta entity de asset como publicación viva ni checkout real todavía.',
+          ],
+        },
+        flowStatus: 'ready_for_operator_flow',
+        stages: {
+          opener: 'Mensaje de apertura final',
+          qualification: 'Follow-up 1: Follow-up angle',
+          objectionHandling: ['Recovery: Recovery branch', 'Recovery: Close note'],
+          closingCta: 'Activar producto base',
+          fallbackEscalation:
+            'Si la conversación se enfría, pasar a revisión humana antes de insistir.',
+        },
+        operatorChecklist: ['Sequence QA'],
+        handoffNotes: [
+          'Growth valida tono, timing y cierre antes de automatizar cualquier secuencia.',
+          'Mantener la secuencia como asistencia operada, no como flujo vivo automático todavía.',
+        ],
+        guardrails: [
+          'No tratar esta entidad como checkout ni inventario final todavia.',
+          'No tratar esta entity de asset como publicación viva ni checkout real todavía.',
+          'No tratar esta secuencia como automatización viva de WhatsApp todavía.',
+          'No tratar este flujo como automatización viva de WhatsApp todavía.',
+        ],
+      }),
+    };
     requestTenantEcommerceProductEntityCommercializationPacketUseCase = {
       execute: jest.fn().mockResolvedValue({
         tenantSlug: 'saas-platform',
@@ -6289,6 +6789,20 @@ describe('API', () => {
       .useValue(getTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase)
       .overrideProvider(GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase)
       .useValue(getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase)
+      .overrideProvider(GetTenantEcommerceLandingAssetEntityWorkspaceUseCase)
+      .useValue(getTenantEcommerceLandingAssetEntityWorkspaceUseCase)
+      .overrideProvider(GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase)
+      .useValue(getTenantEcommerceCatalogAssetEntityWorkspaceUseCase)
+      .overrideProvider(GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase)
+      .useValue(getTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase)
+      .overrideProvider(GetTenantEcommerceChannelReleaseWorkbenchUseCase)
+      .useValue(getTenantEcommerceChannelReleaseWorkbenchUseCase)
+      .overrideProvider(GetTenantEcommerceChannelReleaseExecutionReadinessUseCase)
+      .useValue(getTenantEcommerceChannelReleaseExecutionReadinessUseCase)
+      .overrideProvider(GetTenantEcommerceLandingPageStructureUseCase)
+      .useValue(getTenantEcommerceLandingPageStructureUseCase)
+      .overrideProvider(GetTenantEcommerceWhatsappSalesFlowUseCase)
+      .useValue(getTenantEcommerceWhatsappSalesFlowUseCase)
       .overrideProvider(GetTenantEcommerceProductEntityChannelReleaseCandidateDetailUseCase)
       .useValue(getTenantEcommerceProductEntityChannelReleaseCandidateDetailUseCase)
       .overrideProvider(GetTenantEcommerceProductEntityChannelDraftDetailUseCase)
@@ -10998,6 +11512,179 @@ describe('API', () => {
     expect(
       getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase.execute,
     ).toHaveBeenCalledWith('saas-platform', 'product_entity_001', 'landing');
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/landing-asset-entity-workspace should return one landing asset entity workspace', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/landing-asset-entity-workspace',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.workspaceStatus).toBe('needs_publish_copy');
+        expect(response.body.hero.headline).toBe('Headline final');
+        expect(response.body.publishChecklist).toEqual(['Hero QA']);
+      });
+
+    expect(
+      getTenantEcommerceLandingAssetEntityWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/catalog-asset-entity-workspace should return one catalog asset entity workspace', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/catalog-asset-entity-workspace',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.workspaceStatus).toBe(
+          'ready_for_catalog_assembly',
+        );
+        expect(response.body.merchandisingCard.title).toBe(
+          'Catalog asset entity final',
+        );
+        expect(response.body.offerBullets).toEqual([
+          'Offer bullets',
+          'Pricing snapshot',
+        ]);
+      });
+
+    expect(
+      getTenantEcommerceCatalogAssetEntityWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/whatsapp-channel-sequence-workspace should return one whatsapp sequence workspace', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/whatsapp-channel-sequence-workspace',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.workspaceStatus).toBe(
+          'ready_for_sequence_assembly',
+        );
+        expect(response.body.opener).toBe('Mensaje de apertura final');
+        expect(response.body.followUpSequence).toEqual([
+          'Mensaje de apertura final',
+          'Follow-up 1: Follow-up angle',
+          'Follow-up 2: Recovery CTA',
+        ]);
+      });
+
+    expect(
+      getTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/channel-release-workbench should return one channel release workbench', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/channel-release-workbench',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.summary.totalCandidates).toBe(1);
+        expect(response.body.channels).toEqual([
+          expect.objectContaining({
+            channelKey: 'landing',
+            status: 'needs_publish_copy',
+          }),
+          expect.objectContaining({
+            channelKey: 'catalog',
+            status: 'missing',
+          }),
+          expect.objectContaining({
+            channelKey: 'whatsapp',
+            status: 'missing',
+          }),
+        ]);
+      });
+
+    expect(
+      getTenantEcommerceChannelReleaseWorkbenchUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/channel-release-execution-readiness should return one release execution readiness workspace', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/channel-release-execution-readiness',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.overallStatus).toBe('needs_channel_completion');
+        expect(response.body.channels).toEqual([
+          expect.objectContaining({
+            channelKey: 'landing',
+            releaseStatus: 'needs_publish_copy',
+          }),
+          expect.objectContaining({
+            channelKey: 'catalog',
+            releaseStatus: 'missing',
+          }),
+          expect.objectContaining({
+            channelKey: 'whatsapp',
+            releaseStatus: 'missing',
+          }),
+        ]);
+      });
+
+    expect(
+      getTenantEcommerceChannelReleaseExecutionReadinessUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/landing-page-structure should return one landing page structure', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/landing-page-structure',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.structureStatus).toBe('needs_publish_copy');
+        expect(response.body.hero.headline).toBe('Headline final');
+        expect(response.body.offerStack).toEqual([
+          { title: 'Offer block 1', detail: 'Hero final' },
+          { title: 'Offer block 2', detail: 'CTA final' },
+        ]);
+      });
+
+    expect(getTenantEcommerceLandingPageStructureUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'product_entity_001',
+    );
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/whatsapp-sales-flow should return one whatsapp sales flow', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/whatsapp-sales-flow',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.flowStatus).toBe('ready_for_operator_flow');
+        expect(response.body.stages.opener).toBe(
+          'Mensaje de apertura final',
+        );
+        expect(response.body.stages.objectionHandling).toEqual([
+          'Recovery: Recovery branch',
+          'Recovery: Close note',
+        ]);
+      });
+
+    expect(getTenantEcommerceWhatsappSalesFlowUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'product_entity_001',
+    );
   });
 
   it('POST /api/ecommerce/tenants/:slug/product-entities/:productEntityId/channel-asset-workspaces/:channelKey/promote-to-channel-asset-entity should promote one channel asset entity', async () => {

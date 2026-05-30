@@ -2498,6 +2498,151 @@ export interface PromoteEcommerceProductEntityChannelAssetEntityToReleaseCandida
   releaseCandidate: EcommerceProductEntityChannelReleaseCandidateResponse;
 }
 
+export interface EcommerceLandingAssetEntityWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponse;
+  workspaceStatus: 'ready_for_landing_assembly' | 'needs_publish_copy' | 'blocked';
+  hero: {
+    headline: string;
+    subheadline: string;
+    primaryCta: string;
+  };
+  proofBlocks: string[];
+  offerSections: string[];
+  publishChecklist: string[];
+  nextMilestone: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceCatalogAssetEntityWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponse;
+  workspaceStatus: 'ready_for_catalog_assembly' | 'needs_publish_copy' | 'blocked';
+  merchandisingCard: {
+    title: string;
+    pricingSnapshot: string;
+    primaryCta: string;
+  };
+  offerBullets: string[];
+  merchandisingChecks: string[];
+  nextMilestone: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceWhatsappChannelSequenceWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponse;
+  workspaceStatus:
+    | 'ready_for_sequence_assembly'
+    | 'needs_publish_copy'
+    | 'blocked';
+  opener: string;
+  followUpSequence: string[];
+  recoveryBranch: string[];
+  closeCta: string;
+  operatorNotes: string[];
+  nextMilestone: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceChannelReleaseWorkbenchResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: {
+    totalCandidates: number;
+    readyCount: number;
+    needsPublishCopyCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  channels: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    status: 'candidate_ready' | 'needs_publish_copy' | 'blocked' | 'missing';
+    handoffOwner: 'ecommerce' | 'growth' | 'shared';
+    title: string;
+    nextMilestone: string;
+    blockedBy: string[];
+  }>;
+  qaChecklist: string[];
+  finalArtifacts: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceChannelReleaseExecutionReadinessResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  overallStatus:
+    | 'ready_for_controlled_release'
+    | 'needs_channel_completion'
+    | 'blocked';
+  summary: string;
+  channels: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    releaseStatus: 'candidate_ready' | 'needs_publish_copy' | 'blocked' | 'missing';
+    executionOwner: 'ecommerce' | 'growth' | 'shared';
+    executionChecklist: string[];
+    launchWindow: string;
+    blockedBy: string[];
+  }>;
+  finalChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceLandingPageStructureResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponse;
+  structureStatus: 'ready_for_preview' | 'needs_publish_copy' | 'blocked';
+  hero: {
+    headline: string;
+    subheadline: string;
+    primaryCta: string;
+  };
+  proofStrip: string[];
+  offerStack: Array<{
+    title: string;
+    detail: string;
+  }>;
+  ctaBand: {
+    primaryCta: string;
+    supportLabel: string;
+  };
+  faqSeed: string[];
+  previewGuardrails: string[];
+}
+
+export interface EcommerceWhatsappSalesFlowResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponse;
+  flowStatus: 'ready_for_operator_flow' | 'needs_publish_copy' | 'blocked';
+  stages: {
+    opener: string;
+    qualification: string;
+    objectionHandling: string[];
+    closingCta: string;
+    fallbackEscalation: string;
+  };
+  operatorChecklist: string[];
+  handoffNotes: string[];
+  guardrails: string[];
+}
+
 export interface AiMemoryWorkspaceAgentResponse {
   agentKey: string;
   title: string;

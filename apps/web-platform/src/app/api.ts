@@ -40,6 +40,13 @@ import {
   EcommerceProductEntityChannelAssetWorkspaceRegistryResponse,
   EcommerceProductEntityChannelAssetEntityDetailResponse,
   EcommerceProductEntityChannelAssetEntityRegistryResponse,
+  EcommerceLandingAssetEntityWorkspaceResponse,
+  EcommerceCatalogAssetEntityWorkspaceResponse,
+  EcommerceWhatsappChannelSequenceWorkspaceResponse,
+  EcommerceChannelReleaseWorkbenchResponse,
+  EcommerceChannelReleaseExecutionReadinessResponse,
+  EcommerceLandingPageStructureResponse,
+  EcommerceWhatsappSalesFlowResponse,
   EcommerceProductEntityChannelReleaseCandidateDetailResponse,
   EcommerceProductEntityChannelReleaseCandidateRegistryResponse,
   PromoteEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceResponse,
@@ -2384,6 +2391,132 @@ export async function promoteTenantEcommerceProductEntityChannelAssetEntityToRel
     )}/promote-to-release-candidate`,
     {
       method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceLandingAssetEntityWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceLandingAssetEntityWorkspaceResponse> {
+  return request<EcommerceLandingAssetEntityWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/landing-asset-entity-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceCatalogAssetEntityWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceCatalogAssetEntityWorkspaceResponse> {
+  return request<EcommerceCatalogAssetEntityWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/catalog-asset-entity-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceWhatsappChannelSequenceWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceWhatsappChannelSequenceWorkspaceResponse> {
+  return request<EcommerceWhatsappChannelSequenceWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/whatsapp-channel-sequence-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceChannelReleaseWorkbench(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceChannelReleaseWorkbenchResponse> {
+  return request<EcommerceChannelReleaseWorkbenchResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-release-workbench`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceChannelReleaseExecutionReadiness(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceChannelReleaseExecutionReadinessResponse> {
+  return request<EcommerceChannelReleaseExecutionReadinessResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/channel-release-execution-readiness`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceLandingPageStructure(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceLandingPageStructureResponse> {
+  return request<EcommerceLandingPageStructureResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/landing-page-structure`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceWhatsappSalesFlow(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceWhatsappSalesFlowResponse> {
+  return request<EcommerceWhatsappSalesFlowResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/whatsapp-sales-flow`,
+    {
+      method: 'GET',
       token,
     },
   );

@@ -849,3 +849,152 @@ export interface TenantEcommerceProductEntityChannelReleaseCandidateDetailView {
   productEntity: TenantEcommerceProductEntityView;
   releaseCandidate: TenantEcommerceProductEntityChannelReleaseCandidateView;
 }
+
+export interface TenantEcommerceLandingAssetEntityWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  assetEntity: TenantEcommerceProductEntityChannelAssetEntityView;
+  workspaceStatus: 'ready_for_landing_assembly' | 'needs_publish_copy' | 'blocked';
+  hero: {
+    headline: string;
+    subheadline: string;
+    primaryCta: string;
+  };
+  proofBlocks: string[];
+  offerSections: string[];
+  publishChecklist: string[];
+  nextMilestone: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceCatalogAssetEntityWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  assetEntity: TenantEcommerceProductEntityChannelAssetEntityView;
+  workspaceStatus: 'ready_for_catalog_assembly' | 'needs_publish_copy' | 'blocked';
+  merchandisingCard: {
+    title: string;
+    pricingSnapshot: string;
+    primaryCta: string;
+  };
+  offerBullets: string[];
+  merchandisingChecks: string[];
+  nextMilestone: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceWhatsappChannelSequenceWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  assetEntity: TenantEcommerceProductEntityChannelAssetEntityView;
+  workspaceStatus:
+    | 'ready_for_sequence_assembly'
+    | 'needs_publish_copy'
+    | 'blocked';
+  opener: string;
+  followUpSequence: string[];
+  recoveryBranch: string[];
+  closeCta: string;
+  operatorNotes: string[];
+  nextMilestone: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceChannelReleaseWorkbenchView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  summary: {
+    totalCandidates: number;
+    readyCount: number;
+    needsPublishCopyCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  channels: Array<{
+    channelKey: TenantEcommerceProductEntityChannelDraftKey;
+    status: 'candidate_ready' | 'needs_publish_copy' | 'blocked' | 'missing';
+    handoffOwner: 'ecommerce' | 'growth' | 'shared';
+    title: string;
+    nextMilestone: string;
+    blockedBy: string[];
+  }>;
+  qaChecklist: string[];
+  finalArtifacts: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceChannelReleaseExecutionReadinessView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  overallStatus:
+    | 'ready_for_controlled_release'
+    | 'needs_channel_completion'
+    | 'blocked';
+  summary: string;
+  channels: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    releaseStatus:
+      | 'candidate_ready'
+      | 'needs_publish_copy'
+      | 'blocked'
+      | 'missing';
+    executionOwner: 'ecommerce' | 'growth' | 'shared';
+    executionChecklist: string[];
+    launchWindow: string;
+    blockedBy: string[];
+  }>;
+  finalChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceLandingPageStructureView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  assetEntity: TenantEcommerceProductEntityChannelAssetEntityView;
+  structureStatus: 'ready_for_preview' | 'needs_publish_copy' | 'blocked';
+  hero: {
+    headline: string;
+    subheadline: string;
+    primaryCta: string;
+  };
+  proofStrip: string[];
+  offerStack: Array<{
+    title: string;
+    detail: string;
+  }>;
+  ctaBand: {
+    primaryCta: string;
+    supportLabel: string;
+  };
+  faqSeed: string[];
+  previewGuardrails: string[];
+}
+
+export interface TenantEcommerceWhatsappSalesFlowView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  assetEntity: TenantEcommerceProductEntityChannelAssetEntityView;
+  flowStatus: 'ready_for_operator_flow' | 'needs_publish_copy' | 'blocked';
+  stages: {
+    opener: string;
+    qualification: string;
+    objectionHandling: string[];
+    closingCta: string;
+    fallbackEscalation: string;
+  };
+  operatorChecklist: string[];
+  handoffNotes: string[];
+  guardrails: string[];
+}

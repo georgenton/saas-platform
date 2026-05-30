@@ -11,6 +11,11 @@ import {
 import {
   ECOMMERCE_PRODUCT_DRAFT_REPOSITORY,
   ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
+  GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
+  GetTenantEcommerceChannelReleaseExecutionReadinessUseCase,
+  GetTenantEcommerceChannelReleaseWorkbenchUseCase,
+  GetTenantEcommerceLandingAssetEntityWorkspaceUseCase,
+  GetTenantEcommerceLandingPageStructureUseCase,
   GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
   GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
   GetTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase,
@@ -26,6 +31,8 @@ import {
   GetTenantEcommerceProductAuthoringWorkspaceUseCase,
   GetTenantEcommerceProductSetupDetailUseCase,
   GetTenantEcommerceProductWorkspaceDetailUseCase,
+  GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
+  GetTenantEcommerceWhatsappSalesFlowUseCase,
   GetTenantEcommerceLaunchPlanDetailUseCase,
   GetTenantEcommerceStoreProfileWorkspaceUseCase,
   GetTenantEcommerceStoreSetupWorkspaceUseCase,
@@ -565,6 +572,76 @@ import { EcommerceController } from './ecommerce.controller';
           ecommerceProductEntityChannelDraftRepository,
           getTenantEcommerceProductEntityDetailUseCase,
           promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceLandingAssetEntityWorkspaceUseCase,
+      inject: [GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase],
+      useFactory: (getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase) =>
+        new GetTenantEcommerceLandingAssetEntityWorkspaceUseCase(
+          getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
+      inject: [GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase],
+      useFactory: (getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase) =>
+        new GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase(
+          getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
+      inject: [GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase],
+      useFactory: (getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase) =>
+        new GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase(
+          getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceChannelReleaseWorkbenchUseCase,
+      inject: [
+        GetTenantEcommerceProductEntityDetailUseCase,
+        ListTenantEcommerceProductEntityChannelReleaseCandidatesUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceProductEntityDetailUseCase,
+        listTenantEcommerceProductEntityChannelReleaseCandidatesUseCase,
+      ) =>
+        new GetTenantEcommerceChannelReleaseWorkbenchUseCase(
+          getTenantEcommerceProductEntityDetailUseCase,
+          listTenantEcommerceProductEntityChannelReleaseCandidatesUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceChannelReleaseExecutionReadinessUseCase,
+      inject: [
+        GetTenantEcommerceProductEntityDetailUseCase,
+        ListTenantEcommerceProductEntityChannelReleaseCandidatesUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceProductEntityDetailUseCase,
+        listTenantEcommerceProductEntityChannelReleaseCandidatesUseCase,
+      ) =>
+        new GetTenantEcommerceChannelReleaseExecutionReadinessUseCase(
+          getTenantEcommerceProductEntityDetailUseCase,
+          listTenantEcommerceProductEntityChannelReleaseCandidatesUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceLandingPageStructureUseCase,
+      inject: [GetTenantEcommerceLandingAssetEntityWorkspaceUseCase],
+      useFactory: (getTenantEcommerceLandingAssetEntityWorkspaceUseCase) =>
+        new GetTenantEcommerceLandingPageStructureUseCase(
+          getTenantEcommerceLandingAssetEntityWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceWhatsappSalesFlowUseCase,
+      inject: [GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase],
+      useFactory: (getTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase) =>
+        new GetTenantEcommerceWhatsappSalesFlowUseCase(
+          getTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
         ),
     },
     {

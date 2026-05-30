@@ -14,6 +14,13 @@ import {
   EcommerceProductEntityChannelAssetDraftsWorkspaceResponse,
   EcommerceProductEntityChannelAssetEntityDetailResponse,
   EcommerceProductEntityChannelAssetEntityRegistryResponse,
+  EcommerceLandingAssetEntityWorkspaceResponse,
+  EcommerceLandingPageStructureResponse,
+  EcommerceCatalogAssetEntityWorkspaceResponse,
+  EcommerceWhatsappChannelSequenceWorkspaceResponse,
+  EcommerceChannelReleaseWorkbenchResponse,
+  EcommerceChannelReleaseExecutionReadinessResponse,
+  EcommerceWhatsappSalesFlowResponse,
   EcommerceProductEntityChannelReleaseCandidateDetailResponse,
   EcommerceProductEntityChannelReleaseCandidateRegistryResponse,
   EcommerceProductEntityChannelAssetWorkspaceDetailResponse,
@@ -87,6 +94,27 @@ type Props = {
     | null;
   selectedTenantEcommerceProductEntityChannelAssetEntityDetail:
     | EcommerceProductEntityChannelAssetEntityDetailResponse
+    | null;
+  selectedTenantEcommerceLandingAssetEntityWorkspace:
+    | EcommerceLandingAssetEntityWorkspaceResponse
+    | null;
+  selectedTenantEcommerceCatalogAssetEntityWorkspace:
+    | EcommerceCatalogAssetEntityWorkspaceResponse
+    | null;
+  selectedTenantEcommerceWhatsappChannelSequenceWorkspace:
+    | EcommerceWhatsappChannelSequenceWorkspaceResponse
+    | null;
+  selectedTenantEcommerceChannelReleaseWorkbench:
+    | EcommerceChannelReleaseWorkbenchResponse
+    | null;
+  selectedTenantEcommerceChannelReleaseExecutionReadiness:
+    | EcommerceChannelReleaseExecutionReadinessResponse
+    | null;
+  selectedTenantEcommerceLandingPageStructure:
+    | EcommerceLandingPageStructureResponse
+    | null;
+  selectedTenantEcommerceWhatsappSalesFlow:
+    | EcommerceWhatsappSalesFlowResponse
     | null;
   tenantEcommerceProductEntityChannelReleaseCandidateRegistry:
     | EcommerceProductEntityChannelReleaseCandidateRegistryResponse
@@ -315,6 +343,13 @@ export function AiEcommerceLaunchSection({
   selectedTenantEcommerceProductEntityChannelAssetWorkspaceDetail,
   tenantEcommerceProductEntityChannelAssetEntityRegistry,
   selectedTenantEcommerceProductEntityChannelAssetEntityDetail,
+  selectedTenantEcommerceLandingAssetEntityWorkspace,
+  selectedTenantEcommerceCatalogAssetEntityWorkspace,
+  selectedTenantEcommerceWhatsappChannelSequenceWorkspace,
+  selectedTenantEcommerceChannelReleaseWorkbench,
+  selectedTenantEcommerceChannelReleaseExecutionReadiness,
+  selectedTenantEcommerceLandingPageStructure,
+  selectedTenantEcommerceWhatsappSalesFlow,
   tenantEcommerceProductEntityChannelReleaseCandidateRegistry,
   selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail,
   lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket,
@@ -2547,6 +2582,362 @@ export function AiEcommerceLaunchSection({
                                 Next milestone:{' '}
                                 {
                                   lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket.nextMilestone
+                                }
+                              </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceLandingAssetEntityWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Landing asset entity
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceLandingAssetEntityWorkspace.assetEntity
+                                        .title
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceLandingAssetEntityWorkspace.workspaceStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <p>
+                                {
+                                  selectedTenantEcommerceLandingAssetEntityWorkspace.hero
+                                    .headline
+                                }
+                              </p>
+                              <small>
+                                {
+                                  selectedTenantEcommerceLandingAssetEntityWorkspace.hero
+                                    .subheadline
+                                }
+                              </small>
+                              <small>
+                                CTA:{' '}
+                                {
+                                  selectedTenantEcommerceLandingAssetEntityWorkspace.hero
+                                    .primaryCta
+                                }
+                              </small>
+                              <small>
+                                Proof blocks:{' '}
+                                {selectedTenantEcommerceLandingAssetEntityWorkspace.proofBlocks.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Offer sections:{' '}
+                                {selectedTenantEcommerceLandingAssetEntityWorkspace.offerSections.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Publish checklist:{' '}
+                                {selectedTenantEcommerceLandingAssetEntityWorkspace.publishChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceCatalogAssetEntityWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Catalog asset entity
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceCatalogAssetEntityWorkspace.merchandisingCard
+                                        .title
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceCatalogAssetEntityWorkspace.workspaceStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Pricing:{' '}
+                                {
+                                  selectedTenantEcommerceCatalogAssetEntityWorkspace
+                                    .merchandisingCard.pricingSnapshot
+                                }
+                              </small>
+                              <small>
+                                CTA:{' '}
+                                {
+                                  selectedTenantEcommerceCatalogAssetEntityWorkspace
+                                    .merchandisingCard.primaryCta
+                                }
+                              </small>
+                              <small>
+                                Offer bullets:{' '}
+                                {selectedTenantEcommerceCatalogAssetEntityWorkspace.offerBullets.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Merchandising checks:{' '}
+                                {selectedTenantEcommerceCatalogAssetEntityWorkspace.merchandisingChecks.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceWhatsappChannelSequenceWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    WhatsApp channel sequence
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceWhatsappChannelSequenceWorkspace
+                                        .assetEntity.title
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceWhatsappChannelSequenceWorkspace.workspaceStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Opener:{' '}
+                                {
+                                  selectedTenantEcommerceWhatsappChannelSequenceWorkspace
+                                    .opener
+                                }
+                              </small>
+                              <small>
+                                Follow-up:{' '}
+                                {selectedTenantEcommerceWhatsappChannelSequenceWorkspace.followUpSequence.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Recovery:{' '}
+                                {selectedTenantEcommerceWhatsappChannelSequenceWorkspace.recoveryBranch.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Close CTA:{' '}
+                                {
+                                  selectedTenantEcommerceWhatsappChannelSequenceWorkspace
+                                    .closeCta
+                                }
+                              </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceChannelReleaseWorkbench ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Channel release workbench
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceChannelReleaseWorkbench
+                                        .summary.headline
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {
+                                    selectedTenantEcommerceChannelReleaseWorkbench
+                                      .summary.readyCount
+                                  }
+                                  /{
+                                    selectedTenantEcommerceChannelReleaseWorkbench
+                                      .summary.totalCandidates
+                                  }{' '}
+                                  ready
+                                </span>
+                              </div>
+                              <small>
+                                {
+                                  selectedTenantEcommerceChannelReleaseWorkbench
+                                    .summary.detail
+                                }
+                              </small>
+                              <small>
+                                Channels:{' '}
+                                {selectedTenantEcommerceChannelReleaseWorkbench.channels
+                                  .map(
+                                    (channel) =>
+                                      `${humanizeKey(channel.channelKey)}:${humanizeKey(channel.status)}`,
+                                  )
+                                  .join(' | ')}
+                              </small>
+                              <small>
+                                QA:{' '}
+                                {selectedTenantEcommerceChannelReleaseWorkbench.qaChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Final artifacts:{' '}
+                                {selectedTenantEcommerceChannelReleaseWorkbench.finalArtifacts.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceChannelReleaseExecutionReadiness ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Release execution readiness
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceChannelReleaseExecutionReadiness.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceChannelReleaseExecutionReadiness.overallStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Channels:{' '}
+                                {selectedTenantEcommerceChannelReleaseExecutionReadiness.channels
+                                  .map(
+                                    (channel) =>
+                                      `${humanizeKey(channel.channelKey)}:${humanizeKey(channel.releaseStatus)}`,
+                                  )
+                                  .join(' | ')}
+                              </small>
+                              <small>
+                                Final checklist:{' '}
+                                {selectedTenantEcommerceChannelReleaseExecutionReadiness.finalChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              {selectedTenantEcommerceChannelReleaseExecutionReadiness.blockedBy
+                                .length > 0 ? (
+                                <small>
+                                  Blocked by:{' '}
+                                  {selectedTenantEcommerceChannelReleaseExecutionReadiness.blockedBy.join(
+                                    ' | ',
+                                  )}
+                                </small>
+                              ) : null}
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceLandingPageStructure ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Landing page structure
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceLandingPageStructure.hero
+                                        .headline
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceLandingPageStructure.structureStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Proof strip:{' '}
+                                {selectedTenantEcommerceLandingPageStructure.proofStrip.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Offer stack:{' '}
+                                {selectedTenantEcommerceLandingPageStructure.offerStack
+                                  .map((entry) => `${entry.title}: ${entry.detail}`)
+                                  .join(' | ')}
+                              </small>
+                              <small>
+                                CTA band:{' '}
+                                {
+                                  selectedTenantEcommerceLandingPageStructure.ctaBand
+                                    .primaryCta
+                                }{' '}
+                                ·{' '}
+                                {
+                                  selectedTenantEcommerceLandingPageStructure.ctaBand
+                                    .supportLabel
+                                }
+                              </small>
+                              <small>
+                                FAQ seed:{' '}
+                                {selectedTenantEcommerceLandingPageStructure.faqSeed.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceWhatsappSalesFlow ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    WhatsApp sales flow
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceWhatsappSalesFlow.stages
+                                        .opener
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceWhatsappSalesFlow.flowStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Qualification:{' '}
+                                {
+                                  selectedTenantEcommerceWhatsappSalesFlow.stages
+                                    .qualification
+                                }
+                              </small>
+                              <small>
+                                Objection handling:{' '}
+                                {selectedTenantEcommerceWhatsappSalesFlow.stages.objectionHandling.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Closing CTA:{' '}
+                                {
+                                  selectedTenantEcommerceWhatsappSalesFlow.stages
+                                    .closingCta
+                                }
+                              </small>
+                              <small>
+                                Fallback:{' '}
+                                {
+                                  selectedTenantEcommerceWhatsappSalesFlow.stages
+                                    .fallbackEscalation
                                 }
                               </small>
                             </div>

@@ -1,11 +1,14 @@
 import {
   TenantEcommerceCatalogAssetEntityWorkspaceView,
   TenantEcommerceCatalogCommercialCardView,
+  TenantEcommerceChannelReleaseApprovalPacketView,
   TenantEcommerceChannelReleaseExecutionReadinessView,
   TenantEcommerceChannelReleaseHandoffPacketView,
   TenantEcommerceChannelReleaseWorkbenchView,
   TenantEcommerceLandingAssetEntityWorkspaceView,
   TenantEcommerceLandingPageStructureView,
+  TenantEcommerceStorefrontPreviewWorkspaceView,
+  TenantEcommerceWhatsappGrowthActivationWorkspaceView,
   TenantEcommerceWhatsappChannelSequenceWorkspaceView,
   TenantEcommerceWhatsappGrowthHandoffView,
   TenantEcommerceWhatsappSalesFlowView,
@@ -172,6 +175,67 @@ export interface EcommerceChannelReleaseHandoffPacketResponseDto {
   guardrails: string[];
 }
 
+export interface EcommerceStorefrontPreviewWorkspaceResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  previewStatus: 'ready_for_preview_review' | 'needs_publish_copy' | 'blocked';
+  summary: {
+    headline: string;
+    detail: string;
+  };
+  landingPreview: {
+    headline: string;
+    subheadline: string;
+    primaryCta: string;
+    proofStrip: string[];
+  };
+  catalogPreview: {
+    title: string;
+    shortDescription: string;
+    pricingPresentation: string;
+    primaryCta: string;
+    offerBullets: string[];
+  };
+  releaseSignals: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    status:
+      | 'candidate_ready'
+      | 'needs_publish_copy'
+      | 'blocked'
+      | 'missing';
+    detail: string;
+  }>;
+  previewChecklist: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceChannelReleaseApprovalPacketResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  approvalStatus:
+    | 'ready_for_operator_approval'
+    | 'needs_channel_completion'
+    | 'blocked';
+  summary: string;
+  approvalOwner: 'ecommerce' | 'growth' | 'shared';
+  channels: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    readiness:
+      | 'candidate_ready'
+      | 'needs_publish_copy'
+      | 'blocked'
+      | 'missing';
+    approvalDecision: 'approve' | 'review' | 'block';
+    rationale: string;
+  }>;
+  requiredApprovals: string[];
+  warnings: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceLandingPageStructureResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -238,6 +302,34 @@ export interface EcommerceWhatsappGrowthHandoffResponseDto {
   sequencingNotes: string[];
   bridgeArtifacts: string[];
   readinessChecks: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceWhatsappGrowthActivationWorkspaceResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponseDto;
+  activationStatus:
+    | 'ready_for_growth_activation'
+    | 'needs_publish_copy'
+    | 'blocked';
+  targetWorkspace: {
+    productKey: 'growth';
+    channel: 'whatsapp';
+    activationMode: 'operator_assist';
+  };
+  activationSummary: string;
+  sequencePayload: {
+    opener: string;
+    qualification: string;
+    objectionHandling: string[];
+    closingCta: string;
+    fallbackEscalation: string;
+  };
+  activationChecklist: string[];
+  bridgeArtifacts: string[];
+  handoffNotes: string[];
   guardrails: string[];
 }
 
@@ -382,6 +474,47 @@ export function toEcommerceChannelReleaseHandoffPacketResponseDto(
   };
 }
 
+export function toEcommerceStorefrontPreviewWorkspaceResponseDto(
+  view: TenantEcommerceStorefrontPreviewWorkspaceView,
+): EcommerceStorefrontPreviewWorkspaceResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    previewStatus: view.previewStatus,
+    summary: { ...view.summary },
+    landingPreview: {
+      ...view.landingPreview,
+      proofStrip: [...view.landingPreview.proofStrip],
+    },
+    catalogPreview: {
+      ...view.catalogPreview,
+      offerBullets: [...view.catalogPreview.offerBullets],
+    },
+    releaseSignals: view.releaseSignals.map((signal) => ({ ...signal })),
+    previewChecklist: [...view.previewChecklist],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceChannelReleaseApprovalPacketResponseDto(
+  view: TenantEcommerceChannelReleaseApprovalPacketView,
+): EcommerceChannelReleaseApprovalPacketResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    approvalStatus: view.approvalStatus,
+    summary: view.summary,
+    approvalOwner: view.approvalOwner,
+    channels: view.channels.map((channel) => ({ ...channel })),
+    requiredApprovals: [...view.requiredApprovals],
+    warnings: [...view.warnings],
+    blockers: [...view.blockers],
+    guardrails: [...view.guardrails],
+  };
+}
+
 export function toEcommerceLandingPageStructureResponseDto(
   view: TenantEcommerceLandingPageStructureView,
 ): EcommerceLandingPageStructureResponseDto {
@@ -442,6 +575,30 @@ export function toEcommerceWhatsappGrowthHandoffResponseDto(
     sequencingNotes: [...view.sequencingNotes],
     bridgeArtifacts: [...view.bridgeArtifacts],
     readinessChecks: [...view.readinessChecks],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceWhatsappGrowthActivationWorkspaceResponseDto(
+  view: TenantEcommerceWhatsappGrowthActivationWorkspaceView,
+): EcommerceWhatsappGrowthActivationWorkspaceResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    assetEntity: toEcommerceProductEntityChannelAssetEntityResponseDto(
+      view.assetEntity,
+    ),
+    activationStatus: view.activationStatus,
+    targetWorkspace: { ...view.targetWorkspace },
+    activationSummary: view.activationSummary,
+    sequencePayload: {
+      ...view.sequencePayload,
+      objectionHandling: [...view.sequencePayload.objectionHandling],
+    },
+    activationChecklist: [...view.activationChecklist],
+    bridgeArtifacts: [...view.bridgeArtifacts],
+    handoffNotes: [...view.handoffNotes],
     guardrails: [...view.guardrails],
   };
 }

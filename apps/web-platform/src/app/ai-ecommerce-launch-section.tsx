@@ -18,11 +18,14 @@ import {
   EcommerceLandingPageStructureResponse,
   EcommerceCatalogAssetEntityWorkspaceResponse,
   EcommerceCatalogCommercialCardResponse,
+  EcommerceChannelReleaseApprovalPacketResponse,
   EcommerceWhatsappChannelSequenceWorkspaceResponse,
   EcommerceChannelReleaseWorkbenchResponse,
   EcommerceChannelReleaseExecutionReadinessResponse,
   EcommerceChannelReleaseHandoffPacketResponse,
+  EcommerceStorefrontPreviewWorkspaceResponse,
   EcommerceWhatsappSalesFlowResponse,
+  EcommerceWhatsappGrowthActivationWorkspaceResponse,
   EcommerceWhatsappGrowthHandoffResponse,
   EcommerceProductEntityChannelReleaseCandidateDetailResponse,
   EcommerceProductEntityChannelReleaseCandidateRegistryResponse,
@@ -107,6 +110,9 @@ type Props = {
   selectedTenantEcommerceCatalogCommercialCard:
     | EcommerceCatalogCommercialCardResponse
     | null;
+  selectedTenantEcommerceStorefrontPreviewWorkspace:
+    | EcommerceStorefrontPreviewWorkspaceResponse
+    | null;
   selectedTenantEcommerceWhatsappChannelSequenceWorkspace:
     | EcommerceWhatsappChannelSequenceWorkspaceResponse
     | null;
@@ -119,6 +125,9 @@ type Props = {
   lastEcommerceChannelReleaseHandoffPacket:
     | EcommerceChannelReleaseHandoffPacketResponse
     | null;
+  lastEcommerceChannelReleaseApprovalPacket:
+    | EcommerceChannelReleaseApprovalPacketResponse
+    | null;
   selectedTenantEcommerceLandingPageStructure:
     | EcommerceLandingPageStructureResponse
     | null;
@@ -127,6 +136,9 @@ type Props = {
     | null;
   lastEcommerceWhatsappGrowthHandoff:
     | EcommerceWhatsappGrowthHandoffResponse
+    | null;
+  selectedTenantEcommerceWhatsappGrowthActivationWorkspace:
+    | EcommerceWhatsappGrowthActivationWorkspaceResponse
     | null;
   tenantEcommerceProductEntityChannelReleaseCandidateRegistry:
     | EcommerceProductEntityChannelReleaseCandidateRegistryResponse
@@ -210,6 +222,7 @@ type Props = {
     | string
     | null;
   ecommerceChannelReleaseHandoffPacketLoading: string | null;
+  ecommerceChannelReleaseApprovalPacketLoading: string | null;
   ecommerceWhatsappGrowthHandoffLoading: string | null;
   ecommerceProductSetupDefinitionActionLoading: string | null;
   ecommerceProductWorkspaceReadinessActionLoading: string | null;
@@ -321,7 +334,10 @@ type Props = {
   ) => void;
   onPromoteProductEntityChannelAssetEntityToReleaseCandidate: () => void;
   onRequestChannelReleaseHandoffPacket: () => void;
+  onRequestChannelReleaseApprovalPacket: () => void;
+  onLoadStorefrontPreviewWorkspace: () => void;
   onRequestWhatsappGrowthHandoff: () => void;
+  onLoadWhatsappGrowthActivationWorkspace: () => void;
   onSelectProductEntityChannelReleaseCandidate: (
     channelKey: 'landing' | 'catalog' | 'whatsapp',
   ) => void;
@@ -362,13 +378,16 @@ export function AiEcommerceLaunchSection({
   selectedTenantEcommerceLandingAssetEntityWorkspace,
   selectedTenantEcommerceCatalogAssetEntityWorkspace,
   selectedTenantEcommerceCatalogCommercialCard,
+  selectedTenantEcommerceStorefrontPreviewWorkspace,
   selectedTenantEcommerceWhatsappChannelSequenceWorkspace,
   selectedTenantEcommerceChannelReleaseWorkbench,
   selectedTenantEcommerceChannelReleaseExecutionReadiness,
   lastEcommerceChannelReleaseHandoffPacket,
+  lastEcommerceChannelReleaseApprovalPacket,
   selectedTenantEcommerceLandingPageStructure,
   selectedTenantEcommerceWhatsappSalesFlow,
   lastEcommerceWhatsappGrowthHandoff,
+  selectedTenantEcommerceWhatsappGrowthActivationWorkspace,
   tenantEcommerceProductEntityChannelReleaseCandidateRegistry,
   selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail,
   lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket,
@@ -415,6 +434,7 @@ export function AiEcommerceLaunchSection({
   ecommerceProductEntityChannelAssetEntityPublishPreparationPacketLoading,
   ecommerceProductEntityChannelReleaseCandidatePromotionActionLoading,
   ecommerceChannelReleaseHandoffPacketLoading,
+  ecommerceChannelReleaseApprovalPacketLoading,
   ecommerceWhatsappGrowthHandoffLoading,
   ecommerceProductSetupDefinitionActionLoading,
   ecommerceProductWorkspaceReadinessActionLoading,
@@ -479,7 +499,10 @@ export function AiEcommerceLaunchSection({
   onSelectProductEntityChannelAssetEntity,
   onPromoteProductEntityChannelAssetEntityToReleaseCandidate,
   onRequestChannelReleaseHandoffPacket,
+  onRequestChannelReleaseApprovalPacket,
+  onLoadStorefrontPreviewWorkspace,
   onRequestWhatsappGrowthHandoff,
+  onLoadWhatsappGrowthActivationWorkspace,
   onSelectProductEntityChannelReleaseCandidate,
   onSelectLaunchPlan,
   onRequestActivationReadiness,
@@ -2762,11 +2785,76 @@ export function AiEcommerceLaunchSection({
                                     .card.primaryCta
                                 }
                               </small>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  onClick={onLoadStorefrontPreviewWorkspace}
+                                  type="button"
+                                >
+                                  Abrir storefront preview
+                                </button>
+                              </div>
                               <small>
                                 Highlights:{' '}
                                 {selectedTenantEcommerceCatalogCommercialCard.merchandisingHighlights.join(
                                   ' | ',
                                 )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceStorefrontPreviewWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Storefront preview workspace
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceStorefrontPreviewWorkspace
+                                        .summary.headline
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceStorefrontPreviewWorkspace.previewStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                {
+                                  selectedTenantEcommerceStorefrontPreviewWorkspace
+                                    .summary.detail
+                                }
+                              </small>
+                              <small>
+                                Landing hero:{' '}
+                                {
+                                  selectedTenantEcommerceStorefrontPreviewWorkspace
+                                    .landingPreview.headline
+                                }
+                              </small>
+                              <small>
+                                Catalog card:{' '}
+                                {
+                                  selectedTenantEcommerceStorefrontPreviewWorkspace
+                                    .catalogPreview.title
+                                }{' '}
+                                ·{' '}
+                                {
+                                  selectedTenantEcommerceStorefrontPreviewWorkspace
+                                    .catalogPreview.pricingPresentation
+                                }
+                              </small>
+                              <small>
+                                Release signals:{' '}
+                                {selectedTenantEcommerceStorefrontPreviewWorkspace.releaseSignals
+                                  .map(
+                                    (signal) =>
+                                      `${humanizeKey(signal.channelKey)}:${humanizeKey(signal.status)}`,
+                                  )
+                                  .join(' | ')}
                               </small>
                             </div>
                           ) : null}
@@ -2933,6 +3021,22 @@ export function AiEcommerceLaunchSection({
                                     ? 'Empaquetando handoff...'
                                     : 'Solicitar release handoff'}
                                 </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceChannelReleaseApprovalPacketLoading ===
+                                    selectedTenantEcommerceChannelReleaseExecutionReadiness
+                                      .productEntity.productEntityId
+                                  }
+                                  onClick={onRequestChannelReleaseApprovalPacket}
+                                  type="button"
+                                >
+                                  {ecommerceChannelReleaseApprovalPacketLoading ===
+                                  selectedTenantEcommerceChannelReleaseExecutionReadiness
+                                    .productEntity.productEntityId
+                                    ? 'Preparando approval...'
+                                    : 'Solicitar release approval'}
+                                </button>
                               </div>
                             </div>
                           ) : null}
@@ -2988,6 +3092,48 @@ export function AiEcommerceLaunchSection({
                                   )}
                                 </small>
                               ) : null}
+                            </div>
+                          ) : null}
+                          {lastEcommerceChannelReleaseApprovalPacket ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Release approval packet
+                                  </span>
+                                  <h4>
+                                    {
+                                      lastEcommerceChannelReleaseApprovalPacket.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceChannelReleaseApprovalPacket.approvalStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Owner:{' '}
+                                {humanizeKey(
+                                  lastEcommerceChannelReleaseApprovalPacket.approvalOwner,
+                                )}
+                              </small>
+                              <small>
+                                Decisions:{' '}
+                                {lastEcommerceChannelReleaseApprovalPacket.channels
+                                  .map(
+                                    (channel) =>
+                                      `${humanizeKey(channel.channelKey)}:${humanizeKey(channel.approvalDecision)}`,
+                                  )
+                                  .join(' | ')}
+                              </small>
+                              <small>
+                                Required approvals:{' '}
+                                {lastEcommerceChannelReleaseApprovalPacket.requiredApprovals.join(
+                                  ' | ',
+                                )}
+                              </small>
                             </div>
                           ) : null}
                           {selectedTenantEcommerceLandingPageStructure ? (
@@ -3106,6 +3252,13 @@ export function AiEcommerceLaunchSection({
                                     ? 'Preparando handoff...'
                                     : 'Solicitar Growth handoff'}
                                 </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  onClick={onLoadWhatsappGrowthActivationWorkspace}
+                                  type="button"
+                                >
+                                  Abrir Growth activation
+                                </button>
                               </div>
                             </div>
                           ) : null}
@@ -3152,6 +3305,47 @@ export function AiEcommerceLaunchSection({
                               <small>
                                 Bridge artifacts:{' '}
                                 {lastEcommerceWhatsappGrowthHandoff.bridgeArtifacts.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceWhatsappGrowthActivationWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    WhatsApp growth activation
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceWhatsappGrowthActivationWorkspace.activationSummary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceWhatsappGrowthActivationWorkspace.activationStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Opener:{' '}
+                                {
+                                  selectedTenantEcommerceWhatsappGrowthActivationWorkspace
+                                    .sequencePayload.opener
+                                }
+                              </small>
+                              <small>
+                                Qualification:{' '}
+                                {
+                                  selectedTenantEcommerceWhatsappGrowthActivationWorkspace
+                                    .sequencePayload.qualification
+                                }
+                              </small>
+                              <small>
+                                Checklist:{' '}
+                                {selectedTenantEcommerceWhatsappGrowthActivationWorkspace.activationChecklist.join(
                                   ' | ',
                                 )}
                               </small>

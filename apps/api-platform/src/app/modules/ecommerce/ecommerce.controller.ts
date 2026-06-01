@@ -13,7 +13,9 @@ import {
   GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
   GetTenantEcommerceCatalogCommercialCardUseCase,
   GetTenantEcommerceCatalogListingAssetUseCase,
+  GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
   GetTenantEcommerceStorefrontReleaseCandidateBriefUseCase,
+  GetTenantEcommerceStorefrontGoLiveManifestUseCase,
   GetTenantEcommerceStorefrontReleaseControlWorkspaceUseCase,
   GetTenantEcommerceChannelReleaseExecutionReadinessUseCase,
   GetTenantEcommerceChannelReleaseWorkbenchUseCase,
@@ -49,6 +51,7 @@ import {
   RequestTenantEcommerceWhatsappGrowthExecutionBridgeUseCase,
   RequestTenantEcommerceWhatsappGrowthOperatorLaunchPacketUseCase,
   RequestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase,
+  RequestTenantEcommerceOrderInvoicingBridgeUseCase,
   SaveTenantEcommerceProductEntityChannelDraftUseCase,
   UpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase,
   UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
@@ -142,6 +145,7 @@ import {
   EcommerceCatalogCommercialCardResponseDto,
   EcommerceCatalogListingAssetResponseDto,
   EcommerceCatalogMerchandisingPacketResponseDto,
+  EcommerceCheckoutOrderIntakeWorkspaceResponseDto,
   EcommerceCatalogStorefrontPlacementPacketResponseDto,
   EcommerceChannelReleaseApprovalPacketResponseDto,
   EcommerceChannelReleaseExecutionReadinessResponseDto,
@@ -153,12 +157,14 @@ import {
   EcommerceLandingAssetEntityWorkspaceResponseDto,
   EcommerceLandingPublishArtifactResponseDto,
   EcommerceStorefrontReleaseControlWorkspaceResponseDto,
+  EcommerceStorefrontGoLiveManifestResponseDto,
   EcommerceStorefrontReleaseCandidateBriefResponseDto,
   EcommerceStorefrontPublishReviewWorkspaceResponseDto,
   EcommerceStorefrontPreviewWorkspaceResponseDto,
   EcommerceWhatsappGrowthActivationPacketResponseDto,
   EcommerceWhatsappGrowthExecutionBridgeResponseDto,
   EcommerceWhatsappGrowthLaunchAcknowledgementPacketResponseDto,
+  EcommerceOrderInvoicingBridgeResponseDto,
   EcommerceWhatsappGrowthOperatorLaunchPacketResponseDto,
   EcommerceWhatsappGrowthActivationWorkspaceResponseDto,
   EcommerceWhatsappGrowthHandoffResponseDto,
@@ -167,6 +173,7 @@ import {
   toEcommerceCatalogCommercialCardResponseDto,
   toEcommerceCatalogListingAssetResponseDto,
   toEcommerceCatalogMerchandisingPacketResponseDto,
+  toEcommerceCheckoutOrderIntakeWorkspaceResponseDto,
   toEcommerceCatalogStorefrontPlacementPacketResponseDto,
   toEcommerceChannelReleaseApprovalPacketResponseDto,
   toEcommerceChannelReleaseExecutionReadinessResponseDto,
@@ -178,12 +185,14 @@ import {
   toEcommerceLandingAssetEntityWorkspaceResponseDto,
   toEcommerceLandingPublishArtifactResponseDto,
   toEcommerceStorefrontReleaseControlWorkspaceResponseDto,
+  toEcommerceStorefrontGoLiveManifestResponseDto,
   toEcommerceStorefrontReleaseCandidateBriefResponseDto,
   toEcommerceStorefrontPublishReviewWorkspaceResponseDto,
   toEcommerceStorefrontPreviewWorkspaceResponseDto,
   toEcommerceWhatsappGrowthActivationPacketResponseDto,
   toEcommerceWhatsappGrowthExecutionBridgeResponseDto,
   toEcommerceWhatsappGrowthLaunchAcknowledgementPacketResponseDto,
+  toEcommerceOrderInvoicingBridgeResponseDto,
   toEcommerceWhatsappGrowthOperatorLaunchPacketResponseDto,
   toEcommerceWhatsappGrowthActivationWorkspaceResponseDto,
   toEcommerceWhatsappGrowthHandoffResponseDto,
@@ -320,10 +329,12 @@ export class EcommerceController {
     private readonly getTenantEcommerceCatalogAssetEntityWorkspaceUseCase: GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
     private readonly getTenantEcommerceCatalogCommercialCardUseCase: GetTenantEcommerceCatalogCommercialCardUseCase,
     private readonly getTenantEcommerceCatalogListingAssetUseCase: GetTenantEcommerceCatalogListingAssetUseCase,
+    private readonly getTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase: GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
     private readonly getTenantEcommerceStorefrontPreviewWorkspaceUseCase: GetTenantEcommerceStorefrontPreviewWorkspaceUseCase,
     private readonly getTenantEcommerceStorefrontPublishReviewWorkspaceUseCase: GetTenantEcommerceStorefrontPublishReviewWorkspaceUseCase,
     private readonly getTenantEcommerceStorefrontReleaseCandidateBriefUseCase: GetTenantEcommerceStorefrontReleaseCandidateBriefUseCase,
     private readonly getTenantEcommerceStorefrontReleaseControlWorkspaceUseCase: GetTenantEcommerceStorefrontReleaseControlWorkspaceUseCase,
+    private readonly getTenantEcommerceStorefrontGoLiveManifestUseCase: GetTenantEcommerceStorefrontGoLiveManifestUseCase,
     private readonly getTenantEcommerceLandingPublishArtifactUseCase: GetTenantEcommerceLandingPublishArtifactUseCase,
     private readonly getTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase: GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
     private readonly getTenantEcommerceChannelReleaseWorkbenchUseCase: GetTenantEcommerceChannelReleaseWorkbenchUseCase,
@@ -355,6 +366,7 @@ export class EcommerceController {
     private readonly requestTenantEcommerceWhatsappGrowthExecutionBridgeUseCase: RequestTenantEcommerceWhatsappGrowthExecutionBridgeUseCase,
     private readonly requestTenantEcommerceWhatsappGrowthOperatorLaunchPacketUseCase: RequestTenantEcommerceWhatsappGrowthOperatorLaunchPacketUseCase,
     private readonly requestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase: RequestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase,
+    private readonly requestTenantEcommerceOrderInvoicingBridgeUseCase: RequestTenantEcommerceOrderInvoicingBridgeUseCase,
     private readonly updateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase: UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
     private readonly updateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase: UpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase,
     private readonly requestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase: RequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase,
@@ -1247,6 +1259,35 @@ export class EcommerceController {
     return toEcommerceStorefrontReleaseControlWorkspaceResponseDto(workspace);
   }
 
+  @Get(':slug/product-entities/:productEntityId/storefront-go-live-manifest')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantStorefrontGoLiveManifest(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceStorefrontGoLiveManifestResponseDto> {
+    const manifest =
+      await this.getTenantEcommerceStorefrontGoLiveManifestUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!manifest) {
+      throw new NotFoundException(
+        `Storefront go-live manifest for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceStorefrontGoLiveManifestResponseDto(manifest);
+  }
+
   @Get(':slug/product-entities/:productEntityId/landing-publish-artifact')
   @UseGuards(
     JwtAuthenticationGuard,
@@ -1539,6 +1580,35 @@ export class EcommerceController {
     return toEcommerceCatalogMerchandisingPacketResponseDto(packet);
   }
 
+  @Get(':slug/product-entities/:productEntityId/checkout-order-intake-workspace')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantCheckoutOrderIntakeWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceCheckoutOrderIntakeWorkspaceResponseDto> {
+    const workspace =
+      await this.getTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Checkout order intake workspace for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceCheckoutOrderIntakeWorkspaceResponseDto(workspace);
+  }
+
   @Get(':slug/product-entities/:productEntityId/landing-page-structure')
   @UseGuards(
     JwtAuthenticationGuard,
@@ -1774,6 +1844,35 @@ export class EcommerceController {
     return toEcommerceWhatsappGrowthLaunchAcknowledgementPacketResponseDto(
       packet,
     );
+  }
+
+  @Post(':slug/product-entities/:productEntityId/request-order-invoicing-bridge')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantOrderInvoicingBridge(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderInvoicingBridgeResponseDto> {
+    const packet =
+      await this.requestTenantEcommerceOrderInvoicingBridgeUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!packet) {
+      throw new NotFoundException(
+        `Order invoicing bridge for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceOrderInvoicingBridgeResponseDto(packet);
   }
 
   @Get(':slug/product-entities/:productEntityId/channel-drafts/:channelKey')

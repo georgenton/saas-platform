@@ -1545,3 +1545,119 @@ export interface TenantEcommerceWhatsappGrowthHandoffView {
   readinessChecks: string[];
   guardrails: string[];
 }
+
+export interface TenantEcommerceCheckoutOrderIntakeWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  checkoutStatus:
+    | 'ready_for_order_intake'
+    | 'needs_storefront_alignment'
+    | 'blocked';
+  summary: string;
+  checkoutDraft: {
+    offerTitle: string;
+    pricingSnapshot: string;
+    primaryCta: string;
+    customerPrompt: string;
+    closingChannel: 'landing' | 'catalog' | 'whatsapp';
+  };
+  customerFields: string[];
+  channelSignals: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    status: 'ready' | 'warning' | 'blocked';
+    detail: string;
+  }>;
+  invoicingConnection: {
+    status: 'ready' | 'warning' | 'blocked';
+    detail: string;
+    nextStep: string;
+  };
+  orderChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderInvoicingBridgeView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  bridgeStatus:
+    | 'ready_for_invoice_handoff'
+    | 'needs_customer_fiscal_data'
+    | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  orderDraft: TenantEcommerceCheckoutOrderIntakeWorkspaceView['checkoutDraft'];
+  invoiceReadiness: {
+    connectionStatus: 'ready' | 'warning' | 'blocked';
+    buyerProfileStatus: 'ready' | 'needs_customer_fiscal_data' | 'blocked';
+    suggestedDocument: 'invoice';
+  };
+  fiscalRequirements: string[];
+  handoffArtifacts: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceStorefrontGoLiveManifestView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  manifestStatus:
+    | 'ready_for_controlled_go_live'
+    | 'needs_checkout_foundation'
+    | 'blocked';
+  summary: {
+    headline: string;
+    detail: string;
+  };
+  channelSnapshot: {
+    landingStatus:
+      | 'ready_for_release_control'
+      | 'needs_operator_revision'
+      | 'blocked';
+    catalogStatus:
+      | 'ready_for_merchandising_review'
+      | 'needs_operator_revision'
+      | 'blocked';
+    whatsappStatus:
+      | 'ready_for_growth_launch_acknowledgement'
+      | 'needs_operator_revision'
+      | 'blocked';
+  };
+  orderReadiness: {
+    checkoutStatus:
+      | 'ready_for_order_intake'
+      | 'needs_storefront_alignment'
+      | 'blocked';
+    invoicingStatus:
+      | 'ready_for_invoice_handoff'
+      | 'needs_customer_fiscal_data'
+      | 'blocked';
+  };
+  goLiveDependencies: Array<{
+    key:
+      | 'storefront_release_control'
+      | 'catalog_merchandising'
+      | 'whatsapp_growth_acknowledgement'
+      | 'checkout_order_intake'
+      | 'order_invoicing_bridge';
+    title: string;
+    status: 'ready' | 'warning' | 'blocked';
+    detail: string;
+  }>;
+  finalChecklist: string[];
+  operatorHandoff: {
+    owner: 'ecommerce' | 'growth' | 'shared';
+    goLiveMode: 'controlled_go_live';
+    nextWindow: string;
+  };
+  warnings: string[];
+  blockers: string[];
+  guardrails: string[];
+}

@@ -2686,6 +2686,36 @@ export interface EcommerceStorefrontPreviewWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface EcommerceStorefrontPublishReviewWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  reviewStatus:
+    | 'ready_for_publish_review'
+    | 'needs_operator_revision'
+    | 'blocked';
+  summary: {
+    headline: string;
+    detail: string;
+  };
+  previewSnapshot: EcommerceStorefrontPreviewWorkspaceResponse;
+  approvalSnapshot: {
+    approvalStatus:
+      | 'ready_for_operator_approval'
+      | 'needs_channel_completion'
+      | 'blocked';
+    approvalOwner: 'ecommerce' | 'growth' | 'shared';
+    channelDecisions: Array<{
+      channelKey: 'landing' | 'catalog' | 'whatsapp';
+      approvalDecision: 'approve' | 'review' | 'block';
+      rationale: string;
+    }>;
+  };
+  reviewChecklist: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceChannelReleaseApprovalPacketResponse {
   tenantSlug: string;
   generatedAt: string;
@@ -2707,6 +2737,28 @@ export interface EcommerceChannelReleaseApprovalPacketResponse {
     rationale: string;
   }>;
   requiredApprovals: string[];
+  warnings: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceChannelReleaseLaunchPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  launchStatus:
+    | 'ready_for_controlled_launch'
+    | 'needs_operator_revision'
+    | 'blocked';
+  summary: string;
+  launchOwner: 'ecommerce' | 'growth' | 'shared';
+  channels: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    launchDecision: 'launch' | 'review' | 'hold';
+    launchStep: string;
+    fallbackStep: string;
+  }>;
+  launchChecklist: string[];
   warnings: string[];
   blockers: string[];
   guardrails: string[];
@@ -2806,6 +2858,34 @@ export interface EcommerceWhatsappGrowthActivationWorkspaceResponse {
   activationChecklist: string[];
   bridgeArtifacts: string[];
   handoffNotes: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceWhatsappGrowthActivationPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponse;
+  packetStatus:
+    | 'ready_for_growth_operator_activation'
+    | 'needs_operator_revision'
+    | 'blocked';
+  activationTarget: {
+    productKey: 'growth';
+    channel: 'whatsapp';
+    activationMode: 'operator_assist';
+  };
+  activationSummary: string;
+  messagePack: {
+    opener: string;
+    qualification: string;
+    objectionHandling: string[];
+    closingCta: string;
+    fallbackEscalation: string;
+  };
+  activationChecklist: string[];
+  bridgeArtifacts: string[];
+  operatorSteps: string[];
   guardrails: string[];
 }
 

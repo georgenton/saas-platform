@@ -33,6 +33,7 @@ import {
   GetTenantEcommerceProductSetupDetailUseCase,
   GetTenantEcommerceProductWorkspaceDetailUseCase,
   GetTenantEcommerceStorefrontPreviewWorkspaceUseCase,
+  GetTenantEcommerceStorefrontPublishReviewWorkspaceUseCase,
   GetTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase,
   GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
   GetTenantEcommerceWhatsappSalesFlowUseCase,
@@ -56,6 +57,7 @@ import {
   PromoteTenantEcommerceProductWorkspaceToProductSetupUseCase,
   PromoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
   RequestTenantEcommerceChannelReleaseApprovalPacketUseCase,
+  RequestTenantEcommerceChannelReleaseLaunchPacketUseCase,
   RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
   RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
   RequestTenantEcommerceChannelReleaseHandoffPacketUseCase,
@@ -66,6 +68,7 @@ import {
   RequestTenantEcommerceProductEntityCommercializationPacketUseCase,
   RequestTenantEcommerceProductSetupDefinitionPacketUseCase,
   RequestTenantEcommerceWhatsappGrowthHandoffUseCase,
+  RequestTenantEcommerceWhatsappGrowthActivationPacketUseCase,
   RequestTenantEcommerceProductWorkspaceReadinessPacketUseCase,
   RequestTenantEcommerceLaunchPlanActivationReadinessUseCase,
   SaveTenantEcommerceProductAuthoringDraftUseCase,
@@ -623,6 +626,21 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: GetTenantEcommerceStorefrontPublishReviewWorkspaceUseCase,
+      inject: [
+        GetTenantEcommerceStorefrontPreviewWorkspaceUseCase,
+        RequestTenantEcommerceChannelReleaseApprovalPacketUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceStorefrontPreviewWorkspaceUseCase,
+        requestTenantEcommerceChannelReleaseApprovalPacketUseCase,
+      ) =>
+        new GetTenantEcommerceStorefrontPublishReviewWorkspaceUseCase(
+          getTenantEcommerceStorefrontPreviewWorkspaceUseCase,
+          requestTenantEcommerceChannelReleaseApprovalPacketUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
       inject: [GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase],
       useFactory: (getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase) =>
@@ -691,6 +709,21 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: RequestTenantEcommerceChannelReleaseLaunchPacketUseCase,
+      inject: [
+        GetTenantEcommerceChannelReleaseExecutionReadinessUseCase,
+        RequestTenantEcommerceChannelReleaseApprovalPacketUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceChannelReleaseExecutionReadinessUseCase,
+        requestTenantEcommerceChannelReleaseApprovalPacketUseCase,
+      ) =>
+        new RequestTenantEcommerceChannelReleaseLaunchPacketUseCase(
+          getTenantEcommerceChannelReleaseExecutionReadinessUseCase,
+          requestTenantEcommerceChannelReleaseApprovalPacketUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcommerceLandingPageStructureUseCase,
       inject: [GetTenantEcommerceLandingAssetEntityWorkspaceUseCase],
       useFactory: (getTenantEcommerceLandingAssetEntityWorkspaceUseCase) =>
@@ -720,6 +753,14 @@ import { EcommerceController } from './ecommerce.controller';
       useFactory: (requestTenantEcommerceWhatsappGrowthHandoffUseCase) =>
         new GetTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase(
           requestTenantEcommerceWhatsappGrowthHandoffUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceWhatsappGrowthActivationPacketUseCase,
+      inject: [GetTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase],
+      useFactory: (getTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase) =>
+        new RequestTenantEcommerceWhatsappGrowthActivationPacketUseCase(
+          getTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase,
         ),
     },
     {

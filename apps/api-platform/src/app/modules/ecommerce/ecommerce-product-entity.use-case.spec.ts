@@ -1,6 +1,7 @@
 import {
   GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
   GetTenantEcommerceCatalogCommercialCardUseCase,
+  GetTenantEcommerceStorefrontPublishReviewWorkspaceUseCase,
   GetTenantEcommerceStorefrontPreviewWorkspaceUseCase,
   GetTenantEcommerceChannelReleaseExecutionReadinessUseCase,
   GetTenantEcommerceChannelReleaseWorkbenchUseCase,
@@ -26,6 +27,7 @@ import {
   PromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
   RequestTenantEcommerceChannelReleaseHandoffPacketUseCase,
   RequestTenantEcommerceChannelReleaseApprovalPacketUseCase,
+  RequestTenantEcommerceChannelReleaseLaunchPacketUseCase,
   RequestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase,
   RequestTenantEcommerceProductEntityChannelDraftActionPacketUseCase,
   RequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase,
@@ -37,6 +39,7 @@ import {
   UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
   GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
   GetTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase,
+  RequestTenantEcommerceWhatsappGrowthActivationPacketUseCase,
   GetTenantEcommerceWhatsappSalesFlowUseCase,
 } from '@saas-platform/ecommerce-application';
 
@@ -2124,6 +2127,85 @@ describe('Ecommerce product entity use cases', () => {
     });
   });
 
+  it('loads one storefront publish review workspace', async () => {
+    const previewUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:08:00.000Z'),
+        productEntity,
+        previewStatus: 'needs_publish_copy',
+        summary: {
+          headline: 'Preview headline',
+          detail: 'Preview detail',
+        },
+        landingPreview: {
+          headline: 'Headline final',
+          subheadline: 'Landing subheadline',
+          primaryCta: 'Activar producto base',
+          proofStrip: ['Proof 1'],
+        },
+        catalogPreview: {
+          title: 'Catalog asset entity final',
+          shortDescription: 'Catalog headline final',
+          pricingPresentation: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          offerBullets: ['Offer bullets'],
+        },
+        releaseSignals: [
+          {
+            channelKey: 'landing',
+            status: 'needs_publish_copy',
+            detail: 'Ajustar copy antes del review final',
+          },
+        ],
+        previewChecklist: ['FAQ 1'],
+        guardrails: ['Preview guardrail'],
+      }),
+    };
+    const approvalUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:05:45.000Z'),
+        productEntity,
+        approvalStatus: 'needs_channel_completion',
+        summary: 'Approval summary',
+        approvalOwner: 'shared',
+        channels: [
+          {
+            channelKey: 'landing',
+            readiness: 'needs_publish_copy',
+            approvalDecision: 'review',
+            rationale: 'Ajustar copy antes del publish review final',
+          },
+        ],
+        requiredApprovals: ['Checklist'],
+        warnings: ['Warning'],
+        blockers: [],
+        guardrails: ['Approval guardrail'],
+      }),
+    };
+    const useCase = new GetTenantEcommerceStorefrontPublishReviewWorkspaceUseCase(
+      previewUseCase as never,
+      approvalUseCase as never,
+      () => new Date('2026-05-28T17:08:15.000Z'),
+    );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001'),
+    ).resolves.toMatchObject({
+      reviewStatus: 'needs_operator_revision',
+      approvalSnapshot: {
+        approvalOwner: 'shared',
+        channelDecisions: [
+          expect.objectContaining({
+            channelKey: 'landing',
+            approvalDecision: 'review',
+          }),
+        ],
+      },
+    });
+  });
+
   it('loads one whatsapp channel sequence workspace', async () => {
     const ecommerceProductEntityRepository = {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
@@ -2463,6 +2545,71 @@ describe('Ecommerce product entity use cases', () => {
     });
   });
 
+  it('requests one channel release launch packet', async () => {
+    const readinessUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:05:00.000Z'),
+        productEntity,
+        overallStatus: 'needs_channel_completion',
+        summary: 'Readiness summary',
+        channels: [
+          {
+            channelKey: 'landing',
+            releaseStatus: 'needs_publish_copy',
+            executionOwner: 'shared',
+            executionChecklist: ['Hero QA'],
+            launchWindow: 'Ajustar copy y artifacts antes de release controlado',
+            blockedBy: ['Pending copy review'],
+          },
+        ],
+        finalChecklist: ['Checklist'],
+        blockedBy: ['Pending copy review'],
+        guardrails: ['Release guardrail'],
+      }),
+    };
+    const approvalUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:05:45.000Z'),
+        productEntity,
+        approvalStatus: 'needs_channel_completion',
+        summary: 'Approval summary',
+        approvalOwner: 'shared',
+        channels: [
+          {
+            channelKey: 'landing',
+            readiness: 'needs_publish_copy',
+            approvalDecision: 'review',
+            rationale: 'Ajustar copy antes del launch final',
+          },
+        ],
+        requiredApprovals: ['Checklist'],
+        warnings: ['Warning'],
+        blockers: [],
+        guardrails: ['Approval guardrail'],
+      }),
+    };
+    const useCase = new RequestTenantEcommerceChannelReleaseLaunchPacketUseCase(
+      readinessUseCase as never,
+      approvalUseCase as never,
+      () => new Date('2026-05-28T17:06:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001'),
+    ).resolves.toMatchObject({
+      launchStatus: 'needs_operator_revision',
+      launchOwner: 'shared',
+      channels: [
+        expect.objectContaining({
+          channelKey: 'landing',
+          launchDecision: 'review',
+        }),
+      ],
+    });
+  });
+
   it('loads one landing page structure', async () => {
     const ecommerceProductEntityRepository = {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
@@ -2695,6 +2842,55 @@ describe('Ecommerce product entity use cases', () => {
         channel: 'whatsapp',
       },
       sequencePayload: {
+        opener: 'Mensaje de apertura final',
+        closingCta: 'Activar producto base',
+      },
+    });
+  });
+
+  it('requests one whatsapp growth activation packet', async () => {
+    const activationWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:08:30.000Z'),
+        productEntity,
+        assetEntity: {
+          channelKey: 'whatsapp',
+        },
+        activationStatus: 'ready_for_growth_activation',
+        targetWorkspace: {
+          productKey: 'growth',
+          channel: 'whatsapp',
+          activationMode: 'operator_assist',
+        },
+        activationSummary: 'Activation summary',
+        sequencePayload: {
+          opener: 'Mensaje de apertura final',
+          qualification: 'Follow-up 1: Follow-up angle',
+          objectionHandling: ['Recovery: Recovery branch'],
+          closingCta: 'Activar producto base',
+          fallbackEscalation: 'Escalar si se enfria la conversacion',
+        },
+        activationChecklist: ['Sequence QA'],
+        bridgeArtifacts: ['Artifact 1'],
+        handoffNotes: ['Growth note'],
+        guardrails: ['Growth guardrail'],
+      }),
+    };
+    const useCase = new RequestTenantEcommerceWhatsappGrowthActivationPacketUseCase(
+      activationWorkspaceUseCase as never,
+      () => new Date('2026-05-28T17:08:45.000Z'),
+    );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001'),
+    ).resolves.toMatchObject({
+      packetStatus: 'ready_for_growth_operator_activation',
+      activationTarget: {
+        productKey: 'growth',
+        channel: 'whatsapp',
+      },
+      messagePack: {
         opener: 'Mensaje de apertura final',
         closingCta: 'Activar producto base',
       },

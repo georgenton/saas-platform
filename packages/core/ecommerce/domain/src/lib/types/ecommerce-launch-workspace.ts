@@ -1096,6 +1096,86 @@ export interface TenantEcommerceWhatsappGrowthActivationWorkspaceView {
   guardrails: string[];
 }
 
+export interface TenantEcommerceStorefrontPublishReviewWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  reviewStatus:
+    | 'ready_for_publish_review'
+    | 'needs_operator_revision'
+    | 'blocked';
+  summary: {
+    headline: string;
+    detail: string;
+  };
+  previewSnapshot: TenantEcommerceStorefrontPreviewWorkspaceView;
+  approvalSnapshot: {
+    approvalStatus:
+      | 'ready_for_operator_approval'
+      | 'needs_channel_completion'
+      | 'blocked';
+    approvalOwner: 'ecommerce' | 'growth' | 'shared';
+    channelDecisions: Array<{
+      channelKey: 'landing' | 'catalog' | 'whatsapp';
+      approvalDecision: 'approve' | 'review' | 'block';
+      rationale: string;
+    }>;
+  };
+  reviewChecklist: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceChannelReleaseLaunchPacketView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  launchStatus:
+    | 'ready_for_controlled_launch'
+    | 'needs_operator_revision'
+    | 'blocked';
+  summary: string;
+  launchOwner: 'ecommerce' | 'growth' | 'shared';
+  channels: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    launchDecision: 'launch' | 'review' | 'hold';
+    launchStep: string;
+    fallbackStep: string;
+  }>;
+  launchChecklist: string[];
+  warnings: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceWhatsappGrowthActivationPacketView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  assetEntity: TenantEcommerceProductEntityChannelAssetEntityView;
+  packetStatus:
+    | 'ready_for_growth_operator_activation'
+    | 'needs_operator_revision'
+    | 'blocked';
+  activationTarget: {
+    productKey: 'growth';
+    channel: 'whatsapp';
+    activationMode: 'operator_assist';
+  };
+  activationSummary: string;
+  messagePack: {
+    opener: string;
+    qualification: string;
+    objectionHandling: string[];
+    closingCta: string;
+    fallbackEscalation: string;
+  };
+  activationChecklist: string[];
+  bridgeArtifacts: string[];
+  operatorSteps: string[];
+  guardrails: string[];
+}
+
 export interface TenantEcommerceLandingPageStructureView {
   tenantSlug: string;
   generatedAt: Date;

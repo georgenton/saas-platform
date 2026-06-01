@@ -17,10 +17,13 @@ import {
   EcommerceLandingAssetEntityWorkspaceResponse,
   EcommerceLandingPageStructureResponse,
   EcommerceCatalogAssetEntityWorkspaceResponse,
+  EcommerceCatalogCommercialCardResponse,
   EcommerceWhatsappChannelSequenceWorkspaceResponse,
   EcommerceChannelReleaseWorkbenchResponse,
   EcommerceChannelReleaseExecutionReadinessResponse,
+  EcommerceChannelReleaseHandoffPacketResponse,
   EcommerceWhatsappSalesFlowResponse,
+  EcommerceWhatsappGrowthHandoffResponse,
   EcommerceProductEntityChannelReleaseCandidateDetailResponse,
   EcommerceProductEntityChannelReleaseCandidateRegistryResponse,
   EcommerceProductEntityChannelAssetWorkspaceDetailResponse,
@@ -101,6 +104,9 @@ type Props = {
   selectedTenantEcommerceCatalogAssetEntityWorkspace:
     | EcommerceCatalogAssetEntityWorkspaceResponse
     | null;
+  selectedTenantEcommerceCatalogCommercialCard:
+    | EcommerceCatalogCommercialCardResponse
+    | null;
   selectedTenantEcommerceWhatsappChannelSequenceWorkspace:
     | EcommerceWhatsappChannelSequenceWorkspaceResponse
     | null;
@@ -110,11 +116,17 @@ type Props = {
   selectedTenantEcommerceChannelReleaseExecutionReadiness:
     | EcommerceChannelReleaseExecutionReadinessResponse
     | null;
+  lastEcommerceChannelReleaseHandoffPacket:
+    | EcommerceChannelReleaseHandoffPacketResponse
+    | null;
   selectedTenantEcommerceLandingPageStructure:
     | EcommerceLandingPageStructureResponse
     | null;
   selectedTenantEcommerceWhatsappSalesFlow:
     | EcommerceWhatsappSalesFlowResponse
+    | null;
+  lastEcommerceWhatsappGrowthHandoff:
+    | EcommerceWhatsappGrowthHandoffResponse
     | null;
   tenantEcommerceProductEntityChannelReleaseCandidateRegistry:
     | EcommerceProductEntityChannelReleaseCandidateRegistryResponse
@@ -197,6 +209,8 @@ type Props = {
   ecommerceProductEntityChannelReleaseCandidatePromotionActionLoading:
     | string
     | null;
+  ecommerceChannelReleaseHandoffPacketLoading: string | null;
+  ecommerceWhatsappGrowthHandoffLoading: string | null;
   ecommerceProductSetupDefinitionActionLoading: string | null;
   ecommerceProductWorkspaceReadinessActionLoading: string | null;
   tenantEcommerceStoreProfileWorkspace: EcommerceStoreProfileWorkspaceResponse | null;
@@ -306,6 +320,8 @@ type Props = {
     channelKey: 'landing' | 'catalog' | 'whatsapp',
   ) => void;
   onPromoteProductEntityChannelAssetEntityToReleaseCandidate: () => void;
+  onRequestChannelReleaseHandoffPacket: () => void;
+  onRequestWhatsappGrowthHandoff: () => void;
   onSelectProductEntityChannelReleaseCandidate: (
     channelKey: 'landing' | 'catalog' | 'whatsapp',
   ) => void;
@@ -345,11 +361,14 @@ export function AiEcommerceLaunchSection({
   selectedTenantEcommerceProductEntityChannelAssetEntityDetail,
   selectedTenantEcommerceLandingAssetEntityWorkspace,
   selectedTenantEcommerceCatalogAssetEntityWorkspace,
+  selectedTenantEcommerceCatalogCommercialCard,
   selectedTenantEcommerceWhatsappChannelSequenceWorkspace,
   selectedTenantEcommerceChannelReleaseWorkbench,
   selectedTenantEcommerceChannelReleaseExecutionReadiness,
+  lastEcommerceChannelReleaseHandoffPacket,
   selectedTenantEcommerceLandingPageStructure,
   selectedTenantEcommerceWhatsappSalesFlow,
+  lastEcommerceWhatsappGrowthHandoff,
   tenantEcommerceProductEntityChannelReleaseCandidateRegistry,
   selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail,
   lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket,
@@ -395,6 +414,8 @@ export function AiEcommerceLaunchSection({
   ecommerceProductEntityChannelAssetEntitySaveActionLoading,
   ecommerceProductEntityChannelAssetEntityPublishPreparationPacketLoading,
   ecommerceProductEntityChannelReleaseCandidatePromotionActionLoading,
+  ecommerceChannelReleaseHandoffPacketLoading,
+  ecommerceWhatsappGrowthHandoffLoading,
   ecommerceProductSetupDefinitionActionLoading,
   ecommerceProductWorkspaceReadinessActionLoading,
   tenantEcommerceStoreProfileWorkspace,
@@ -457,6 +478,8 @@ export function AiEcommerceLaunchSection({
   onRequestProductEntityChannelAssetEntityPublishPreparationPacket,
   onSelectProductEntityChannelAssetEntity,
   onPromoteProductEntityChannelAssetEntityToReleaseCandidate,
+  onRequestChannelReleaseHandoffPacket,
+  onRequestWhatsappGrowthHandoff,
   onSelectProductEntityChannelReleaseCandidate,
   onSelectLaunchPlan,
   onRequestActivationReadiness,
@@ -2693,6 +2716,60 @@ export function AiEcommerceLaunchSection({
                               </small>
                             </div>
                           ) : null}
+                          {selectedTenantEcommerceCatalogCommercialCard ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Catalog commercial card
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceCatalogCommercialCard
+                                        .card.title
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceCatalogCommercialCard.commercialStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                {
+                                  selectedTenantEcommerceCatalogCommercialCard.storefrontSummary
+                                }
+                              </small>
+                              <small>
+                                Short description:{' '}
+                                {
+                                  selectedTenantEcommerceCatalogCommercialCard
+                                    .card.shortDescription
+                                }
+                              </small>
+                              <small>
+                                Pricing:{' '}
+                                {
+                                  selectedTenantEcommerceCatalogCommercialCard
+                                    .card.pricingPresentation
+                                }
+                              </small>
+                              <small>
+                                CTA:{' '}
+                                {
+                                  selectedTenantEcommerceCatalogCommercialCard
+                                    .card.primaryCta
+                                }
+                              </small>
+                              <small>
+                                Highlights:{' '}
+                                {selectedTenantEcommerceCatalogCommercialCard.merchandisingHighlights.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
                           {selectedTenantEcommerceWhatsappChannelSequenceWorkspace ? (
                             <div className={styles.commercialCard}>
                               <div className={styles.sectionHeading}>
@@ -2839,6 +2916,78 @@ export function AiEcommerceLaunchSection({
                                   )}
                                 </small>
                               ) : null}
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceChannelReleaseHandoffPacketLoading ===
+                                    selectedTenantEcommerceChannelReleaseExecutionReadiness
+                                      .productEntity.productEntityId
+                                  }
+                                  onClick={onRequestChannelReleaseHandoffPacket}
+                                  type="button"
+                                >
+                                  {ecommerceChannelReleaseHandoffPacketLoading ===
+                                  selectedTenantEcommerceChannelReleaseExecutionReadiness
+                                    .productEntity.productEntityId
+                                    ? 'Empaquetando handoff...'
+                                    : 'Solicitar release handoff'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                          {lastEcommerceChannelReleaseHandoffPacket ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Release handoff packet
+                                  </span>
+                                  <h4>
+                                    {
+                                      lastEcommerceChannelReleaseHandoffPacket.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceChannelReleaseHandoffPacket.handoffStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Channels:{' '}
+                                {lastEcommerceChannelReleaseHandoffPacket.channels
+                                  .map(
+                                    (channel) =>
+                                      `${humanizeKey(channel.channelKey)}:${humanizeKey(channel.readiness)}`,
+                                  )
+                                  .join(' | ')}
+                              </small>
+                              <small>
+                                Checklist:{' '}
+                                {lastEcommerceChannelReleaseHandoffPacket.handoffChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              {lastEcommerceChannelReleaseHandoffPacket.warnings
+                                .length > 0 ? (
+                                <small>
+                                  Warnings:{' '}
+                                  {lastEcommerceChannelReleaseHandoffPacket.warnings.join(
+                                    ' | ',
+                                  )}
+                                </small>
+                              ) : null}
+                              {lastEcommerceChannelReleaseHandoffPacket.blockers
+                                .length > 0 ? (
+                                <small>
+                                  Blockers:{' '}
+                                  {lastEcommerceChannelReleaseHandoffPacket.blockers.join(
+                                    ' | ',
+                                  )}
+                                </small>
+                              ) : null}
                             </div>
                           ) : null}
                           {selectedTenantEcommerceLandingPageStructure ? (
@@ -2939,6 +3088,72 @@ export function AiEcommerceLaunchSection({
                                   selectedTenantEcommerceWhatsappSalesFlow.stages
                                     .fallbackEscalation
                                 }
+                              </small>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceWhatsappGrowthHandoffLoading ===
+                                    selectedTenantEcommerceWhatsappSalesFlow
+                                      .productEntity.productEntityId
+                                  }
+                                  onClick={onRequestWhatsappGrowthHandoff}
+                                  type="button"
+                                >
+                                  {ecommerceWhatsappGrowthHandoffLoading ===
+                                  selectedTenantEcommerceWhatsappSalesFlow
+                                    .productEntity.productEntityId
+                                    ? 'Preparando handoff...'
+                                    : 'Solicitar Growth handoff'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                          {lastEcommerceWhatsappGrowthHandoff ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    WhatsApp growth handoff
+                                  </span>
+                                  <h4>
+                                    {
+                                      lastEcommerceWhatsappGrowthHandoff.payload
+                                        .opener
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceWhatsappGrowthHandoff.handoffStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Qualification:{' '}
+                                {
+                                  lastEcommerceWhatsappGrowthHandoff.payload
+                                    .qualification
+                                }
+                              </small>
+                              <small>
+                                Objections:{' '}
+                                {lastEcommerceWhatsappGrowthHandoff.payload.objectionHandling.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Closing CTA:{' '}
+                                {
+                                  lastEcommerceWhatsappGrowthHandoff.payload
+                                    .closingCta
+                                }
+                              </small>
+                              <small>
+                                Bridge artifacts:{' '}
+                                {lastEcommerceWhatsappGrowthHandoff.bridgeArtifacts.join(
+                                  ' | ',
+                                )}
                               </small>
                             </div>
                           ) : null}

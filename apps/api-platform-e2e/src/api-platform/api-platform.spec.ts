@@ -62,7 +62,9 @@ import {
   GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
   GetTenantEcommerceCatalogCommercialCardUseCase,
   GetTenantEcommerceCatalogListingAssetUseCase,
+  GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
   GetTenantEcommerceStorefrontReleaseControlWorkspaceUseCase,
+  GetTenantEcommerceStorefrontGoLiveManifestUseCase,
   GetTenantEcommerceStorefrontReleaseCandidateBriefUseCase,
   GetTenantEcommerceStorefrontPublishReviewWorkspaceUseCase,
   GetTenantEcommerceStorefrontPreviewWorkspaceUseCase,
@@ -101,6 +103,7 @@ import {
   RequestTenantEcommerceChannelReleaseLaunchPacketUseCase,
   RequestTenantEcommerceCatalogStorefrontPlacementPacketUseCase,
   RequestTenantEcommerceCatalogMerchandisingPacketUseCase,
+  RequestTenantEcommerceOrderInvoicingBridgeUseCase,
   RequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase,
   RequestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase,
   PromoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
@@ -375,10 +378,16 @@ describe('API', () => {
   let getTenantEcommerceCatalogListingAssetUseCase: {
     execute: jest.Mock;
   };
+  let getTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
   let getTenantEcommerceStorefrontReleaseCandidateBriefUseCase: {
     execute: jest.Mock;
   };
   let getTenantEcommerceStorefrontReleaseControlWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcommerceStorefrontGoLiveManifestUseCase: {
     execute: jest.Mock;
   };
   let getTenantEcommerceStorefrontPreviewWorkspaceUseCase: {
@@ -412,6 +421,9 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let requestTenantEcommerceCatalogMerchandisingPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantEcommerceOrderInvoicingBridgeUseCase: {
     execute: jest.Mock;
   };
   let getTenantEcommerceLandingPageStructureUseCase: {
@@ -5488,6 +5500,244 @@ describe('API', () => {
         guardrails: ['Acknowledgement guardrail'],
       }),
     };
+    getTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-01T11:40:00.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        checkoutStatus: 'needs_storefront_alignment',
+        summary:
+          'El intake ya puede bosquejarse, aunque conviene alinear storefront, cierre y facturación antes de usarlo como salida comercial.',
+        checkoutDraft: {
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          customerPrompt:
+            'Pedir nombre, email, canal preferido y confirmación explícita de la oferta antes de cerrar la orden.',
+          closingChannel: 'whatsapp',
+        },
+        customerFields: [
+          'full_name',
+          'email',
+          'whatsapp_phone',
+          'offer_confirmation',
+          'billing_intent',
+        ],
+        channelSignals: [
+          {
+            channelKey: 'landing',
+            status: 'warning',
+            detail:
+              'La landing ya está cerca, pero todavía conviene una revisión operativa final.',
+          },
+          {
+            channelKey: 'catalog',
+            status: 'ready',
+            detail: 'La ficha comercial ya tiene forma de storefront card.',
+          },
+          {
+            channelKey: 'whatsapp',
+            status: 'warning',
+            detail:
+              'El handoff ya está bien encaminado, aunque todavía conviene una última revisión operativa.',
+          },
+        ],
+        invoicingConnection: {
+          status: 'ready',
+          detail:
+            'La conexión comercial con Invoicing ya está lista para asistir el cierre.',
+          nextStep: 'Usar el bridge de orden para preparar handoff fiscal.',
+        },
+        orderChecklist: [
+          'Confirmar oferta, pricing y CTA como una sola narrativa de cierre.',
+          'Capturar datos mínimos del comprador antes del handoff comercial.',
+          'Validar canal de cierre y expectativa de facturación.',
+        ],
+        blockedBy: [],
+        guardrails: [
+          'No tratar esta estructura como landing publicada ni checkout vivo todavía.',
+          'No promover esto como storefront real antes del release candidate.',
+          'No convertir este acknowledgement packet en activación viva de Growth todavía.',
+          'No tratar este workspace como checkout vivo ni cobro automático todavía.',
+        ],
+      }),
+    };
+    requestTenantEcommerceOrderInvoicingBridgeUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-01T11:42:00.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        bridgeStatus: 'needs_customer_fiscal_data',
+        summary:
+          'El bridge ya se puede preparar, pero todavía conviene completar datos del comprador y señales fiscales antes del handoff.',
+        targetWorkspace: {
+          productKey: 'invoicing',
+          stage: 'electronic_invoicing_ec_mvp',
+          handoffMode: 'operator_assist',
+        },
+        orderDraft: {
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          customerPrompt:
+            'Pedir nombre, email, canal preferido y confirmación explícita de la oferta antes de cerrar la orden.',
+          closingChannel: 'whatsapp',
+        },
+        invoiceReadiness: {
+          connectionStatus: 'ready',
+          buyerProfileStatus: 'needs_customer_fiscal_data',
+          suggestedDocument: 'invoice',
+        },
+        fiscalRequirements: [
+          'buyer_legal_name',
+          'buyer_tax_id_or_document',
+          'billing_email',
+          'accepted_offer_snapshot',
+          'channel_close_reference',
+        ],
+        handoffArtifacts: [
+          'Order intake snapshot',
+          'Pricing and CTA confirmation',
+          'Billing intent confirmation',
+        ],
+        blockedBy: [],
+        guardrails: [
+          'No tratar este workspace como checkout vivo ni cobro automático todavía.',
+          'No convertir este bridge en emisión viva de factura ni cobro automático todavía.',
+        ],
+      }),
+    };
+    getTenantEcommerceStorefrontGoLiveManifestUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-01T11:44:00.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        manifestStatus: 'needs_checkout_foundation',
+        summary: {
+          headline:
+            'El go-live ya tiene forma, aunque todavía conviene cerrar el intake y el puente fiscal.',
+          detail:
+            'La salida ya está bien orquestada, pero todavía no conviene tratarla como storefront listo para vender sin revisar cierre comercial.',
+        },
+        channelSnapshot: {
+          landingStatus: 'needs_operator_revision',
+          catalogStatus: 'needs_operator_revision',
+          whatsappStatus: 'needs_operator_revision',
+        },
+        orderReadiness: {
+          checkoutStatus: 'needs_storefront_alignment',
+          invoicingStatus: 'needs_customer_fiscal_data',
+        },
+        goLiveDependencies: [
+          {
+            key: 'storefront_release_control',
+            title: 'Storefront release control',
+            status: 'warning',
+            detail:
+              'Todavía conviene una última revisión operativa antes del release.',
+          },
+          {
+            key: 'catalog_merchandising',
+            title: 'Catalog merchandising',
+            status: 'warning',
+            detail:
+              'La ficha ya tiene forma comercial, pero todavía conviene revisar placement y launch antes de storefront.',
+          },
+          {
+            key: 'whatsapp_growth_acknowledgement',
+            title: 'WhatsApp growth acknowledgement',
+            status: 'warning',
+            detail:
+              'El handoff ya está bien encaminado, aunque todavía conviene una última revisión operativa.',
+          },
+          {
+            key: 'checkout_order_intake',
+            title: 'Checkout order intake',
+            status: 'warning',
+            detail:
+              'El intake ya puede bosquejarse, aunque conviene alinear storefront, cierre y facturación antes de usarlo como salida comercial.',
+          },
+          {
+            key: 'order_invoicing_bridge',
+            title: 'Order invoicing bridge',
+            status: 'warning',
+            detail:
+              'El bridge ya se puede preparar, pero todavía conviene completar datos del comprador y señales fiscales antes del handoff.',
+          },
+        ],
+        finalChecklist: [
+          'Brief checklist',
+          'Review checklist',
+          'Placement checklist',
+          'buyer_legal_name',
+        ],
+        operatorHandoff: {
+          owner: 'shared',
+          goLiveMode: 'controlled_go_live',
+          nextWindow:
+            'Resolver dependencies marcadas antes de agendar una ventana de salida.',
+        },
+        warnings: [
+          'Storefront release control: Todavía conviene una última revisión operativa antes del release.',
+          'Catalog merchandising: La ficha ya tiene forma comercial, pero todavía conviene revisar placement y launch antes de storefront.',
+        ],
+        blockers: [],
+        guardrails: [
+          'Control guardrail',
+          'No tratar este workspace como checkout vivo ni cobro automático todavía.',
+          'No convertir este bridge en emisión viva de factura ni cobro automático todavía.',
+          'No convertir este manifest en go-live automático ni storefront vivo todavía.',
+        ],
+      }),
+    };
     requestTenantEcommerceProductEntityCommercializationPacketUseCase = {
       execute: jest.fn().mockResolvedValue({
         tenantSlug: 'saas-platform',
@@ -8212,6 +8462,12 @@ describe('API', () => {
       .useValue(getTenantEcommerceProductAuthoringWorkspaceUseCase)
       .overrideProvider(GetTenantEcommerceStoreProfileWorkspaceUseCase)
       .useValue(getTenantEcommerceStoreProfileWorkspaceUseCase)
+      .overrideProvider(GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase)
+      .useValue(getTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase)
+      .overrideProvider(RequestTenantEcommerceOrderInvoicingBridgeUseCase)
+      .useValue(requestTenantEcommerceOrderInvoicingBridgeUseCase)
+      .overrideProvider(GetTenantEcommerceStorefrontGoLiveManifestUseCase)
+      .useValue(getTenantEcommerceStorefrontGoLiveManifestUseCase)
       .overrideProvider(GetTenantEcommerceStoreSetupWorkspaceUseCase)
       .useValue(getTenantEcommerceStoreSetupWorkspaceUseCase)
       .overrideProvider(GetTenantEcommerceLaunchWorkspaceUseCase)
@@ -12974,6 +13230,68 @@ describe('API', () => {
 
     expect(
       getTenantEcommerceStorefrontReleaseControlWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/storefront-go-live-manifest should return one storefront go-live manifest', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/storefront-go-live-manifest',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.manifestStatus).toBe('needs_checkout_foundation');
+        expect(response.body.orderReadiness.checkoutStatus).toBe(
+          'needs_storefront_alignment',
+        );
+        expect(response.body.operatorHandoff.owner).toBe('shared');
+      });
+
+    expect(
+      getTenantEcommerceStorefrontGoLiveManifestUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/checkout-order-intake-workspace should return one checkout intake workspace', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/checkout-order-intake-workspace',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.checkoutStatus).toBe(
+          'needs_storefront_alignment',
+        );
+        expect(response.body.checkoutDraft.offerTitle).toBe(
+          'Catalog asset entity final',
+        );
+        expect(response.body.invoicingConnection.status).toBe('ready');
+      });
+
+    expect(
+      getTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
+  });
+
+  it('POST /api/ecommerce/tenants/:slug/product-entities/:productEntityId/request-order-invoicing-bridge should return one order invoicing bridge', async () => {
+    await request(httpServer)
+      .post(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/request-order-invoicing-bridge',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.bridgeStatus).toBe(
+          'needs_customer_fiscal_data',
+        );
+        expect(response.body.targetWorkspace.productKey).toBe('invoicing');
+        expect(response.body.invoiceReadiness.connectionStatus).toBe('ready');
+      });
+
+    expect(
+      requestTenantEcommerceOrderInvoicingBridgeUseCase.execute,
     ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
   });
 

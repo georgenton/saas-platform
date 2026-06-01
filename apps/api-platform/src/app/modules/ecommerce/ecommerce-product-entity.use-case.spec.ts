@@ -2,6 +2,8 @@ import {
   GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
   GetTenantEcommerceCatalogCommercialCardUseCase,
   GetTenantEcommerceCatalogListingAssetUseCase,
+  GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
+  GetTenantEcommerceStorefrontGoLiveManifestUseCase,
   GetTenantEcommerceStorefrontReleaseControlWorkspaceUseCase,
   GetTenantEcommerceStorefrontReleaseCandidateBriefUseCase,
   GetTenantEcommerceStorefrontPublishReviewWorkspaceUseCase,
@@ -34,6 +36,7 @@ import {
   RequestTenantEcommerceChannelReleaseLaunchPacketUseCase,
   RequestTenantEcommerceCatalogStorefrontPlacementPacketUseCase,
   RequestTenantEcommerceCatalogMerchandisingPacketUseCase,
+  RequestTenantEcommerceOrderInvoicingBridgeUseCase,
   RequestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase,
   RequestTenantEcommerceProductEntityChannelDraftActionPacketUseCase,
   RequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase,
@@ -3719,6 +3722,381 @@ describe('Ecommerce product entity use cases', () => {
       launchPayload: {
         opener: 'Mensaje de apertura final',
         closingCta: 'Activar producto base',
+      },
+    });
+  });
+
+  it('loads one checkout order intake workspace', async () => {
+    const storeProfileUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T16:20:00.000Z'),
+        summary: {
+          tone: 'healthy',
+          profileReadiness: 'draft_ready',
+          headline: 'Store profile listo',
+          detail: 'Setup usable.',
+          suggestedFocus: 'Store profile',
+        },
+        identityDraft: {
+          storeName: 'SaaS Platform Store',
+          storefrontSlug: 'saas-platform-store',
+          launchNarrative: 'Narrative',
+          primaryChannel: 'landing',
+        },
+        connections: [
+          {
+            key: 'invoicing',
+            title: 'Invoicing',
+            status: 'ready',
+            detail: 'Conexión fiscal lista.',
+          },
+        ],
+        recommendedAssets: [],
+        safeActions: [],
+        blockedActions: [],
+      }),
+    };
+    const landingArtifactUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:00:00.000Z'),
+        productEntity,
+        assetEntity: { channelKey: 'landing', title: 'Landing asset entity final' },
+        artifactStatus: 'ready_for_release_candidate',
+        summary: {
+          headline: 'Landing lista',
+          detail: 'Landing lista para release candidate.',
+        },
+        hero: {
+          headline: 'Hero headline',
+          subheadline: 'Hero subheadline',
+          primaryCta: 'Activar producto base',
+        },
+        proofStrip: ['Proof'],
+        offerStack: [{ title: 'Offer', detail: 'Offer detail' }],
+        ctaBand: {
+          primaryCta: 'Activar producto base',
+          supportLabel: 'Soporte',
+        },
+        faqSeed: ['FAQ'],
+        finalChecklist: ['Checklist'],
+        blockers: [],
+        guardrails: ['Landing guardrail'],
+      }),
+    };
+    const commercialCardUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:01:00.000Z'),
+        productEntity,
+        assetEntity: { channelKey: 'catalog', title: 'Catalog asset entity final' },
+        commercialStatus: 'ready_for_storefront_card',
+        card: {
+          title: 'Catalog asset entity final',
+          shortDescription: 'Catalog headline final',
+          pricingPresentation: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+        },
+        offerBullets: ['Bullet 1'],
+        storefrontSummary: 'Catalog storefront summary',
+        merchandisingHighlights: ['Highlight 1'],
+        guardrails: ['Catalog guardrail'],
+      }),
+    };
+    const whatsappAckUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:12:00.000Z'),
+        productEntity,
+        assetEntity: { channelKey: 'whatsapp', title: 'Whatsapp asset entity final' },
+        acknowledgementStatus: 'ready_for_growth_launch_acknowledgement',
+        summary: 'WhatsApp listo para acknowledgement final.',
+        targetWorkspace: {
+          productKey: 'growth',
+          channel: 'whatsapp',
+          activationMode: 'operator_assist',
+          handoffMode: 'operator_assist',
+        },
+        activationContext: {
+          workspaceStatus: 'ready_for_growth_activation',
+          packetStatus: 'ready_for_growth_operator_activation',
+          launchStatus: 'ready_for_growth_operator_launch',
+        },
+        launchPayload: {
+          opener: 'Mensaje de apertura final',
+          qualification: 'Qualify',
+          objectionHandling: ['Obj'],
+          closingCta: 'Activar producto base',
+          fallbackEscalation: 'Escalar',
+        },
+        acknowledgementChecklist: ['Ack checklist'],
+        operatorActions: ['Operator action'],
+        bridgeArtifacts: ['Artifact'],
+        blockers: [],
+        guardrails: ['Ack guardrail'],
+      }),
+    };
+    const useCase = new GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase(
+      storeProfileUseCase as never,
+      landingArtifactUseCase as never,
+      commercialCardUseCase as never,
+      whatsappAckUseCase as never,
+      () => new Date('2026-05-28T17:20:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001'),
+    ).resolves.toMatchObject({
+      checkoutStatus: 'ready_for_order_intake',
+      checkoutDraft: {
+        offerTitle: 'Catalog asset entity final',
+        primaryCta: 'Activar producto base',
+        closingChannel: 'landing',
+      },
+      invoicingConnection: {
+        status: 'ready',
+      },
+    });
+  });
+
+  it('requests one order invoicing bridge', async () => {
+    const checkoutWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:20:00.000Z'),
+        productEntity,
+        checkoutStatus: 'ready_for_order_intake',
+        summary: 'Checkout listo para intake.',
+        checkoutDraft: {
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          customerPrompt: 'Pedir datos mínimos.',
+          closingChannel: 'landing',
+        },
+        customerFields: ['full_name'],
+        channelSignals: [],
+        invoicingConnection: {
+          status: 'ready',
+          detail: 'Conexión fiscal lista.',
+          nextStep: 'Handoff fiscal',
+        },
+        orderChecklist: ['Checklist'],
+        blockedBy: [],
+        guardrails: ['Checkout guardrail'],
+      }),
+    };
+    const storeProfileUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T16:20:00.000Z'),
+        summary: {
+          tone: 'healthy',
+          profileReadiness: 'draft_ready',
+          headline: 'Store profile listo',
+          detail: 'Setup usable.',
+          suggestedFocus: 'Store profile',
+        },
+        identityDraft: {
+          storeName: 'SaaS Platform Store',
+          storefrontSlug: 'saas-platform-store',
+          launchNarrative: 'Narrative',
+          primaryChannel: 'landing',
+        },
+        connections: [
+          {
+            key: 'invoicing',
+            title: 'Invoicing',
+            status: 'ready',
+            detail: 'Conexión fiscal lista.',
+          },
+        ],
+        recommendedAssets: [],
+        safeActions: [],
+        blockedActions: [],
+      }),
+    };
+    const useCase = new RequestTenantEcommerceOrderInvoicingBridgeUseCase(
+      checkoutWorkspaceUseCase as never,
+      storeProfileUseCase as never,
+      () => new Date('2026-05-28T17:22:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001'),
+    ).resolves.toMatchObject({
+      bridgeStatus: 'ready_for_invoice_handoff',
+      targetWorkspace: {
+        productKey: 'invoicing',
+      },
+      invoiceReadiness: {
+        connectionStatus: 'ready',
+        buyerProfileStatus: 'ready',
+      },
+    });
+  });
+
+  it('loads one storefront go-live manifest', async () => {
+    const releaseControlUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:10:00.000Z'),
+        productEntity,
+        controlStatus: 'ready_for_release_control',
+        summary: {
+          headline: 'Control listo',
+          detail: 'Release control listo.',
+        },
+        briefSnapshot: {
+          briefStatus: 'ready_for_storefront_release_candidate',
+          landingTitle: 'Landing',
+          catalogTitle: 'Catalog',
+        },
+        releaseControl: {
+          reviewStatus: 'ready_for_publish_review',
+          approvalOwner: 'shared',
+          launchOwner: 'shared',
+        },
+        channelDecisions: [],
+        controlChecklist: ['Control checklist'],
+        blockers: [],
+        guardrails: ['Control guardrail'],
+      }),
+    };
+    const merchandisingUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:11:00.000Z'),
+        productEntity,
+        assetEntity: { channelKey: 'catalog', title: 'Catalog asset entity final' },
+        merchandisingStatus: 'ready_for_merchandising_review',
+        card: {
+          title: 'Catalog asset entity final',
+          shortDescription: 'Catalog headline final',
+          pricingPresentation: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+        },
+        merchandisingSummary: 'Catalog listo.',
+        placementContext: {
+          commercialStatus: 'ready_for_storefront_card',
+          placementStatus: 'ready_for_storefront_placement',
+          launchDecision: 'launch',
+        },
+        merchandisingNotes: ['Note'],
+        merchandisingChecklist: ['Checklist'],
+        blockers: [],
+        guardrails: ['Catalog guardrail'],
+      }),
+    };
+    const whatsappAckUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:12:00.000Z'),
+        productEntity,
+        assetEntity: { channelKey: 'whatsapp', title: 'Whatsapp asset entity final' },
+        acknowledgementStatus: 'ready_for_growth_launch_acknowledgement',
+        summary: 'WhatsApp listo.',
+        targetWorkspace: {
+          productKey: 'growth',
+          channel: 'whatsapp',
+          activationMode: 'operator_assist',
+          handoffMode: 'operator_assist',
+        },
+        activationContext: {
+          workspaceStatus: 'ready_for_growth_activation',
+          packetStatus: 'ready_for_growth_operator_activation',
+          launchStatus: 'ready_for_growth_operator_launch',
+        },
+        launchPayload: {
+          opener: 'Mensaje de apertura final',
+          qualification: 'Qualify',
+          objectionHandling: ['Obj'],
+          closingCta: 'Activar producto base',
+          fallbackEscalation: 'Escalar',
+        },
+        acknowledgementChecklist: ['Ack checklist'],
+        operatorActions: ['Action'],
+        bridgeArtifacts: ['Artifact'],
+        blockers: [],
+        guardrails: ['Ack guardrail'],
+      }),
+    };
+    const checkoutWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:20:00.000Z'),
+        productEntity,
+        checkoutStatus: 'ready_for_order_intake',
+        summary: 'Checkout listo.',
+        checkoutDraft: {
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          customerPrompt: 'Pedir datos mínimos.',
+          closingChannel: 'landing',
+        },
+        customerFields: ['full_name'],
+        channelSignals: [],
+        invoicingConnection: {
+          status: 'ready',
+          detail: 'Conexión fiscal lista.',
+          nextStep: 'Handoff fiscal',
+        },
+        orderChecklist: ['Order checklist'],
+        blockedBy: [],
+        guardrails: ['Checkout guardrail'],
+      }),
+    };
+    const invoicingBridgeUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:22:00.000Z'),
+        productEntity,
+        bridgeStatus: 'ready_for_invoice_handoff',
+        summary: 'Bridge listo.',
+        targetWorkspace: {
+          productKey: 'invoicing',
+          stage: 'electronic_invoicing_ec_mvp',
+          handoffMode: 'operator_assist',
+        },
+        orderDraft: {
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          customerPrompt: 'Pedir datos mínimos.',
+          closingChannel: 'landing',
+        },
+        invoiceReadiness: {
+          connectionStatus: 'ready',
+          buyerProfileStatus: 'ready',
+          suggestedDocument: 'invoice',
+        },
+        fiscalRequirements: ['buyer_legal_name'],
+        handoffArtifacts: ['Order intake snapshot'],
+        blockedBy: [],
+        guardrails: ['Bridge guardrail'],
+      }),
+    };
+    const useCase = new GetTenantEcommerceStorefrontGoLiveManifestUseCase(
+      releaseControlUseCase as never,
+      merchandisingUseCase as never,
+      whatsappAckUseCase as never,
+      checkoutWorkspaceUseCase as never,
+      invoicingBridgeUseCase as never,
+      () => new Date('2026-05-28T17:24:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001'),
+    ).resolves.toMatchObject({
+      manifestStatus: 'ready_for_controlled_go_live',
+      orderReadiness: {
+        checkoutStatus: 'ready_for_order_intake',
+        invoicingStatus: 'ready_for_invoice_handoff',
+      },
+      operatorHandoff: {
+        goLiveMode: 'controlled_go_live',
       },
     });
   });

@@ -45,6 +45,7 @@ import {
   EcommerceCatalogCommercialCardResponse,
   EcommerceCatalogListingAssetResponse,
   EcommerceCatalogMerchandisingPacketResponse,
+  EcommerceCheckoutOrderIntakeWorkspaceResponse,
   EcommerceCatalogStorefrontPlacementPacketResponse,
   EcommerceChannelReleaseApprovalPacketResponse,
   EcommerceChannelReleaseLaunchPacketResponse,
@@ -56,7 +57,9 @@ import {
   EcommerceStorefrontPreviewWorkspaceResponse,
   EcommerceLandingPageStructureResponse,
   EcommerceLandingPublishArtifactResponse,
+  EcommerceOrderInvoicingBridgeResponse,
   EcommerceStorefrontReleaseControlWorkspaceResponse,
+  EcommerceStorefrontGoLiveManifestResponse,
   EcommerceStorefrontReleaseCandidateBriefResponse,
   EcommerceWhatsappGrowthActivationPacketResponse,
   EcommerceWhatsappGrowthExecutionBridgeResponse,
@@ -2558,6 +2561,24 @@ export async function fetchTenantEcommerceStorefrontReleaseControlWorkspace(
   );
 }
 
+export async function fetchTenantEcommerceStorefrontGoLiveManifest(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceStorefrontGoLiveManifestResponse> {
+  return request<EcommerceStorefrontGoLiveManifestResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/storefront-go-live-manifest`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function fetchTenantEcommerceWhatsappChannelSequenceWorkspace(
   token: string,
   tenantSlug: string,
@@ -2720,6 +2741,24 @@ export async function requestTenantEcommerceCatalogMerchandisingPacket(
   );
 }
 
+export async function fetchTenantEcommerceCheckoutOrderIntakeWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceCheckoutOrderIntakeWorkspaceResponse> {
+  return request<EcommerceCheckoutOrderIntakeWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/checkout-order-intake-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function fetchTenantEcommerceLandingPageStructure(
   token: string,
   tenantSlug: string,
@@ -2857,6 +2896,24 @@ export async function requestTenantEcommerceWhatsappGrowthLaunchAcknowledgementP
     )}/product-entities/${encodeURIComponent(
       productEntityId,
     )}/request-whatsapp-growth-launch-acknowledgement-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceOrderInvoicingBridge(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceOrderInvoicingBridgeResponse> {
+  return request<EcommerceOrderInvoicingBridgeResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/request-order-invoicing-bridge`,
     {
       method: 'POST',
       token,

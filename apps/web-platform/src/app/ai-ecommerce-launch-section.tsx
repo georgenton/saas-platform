@@ -21,6 +21,7 @@ import {
   EcommerceCatalogCommercialCardResponse,
   EcommerceCatalogListingAssetResponse,
   EcommerceCatalogMerchandisingPacketResponse,
+  EcommerceCheckoutOrderIntakeWorkspaceResponse,
   EcommerceCatalogStorefrontPlacementPacketResponse,
   EcommerceChannelReleaseApprovalPacketResponse,
   EcommerceChannelReleaseLaunchPacketResponse,
@@ -31,11 +32,13 @@ import {
   EcommerceStorefrontPublishReviewWorkspaceResponse,
   EcommerceStorefrontPreviewWorkspaceResponse,
   EcommerceStorefrontReleaseControlWorkspaceResponse,
+  EcommerceStorefrontGoLiveManifestResponse,
   EcommerceStorefrontReleaseCandidateBriefResponse,
   EcommerceWhatsappSalesFlowResponse,
   EcommerceWhatsappGrowthActivationPacketResponse,
   EcommerceWhatsappGrowthExecutionBridgeResponse,
   EcommerceWhatsappGrowthLaunchAcknowledgementPacketResponse,
+  EcommerceOrderInvoicingBridgeResponse,
   EcommerceWhatsappGrowthOperatorLaunchPacketResponse,
   EcommerceWhatsappGrowthActivationWorkspaceResponse,
   EcommerceWhatsappGrowthHandoffResponse,
@@ -131,6 +134,9 @@ type Props = {
   selectedTenantEcommerceStorefrontReleaseControlWorkspace:
     | EcommerceStorefrontReleaseControlWorkspaceResponse
     | null;
+  selectedTenantEcommerceStorefrontGoLiveManifest:
+    | EcommerceStorefrontGoLiveManifestResponse
+    | null;
   selectedTenantEcommerceStorefrontPreviewWorkspace:
     | EcommerceStorefrontPreviewWorkspaceResponse
     | null;
@@ -164,6 +170,9 @@ type Props = {
   lastEcommerceCatalogMerchandisingPacket:
     | EcommerceCatalogMerchandisingPacketResponse
     | null;
+  selectedTenantEcommerceCheckoutOrderIntakeWorkspace:
+    | EcommerceCheckoutOrderIntakeWorkspaceResponse
+    | null;
   selectedTenantEcommerceLandingPageStructure:
     | EcommerceLandingPageStructureResponse
     | null;
@@ -187,6 +196,9 @@ type Props = {
     | null;
   lastEcommerceWhatsappGrowthLaunchAcknowledgementPacket:
     | EcommerceWhatsappGrowthLaunchAcknowledgementPacketResponse
+    | null;
+  lastEcommerceOrderInvoicingBridge:
+    | EcommerceOrderInvoicingBridgeResponse
     | null;
   tenantEcommerceProductEntityChannelReleaseCandidateRegistry:
     | EcommerceProductEntityChannelReleaseCandidateRegistryResponse
@@ -274,6 +286,7 @@ type Props = {
   ecommerceChannelReleaseLaunchPacketLoading: string | null;
   ecommerceCatalogStorefrontPlacementPacketLoading: string | null;
   ecommerceCatalogMerchandisingPacketLoading: string | null;
+  ecommerceOrderInvoicingBridgeLoading: string | null;
   ecommerceWhatsappGrowthHandoffLoading: string | null;
   ecommerceWhatsappGrowthActivationPacketLoading: string | null;
   ecommerceWhatsappGrowthExecutionBridgeLoading: string | null;
@@ -395,16 +408,19 @@ type Props = {
   onLoadLandingPublishArtifact: () => void;
   onLoadStorefrontReleaseCandidateBrief: () => void;
   onLoadStorefrontReleaseControlWorkspace: () => void;
+  onLoadStorefrontGoLiveManifest: () => void;
   onRequestChannelReleaseLaunchPacket: () => void;
   onLoadCatalogListingAsset: () => void;
   onRequestCatalogStorefrontPlacementPacket: () => void;
   onRequestCatalogMerchandisingPacket: () => void;
+  onLoadCheckoutOrderIntakeWorkspace: () => void;
   onRequestWhatsappGrowthHandoff: () => void;
   onLoadWhatsappGrowthActivationWorkspace: () => void;
   onRequestWhatsappGrowthActivationPacket: () => void;
   onRequestWhatsappGrowthExecutionBridge: () => void;
   onRequestWhatsappGrowthOperatorLaunchPacket: () => void;
   onRequestWhatsappGrowthLaunchAcknowledgementPacket: () => void;
+  onRequestOrderInvoicingBridge: () => void;
   onSelectProductEntityChannelReleaseCandidate: (
     channelKey: 'landing' | 'catalog' | 'whatsapp',
   ) => void;
@@ -448,6 +464,7 @@ export function AiEcommerceLaunchSection({
   selectedTenantEcommerceCatalogListingAsset,
   selectedTenantEcommerceStorefrontReleaseCandidateBrief,
   selectedTenantEcommerceStorefrontReleaseControlWorkspace,
+  selectedTenantEcommerceStorefrontGoLiveManifest,
   selectedTenantEcommerceStorefrontPreviewWorkspace,
   selectedTenantEcommerceStorefrontPublishReviewWorkspace,
   selectedTenantEcommerceLandingPublishArtifact,
@@ -459,6 +476,7 @@ export function AiEcommerceLaunchSection({
   lastEcommerceChannelReleaseLaunchPacket,
   lastEcommerceCatalogStorefrontPlacementPacket,
   lastEcommerceCatalogMerchandisingPacket,
+  selectedTenantEcommerceCheckoutOrderIntakeWorkspace,
   selectedTenantEcommerceLandingPageStructure,
   selectedTenantEcommerceWhatsappSalesFlow,
   lastEcommerceWhatsappGrowthHandoff,
@@ -467,6 +485,7 @@ export function AiEcommerceLaunchSection({
   lastEcommerceWhatsappGrowthExecutionBridge,
   lastEcommerceWhatsappGrowthOperatorLaunchPacket,
   lastEcommerceWhatsappGrowthLaunchAcknowledgementPacket,
+  lastEcommerceOrderInvoicingBridge,
   tenantEcommerceProductEntityChannelReleaseCandidateRegistry,
   selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail,
   lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket,
@@ -517,6 +536,7 @@ export function AiEcommerceLaunchSection({
   ecommerceChannelReleaseLaunchPacketLoading,
   ecommerceCatalogStorefrontPlacementPacketLoading,
   ecommerceCatalogMerchandisingPacketLoading,
+  ecommerceOrderInvoicingBridgeLoading,
   ecommerceWhatsappGrowthHandoffLoading,
   ecommerceWhatsappGrowthActivationPacketLoading,
   ecommerceWhatsappGrowthExecutionBridgeLoading,
@@ -591,16 +611,19 @@ export function AiEcommerceLaunchSection({
   onLoadLandingPublishArtifact,
   onLoadStorefrontReleaseCandidateBrief,
   onLoadStorefrontReleaseControlWorkspace,
+  onLoadStorefrontGoLiveManifest,
   onRequestChannelReleaseLaunchPacket,
   onLoadCatalogListingAsset,
   onRequestCatalogStorefrontPlacementPacket,
   onRequestCatalogMerchandisingPacket,
+  onLoadCheckoutOrderIntakeWorkspace,
   onRequestWhatsappGrowthHandoff,
   onLoadWhatsappGrowthActivationWorkspace,
   onRequestWhatsappGrowthActivationPacket,
   onRequestWhatsappGrowthExecutionBridge,
   onRequestWhatsappGrowthOperatorLaunchPacket,
   onRequestWhatsappGrowthLaunchAcknowledgementPacket,
+  onRequestOrderInvoicingBridge,
   onSelectProductEntityChannelReleaseCandidate,
   onSelectLaunchPlan,
   onRequestActivationReadiness,
@@ -3198,6 +3221,76 @@ export function AiEcommerceLaunchSection({
                                   ' | ',
                                 )}
                               </small>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  onClick={onLoadStorefrontGoLiveManifest}
+                                  type="button"
+                                >
+                                  Abrir go-live manifest
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceStorefrontGoLiveManifest ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Storefront go-live manifest
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceStorefrontGoLiveManifest.summary.headline
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceStorefrontGoLiveManifest.manifestStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                {
+                                  selectedTenantEcommerceStorefrontGoLiveManifest.summary.detail
+                                }
+                              </small>
+                              <small>
+                                Channel snapshot:{' '}
+                                {[
+                                  `landing:${humanizeKey(
+                                    selectedTenantEcommerceStorefrontGoLiveManifest
+                                      .channelSnapshot.landingStatus,
+                                  )}`,
+                                  `catalog:${humanizeKey(
+                                    selectedTenantEcommerceStorefrontGoLiveManifest
+                                      .channelSnapshot.catalogStatus,
+                                  )}`,
+                                  `whatsapp:${humanizeKey(
+                                    selectedTenantEcommerceStorefrontGoLiveManifest
+                                      .channelSnapshot.whatsappStatus,
+                                  )}`,
+                                ].join(' | ')}
+                              </small>
+                              <small>
+                                Order readiness:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceStorefrontGoLiveManifest
+                                    .orderReadiness.checkoutStatus,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceStorefrontGoLiveManifest
+                                    .orderReadiness.invoicingStatus,
+                                )}
+                              </small>
+                              <small>
+                                Final checklist:{' '}
+                                {selectedTenantEcommerceStorefrontGoLiveManifest.finalChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
                             </div>
                           ) : null}
                           {selectedTenantEcommerceWhatsappChannelSequenceWorkspace ? (
@@ -3716,6 +3809,90 @@ export function AiEcommerceLaunchSection({
                                   ' | ',
                                 )}
                               </small>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  onClick={onLoadCheckoutOrderIntakeWorkspace}
+                                  type="button"
+                                >
+                                  Abrir checkout intake
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceCheckoutOrderIntakeWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Checkout order intake workspace
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceCheckoutOrderIntakeWorkspace.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceCheckoutOrderIntakeWorkspace.checkoutStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Offer:{' '}
+                                {
+                                  selectedTenantEcommerceCheckoutOrderIntakeWorkspace
+                                    .checkoutDraft.offerTitle
+                                }{' '}
+                                ·{' '}
+                                {
+                                  selectedTenantEcommerceCheckoutOrderIntakeWorkspace
+                                    .checkoutDraft.pricingSnapshot
+                                }
+                              </small>
+                              <small>
+                                Customer fields:{' '}
+                                {selectedTenantEcommerceCheckoutOrderIntakeWorkspace.customerFields.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Invoicing:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceCheckoutOrderIntakeWorkspace
+                                    .invoicingConnection.status,
+                                )}{' '}
+                                ·{' '}
+                                {
+                                  selectedTenantEcommerceCheckoutOrderIntakeWorkspace
+                                    .invoicingConnection.detail
+                                }
+                              </small>
+                              <small>
+                                Checklist:{' '}
+                                {selectedTenantEcommerceCheckoutOrderIntakeWorkspace.orderChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceOrderInvoicingBridgeLoading ===
+                                    selectedTenantEcommerceCheckoutOrderIntakeWorkspace
+                                      .productEntity.productEntityId
+                                  }
+                                  onClick={onRequestOrderInvoicingBridge}
+                                  type="button"
+                                >
+                                  {ecommerceOrderInvoicingBridgeLoading ===
+                                  selectedTenantEcommerceCheckoutOrderIntakeWorkspace
+                                    .productEntity.productEntityId
+                                    ? 'Preparando bridge fiscal...'
+                                    : 'Solicitar invoicing bridge'}
+                                </button>
+                              </div>
                             </div>
                           ) : null}
                           {selectedTenantEcommerceLandingPageStructure ? (
@@ -4175,6 +4352,52 @@ export function AiEcommerceLaunchSection({
                               <small>
                                 Acknowledgement checklist:{' '}
                                 {lastEcommerceWhatsappGrowthLaunchAcknowledgementPacket.acknowledgementChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {lastEcommerceOrderInvoicingBridge ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Order invoicing bridge
+                                  </span>
+                                  <h4>
+                                    {lastEcommerceOrderInvoicingBridge.summary}
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceOrderInvoicingBridge.bridgeStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Draft:{' '}
+                                {lastEcommerceOrderInvoicingBridge.orderDraft.offerTitle}{' '}
+                                ·{' '}
+                                {
+                                  lastEcommerceOrderInvoicingBridge.orderDraft
+                                    .pricingSnapshot
+                                }
+                              </small>
+                              <small>
+                                Invoice readiness:{' '}
+                                {humanizeKey(
+                                  lastEcommerceOrderInvoicingBridge
+                                    .invoiceReadiness.connectionStatus,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  lastEcommerceOrderInvoicingBridge
+                                    .invoiceReadiness.buyerProfileStatus,
+                                )}
+                              </small>
+                              <small>
+                                Fiscal requirements:{' '}
+                                {lastEcommerceOrderInvoicingBridge.fiscalRequirements.join(
                                   ' | ',
                                 )}
                               </small>

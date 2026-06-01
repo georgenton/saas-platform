@@ -84,7 +84,9 @@ import {
   fetchTenantEcommerceCatalogAssetEntityWorkspace,
   fetchTenantEcommerceCatalogCommercialCard,
   fetchTenantEcommerceCatalogListingAsset,
+  fetchTenantEcommerceCheckoutOrderIntakeWorkspace,
   fetchTenantEcommerceStorefrontReleaseControlWorkspace,
+  fetchTenantEcommerceStorefrontGoLiveManifest,
   fetchTenantEcommerceStorefrontReleaseCandidateBrief,
   fetchTenantEcommerceStorefrontPreviewWorkspace,
   fetchTenantEcommerceStorefrontPublishReviewWorkspace,
@@ -112,6 +114,7 @@ import {
   requestTenantEcommerceWhatsappGrowthActivationPacket,
   requestTenantEcommerceWhatsappGrowthExecutionBridge,
   requestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacket,
+  requestTenantEcommerceOrderInvoicingBridge,
   requestTenantEcommerceWhatsappGrowthOperatorLaunchPacket,
   requestTenantEcommerceWhatsappGrowthHandoff,
   fetchTenantEcommerceSavedProductEntityChannelDraftDetail,
@@ -286,6 +289,7 @@ import {
   EcommerceCatalogCommercialCardResponse,
   EcommerceCatalogListingAssetResponse,
   EcommerceCatalogMerchandisingPacketResponse,
+  EcommerceCheckoutOrderIntakeWorkspaceResponse,
   EcommerceCatalogStorefrontPlacementPacketResponse,
   EcommerceChannelReleaseApprovalPacketResponse,
   EcommerceChannelReleaseLaunchPacketResponse,
@@ -296,6 +300,7 @@ import {
   EcommerceStorefrontPublishReviewWorkspaceResponse,
   EcommerceStorefrontPreviewWorkspaceResponse,
   EcommerceStorefrontReleaseControlWorkspaceResponse,
+  EcommerceStorefrontGoLiveManifestResponse,
   EcommerceStorefrontReleaseCandidateBriefResponse,
   EcommerceProductEntityChannelReleaseCandidateDetailResponse,
   EcommerceProductEntityChannelReleaseCandidateRegistryResponse,
@@ -309,6 +314,7 @@ import {
   EcommerceWhatsappGrowthActivationPacketResponse,
   EcommerceWhatsappGrowthExecutionBridgeResponse,
   EcommerceWhatsappGrowthLaunchAcknowledgementPacketResponse,
+  EcommerceOrderInvoicingBridgeResponse,
   EcommerceWhatsappGrowthOperatorLaunchPacketResponse,
   EcommerceWhatsappGrowthActivationWorkspaceResponse,
   EcommerceWhatsappGrowthHandoffResponse,
@@ -1856,6 +1862,10 @@ export function App() {
     setSelectedTenantEcommerceStorefrontReleaseControlWorkspace,
   ] = useState<EcommerceStorefrontReleaseControlWorkspaceResponse | null>(null);
   const [
+    selectedTenantEcommerceStorefrontGoLiveManifest,
+    setSelectedTenantEcommerceStorefrontGoLiveManifest,
+  ] = useState<EcommerceStorefrontGoLiveManifestResponse | null>(null);
+  const [
     selectedTenantEcommerceStorefrontPreviewWorkspace,
     setSelectedTenantEcommerceStorefrontPreviewWorkspace,
   ] = useState<EcommerceStorefrontPreviewWorkspaceResponse | null>(null);
@@ -1936,6 +1946,14 @@ export function App() {
     useState<EcommerceWhatsappGrowthLaunchAcknowledgementPacketResponse | null>(
       null,
     );
+  const [
+    selectedTenantEcommerceCheckoutOrderIntakeWorkspace,
+    setSelectedTenantEcommerceCheckoutOrderIntakeWorkspace,
+  ] = useState<EcommerceCheckoutOrderIntakeWorkspaceResponse | null>(null);
+  const [
+    lastEcommerceOrderInvoicingBridge,
+    setLastEcommerceOrderInvoicingBridge,
+  ] = useState<EcommerceOrderInvoicingBridgeResponse | null>(null);
   const [
     lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket,
     setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket,
@@ -2168,6 +2186,10 @@ export function App() {
   const [
     ecommerceWhatsappGrowthLaunchAcknowledgementPacketLoading,
     setEcommerceWhatsappGrowthLaunchAcknowledgementPacketLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceOrderInvoicingBridgeLoading,
+    setEcommerceOrderInvoicingBridgeLoading,
   ] = useState<string | null>(null);
   const [
     lastEcommerceProductSetupDefinitionPacket,
@@ -4735,6 +4757,16 @@ export function App() {
       productEntityId,
     );
   };
+  const fetchTenantEcommerceStorefrontGoLiveManifestSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+  ) => {
+    return fetchTenantEcommerceStorefrontGoLiveManifest(
+      token!,
+      tenantSlug,
+      productEntityId,
+    );
+  };
   const fetchTenantEcommerceWhatsappChannelSequenceWorkspaceSurface = async (
     tenantSlug: string,
     productEntityId: string,
@@ -4810,6 +4842,16 @@ export function App() {
     productEntityId: string,
   ) => {
     return requestTenantEcommerceCatalogMerchandisingPacket(
+      token!,
+      tenantSlug,
+      productEntityId,
+    );
+  };
+  const fetchTenantEcommerceCheckoutOrderIntakeWorkspaceSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+  ) => {
+    return fetchTenantEcommerceCheckoutOrderIntakeWorkspace(
       token!,
       tenantSlug,
       productEntityId,
@@ -4891,6 +4933,16 @@ export function App() {
         productEntityId,
       );
     };
+  const requestTenantEcommerceOrderInvoicingBridgeSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+  ) => {
+    return requestTenantEcommerceOrderInvoicingBridge(
+      token!,
+      tenantSlug,
+      productEntityId,
+    );
+  };
   const fetchTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface =
     async (tenantSlug: string, productEntityId: string) => {
       return fetchTenantEcommerceProductEntityChannelReleaseCandidates(
@@ -5198,6 +5250,15 @@ export function App() {
   ): void => {
     setSelectedTenantEcommerceStorefrontReleaseControlWorkspace(workspace);
   };
+  const applyTenantEcommerceStorefrontGoLiveManifestSurface = (
+    workspace:
+      | Awaited<
+          ReturnType<typeof fetchTenantEcommerceStorefrontGoLiveManifestSurface>
+        >
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceStorefrontGoLiveManifest(workspace);
+  };
   const applyTenantEcommerceStorefrontPreviewWorkspaceSurface = (
     workspace:
       | Awaited<
@@ -5305,6 +5366,15 @@ export function App() {
   ): void => {
     setLastEcommerceCatalogMerchandisingPacket(packet);
   };
+  const applyTenantEcommerceCheckoutOrderIntakeWorkspaceSurface = (
+    workspace:
+      | Awaited<
+          ReturnType<typeof fetchTenantEcommerceCheckoutOrderIntakeWorkspaceSurface>
+        >
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceCheckoutOrderIntakeWorkspace(workspace);
+  };
   const applyTenantEcommerceLandingPageStructureSurface = (
     workspace:
       | Awaited<
@@ -5380,6 +5450,15 @@ export function App() {
       | null,
   ): void => {
     setLastEcommerceWhatsappGrowthLaunchAcknowledgementPacket(packet);
+  };
+  const applyTenantEcommerceOrderInvoicingBridgeSurface = (
+    packet:
+      | Awaited<
+          ReturnType<typeof requestTenantEcommerceOrderInvoicingBridgeSurface>
+        >
+      | null,
+  ): void => {
+    setLastEcommerceOrderInvoicingBridge(packet);
   };
   const applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface =
     (
@@ -10991,6 +11070,7 @@ export function App() {
       applyTenantEcommerceCatalogListingAssetSurface(null);
       applyTenantEcommerceStorefrontReleaseCandidateBriefSurface(null);
       applyTenantEcommerceStorefrontReleaseControlWorkspaceSurface(null);
+      applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
       applyTenantEcommerceStorefrontPreviewWorkspaceSurface(null);
       applyTenantEcommerceStorefrontPublishReviewWorkspaceSurface(null);
       applyTenantEcommerceLandingPublishArtifactSurface(null);
@@ -11002,6 +11082,7 @@ export function App() {
       applyTenantEcommerceChannelReleaseLaunchPacketSurface(null);
       applyTenantEcommerceCatalogStorefrontPlacementPacketSurface(null);
       applyTenantEcommerceCatalogMerchandisingPacketSurface(null);
+      applyTenantEcommerceCheckoutOrderIntakeWorkspaceSurface(null);
       applyTenantEcommerceLandingPageStructureSurface(null);
       applyTenantEcommerceWhatsappSalesFlowSurface(null);
       applyTenantEcommerceWhatsappGrowthHandoffSurface(null);
@@ -11010,6 +11091,7 @@ export function App() {
       applyTenantEcommerceWhatsappGrowthExecutionBridgeSurface(null);
       applyTenantEcommerceWhatsappGrowthOperatorLaunchPacketSurface(null);
       applyTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketSurface(null);
+      applyTenantEcommerceOrderInvoicingBridgeSurface(null);
       applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
         null,
       );
@@ -11124,6 +11206,7 @@ export function App() {
         applyTenantEcommerceCatalogListingAssetSurface(null);
         applyTenantEcommerceStorefrontReleaseCandidateBriefSurface(null);
         applyTenantEcommerceStorefrontReleaseControlWorkspaceSurface(null);
+        applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
         applyTenantEcommerceStorefrontPreviewWorkspaceSurface(null);
         applyTenantEcommerceStorefrontPublishReviewWorkspaceSurface(null);
         applyTenantEcommerceLandingPublishArtifactSurface(null);
@@ -11139,6 +11222,7 @@ export function App() {
         applyTenantEcommerceChannelReleaseLaunchPacketSurface(null);
         applyTenantEcommerceCatalogStorefrontPlacementPacketSurface(null);
         applyTenantEcommerceCatalogMerchandisingPacketSurface(null);
+        applyTenantEcommerceCheckoutOrderIntakeWorkspaceSurface(null);
         applyTenantEcommerceLandingPageStructureSurface(null);
         applyTenantEcommerceWhatsappSalesFlowSurface(null);
         applyTenantEcommerceWhatsappGrowthHandoffSurface(null);
@@ -11147,6 +11231,7 @@ export function App() {
         applyTenantEcommerceWhatsappGrowthExecutionBridgeSurface(null);
         applyTenantEcommerceWhatsappGrowthOperatorLaunchPacketSurface(null);
         applyTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketSurface(null);
+        applyTenantEcommerceOrderInvoicingBridgeSurface(null);
         applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
           channelReleaseCandidateRegistry,
         );
@@ -11186,6 +11271,7 @@ export function App() {
       applyTenantEcommerceCatalogListingAssetSurface(null);
       applyTenantEcommerceStorefrontReleaseCandidateBriefSurface(null);
       applyTenantEcommerceStorefrontReleaseControlWorkspaceSurface(null);
+      applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
       applyTenantEcommerceStorefrontPreviewWorkspaceSurface(null);
       applyTenantEcommerceStorefrontPublishReviewWorkspaceSurface(null);
       applyTenantEcommerceLandingPublishArtifactSurface(null);
@@ -11197,6 +11283,7 @@ export function App() {
       applyTenantEcommerceChannelReleaseLaunchPacketSurface(null);
       applyTenantEcommerceCatalogStorefrontPlacementPacketSurface(null);
       applyTenantEcommerceCatalogMerchandisingPacketSurface(null);
+      applyTenantEcommerceCheckoutOrderIntakeWorkspaceSurface(null);
       applyTenantEcommerceLandingPageStructureSurface(null);
       applyTenantEcommerceWhatsappSalesFlowSurface(null);
       applyTenantEcommerceWhatsappGrowthHandoffSurface(null);
@@ -11205,6 +11292,7 @@ export function App() {
       applyTenantEcommerceWhatsappGrowthExecutionBridgeSurface(null);
       applyTenantEcommerceWhatsappGrowthOperatorLaunchPacketSurface(null);
       applyTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketSurface(null);
+      applyTenantEcommerceOrderInvoicingBridgeSurface(null);
       applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
         null,
       );
@@ -13078,6 +13166,7 @@ export function App() {
       startTransition(() => {
         applyTenantEcommerceStorefrontReleaseCandidateBriefSurface(result);
         applyTenantEcommerceStorefrontReleaseControlWorkspaceSurface(null);
+        applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
         setEcommerceLaunchActionMessage(
           `Storefront release brief ${humanizeKey(result.briefStatus)} para ${selectedTenantEcommerceProductEntityDetail.productEntity.title}.`,
         );
@@ -13085,6 +13174,7 @@ export function App() {
     } catch (error) {
       applyTenantEcommerceStorefrontReleaseCandidateBriefSurface(null);
       applyTenantEcommerceStorefrontReleaseControlWorkspaceSurface(null);
+      applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
       setEcommerceLaunchError(
         error instanceof Error
           ? error.message
@@ -13128,6 +13218,44 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo cargar el storefront release control workspace.',
+      );
+    }
+  }
+
+  async function handleLoadTenantEcommerceStorefrontGoLiveManifest() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await fetchTenantEcommerceStorefrontGoLiveManifestSurface(
+        tenantSlug,
+        productEntityId,
+      );
+
+      startTransition(() => {
+        applyTenantEcommerceStorefrontGoLiveManifestSurface(result);
+        setEcommerceLaunchActionMessage(
+          `Storefront go-live manifest ${humanizeKey(result.manifestStatus)} para ${selectedTenantEcommerceProductEntityDetail.productEntity.title}.`,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el storefront go-live manifest.',
       );
     }
   }
@@ -13201,8 +13329,11 @@ export function App() {
         applyTenantEcommerceCatalogListingAssetSurface(null);
         applyTenantEcommerceStorefrontReleaseCandidateBriefSurface(null);
         applyTenantEcommerceStorefrontReleaseControlWorkspaceSurface(null);
+        applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
         applyTenantEcommerceCatalogStorefrontPlacementPacketSurface(null);
         applyTenantEcommerceCatalogMerchandisingPacketSurface(null);
+        applyTenantEcommerceCheckoutOrderIntakeWorkspaceSurface(null);
+        applyTenantEcommerceOrderInvoicingBridgeSurface(null);
         applyTenantEcommerceWhatsappGrowthOperatorLaunchPacketSurface(null);
         applyTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketSurface(
           null,
@@ -13216,8 +13347,11 @@ export function App() {
       applyTenantEcommerceCatalogListingAssetSurface(null);
       applyTenantEcommerceStorefrontReleaseCandidateBriefSurface(null);
       applyTenantEcommerceStorefrontReleaseControlWorkspaceSurface(null);
+      applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
       applyTenantEcommerceCatalogStorefrontPlacementPacketSurface(null);
       applyTenantEcommerceCatalogMerchandisingPacketSurface(null);
+      applyTenantEcommerceCheckoutOrderIntakeWorkspaceSurface(null);
+      applyTenantEcommerceOrderInvoicingBridgeSurface(null);
       applyTenantEcommerceWhatsappGrowthOperatorLaunchPacketSurface(null);
       applyTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketSurface(
         null,
@@ -13340,12 +13474,18 @@ export function App() {
 
       startTransition(() => {
         applyTenantEcommerceCatalogMerchandisingPacketSurface(result);
+        applyTenantEcommerceCheckoutOrderIntakeWorkspaceSurface(null);
+        applyTenantEcommerceOrderInvoicingBridgeSurface(null);
+        applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
         setEcommerceLaunchActionMessage(
           `Catalog merchandising ${humanizeKey(result.merchandisingStatus)} para ${result.assetEntity.title}.`,
         );
       });
     } catch (error) {
       applyTenantEcommerceCatalogMerchandisingPacketSurface(null);
+      applyTenantEcommerceCheckoutOrderIntakeWorkspaceSurface(null);
+      applyTenantEcommerceOrderInvoicingBridgeSurface(null);
+      applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
       setEcommerceLaunchError(
         error instanceof Error
           ? error.message
@@ -13569,6 +13709,9 @@ export function App() {
         applyTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketSurface(
           result,
         );
+        applyTenantEcommerceCheckoutOrderIntakeWorkspaceSurface(null);
+        applyTenantEcommerceOrderInvoicingBridgeSurface(null);
+        applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
         setEcommerceLaunchActionMessage(
           `WhatsApp launch acknowledgement ${humanizeKey(result.acknowledgementStatus)} para ${result.assetEntity.title}.`,
         );
@@ -13577,6 +13720,9 @@ export function App() {
       applyTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketSurface(
         null,
       );
+      applyTenantEcommerceCheckoutOrderIntakeWorkspaceSurface(null);
+      applyTenantEcommerceOrderInvoicingBridgeSurface(null);
+      applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
       setEcommerceLaunchError(
         error instanceof Error
           ? error.message
@@ -13584,6 +13730,90 @@ export function App() {
       );
     } finally {
       setEcommerceWhatsappGrowthLaunchAcknowledgementPacketLoading(null);
+    }
+  }
+
+  async function handleLoadTenantEcommerceCheckoutOrderIntakeWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await fetchTenantEcommerceCheckoutOrderIntakeWorkspaceSurface(
+          tenantSlug,
+          productEntityId,
+        );
+
+      startTransition(() => {
+        applyTenantEcommerceCheckoutOrderIntakeWorkspaceSurface(result);
+        applyTenantEcommerceOrderInvoicingBridgeSurface(null);
+        setEcommerceLaunchActionMessage(
+          `Checkout order intake ${humanizeKey(result.checkoutStatus)} para ${result.productEntity.title}.`,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceCheckoutOrderIntakeWorkspaceSurface(null);
+      applyTenantEcommerceOrderInvoicingBridgeSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el checkout order intake workspace.',
+      );
+    }
+  }
+
+  async function handleRequestTenantEcommerceOrderInvoicingBridge() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setEcommerceOrderInvoicingBridgeLoading(productEntityId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await requestTenantEcommerceOrderInvoicingBridgeSurface(
+        tenantSlug,
+        productEntityId,
+      );
+
+      startTransition(() => {
+        applyTenantEcommerceOrderInvoicingBridgeSurface(result);
+        applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
+        setEcommerceLaunchActionMessage(
+          `Order invoicing bridge ${humanizeKey(result.bridgeStatus)} para ${result.productEntity.title}.`,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceOrderInvoicingBridgeSurface(null);
+      applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el bridge de orden hacia Invoicing.',
+      );
+    } finally {
+      setEcommerceOrderInvoicingBridgeLoading(null);
     }
   }
 
@@ -16628,6 +16858,9 @@ export function App() {
             selectedTenantEcommerceStorefrontReleaseControlWorkspace={
               selectedTenantEcommerceStorefrontReleaseControlWorkspace
             }
+            selectedTenantEcommerceStorefrontGoLiveManifest={
+              selectedTenantEcommerceStorefrontGoLiveManifest
+            }
             selectedTenantEcommerceStorefrontPreviewWorkspace={
               selectedTenantEcommerceStorefrontPreviewWorkspace
             }
@@ -16661,6 +16894,9 @@ export function App() {
             lastEcommerceCatalogMerchandisingPacket={
               lastEcommerceCatalogMerchandisingPacket
             }
+            selectedTenantEcommerceCheckoutOrderIntakeWorkspace={
+              selectedTenantEcommerceCheckoutOrderIntakeWorkspace
+            }
             selectedTenantEcommerceLandingPageStructure={
               selectedTenantEcommerceLandingPageStructure
             }
@@ -16684,6 +16920,9 @@ export function App() {
             }
             lastEcommerceWhatsappGrowthLaunchAcknowledgementPacket={
               lastEcommerceWhatsappGrowthLaunchAcknowledgementPacket
+            }
+            lastEcommerceOrderInvoicingBridge={
+              lastEcommerceOrderInvoicingBridge
             }
             tenantEcommerceProductEntityChannelReleaseCandidateRegistry={
               tenantEcommerceProductEntityChannelReleaseCandidateRegistry
@@ -16834,6 +17073,9 @@ export function App() {
             }
             ecommerceCatalogMerchandisingPacketLoading={
               ecommerceCatalogMerchandisingPacketLoading
+            }
+            ecommerceOrderInvoicingBridgeLoading={
+              ecommerceOrderInvoicingBridgeLoading
             }
             ecommerceWhatsappGrowthHandoffLoading={
               ecommerceWhatsappGrowthHandoffLoading
@@ -17039,6 +17281,9 @@ export function App() {
             onLoadStorefrontReleaseControlWorkspace={() => {
               void handleLoadTenantEcommerceStorefrontReleaseControlWorkspace();
             }}
+            onLoadStorefrontGoLiveManifest={() => {
+              void handleLoadTenantEcommerceStorefrontGoLiveManifest();
+            }}
             onRequestChannelReleaseLaunchPacket={() => {
               void handleRequestTenantEcommerceChannelReleaseLaunchPacket();
             }}
@@ -17050,6 +17295,9 @@ export function App() {
             }}
             onRequestCatalogMerchandisingPacket={() => {
               void handleRequestTenantEcommerceCatalogMerchandisingPacket();
+            }}
+            onLoadCheckoutOrderIntakeWorkspace={() => {
+              void handleLoadTenantEcommerceCheckoutOrderIntakeWorkspace();
             }}
             onRequestWhatsappGrowthHandoff={() => {
               void handleRequestTenantEcommerceWhatsappGrowthHandoff();
@@ -17068,6 +17316,9 @@ export function App() {
             }}
             onRequestWhatsappGrowthLaunchAcknowledgementPacket={() => {
               void handleRequestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacket();
+            }}
+            onRequestOrderInvoicingBridge={() => {
+              void handleRequestTenantEcommerceOrderInvoicingBridge();
             }}
             onSelectProductEntityChannelReleaseCandidate={(channelKey) => {
               void loadTenantEcommerceProductEntityChannelReleaseCandidateDetail(

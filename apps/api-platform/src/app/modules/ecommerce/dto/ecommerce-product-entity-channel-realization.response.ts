@@ -1,18 +1,21 @@
 import {
   TenantEcommerceCatalogAssetEntityWorkspaceView,
   TenantEcommerceCatalogCommercialCardView,
+  TenantEcommerceCatalogListingAssetView,
   TenantEcommerceChannelReleaseApprovalPacketView,
   TenantEcommerceChannelReleaseExecutionReadinessView,
   TenantEcommerceChannelReleaseHandoffPacketView,
   TenantEcommerceChannelReleaseLaunchPacketView,
   TenantEcommerceChannelReleaseWorkbenchView,
   TenantEcommerceLandingAssetEntityWorkspaceView,
+  TenantEcommerceLandingPublishArtifactView,
   TenantEcommerceLandingPageStructureView,
   TenantEcommerceStorefrontPublishReviewWorkspaceView,
   TenantEcommerceStorefrontPreviewWorkspaceView,
   TenantEcommerceWhatsappGrowthActivationPacketView,
   TenantEcommerceWhatsappGrowthActivationWorkspaceView,
   TenantEcommerceWhatsappChannelSequenceWorkspaceView,
+  TenantEcommerceWhatsappGrowthExecutionBridgeView,
   TenantEcommerceWhatsappGrowthHandoffView,
   TenantEcommerceWhatsappSalesFlowView,
 } from '@saas-platform/ecommerce-domain';
@@ -291,6 +294,63 @@ export interface EcommerceChannelReleaseLaunchPacketResponseDto {
   guardrails: string[];
 }
 
+export interface EcommerceLandingPublishArtifactResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponseDto;
+  artifactStatus:
+    | 'ready_for_release_candidate'
+    | 'needs_operator_revision'
+    | 'blocked';
+  summary: {
+    headline: string;
+    detail: string;
+  };
+  hero: {
+    headline: string;
+    subheadline: string;
+    primaryCta: string;
+  };
+  proofStrip: string[];
+  offerStack: Array<{
+    title: string;
+    detail: string;
+  }>;
+  ctaBand: {
+    primaryCta: string;
+    supportLabel: string;
+  };
+  faqSeed: string[];
+  finalChecklist: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceCatalogListingAssetResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponseDto;
+  listingStatus:
+    | 'ready_for_storefront_listing'
+    | 'needs_operator_revision'
+    | 'blocked';
+  card: {
+    title: string;
+    shortDescription: string;
+    pricingPresentation: string;
+    primaryCta: string;
+  };
+  offerBullets: string[];
+  storefrontSummary: string;
+  launchOwner: 'ecommerce' | 'growth' | 'shared';
+  placementNotes: string[];
+  finalChecklist: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceLandingPageStructureResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -413,6 +473,35 @@ export interface EcommerceWhatsappGrowthActivationPacketResponseDto {
   activationChecklist: string[];
   bridgeArtifacts: string[];
   operatorSteps: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceWhatsappGrowthExecutionBridgeResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponseDto;
+  bridgeStatus:
+    | 'ready_for_growth_execution'
+    | 'needs_operator_revision'
+    | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'growth';
+    channel: 'whatsapp';
+    activationMode: 'operator_assist';
+    handoffMode: 'operator_assist';
+  };
+  executionPayload: {
+    opener: string;
+    qualification: string;
+    objectionHandling: string[];
+    closingCta: string;
+    fallbackEscalation: string;
+  };
+  operatorChecklist: string[];
+  bridgeArtifacts: string[];
+  nextSteps: string[];
   guardrails: string[];
 }
 
@@ -640,6 +729,51 @@ export function toEcommerceChannelReleaseLaunchPacketResponseDto(
   };
 }
 
+export function toEcommerceLandingPublishArtifactResponseDto(
+  view: TenantEcommerceLandingPublishArtifactView,
+): EcommerceLandingPublishArtifactResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    assetEntity: toEcommerceProductEntityChannelAssetEntityResponseDto(
+      view.assetEntity,
+    ),
+    artifactStatus: view.artifactStatus,
+    summary: { ...view.summary },
+    hero: { ...view.hero },
+    proofStrip: [...view.proofStrip],
+    offerStack: view.offerStack.map((entry) => ({ ...entry })),
+    ctaBand: { ...view.ctaBand },
+    faqSeed: [...view.faqSeed],
+    finalChecklist: [...view.finalChecklist],
+    blockers: [...view.blockers],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceCatalogListingAssetResponseDto(
+  view: TenantEcommerceCatalogListingAssetView,
+): EcommerceCatalogListingAssetResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    assetEntity: toEcommerceProductEntityChannelAssetEntityResponseDto(
+      view.assetEntity,
+    ),
+    listingStatus: view.listingStatus,
+    card: { ...view.card },
+    offerBullets: [...view.offerBullets],
+    storefrontSummary: view.storefrontSummary,
+    launchOwner: view.launchOwner,
+    placementNotes: [...view.placementNotes],
+    finalChecklist: [...view.finalChecklist],
+    blockers: [...view.blockers],
+    guardrails: [...view.guardrails],
+  };
+}
+
 export function toEcommerceLandingPageStructureResponseDto(
   view: TenantEcommerceLandingPageStructureView,
 ): EcommerceLandingPageStructureResponseDto {
@@ -748,6 +882,30 @@ export function toEcommerceWhatsappGrowthActivationPacketResponseDto(
     activationChecklist: [...view.activationChecklist],
     bridgeArtifacts: [...view.bridgeArtifacts],
     operatorSteps: [...view.operatorSteps],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceWhatsappGrowthExecutionBridgeResponseDto(
+  view: TenantEcommerceWhatsappGrowthExecutionBridgeView,
+): EcommerceWhatsappGrowthExecutionBridgeResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    assetEntity: toEcommerceProductEntityChannelAssetEntityResponseDto(
+      view.assetEntity,
+    ),
+    bridgeStatus: view.bridgeStatus,
+    summary: view.summary,
+    targetWorkspace: { ...view.targetWorkspace },
+    executionPayload: {
+      ...view.executionPayload,
+      objectionHandling: [...view.executionPayload.objectionHandling],
+    },
+    operatorChecklist: [...view.operatorChecklist],
+    bridgeArtifacts: [...view.bridgeArtifacts],
+    nextSteps: [...view.nextSteps],
     guardrails: [...view.guardrails],
   };
 }

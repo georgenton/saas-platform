@@ -1176,6 +1176,92 @@ export interface TenantEcommerceWhatsappGrowthActivationPacketView {
   guardrails: string[];
 }
 
+export interface TenantEcommerceLandingPublishArtifactView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  assetEntity: TenantEcommerceProductEntityChannelAssetEntityView;
+  artifactStatus:
+    | 'ready_for_release_candidate'
+    | 'needs_operator_revision'
+    | 'blocked';
+  summary: {
+    headline: string;
+    detail: string;
+  };
+  hero: {
+    headline: string;
+    subheadline: string;
+    primaryCta: string;
+  };
+  proofStrip: string[];
+  offerStack: Array<{
+    title: string;
+    detail: string;
+  }>;
+  ctaBand: {
+    primaryCta: string;
+    supportLabel: string;
+  };
+  faqSeed: string[];
+  finalChecklist: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceCatalogListingAssetView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  assetEntity: TenantEcommerceProductEntityChannelAssetEntityView;
+  listingStatus:
+    | 'ready_for_storefront_listing'
+    | 'needs_operator_revision'
+    | 'blocked';
+  card: {
+    title: string;
+    shortDescription: string;
+    pricingPresentation: string;
+    primaryCta: string;
+  };
+  offerBullets: string[];
+  storefrontSummary: string;
+  launchOwner: 'ecommerce' | 'growth' | 'shared';
+  placementNotes: string[];
+  finalChecklist: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceWhatsappGrowthExecutionBridgeView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  assetEntity: TenantEcommerceProductEntityChannelAssetEntityView;
+  bridgeStatus:
+    | 'ready_for_growth_execution'
+    | 'needs_operator_revision'
+    | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'growth';
+    channel: 'whatsapp';
+    activationMode: 'operator_assist';
+    handoffMode: 'operator_assist';
+  };
+  executionPayload: {
+    opener: string;
+    qualification: string;
+    objectionHandling: string[];
+    closingCta: string;
+    fallbackEscalation: string;
+  };
+  operatorChecklist: string[];
+  bridgeArtifacts: string[];
+  nextSteps: string[];
+  guardrails: string[];
+}
+
 export interface TenantEcommerceLandingPageStructureView {
   tenantSlug: string;
   generatedAt: Date;

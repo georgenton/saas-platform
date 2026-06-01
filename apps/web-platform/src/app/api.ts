@@ -44,12 +44,15 @@ import {
   EcommerceCatalogAssetEntityWorkspaceResponse,
   EcommerceCatalogCommercialCardResponse,
   EcommerceChannelReleaseApprovalPacketResponse,
+  EcommerceChannelReleaseLaunchPacketResponse,
   EcommerceWhatsappChannelSequenceWorkspaceResponse,
   EcommerceChannelReleaseWorkbenchResponse,
   EcommerceChannelReleaseExecutionReadinessResponse,
   EcommerceChannelReleaseHandoffPacketResponse,
+  EcommerceStorefrontPublishReviewWorkspaceResponse,
   EcommerceStorefrontPreviewWorkspaceResponse,
   EcommerceLandingPageStructureResponse,
+  EcommerceWhatsappGrowthActivationPacketResponse,
   EcommerceWhatsappGrowthActivationWorkspaceResponse,
   EcommerceWhatsappGrowthHandoffResponse,
   EcommerceWhatsappSalesFlowResponse,
@@ -2474,6 +2477,24 @@ export async function fetchTenantEcommerceStorefrontPreviewWorkspace(
   );
 }
 
+export async function fetchTenantEcommerceStorefrontPublishReviewWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceStorefrontPublishReviewWorkspaceResponse> {
+  return request<EcommerceStorefrontPublishReviewWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/storefront-publish-review-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function fetchTenantEcommerceWhatsappChannelSequenceWorkspace(
   token: string,
   tenantSlug: string,
@@ -2564,6 +2585,24 @@ export async function requestTenantEcommerceChannelReleaseApprovalPacket(
   );
 }
 
+export async function requestTenantEcommerceChannelReleaseLaunchPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceChannelReleaseLaunchPacketResponse> {
+  return request<EcommerceChannelReleaseLaunchPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/request-release-launch-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
 export async function fetchTenantEcommerceLandingPageStructure(
   token: string,
   tenantSlug: string,
@@ -2631,6 +2670,24 @@ export async function fetchTenantEcommerceWhatsappGrowthActivationWorkspace(
     )}/whatsapp-growth-activation-workspace`,
     {
       method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceWhatsappGrowthActivationPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceWhatsappGrowthActivationPacketResponse> {
+  return request<EcommerceWhatsappGrowthActivationPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/request-whatsapp-growth-activation-packet`,
+    {
+      method: 'POST',
       token,
     },
   );

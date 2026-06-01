@@ -19,6 +19,7 @@ export * from './lib/use-cases/get-tenant-ecommerce-catalog-asset-entity-workspa
 export * from './lib/use-cases/get-tenant-ecommerce-catalog-commercial-card.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-storefront-preview-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-storefront-publish-review-workspace.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-storefront-release-candidate-brief.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-landing-publish-artifact.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-catalog-listing-asset.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-whatsapp-channel-sequence-workspace.use-case';
@@ -60,9 +61,11 @@ export * from './lib/use-cases/request-tenant-ecommerce-product-entity-channel-a
 export * from './lib/use-cases/request-tenant-ecommerce-channel-release-handoff-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-channel-release-approval-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-channel-release-launch-packet.use-case';
+export * from './lib/use-cases/request-tenant-ecommerce-catalog-storefront-placement-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-whatsapp-growth-handoff.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-whatsapp-growth-activation-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-whatsapp-growth-execution-bridge.use-case';
+export * from './lib/use-cases/request-tenant-ecommerce-whatsapp-growth-operator-launch-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-setup-definition-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-workspace-readiness-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-launch-plan-activation-readiness.use-case';

@@ -1262,6 +1262,106 @@ export interface TenantEcommerceWhatsappGrowthExecutionBridgeView {
   guardrails: string[];
 }
 
+export interface TenantEcommerceStorefrontReleaseCandidateBriefView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  briefStatus:
+    | 'ready_for_storefront_release_candidate'
+    | 'needs_operator_revision'
+    | 'blocked';
+  summary: {
+    headline: string;
+    detail: string;
+  };
+  landingArtifact: {
+    title: string;
+    artifactStatus:
+      | 'ready_for_release_candidate'
+      | 'needs_operator_revision'
+      | 'blocked';
+    primaryCta: string;
+  };
+  catalogListing: {
+    title: string;
+    listingStatus:
+      | 'ready_for_storefront_listing'
+      | 'needs_operator_revision'
+      | 'blocked';
+    pricingPresentation: string;
+  };
+  releaseSignals: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    status: 'ready' | 'warning' | 'blocked' | 'missing';
+    detail: string;
+  }>;
+  finalChecklist: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceCatalogStorefrontPlacementPacketView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  assetEntity: TenantEcommerceProductEntityChannelAssetEntityView;
+  placementStatus:
+    | 'ready_for_storefront_placement'
+    | 'needs_operator_revision'
+    | 'blocked';
+  card: {
+    title: string;
+    shortDescription: string;
+    pricingPresentation: string;
+    primaryCta: string;
+  };
+  placementSummary: string;
+  storefrontContext: {
+    previewStatus:
+      | 'ready_for_preview_review'
+      | 'needs_publish_copy'
+      | 'blocked';
+    approvalStatus:
+      | 'ready_for_operator_approval'
+      | 'needs_channel_completion'
+      | 'blocked';
+  };
+  placementNotes: string[];
+  placementChecklist: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceWhatsappGrowthOperatorLaunchPacketView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  assetEntity: TenantEcommerceProductEntityChannelAssetEntityView;
+  launchStatus:
+    | 'ready_for_growth_operator_launch'
+    | 'needs_operator_revision'
+    | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'growth';
+    channel: 'whatsapp';
+    activationMode: 'operator_assist';
+    handoffMode: 'operator_assist';
+  };
+  executionPayload: {
+    opener: string;
+    qualification: string;
+    objectionHandling: string[];
+    closingCta: string;
+    fallbackEscalation: string;
+  };
+  launchChecklist: string[];
+  operatorSteps: string[];
+  bridgeArtifacts: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
 export interface TenantEcommerceLandingPageStructureView {
   tenantSlug: string;
   generatedAt: Date;

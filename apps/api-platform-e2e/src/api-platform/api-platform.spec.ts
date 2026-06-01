@@ -61,6 +61,7 @@ import {
 import {
   GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
   GetTenantEcommerceCatalogCommercialCardUseCase,
+  GetTenantEcommerceStorefrontPreviewWorkspaceUseCase,
   GetTenantEcommerceChannelReleaseExecutionReadinessUseCase,
   GetTenantEcommerceChannelReleaseWorkbenchUseCase,
   GetTenantEcommerceLandingAssetEntityWorkspaceUseCase,
@@ -91,6 +92,7 @@ import {
   PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
   PromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
   RequestTenantEcommerceChannelReleaseHandoffPacketUseCase,
+  RequestTenantEcommerceChannelReleaseApprovalPacketUseCase,
   RequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase,
   RequestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase,
   PromoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
@@ -113,6 +115,7 @@ import {
   GetTenantEcommerceStoreProfileWorkspaceUseCase,
   GetTenantEcommerceStoreSetupWorkspaceUseCase,
   GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
+  GetTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase,
   GetTenantEcommerceWhatsappSalesFlowUseCase,
 } from '@saas-platform/ecommerce-application';
 import {
@@ -357,6 +360,9 @@ describe('API', () => {
   let getTenantEcommerceCatalogCommercialCardUseCase: {
     execute: jest.Mock;
   };
+  let getTenantEcommerceStorefrontPreviewWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
   let getTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase: {
     execute: jest.Mock;
   };
@@ -369,6 +375,9 @@ describe('API', () => {
   let requestTenantEcommerceChannelReleaseHandoffPacketUseCase: {
     execute: jest.Mock;
   };
+  let requestTenantEcommerceChannelReleaseApprovalPacketUseCase: {
+    execute: jest.Mock;
+  };
   let getTenantEcommerceLandingPageStructureUseCase: {
     execute: jest.Mock;
   };
@@ -376,6 +385,9 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let requestTenantEcommerceWhatsappGrowthHandoffUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase: {
     execute: jest.Mock;
   };
   let requestTenantEcommerceProductEntityCommercializationPacketUseCase: {
@@ -3966,6 +3978,58 @@ describe('API', () => {
         ],
       }),
     };
+    getTenantEcommerceStorefrontPreviewWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:08:00.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        previewStatus: 'needs_publish_copy',
+        summary: {
+          headline:
+            'El storefront ya se puede revisar, pero todavía conviene ajustar copy y release notes.',
+          detail:
+            'La base ya existe, aunque todavía hay señales de publish copy o completion por cerrar.',
+        },
+        landingPreview: {
+          headline: 'Headline final',
+          subheadline: 'Landing subheadline',
+          primaryCta: 'Activar producto base',
+          proofStrip: ['Proof 1', 'Proof 2'],
+        },
+        catalogPreview: {
+          title: 'Catalog asset entity final',
+          shortDescription: 'Catalog headline final',
+          pricingPresentation: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          offerBullets: ['Offer bullets', 'Pricing snapshot'],
+        },
+        releaseSignals: [
+          {
+            channelKey: 'landing',
+            status: 'needs_publish_copy',
+            detail: 'Ajustar copy y artifacts antes de release controlado',
+          },
+        ],
+        previewChecklist: ['FAQ 1', 'Pricing QA'],
+        guardrails: ['Storefront preview guardrail'],
+      }),
+    };
     getTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase = {
       execute: jest.fn().mockResolvedValue({
         tenantSlug: 'saas-platform',
@@ -4245,6 +4309,48 @@ describe('API', () => {
         ],
       }),
     };
+    requestTenantEcommerceChannelReleaseApprovalPacketUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:05:45.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        approvalStatus: 'needs_channel_completion',
+        summary:
+          'La aprobación ya se puede preparar, pero todavía conviene revisar algunos canales.',
+        approvalOwner: 'shared',
+        channels: [
+          {
+            channelKey: 'landing',
+            readiness: 'needs_publish_copy',
+            approvalDecision: 'review',
+            rationale:
+              'El canal necesita revisión adicional antes de considerarlo aprobado.',
+          },
+        ],
+        requiredApprovals: ['Checklist'],
+        warnings: [
+          'landing: El canal necesita revisión adicional antes de considerarlo aprobado.',
+        ],
+        blockers: [],
+        guardrails: ['Approval guardrail'],
+      }),
+    };
     getTenantEcommerceLandingPageStructureUseCase = {
       execute: jest.fn().mockResolvedValue({
         tenantSlug: 'saas-platform',
@@ -4470,6 +4576,72 @@ describe('API', () => {
           'No tratar este flujo como automatización viva de WhatsApp todavía.',
           'No empujar este handoff como automatización viva de Growth todavía.',
         ],
+      }),
+    };
+    getTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:08:30.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        assetEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:53:00.000Z'),
+          assetEntityId: 'channel_draft_003',
+          productEntityId: 'product_entity_001',
+          sourceSavedChannelDraftId: 'channel_draft_003',
+          channelKey: 'whatsapp',
+          promotedAt: new Date('2026-05-28T16:53:00.000Z'),
+          status: 'draft_asset_entity',
+          handoffOwner: 'growth',
+          title: 'Whatsapp asset entity final',
+          headline: 'Mensaje de apertura final',
+          summary: 'Activation summary',
+          draftBlueprint: ['Follow-up angle', 'Recovery CTA'],
+          publishChecklist: ['Sequence QA'],
+          recommendedArtifacts: ['Recovery branch', 'Close note'],
+          nextMilestone: 'QA final de whatsapp',
+          blockedBy: [],
+          guardrails: ['Guardrail'],
+        },
+        activationStatus: 'ready_for_growth_activation',
+        targetWorkspace: {
+          productKey: 'growth',
+          channel: 'whatsapp',
+          activationMode: 'operator_assist',
+        },
+        activationSummary:
+          'El handoff de WhatsApp ya está en un punto razonable para activación asistida en Growth.',
+        sequencePayload: {
+          opener: 'Mensaje de apertura final',
+          qualification: 'Follow-up 1: Follow-up angle',
+          objectionHandling: [
+            'Recovery: Recovery branch',
+            'Recovery: Close note',
+          ],
+          closingCta: 'Activar producto base',
+          fallbackEscalation:
+            'Si la conversación se enfría, pasar a revisión humana antes de insistir.',
+        },
+        activationChecklist: ['Sequence QA'],
+        bridgeArtifacts: ['WhatsApp opener packet'],
+        handoffNotes: ['Growth note'],
+        guardrails: ['Growth activation guardrail'],
       }),
     };
     requestTenantEcommerceProductEntityCommercializationPacketUseCase = {
@@ -7034,6 +7206,8 @@ describe('API', () => {
       .useValue(getTenantEcommerceCatalogAssetEntityWorkspaceUseCase)
       .overrideProvider(GetTenantEcommerceCatalogCommercialCardUseCase)
       .useValue(getTenantEcommerceCatalogCommercialCardUseCase)
+      .overrideProvider(GetTenantEcommerceStorefrontPreviewWorkspaceUseCase)
+      .useValue(getTenantEcommerceStorefrontPreviewWorkspaceUseCase)
       .overrideProvider(GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase)
       .useValue(getTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase)
       .overrideProvider(GetTenantEcommerceChannelReleaseWorkbenchUseCase)
@@ -7042,12 +7216,16 @@ describe('API', () => {
       .useValue(getTenantEcommerceChannelReleaseExecutionReadinessUseCase)
       .overrideProvider(RequestTenantEcommerceChannelReleaseHandoffPacketUseCase)
       .useValue(requestTenantEcommerceChannelReleaseHandoffPacketUseCase)
+      .overrideProvider(RequestTenantEcommerceChannelReleaseApprovalPacketUseCase)
+      .useValue(requestTenantEcommerceChannelReleaseApprovalPacketUseCase)
       .overrideProvider(GetTenantEcommerceLandingPageStructureUseCase)
       .useValue(getTenantEcommerceLandingPageStructureUseCase)
       .overrideProvider(GetTenantEcommerceWhatsappSalesFlowUseCase)
       .useValue(getTenantEcommerceWhatsappSalesFlowUseCase)
       .overrideProvider(RequestTenantEcommerceWhatsappGrowthHandoffUseCase)
       .useValue(requestTenantEcommerceWhatsappGrowthHandoffUseCase)
+      .overrideProvider(GetTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase)
+      .useValue(getTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase)
       .overrideProvider(GetTenantEcommerceProductEntityChannelReleaseCandidateDetailUseCase)
       .useValue(getTenantEcommerceProductEntityChannelReleaseCandidateDetailUseCase)
       .overrideProvider(GetTenantEcommerceProductEntityChannelDraftDetailUseCase)
@@ -11824,6 +12002,26 @@ describe('API', () => {
     ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
   });
 
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/storefront-preview-workspace should return one storefront preview workspace', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/storefront-preview-workspace',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.previewStatus).toBe('needs_publish_copy');
+        expect(response.body.landingPreview.headline).toBe('Headline final');
+        expect(response.body.catalogPreview.title).toBe(
+          'Catalog asset entity final',
+        );
+      });
+
+    expect(
+      getTenantEcommerceStorefrontPreviewWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
+  });
+
   it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/whatsapp-channel-sequence-workspace should return one whatsapp sequence workspace', async () => {
     await request(httpServer)
       .get(
@@ -11933,6 +12131,31 @@ describe('API', () => {
     ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
   });
 
+  it('POST /api/ecommerce/tenants/:slug/product-entities/:productEntityId/request-release-approval-packet should return one release approval packet', async () => {
+    await request(httpServer)
+      .post(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/request-release-approval-packet',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.approvalStatus).toBe('needs_channel_completion');
+        expect(response.body.approvalOwner).toBe('shared');
+        expect(response.body.channels).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              channelKey: 'landing',
+              approvalDecision: 'review',
+            }),
+          ]),
+        );
+      });
+
+    expect(
+      requestTenantEcommerceChannelReleaseApprovalPacketUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
+  });
+
   it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/landing-page-structure should return one landing page structure', async () => {
     await request(httpServer)
       .get(
@@ -11996,6 +12219,28 @@ describe('API', () => {
 
     expect(
       requestTenantEcommerceWhatsappGrowthHandoffUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/whatsapp-growth-activation-workspace should return one whatsapp growth activation workspace', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/whatsapp-growth-activation-workspace',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.activationStatus).toBe(
+          'ready_for_growth_activation',
+        );
+        expect(response.body.targetWorkspace.productKey).toBe('growth');
+        expect(response.body.sequencePayload.opener).toBe(
+          'Mensaje de apertura final',
+        );
+      });
+
+    expect(
+      getTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase.execute,
     ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
   });
 

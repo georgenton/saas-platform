@@ -17,11 +17,13 @@ export * from './lib/use-cases/get-tenant-ecommerce-product-entity-channel-relea
 export * from './lib/use-cases/get-tenant-ecommerce-landing-asset-entity-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-catalog-asset-entity-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-catalog-commercial-card.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-storefront-preview-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-whatsapp-channel-sequence-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-channel-release-workbench.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-channel-release-execution-readiness.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-landing-page-structure.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-whatsapp-sales-flow.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-whatsapp-growth-activation-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-product-entity-channel-draft-publish-preparation-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-saved-product-entity-channel-draft-detail.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-product-setup-detail.use-case';
@@ -53,6 +55,7 @@ export * from './lib/use-cases/request-tenant-ecommerce-product-entity-channel-d
 export * from './lib/use-cases/request-tenant-ecommerce-product-entity-channel-asset-publish-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-entity-channel-asset-entity-publish-preparation-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-channel-release-handoff-packet.use-case';
+export * from './lib/use-cases/request-tenant-ecommerce-channel-release-approval-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-whatsapp-growth-handoff.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-setup-definition-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-workspace-readiness-packet.use-case';

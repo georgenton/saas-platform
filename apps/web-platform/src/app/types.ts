@@ -2651,6 +2651,67 @@ export interface EcommerceChannelReleaseHandoffPacketResponse {
   guardrails: string[];
 }
 
+export interface EcommerceStorefrontPreviewWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  previewStatus: 'ready_for_preview_review' | 'needs_publish_copy' | 'blocked';
+  summary: {
+    headline: string;
+    detail: string;
+  };
+  landingPreview: {
+    headline: string;
+    subheadline: string;
+    primaryCta: string;
+    proofStrip: string[];
+  };
+  catalogPreview: {
+    title: string;
+    shortDescription: string;
+    pricingPresentation: string;
+    primaryCta: string;
+    offerBullets: string[];
+  };
+  releaseSignals: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    status:
+      | 'candidate_ready'
+      | 'needs_publish_copy'
+      | 'blocked'
+      | 'missing';
+    detail: string;
+  }>;
+  previewChecklist: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceChannelReleaseApprovalPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  approvalStatus:
+    | 'ready_for_operator_approval'
+    | 'needs_channel_completion'
+    | 'blocked';
+  summary: string;
+  approvalOwner: 'ecommerce' | 'growth' | 'shared';
+  channels: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    readiness:
+      | 'candidate_ready'
+      | 'needs_publish_copy'
+      | 'blocked'
+      | 'missing';
+    approvalDecision: 'approve' | 'review' | 'block';
+    rationale: string;
+  }>;
+  requiredApprovals: string[];
+  warnings: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceLandingPageStructureResponse {
   tenantSlug: string;
   generatedAt: string;
@@ -2717,6 +2778,34 @@ export interface EcommerceWhatsappGrowthHandoffResponse {
   sequencingNotes: string[];
   bridgeArtifacts: string[];
   readinessChecks: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceWhatsappGrowthActivationWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponse;
+  activationStatus:
+    | 'ready_for_growth_activation'
+    | 'needs_publish_copy'
+    | 'blocked';
+  targetWorkspace: {
+    productKey: 'growth';
+    channel: 'whatsapp';
+    activationMode: 'operator_assist';
+  };
+  activationSummary: string;
+  sequencePayload: {
+    opener: string;
+    qualification: string;
+    objectionHandling: string[];
+    closingCta: string;
+    fallbackEscalation: string;
+  };
+  activationChecklist: string[];
+  bridgeArtifacts: string[];
+  handoffNotes: string[];
   guardrails: string[];
 }
 

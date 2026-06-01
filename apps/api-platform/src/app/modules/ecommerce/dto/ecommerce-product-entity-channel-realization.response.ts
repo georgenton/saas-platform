@@ -1,10 +1,13 @@
 import {
   TenantEcommerceCatalogAssetEntityWorkspaceView,
+  TenantEcommerceCatalogCommercialCardView,
   TenantEcommerceChannelReleaseExecutionReadinessView,
+  TenantEcommerceChannelReleaseHandoffPacketView,
   TenantEcommerceChannelReleaseWorkbenchView,
   TenantEcommerceLandingAssetEntityWorkspaceView,
   TenantEcommerceLandingPageStructureView,
   TenantEcommerceWhatsappChannelSequenceWorkspaceView,
+  TenantEcommerceWhatsappGrowthHandoffView,
   TenantEcommerceWhatsappSalesFlowView,
 } from '@saas-platform/ecommerce-domain';
 import {
@@ -50,6 +53,27 @@ export interface EcommerceCatalogAssetEntityWorkspaceResponseDto {
   merchandisingChecks: string[];
   nextMilestone: string;
   blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceCatalogCommercialCardResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponseDto;
+  commercialStatus:
+    | 'ready_for_storefront_card'
+    | 'needs_publish_copy'
+    | 'blocked';
+  card: {
+    title: string;
+    shortDescription: string;
+    pricingPresentation: string;
+    primaryCta: string;
+  };
+  offerBullets: string[];
+  storefrontSummary: string;
+  merchandisingHighlights: string[];
   guardrails: string[];
 }
 
@@ -119,6 +143,35 @@ export interface EcommerceChannelReleaseExecutionReadinessResponseDto {
   guardrails: string[];
 }
 
+export interface EcommerceChannelReleaseHandoffPacketResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  handoffStatus: 'ready_for_handoff' | 'needs_channel_completion' | 'blocked';
+  summary: string;
+  ownerModel: {
+    primaryOwner: 'ecommerce' | 'growth' | 'shared';
+    escalationOwner: 'growth' | 'shared';
+    releaseMode: 'controlled_release';
+  };
+  channels: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    readiness:
+      | 'candidate_ready'
+      | 'needs_publish_copy'
+      | 'blocked'
+      | 'missing';
+    handoffOwner: 'ecommerce' | 'growth' | 'shared';
+    blockerType: 'none' | 'warning' | 'blocker';
+    minimumArtifacts: string[];
+    nextMilestone: string;
+  }>;
+  handoffChecklist: string[];
+  warnings: string[];
+  blockers: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceLandingPageStructureResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -161,6 +214,33 @@ export interface EcommerceWhatsappSalesFlowResponseDto {
   guardrails: string[];
 }
 
+export interface EcommerceWhatsappGrowthHandoffResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  assetEntity: EcommerceProductEntityChannelAssetEntityResponseDto;
+  handoffStatus:
+    | 'ready_for_growth_workbench'
+    | 'needs_publish_copy'
+    | 'blocked';
+  targetWorkspace: {
+    productKey: 'growth';
+    channel: 'whatsapp';
+    handoffMode: 'operator_assist';
+  };
+  payload: {
+    opener: string;
+    qualification: string;
+    objectionHandling: string[];
+    closingCta: string;
+    fallbackEscalation: string;
+  };
+  sequencingNotes: string[];
+  bridgeArtifacts: string[];
+  readinessChecks: string[];
+  guardrails: string[];
+}
+
 export function toEcommerceLandingAssetEntityWorkspaceResponseDto(
   view: TenantEcommerceLandingAssetEntityWorkspaceView,
 ): EcommerceLandingAssetEntityWorkspaceResponseDto {
@@ -198,6 +278,25 @@ export function toEcommerceCatalogAssetEntityWorkspaceResponseDto(
     merchandisingChecks: [...view.merchandisingChecks],
     nextMilestone: view.nextMilestone,
     blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceCatalogCommercialCardResponseDto(
+  view: TenantEcommerceCatalogCommercialCardView,
+): EcommerceCatalogCommercialCardResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    assetEntity: toEcommerceProductEntityChannelAssetEntityResponseDto(
+      view.assetEntity,
+    ),
+    commercialStatus: view.commercialStatus,
+    card: { ...view.card },
+    offerBullets: [...view.offerBullets],
+    storefrontSummary: view.storefrontSummary,
+    merchandisingHighlights: [...view.merchandisingHighlights],
     guardrails: [...view.guardrails],
   };
 }
@@ -262,6 +361,27 @@ export function toEcommerceChannelReleaseExecutionReadinessResponseDto(
   };
 }
 
+export function toEcommerceChannelReleaseHandoffPacketResponseDto(
+  view: TenantEcommerceChannelReleaseHandoffPacketView,
+): EcommerceChannelReleaseHandoffPacketResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    handoffStatus: view.handoffStatus,
+    summary: view.summary,
+    ownerModel: { ...view.ownerModel },
+    channels: view.channels.map((channel) => ({
+      ...channel,
+      minimumArtifacts: [...channel.minimumArtifacts],
+    })),
+    handoffChecklist: [...view.handoffChecklist],
+    warnings: [...view.warnings],
+    blockers: [...view.blockers],
+    guardrails: [...view.guardrails],
+  };
+}
+
 export function toEcommerceLandingPageStructureResponseDto(
   view: TenantEcommerceLandingPageStructureView,
 ): EcommerceLandingPageStructureResponseDto {
@@ -299,6 +419,29 @@ export function toEcommerceWhatsappSalesFlowResponseDto(
     },
     operatorChecklist: [...view.operatorChecklist],
     handoffNotes: [...view.handoffNotes],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceWhatsappGrowthHandoffResponseDto(
+  view: TenantEcommerceWhatsappGrowthHandoffView,
+): EcommerceWhatsappGrowthHandoffResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    assetEntity: toEcommerceProductEntityChannelAssetEntityResponseDto(
+      view.assetEntity,
+    ),
+    handoffStatus: view.handoffStatus,
+    targetWorkspace: { ...view.targetWorkspace },
+    payload: {
+      ...view.payload,
+      objectionHandling: [...view.payload.objectionHandling],
+    },
+    sequencingNotes: [...view.sequencingNotes],
+    bridgeArtifacts: [...view.bridgeArtifacts],
+    readinessChecks: [...view.readinessChecks],
     guardrails: [...view.guardrails],
   };
 }

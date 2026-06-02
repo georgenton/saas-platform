@@ -67,12 +67,15 @@ import {
   EcommerceOrderHandoffDecisionResponse,
   EcommerceOrderHandoffExecutionWorkspaceResponse,
   EcommerceOrderHoldResolutionWorkspaceResponse,
+  EcommerceOrderRouteResolutionPacketResponse,
   EcommerceOrderInvoiceDraftBridgeResponse,
+  EcommerceInvoiceDraftHandoffWorkspaceResponse,
   EcommerceInvoiceDraftIntakeWorkspaceResponse,
   EcommerceInvoiceDraftOpenBridgeResponse,
   EcommerceInvoiceDraftLaunchBridgeResponse,
   EcommerceOrderDraftRegistryResponse,
   EcommerceOrderOpsAttentionWorkspaceResponse,
+  EcommerceOrderOpsEscalationBoardResponse,
   EcommerceOrderOperatorWorkboardResponse,
   EcommerceOrderOpsPriorityQueueResponse,
   EcommerceOrderReviewWorkspaceResponse,
@@ -3283,6 +3286,48 @@ export async function requestTenantEcommerceInvoiceDraftLaunchBridge(
   );
 }
 
+export async function requestTenantEcommerceOrderRouteResolutionPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderRouteResolutionPacketResponse> {
+  return request<EcommerceOrderRouteResolutionPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/request-route-resolution-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceInvoiceDraftHandoffWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceInvoiceDraftHandoffWorkspaceResponse> {
+  return request<EcommerceInvoiceDraftHandoffWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/invoice-draft-handoff-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function requestTenantEcommerceOrderInvoiceDraftBridge(
   token: string,
   tenantSlug: string,
@@ -3351,6 +3396,24 @@ export async function fetchTenantEcommerceOrderOpsAttentionWorkspace(
     )}/product-entities/${encodeURIComponent(
       productEntityId,
     )}/order-ops-attention-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderOpsEscalationBoard(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceOrderOpsEscalationBoardResponse> {
+  return request<EcommerceOrderOpsEscalationBoardResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-ops-escalation-board`,
     {
       method: 'GET',
       token,

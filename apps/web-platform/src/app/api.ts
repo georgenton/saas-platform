@@ -65,10 +65,13 @@ import {
   EcommerceOrderFiscalDataCompletionWorkspaceResponse,
   EcommerceOrderGrowthFollowUpWorkspaceResponse,
   EcommerceOrderHandoffDecisionResponse,
+  EcommerceOrderHandoffExecutionWorkspaceResponse,
   EcommerceOrderInvoiceDraftBridgeResponse,
   EcommerceInvoiceDraftIntakeWorkspaceResponse,
+  EcommerceInvoiceDraftOpenBridgeResponse,
   EcommerceOrderDraftRegistryResponse,
   EcommerceOrderOperatorWorkboardResponse,
+  EcommerceOrderOpsPriorityQueueResponse,
   EcommerceOrderReviewWorkspaceResponse,
   EcommerceOrderStatusLifecycleDetailResponse,
   EcommerceOrderStatusLifecycleRegistryResponse,
@@ -3193,6 +3196,48 @@ export async function fetchTenantEcommerceInvoiceDraftIntakeWorkspace(
   );
 }
 
+export async function fetchTenantEcommerceOrderHandoffExecutionWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderHandoffExecutionWorkspaceResponse> {
+  return request<EcommerceOrderHandoffExecutionWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/handoff-execution-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceInvoiceDraftOpenBridge(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceInvoiceDraftOpenBridgeResponse> {
+  return request<EcommerceInvoiceDraftOpenBridgeResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/request-invoice-draft-open-bridge`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
 export async function requestTenantEcommerceOrderInvoiceDraftBridge(
   token: string,
   tenantSlug: string,
@@ -3225,6 +3270,24 @@ export async function fetchTenantEcommerceOrderOperatorWorkboard(
     )}/product-entities/${encodeURIComponent(
       productEntityId,
     )}/order-operator-workboard`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderOpsPriorityQueue(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceOrderOpsPriorityQueueResponse> {
+  return request<EcommerceOrderOpsPriorityQueueResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-ops-priority-queue`,
     {
       method: 'GET',
       token,

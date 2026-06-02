@@ -21,10 +21,14 @@ import {
   TenantEcommerceOrderFiscalDataCompletionWorkspaceView,
   TenantEcommerceOrderGrowthFollowUpWorkspaceView,
   TenantEcommerceOrderHandoffDecisionView,
+  TenantEcommerceOrderHandoffExecutionWorkspaceView,
   TenantEcommerceOrderOperatorWorkboardEntryView,
   TenantEcommerceOrderOperatorWorkboardView,
+  TenantEcommerceOrderOpsPriorityQueueEntryView,
+  TenantEcommerceOrderOpsPriorityQueueView,
   TenantEcommerceOrderInvoiceDraftBridgeView,
   TenantEcommerceInvoiceDraftIntakeWorkspaceView,
+  TenantEcommerceInvoiceDraftOpenBridgeView,
   TenantEcommerceOrderInvoicingBridgeView,
   TenantEcommerceOrderReviewWorkspaceView,
   TenantEcommerceOrderStatusLifecycleDetailView,
@@ -1132,6 +1136,95 @@ export interface EcommerceOrderOperatorWorkboardResponseDto {
   entries: EcommerceOrderOperatorWorkboardEntryResponseDto[];
 }
 
+export interface EcommerceOrderHandoffExecutionWorkspaceResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  executionStatus: 'ready_for_execution' | 'needs_data' | 'blocked';
+  activeRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  summary: string;
+  owner: {
+    productKey: 'ecommerce';
+    role: 'operator';
+  };
+  routeTargets: {
+    invoicingTarget: {
+      productKey: 'invoicing';
+      stage: 'electronic_invoicing_ec_mvp';
+      handoffMode: 'operator_assist';
+    };
+    growthTarget: {
+      productKey: 'growth';
+      channel: 'whatsapp';
+      handoffMode: 'operator_assist';
+    };
+  };
+  executionChecklist: string[];
+  nextStep: string;
+  handoffArtifacts: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceInvoiceDraftOpenBridgeResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  bridgeStatus: 'ready_to_open' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  payload: {
+    customerLabel: string;
+    documentHint: 'invoice';
+    offerTitle: string;
+    pricingSnapshot: string;
+    billingIntent: string | null;
+  };
+  fiscalSnapshot: {
+    requiredFields: string[];
+    missingFields: string[];
+  };
+  handoffArtifacts: string[];
+  operatorChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderOpsPriorityQueueEntryResponseDto {
+  orderDraftId: string;
+  orderLabel: string;
+  currentStatus: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+  activeRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  priorityBand: 'critical' | 'high' | 'medium' | 'low';
+  priorityScore: number;
+  attentionReason: string;
+  recommendedAction: string;
+  quickActions: string[];
+  updatedAt: string;
+}
+
+export interface EcommerceOrderOpsPriorityQueueResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  summary: {
+    totalOrders: number;
+    criticalCount: number;
+    invoicingLaneCount: number;
+    growthLaneCount: number;
+    holdCount: number;
+    headline: string;
+    detail: string;
+  };
+  entries: EcommerceOrderOpsPriorityQueueEntryResponseDto[];
+}
+
 export interface EcommerceLandingPageStructureResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -2096,6 +2189,84 @@ export function toEcommerceOrderOperatorWorkboardResponseDto(
     summary: { ...view.summary },
     entries: view.entries.map((entry) =>
       toEcommerceOrderOperatorWorkboardEntryResponseDto(entry),
+    ),
+  };
+}
+
+export function toEcommerceOrderHandoffExecutionWorkspaceResponseDto(
+  view: TenantEcommerceOrderHandoffExecutionWorkspaceView,
+): EcommerceOrderHandoffExecutionWorkspaceResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    executionStatus: view.executionStatus,
+    activeRoute: view.activeRoute,
+    summary: view.summary,
+    owner: { ...view.owner },
+    routeTargets: {
+      invoicingTarget: { ...view.routeTargets.invoicingTarget },
+      growthTarget: { ...view.routeTargets.growthTarget },
+    },
+    executionChecklist: [...view.executionChecklist],
+    nextStep: view.nextStep,
+    handoffArtifacts: [...view.handoffArtifacts],
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceInvoiceDraftOpenBridgeResponseDto(
+  view: TenantEcommerceInvoiceDraftOpenBridgeView,
+): EcommerceInvoiceDraftOpenBridgeResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    bridgeStatus: view.bridgeStatus,
+    summary: view.summary,
+    targetWorkspace: { ...view.targetWorkspace },
+    payload: { ...view.payload },
+    fiscalSnapshot: {
+      requiredFields: [...view.fiscalSnapshot.requiredFields],
+      missingFields: [...view.fiscalSnapshot.missingFields],
+    },
+    handoffArtifacts: [...view.handoffArtifacts],
+    operatorChecklist: [...view.operatorChecklist],
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderOpsPriorityQueueEntryResponseDto(
+  view: TenantEcommerceOrderOpsPriorityQueueEntryView,
+): EcommerceOrderOpsPriorityQueueEntryResponseDto {
+  return {
+    orderDraftId: view.orderDraftId,
+    orderLabel: view.orderLabel,
+    currentStatus: view.currentStatus,
+    activeRoute: view.activeRoute,
+    priorityBand: view.priorityBand,
+    priorityScore: view.priorityScore,
+    attentionReason: view.attentionReason,
+    recommendedAction: view.recommendedAction,
+    quickActions: [...view.quickActions],
+    updatedAt: view.updatedAt.toISOString(),
+  };
+}
+
+export function toEcommerceOrderOpsPriorityQueueResponseDto(
+  view: TenantEcommerceOrderOpsPriorityQueueView,
+): EcommerceOrderOpsPriorityQueueResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    summary: { ...view.summary },
+    entries: view.entries.map((entry) =>
+      toEcommerceOrderOpsPriorityQueueEntryResponseDto(entry),
     ),
   };
 }

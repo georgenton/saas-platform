@@ -2478,3 +2478,103 @@ export interface TenantEcommerceOrderPostSaleLifecycleDetailView {
   blockedBy: string[];
   guardrails: string[];
 }
+
+export interface TenantEcommerceOrderPaymentConfirmationWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  confirmationStatus: 'ready_for_confirmation' | 'needs_review' | 'blocked';
+  summary: string;
+  expectedCollection: {
+    collectionChannel: 'landing' | 'catalog' | 'whatsapp';
+    pricingSnapshot: string;
+    billingIntent: string | null;
+    primaryCta: string;
+  };
+  lifecycleSignal: {
+    currentStatus:
+      | 'handed_off'
+      | 'invoicing'
+      | 'awaiting_payment'
+      | 'paid'
+      | 'blocked';
+    detail: string;
+  };
+  confirmationChecklist: string[];
+  evidenceHints: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderFulfillmentReadinessWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  fulfillmentStatus:
+    | 'ready_for_fulfillment'
+    | 'waiting_payment_confirmation'
+    | 'blocked';
+  summary: string;
+  fulfillmentProfile: {
+    fulfillmentType: 'digital' | 'service' | 'physical';
+    deliveryChannel: 'email' | 'whatsapp' | 'manual';
+    ownerRole: 'operator';
+  };
+  prerequisites: string[];
+  blockedBy: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderRevenueTrackingSummaryEntryView {
+  orderDraftId: string;
+  orderLabel: string;
+  currentStatus:
+    | 'handed_off'
+    | 'invoicing'
+    | 'awaiting_payment'
+    | 'paid'
+    | 'blocked';
+  paymentConfirmationStatus:
+    | 'ready_for_confirmation'
+    | 'needs_review'
+    | 'blocked';
+  fulfillmentStatus:
+    | 'ready_for_fulfillment'
+    | 'waiting_payment_confirmation'
+    | 'blocked';
+  pricingSnapshot: string;
+  billingIntent: string | null;
+  nextStep: string;
+  updatedAt: Date;
+}
+
+export interface TenantEcommerceOrderRevenueTrackingSummaryView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  summary: {
+    totalOrders: number;
+    expectedOrderCount: number;
+    confirmedOrderCount: number;
+    awaitingPaymentCount: number;
+    blockedCount: number;
+    readyForFulfillmentCount: number;
+    headline: string;
+    detail: string;
+  };
+  paymentRollup: {
+    readyForConfirmationCount: number;
+    needsReviewCount: number;
+    blockedCount: number;
+    confirmationBacklog: string;
+  };
+  valueSignals: {
+    expectedPricingSnapshots: string[];
+    billingIntents: string[];
+  };
+  entries: TenantEcommerceOrderRevenueTrackingSummaryEntryView[];
+}

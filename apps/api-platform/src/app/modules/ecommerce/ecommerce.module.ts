@@ -19,8 +19,10 @@ import {
   GetTenantEcommerceOrderDraftDetailUseCase,
   GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
   GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+  GetTenantEcommerceOrderOperatorWorkboardUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
+  GetTenantEcommerceInvoiceDraftIntakeWorkspaceUseCase,
   GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
   GetTenantEcommerceStorefrontReleaseCandidateBriefUseCase,
   GetTenantEcommerceStorefrontGoLiveManifestUseCase,
@@ -77,6 +79,7 @@ import {
   RequestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
   RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
   RequestTenantEcommerceOrderApprovalDecisionUseCase,
+  RequestTenantEcommerceOrderHandoffDecisionUseCase,
   RequestTenantEcommerceChannelReleaseLaunchPacketUseCase,
   RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
   RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
@@ -1194,6 +1197,48 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: RequestTenantEcommerceOrderHandoffDecisionUseCase,
+      inject: [
+        RequestTenantEcommerceOrderApprovalDecisionUseCase,
+        GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+        GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+        RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+      ],
+      useFactory: (
+        requestTenantEcommerceOrderApprovalDecisionUseCase,
+        getTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+        getTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+        requestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+      ) =>
+        new RequestTenantEcommerceOrderHandoffDecisionUseCase(
+          requestTenantEcommerceOrderApprovalDecisionUseCase,
+          getTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+          getTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+          requestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceInvoiceDraftIntakeWorkspaceUseCase,
+      inject: [
+        GetTenantEcommerceOrderDraftDetailUseCase,
+        GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+        RequestTenantEcommerceOrderHandoffDecisionUseCase,
+        RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderDraftDetailUseCase,
+        getTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+        requestTenantEcommerceOrderHandoffDecisionUseCase,
+        requestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+      ) =>
+        new GetTenantEcommerceInvoiceDraftIntakeWorkspaceUseCase(
+          getTenantEcommerceOrderDraftDetailUseCase,
+          getTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+          requestTenantEcommerceOrderHandoffDecisionUseCase,
+          requestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
       inject: [
         GetTenantEcommerceOrderDraftDetailUseCase,
@@ -1227,6 +1272,21 @@ import { EcommerceController } from './ecommerce.controller';
         new ListTenantEcommerceOrderStatusLifecyclesUseCase(
           listTenantEcommerceOrderDraftsUseCase,
           getTenantEcommerceOrderStatusLifecycleDetailUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceOrderOperatorWorkboardUseCase,
+      inject: [
+        ListTenantEcommerceOrderStatusLifecyclesUseCase,
+        RequestTenantEcommerceOrderHandoffDecisionUseCase,
+      ],
+      useFactory: (
+        listTenantEcommerceOrderStatusLifecyclesUseCase,
+        requestTenantEcommerceOrderHandoffDecisionUseCase,
+      ) =>
+        new GetTenantEcommerceOrderOperatorWorkboardUseCase(
+          listTenantEcommerceOrderStatusLifecyclesUseCase,
+          requestTenantEcommerceOrderHandoffDecisionUseCase,
         ),
     },
     {

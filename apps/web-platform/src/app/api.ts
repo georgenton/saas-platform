@@ -60,11 +60,15 @@ import {
   EcommerceLandingPageStructureResponse,
   EcommerceLandingPublishArtifactResponse,
   EcommerceLiveStorefrontSessionWorkspaceResponse,
+  EcommerceOrderApprovalDecisionResponse,
   EcommerceOrderDraftDetailResponse,
+  EcommerceOrderFiscalDataCompletionWorkspaceResponse,
   EcommerceOrderGrowthFollowUpWorkspaceResponse,
   EcommerceOrderInvoiceDraftBridgeResponse,
   EcommerceOrderDraftRegistryResponse,
   EcommerceOrderReviewWorkspaceResponse,
+  EcommerceOrderStatusLifecycleDetailResponse,
+  EcommerceOrderStatusLifecycleRegistryResponse,
   EcommerceOrderDraftSaveResponse,
   EcommerceOrderInvoicingBridgeResponse,
   EcommerceOrderToGrowthConversationBridgeResponse,
@@ -3102,6 +3106,48 @@ export async function fetchTenantEcommerceOrderReviewWorkspace(
   );
 }
 
+export async function requestTenantEcommerceOrderApprovalDecision(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderApprovalDecisionResponse> {
+  return request<EcommerceOrderApprovalDecisionResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/request-approval-decision`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderFiscalDataCompletionWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderFiscalDataCompletionWorkspaceResponse> {
+  return request<EcommerceOrderFiscalDataCompletionWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/fiscal-data-completion-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function requestTenantEcommerceOrderInvoiceDraftBridge(
   token: string,
   tenantSlug: string,
@@ -3137,6 +3183,43 @@ export async function fetchTenantEcommerceOrderGrowthFollowUpWorkspace(
     )}/order-drafts/${encodeURIComponent(
       orderDraftId,
     )}/growth-follow-up-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderStatusLifecycles(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceOrderStatusLifecycleRegistryResponse> {
+  return request<EcommerceOrderStatusLifecycleRegistryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-status-lifecycles`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderStatusLifecycleDetail(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderStatusLifecycleDetailResponse> {
+  return request<EcommerceOrderStatusLifecycleDetailResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-status-lifecycles/${encodeURIComponent(orderDraftId)}`,
     {
       method: 'GET',
       token,

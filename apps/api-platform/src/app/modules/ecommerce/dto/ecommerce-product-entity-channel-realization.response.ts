@@ -17,10 +17,15 @@ import {
   TenantEcommerceOrderDraftRegistryView,
   TenantEcommerceOrderDraftSaveView,
   TenantEcommerceOrderDraftView,
+  TenantEcommerceOrderApprovalDecisionView,
+  TenantEcommerceOrderFiscalDataCompletionWorkspaceView,
   TenantEcommerceOrderGrowthFollowUpWorkspaceView,
   TenantEcommerceOrderInvoiceDraftBridgeView,
   TenantEcommerceOrderInvoicingBridgeView,
   TenantEcommerceOrderReviewWorkspaceView,
+  TenantEcommerceOrderStatusLifecycleDetailView,
+  TenantEcommerceOrderStatusLifecycleRegistryView,
+  TenantEcommerceOrderStatusLifecycleSummaryView,
   TenantEcommerceOrderToGrowthConversationBridgeView,
   TenantEcommerceOrderToInvoiceReadinessPacketView,
   TenantEcommerceCheckoutCloseoutPacketView,
@@ -965,6 +970,90 @@ export interface EcommerceOrderGrowthFollowUpWorkspaceResponseDto {
   guardrails: string[];
 }
 
+export interface EcommerceOrderApprovalDecisionResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  decision: 'approved' | 'needs_follow_up' | 'blocked';
+  summary: string;
+  owner: {
+    productKey: 'ecommerce';
+    role: 'operator';
+  };
+  rationale: string;
+  approvalChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderFiscalDataCompletionWorkspaceResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  workspaceStatus: 'ready' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+  };
+  requiredFields: string[];
+  missingFields: string[];
+  completionHints: Array<{
+    fieldKey: string;
+    label: string;
+    hint: string;
+  }>;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderStatusLifecycleSummaryResponseDto {
+  orderDraftId: string;
+  orderLabel: string;
+  currentStatus: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+  lastAction: string;
+  nextStep: string;
+  updatedAt: string;
+}
+
+export interface EcommerceOrderStatusLifecycleRegistryResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  summary: {
+    totalOrders: number;
+    draftCount: number;
+    underReviewCount: number;
+    approvedCount: number;
+    handedOffCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  orders: EcommerceOrderStatusLifecycleSummaryResponseDto[];
+}
+
+export interface EcommerceOrderStatusLifecycleDetailResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  currentStatus: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+  summary: string;
+  lastAction: string;
+  nextStep: string;
+  timeline: Array<{
+    key: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+    label: string;
+    status: 'completed' | 'active' | 'pending';
+    detail: string;
+  }>;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceLandingPageStructureResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -1774,6 +1863,88 @@ export function toEcommerceOrderGrowthFollowUpWorkspaceResponseDto(
     followUpPlan: { ...view.followUpPlan },
     handoffArtifacts: [...view.handoffArtifacts],
     operatorChecklist: [...view.operatorChecklist],
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderApprovalDecisionResponseDto(
+  view: TenantEcommerceOrderApprovalDecisionView,
+): EcommerceOrderApprovalDecisionResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    decision: view.decision,
+    summary: view.summary,
+    owner: { ...view.owner },
+    rationale: view.rationale,
+    approvalChecklist: [...view.approvalChecklist],
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderFiscalDataCompletionWorkspaceResponseDto(
+  view: TenantEcommerceOrderFiscalDataCompletionWorkspaceView,
+): EcommerceOrderFiscalDataCompletionWorkspaceResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    workspaceStatus: view.workspaceStatus,
+    summary: view.summary,
+    targetWorkspace: { ...view.targetWorkspace },
+    requiredFields: [...view.requiredFields],
+    missingFields: [...view.missingFields],
+    completionHints: view.completionHints.map((entry) => ({ ...entry })),
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderStatusLifecycleSummaryResponseDto(
+  view: TenantEcommerceOrderStatusLifecycleSummaryView,
+): EcommerceOrderStatusLifecycleSummaryResponseDto {
+  return {
+    orderDraftId: view.orderDraftId,
+    orderLabel: view.orderLabel,
+    currentStatus: view.currentStatus,
+    lastAction: view.lastAction,
+    nextStep: view.nextStep,
+    updatedAt: view.updatedAt.toISOString(),
+  };
+}
+
+export function toEcommerceOrderStatusLifecycleRegistryResponseDto(
+  view: TenantEcommerceOrderStatusLifecycleRegistryView,
+): EcommerceOrderStatusLifecycleRegistryResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    summary: { ...view.summary },
+    orders: view.orders.map((entry) =>
+      toEcommerceOrderStatusLifecycleSummaryResponseDto(entry),
+    ),
+  };
+}
+
+export function toEcommerceOrderStatusLifecycleDetailResponseDto(
+  view: TenantEcommerceOrderStatusLifecycleDetailView,
+): EcommerceOrderStatusLifecycleDetailResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    currentStatus: view.currentStatus,
+    summary: view.summary,
+    lastAction: view.lastAction,
+    nextStep: view.nextStep,
+    timeline: view.timeline.map((entry) => ({ ...entry })),
     blockedBy: [...view.blockedBy],
     guardrails: [...view.guardrails],
   };

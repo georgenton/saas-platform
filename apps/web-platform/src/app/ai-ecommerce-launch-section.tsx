@@ -36,11 +36,15 @@ import {
   EcommerceStorefrontReleaseControlWorkspaceResponse,
   EcommerceStorefrontGoLiveManifestResponse,
   EcommerceLiveStorefrontSessionWorkspaceResponse,
+  EcommerceOrderApprovalDecisionResponse,
   EcommerceOrderDraftDetailResponse,
+  EcommerceOrderFiscalDataCompletionWorkspaceResponse,
   EcommerceOrderGrowthFollowUpWorkspaceResponse,
   EcommerceOrderInvoiceDraftBridgeResponse,
   EcommerceOrderDraftRegistryResponse,
   EcommerceOrderReviewWorkspaceResponse,
+  EcommerceOrderStatusLifecycleDetailResponse,
+  EcommerceOrderStatusLifecycleRegistryResponse,
   EcommerceStorefrontReleaseCandidateBriefResponse,
   EcommerceWhatsappSalesFlowResponse,
   EcommerceWhatsappGrowthActivationPacketResponse,
@@ -202,11 +206,23 @@ type Props = {
   selectedTenantEcommerceOrderReviewWorkspace:
     | EcommerceOrderReviewWorkspaceResponse
     | null;
+  lastEcommerceOrderApprovalDecision:
+    | EcommerceOrderApprovalDecisionResponse
+    | null;
   lastEcommerceOrderInvoiceDraftBridge:
     | EcommerceOrderInvoiceDraftBridgeResponse
     | null;
+  selectedTenantEcommerceOrderFiscalDataCompletionWorkspace:
+    | EcommerceOrderFiscalDataCompletionWorkspaceResponse
+    | null;
   selectedTenantEcommerceOrderGrowthFollowUpWorkspace:
     | EcommerceOrderGrowthFollowUpWorkspaceResponse
+    | null;
+  tenantEcommerceOrderStatusLifecycleRegistry:
+    | EcommerceOrderStatusLifecycleRegistryResponse
+    | null;
+  selectedTenantEcommerceOrderStatusLifecycleDetail:
+    | EcommerceOrderStatusLifecycleDetailResponse
     | null;
   selectedTenantEcommerceLandingPageStructure:
     | EcommerceLandingPageStructureResponse
@@ -332,8 +348,11 @@ type Props = {
   ecommerceCheckoutCloseoutPacketLoading: string | null;
   ecommerceOrderToGrowthConversationBridgeLoading: string | null;
   tenantEcommerceOrderReviewWorkspaceLoading: boolean;
+  ecommerceOrderApprovalDecisionLoading: string | null;
   ecommerceOrderInvoiceDraftBridgeLoading: string | null;
+  tenantEcommerceOrderFiscalDataCompletionWorkspaceLoading: boolean;
   tenantEcommerceOrderGrowthFollowUpWorkspaceLoading: boolean;
+  tenantEcommerceOrderStatusLifecycleDetailLoading: boolean;
   ecommerceWhatsappGrowthHandoffLoading: string | null;
   ecommerceWhatsappGrowthActivationPacketLoading: string | null;
   ecommerceWhatsappGrowthExecutionBridgeLoading: string | null;
@@ -468,8 +487,11 @@ type Props = {
   onRequestCheckoutCloseoutPacket: () => void;
   onRequestOrderToGrowthConversationBridge: () => void;
   onLoadOrderReviewWorkspace: () => void;
+  onRequestOrderApprovalDecision: () => void;
   onRequestOrderInvoiceDraftBridge: () => void;
+  onLoadOrderFiscalDataCompletionWorkspace: () => void;
   onLoadOrderGrowthFollowUpWorkspace: () => void;
+  onSelectOrderStatusLifecycle: (orderDraftId: string) => void;
   onRequestWhatsappGrowthHandoff: () => void;
   onLoadWhatsappGrowthActivationWorkspace: () => void;
   onRequestWhatsappGrowthActivationPacket: () => void;
@@ -541,8 +563,12 @@ export function AiEcommerceLaunchSection({
   lastEcommerceCheckoutCloseoutPacket,
   lastEcommerceOrderToGrowthConversationBridge,
   selectedTenantEcommerceOrderReviewWorkspace,
+  lastEcommerceOrderApprovalDecision,
   lastEcommerceOrderInvoiceDraftBridge,
+  selectedTenantEcommerceOrderFiscalDataCompletionWorkspace,
   selectedTenantEcommerceOrderGrowthFollowUpWorkspace,
+  tenantEcommerceOrderStatusLifecycleRegistry,
+  selectedTenantEcommerceOrderStatusLifecycleDetail,
   selectedTenantEcommerceLandingPageStructure,
   selectedTenantEcommerceWhatsappSalesFlow,
   lastEcommerceWhatsappGrowthHandoff,
@@ -611,8 +637,11 @@ export function AiEcommerceLaunchSection({
   ecommerceCheckoutCloseoutPacketLoading,
   ecommerceOrderToGrowthConversationBridgeLoading,
   tenantEcommerceOrderReviewWorkspaceLoading,
+  ecommerceOrderApprovalDecisionLoading,
   ecommerceOrderInvoiceDraftBridgeLoading,
+  tenantEcommerceOrderFiscalDataCompletionWorkspaceLoading,
   tenantEcommerceOrderGrowthFollowUpWorkspaceLoading,
+  tenantEcommerceOrderStatusLifecycleDetailLoading,
   ecommerceWhatsappGrowthHandoffLoading,
   ecommerceWhatsappGrowthActivationPacketLoading,
   ecommerceWhatsappGrowthExecutionBridgeLoading,
@@ -700,8 +729,11 @@ export function AiEcommerceLaunchSection({
   onRequestCheckoutCloseoutPacket,
   onRequestOrderToGrowthConversationBridge,
   onLoadOrderReviewWorkspace,
+  onRequestOrderApprovalDecision,
   onRequestOrderInvoiceDraftBridge,
+  onLoadOrderFiscalDataCompletionWorkspace,
   onLoadOrderGrowthFollowUpWorkspace,
+  onSelectOrderStatusLifecycle,
   onRequestWhatsappGrowthHandoff,
   onLoadWhatsappGrowthActivationWorkspace,
   onRequestWhatsappGrowthActivationPacket,
@@ -4904,6 +4936,23 @@ export function AiEcommerceLaunchSection({
                                 <button
                                   className={styles.secondaryButton}
                                   disabled={
+                                    ecommerceOrderApprovalDecisionLoading ===
+                                      selectedTenantEcommerceOrderDraftDetail
+                                        .orderDraft.id ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={onRequestOrderApprovalDecision}
+                                  type="button"
+                                >
+                                  {ecommerceOrderApprovalDecisionLoading ===
+                                  selectedTenantEcommerceOrderDraftDetail
+                                    .orderDraft.id
+                                    ? 'Preparando approval...'
+                                    : 'Solicitar approval decision'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
                                     tenantEcommerceOrderGrowthFollowUpWorkspaceLoading ||
                                     tenantEcommerceOrderDraftDetailLoading
                                   }
@@ -4915,6 +4964,39 @@ export function AiEcommerceLaunchSection({
                                   {tenantEcommerceOrderGrowthFollowUpWorkspaceLoading
                                     ? 'Cargando follow-up...'
                                     : 'Cargar growth follow-up'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    tenantEcommerceOrderFiscalDataCompletionWorkspaceLoading ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={
+                                    onLoadOrderFiscalDataCompletionWorkspace
+                                  }
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderFiscalDataCompletionWorkspaceLoading
+                                    ? 'Cargando fiscal...'
+                                    : 'Cargar fiscal completion'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    tenantEcommerceOrderStatusLifecycleDetailLoading ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={() =>
+                                    onSelectOrderStatusLifecycle(
+                                      selectedTenantEcommerceOrderDraftDetail
+                                        .orderDraft.id,
+                                    )
+                                  }
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderStatusLifecycleDetailLoading
+                                    ? 'Cargando lifecycle...'
+                                    : 'Cargar lifecycle'}
                                 </button>
                               </div>
                             </div>
@@ -4964,6 +5046,45 @@ export function AiEcommerceLaunchSection({
                               <small>
                                 Next actions:{' '}
                                 {selectedTenantEcommerceOrderReviewWorkspace.nextActions.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {lastEcommerceOrderApprovalDecision ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Order approval decision
+                                  </span>
+                                  <h4>
+                                    {lastEcommerceOrderApprovalDecision.summary}
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceOrderApprovalDecision.decision,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Owner:{' '}
+                                {humanizeKey(
+                                  lastEcommerceOrderApprovalDecision.owner.productKey,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  lastEcommerceOrderApprovalDecision.owner.role,
+                                )}
+                              </small>
+                              <small>
+                                Rationale:{' '}
+                                {lastEcommerceOrderApprovalDecision.rationale}
+                              </small>
+                              <small>
+                                Approval checklist:{' '}
+                                {lastEcommerceOrderApprovalDecision.approvalChecklist.join(
                                   ' | ',
                                 )}
                               </small>
@@ -5066,6 +5187,60 @@ export function AiEcommerceLaunchSection({
                               </small>
                             </div>
                           ) : null}
+                          {selectedTenantEcommerceOrderFiscalDataCompletionWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Order fiscal data completion
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceOrderFiscalDataCompletionWorkspace.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceOrderFiscalDataCompletionWorkspace.workspaceStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Targets:{' '}
+                                {selectedTenantEcommerceOrderFiscalDataCompletionWorkspace.requiredFields.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Missing fields:{' '}
+                                {selectedTenantEcommerceOrderFiscalDataCompletionWorkspace
+                                  .missingFields.length > 0
+                                  ? selectedTenantEcommerceOrderFiscalDataCompletionWorkspace.missingFields.join(
+                                      ' | ',
+                                    )
+                                  : 'Ninguno'}
+                              </small>
+                              <small>
+                                Hints:{' '}
+                                {selectedTenantEcommerceOrderFiscalDataCompletionWorkspace.completionHints
+                                  .map((entry) => `${entry.label}: ${entry.hint}`)
+                                  .join(' | ')}
+                              </small>
+                              <small>
+                                Target workspace:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderFiscalDataCompletionWorkspace
+                                    .targetWorkspace.productKey,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderFiscalDataCompletionWorkspace
+                                    .targetWorkspace.stage,
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
                           {lastEcommerceOrderToGrowthConversationBridge ? (
                             <div className={styles.commercialCard}>
                               <div className={styles.sectionHeading}>
@@ -5103,6 +5278,10 @@ export function AiEcommerceLaunchSection({
                                   ' | ',
                                 )}
                               </small>
+                            </div>
+                          ) : null}
+                          {lastEcommerceOrderToGrowthConversationBridge ? (
+                            <div className={styles.commercialCard}>
                               <small>
                                 Follow-up checklist:{' '}
                                 {lastEcommerceOrderToGrowthConversationBridge.followUpChecklist.join(
@@ -5154,6 +5333,106 @@ export function AiEcommerceLaunchSection({
                                 {selectedTenantEcommerceOrderGrowthFollowUpWorkspace.operatorChecklist.join(
                                   ' | ',
                                 )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {tenantEcommerceOrderStatusLifecycleRegistry ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  tenantEcommerceOrderStatusLifecycleRegistry
+                                    .summary.headline
+                                }
+                              </small>
+                              <small>
+                                {
+                                  tenantEcommerceOrderStatusLifecycleRegistry
+                                    .summary.detail
+                                }
+                              </small>
+                              {tenantEcommerceOrderStatusLifecycleRegistry.orders
+                                .length === 0 ? (
+                                <small>
+                                  Todavía no hay lifecycle entries para order drafts.
+                                </small>
+                              ) : (
+                                <ul className={styles.customerList}>
+                                  {tenantEcommerceOrderStatusLifecycleRegistry.orders.map(
+                                    (orderLifecycle) => (
+                                      <li
+                                        className={styles.customerListItem}
+                                        key={orderLifecycle.orderDraftId}
+                                      >
+                                        <div className={styles.customerListPrimary}>
+                                          <strong>
+                                            {orderLifecycle.orderLabel}
+                                          </strong>
+                                          <small>
+                                            {humanizeKey(
+                                              orderLifecycle.currentStatus,
+                                            )}{' '}
+                                            · {orderLifecycle.nextStep}
+                                          </small>
+                                        </div>
+                                        <div className={styles.inlineActions}>
+                                          <button
+                                            className={styles.ghostButton}
+                                            onClick={() =>
+                                              onSelectOrderStatusLifecycle(
+                                                orderLifecycle.orderDraftId,
+                                              )
+                                            }
+                                            type="button"
+                                          >
+                                            Abrir lifecycle
+                                          </button>
+                                        </div>
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              )}
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceOrderStatusLifecycleDetail ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Order status lifecycle
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceOrderStatusLifecycleDetail.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceOrderStatusLifecycleDetail.currentStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Timeline:{' '}
+                                {selectedTenantEcommerceOrderStatusLifecycleDetail.timeline
+                                  .map(
+                                    (entry) =>
+                                      `${humanizeKey(entry.key)}:${humanizeKey(entry.status)}`,
+                                  )
+                                  .join(' | ')}
+                              </small>
+                              <small>
+                                Last action:{' '}
+                                {
+                                  selectedTenantEcommerceOrderStatusLifecycleDetail.lastAction
+                                }
+                              </small>
+                              <small>
+                                Next step:{' '}
+                                {
+                                  selectedTenantEcommerceOrderStatusLifecycleDetail.nextStep
+                                }
                               </small>
                             </div>
                           ) : null}

@@ -82,6 +82,10 @@ export * from './lib/use-cases/request-tenant-ecommerce-order-to-growth-conversa
 export * from './lib/use-cases/get-tenant-ecommerce-order-review-workspace.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-order-invoice-draft-bridge.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-growth-follow-up-workspace.use-case';
+export * from './lib/use-cases/request-tenant-ecommerce-order-approval-decision.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-order-fiscal-data-completion-workspace.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-order-status-lifecycle-detail.use-case';
+export * from './lib/use-cases/list-tenant-ecommerce-order-status-lifecycles.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-setup-definition-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-workspace-readiness-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-launch-plan-activation-readiness.use-case';

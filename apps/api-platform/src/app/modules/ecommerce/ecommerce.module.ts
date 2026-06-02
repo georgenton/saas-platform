@@ -17,8 +17,10 @@ import {
   GetTenantEcommerceCatalogListingAssetUseCase,
   GetTenantEcommerceLiveStorefrontSessionWorkspaceUseCase,
   GetTenantEcommerceOrderDraftDetailUseCase,
+  GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
   GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
+  GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
   GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
   GetTenantEcommerceStorefrontReleaseCandidateBriefUseCase,
   GetTenantEcommerceStorefrontGoLiveManifestUseCase,
@@ -55,6 +57,7 @@ import {
   ListTenantEcommerceProductWorkspacesUseCase,
   ListTenantEcommerceSavedProductDraftsUseCase,
   ListTenantEcommerceOrderDraftsUseCase,
+  ListTenantEcommerceOrderStatusLifecyclesUseCase,
   ListTenantEcommerceLaunchPlansUseCase,
   ListTenantEcommerceProductSetupsUseCase,
   ListTenantEcommerceProductEntitiesUseCase,
@@ -73,6 +76,7 @@ import {
   RequestTenantEcommerceCatalogMerchandisingPacketUseCase,
   RequestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
   RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
+  RequestTenantEcommerceOrderApprovalDecisionUseCase,
   RequestTenantEcommerceChannelReleaseLaunchPacketUseCase,
   RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
   RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
@@ -1154,6 +1158,75 @@ import { EcommerceController } from './ecommerce.controller';
         new GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase(
           getTenantEcommerceOrderDraftDetailUseCase,
           requestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+      inject: [
+        GetTenantEcommerceOrderDraftDetailUseCase,
+        RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderDraftDetailUseCase,
+        requestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+      ) =>
+        new GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase(
+          getTenantEcommerceOrderDraftDetailUseCase,
+          requestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceOrderApprovalDecisionUseCase,
+      inject: [
+        GetTenantEcommerceOrderReviewWorkspaceUseCase,
+        RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+        GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderReviewWorkspaceUseCase,
+        requestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+        getTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+      ) =>
+        new RequestTenantEcommerceOrderApprovalDecisionUseCase(
+          getTenantEcommerceOrderReviewWorkspaceUseCase,
+          requestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+          getTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
+      inject: [
+        GetTenantEcommerceOrderDraftDetailUseCase,
+        GetTenantEcommerceOrderReviewWorkspaceUseCase,
+        RequestTenantEcommerceOrderApprovalDecisionUseCase,
+        RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderDraftDetailUseCase,
+        getTenantEcommerceOrderReviewWorkspaceUseCase,
+        requestTenantEcommerceOrderApprovalDecisionUseCase,
+        requestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+      ) =>
+        new GetTenantEcommerceOrderStatusLifecycleDetailUseCase(
+          getTenantEcommerceOrderDraftDetailUseCase,
+          getTenantEcommerceOrderReviewWorkspaceUseCase,
+          requestTenantEcommerceOrderApprovalDecisionUseCase,
+          requestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+        ),
+    },
+    {
+      provide: ListTenantEcommerceOrderStatusLifecyclesUseCase,
+      inject: [
+        ListTenantEcommerceOrderDraftsUseCase,
+        GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
+      ],
+      useFactory: (
+        listTenantEcommerceOrderDraftsUseCase,
+        getTenantEcommerceOrderStatusLifecycleDetailUseCase,
+      ) =>
+        new ListTenantEcommerceOrderStatusLifecyclesUseCase(
+          listTenantEcommerceOrderDraftsUseCase,
+          getTenantEcommerceOrderStatusLifecycleDetailUseCase,
         ),
     },
     {

@@ -3615,6 +3615,24 @@ export interface EcommerceOrderApprovalDecisionResponse {
   guardrails: string[];
 }
 
+export interface EcommerceOrderHandoffDecisionResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  handoffStatus: 'ready' | 'needs_data' | 'blocked';
+  route: 'invoicing' | 'growth_follow_up' | 'hold';
+  summary: string;
+  owner: {
+    productKey: 'ecommerce';
+    role: 'operator';
+  };
+  rationale: string;
+  routeChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceOrderFiscalDataCompletionWorkspaceResponse {
   tenantSlug: string;
   generatedAt: string;
@@ -3635,6 +3653,67 @@ export interface EcommerceOrderFiscalDataCompletionWorkspaceResponse {
   }>;
   blockedBy: string[];
   guardrails: string[];
+}
+
+export interface EcommerceInvoiceDraftIntakeWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  workspaceStatus: 'ready_to_open_invoice_draft' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  commercialSnapshot: {
+    offerTitle: string;
+    pricingSnapshot: string;
+    primaryCta: string;
+    closingChannel: string;
+  };
+  fiscalSnapshot: {
+    requiredFields: string[];
+    missingFields: string[];
+    billingIntent: string | null;
+  };
+  handoffArtifacts: string[];
+  operatorChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderOperatorWorkboardEntryResponse {
+  orderDraftId: string;
+  orderLabel: string;
+  currentStatus:
+    | 'draft'
+    | 'under_review'
+    | 'approved'
+    | 'handed_off'
+    | 'blocked';
+  handoffRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  priority: 'high' | 'medium' | 'low';
+  attentionReason: string;
+  nextStep: string;
+  updatedAt: string;
+}
+
+export interface EcommerceOrderOperatorWorkboardResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: {
+    totalOrders: number;
+    highPriorityCount: number;
+    readyForInvoicingCount: number;
+    growthFollowUpCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  entries: EcommerceOrderOperatorWorkboardEntryResponse[];
 }
 
 export interface EcommerceOrderStatusLifecycleSummaryResponse {

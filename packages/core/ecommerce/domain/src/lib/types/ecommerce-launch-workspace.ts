@@ -2039,3 +2039,77 @@ export interface TenantEcommerceOrderStatusLifecycleDetailView {
   blockedBy: string[];
   guardrails: string[];
 }
+
+export interface TenantEcommerceOrderHandoffDecisionView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  handoffStatus: 'ready' | 'needs_data' | 'blocked';
+  route: 'invoicing' | 'growth_follow_up' | 'hold';
+  summary: string;
+  owner: {
+    productKey: 'ecommerce';
+    role: 'operator';
+  };
+  rationale: string;
+  routeChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceInvoiceDraftIntakeWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  workspaceStatus: 'ready_to_open_invoice_draft' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  commercialSnapshot: {
+    offerTitle: string;
+    pricingSnapshot: string;
+    primaryCta: string;
+    closingChannel: string;
+  };
+  fiscalSnapshot: {
+    requiredFields: string[];
+    missingFields: string[];
+    billingIntent: string | null;
+  };
+  handoffArtifacts: string[];
+  operatorChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderOperatorWorkboardEntryView {
+  orderDraftId: string;
+  orderLabel: string;
+  currentStatus: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+  handoffRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  priority: 'high' | 'medium' | 'low';
+  attentionReason: string;
+  nextStep: string;
+  updatedAt: Date;
+}
+
+export interface TenantEcommerceOrderOperatorWorkboardView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  summary: {
+    totalOrders: number;
+    highPriorityCount: number;
+    readyForInvoicingCount: number;
+    growthFollowUpCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  entries: TenantEcommerceOrderOperatorWorkboardEntryView[];
+}

@@ -86,6 +86,8 @@ import {
   fetchTenantEcommerceCatalogListingAsset,
   fetchTenantEcommerceLiveStorefrontSessionWorkspace,
   fetchTenantEcommerceCheckoutOrderIntakeWorkspace,
+  fetchTenantEcommerceOrderDraftDetail,
+  fetchTenantEcommerceOrderDrafts,
   fetchTenantEcommerceStorefrontReleaseControlWorkspace,
   fetchTenantEcommerceStorefrontGoLiveManifest,
   fetchTenantEcommerceStorefrontReleaseCandidateBrief,
@@ -98,6 +100,7 @@ import {
   requestTenantEcommerceChannelReleaseApprovalPacket,
   requestTenantEcommerceChannelReleaseLaunchPacket,
   requestTenantEcommerceCatalogMerchandisingPacket,
+  requestTenantEcommerceCheckoutCloseoutPacket,
   requestTenantEcommerceCheckoutCustomerCapturePacket,
   requestTenantEcommerceCatalogStorefrontPlacementPacket,
   requestTenantEcommerceChannelReleaseHandoffPacket,
@@ -117,6 +120,7 @@ import {
   requestTenantEcommerceWhatsappGrowthExecutionBridge,
   requestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacket,
   requestTenantEcommerceOrderInvoicingBridge,
+  requestTenantEcommerceOrderToGrowthConversationBridge,
   requestTenantEcommerceOrderToInvoiceReadinessPacket,
   requestTenantEcommerceWhatsappGrowthOperatorLaunchPacket,
   requestTenantEcommerceWhatsappGrowthHandoff,
@@ -140,6 +144,7 @@ import {
   requestTenantEcommerceProductEntityChannelDraftPublishReadinessPacket,
   requestTenantEcommerceProductEntityCommercializationPacket,
   saveTenantEcommerceProductEntityChannelDraft,
+  saveTenantEcommerceOrderDraft,
   updateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshot,
   updateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshot,
   requestTenantEcommerceProductSetupDefinitionPacket,
@@ -292,6 +297,7 @@ import {
   EcommerceCatalogCommercialCardResponse,
   EcommerceCatalogListingAssetResponse,
   EcommerceCatalogMerchandisingPacketResponse,
+  EcommerceCheckoutCloseoutPacketResponse,
   EcommerceCheckoutCustomerCapturePacketResponse,
   EcommerceCheckoutOrderIntakeWorkspaceResponse,
   EcommerceCatalogStorefrontPlacementPacketResponse,
@@ -306,6 +312,9 @@ import {
   EcommerceStorefrontReleaseControlWorkspaceResponse,
   EcommerceStorefrontGoLiveManifestResponse,
   EcommerceLiveStorefrontSessionWorkspaceResponse,
+  EcommerceOrderDraftDetailResponse,
+  EcommerceOrderDraftRegistryResponse,
+  EcommerceOrderDraftSaveResponse,
   EcommerceStorefrontReleaseCandidateBriefResponse,
   EcommerceProductEntityChannelReleaseCandidateDetailResponse,
   EcommerceProductEntityChannelReleaseCandidateRegistryResponse,
@@ -320,6 +329,7 @@ import {
   EcommerceWhatsappGrowthExecutionBridgeResponse,
   EcommerceWhatsappGrowthLaunchAcknowledgementPacketResponse,
   EcommerceOrderInvoicingBridgeResponse,
+  EcommerceOrderToGrowthConversationBridgeResponse,
   EcommerceOrderToInvoiceReadinessPacketResponse,
   EcommerceWhatsappGrowthOperatorLaunchPacketResponse,
   EcommerceWhatsappGrowthActivationWorkspaceResponse,
@@ -1973,6 +1983,22 @@ export function App() {
     setLastEcommerceOrderToInvoiceReadinessPacket,
   ] = useState<EcommerceOrderToInvoiceReadinessPacketResponse | null>(null);
   const [
+    tenantEcommerceOrderDraftRegistry,
+    setTenantEcommerceOrderDraftRegistry,
+  ] = useState<EcommerceOrderDraftRegistryResponse | null>(null);
+  const [
+    selectedTenantEcommerceOrderDraftDetail,
+    setSelectedTenantEcommerceOrderDraftDetail,
+  ] = useState<EcommerceOrderDraftDetailResponse | null>(null);
+  const [
+    lastEcommerceCheckoutCloseoutPacket,
+    setLastEcommerceCheckoutCloseoutPacket,
+  ] = useState<EcommerceCheckoutCloseoutPacketResponse | null>(null);
+  const [
+    lastEcommerceOrderToGrowthConversationBridge,
+    setLastEcommerceOrderToGrowthConversationBridge,
+  ] = useState<EcommerceOrderToGrowthConversationBridgeResponse | null>(null);
+  const [
     lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket,
     setLastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket,
   ] =
@@ -2216,6 +2242,22 @@ export function App() {
   const [
     ecommerceOrderToInvoiceReadinessPacketLoading,
     setEcommerceOrderToInvoiceReadinessPacketLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceOrderDraftSaveLoading,
+    setEcommerceOrderDraftSaveLoading,
+  ] = useState<string | null>(null);
+  const [
+    tenantEcommerceOrderDraftDetailLoading,
+    setTenantEcommerceOrderDraftDetailLoading,
+  ] = useState(false);
+  const [
+    ecommerceCheckoutCloseoutPacketLoading,
+    setEcommerceCheckoutCloseoutPacketLoading,
+  ] = useState<string | null>(null);
+  const [
+    ecommerceOrderToGrowthConversationBridgeLoading,
+    setEcommerceOrderToGrowthConversationBridgeLoading,
   ] = useState<string | null>(null);
   const [
     lastEcommerceProductSetupDefinitionPacket,
@@ -4903,6 +4945,30 @@ export function App() {
       productEntityId,
     );
   };
+  const saveTenantEcommerceOrderDraftSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+  ) => {
+    return saveTenantEcommerceOrderDraft(token!, tenantSlug, productEntityId);
+  };
+  const fetchTenantEcommerceOrderDraftsSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+  ) => {
+    return fetchTenantEcommerceOrderDrafts(token!, tenantSlug, productEntityId);
+  };
+  const fetchTenantEcommerceOrderDraftDetailSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+    orderDraftId: string,
+  ) => {
+    return fetchTenantEcommerceOrderDraftDetail(
+      token!,
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+    );
+  };
   const fetchTenantEcommerceLandingPageStructureSurface = async (
     tenantSlug: string,
     productEntityId: string,
@@ -4997,6 +5063,30 @@ export function App() {
       token!,
       tenantSlug,
       productEntityId,
+    );
+  };
+  const requestTenantEcommerceCheckoutCloseoutPacketSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+    orderDraftId: string,
+  ) => {
+    return requestTenantEcommerceCheckoutCloseoutPacket(
+      token!,
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+    );
+  };
+  const requestTenantEcommerceOrderToGrowthConversationBridgeSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+    orderDraftId: string,
+  ) => {
+    return requestTenantEcommerceOrderToGrowthConversationBridge(
+      token!,
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
     );
   };
   const fetchTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface =
@@ -5546,6 +5636,40 @@ export function App() {
       | null,
   ): void => {
     setLastEcommerceOrderToInvoiceReadinessPacket(packet);
+  };
+  const applyTenantEcommerceOrderDraftRegistrySurface = (
+    registry:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceOrderDraftsSurface>>
+      | null,
+  ): void => {
+    setTenantEcommerceOrderDraftRegistry(registry);
+  };
+  const applyTenantEcommerceOrderDraftDetailSurface = (
+    detail:
+      | Awaited<ReturnType<typeof fetchTenantEcommerceOrderDraftDetailSurface>>
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceOrderDraftDetail(detail);
+  };
+  const applyTenantEcommerceCheckoutCloseoutPacketSurface = (
+    packet:
+      | Awaited<
+          ReturnType<typeof requestTenantEcommerceCheckoutCloseoutPacketSurface>
+        >
+      | null,
+  ): void => {
+    setLastEcommerceCheckoutCloseoutPacket(packet);
+  };
+  const applyTenantEcommerceOrderToGrowthConversationBridgeSurface = (
+    packet:
+      | Awaited<
+          ReturnType<
+            typeof requestTenantEcommerceOrderToGrowthConversationBridgeSurface
+          >
+        >
+      | null,
+  ): void => {
+    setLastEcommerceOrderToGrowthConversationBridge(packet);
   };
   const applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface =
     (
@@ -11182,6 +11306,10 @@ export function App() {
       applyTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketSurface(null);
       applyTenantEcommerceOrderInvoicingBridgeSurface(null);
       applyTenantEcommerceOrderToInvoiceReadinessPacketSurface(null);
+      applyTenantEcommerceOrderDraftRegistrySurface(null);
+      applyTenantEcommerceOrderDraftDetailSurface(null);
+      applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+      applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
       applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
         null,
       );
@@ -11235,6 +11363,7 @@ export function App() {
         channelReleaseExecutionReadiness,
         channelReleaseCandidateRegistry,
         savedChannelDraftRegistry,
+        orderDraftRegistry,
       ] =
         await Promise.all([
         fetchTenantEcommerceProductEntityDetailSurface(tenantSlug, productEntityId),
@@ -11270,6 +11399,7 @@ export function App() {
           tenantSlug,
           productEntityId,
         ),
+        fetchTenantEcommerceOrderDraftsSurface(tenantSlug, productEntityId),
       ]);
 
       startTransition(() => {
@@ -11325,6 +11455,10 @@ export function App() {
         applyTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketSurface(null);
         applyTenantEcommerceOrderInvoicingBridgeSurface(null);
         applyTenantEcommerceOrderToInvoiceReadinessPacketSurface(null);
+        applyTenantEcommerceOrderDraftRegistrySurface(orderDraftRegistry);
+        applyTenantEcommerceOrderDraftDetailSurface(null);
+        applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+        applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
         applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
           channelReleaseCandidateRegistry,
         );
@@ -11389,6 +11523,10 @@ export function App() {
       applyTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketSurface(null);
       applyTenantEcommerceOrderInvoicingBridgeSurface(null);
       applyTenantEcommerceOrderToInvoiceReadinessPacketSurface(null);
+      applyTenantEcommerceOrderDraftRegistrySurface(null);
+      applyTenantEcommerceOrderDraftDetailSurface(null);
+      applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+      applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
       applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
         null,
       );
@@ -13854,6 +13992,10 @@ export function App() {
         applyTenantEcommerceCheckoutCustomerCapturePacketSurface(null);
         applyTenantEcommerceOrderInvoicingBridgeSurface(null);
         applyTenantEcommerceOrderToInvoiceReadinessPacketSurface(null);
+        applyTenantEcommerceOrderDraftRegistrySurface(null);
+        applyTenantEcommerceOrderDraftDetailSurface(null);
+        applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+        applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
         applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
         applyTenantEcommerceLiveStorefrontSessionWorkspaceSurface(null);
         setEcommerceLaunchActionMessage(
@@ -13868,6 +14010,10 @@ export function App() {
       applyTenantEcommerceCheckoutCustomerCapturePacketSurface(null);
       applyTenantEcommerceOrderInvoicingBridgeSurface(null);
       applyTenantEcommerceOrderToInvoiceReadinessPacketSurface(null);
+      applyTenantEcommerceOrderDraftRegistrySurface(null);
+      applyTenantEcommerceOrderDraftDetailSurface(null);
+      applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+      applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
       applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
       applyTenantEcommerceLiveStorefrontSessionWorkspaceSurface(null);
       setEcommerceLaunchError(
@@ -13908,6 +14054,10 @@ export function App() {
         applyTenantEcommerceCheckoutCustomerCapturePacketSurface(null);
         applyTenantEcommerceOrderInvoicingBridgeSurface(null);
         applyTenantEcommerceOrderToInvoiceReadinessPacketSurface(null);
+        applyTenantEcommerceOrderDraftRegistrySurface(null);
+        applyTenantEcommerceOrderDraftDetailSurface(null);
+        applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+        applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
         setEcommerceLaunchActionMessage(
           `Checkout order intake ${humanizeKey(result.checkoutStatus)} para ${result.productEntity.title}.`,
         );
@@ -13917,6 +14067,10 @@ export function App() {
       applyTenantEcommerceCheckoutCustomerCapturePacketSurface(null);
       applyTenantEcommerceOrderInvoicingBridgeSurface(null);
       applyTenantEcommerceOrderToInvoiceReadinessPacketSurface(null);
+      applyTenantEcommerceOrderDraftRegistrySurface(null);
+      applyTenantEcommerceOrderDraftDetailSurface(null);
+      applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+      applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
       setEcommerceLaunchError(
         error instanceof Error
           ? error.message
@@ -13953,6 +14107,10 @@ export function App() {
         applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
         applyTenantEcommerceLiveStorefrontSessionWorkspaceSurface(null);
         applyTenantEcommerceOrderToInvoiceReadinessPacketSurface(null);
+        applyTenantEcommerceOrderDraftRegistrySurface(null);
+        applyTenantEcommerceOrderDraftDetailSurface(null);
+        applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+        applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
         setEcommerceLaunchActionMessage(
           `Order invoicing bridge ${humanizeKey(result.bridgeStatus)} para ${result.productEntity.title}.`,
         );
@@ -13962,6 +14120,10 @@ export function App() {
       applyTenantEcommerceStorefrontGoLiveManifestSurface(null);
       applyTenantEcommerceLiveStorefrontSessionWorkspaceSurface(null);
       applyTenantEcommerceOrderToInvoiceReadinessPacketSurface(null);
+      applyTenantEcommerceOrderDraftRegistrySurface(null);
+      applyTenantEcommerceOrderDraftDetailSurface(null);
+      applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+      applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
       setEcommerceLaunchError(
         error instanceof Error
           ? error.message
@@ -13999,6 +14161,10 @@ export function App() {
       startTransition(() => {
         applyTenantEcommerceCheckoutCustomerCapturePacketSurface(result);
         applyTenantEcommerceOrderToInvoiceReadinessPacketSurface(null);
+        applyTenantEcommerceOrderDraftRegistrySurface(null);
+        applyTenantEcommerceOrderDraftDetailSurface(null);
+        applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+        applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
         setEcommerceLaunchActionMessage(
           `Customer capture ${humanizeKey(result.captureStatus)} para ${result.productEntity.title}.`,
         );
@@ -14006,6 +14172,10 @@ export function App() {
     } catch (error) {
       applyTenantEcommerceCheckoutCustomerCapturePacketSurface(null);
       applyTenantEcommerceOrderToInvoiceReadinessPacketSurface(null);
+      applyTenantEcommerceOrderDraftRegistrySurface(null);
+      applyTenantEcommerceOrderDraftDetailSurface(null);
+      applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+      applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
       setEcommerceLaunchError(
         error instanceof Error
           ? error.message
@@ -14055,6 +14225,191 @@ export function App() {
       );
     } finally {
       setEcommerceOrderToInvoiceReadinessPacketLoading(null);
+    }
+  }
+
+  async function handleSaveTenantEcommerceOrderDraft() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setEcommerceOrderDraftSaveLoading(productEntityId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await saveTenantEcommerceOrderDraftSurface(
+        tenantSlug,
+        productEntityId,
+      );
+      const [registry, detail] = await Promise.all([
+        fetchTenantEcommerceOrderDraftsSurface(tenantSlug, productEntityId),
+        fetchTenantEcommerceOrderDraftDetailSurface(
+          tenantSlug,
+          productEntityId,
+          result.orderDraft.id,
+        ),
+      ]);
+
+      startTransition(() => {
+        applyTenantEcommerceOrderDraftRegistrySurface(registry);
+        applyTenantEcommerceOrderDraftDetailSurface(detail);
+        applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+        applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
+        setEcommerceLaunchActionMessage(
+          `Order draft ${humanizeKey(result.orderDraft.status)} para ${result.orderDraft.offerTitle}.`,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+      applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo guardar el order draft de ecommerce.',
+      );
+    } finally {
+      setEcommerceOrderDraftSaveLoading(null);
+    }
+  }
+
+  async function handleLoadTenantEcommerceOrderDraftDetail(orderDraftId: string) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setTenantEcommerceOrderDraftDetailLoading(true);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const detail = await fetchTenantEcommerceOrderDraftDetailSurface(
+        tenantSlug,
+        productEntityId,
+        orderDraftId,
+      );
+
+      startTransition(() => {
+        applyTenantEcommerceOrderDraftDetailSurface(detail);
+        applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+        applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
+      });
+    } catch (error) {
+      applyTenantEcommerceOrderDraftDetailSurface(null);
+      applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+      applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el detalle del order draft de ecommerce.',
+      );
+    } finally {
+      setTenantEcommerceOrderDraftDetailLoading(false);
+    }
+  }
+
+  async function handleRequestTenantEcommerceCheckoutCloseoutPacket() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceOrderDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const orderDraftId = selectedTenantEcommerceOrderDraftDetail.orderDraft.id;
+    setEcommerceCheckoutCloseoutPacketLoading(orderDraftId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await requestTenantEcommerceCheckoutCloseoutPacketSurface(
+        tenantSlug,
+        productEntityId,
+        orderDraftId,
+      );
+
+      startTransition(() => {
+        applyTenantEcommerceCheckoutCloseoutPacketSurface(result);
+        setEcommerceLaunchActionMessage(
+          `Checkout closeout ${humanizeKey(result.closeoutStatus)} para ${result.orderDraft.orderLabel}.`,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceCheckoutCloseoutPacketSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el checkout closeout packet.',
+      );
+    } finally {
+      setEcommerceCheckoutCloseoutPacketLoading(null);
+    }
+  }
+
+  async function handleRequestTenantEcommerceOrderToGrowthConversationBridge() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceOrderDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const orderDraftId = selectedTenantEcommerceOrderDraftDetail.orderDraft.id;
+    setEcommerceOrderToGrowthConversationBridgeLoading(orderDraftId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await requestTenantEcommerceOrderToGrowthConversationBridgeSurface(
+          tenantSlug,
+          productEntityId,
+          orderDraftId,
+        );
+
+      startTransition(() => {
+        applyTenantEcommerceOrderToGrowthConversationBridgeSurface(result);
+        setEcommerceLaunchActionMessage(
+          `Growth bridge ${humanizeKey(result.bridgeStatus)} para ${result.orderDraft.orderLabel}.`,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceOrderToGrowthConversationBridgeSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el bridge de order draft hacia Growth.',
+      );
+    } finally {
+      setEcommerceOrderToGrowthConversationBridgeLoading(null);
     }
   }
 
@@ -17144,6 +17499,18 @@ export function App() {
             lastEcommerceCheckoutCustomerCapturePacket={
               lastEcommerceCheckoutCustomerCapturePacket
             }
+            tenantEcommerceOrderDraftRegistry={
+              tenantEcommerceOrderDraftRegistry
+            }
+            selectedTenantEcommerceOrderDraftDetail={
+              selectedTenantEcommerceOrderDraftDetail
+            }
+            lastEcommerceCheckoutCloseoutPacket={
+              lastEcommerceCheckoutCloseoutPacket
+            }
+            lastEcommerceOrderToGrowthConversationBridge={
+              lastEcommerceOrderToGrowthConversationBridge
+            }
             selectedTenantEcommerceLandingPageStructure={
               selectedTenantEcommerceLandingPageStructure
             }
@@ -17332,6 +17699,16 @@ export function App() {
             }
             ecommerceOrderToInvoiceReadinessPacketLoading={
               ecommerceOrderToInvoiceReadinessPacketLoading
+            }
+            ecommerceOrderDraftSaveLoading={ecommerceOrderDraftSaveLoading}
+            tenantEcommerceOrderDraftDetailLoading={
+              tenantEcommerceOrderDraftDetailLoading
+            }
+            ecommerceCheckoutCloseoutPacketLoading={
+              ecommerceCheckoutCloseoutPacketLoading
+            }
+            ecommerceOrderToGrowthConversationBridgeLoading={
+              ecommerceOrderToGrowthConversationBridgeLoading
             }
             ecommerceWhatsappGrowthHandoffLoading={
               ecommerceWhatsappGrowthHandoffLoading
@@ -17560,6 +17937,18 @@ export function App() {
             }}
             onRequestCheckoutCustomerCapturePacket={() => {
               void handleRequestTenantEcommerceCheckoutCustomerCapturePacket();
+            }}
+            onSaveOrderDraft={() => {
+              void handleSaveTenantEcommerceOrderDraft();
+            }}
+            onSelectOrderDraft={(orderDraftId) => {
+              void handleLoadTenantEcommerceOrderDraftDetail(orderDraftId);
+            }}
+            onRequestCheckoutCloseoutPacket={() => {
+              void handleRequestTenantEcommerceCheckoutCloseoutPacket();
+            }}
+            onRequestOrderToGrowthConversationBridge={() => {
+              void handleRequestTenantEcommerceOrderToGrowthConversationBridge();
             }}
             onRequestWhatsappGrowthHandoff={() => {
               void handleRequestTenantEcommerceWhatsappGrowthHandoff();

@@ -3399,6 +3399,125 @@ export interface EcommerceOrderToInvoiceReadinessPacketResponse {
   guardrails: string[];
 }
 
+export interface EcommerceOrderDraftResponse {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  productEntityId: string;
+  status: 'draft' | 'needs_data' | 'ready_for_review' | 'blocked';
+  orderLabel: string;
+  offerTitle: string;
+  pricingSnapshot: string;
+  primaryCta: string;
+  closingChannel: 'landing' | 'catalog' | 'whatsapp';
+  captureStatus: 'ready_for_order_draft' | 'needs_customer_input' | 'blocked';
+  invoicingReadinessStatus: 'ready_to_invoice' | 'needs_data' | 'blocked';
+  customerProfile: {
+    fullName: string | null;
+    email: string | null;
+    whatsappPhone: string | null;
+    billingIntent: string | null;
+    buyerCompany: string | null;
+    buyerTaxIdOrDocument: string | null;
+  };
+  requiredFields: string[];
+  optionalFields: string[];
+  operatorPrompts: string[];
+  missingFields: string[];
+  blockedBy: string[];
+  guardrails: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EcommerceOrderDraftSaveResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  summary: string;
+  orderDraft: EcommerceOrderDraftResponse;
+}
+
+export interface EcommerceOrderDraftRegistryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: {
+    totalOrderDrafts: number;
+    draftCount: number;
+    needsDataCount: number;
+    readyForReviewCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  orderDrafts: EcommerceOrderDraftResponse[];
+}
+
+export interface EcommerceOrderDraftDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  summary: string;
+  nextActions: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceCheckoutCloseoutPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  closeoutStatus: 'ready_for_operator_closeout' | 'needs_data' | 'blocked';
+  summary: string;
+  commercialSnapshot: {
+    offerTitle: string;
+    pricingSnapshot: string;
+    primaryCta: string;
+    closingChannel: 'landing' | 'catalog' | 'whatsapp';
+  };
+  paymentReadiness: {
+    status: 'ready' | 'needs_customer_input' | 'blocked';
+    hint: string;
+  };
+  invoicingReadiness: {
+    status: 'ready_to_invoice' | 'needs_data' | 'blocked';
+    detail: string;
+  };
+  closeoutChecklist: string[];
+  missingFields: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderToGrowthConversationBridgeResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  bridgeStatus:
+    | 'ready_for_growth_follow_up'
+    | 'needs_customer_confirmation'
+    | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'growth';
+    channel: 'whatsapp';
+    handoffMode: 'operator_assist';
+  };
+  conversationSeed: {
+    leadLabel: string;
+    opener: string;
+    closeCta: string;
+    followUpChannel: 'landing' | 'catalog' | 'whatsapp';
+  };
+  handoffArtifacts: string[];
+  followUpChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface AiMemoryWorkspaceAgentResponse {
   agentKey: string;
   title: string;

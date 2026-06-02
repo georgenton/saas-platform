@@ -45,6 +45,7 @@ import {
   EcommerceCatalogCommercialCardResponse,
   EcommerceCatalogListingAssetResponse,
   EcommerceCatalogMerchandisingPacketResponse,
+  EcommerceCheckoutCloseoutPacketResponse,
   EcommerceCheckoutCustomerCapturePacketResponse,
   EcommerceCheckoutOrderIntakeWorkspaceResponse,
   EcommerceCatalogStorefrontPlacementPacketResponse,
@@ -59,7 +60,11 @@ import {
   EcommerceLandingPageStructureResponse,
   EcommerceLandingPublishArtifactResponse,
   EcommerceLiveStorefrontSessionWorkspaceResponse,
+  EcommerceOrderDraftDetailResponse,
+  EcommerceOrderDraftRegistryResponse,
+  EcommerceOrderDraftSaveResponse,
   EcommerceOrderInvoicingBridgeResponse,
+  EcommerceOrderToGrowthConversationBridgeResponse,
   EcommerceOrderToInvoiceReadinessPacketResponse,
   EcommerceStorefrontReleaseControlWorkspaceResponse,
   EcommerceStorefrontGoLiveManifestResponse,
@@ -2798,6 +2803,59 @@ export async function requestTenantEcommerceCheckoutCustomerCapturePacket(
   );
 }
 
+export async function saveTenantEcommerceOrderDraft(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceOrderDraftSaveResponse> {
+  return request<EcommerceOrderDraftSaveResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/save-order-draft`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderDrafts(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceOrderDraftRegistryResponse> {
+  return request<EcommerceOrderDraftRegistryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(productEntityId)}/order-drafts`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderDraftDetail(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderDraftDetailResponse> {
+  return request<EcommerceOrderDraftDetailResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(orderDraftId)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function fetchTenantEcommerceLandingPageStructure(
   token: string,
   tenantSlug: string,
@@ -2971,6 +3029,48 @@ export async function requestTenantEcommerceOrderToInvoiceReadinessPacket(
     )}/product-entities/${encodeURIComponent(
       productEntityId,
     )}/request-order-to-invoice-readiness-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceCheckoutCloseoutPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceCheckoutCloseoutPacketResponse> {
+  return request<EcommerceCheckoutCloseoutPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/request-checkout-closeout-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceOrderToGrowthConversationBridge(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderToGrowthConversationBridgeResponse> {
+  return request<EcommerceOrderToGrowthConversationBridgeResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/request-growth-conversation-bridge`,
     {
       method: 'POST',
       token,

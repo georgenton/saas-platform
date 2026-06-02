@@ -38,7 +38,9 @@ import {
   RequestTenantEcommerceCatalogStorefrontPlacementPacketUseCase,
   RequestTenantEcommerceCatalogMerchandisingPacketUseCase,
   RequestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
+  RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
   RequestTenantEcommerceOrderInvoicingBridgeUseCase,
+  RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
   RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
   RequestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase,
   RequestTenantEcommerceProductEntityChannelDraftActionPacketUseCase,
@@ -47,6 +49,9 @@ import {
   RequestTenantEcommerceProductEntityCommercializationPacketUseCase,
   RequestTenantEcommerceWhatsappGrowthHandoffUseCase,
   SaveTenantEcommerceProductEntityChannelDraftUseCase,
+  SaveTenantEcommerceOrderDraftUseCase,
+  ListTenantEcommerceOrderDraftsUseCase,
+  GetTenantEcommerceOrderDraftDetailUseCase,
   UpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase,
   UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
   GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
@@ -4417,6 +4422,349 @@ describe('Ecommerce product entity use cases', () => {
       readinessSnapshot: {
         captureStatus: 'ready_for_order_draft',
         bridgeStatus: 'ready_for_invoice_handoff',
+      },
+    });
+  });
+
+  it('saves one ecommerce order draft', async () => {
+    const tenantUseCase = {
+      execute: jest.fn().mockResolvedValue({ id: 'tenant_001' }),
+    };
+    const capturePacketUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:28:00.000Z'),
+        productEntity,
+        captureStatus: 'ready_for_order_draft',
+        summary: 'Capture listo.',
+        orderDraftSeed: {
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          customerPrompt: 'Pedir datos mínimos.',
+          closingChannel: 'landing',
+        },
+        captureForm: {
+          requiredFields: ['full_name'],
+          optionalFields: ['buyer_company'],
+          validationRules: ['Rule'],
+        },
+        billingReadiness: {
+          status: 'needs_customer_input',
+          hint: 'Hint',
+        },
+        operatorPrompts: ['Prompt'],
+        blockedBy: [],
+        guardrails: ['Capture guardrail'],
+      }),
+    };
+    const invoiceReadinessUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:30:00.000Z'),
+        productEntity,
+        readinessStatus: 'needs_data',
+        summary: 'Readiness parcial.',
+        targetWorkspace: {
+          productKey: 'invoicing',
+          stage: 'electronic_invoicing_ec_mvp',
+          handoffMode: 'operator_assist',
+        },
+        readinessSnapshot: {
+          captureStatus: 'ready_for_order_draft',
+          bridgeStatus: 'needs_customer_fiscal_data',
+          buyerProfileStatus: 'needs_customer_fiscal_data',
+        },
+        fiscalRequirements: ['buyer_legal_name'],
+        missingFields: ['buyer_legal_name'],
+        handoffArtifacts: ['Artifact'],
+        operatorChecklist: ['Checklist'],
+        blockedBy: [],
+        guardrails: ['Readiness guardrail'],
+      }),
+    };
+    const repository = {
+      findByTenantSlugAndProductEntityId: jest.fn().mockResolvedValue(null),
+      save: jest.fn().mockImplementation(async (command) => ({
+        ...command,
+        customerProfile: { ...command.customerProfile },
+        requiredFields: [...command.requiredFields],
+        optionalFields: [...command.optionalFields],
+        operatorPrompts: [...command.operatorPrompts],
+        missingFields: [...command.missingFields],
+        blockedBy: [...command.blockedBy],
+        guardrails: [...command.guardrails],
+        createdAt: new Date('2026-05-28T17:31:00.000Z'),
+        updatedAt: new Date('2026-05-28T17:31:00.000Z'),
+      })),
+    };
+    const useCase = new SaveTenantEcommerceOrderDraftUseCase(
+      tenantUseCase as never,
+      capturePacketUseCase as never,
+      invoiceReadinessUseCase as never,
+      repository as never,
+      () => 'order_draft_001',
+      () => new Date('2026-05-28T17:31:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001'),
+    ).resolves.toMatchObject({
+      orderDraft: {
+        id: 'order_draft_001',
+        status: 'draft',
+        offerTitle: 'Catalog asset entity final',
+      },
+    });
+  });
+
+  it('lists one ecommerce order draft registry', async () => {
+    const repository = {
+      listByTenantSlugAndProductEntityId: jest.fn().mockResolvedValue([
+        {
+          id: 'order_draft_001',
+          tenantId: 'tenant_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          status: 'draft',
+          orderLabel: 'Order draft',
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          closingChannel: 'landing',
+          captureStatus: 'ready_for_order_draft',
+          invoicingReadinessStatus: 'needs_data',
+          customerProfile: {
+            fullName: null,
+            email: null,
+            whatsappPhone: null,
+            billingIntent: null,
+            buyerCompany: null,
+            buyerTaxIdOrDocument: null,
+          },
+          requiredFields: ['full_name'],
+          optionalFields: ['buyer_company'],
+          operatorPrompts: ['Prompt'],
+          missingFields: ['buyer_legal_name'],
+          blockedBy: [],
+          guardrails: ['Guardrail'],
+          createdAt: new Date('2026-05-28T17:31:00.000Z'),
+          updatedAt: new Date('2026-05-28T17:31:00.000Z'),
+        },
+      ]),
+    };
+    const productEntityDetailUseCase = {
+      execute: jest.fn().mockResolvedValue({ productEntity }),
+    };
+    const useCase = new ListTenantEcommerceOrderDraftsUseCase(
+      repository as never,
+      productEntityDetailUseCase as never,
+      () => new Date('2026-05-28T17:32:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001'),
+    ).resolves.toMatchObject({
+      summary: {
+        totalOrderDrafts: 1,
+        draftCount: 1,
+      },
+    });
+  });
+
+  it('requests one checkout closeout packet', async () => {
+    const orderDraftDetailUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:32:00.000Z'),
+        productEntity,
+        orderDraft: {
+          id: 'order_draft_001',
+          tenantId: 'tenant_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          status: 'ready_for_review',
+          orderLabel: 'Order draft',
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          closingChannel: 'landing',
+          captureStatus: 'ready_for_order_draft',
+          invoicingReadinessStatus: 'ready_to_invoice',
+          customerProfile: {
+            fullName: null,
+            email: null,
+            whatsappPhone: null,
+            billingIntent: null,
+            buyerCompany: null,
+            buyerTaxIdOrDocument: null,
+          },
+          requiredFields: ['full_name'],
+          optionalFields: ['buyer_company'],
+          operatorPrompts: ['Prompt'],
+          missingFields: [],
+          blockedBy: [],
+          guardrails: ['Guardrail'],
+          createdAt: new Date('2026-05-28T17:31:00.000Z'),
+          updatedAt: new Date('2026-05-28T17:31:00.000Z'),
+        },
+        summary: 'Detail listo.',
+        nextActions: ['Action'],
+        blockedBy: [],
+        guardrails: ['Detail guardrail'],
+      }),
+    };
+    const invoiceReadinessUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:30:00.000Z'),
+        productEntity,
+        readinessStatus: 'ready_to_invoice',
+        summary: 'Readiness listo.',
+        targetWorkspace: {
+          productKey: 'invoicing',
+          stage: 'electronic_invoicing_ec_mvp',
+          handoffMode: 'operator_assist',
+        },
+        readinessSnapshot: {
+          captureStatus: 'ready_for_order_draft',
+          bridgeStatus: 'ready_for_invoice_handoff',
+          buyerProfileStatus: 'ready',
+        },
+        fiscalRequirements: ['buyer_legal_name'],
+        missingFields: [],
+        handoffArtifacts: ['Artifact'],
+        operatorChecklist: ['Checklist'],
+        blockedBy: [],
+        guardrails: ['Readiness guardrail'],
+      }),
+    };
+    const useCase = new RequestTenantEcommerceCheckoutCloseoutPacketUseCase(
+      orderDraftDetailUseCase as never,
+      invoiceReadinessUseCase as never,
+      () => new Date('2026-05-28T17:33:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute(
+        'saas-platform',
+        'product_entity_001',
+        'order_draft_001',
+      ),
+    ).resolves.toMatchObject({
+      closeoutStatus: 'ready_for_operator_closeout',
+      commercialSnapshot: {
+        offerTitle: 'Catalog asset entity final',
+      },
+    });
+  });
+
+  it('requests one order-to-growth conversation bridge', async () => {
+    const orderDraftDetailUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:32:00.000Z'),
+        productEntity,
+        orderDraft: {
+          id: 'order_draft_001',
+          tenantId: 'tenant_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          status: 'ready_for_review',
+          orderLabel: 'Order draft',
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          closingChannel: 'whatsapp',
+          captureStatus: 'ready_for_order_draft',
+          invoicingReadinessStatus: 'ready_to_invoice',
+          customerProfile: {
+            fullName: 'Buyer One',
+            email: null,
+            whatsappPhone: null,
+            billingIntent: null,
+            buyerCompany: null,
+            buyerTaxIdOrDocument: null,
+          },
+          requiredFields: ['full_name'],
+          optionalFields: ['buyer_company'],
+          operatorPrompts: ['Prompt'],
+          missingFields: [],
+          blockedBy: [],
+          guardrails: ['Guardrail'],
+          createdAt: new Date('2026-05-28T17:31:00.000Z'),
+          updatedAt: new Date('2026-05-28T17:31:00.000Z'),
+        },
+        summary: 'Detail listo.',
+        nextActions: ['Action'],
+        blockedBy: [],
+        guardrails: ['Detail guardrail'],
+      }),
+    };
+    const whatsappBridgeUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-05-28T17:34:00.000Z'),
+        productEntity,
+        assetEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T17:34:00.000Z'),
+          assetEntityId: 'asset_001',
+          productEntityId: 'product_entity_001',
+          sourceSavedChannelDraftId: 'saved_channel_draft_001',
+          channelKey: 'whatsapp',
+          promotedAt: new Date('2026-05-28T17:34:00.000Z'),
+          status: 'draft_asset_entity',
+          handoffOwner: 'growth',
+          title: 'Whatsapp asset',
+          headline: 'Headline',
+          summary: 'Summary',
+          draftBlueprint: ['Blueprint'],
+          publishChecklist: ['Checklist'],
+          recommendedArtifacts: ['Artifact'],
+          nextMilestone: 'Milestone',
+          blockedBy: [],
+          guardrails: ['Guardrail'],
+        },
+        bridgeStatus: 'ready_for_growth_execution',
+        summary: 'Bridge listo.',
+        targetWorkspace: {
+          productKey: 'growth',
+          channel: 'whatsapp',
+          activationMode: 'operator_assist',
+          handoffMode: 'operator_assist',
+        },
+        executionPayload: {
+          opener: 'Hola Buyer One',
+          qualification: 'Qualify',
+          objectionHandling: ['Obj'],
+          closingCta: 'Activar producto base',
+          fallbackEscalation: 'Escalar',
+        },
+        operatorChecklist: ['Checklist'],
+        bridgeArtifacts: ['Artifact'],
+        nextSteps: ['Step'],
+        guardrails: ['Bridge guardrail'],
+      }),
+    };
+    const useCase =
+      new RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase(
+        orderDraftDetailUseCase as never,
+        whatsappBridgeUseCase as never,
+        () => new Date('2026-05-28T17:35:00.000Z'),
+      );
+
+    await expect(
+      useCase.execute(
+        'saas-platform',
+        'product_entity_001',
+        'order_draft_001',
+      ),
+    ).resolves.toMatchObject({
+      bridgeStatus: 'ready_for_growth_follow_up',
+      conversationSeed: {
+        leadLabel: 'Buyer One',
+        opener: 'Hola Buyer One',
       },
     });
   });

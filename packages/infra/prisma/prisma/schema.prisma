@@ -53,6 +53,7 @@ model Tenant {
   aiSuggestionRuns AiSuggestionRun[]
   aiGuardedExecutionEvents AiGuardedExecutionEvent[]
   ecommerceProductDrafts EcommerceProductDraft[]
+  ecommerceOrderDrafts EcommerceOrderDraft[]
   ecommerceProductSetups EcommerceProductSetup[]
   ecommerceProductEntityChannelDrafts EcommerceProductEntityChannelDraft[]
   ecommerceProductEntities EcommerceProductEntity[]
@@ -733,6 +734,35 @@ model EcommerceProductDraft {
 
   @@unique([tenantId, sourceDraftId])
   @@index([tenantSlug, sourceDraftId])
+  @@index([tenantId, createdAt])
+}
+
+model EcommerceOrderDraft {
+  id                        String   @id
+  tenantId                  String
+  tenantSlug                String
+  productEntityId           String
+  status                    String
+  orderLabel                String
+  offerTitle                String
+  pricingSnapshot           String
+  primaryCta                String
+  closingChannel            String
+  captureStatus             String
+  invoicingReadinessStatus  String
+  customerProfileJson       String   @db.Text
+  requiredFieldsJson        String   @db.Text
+  optionalFieldsJson        String   @db.Text
+  operatorPromptsJson       String   @db.Text
+  missingFieldsJson         String   @db.Text
+  blockedByJson             String   @db.Text
+  guardrailsJson            String   @db.Text
+  tenant                    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([tenantId, productEntityId])
+  @@index([tenantSlug, productEntityId])
   @@index([tenantId, createdAt])
 }
 

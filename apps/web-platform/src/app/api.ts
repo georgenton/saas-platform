@@ -66,10 +66,13 @@ import {
   EcommerceOrderGrowthFollowUpWorkspaceResponse,
   EcommerceOrderHandoffDecisionResponse,
   EcommerceOrderHandoffExecutionWorkspaceResponse,
+  EcommerceOrderHoldResolutionWorkspaceResponse,
   EcommerceOrderInvoiceDraftBridgeResponse,
   EcommerceInvoiceDraftIntakeWorkspaceResponse,
   EcommerceInvoiceDraftOpenBridgeResponse,
+  EcommerceInvoiceDraftLaunchBridgeResponse,
   EcommerceOrderDraftRegistryResponse,
+  EcommerceOrderOpsAttentionWorkspaceResponse,
   EcommerceOrderOperatorWorkboardResponse,
   EcommerceOrderOpsPriorityQueueResponse,
   EcommerceOrderReviewWorkspaceResponse,
@@ -3238,6 +3241,48 @@ export async function requestTenantEcommerceInvoiceDraftOpenBridge(
   );
 }
 
+export async function fetchTenantEcommerceOrderHoldResolutionWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderHoldResolutionWorkspaceResponse> {
+  return request<EcommerceOrderHoldResolutionWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/hold-resolution-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceInvoiceDraftLaunchBridge(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceInvoiceDraftLaunchBridgeResponse> {
+  return request<EcommerceInvoiceDraftLaunchBridgeResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/request-invoice-draft-launch-bridge`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
 export async function requestTenantEcommerceOrderInvoiceDraftBridge(
   token: string,
   tenantSlug: string,
@@ -3288,6 +3333,24 @@ export async function fetchTenantEcommerceOrderOpsPriorityQueue(
     )}/product-entities/${encodeURIComponent(
       productEntityId,
     )}/order-ops-priority-queue`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderOpsAttentionWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceOrderOpsAttentionWorkspaceResponse> {
+  return request<EcommerceOrderOpsAttentionWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-ops-attention-workspace`,
     {
       method: 'GET',
       token,

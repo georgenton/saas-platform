@@ -20,7 +20,9 @@ import {
   GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
   GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
   GetTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
+  GetTenantEcommerceOrderHoldResolutionWorkspaceUseCase,
   GetTenantEcommerceOrderOperatorWorkboardUseCase,
+  GetTenantEcommerceOrderOpsAttentionWorkspaceUseCase,
   GetTenantEcommerceOrderOpsPriorityQueueUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
@@ -83,6 +85,7 @@ import {
   RequestTenantEcommerceOrderApprovalDecisionUseCase,
   RequestTenantEcommerceOrderHandoffDecisionUseCase,
   RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
+  RequestTenantEcommerceInvoiceDraftLaunchBridgeUseCase,
   RequestTenantEcommerceChannelReleaseLaunchPacketUseCase,
   RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
   RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
@@ -1260,6 +1263,24 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: GetTenantEcommerceOrderHoldResolutionWorkspaceUseCase,
+      inject: [
+        RequestTenantEcommerceOrderHandoffDecisionUseCase,
+        GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+        GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+      ],
+      useFactory: (
+        requestTenantEcommerceOrderHandoffDecisionUseCase,
+        getTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+        getTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+      ) =>
+        new GetTenantEcommerceOrderHoldResolutionWorkspaceUseCase(
+          requestTenantEcommerceOrderHandoffDecisionUseCase,
+          getTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+          getTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+        ),
+    },
+    {
       provide: RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
       inject: [
         GetTenantEcommerceInvoiceDraftIntakeWorkspaceUseCase,
@@ -1271,6 +1292,21 @@ import { EcommerceController } from './ecommerce.controller';
       ) =>
         new RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase(
           getTenantEcommerceInvoiceDraftIntakeWorkspaceUseCase,
+          getTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceInvoiceDraftLaunchBridgeUseCase,
+      inject: [
+        RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
+        GetTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
+      ],
+      useFactory: (
+        requestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
+        getTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
+      ) =>
+        new RequestTenantEcommerceInvoiceDraftLaunchBridgeUseCase(
+          requestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
           getTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
         ),
     },
@@ -1337,6 +1373,21 @@ import { EcommerceController } from './ecommerce.controller';
       ) =>
         new GetTenantEcommerceOrderOpsPriorityQueueUseCase(
           getTenantEcommerceOrderOperatorWorkboardUseCase,
+          getTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceOrderOpsAttentionWorkspaceUseCase,
+      inject: [
+        GetTenantEcommerceOrderOpsPriorityQueueUseCase,
+        GetTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderOpsPriorityQueueUseCase,
+        getTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
+      ) =>
+        new GetTenantEcommerceOrderOpsAttentionWorkspaceUseCase(
+          getTenantEcommerceOrderOpsPriorityQueueUseCase,
           getTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
         ),
     },

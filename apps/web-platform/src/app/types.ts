@@ -3810,6 +3810,91 @@ export interface EcommerceOrderOpsPriorityQueueResponse {
   entries: EcommerceOrderOpsPriorityQueueEntryResponse[];
 }
 
+export interface EcommerceOrderHoldResolutionWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  resolutionStatus: 'ready_to_resolve' | 'needs_data' | 'blocked';
+  currentRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  summary: string;
+  owner: {
+    productKey: 'ecommerce';
+    role: 'operator';
+  };
+  blockerSummary: {
+    hardBlockers: string[];
+    softBlockers: string[];
+  };
+  suggestedExitRoutes: Array<{
+    route: 'invoicing' | 'growth_follow_up';
+    readiness: 'ready' | 'needs_data' | 'blocked';
+    rationale: string;
+  }>;
+  resolutionChecklist: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceInvoiceDraftLaunchBridgeResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  launchStatus: 'ready_to_launch' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  launchPayload: {
+    customerLabel: string;
+    documentHint: 'invoice';
+    offerTitle: string;
+    pricingSnapshot: string;
+    billingIntent: string | null;
+    routeConfirmed: boolean;
+  };
+  fiscalArtifacts: string[];
+  commercialArtifacts: string[];
+  operatorChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderOpsAttentionWorkspaceEntryResponse {
+  orderDraftId: string;
+  orderLabel: string;
+  attentionStatus: 'blocked' | 'needs_data' | 'ready';
+  activeRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  attentionReason: string;
+  nextAction: string;
+  ownerRole: 'operator';
+  updatedAt: string;
+}
+
+export interface EcommerceOrderOpsAttentionWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: {
+    totalAttentionItems: number;
+    blockedCount: number;
+    needsDataCount: number;
+    readyCount: number;
+    headline: string;
+    detail: string;
+  };
+  focusLanes: Array<{
+    laneKey: 'blocked' | 'needs_data' | 'ready';
+    count: number;
+    actionBias: string;
+  }>;
+  entries: EcommerceOrderOpsAttentionWorkspaceEntryResponse[];
+}
+
 export interface EcommerceOrderStatusLifecycleSummaryResponse {
   orderDraftId: string;
   orderLabel: string;

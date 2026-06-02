@@ -54,13 +54,16 @@ import {
   EcommerceOrderOpsAttentionWorkspaceResponse,
   EcommerceOrderOpsEscalationBoardResponse,
   EcommerceOrderOperatorWorkboardResponse,
+  EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentConfirmationDecisionResponse,
   EcommerceOrderPaymentConfirmationWorkspaceResponse,
   EcommerceOrderPaymentReadinessWorkspaceResponse,
+  EcommerceOrderPostSaleOpsBoardResponse,
   EcommerceOrderPostSaleLifecycleDetailResponse,
   EcommerceOrderPostSaleLifecycleRegistryResponse,
   EcommerceOrderRevenueOpsBoardResponse,
   EcommerceOrderRevenueTrackingSummaryResponse,
+  EcommerceOrderFulfillmentDeliveryWorkspaceResponse,
   EcommerceOrderOpsPriorityQueueResponse,
   EcommerceOrderReviewWorkspaceResponse,
   EcommerceOrderStatusLifecycleDetailResponse,
@@ -273,11 +276,17 @@ type Props = {
   lastEcommerceOrderPaymentConfirmationDecision:
     | EcommerceOrderPaymentConfirmationDecisionResponse
     | null;
+  selectedTenantEcommerceOrderPaymentConfirmationLog:
+    | EcommerceOrderPaymentConfirmationLogResponse
+    | null;
   selectedTenantEcommerceOrderFulfillmentReadinessWorkspace:
     | EcommerceOrderFulfillmentReadinessWorkspaceResponse
     | null;
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace:
     | EcommerceOrderFulfillmentExecutionWorkspaceResponse
+    | null;
+  selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace:
+    | EcommerceOrderFulfillmentDeliveryWorkspaceResponse
     | null;
   selectedTenantEcommerceOrderGrowthFollowUpWorkspace:
     | EcommerceOrderGrowthFollowUpWorkspaceResponse
@@ -305,6 +314,9 @@ type Props = {
     | null;
   selectedTenantEcommerceOrderPostSaleLifecycleDetail:
     | EcommerceOrderPostSaleLifecycleDetailResponse
+    | null;
+  tenantEcommerceOrderPostSaleOpsBoard:
+    | EcommerceOrderPostSaleOpsBoardResponse
     | null;
   tenantEcommerceOrderRevenueTrackingSummary:
     | EcommerceOrderRevenueTrackingSummaryResponse
@@ -451,8 +463,10 @@ type Props = {
   tenantEcommerceOrderPaymentReadinessWorkspaceLoading: boolean;
   tenantEcommerceOrderPaymentConfirmationWorkspaceLoading: boolean;
   ecommerceOrderPaymentConfirmationDecisionLoading: string | null;
+  tenantEcommerceOrderPaymentConfirmationLogLoading: boolean;
   tenantEcommerceOrderFulfillmentReadinessWorkspaceLoading: boolean;
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading: boolean;
+  tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading: boolean;
   tenantEcommerceOrderGrowthFollowUpWorkspaceLoading: boolean;
   tenantEcommerceOrderOperatorWorkboardLoading: boolean;
   tenantEcommerceOrderOpsPriorityQueueLoading: boolean;
@@ -461,6 +475,7 @@ type Props = {
   tenantEcommerceOrderStatusLifecycleDetailLoading: boolean;
   tenantEcommerceOrderPostSaleLifecycleRegistryLoading: boolean;
   tenantEcommerceOrderPostSaleLifecycleDetailLoading: boolean;
+  tenantEcommerceOrderPostSaleOpsBoardLoading: boolean;
   tenantEcommerceOrderRevenueTrackingSummaryLoading: boolean;
   tenantEcommerceOrderRevenueOpsBoardLoading: boolean;
   ecommerceWhatsappGrowthHandoffLoading: string | null;
@@ -612,8 +627,10 @@ type Props = {
   onLoadOrderPaymentReadinessWorkspace: () => void;
   onLoadOrderPaymentConfirmationWorkspace: () => void;
   onRequestOrderPaymentConfirmationDecision: () => void;
+  onLoadOrderPaymentConfirmationLog: () => void;
   onLoadOrderFulfillmentReadinessWorkspace: () => void;
   onLoadOrderFulfillmentExecutionWorkspace: () => void;
+  onLoadOrderFulfillmentDeliveryWorkspace: () => void;
   onLoadOrderGrowthFollowUpWorkspace: () => void;
   onLoadOrderOperatorWorkboard: () => void;
   onLoadOrderOpsPriorityQueue: () => void;
@@ -622,6 +639,7 @@ type Props = {
   onSelectOrderStatusLifecycle: (orderDraftId: string) => void;
   onLoadOrderPostSaleLifecycleRegistry: () => void;
   onSelectOrderPostSaleLifecycle: (orderDraftId: string) => void;
+  onLoadOrderPostSaleOpsBoard: () => void;
   onLoadOrderRevenueTrackingSummary: () => void;
   onLoadOrderRevenueOpsBoard: () => void;
   onRequestWhatsappGrowthHandoff: () => void;
@@ -710,8 +728,10 @@ export function AiEcommerceLaunchSection({
   selectedTenantEcommerceOrderPaymentReadinessWorkspace,
   selectedTenantEcommerceOrderPaymentConfirmationWorkspace,
   lastEcommerceOrderPaymentConfirmationDecision,
+  selectedTenantEcommerceOrderPaymentConfirmationLog,
   selectedTenantEcommerceOrderFulfillmentReadinessWorkspace,
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
+  selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace,
   selectedTenantEcommerceOrderGrowthFollowUpWorkspace,
   tenantEcommerceOrderOperatorWorkboard,
   tenantEcommerceOrderOpsPriorityQueue,
@@ -721,6 +741,7 @@ export function AiEcommerceLaunchSection({
   selectedTenantEcommerceOrderStatusLifecycleDetail,
   tenantEcommerceOrderPostSaleLifecycleRegistry,
   selectedTenantEcommerceOrderPostSaleLifecycleDetail,
+  tenantEcommerceOrderPostSaleOpsBoard,
   tenantEcommerceOrderRevenueTrackingSummary,
   tenantEcommerceOrderRevenueOpsBoard,
   selectedTenantEcommerceLandingPageStructure,
@@ -806,8 +827,10 @@ export function AiEcommerceLaunchSection({
   tenantEcommerceOrderPaymentReadinessWorkspaceLoading,
   tenantEcommerceOrderPaymentConfirmationWorkspaceLoading,
   ecommerceOrderPaymentConfirmationDecisionLoading,
+  tenantEcommerceOrderPaymentConfirmationLogLoading,
   tenantEcommerceOrderFulfillmentReadinessWorkspaceLoading,
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
+  tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading,
   tenantEcommerceOrderGrowthFollowUpWorkspaceLoading,
   tenantEcommerceOrderOperatorWorkboardLoading,
   tenantEcommerceOrderOpsPriorityQueueLoading,
@@ -816,6 +839,7 @@ export function AiEcommerceLaunchSection({
   tenantEcommerceOrderStatusLifecycleDetailLoading,
   tenantEcommerceOrderPostSaleLifecycleRegistryLoading,
   tenantEcommerceOrderPostSaleLifecycleDetailLoading,
+  tenantEcommerceOrderPostSaleOpsBoardLoading,
   tenantEcommerceOrderRevenueTrackingSummaryLoading,
   tenantEcommerceOrderRevenueOpsBoardLoading,
   ecommerceWhatsappGrowthHandoffLoading,
@@ -920,8 +944,10 @@ export function AiEcommerceLaunchSection({
   onLoadOrderPaymentReadinessWorkspace,
   onLoadOrderPaymentConfirmationWorkspace,
   onRequestOrderPaymentConfirmationDecision,
+  onLoadOrderPaymentConfirmationLog,
   onLoadOrderFulfillmentReadinessWorkspace,
   onLoadOrderFulfillmentExecutionWorkspace,
+  onLoadOrderFulfillmentDeliveryWorkspace,
   onLoadOrderGrowthFollowUpWorkspace,
   onLoadOrderOperatorWorkboard,
   onLoadOrderOpsPriorityQueue,
@@ -930,6 +956,7 @@ export function AiEcommerceLaunchSection({
   onSelectOrderStatusLifecycle,
   onLoadOrderPostSaleLifecycleRegistry,
   onSelectOrderPostSaleLifecycle,
+  onLoadOrderPostSaleOpsBoard,
   onLoadOrderRevenueTrackingSummary,
   onLoadOrderRevenueOpsBoard,
   onRequestWhatsappGrowthHandoff,
@@ -5377,6 +5404,19 @@ export function AiEcommerceLaunchSection({
                                 <button
                                   className={styles.secondaryButton}
                                   disabled={
+                                    tenantEcommerceOrderPaymentConfirmationLogLoading ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={onLoadOrderPaymentConfirmationLog}
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderPaymentConfirmationLogLoading
+                                    ? 'Cargando confirmation log...'
+                                    : 'Cargar confirmation log'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
                                     tenantEcommerceOrderFulfillmentReadinessWorkspaceLoading ||
                                     tenantEcommerceOrderDraftDetailLoading
                                   }
@@ -5403,6 +5443,21 @@ export function AiEcommerceLaunchSection({
                                   {tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading
                                     ? 'Cargando fulfillment execution...'
                                     : 'Cargar fulfillment execution'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={
+                                    onLoadOrderFulfillmentDeliveryWorkspace
+                                  }
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading
+                                    ? 'Cargando fulfillment delivery...'
+                                    : 'Cargar fulfillment delivery'}
                                 </button>
                                 <button
                                   className={styles.secondaryButton}
@@ -5871,6 +5926,52 @@ export function AiEcommerceLaunchSection({
                               </small>
                             </div>
                           ) : null}
+                          {selectedTenantEcommerceOrderPaymentConfirmationLog ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Payment confirmation log
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceOrderPaymentConfirmationLog.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceOrderPaymentConfirmationLog.logStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Channel:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderPaymentConfirmationLog
+                                    .confirmationRecord.confirmationChannel,
+                                )}{' '}
+                                ·{' '}
+                                {formatDate(
+                                  selectedTenantEcommerceOrderPaymentConfirmationLog
+                                    .confirmationRecord.confirmedAt,
+                                )}
+                              </small>
+                              <small>
+                                Operator note:{' '}
+                                {
+                                  selectedTenantEcommerceOrderPaymentConfirmationLog
+                                    .confirmationRecord.operatorNote
+                                }
+                              </small>
+                              <small>
+                                Audit trail:{' '}
+                                {selectedTenantEcommerceOrderPaymentConfirmationLog.auditTrail.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
                           {selectedTenantEcommerceOrderFulfillmentReadinessWorkspace ? (
                             <div className={styles.commercialCard}>
                               <div className={styles.sectionHeading}>
@@ -5912,6 +6013,51 @@ export function AiEcommerceLaunchSection({
                                 Next step:{' '}
                                 {
                                   selectedTenantEcommerceOrderFulfillmentReadinessWorkspace.nextStep
+                                }
+                              </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Fulfillment delivery workspace
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace.deliveryStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Delivery profile:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace
+                                    .deliveryProfile.fulfillmentType,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace
+                                    .deliveryProfile.deliveryMode,
+                                )}
+                              </small>
+                              <small>
+                                Handoff notes:{' '}
+                                {selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace.handoffNotes.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Next step:{' '}
+                                {
+                                  selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace.nextStep
                                 }
                               </small>
                             </div>
@@ -6810,6 +6956,16 @@ export function AiEcommerceLaunchSection({
                             </button>
                             <button
                               className={styles.secondaryButton}
+                              disabled={tenantEcommerceOrderPostSaleOpsBoardLoading}
+                              onClick={onLoadOrderPostSaleOpsBoard}
+                              type="button"
+                            >
+                              {tenantEcommerceOrderPostSaleOpsBoardLoading
+                                ? 'Cargando post-sale ops...'
+                                : 'Cargar post-sale ops board'}
+                            </button>
+                            <button
+                              className={styles.secondaryButton}
                               disabled={
                                 tenantEcommerceOrderRevenueTrackingSummaryLoading
                               }
@@ -6971,6 +7127,71 @@ export function AiEcommerceLaunchSection({
                                   selectedTenantEcommerceOrderPostSaleLifecycleDetail.nextStep
                                 }
                               </small>
+                            </div>
+                          ) : null}
+                          {tenantEcommerceOrderPostSaleOpsBoard ? (
+                            <div className={styles.stack}>
+                              <small>
+                                {
+                                  tenantEcommerceOrderPostSaleOpsBoard.summary
+                                    .headline
+                                }
+                              </small>
+                              <small>
+                                {
+                                  tenantEcommerceOrderPostSaleOpsBoard.summary
+                                    .detail
+                                }
+                              </small>
+                              <small>
+                                Focus lanes:{' '}
+                                {tenantEcommerceOrderPostSaleOpsBoard.focusLanes
+                                  .map(
+                                    (lane) =>
+                                      `${humanizeKey(lane.laneKey)} (${lane.count})`,
+                                  )
+                                  .join(' | ')}
+                              </small>
+                              {tenantEcommerceOrderPostSaleOpsBoard.entries
+                                .length === 0 ? (
+                                <small>
+                                  Todavía no hay órdenes en el post-sale ops board.
+                                </small>
+                              ) : (
+                                <ul className={styles.customerList}>
+                                  {tenantEcommerceOrderPostSaleOpsBoard.entries.map(
+                                    (entry) => (
+                                      <li
+                                        className={styles.customerListItem}
+                                        key={entry.orderDraftId}
+                                      >
+                                        <div className={styles.customerListPrimary}>
+                                          <strong>{entry.orderLabel}</strong>
+                                          <small>
+                                            {humanizeKey(entry.opsStatus)} ·{' '}
+                                            {humanizeKey(entry.priorityBand)}
+                                          </small>
+                                          <small>
+                                            {entry.attentionReason} ·{' '}
+                                            {entry.nextAction}
+                                          </small>
+                                        </div>
+                                        <div className={styles.inlineActions}>
+                                          <button
+                                            className={styles.ghostButton}
+                                            onClick={() =>
+                                              onSelectOrderDraft(entry.orderDraftId)
+                                            }
+                                            type="button"
+                                          >
+                                            Abrir order draft
+                                          </button>
+                                        </div>
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              )}
                             </div>
                           ) : null}
                           {tenantEcommerceOrderRevenueTrackingSummary ? (

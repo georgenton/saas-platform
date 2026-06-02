@@ -3,6 +3,11 @@ import { createSign, generateKeyPairSync } from 'node:crypto';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import {
+  createEcommerceOrderFulfillmentDeliveryWorkspaceFixture,
+  createEcommerceOrderPaymentConfirmationLogFixture,
+  createEcommerceOrderPostSaleOpsBoardFixture,
+} from './ecommerce-post-sale-fixtures';
+import {
   ChangeTenantPlanUseCase,
   ENTITLEMENT_REPOSITORY,
   GetPlanByKeyUseCase,
@@ -71,8 +76,10 @@ import {
   GetTenantEcommerceOrderOpsEscalationBoardUseCase,
   GetTenantEcommerceOrderRevenueOpsBoardUseCase,
   GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase,
+  GetTenantEcommerceOrderPaymentConfirmationLogUseCase,
   GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
   GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
+  GetTenantEcommerceOrderPostSaleOpsBoardUseCase,
   GetTenantEcommerceOrderRevenueTrackingSummaryUseCase,
   GetTenantEcommerceOrderOperatorWorkboardUseCase,
   GetTenantEcommerceOrderOpsAttentionWorkspaceUseCase,
@@ -80,6 +87,7 @@ import {
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
   GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase,
+  GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
   GetTenantEcommerceInvoiceDraftHandoffWorkspaceUseCase,
   GetTenantEcommerceInvoiceDraftIntakeWorkspaceUseCase,
@@ -466,6 +474,9 @@ describe('API', () => {
   let getTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase: {
     execute: jest.Mock;
   };
+  let getTenantEcommerceOrderPaymentConfirmationLogUseCase: {
+    execute: jest.Mock;
+  };
   let requestTenantEcommerceOrderPaymentConfirmationDecisionUseCase: {
     execute: jest.Mock;
   };
@@ -475,7 +486,13 @@ describe('API', () => {
   let getTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase: {
     execute: jest.Mock;
   };
+  let getTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
   let getTenantEcommerceOrderPostSaleLifecycleDetailUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcommerceOrderPostSaleOpsBoardUseCase: {
     execute: jest.Mock;
   };
   let getTenantEcommerceOrderRevenueTrackingSummaryUseCase: {
@@ -8187,6 +8204,11 @@ describe('API', () => {
         guardrails: ['Payment confirmation guardrail'],
       }),
     };
+    getTenantEcommerceOrderPaymentConfirmationLogUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(createEcommerceOrderPaymentConfirmationLogFixture()),
+    };
     requestTenantEcommerceOrderPaymentConfirmationDecisionUseCase = {
       execute: jest.fn().mockResolvedValue({
         tenantSlug: 'saas-platform',
@@ -8385,6 +8407,13 @@ describe('API', () => {
         guardrails: ['Fulfillment execution guardrail'],
       }),
     };
+    getTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(
+          createEcommerceOrderFulfillmentDeliveryWorkspaceFixture(),
+        ),
+    };
     getTenantEcommerceOrderRevenueTrackingSummaryUseCase = {
       execute: jest.fn().mockResolvedValue({
         tenantSlug: 'saas-platform',
@@ -8441,6 +8470,11 @@ describe('API', () => {
           },
         ],
       }),
+    };
+    getTenantEcommerceOrderPostSaleOpsBoardUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(createEcommerceOrderPostSaleOpsBoardFixture()),
     };
     getTenantEcommerceOrderRevenueOpsBoardUseCase = {
       execute: jest.fn().mockResolvedValue({
@@ -10888,7 +10922,7 @@ describe('API', () => {
       verify: jest.fn().mockReturnValue(true),
     };
 
-    const moduleFixture: TestingModule = await Test.createTestingModule({
+    const testingModuleBuilder: any = Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(PrismaService)
@@ -11227,7 +11261,9 @@ describe('API', () => {
       .overrideProvider(GetTenantEcommerceStorefrontGoLiveManifestUseCase)
       .useValue(getTenantEcommerceStorefrontGoLiveManifestUseCase)
       .overrideProvider(GetTenantEcommerceLiveStorefrontSessionWorkspaceUseCase)
-      .useValue(getTenantEcommerceLiveStorefrontSessionWorkspaceUseCase)
+      .useValue(getTenantEcommerceLiveStorefrontSessionWorkspaceUseCase);
+
+    testingModuleBuilder
       .overrideProvider(SaveTenantEcommerceOrderDraftUseCase)
       .useValue(saveTenantEcommerceOrderDraftUseCase)
       .overrideProvider(ListTenantEcommerceOrderDraftsUseCase)
@@ -11276,6 +11312,8 @@ describe('API', () => {
         GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase,
       )
       .useValue(getTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase)
+      .overrideProvider(GetTenantEcommerceOrderPaymentConfirmationLogUseCase)
+      .useValue(getTenantEcommerceOrderPaymentConfirmationLogUseCase)
       .overrideProvider(
         RequestTenantEcommerceOrderPaymentConfirmationDecisionUseCase,
       )
@@ -11288,6 +11326,8 @@ describe('API', () => {
         GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase,
       )
       .useValue(getTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase)
+      .overrideProvider(GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase)
+      .useValue(getTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase)
       .overrideProvider(GetTenantEcommerceOrderOperatorWorkboardUseCase)
       .useValue(getTenantEcommerceOrderOperatorWorkboardUseCase)
       .overrideProvider(GetTenantEcommerceOrderOpsPriorityQueueUseCase)
@@ -11304,10 +11344,14 @@ describe('API', () => {
       .useValue(listTenantEcommerceOrderPostSaleLifecyclesUseCase)
       .overrideProvider(GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase)
       .useValue(getTenantEcommerceOrderPostSaleLifecycleDetailUseCase)
+      .overrideProvider(GetTenantEcommerceOrderPostSaleOpsBoardUseCase)
+      .useValue(getTenantEcommerceOrderPostSaleOpsBoardUseCase)
       .overrideProvider(GetTenantEcommerceOrderRevenueTrackingSummaryUseCase)
       .useValue(getTenantEcommerceOrderRevenueTrackingSummaryUseCase)
       .overrideProvider(GetTenantEcommerceOrderRevenueOpsBoardUseCase)
-      .useValue(getTenantEcommerceOrderRevenueOpsBoardUseCase)
+      .useValue(getTenantEcommerceOrderRevenueOpsBoardUseCase);
+
+    testingModuleBuilder
       .overrideProvider(GetTenantEcommerceStoreSetupWorkspaceUseCase)
       .useValue(getTenantEcommerceStoreSetupWorkspaceUseCase)
       .overrideProvider(GetTenantEcommerceLaunchWorkspaceUseCase)
@@ -11459,8 +11503,9 @@ describe('API', () => {
       .overrideProvider(ResolveTenantAccessUseCase)
       .useValue(resolveTenantAccessUseCase)
       .overrideProvider(CreateTenantUseCase)
-      .useValue(createTenantUseCase)
-      .compile();
+      .useValue(createTenantUseCase);
+
+    const moduleFixture: TestingModule = await testingModuleBuilder.compile();
 
     app = moduleFixture.createNestApplication({
       rawBody: true,
@@ -16804,6 +16849,32 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/order-drafts/:orderDraftId/payment-confirmation-log should return one payment confirmation log', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/order-drafts/order_draft_001/payment-confirmation-log',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.logStatus).toBe('confirmed');
+        expect(response.body.confirmationRecord.confirmationChannel).toBe(
+          'whatsapp',
+        );
+        expect(response.body.decisionSignal.paymentDecision).toBe(
+          'confirmed',
+        );
+      });
+
+    expect(
+      getTenantEcommerceOrderPaymentConfirmationLogUseCase.execute,
+    ).toHaveBeenCalledWith(
+      'saas-platform',
+      'product_entity_001',
+      'order_draft_001',
+    );
+  });
+
   it('POST /api/ecommerce/tenants/:slug/product-entities/:productEntityId/order-drafts/:orderDraftId/request-payment-confirmation-decision should return one payment confirmation decision', async () => {
     await request(httpServer)
       .post(
@@ -16883,6 +16954,30 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/order-drafts/:orderDraftId/fulfillment-delivery-workspace should return one fulfillment delivery workspace', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/order-drafts/order_draft_001/fulfillment-delivery-workspace',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.deliveryStatus).toBe('in_progress');
+        expect(response.body.deliveryProfile.fulfillmentType).toBe('service');
+        expect(response.body.deliveryProfile.deliveryMode).toBe(
+          'service_activation',
+        );
+      });
+
+    expect(
+      getTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith(
+      'saas-platform',
+      'product_entity_001',
+      'order_draft_001',
+    );
+  });
+
   it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/order-post-sale-lifecycles should return one post-sale lifecycle registry', async () => {
     await request(httpServer)
       .get(
@@ -16919,6 +17014,27 @@ describe('API', () => {
       'saas-platform',
       'product_entity_001',
       'order_draft_001',
+    );
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/order-post-sale-ops-board should return one post-sale ops board', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/order-post-sale-ops-board',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.summary.totalOrders).toBe(1);
+        expect(response.body.summary.readyForFulfillmentCount).toBe(1);
+        expect(response.body.entries[0].opsStatus).toBe(
+          'ready_for_fulfillment',
+        );
+      });
+
+    expect(getTenantEcommerceOrderPostSaleOpsBoardUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'product_entity_001',
     );
   });
 

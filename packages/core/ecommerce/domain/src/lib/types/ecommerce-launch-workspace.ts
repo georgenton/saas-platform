@@ -2663,3 +2663,97 @@ export interface TenantEcommerceOrderRevenueOpsBoardView {
   }>;
   entries: TenantEcommerceOrderRevenueOpsBoardEntryView[];
 }
+
+export interface TenantEcommerceOrderPaymentConfirmationLogView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  logStatus: 'confirmed' | 'needs_review' | 'disputed';
+  summary: string;
+  confirmationRecord: {
+    confirmedAt: Date;
+    confirmationChannel: 'landing' | 'catalog' | 'whatsapp';
+    operatorNote: string;
+    evidenceHints: string[];
+  };
+  decisionSignal: {
+    paymentDecision: 'confirmed' | 'needs_review' | 'blocked';
+    postSaleStatus:
+      | 'handed_off'
+      | 'invoicing'
+      | 'awaiting_payment'
+      | 'paid'
+      | 'blocked';
+  };
+  auditTrail: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderFulfillmentDeliveryWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  deliveryStatus: 'in_progress' | 'delivered' | 'blocked';
+  summary: string;
+  deliveryProfile: {
+    fulfillmentType: 'digital' | 'service' | 'physical';
+    deliveryChannel: 'email' | 'whatsapp' | 'manual';
+    ownerRole: 'operator';
+    deliveryMode: 'guided_handoff' | 'manual_execution' | 'service_activation';
+  };
+  handoffNotes: string[];
+  prerequisitesResolved: string[];
+  executionSignals: {
+    paymentLogStatus: 'confirmed' | 'needs_review' | 'disputed';
+    fulfillmentExecutionStatus:
+      | 'ready_to_execute'
+      | 'waiting_payment_confirmation'
+      | 'blocked';
+    postSaleStatus:
+      | 'handed_off'
+      | 'invoicing'
+      | 'awaiting_payment'
+      | 'paid'
+      | 'blocked';
+  };
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderPostSaleOpsBoardEntryView {
+  orderDraftId: string;
+  orderLabel: string;
+  opsStatus: 'awaiting_payment' | 'ready_for_fulfillment' | 'in_progress' | 'blocked';
+  priorityBand: 'critical' | 'high' | 'monitor';
+  paymentLogStatus: 'confirmed' | 'needs_review' | 'disputed';
+  deliveryStatus: 'in_progress' | 'delivered' | 'blocked';
+  attentionReason: string;
+  nextAction: string;
+  updatedAt: Date;
+}
+
+export interface TenantEcommerceOrderPostSaleOpsBoardView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  summary: {
+    totalOrders: number;
+    awaitingPaymentCount: number;
+    readyForFulfillmentCount: number;
+    inProgressCount: number;
+    blockedCount: number;
+    criticalCount: number;
+    headline: string;
+    detail: string;
+  };
+  focusLanes: Array<{
+    laneKey: 'awaiting_payment' | 'ready_for_fulfillment' | 'in_progress' | 'blocked';
+    count: number;
+    operatorBias: string;
+  }>;
+  entries: TenantEcommerceOrderPostSaleOpsBoardEntryView[];
+}

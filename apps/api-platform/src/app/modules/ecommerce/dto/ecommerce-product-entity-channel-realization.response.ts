@@ -33,6 +33,7 @@ import {
   TenantEcommerceOrderOpsPriorityQueueEntryView,
   TenantEcommerceOrderOpsPriorityQueueView,
   TenantEcommerceOrderPaymentConfirmationDecisionView,
+  TenantEcommerceOrderPaymentConfirmationLogView,
   TenantEcommerceOrderPaymentConfirmationWorkspaceView,
   TenantEcommerceOrderInvoiceDraftBridgeView,
   TenantEcommerceInvoiceDraftHandoffWorkspaceView,
@@ -40,11 +41,14 @@ import {
   TenantEcommerceInvoiceDraftIntakeWorkspaceView,
   TenantEcommerceInvoiceDraftOpenBridgeView,
   TenantEcommerceInvoiceDraftLaunchBridgeView,
+  TenantEcommerceOrderFulfillmentDeliveryWorkspaceView,
   TenantEcommerceOrderFulfillmentExecutionWorkspaceView,
   TenantEcommerceOrderFulfillmentReadinessWorkspaceView,
   TenantEcommerceOrderPaymentReadinessWorkspaceView,
   TenantEcommerceOrderPostSaleLifecycleDetailView,
   TenantEcommerceOrderPostSaleLifecycleEntryView,
+  TenantEcommerceOrderPostSaleOpsBoardEntryView,
+  TenantEcommerceOrderPostSaleOpsBoardView,
   TenantEcommerceOrderPostSaleLifecycleRegistryView,
   TenantEcommerceOrderRevenueOpsBoardEntryView,
   TenantEcommerceOrderRevenueOpsBoardView,
@@ -1508,6 +1512,33 @@ export interface EcommerceOrderPaymentConfirmationDecisionResponseDto {
   guardrails: string[];
 }
 
+export interface EcommerceOrderPaymentConfirmationLogResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  logStatus: 'confirmed' | 'needs_review' | 'disputed';
+  summary: string;
+  confirmationRecord: {
+    confirmedAt: string;
+    confirmationChannel: 'landing' | 'catalog' | 'whatsapp';
+    operatorNote: string;
+    evidenceHints: string[];
+  };
+  decisionSignal: {
+    paymentDecision: 'confirmed' | 'needs_review' | 'blocked';
+    postSaleStatus:
+      | 'handed_off'
+      | 'invoicing'
+      | 'awaiting_payment'
+      | 'paid'
+      | 'blocked';
+  };
+  auditTrail: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceOrderFulfillmentReadinessWorkspaceResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -1557,6 +1588,39 @@ export interface EcommerceOrderFulfillmentExecutionWorkspaceResponseDto {
   executionChecklist: string[];
   blockedBy: string[];
   nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcommerceOrderFulfillmentDeliveryWorkspaceResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  deliveryStatus: 'in_progress' | 'delivered' | 'blocked';
+  summary: string;
+  deliveryProfile: {
+    fulfillmentType: 'digital' | 'service' | 'physical';
+    deliveryChannel: 'email' | 'whatsapp' | 'manual';
+    ownerRole: 'operator';
+    deliveryMode: 'guided_handoff' | 'manual_execution' | 'service_activation';
+  };
+  handoffNotes: string[];
+  prerequisitesResolved: string[];
+  executionSignals: {
+    paymentLogStatus: 'confirmed' | 'needs_review' | 'disputed';
+    fulfillmentExecutionStatus:
+      | 'ready_to_execute'
+      | 'waiting_payment_confirmation'
+      | 'blocked';
+    postSaleStatus:
+      | 'handed_off'
+      | 'invoicing'
+      | 'awaiting_payment'
+      | 'paid'
+      | 'blocked';
+  };
+  nextStep: string;
+  blockedBy: string[];
   guardrails: string[];
 }
 
@@ -1699,6 +1763,40 @@ export interface EcommerceOrderRevenueOpsBoardResponseDto {
     operatorBias: string;
   }>;
   entries: EcommerceOrderRevenueOpsBoardEntryResponseDto[];
+}
+
+export interface EcommerceOrderPostSaleOpsBoardEntryResponseDto {
+  orderDraftId: string;
+  orderLabel: string;
+  opsStatus: 'awaiting_payment' | 'ready_for_fulfillment' | 'in_progress' | 'blocked';
+  priorityBand: 'critical' | 'high' | 'monitor';
+  paymentLogStatus: 'confirmed' | 'needs_review' | 'disputed';
+  deliveryStatus: 'in_progress' | 'delivered' | 'blocked';
+  attentionReason: string;
+  nextAction: string;
+  updatedAt: string;
+}
+
+export interface EcommerceOrderPostSaleOpsBoardResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  summary: {
+    totalOrders: number;
+    awaitingPaymentCount: number;
+    readyForFulfillmentCount: number;
+    inProgressCount: number;
+    blockedCount: number;
+    criticalCount: number;
+    headline: string;
+    detail: string;
+  };
+  focusLanes: Array<{
+    laneKey: 'awaiting_payment' | 'ready_for_fulfillment' | 'in_progress' | 'blocked';
+    count: number;
+    operatorBias: string;
+  }>;
+  entries: EcommerceOrderPostSaleOpsBoardEntryResponseDto[];
 }
 
 export interface EcommerceLandingPageStructureResponseDto {
@@ -2983,6 +3081,29 @@ export function toEcommerceOrderPaymentConfirmationDecisionResponseDto(
   };
 }
 
+export function toEcommerceOrderPaymentConfirmationLogResponseDto(
+  view: TenantEcommerceOrderPaymentConfirmationLogView,
+): EcommerceOrderPaymentConfirmationLogResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    logStatus: view.logStatus,
+    summary: view.summary,
+    confirmationRecord: {
+      confirmedAt: view.confirmationRecord.confirmedAt.toISOString(),
+      confirmationChannel: view.confirmationRecord.confirmationChannel,
+      operatorNote: view.confirmationRecord.operatorNote,
+      evidenceHints: [...view.confirmationRecord.evidenceHints],
+    },
+    decisionSignal: { ...view.decisionSignal },
+    auditTrail: [...view.auditTrail],
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
 export function toEcommerceOrderFulfillmentReadinessWorkspaceResponseDto(
   view: TenantEcommerceOrderFulfillmentReadinessWorkspaceView,
 ): EcommerceOrderFulfillmentReadinessWorkspaceResponseDto {
@@ -3016,6 +3137,26 @@ export function toEcommerceOrderFulfillmentExecutionWorkspaceResponseDto(
     executionChecklist: [...view.executionChecklist],
     blockedBy: [...view.blockedBy],
     nextStep: view.nextStep,
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderFulfillmentDeliveryWorkspaceResponseDto(
+  view: TenantEcommerceOrderFulfillmentDeliveryWorkspaceView,
+): EcommerceOrderFulfillmentDeliveryWorkspaceResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    deliveryStatus: view.deliveryStatus,
+    summary: view.summary,
+    deliveryProfile: { ...view.deliveryProfile },
+    handoffNotes: [...view.handoffNotes],
+    prerequisitesResolved: [...view.prerequisitesResolved],
+    executionSignals: { ...view.executionSignals },
+    nextStep: view.nextStep,
+    blockedBy: [...view.blockedBy],
     guardrails: [...view.guardrails],
   };
 }
@@ -3121,6 +3262,30 @@ export function toEcommerceOrderRevenueOpsBoardResponseDto(
     priorityLanes: view.priorityLanes.map((lane) => ({ ...lane })),
     entries: view.entries.map((entry) =>
       toEcommerceOrderRevenueOpsBoardEntryResponseDto(entry),
+    ),
+  };
+}
+
+function toEcommerceOrderPostSaleOpsBoardEntryResponseDto(
+  view: TenantEcommerceOrderPostSaleOpsBoardEntryView,
+): EcommerceOrderPostSaleOpsBoardEntryResponseDto {
+  return {
+    ...view,
+    updatedAt: view.updatedAt.toISOString(),
+  };
+}
+
+export function toEcommerceOrderPostSaleOpsBoardResponseDto(
+  view: TenantEcommerceOrderPostSaleOpsBoardView,
+): EcommerceOrderPostSaleOpsBoardResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    summary: { ...view.summary },
+    focusLanes: view.focusLanes.map((lane) => ({ ...lane })),
+    entries: view.entries.map((entry) =>
+      toEcommerceOrderPostSaleOpsBoardEntryResponseDto(entry),
     ),
   };
 }

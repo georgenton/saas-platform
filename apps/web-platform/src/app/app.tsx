@@ -95,13 +95,16 @@ import {
   fetchTenantEcommerceOrderOpsAttentionWorkspace,
   fetchTenantEcommerceOrderOpsEscalationBoard,
   requestTenantEcommerceOrderPaymentConfirmationDecision,
+  fetchTenantEcommerceOrderPaymentConfirmationLog,
   fetchTenantEcommerceOrderPaymentConfirmationWorkspace,
   fetchTenantEcommerceOrderPaymentReadinessWorkspace,
+  fetchTenantEcommerceOrderPostSaleOpsBoard,
   fetchTenantEcommerceOrderPostSaleLifecycleDetail,
   fetchTenantEcommerceOrderPostSaleLifecycles,
   fetchTenantEcommerceOrderRevenueOpsBoard,
   fetchTenantEcommerceOrderRevenueTrackingSummary,
   fetchTenantEcommerceOrderOperatorWorkboard,
+  fetchTenantEcommerceOrderFulfillmentDeliveryWorkspace,
   fetchTenantEcommerceOrderFulfillmentExecutionWorkspace,
   fetchTenantEcommerceOrderFulfillmentReadinessWorkspace,
   fetchTenantEcommerceOrderOpsPriorityQueue,
@@ -359,13 +362,16 @@ import {
   EcommerceOrderOpsAttentionWorkspaceResponse,
   EcommerceOrderOpsEscalationBoardResponse,
   EcommerceOrderOperatorWorkboardResponse,
+  EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentConfirmationDecisionResponse,
   EcommerceOrderPaymentConfirmationWorkspaceResponse,
+  EcommerceOrderPostSaleOpsBoardResponse,
   EcommerceOrderPaymentReadinessWorkspaceResponse,
   EcommerceOrderPostSaleLifecycleDetailResponse,
   EcommerceOrderPostSaleLifecycleRegistryResponse,
   EcommerceOrderRevenueOpsBoardResponse,
   EcommerceOrderRevenueTrackingSummaryResponse,
+  EcommerceOrderFulfillmentDeliveryWorkspaceResponse,
   EcommerceOrderFulfillmentExecutionWorkspaceResponse,
   EcommerceOrderFulfillmentReadinessWorkspaceResponse,
   EcommerceOrderOpsPriorityQueueResponse,
@@ -2123,6 +2129,10 @@ export function App() {
     setLastEcommerceOrderPaymentConfirmationDecision,
   ] = useState<EcommerceOrderPaymentConfirmationDecisionResponse | null>(null);
   const [
+    selectedTenantEcommerceOrderPaymentConfirmationLog,
+    setSelectedTenantEcommerceOrderPaymentConfirmationLog,
+  ] = useState<EcommerceOrderPaymentConfirmationLogResponse | null>(null);
+  const [
     selectedTenantEcommerceOrderFulfillmentReadinessWorkspace,
     setSelectedTenantEcommerceOrderFulfillmentReadinessWorkspace,
   ] = useState<EcommerceOrderFulfillmentReadinessWorkspaceResponse | null>(
@@ -2134,6 +2144,10 @@ export function App() {
   ] = useState<EcommerceOrderFulfillmentExecutionWorkspaceResponse | null>(
     null,
   );
+  const [
+    selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace,
+    setSelectedTenantEcommerceOrderFulfillmentDeliveryWorkspace,
+  ] = useState<EcommerceOrderFulfillmentDeliveryWorkspaceResponse | null>(null);
   const [
     selectedTenantEcommerceOrderGrowthFollowUpWorkspace,
     setSelectedTenantEcommerceOrderGrowthFollowUpWorkspace,
@@ -2170,6 +2184,10 @@ export function App() {
     selectedTenantEcommerceOrderPostSaleLifecycleDetail,
     setSelectedTenantEcommerceOrderPostSaleLifecycleDetail,
   ] = useState<EcommerceOrderPostSaleLifecycleDetailResponse | null>(null);
+  const [
+    tenantEcommerceOrderPostSaleOpsBoard,
+    setTenantEcommerceOrderPostSaleOpsBoard,
+  ] = useState<EcommerceOrderPostSaleOpsBoardResponse | null>(null);
   const [
     tenantEcommerceOrderRevenueTrackingSummary,
     setTenantEcommerceOrderRevenueTrackingSummary,
@@ -2504,12 +2522,20 @@ export function App() {
     setEcommerceOrderPaymentConfirmationDecisionLoading,
   ] = useState<string | null>(null);
   const [
+    tenantEcommerceOrderPaymentConfirmationLogLoading,
+    setTenantEcommerceOrderPaymentConfirmationLogLoading,
+  ] = useState(false);
+  const [
     tenantEcommerceOrderFulfillmentReadinessWorkspaceLoading,
     setTenantEcommerceOrderFulfillmentReadinessWorkspaceLoading,
   ] = useState(false);
   const [
     tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
     setTenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading,
+    setTenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading,
   ] = useState(false);
   const [
     tenantEcommerceOrderGrowthFollowUpWorkspaceLoading,
@@ -2542,6 +2568,10 @@ export function App() {
   const [
     tenantEcommerceOrderPostSaleLifecycleDetailLoading,
     setTenantEcommerceOrderPostSaleLifecycleDetailLoading,
+  ] = useState(false);
+  const [
+    tenantEcommerceOrderPostSaleOpsBoardLoading,
+    setTenantEcommerceOrderPostSaleOpsBoardLoading,
   ] = useState(false);
   const [
     tenantEcommerceOrderRevenueTrackingSummaryLoading,
@@ -5585,12 +5615,36 @@ export function App() {
       orderDraftId,
     );
   };
+  const fetchTenantEcommerceOrderPaymentConfirmationLogSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+    orderDraftId: string,
+  ) => {
+    return fetchTenantEcommerceOrderPaymentConfirmationLog(
+      token!,
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+    );
+  };
   const fetchTenantEcommerceOrderFulfillmentReadinessWorkspaceSurface = async (
     tenantSlug: string,
     productEntityId: string,
     orderDraftId: string,
   ) => {
     return fetchTenantEcommerceOrderFulfillmentReadinessWorkspace(
+      token!,
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+    );
+  };
+  const fetchTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+    orderDraftId: string,
+  ) => {
+    return fetchTenantEcommerceOrderFulfillmentDeliveryWorkspace(
       token!,
       tenantSlug,
       productEntityId,
@@ -5696,6 +5750,16 @@ export function App() {
     productEntityId: string,
   ) => {
     return fetchTenantEcommerceOrderRevenueOpsBoard(
+      token!,
+      tenantSlug,
+      productEntityId,
+    );
+  };
+  const fetchTenantEcommerceOrderPostSaleOpsBoardSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+  ) => {
+    return fetchTenantEcommerceOrderPostSaleOpsBoard(
       token!,
       tenantSlug,
       productEntityId,
@@ -6462,6 +6526,15 @@ export function App() {
   ): void => {
     setLastEcommerceOrderPaymentConfirmationDecision(decision);
   };
+  const applyTenantEcommerceOrderPaymentConfirmationLogSurface = (
+    log:
+      | Awaited<
+          ReturnType<typeof fetchTenantEcommerceOrderPaymentConfirmationLogSurface>
+        >
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceOrderPaymentConfirmationLog(log);
+  };
   const applyTenantEcommerceOrderFulfillmentReadinessWorkspaceSurface = (
     workspace:
       | Awaited<
@@ -6483,6 +6556,15 @@ export function App() {
       | null,
   ): void => {
     setSelectedTenantEcommerceOrderFulfillmentExecutionWorkspace(workspace);
+  };
+  const applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface = (
+    workspace:
+      | Awaited<
+          ReturnType<typeof fetchTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface>
+        >
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceOrderFulfillmentDeliveryWorkspace(workspace);
   };
   const applyTenantEcommerceOrderStatusLifecycleRegistrySurface = (
     registry:
@@ -6573,6 +6655,15 @@ export function App() {
       | null,
   ): void => {
     setTenantEcommerceOrderRevenueOpsBoard(board);
+  };
+  const applyTenantEcommerceOrderPostSaleOpsBoardSurface = (
+    board:
+      | Awaited<
+          ReturnType<typeof fetchTenantEcommerceOrderPostSaleOpsBoardSurface>
+        >
+      | null,
+  ): void => {
+    setTenantEcommerceOrderPostSaleOpsBoard(board);
   };
   const applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface =
     (
@@ -12227,6 +12318,7 @@ export function App() {
       applyTenantEcommerceInvoiceHandoffAcknowledgementSurface(null);
       applyTenantEcommerceOrderFiscalDataCompletionWorkspaceSurface(null);
       applyTenantEcommerceOrderPaymentReadinessWorkspaceSurface(null);
+      applyTenantEcommerceOrderPaymentConfirmationLogSurface(null);
       applyTenantEcommerceOrderPaymentConfirmationDecisionSurface(null);
       applyTenantEcommerceOrderGrowthFollowUpWorkspaceSurface(null);
       applyTenantEcommerceOrderOperatorWorkboardSurface(null);
@@ -12237,6 +12329,7 @@ export function App() {
       applyTenantEcommerceOrderStatusLifecycleDetailSurface(null);
       applyTenantEcommerceOrderPostSaleLifecycleRegistrySurface(null);
       applyTenantEcommerceOrderPostSaleLifecycleDetailSurface(null);
+      applyTenantEcommerceOrderPostSaleOpsBoardSurface(null);
       applyTenantEcommerceOrderRevenueOpsBoardSurface(null);
       applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
         null,
@@ -12272,8 +12365,10 @@ export function App() {
       setTenantEcommerceOrderPaymentReadinessWorkspaceLoading(false);
       setTenantEcommerceOrderPaymentConfirmationWorkspaceLoading(false);
       setEcommerceOrderPaymentConfirmationDecisionLoading(null);
+      setTenantEcommerceOrderPaymentConfirmationLogLoading(false);
       setTenantEcommerceOrderFulfillmentReadinessWorkspaceLoading(false);
       setTenantEcommerceOrderFulfillmentExecutionWorkspaceLoading(false);
+      setTenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading(false);
       setTenantEcommerceOrderOperatorWorkboardLoading(false);
       setTenantEcommerceOrderOpsPriorityQueueLoading(false);
       setTenantEcommerceOrderOpsAttentionWorkspaceLoading(false);
@@ -12281,6 +12376,7 @@ export function App() {
       setTenantEcommerceOrderStatusLifecycleDetailLoading(false);
       setTenantEcommerceOrderPostSaleLifecycleRegistryLoading(false);
       setTenantEcommerceOrderPostSaleLifecycleDetailLoading(false);
+      setTenantEcommerceOrderPostSaleOpsBoardLoading(false);
       setTenantEcommerceOrderRevenueTrackingSummaryLoading(false);
       setTenantEcommerceOrderRevenueOpsBoardLoading(false);
       setTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading(
@@ -12304,8 +12400,10 @@ export function App() {
     setTenantEcommerceOrderPaymentReadinessWorkspaceLoading(false);
     setTenantEcommerceOrderPaymentConfirmationWorkspaceLoading(false);
     setEcommerceOrderPaymentConfirmationDecisionLoading(null);
+    setTenantEcommerceOrderPaymentConfirmationLogLoading(false);
     setTenantEcommerceOrderFulfillmentReadinessWorkspaceLoading(false);
     setTenantEcommerceOrderFulfillmentExecutionWorkspaceLoading(false);
+    setTenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading(false);
     setTenantEcommerceOrderOperatorWorkboardLoading(true);
     setTenantEcommerceOrderOpsPriorityQueueLoading(true);
     setTenantEcommerceOrderOpsAttentionWorkspaceLoading(true);
@@ -12313,6 +12411,7 @@ export function App() {
     setTenantEcommerceOrderStatusLifecycleDetailLoading(false);
     setTenantEcommerceOrderPostSaleLifecycleRegistryLoading(true);
     setTenantEcommerceOrderPostSaleLifecycleDetailLoading(false);
+    setTenantEcommerceOrderPostSaleOpsBoardLoading(false);
     setTenantEcommerceOrderRevenueTrackingSummaryLoading(false);
     setTenantEcommerceOrderRevenueOpsBoardLoading(false);
     setTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading(
@@ -12470,9 +12569,11 @@ export function App() {
         applyTenantEcommerceOrderFiscalDataCompletionWorkspaceSurface(null);
         applyTenantEcommerceOrderPaymentReadinessWorkspaceSurface(null);
         applyTenantEcommerceOrderPaymentConfirmationWorkspaceSurface(null);
+        applyTenantEcommerceOrderPaymentConfirmationLogSurface(null);
         applyTenantEcommerceOrderPaymentConfirmationDecisionSurface(null);
         applyTenantEcommerceOrderFulfillmentReadinessWorkspaceSurface(null);
         applyTenantEcommerceOrderFulfillmentExecutionWorkspaceSurface(null);
+        applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(null);
         applyTenantEcommerceOrderGrowthFollowUpWorkspaceSurface(null);
         applyTenantEcommerceOrderOperatorWorkboardSurface(
           orderOperatorWorkboard,
@@ -12492,6 +12593,7 @@ export function App() {
           orderPostSaleLifecycleRegistry,
         );
         applyTenantEcommerceOrderPostSaleLifecycleDetailSurface(null);
+        applyTenantEcommerceOrderPostSaleOpsBoardSurface(null);
         applyTenantEcommerceOrderRevenueTrackingSummarySurface(null);
         applyTenantEcommerceOrderRevenueOpsBoardSurface(null);
         applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
@@ -12577,9 +12679,11 @@ export function App() {
       applyTenantEcommerceOrderFiscalDataCompletionWorkspaceSurface(null);
       applyTenantEcommerceOrderPaymentReadinessWorkspaceSurface(null);
       applyTenantEcommerceOrderPaymentConfirmationWorkspaceSurface(null);
+      applyTenantEcommerceOrderPaymentConfirmationLogSurface(null);
       applyTenantEcommerceOrderPaymentConfirmationDecisionSurface(null);
       applyTenantEcommerceOrderFulfillmentReadinessWorkspaceSurface(null);
       applyTenantEcommerceOrderFulfillmentExecutionWorkspaceSurface(null);
+      applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(null);
       applyTenantEcommerceOrderGrowthFollowUpWorkspaceSurface(null);
       applyTenantEcommerceOrderOperatorWorkboardSurface(null);
       applyTenantEcommerceOrderOpsPriorityQueueSurface(null);
@@ -12589,6 +12693,7 @@ export function App() {
       applyTenantEcommerceOrderStatusLifecycleDetailSurface(null);
       applyTenantEcommerceOrderPostSaleLifecycleRegistrySurface(null);
       applyTenantEcommerceOrderPostSaleLifecycleDetailSurface(null);
+      applyTenantEcommerceOrderPostSaleOpsBoardSurface(null);
       applyTenantEcommerceOrderRevenueTrackingSummarySurface(null);
       applyTenantEcommerceOrderRevenueOpsBoardSurface(null);
       applyTenantEcommerceProductEntityChannelReleaseCandidateRegistrySurface(
@@ -12631,8 +12736,10 @@ export function App() {
       setTenantEcommerceOrderPaymentReadinessWorkspaceLoading(false);
       setTenantEcommerceOrderPaymentConfirmationWorkspaceLoading(false);
       setEcommerceOrderPaymentConfirmationDecisionLoading(null);
+      setTenantEcommerceOrderPaymentConfirmationLogLoading(false);
       setTenantEcommerceOrderFulfillmentReadinessWorkspaceLoading(false);
       setTenantEcommerceOrderFulfillmentExecutionWorkspaceLoading(false);
+      setTenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading(false);
       setTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceLoading(
         false,
       );
@@ -12642,6 +12749,7 @@ export function App() {
       setTenantEcommerceOrderOpsEscalationBoardLoading(false);
       setTenantEcommerceOrderPostSaleLifecycleRegistryLoading(false);
       setTenantEcommerceOrderPostSaleLifecycleDetailLoading(false);
+      setTenantEcommerceOrderPostSaleOpsBoardLoading(false);
       setTenantEcommerceOrderRevenueTrackingSummaryLoading(false);
       setTenantEcommerceOrderRevenueOpsBoardLoading(false);
     }
@@ -15377,10 +15485,13 @@ export function App() {
         applyTenantEcommerceOrderFiscalDataCompletionWorkspaceSurface(null);
         applyTenantEcommerceOrderPaymentReadinessWorkspaceSurface(null);
         applyTenantEcommerceOrderPaymentConfirmationWorkspaceSurface(null);
+        applyTenantEcommerceOrderPaymentConfirmationLogSurface(null);
         applyTenantEcommerceOrderFulfillmentReadinessWorkspaceSurface(null);
+        applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(null);
         applyTenantEcommerceOrderGrowthFollowUpWorkspaceSurface(null);
         applyTenantEcommerceOrderStatusLifecycleDetailSurface(null);
         applyTenantEcommerceOrderPostSaleLifecycleDetailSurface(null);
+        applyTenantEcommerceOrderPostSaleOpsBoardSurface(null);
         applyTenantEcommerceOrderRevenueTrackingSummarySurface(null);
         setEcommerceLaunchActionMessage(
           `Order draft ${humanizeKey(result.orderDraft.status)} para ${result.orderDraft.offerTitle}.`,
@@ -15404,10 +15515,13 @@ export function App() {
       applyTenantEcommerceOrderFiscalDataCompletionWorkspaceSurface(null);
       applyTenantEcommerceOrderPaymentReadinessWorkspaceSurface(null);
       applyTenantEcommerceOrderPaymentConfirmationWorkspaceSurface(null);
+      applyTenantEcommerceOrderPaymentConfirmationLogSurface(null);
       applyTenantEcommerceOrderFulfillmentReadinessWorkspaceSurface(null);
+      applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(null);
       applyTenantEcommerceOrderGrowthFollowUpWorkspaceSurface(null);
       applyTenantEcommerceOrderStatusLifecycleDetailSurface(null);
       applyTenantEcommerceOrderPostSaleLifecycleDetailSurface(null);
+      applyTenantEcommerceOrderPostSaleOpsBoardSurface(null);
       applyTenantEcommerceOrderRevenueTrackingSummarySurface(null);
       setEcommerceLaunchError(
         error instanceof Error
@@ -15462,12 +15576,15 @@ export function App() {
         applyTenantEcommerceOrderFiscalDataCompletionWorkspaceSurface(null);
         applyTenantEcommerceOrderPaymentReadinessWorkspaceSurface(null);
         applyTenantEcommerceOrderPaymentConfirmationWorkspaceSurface(null);
+        applyTenantEcommerceOrderPaymentConfirmationLogSurface(null);
         applyTenantEcommerceOrderPaymentConfirmationDecisionSurface(null);
         applyTenantEcommerceOrderFulfillmentReadinessWorkspaceSurface(null);
         applyTenantEcommerceOrderFulfillmentExecutionWorkspaceSurface(null);
+        applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(null);
         applyTenantEcommerceOrderGrowthFollowUpWorkspaceSurface(null);
         applyTenantEcommerceOrderStatusLifecycleDetailSurface(null);
         applyTenantEcommerceOrderPostSaleLifecycleDetailSurface(null);
+        applyTenantEcommerceOrderPostSaleOpsBoardSurface(null);
         applyTenantEcommerceOrderRevenueTrackingSummarySurface(null);
         applyTenantEcommerceOrderRevenueOpsBoardSurface(null);
       });
@@ -15490,12 +15607,15 @@ export function App() {
       applyTenantEcommerceOrderFiscalDataCompletionWorkspaceSurface(null);
       applyTenantEcommerceOrderPaymentReadinessWorkspaceSurface(null);
       applyTenantEcommerceOrderPaymentConfirmationWorkspaceSurface(null);
+      applyTenantEcommerceOrderPaymentConfirmationLogSurface(null);
       applyTenantEcommerceOrderPaymentConfirmationDecisionSurface(null);
       applyTenantEcommerceOrderFulfillmentReadinessWorkspaceSurface(null);
       applyTenantEcommerceOrderFulfillmentExecutionWorkspaceSurface(null);
+      applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(null);
       applyTenantEcommerceOrderGrowthFollowUpWorkspaceSurface(null);
       applyTenantEcommerceOrderStatusLifecycleDetailSurface(null);
       applyTenantEcommerceOrderPostSaleLifecycleDetailSurface(null);
+      applyTenantEcommerceOrderPostSaleOpsBoardSurface(null);
       applyTenantEcommerceOrderRevenueTrackingSummarySurface(null);
       applyTenantEcommerceOrderRevenueOpsBoardSurface(null);
       setEcommerceLaunchError(
@@ -16359,6 +16479,50 @@ export function App() {
     }
   }
 
+  async function handleLoadTenantEcommerceOrderPaymentConfirmationLog() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceOrderDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const orderDraftId = selectedTenantEcommerceOrderDraftDetail.orderDraft.id;
+    setTenantEcommerceOrderPaymentConfirmationLogLoading(true);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await fetchTenantEcommerceOrderPaymentConfirmationLogSurface(
+        tenantSlug,
+        productEntityId,
+        orderDraftId,
+      );
+
+      startTransition(() => {
+        applyTenantEcommerceOrderPaymentConfirmationLogSurface(result);
+        setEcommerceLaunchActionMessage(
+          `Payment confirmation log ${humanizeKey(result.logStatus)} para ${result.orderDraft.orderLabel}.`,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceOrderPaymentConfirmationLogSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el payment confirmation log.',
+      );
+    } finally {
+      setTenantEcommerceOrderPaymentConfirmationLogLoading(false);
+    }
+  }
+
   async function handleLoadTenantEcommerceOrderFulfillmentReadinessWorkspace() {
     if (
       !token ||
@@ -16446,6 +16610,51 @@ export function App() {
       );
     } finally {
       setTenantEcommerceOrderFulfillmentExecutionWorkspaceLoading(false);
+    }
+  }
+
+  async function handleLoadTenantEcommerceOrderFulfillmentDeliveryWorkspace() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceOrderDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const orderDraftId = selectedTenantEcommerceOrderDraftDetail.orderDraft.id;
+    setTenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading(true);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await fetchTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(
+          tenantSlug,
+          productEntityId,
+          orderDraftId,
+        );
+
+      startTransition(() => {
+        applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(result);
+        setEcommerceLaunchActionMessage(
+          `Fulfillment delivery ${humanizeKey(result.deliveryStatus)} para ${result.orderDraft.orderLabel}.`,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el fulfillment delivery workspace.',
+      );
+    } finally {
+      setTenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading(false);
     }
   }
 
@@ -16673,6 +16882,47 @@ export function App() {
       );
     } finally {
       setTenantEcommerceOrderRevenueOpsBoardLoading(false);
+    }
+  }
+
+  async function handleLoadTenantEcommerceOrderPostSaleOpsBoard() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setTenantEcommerceOrderPostSaleOpsBoardLoading(true);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result = await fetchTenantEcommerceOrderPostSaleOpsBoardSurface(
+        tenantSlug,
+        productEntityId,
+      );
+
+      startTransition(() => {
+        applyTenantEcommerceOrderPostSaleOpsBoardSurface(result);
+        setEcommerceLaunchActionMessage(
+          `Post-sale ops board con ${result.summary.totalOrders} órdenes cargado.`,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceOrderPostSaleOpsBoardSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el post-sale ops board.',
+      );
+    } finally {
+      setTenantEcommerceOrderPostSaleOpsBoardLoading(false);
     }
   }
 
@@ -19986,11 +20236,17 @@ export function App() {
             lastEcommerceOrderPaymentConfirmationDecision={
               lastEcommerceOrderPaymentConfirmationDecision
             }
+            selectedTenantEcommerceOrderPaymentConfirmationLog={
+              selectedTenantEcommerceOrderPaymentConfirmationLog
+            }
             selectedTenantEcommerceOrderFulfillmentReadinessWorkspace={
               selectedTenantEcommerceOrderFulfillmentReadinessWorkspace
             }
             selectedTenantEcommerceOrderFulfillmentExecutionWorkspace={
               selectedTenantEcommerceOrderFulfillmentExecutionWorkspace
+            }
+            selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace={
+              selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace
             }
             selectedTenantEcommerceOrderGrowthFollowUpWorkspace={
               selectedTenantEcommerceOrderGrowthFollowUpWorkspace
@@ -20018,6 +20274,9 @@ export function App() {
             }
             selectedTenantEcommerceOrderPostSaleLifecycleDetail={
               selectedTenantEcommerceOrderPostSaleLifecycleDetail
+            }
+            tenantEcommerceOrderPostSaleOpsBoard={
+              tenantEcommerceOrderPostSaleOpsBoard
             }
             tenantEcommerceOrderRevenueTrackingSummary={
               tenantEcommerceOrderRevenueTrackingSummary
@@ -20272,11 +20531,17 @@ export function App() {
             ecommerceOrderPaymentConfirmationDecisionLoading={
               ecommerceOrderPaymentConfirmationDecisionLoading
             }
+            tenantEcommerceOrderPaymentConfirmationLogLoading={
+              tenantEcommerceOrderPaymentConfirmationLogLoading
+            }
             tenantEcommerceOrderFulfillmentReadinessWorkspaceLoading={
               tenantEcommerceOrderFulfillmentReadinessWorkspaceLoading
             }
             tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading={
               tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading
+            }
+            tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading={
+              tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading
             }
             tenantEcommerceOrderGrowthFollowUpWorkspaceLoading={
               tenantEcommerceOrderGrowthFollowUpWorkspaceLoading
@@ -20301,6 +20566,9 @@ export function App() {
             }
             tenantEcommerceOrderPostSaleLifecycleDetailLoading={
               tenantEcommerceOrderPostSaleLifecycleDetailLoading
+            }
+            tenantEcommerceOrderPostSaleOpsBoardLoading={
+              tenantEcommerceOrderPostSaleOpsBoardLoading
             }
             tenantEcommerceOrderRevenueTrackingSummaryLoading={
               tenantEcommerceOrderRevenueTrackingSummaryLoading
@@ -20596,11 +20864,17 @@ export function App() {
             onRequestOrderPaymentConfirmationDecision={() => {
               void handleRequestTenantEcommerceOrderPaymentConfirmationDecision();
             }}
+            onLoadOrderPaymentConfirmationLog={() => {
+              void handleLoadTenantEcommerceOrderPaymentConfirmationLog();
+            }}
             onLoadOrderFulfillmentReadinessWorkspace={() => {
               void handleLoadTenantEcommerceOrderFulfillmentReadinessWorkspace();
             }}
             onLoadOrderFulfillmentExecutionWorkspace={() => {
               void handleLoadTenantEcommerceOrderFulfillmentExecutionWorkspace();
+            }}
+            onLoadOrderFulfillmentDeliveryWorkspace={() => {
+              void handleLoadTenantEcommerceOrderFulfillmentDeliveryWorkspace();
             }}
             onLoadOrderGrowthFollowUpWorkspace={() => {
               void handleLoadTenantEcommerceOrderGrowthFollowUpWorkspace();
@@ -20629,6 +20903,9 @@ export function App() {
               void handleLoadTenantEcommerceOrderPostSaleLifecycleDetail(
                 orderDraftId,
               );
+            }}
+            onLoadOrderPostSaleOpsBoard={() => {
+              void handleLoadTenantEcommerceOrderPostSaleOpsBoard();
             }}
             onLoadOrderRevenueTrackingSummary={() => {
               void handleLoadTenantEcommerceOrderRevenueTrackingSummary();

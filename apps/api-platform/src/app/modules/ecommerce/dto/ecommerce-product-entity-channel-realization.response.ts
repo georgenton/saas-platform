@@ -23,13 +23,17 @@ import {
   TenantEcommerceOrderHandoffDecisionView,
   TenantEcommerceOrderHandoffExecutionWorkspaceView,
   TenantEcommerceOrderHoldResolutionWorkspaceView,
+  TenantEcommerceOrderRouteResolutionPacketView,
   TenantEcommerceOrderOperatorWorkboardEntryView,
   TenantEcommerceOrderOperatorWorkboardView,
   TenantEcommerceOrderOpsAttentionWorkspaceEntryView,
   TenantEcommerceOrderOpsAttentionWorkspaceView,
+  TenantEcommerceOrderOpsEscalationBoardEntryView,
+  TenantEcommerceOrderOpsEscalationBoardView,
   TenantEcommerceOrderOpsPriorityQueueEntryView,
   TenantEcommerceOrderOpsPriorityQueueView,
   TenantEcommerceOrderInvoiceDraftBridgeView,
+  TenantEcommerceInvoiceDraftHandoffWorkspaceView,
   TenantEcommerceInvoiceDraftIntakeWorkspaceView,
   TenantEcommerceInvoiceDraftOpenBridgeView,
   TenantEcommerceInvoiceDraftLaunchBridgeView,
@@ -1314,6 +1318,89 @@ export interface EcommerceOrderOpsAttentionWorkspaceResponseDto {
   entries: EcommerceOrderOpsAttentionWorkspaceEntryResponseDto[];
 }
 
+export interface EcommerceOrderRouteResolutionPacketResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  resolutionStatus: 'ready_to_reroute' | 'needs_data' | 'blocked';
+  currentRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  recommendedRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  summary: string;
+  rationale: string;
+  routeSignals: {
+    invoicingReadiness: 'ready' | 'needs_data' | 'blocked';
+    growthReadiness: 'ready' | 'needs_data' | 'blocked';
+    holdRisk: 'high' | 'medium' | 'low';
+  };
+  routeChecklist: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceInvoiceDraftHandoffWorkspaceResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  workspaceStatus: 'ready_for_invoice_handoff' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  routeSnapshot: {
+    currentRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+    recommendedRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+    routeConfirmed: boolean;
+  };
+  handoffPayload: {
+    customerLabel: string;
+    documentHint: 'invoice';
+    offerTitle: string;
+    pricingSnapshot: string;
+    billingIntent: string | null;
+  };
+  handoffArtifacts: string[];
+  operatorChecklist: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderOpsEscalationBoardEntryResponseDto {
+  orderDraftId: string;
+  orderLabel: string;
+  escalationLevel: 'critical' | 'elevated' | 'monitor';
+  activeRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  escalationReason: string;
+  recommendedOwnerRole: 'operator';
+  nextAction: string;
+  updatedAt: string;
+}
+
+export interface EcommerceOrderOpsEscalationBoardResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  summary: {
+    totalEscalations: number;
+    criticalCount: number;
+    elevatedCount: number;
+    monitorCount: number;
+    headline: string;
+    detail: string;
+  };
+  escalationLanes: Array<{
+    laneKey: 'critical' | 'elevated' | 'monitor';
+    count: number;
+    operatorBias: string;
+  }>;
+  entries: EcommerceOrderOpsEscalationBoardEntryResponseDto[];
+}
+
 export interface EcommerceLandingPageStructureResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -2432,6 +2519,88 @@ export function toEcommerceOrderOpsAttentionWorkspaceResponseDto(
     focusLanes: view.focusLanes.map((lane) => ({ ...lane })),
     entries: view.entries.map((entry) =>
       toEcommerceOrderOpsAttentionWorkspaceEntryResponseDto(entry),
+    ),
+  };
+}
+
+export function toEcommerceOrderRouteResolutionPacketResponseDto(
+  view: TenantEcommerceOrderRouteResolutionPacketView,
+): EcommerceOrderRouteResolutionPacketResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    resolutionStatus: view.resolutionStatus,
+    currentRoute: view.currentRoute,
+    recommendedRoute: view.recommendedRoute,
+    summary: view.summary,
+    rationale: view.rationale,
+    routeSignals: {
+      ...view.routeSignals,
+    },
+    routeChecklist: [...view.routeChecklist],
+    nextStep: view.nextStep,
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceInvoiceDraftHandoffWorkspaceResponseDto(
+  view: TenantEcommerceInvoiceDraftHandoffWorkspaceView,
+): EcommerceInvoiceDraftHandoffWorkspaceResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    workspaceStatus: view.workspaceStatus,
+    summary: view.summary,
+    targetWorkspace: {
+      ...view.targetWorkspace,
+    },
+    routeSnapshot: {
+      ...view.routeSnapshot,
+    },
+    handoffPayload: {
+      ...view.handoffPayload,
+    },
+    handoffArtifacts: [...view.handoffArtifacts],
+    operatorChecklist: [...view.operatorChecklist],
+    nextStep: view.nextStep,
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderOpsEscalationBoardEntryResponseDto(
+  view: TenantEcommerceOrderOpsEscalationBoardEntryView,
+): EcommerceOrderOpsEscalationBoardEntryResponseDto {
+  return {
+    orderDraftId: view.orderDraftId,
+    orderLabel: view.orderLabel,
+    escalationLevel: view.escalationLevel,
+    activeRoute: view.activeRoute,
+    escalationReason: view.escalationReason,
+    recommendedOwnerRole: view.recommendedOwnerRole,
+    nextAction: view.nextAction,
+    updatedAt: view.updatedAt.toISOString(),
+  };
+}
+
+export function toEcommerceOrderOpsEscalationBoardResponseDto(
+  view: TenantEcommerceOrderOpsEscalationBoardView,
+): EcommerceOrderOpsEscalationBoardResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    summary: {
+      ...view.summary,
+    },
+    escalationLanes: view.escalationLanes.map((lane) => ({ ...lane })),
+    entries: view.entries.map((entry) =>
+      toEcommerceOrderOpsEscalationBoardEntryResponseDto(entry),
     ),
   };
 }

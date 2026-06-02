@@ -2287,3 +2287,86 @@ export interface TenantEcommerceOrderOpsAttentionWorkspaceView {
   }>;
   entries: TenantEcommerceOrderOpsAttentionWorkspaceEntryView[];
 }
+
+export interface TenantEcommerceOrderRouteResolutionPacketView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  resolutionStatus: 'ready_to_reroute' | 'needs_data' | 'blocked';
+  currentRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  recommendedRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  summary: string;
+  rationale: string;
+  routeSignals: {
+    invoicingReadiness: 'ready' | 'needs_data' | 'blocked';
+    growthReadiness: 'ready' | 'needs_data' | 'blocked';
+    holdRisk: 'high' | 'medium' | 'low';
+  };
+  routeChecklist: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceInvoiceDraftHandoffWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  workspaceStatus: 'ready_for_invoice_handoff' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  routeSnapshot: {
+    currentRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+    recommendedRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+    routeConfirmed: boolean;
+  };
+  handoffPayload: {
+    customerLabel: string;
+    documentHint: 'invoice';
+    offerTitle: string;
+    pricingSnapshot: string;
+    billingIntent: string | null;
+  };
+  handoffArtifacts: string[];
+  operatorChecklist: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderOpsEscalationBoardEntryView {
+  orderDraftId: string;
+  orderLabel: string;
+  escalationLevel: 'critical' | 'elevated' | 'monitor';
+  activeRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  escalationReason: string;
+  recommendedOwnerRole: 'operator';
+  nextAction: string;
+  updatedAt: Date;
+}
+
+export interface TenantEcommerceOrderOpsEscalationBoardView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  summary: {
+    totalEscalations: number;
+    criticalCount: number;
+    elevatedCount: number;
+    monitorCount: number;
+    headline: string;
+    detail: string;
+  };
+  escalationLanes: Array<{
+    laneKey: 'critical' | 'elevated' | 'monitor';
+    count: number;
+    operatorBias: string;
+  }>;
+  entries: TenantEcommerceOrderOpsEscalationBoardEntryView[];
+}

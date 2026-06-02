@@ -75,8 +75,11 @@ import {
   EcommerceInvoiceDraftOpenBridgeResponse,
   EcommerceInvoiceDraftLaunchBridgeResponse,
   EcommerceOrderPaymentReadinessWorkspaceResponse,
+  EcommerceOrderPaymentConfirmationWorkspaceResponse,
+  EcommerceOrderFulfillmentReadinessWorkspaceResponse,
   EcommerceOrderPostSaleLifecycleDetailResponse,
   EcommerceOrderPostSaleLifecycleRegistryResponse,
+  EcommerceOrderRevenueTrackingSummaryResponse,
   EcommerceOrderDraftRegistryResponse,
   EcommerceOrderOpsAttentionWorkspaceResponse,
   EcommerceOrderOpsEscalationBoardResponse,
@@ -3488,6 +3491,48 @@ export async function fetchTenantEcommerceOrderPaymentReadinessWorkspace(
   );
 }
 
+export async function fetchTenantEcommerceOrderPaymentConfirmationWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderPaymentConfirmationWorkspaceResponse> {
+  return request<EcommerceOrderPaymentConfirmationWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/payment-confirmation-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderFulfillmentReadinessWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderFulfillmentReadinessWorkspaceResponse> {
+  return request<EcommerceOrderFulfillmentReadinessWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/fulfillment-readiness-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function fetchTenantEcommerceOrderStatusLifecycles(
   token: string,
   tenantSlug: string,
@@ -3555,6 +3600,24 @@ export async function fetchTenantEcommerceOrderPostSaleLifecycleDetail(
     )}/product-entities/${encodeURIComponent(
       productEntityId,
     )}/order-post-sale-lifecycles/${encodeURIComponent(orderDraftId)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderRevenueTrackingSummary(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceOrderRevenueTrackingSummaryResponse> {
+  return request<EcommerceOrderRevenueTrackingSummaryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-revenue-tracking-summary`,
     {
       method: 'GET',
       token,

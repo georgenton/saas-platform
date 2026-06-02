@@ -17,7 +17,9 @@ import {
   GetTenantEcommerceOrderDraftDetailUseCase,
   GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
   GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+  GetTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
   GetTenantEcommerceOrderOperatorWorkboardUseCase,
+  GetTenantEcommerceOrderOpsPriorityQueueUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
   GetTenantEcommerceInvoiceDraftIntakeWorkspaceUseCase,
@@ -64,6 +66,7 @@ import {
   RequestTenantEcommerceOrderApprovalDecisionUseCase,
   RequestTenantEcommerceOrderHandoffDecisionUseCase,
   RequestTenantEcommerceOrderInvoicingBridgeUseCase,
+  RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
   RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
   RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
   RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
@@ -180,9 +183,12 @@ import {
   EcommerceOrderFiscalDataCompletionWorkspaceResponseDto,
   EcommerceOrderGrowthFollowUpWorkspaceResponseDto,
   EcommerceOrderHandoffDecisionResponseDto,
+  EcommerceOrderHandoffExecutionWorkspaceResponseDto,
   EcommerceOrderOperatorWorkboardResponseDto,
+  EcommerceOrderOpsPriorityQueueResponseDto,
   EcommerceOrderInvoiceDraftBridgeResponseDto,
   EcommerceInvoiceDraftIntakeWorkspaceResponseDto,
+  EcommerceInvoiceDraftOpenBridgeResponseDto,
   EcommerceOrderApprovalDecisionResponseDto,
   EcommerceChannelReleaseWorkbenchResponseDto,
   EcommerceLandingAssetEntityWorkspaceResponseDto,
@@ -226,9 +232,12 @@ import {
   toEcommerceOrderFiscalDataCompletionWorkspaceResponseDto,
   toEcommerceOrderGrowthFollowUpWorkspaceResponseDto,
   toEcommerceOrderHandoffDecisionResponseDto,
+  toEcommerceOrderHandoffExecutionWorkspaceResponseDto,
   toEcommerceOrderOperatorWorkboardResponseDto,
+  toEcommerceOrderOpsPriorityQueueResponseDto,
   toEcommerceOrderInvoiceDraftBridgeResponseDto,
   toEcommerceInvoiceDraftIntakeWorkspaceResponseDto,
+  toEcommerceInvoiceDraftOpenBridgeResponseDto,
   toEcommerceOrderApprovalDecisionResponseDto,
   toEcommerceChannelReleaseWorkbenchResponseDto,
   toEcommerceLandingAssetEntityWorkspaceResponseDto,
@@ -394,7 +403,9 @@ export class EcommerceController {
     private readonly getTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase: GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
     private readonly getTenantEcommerceOrderReviewWorkspaceUseCase: GetTenantEcommerceOrderReviewWorkspaceUseCase,
     private readonly getTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase: GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+    private readonly getTenantEcommerceOrderHandoffExecutionWorkspaceUseCase: GetTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
     private readonly getTenantEcommerceOrderOperatorWorkboardUseCase: GetTenantEcommerceOrderOperatorWorkboardUseCase,
+    private readonly getTenantEcommerceOrderOpsPriorityQueueUseCase: GetTenantEcommerceOrderOpsPriorityQueueUseCase,
     private readonly getTenantEcommerceOrderStatusLifecycleDetailUseCase: GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
     private readonly getTenantEcommerceInvoiceDraftIntakeWorkspaceUseCase: GetTenantEcommerceInvoiceDraftIntakeWorkspaceUseCase,
     private readonly getTenantEcommerceLandingPublishArtifactUseCase: GetTenantEcommerceLandingPublishArtifactUseCase,
@@ -430,6 +441,7 @@ export class EcommerceController {
     private readonly requestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase: RequestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase,
     private readonly requestTenantEcommerceOrderApprovalDecisionUseCase: RequestTenantEcommerceOrderApprovalDecisionUseCase,
     private readonly requestTenantEcommerceOrderHandoffDecisionUseCase: RequestTenantEcommerceOrderHandoffDecisionUseCase,
+    private readonly requestTenantEcommerceInvoiceDraftOpenBridgeUseCase: RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
     private readonly requestTenantEcommerceOrderInvoicingBridgeUseCase: RequestTenantEcommerceOrderInvoicingBridgeUseCase,
     private readonly requestTenantEcommerceCheckoutCustomerCapturePacketUseCase: RequestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
     private readonly requestTenantEcommerceCheckoutCloseoutPacketUseCase: RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
@@ -1990,6 +2002,72 @@ export class EcommerceController {
     return toEcommerceInvoiceDraftIntakeWorkspaceResponseDto(workspace);
   }
 
+  @Get(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/handoff-execution-workspace',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantOrderHandoffExecutionWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderHandoffExecutionWorkspaceResponseDto> {
+    const workspace =
+      await this.getTenantEcommerceOrderHandoffExecutionWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        orderDraftId,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Handoff execution workspace for order draft ${orderDraftId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceOrderHandoffExecutionWorkspaceResponseDto(workspace);
+  }
+
+  @Post(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/request-invoice-draft-open-bridge',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantInvoiceDraftOpenBridge(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceInvoiceDraftOpenBridgeResponseDto> {
+    const bridge =
+      await this.requestTenantEcommerceInvoiceDraftOpenBridgeUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        orderDraftId,
+      );
+
+    if (!bridge) {
+      throw new NotFoundException(
+        `Invoice draft open bridge for order draft ${orderDraftId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceInvoiceDraftOpenBridgeResponseDto(bridge);
+  }
+
   @Get(':slug/product-entities/:productEntityId/order-operator-workboard')
   @UseGuards(
     JwtAuthenticationGuard,
@@ -2017,6 +2095,35 @@ export class EcommerceController {
     }
 
     return toEcommerceOrderOperatorWorkboardResponseDto(workboard);
+  }
+
+  @Get(':slug/product-entities/:productEntityId/order-ops-priority-queue')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantOrderOpsPriorityQueue(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderOpsPriorityQueueResponseDto> {
+    const queue =
+      await this.getTenantEcommerceOrderOpsPriorityQueueUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!queue) {
+      throw new NotFoundException(
+        `Order ops priority queue for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceOrderOpsPriorityQueueResponseDto(queue);
   }
 
   @Get(':slug/product-entities/:productEntityId/order-status-lifecycles')

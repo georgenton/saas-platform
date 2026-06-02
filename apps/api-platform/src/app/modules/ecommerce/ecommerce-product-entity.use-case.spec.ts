@@ -41,13 +41,16 @@ import {
   RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
   RequestTenantEcommerceOrderApprovalDecisionUseCase,
   RequestTenantEcommerceOrderHandoffDecisionUseCase,
+  RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
   RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
   RequestTenantEcommerceOrderInvoicingBridgeUseCase,
   RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
   RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
   GetTenantEcommerceInvoiceDraftIntakeWorkspaceUseCase,
   GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+  GetTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
   GetTenantEcommerceOrderOperatorWorkboardUseCase,
+  GetTenantEcommerceOrderOpsPriorityQueueUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
@@ -5525,6 +5528,179 @@ describe('Ecommerce product entity use cases', () => {
         expect.objectContaining({
           handoffRoute: 'hold',
           priority: 'medium',
+        }),
+      ],
+    });
+  });
+
+  it('loads one order handoff execution workspace', async () => {
+    const handoffDecisionUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:10:00.000Z'),
+        productEntity,
+        orderDraft: { id: 'order_draft_001', orderLabel: 'Order draft' },
+        handoffStatus: 'ready',
+        route: 'invoicing',
+        summary: 'Handoff listo.',
+        owner: { productKey: 'ecommerce', role: 'operator' },
+        rationale: 'Checklist completo.',
+        routeChecklist: ['Checklist'],
+        blockedBy: [],
+        guardrails: ['Handoff guardrail'],
+      }),
+    };
+    const invoiceIntakeUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        workspaceStatus: 'ready_to_open_invoice_draft',
+        blockedBy: [],
+        handoffArtifacts: ['Invoice artifact'],
+        operatorChecklist: ['Invoice checklist'],
+        guardrails: ['Invoice intake guardrail'],
+      }),
+    };
+    const growthFollowUpUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        workspaceStatus: 'ready_for_growth_follow_up',
+        blockedBy: [],
+        handoffArtifacts: ['Growth artifact'],
+        operatorChecklist: ['Growth checklist'],
+        guardrails: ['Growth guardrail'],
+      }),
+    };
+    const useCase = new GetTenantEcommerceOrderHandoffExecutionWorkspaceUseCase(
+      handoffDecisionUseCase as never,
+      invoiceIntakeUseCase as never,
+      growthFollowUpUseCase as never,
+      () => new Date('2026-06-02T10:11:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute(
+        'saas-platform',
+        'product_entity_001',
+        'order_draft_001',
+      ),
+    ).resolves.toMatchObject({
+      executionStatus: 'ready_for_execution',
+      activeRoute: 'invoicing',
+      owner: { productKey: 'ecommerce', role: 'operator' },
+    });
+  });
+
+  it('requests one invoice draft open bridge', async () => {
+    const invoiceIntakeUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:12:00.000Z'),
+        productEntity,
+        orderDraft: {
+          id: 'order_draft_001',
+          orderLabel: 'Order draft',
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          customerProfile: { fullName: 'Buyer One', billingIntent: 'invoice' },
+        },
+        workspaceStatus: 'ready_to_open_invoice_draft',
+        summary: 'Invoice intake listo.',
+        targetWorkspace: {
+          productKey: 'invoicing',
+          stage: 'electronic_invoicing_ec_mvp',
+          handoffMode: 'operator_assist',
+        },
+        commercialSnapshot: {
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+        },
+        fiscalSnapshot: {
+          requiredFields: ['buyer_legal_name'],
+          missingFields: [],
+          billingIntent: 'invoice',
+        },
+        handoffArtifacts: ['Invoice artifact'],
+        operatorChecklist: ['Invoice checklist'],
+        blockedBy: [],
+        guardrails: ['Invoice intake guardrail'],
+      }),
+    };
+    const handoffExecutionUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        executionStatus: 'ready_for_execution',
+        activeRoute: 'invoicing',
+        blockedBy: [],
+        executionChecklist: ['Execution checklist'],
+        handoffArtifacts: ['Execution artifact'],
+        guardrails: ['Execution guardrail'],
+      }),
+    };
+    const useCase = new RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase(
+      invoiceIntakeUseCase as never,
+      handoffExecutionUseCase as never,
+      () => new Date('2026-06-02T10:13:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute(
+        'saas-platform',
+        'product_entity_001',
+        'order_draft_001',
+      ),
+    ).resolves.toMatchObject({
+      bridgeStatus: 'ready_to_open',
+      payload: { documentHint: 'invoice' },
+    });
+  });
+
+  it('loads one order ops priority queue', async () => {
+    const orderOperatorWorkboardUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:14:00.000Z'),
+        productEntity,
+        summary: {
+          totalOrders: 1,
+          highPriorityCount: 1,
+          readyForInvoicingCount: 0,
+          growthFollowUpCount: 1,
+          blockedCount: 0,
+          headline: '1 order en workboard.',
+          detail: 'Detalle.',
+        },
+        entries: [
+          {
+            orderDraftId: 'order_draft_001',
+            orderLabel: 'Order draft',
+            currentStatus: 'under_review',
+            handoffRoute: 'growth_follow_up',
+            priority: 'medium',
+            attentionReason: 'Buyer necesita follow-up.',
+            nextStep: 'Retomar conversación',
+            updatedAt: new Date('2026-06-02T10:14:00.000Z'),
+          },
+        ],
+      }),
+    };
+    const handoffExecutionUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        executionStatus: 'needs_data',
+        activeRoute: 'growth_follow_up',
+        blockedBy: [],
+      }),
+    };
+    const useCase = new GetTenantEcommerceOrderOpsPriorityQueueUseCase(
+      orderOperatorWorkboardUseCase as never,
+      handoffExecutionUseCase as never,
+      () => new Date('2026-06-02T10:15:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001'),
+    ).resolves.toMatchObject({
+      summary: { totalOrders: 1, growthLaneCount: 1 },
+      entries: [
+        expect.objectContaining({
+          activeRoute: 'growth_follow_up',
+          priorityBand: 'medium',
         }),
       ],
     });

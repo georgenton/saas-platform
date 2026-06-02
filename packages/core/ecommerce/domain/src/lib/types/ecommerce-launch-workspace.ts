@@ -2113,3 +2113,92 @@ export interface TenantEcommerceOrderOperatorWorkboardView {
   };
   entries: TenantEcommerceOrderOperatorWorkboardEntryView[];
 }
+
+export interface TenantEcommerceOrderHandoffExecutionWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  executionStatus: 'ready_for_execution' | 'needs_data' | 'blocked';
+  activeRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  summary: string;
+  owner: {
+    productKey: 'ecommerce';
+    role: 'operator';
+  };
+  routeTargets: {
+    invoicingTarget: {
+      productKey: 'invoicing';
+      stage: 'electronic_invoicing_ec_mvp';
+      handoffMode: 'operator_assist';
+    };
+    growthTarget: {
+      productKey: 'growth';
+      channel: 'whatsapp';
+      handoffMode: 'operator_assist';
+    };
+  };
+  executionChecklist: string[];
+  nextStep: string;
+  handoffArtifacts: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceInvoiceDraftOpenBridgeView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  bridgeStatus: 'ready_to_open' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  payload: {
+    customerLabel: string;
+    documentHint: 'invoice';
+    offerTitle: string;
+    pricingSnapshot: string;
+    billingIntent: string | null;
+  };
+  fiscalSnapshot: {
+    requiredFields: string[];
+    missingFields: string[];
+  };
+  handoffArtifacts: string[];
+  operatorChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderOpsPriorityQueueEntryView {
+  orderDraftId: string;
+  orderLabel: string;
+  currentStatus: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+  activeRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+  priorityBand: 'critical' | 'high' | 'medium' | 'low';
+  priorityScore: number;
+  attentionReason: string;
+  recommendedAction: string;
+  quickActions: string[];
+  updatedAt: Date;
+}
+
+export interface TenantEcommerceOrderOpsPriorityQueueView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  summary: {
+    totalOrders: number;
+    criticalCount: number;
+    invoicingLaneCount: number;
+    growthLaneCount: number;
+    holdCount: number;
+    headline: string;
+    detail: string;
+  };
+  entries: TenantEcommerceOrderOpsPriorityQueueEntryView[];
+}

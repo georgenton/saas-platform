@@ -1661,3 +1661,96 @@ export interface TenantEcommerceStorefrontGoLiveManifestView {
   blockers: string[];
   guardrails: string[];
 }
+
+export interface TenantEcommerceLiveStorefrontSessionWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  sessionStatus: 'preview' | 'ready' | 'blocked';
+  summary: {
+    headline: string;
+    detail: string;
+  };
+  storefrontSnapshot: {
+    landingHeadline: string;
+    landingSubheadline: string;
+    primaryCta: string;
+    catalogTitle: string;
+    pricingPresentation: string;
+    closeChannel: 'landing' | 'catalog' | 'whatsapp';
+  };
+  releaseGate: {
+    goLiveStatus:
+      | 'ready_for_controlled_go_live'
+      | 'needs_checkout_foundation'
+      | 'blocked';
+    checkoutStatus:
+      | 'ready_for_order_intake'
+      | 'needs_storefront_alignment'
+      | 'blocked';
+    invoicingStatus:
+      | 'ready_for_invoice_handoff'
+      | 'needs_customer_fiscal_data'
+      | 'blocked';
+  };
+  channelSessions: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    status: 'ready' | 'warning' | 'blocked';
+    role: string;
+    detail: string;
+  }>;
+  sessionChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceCheckoutCustomerCapturePacketView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  captureStatus: 'ready_for_order_draft' | 'needs_customer_input' | 'blocked';
+  summary: string;
+  orderDraftSeed: TenantEcommerceCheckoutOrderIntakeWorkspaceView['checkoutDraft'];
+  captureForm: {
+    requiredFields: string[];
+    optionalFields: string[];
+    validationRules: string[];
+  };
+  billingReadiness: {
+    status: 'ready' | 'needs_customer_input' | 'blocked';
+    hint: string;
+  };
+  operatorPrompts: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderToInvoiceReadinessPacketView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  readinessStatus: 'ready_to_invoice' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  readinessSnapshot: {
+    captureStatus:
+      | 'ready_for_order_draft'
+      | 'needs_customer_input'
+      | 'blocked';
+    bridgeStatus:
+      | 'ready_for_invoice_handoff'
+      | 'needs_customer_fiscal_data'
+      | 'blocked';
+    buyerProfileStatus: 'ready' | 'needs_customer_fiscal_data' | 'blocked';
+  };
+  fiscalRequirements: string[];
+  missingFields: string[];
+  handoffArtifacts: string[];
+  operatorChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}

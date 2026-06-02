@@ -21,6 +21,7 @@ import {
   EcommerceCatalogCommercialCardResponse,
   EcommerceCatalogListingAssetResponse,
   EcommerceCatalogMerchandisingPacketResponse,
+  EcommerceCheckoutCustomerCapturePacketResponse,
   EcommerceCheckoutOrderIntakeWorkspaceResponse,
   EcommerceCatalogStorefrontPlacementPacketResponse,
   EcommerceChannelReleaseApprovalPacketResponse,
@@ -33,12 +34,14 @@ import {
   EcommerceStorefrontPreviewWorkspaceResponse,
   EcommerceStorefrontReleaseControlWorkspaceResponse,
   EcommerceStorefrontGoLiveManifestResponse,
+  EcommerceLiveStorefrontSessionWorkspaceResponse,
   EcommerceStorefrontReleaseCandidateBriefResponse,
   EcommerceWhatsappSalesFlowResponse,
   EcommerceWhatsappGrowthActivationPacketResponse,
   EcommerceWhatsappGrowthExecutionBridgeResponse,
   EcommerceWhatsappGrowthLaunchAcknowledgementPacketResponse,
   EcommerceOrderInvoicingBridgeResponse,
+  EcommerceOrderToInvoiceReadinessPacketResponse,
   EcommerceWhatsappGrowthOperatorLaunchPacketResponse,
   EcommerceWhatsappGrowthActivationWorkspaceResponse,
   EcommerceWhatsappGrowthHandoffResponse,
@@ -137,6 +140,9 @@ type Props = {
   selectedTenantEcommerceStorefrontGoLiveManifest:
     | EcommerceStorefrontGoLiveManifestResponse
     | null;
+  selectedTenantEcommerceLiveStorefrontSessionWorkspace:
+    | EcommerceLiveStorefrontSessionWorkspaceResponse
+    | null;
   selectedTenantEcommerceStorefrontPreviewWorkspace:
     | EcommerceStorefrontPreviewWorkspaceResponse
     | null;
@@ -173,6 +179,9 @@ type Props = {
   selectedTenantEcommerceCheckoutOrderIntakeWorkspace:
     | EcommerceCheckoutOrderIntakeWorkspaceResponse
     | null;
+  lastEcommerceCheckoutCustomerCapturePacket:
+    | EcommerceCheckoutCustomerCapturePacketResponse
+    | null;
   selectedTenantEcommerceLandingPageStructure:
     | EcommerceLandingPageStructureResponse
     | null;
@@ -199,6 +208,9 @@ type Props = {
     | null;
   lastEcommerceOrderInvoicingBridge:
     | EcommerceOrderInvoicingBridgeResponse
+    | null;
+  lastEcommerceOrderToInvoiceReadinessPacket:
+    | EcommerceOrderToInvoiceReadinessPacketResponse
     | null;
   tenantEcommerceProductEntityChannelReleaseCandidateRegistry:
     | EcommerceProductEntityChannelReleaseCandidateRegistryResponse
@@ -287,6 +299,8 @@ type Props = {
   ecommerceCatalogStorefrontPlacementPacketLoading: string | null;
   ecommerceCatalogMerchandisingPacketLoading: string | null;
   ecommerceOrderInvoicingBridgeLoading: string | null;
+  ecommerceCheckoutCustomerCapturePacketLoading: string | null;
+  ecommerceOrderToInvoiceReadinessPacketLoading: string | null;
   ecommerceWhatsappGrowthHandoffLoading: string | null;
   ecommerceWhatsappGrowthActivationPacketLoading: string | null;
   ecommerceWhatsappGrowthExecutionBridgeLoading: string | null;
@@ -409,11 +423,13 @@ type Props = {
   onLoadStorefrontReleaseCandidateBrief: () => void;
   onLoadStorefrontReleaseControlWorkspace: () => void;
   onLoadStorefrontGoLiveManifest: () => void;
+  onLoadLiveStorefrontSessionWorkspace: () => void;
   onRequestChannelReleaseLaunchPacket: () => void;
   onLoadCatalogListingAsset: () => void;
   onRequestCatalogStorefrontPlacementPacket: () => void;
   onRequestCatalogMerchandisingPacket: () => void;
   onLoadCheckoutOrderIntakeWorkspace: () => void;
+  onRequestCheckoutCustomerCapturePacket: () => void;
   onRequestWhatsappGrowthHandoff: () => void;
   onLoadWhatsappGrowthActivationWorkspace: () => void;
   onRequestWhatsappGrowthActivationPacket: () => void;
@@ -421,6 +437,7 @@ type Props = {
   onRequestWhatsappGrowthOperatorLaunchPacket: () => void;
   onRequestWhatsappGrowthLaunchAcknowledgementPacket: () => void;
   onRequestOrderInvoicingBridge: () => void;
+  onRequestOrderToInvoiceReadinessPacket: () => void;
   onSelectProductEntityChannelReleaseCandidate: (
     channelKey: 'landing' | 'catalog' | 'whatsapp',
   ) => void;
@@ -465,6 +482,7 @@ export function AiEcommerceLaunchSection({
   selectedTenantEcommerceStorefrontReleaseCandidateBrief,
   selectedTenantEcommerceStorefrontReleaseControlWorkspace,
   selectedTenantEcommerceStorefrontGoLiveManifest,
+  selectedTenantEcommerceLiveStorefrontSessionWorkspace,
   selectedTenantEcommerceStorefrontPreviewWorkspace,
   selectedTenantEcommerceStorefrontPublishReviewWorkspace,
   selectedTenantEcommerceLandingPublishArtifact,
@@ -477,6 +495,7 @@ export function AiEcommerceLaunchSection({
   lastEcommerceCatalogStorefrontPlacementPacket,
   lastEcommerceCatalogMerchandisingPacket,
   selectedTenantEcommerceCheckoutOrderIntakeWorkspace,
+  lastEcommerceCheckoutCustomerCapturePacket,
   selectedTenantEcommerceLandingPageStructure,
   selectedTenantEcommerceWhatsappSalesFlow,
   lastEcommerceWhatsappGrowthHandoff,
@@ -486,6 +505,7 @@ export function AiEcommerceLaunchSection({
   lastEcommerceWhatsappGrowthOperatorLaunchPacket,
   lastEcommerceWhatsappGrowthLaunchAcknowledgementPacket,
   lastEcommerceOrderInvoicingBridge,
+  lastEcommerceOrderToInvoiceReadinessPacket,
   tenantEcommerceProductEntityChannelReleaseCandidateRegistry,
   selectedTenantEcommerceProductEntityChannelReleaseCandidateDetail,
   lastEcommerceProductEntityChannelAssetEntityPublishPreparationPacket,
@@ -537,6 +557,8 @@ export function AiEcommerceLaunchSection({
   ecommerceCatalogStorefrontPlacementPacketLoading,
   ecommerceCatalogMerchandisingPacketLoading,
   ecommerceOrderInvoicingBridgeLoading,
+  ecommerceCheckoutCustomerCapturePacketLoading,
+  ecommerceOrderToInvoiceReadinessPacketLoading,
   ecommerceWhatsappGrowthHandoffLoading,
   ecommerceWhatsappGrowthActivationPacketLoading,
   ecommerceWhatsappGrowthExecutionBridgeLoading,
@@ -612,11 +634,13 @@ export function AiEcommerceLaunchSection({
   onLoadStorefrontReleaseCandidateBrief,
   onLoadStorefrontReleaseControlWorkspace,
   onLoadStorefrontGoLiveManifest,
+  onLoadLiveStorefrontSessionWorkspace,
   onRequestChannelReleaseLaunchPacket,
   onLoadCatalogListingAsset,
   onRequestCatalogStorefrontPlacementPacket,
   onRequestCatalogMerchandisingPacket,
   onLoadCheckoutOrderIntakeWorkspace,
+  onRequestCheckoutCustomerCapturePacket,
   onRequestWhatsappGrowthHandoff,
   onLoadWhatsappGrowthActivationWorkspace,
   onRequestWhatsappGrowthActivationPacket,
@@ -624,6 +648,7 @@ export function AiEcommerceLaunchSection({
   onRequestWhatsappGrowthOperatorLaunchPacket,
   onRequestWhatsappGrowthLaunchAcknowledgementPacket,
   onRequestOrderInvoicingBridge,
+  onRequestOrderToInvoiceReadinessPacket,
   onSelectProductEntityChannelReleaseCandidate,
   onSelectLaunchPlan,
   onRequestActivationReadiness,
@@ -3291,6 +3316,90 @@ export function AiEcommerceLaunchSection({
                                   ' | ',
                                 )}
                               </small>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  onClick={onLoadLiveStorefrontSessionWorkspace}
+                                  type="button"
+                                >
+                                  Abrir live storefront session
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceLiveStorefrontSessionWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Live storefront session
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceLiveStorefrontSessionWorkspace.summary.headline
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceLiveStorefrontSessionWorkspace.sessionStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                {
+                                  selectedTenantEcommerceLiveStorefrontSessionWorkspace.summary.detail
+                                }
+                              </small>
+                              <small>
+                                Snapshot:{' '}
+                                {
+                                  selectedTenantEcommerceLiveStorefrontSessionWorkspace
+                                    .storefrontSnapshot.landingHeadline
+                                }{' '}
+                                ·{' '}
+                                {
+                                  selectedTenantEcommerceLiveStorefrontSessionWorkspace
+                                    .storefrontSnapshot.catalogTitle
+                                }{' '}
+                                ·{' '}
+                                {
+                                  selectedTenantEcommerceLiveStorefrontSessionWorkspace
+                                    .storefrontSnapshot.pricingPresentation
+                                }
+                              </small>
+                              <small>
+                                Release gate:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceLiveStorefrontSessionWorkspace
+                                    .releaseGate.goLiveStatus,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceLiveStorefrontSessionWorkspace
+                                    .releaseGate.checkoutStatus,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceLiveStorefrontSessionWorkspace
+                                    .releaseGate.invoicingStatus,
+                                )}
+                              </small>
+                              <small>
+                                Channels:{' '}
+                                {selectedTenantEcommerceLiveStorefrontSessionWorkspace.channelSessions
+                                  .map(
+                                    (channel) =>
+                                      `${humanizeKey(channel.channelKey)}:${humanizeKey(channel.status)}`,
+                                  )
+                                  .join(' | ')}
+                              </small>
+                              <small>
+                                Checklist:{' '}
+                                {selectedTenantEcommerceLiveStorefrontSessionWorkspace.sessionChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
                             </div>
                           ) : null}
                           {selectedTenantEcommerceWhatsappChannelSequenceWorkspace ? (
@@ -3487,6 +3596,95 @@ export function AiEcommerceLaunchSection({
                                     .productEntity.productEntityId
                                     ? 'Preparando launch...'
                                     : 'Solicitar launch packet'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                          {lastEcommerceCheckoutCustomerCapturePacket ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Checkout customer capture packet
+                                  </span>
+                                  <h4>
+                                    {
+                                      lastEcommerceCheckoutCustomerCapturePacket.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceCheckoutCustomerCapturePacket.captureStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Required:{' '}
+                                {lastEcommerceCheckoutCustomerCapturePacket.captureForm.requiredFields.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Optional:{' '}
+                                {lastEcommerceCheckoutCustomerCapturePacket.captureForm.optionalFields.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Billing readiness:{' '}
+                                {humanizeKey(
+                                  lastEcommerceCheckoutCustomerCapturePacket
+                                    .billingReadiness.status,
+                                )}{' '}
+                                ·{' '}
+                                {
+                                  lastEcommerceCheckoutCustomerCapturePacket
+                                    .billingReadiness.hint
+                                }
+                              </small>
+                              <small>
+                                Validation:{' '}
+                                {lastEcommerceCheckoutCustomerCapturePacket.captureForm.validationRules.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceCheckoutCustomerCapturePacketLoading ===
+                                    lastEcommerceCheckoutCustomerCapturePacket
+                                      .productEntity.productEntityId
+                                  }
+                                  onClick={
+                                    onRequestCheckoutCustomerCapturePacket
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceCheckoutCustomerCapturePacketLoading ===
+                                  lastEcommerceCheckoutCustomerCapturePacket
+                                    .productEntity.productEntityId
+                                    ? 'Preparando capture...'
+                                    : 'Solicitar customer capture'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceOrderToInvoiceReadinessPacketLoading ===
+                                    lastEcommerceCheckoutCustomerCapturePacket
+                                      .productEntity.productEntityId
+                                  }
+                                  onClick={
+                                    onRequestOrderToInvoiceReadinessPacket
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceOrderToInvoiceReadinessPacketLoading ===
+                                  lastEcommerceCheckoutCustomerCapturePacket
+                                    .productEntity.productEntityId
+                                    ? 'Preparando readiness...'
+                                    : 'Solicitar order-to-invoice readiness'}
                                 </button>
                               </div>
                             </div>
@@ -4398,6 +4596,65 @@ export function AiEcommerceLaunchSection({
                               <small>
                                 Fiscal requirements:{' '}
                                 {lastEcommerceOrderInvoicingBridge.fiscalRequirements.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {lastEcommerceOrderToInvoiceReadinessPacket ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Order-to-invoice readiness packet
+                                  </span>
+                                  <h4>
+                                    {
+                                      lastEcommerceOrderToInvoiceReadinessPacket.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceOrderToInvoiceReadinessPacket.readinessStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Snapshot:{' '}
+                                {humanizeKey(
+                                  lastEcommerceOrderToInvoiceReadinessPacket
+                                    .readinessSnapshot.captureStatus,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  lastEcommerceOrderToInvoiceReadinessPacket
+                                    .readinessSnapshot.bridgeStatus,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  lastEcommerceOrderToInvoiceReadinessPacket
+                                    .readinessSnapshot.buyerProfileStatus,
+                                )}
+                              </small>
+                              <small>
+                                Missing fields:{' '}
+                                {lastEcommerceOrderToInvoiceReadinessPacket.missingFields
+                                  .length > 0
+                                  ? lastEcommerceOrderToInvoiceReadinessPacket.missingFields.join(
+                                      ' | ',
+                                    )
+                                  : 'Ninguno'}
+                              </small>
+                              <small>
+                                Handoff artifacts:{' '}
+                                {lastEcommerceOrderToInvoiceReadinessPacket.handoffArtifacts.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Checklist:{' '}
+                                {lastEcommerceOrderToInvoiceReadinessPacket.operatorChecklist.join(
                                   ' | ',
                                 )}
                               </small>

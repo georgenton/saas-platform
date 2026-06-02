@@ -78,8 +78,10 @@ import {
   EcommerceOrderPaymentConfirmationDecisionResponse,
   EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
+  EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationWorkspaceResponse,
   EcommerceOrderFulfillmentCompletionPacketResponse,
+  EcommerceOrderFulfillmentDeliveryConfirmationPacketResponse,
   EcommerceOrderFulfillmentDeliveryWorkspaceResponse,
   EcommerceOrderFulfillmentExecutionWorkspaceResponse,
   EcommerceOrderFulfillmentReadinessWorkspaceResponse,
@@ -87,6 +89,7 @@ import {
   EcommerceOrderPostSaleLifecycleRegistryResponse,
   EcommerceOrderPostSaleOpsBoardResponse,
   EcommerceOrderPostSaleReportingBoardResponse,
+  EcommerceOrderPostSaleReportingSummaryResponse,
   EcommerceOrderRevenueOpsBoardResponse,
   EcommerceOrderRevenueTrackingSummaryResponse,
   EcommerceOrderDraftRegistryResponse,
@@ -3584,6 +3587,27 @@ export async function fetchTenantEcommerceOrderPaymentDisputeWorkspace(
   );
 }
 
+export async function requestTenantEcommerceOrderPaymentDisputeResolutionPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderPaymentDisputeResolutionPacketResponse> {
+  return request<EcommerceOrderPaymentDisputeResolutionPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/request-payment-dispute-resolution-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
 export async function fetchTenantEcommerceOrderFulfillmentReadinessWorkspace(
   token: string,
   tenantSlug: string,
@@ -3661,6 +3685,27 @@ export async function requestTenantEcommerceOrderFulfillmentCompletionPacket(
     )}/order-drafts/${encodeURIComponent(
       orderDraftId,
     )}/request-fulfillment-completion-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceOrderFulfillmentDeliveryConfirmationPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderFulfillmentDeliveryConfirmationPacketResponse> {
+  return request<EcommerceOrderFulfillmentDeliveryConfirmationPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/request-fulfillment-delivery-confirmation-packet`,
     {
       method: 'POST',
       token,
@@ -3807,6 +3852,24 @@ export async function fetchTenantEcommerceOrderPostSaleReportingBoard(
     )}/product-entities/${encodeURIComponent(
       productEntityId,
     )}/order-post-sale-reporting-board`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderPostSaleReportingSummary(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceOrderPostSaleReportingSummaryResponse> {
+  return request<EcommerceOrderPostSaleReportingSummaryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-post-sale-reporting-summary`,
     {
       method: 'GET',
       token,

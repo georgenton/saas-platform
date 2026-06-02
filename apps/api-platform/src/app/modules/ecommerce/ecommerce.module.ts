@@ -29,6 +29,7 @@ import {
   GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase,
   GetTenantEcommerceOrderPaymentConfirmationLogUseCase,
   GetTenantEcommerceOrderPaymentDisputeWorkspaceUseCase,
+  GetTenantEcommerceOrderPostSaleReportingSummaryUseCase,
   GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
@@ -101,6 +102,8 @@ import {
   RequestTenantEcommerceOrderHandoffDecisionUseCase,
   RequestTenantEcommerceOrderPaymentConfirmationDecisionUseCase,
   RequestTenantEcommerceOrderFulfillmentCompletionPacketUseCase,
+  RequestTenantEcommerceOrderPaymentDisputeResolutionPacketUseCase,
+  RequestTenantEcommerceOrderFulfillmentDeliveryConfirmationPacketUseCase,
   RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
   RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
   RequestTenantEcommerceInvoiceDraftLaunchBridgeUseCase,
@@ -1452,6 +1455,21 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: RequestTenantEcommerceOrderPaymentDisputeResolutionPacketUseCase,
+      inject: [
+        GetTenantEcommerceOrderPaymentDisputeWorkspaceUseCase,
+        GetTenantEcommerceOrderHoldResolutionWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderPaymentDisputeWorkspaceUseCase,
+        getTenantEcommerceOrderHoldResolutionWorkspaceUseCase,
+      ) =>
+        new RequestTenantEcommerceOrderPaymentDisputeResolutionPacketUseCase(
+          getTenantEcommerceOrderPaymentDisputeWorkspaceUseCase,
+          getTenantEcommerceOrderHoldResolutionWorkspaceUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
       inject: [
         GetTenantEcommerceOrderDraftDetailUseCase,
@@ -1590,6 +1608,21 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: RequestTenantEcommerceOrderFulfillmentDeliveryConfirmationPacketUseCase,
+      inject: [
+        GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
+        RequestTenantEcommerceOrderFulfillmentCompletionPacketUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
+        requestTenantEcommerceOrderFulfillmentCompletionPacketUseCase,
+      ) =>
+        new RequestTenantEcommerceOrderFulfillmentDeliveryConfirmationPacketUseCase(
+          getTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
+          requestTenantEcommerceOrderFulfillmentCompletionPacketUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcommerceOrderRevenueTrackingSummaryUseCase,
       inject: [
         ListTenantEcommerceOrderPostSaleLifecyclesUseCase,
@@ -1659,6 +1692,21 @@ import { EcommerceController } from './ecommerce.controller';
           listTenantEcommerceOrderPostSaleLifecyclesUseCase,
           getTenantEcommerceOrderPaymentConfirmationLogUseCase,
           getTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceOrderPostSaleReportingSummaryUseCase,
+      inject: [
+        GetTenantEcommerceOrderPostSaleReportingBoardUseCase,
+        GetTenantEcommerceOrderRevenueTrackingSummaryUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderPostSaleReportingBoardUseCase,
+        getTenantEcommerceOrderRevenueTrackingSummaryUseCase,
+      ) =>
+        new GetTenantEcommerceOrderPostSaleReportingSummaryUseCase(
+          getTenantEcommerceOrderPostSaleReportingBoardUseCase,
+          getTenantEcommerceOrderRevenueTrackingSummaryUseCase,
         ),
     },
     {

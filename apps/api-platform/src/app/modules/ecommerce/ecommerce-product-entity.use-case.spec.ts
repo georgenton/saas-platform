@@ -41,6 +41,7 @@ import {
   RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
   RequestTenantEcommerceOrderApprovalDecisionUseCase,
   RequestTenantEcommerceOrderHandoffDecisionUseCase,
+  RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
   RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
   RequestTenantEcommerceInvoiceDraftLaunchBridgeUseCase,
   RequestTenantEcommerceOrderRouteResolutionPacketUseCase,
@@ -54,6 +55,8 @@ import {
   GetTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
   GetTenantEcommerceOrderHoldResolutionWorkspaceUseCase,
   GetTenantEcommerceOrderOpsEscalationBoardUseCase,
+  GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
+  GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
   GetTenantEcommerceOrderOperatorWorkboardUseCase,
   GetTenantEcommerceOrderOpsAttentionWorkspaceUseCase,
   GetTenantEcommerceOrderOpsPriorityQueueUseCase,
@@ -70,6 +73,7 @@ import {
   SaveTenantEcommerceOrderDraftUseCase,
   ListTenantEcommerceOrderDraftsUseCase,
   GetTenantEcommerceOrderDraftDetailUseCase,
+  ListTenantEcommerceOrderPostSaleLifecyclesUseCase,
   ListTenantEcommerceOrderStatusLifecyclesUseCase,
   UpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase,
   UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
@@ -6094,6 +6098,197 @@ describe('Ecommerce product entity use cases', () => {
         expect.objectContaining({
           escalationLevel: 'critical',
           activeRoute: 'hold',
+        }),
+      ],
+    });
+  });
+
+  it('requests one invoice handoff acknowledgement', async () => {
+    const invoiceDraftHandoffWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:28:00.000Z'),
+        productEntity,
+        orderDraft: { id: 'order_draft_001', orderLabel: 'Order draft' },
+        workspaceStatus: 'ready_for_invoice_handoff',
+        summary: 'Handoff listo.',
+        targetWorkspace: {
+          productKey: 'invoicing',
+          stage: 'electronic_invoicing_ec_mvp',
+          handoffMode: 'operator_assist',
+        },
+        routeSnapshot: {
+          currentRoute: 'hold',
+          recommendedRoute: 'invoicing',
+          routeConfirmed: true,
+        },
+        handoffArtifacts: ['Order draft snapshot'],
+        blockedBy: [],
+        guardrails: ['Handoff guardrail'],
+      }),
+    };
+    const useCase = new RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase(
+      invoiceDraftHandoffWorkspaceUseCase as never,
+      () => new Date('2026-06-02T10:29:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute(
+        'saas-platform',
+        'product_entity_001',
+        'order_draft_001',
+      ),
+    ).resolves.toMatchObject({
+      acknowledgementStatus: 'accepted',
+      receivedArtifacts: ['Order draft snapshot'],
+    });
+  });
+
+  it('loads one order payment readiness workspace', async () => {
+    const checkoutCloseoutPacketUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:30:00.000Z'),
+        productEntity,
+        orderDraft: {
+          id: 'order_draft_001',
+          orderLabel: 'Order draft',
+          closingChannel: 'whatsapp_growth',
+          customerProfile: { billingIntent: 'invoice' },
+        },
+        closeoutStatus: 'ready_for_review',
+        commercialSnapshot: {
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+        },
+        paymentReadiness: {
+          status: 'ready',
+          hint: 'Todo listo.',
+        },
+        blockedBy: [],
+        guardrails: ['Closeout guardrail'],
+      }),
+    };
+    const invoiceAcknowledgementUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        acknowledgementStatus: 'accepted',
+        missingSignals: [],
+        blockedBy: [],
+        guardrails: ['Ack guardrail'],
+      }),
+    };
+    const useCase = new GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase(
+      checkoutCloseoutPacketUseCase as never,
+      invoiceAcknowledgementUseCase as never,
+      () => new Date('2026-06-02T10:31:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute(
+        'saas-platform',
+        'product_entity_001',
+        'order_draft_001',
+      ),
+    ).resolves.toMatchObject({
+      workspaceStatus: 'ready_for_collection',
+      paymentPlan: {
+        collectionChannel: 'whatsapp_growth',
+      },
+    });
+  });
+
+  it('loads one order post-sale lifecycle detail', async () => {
+    const orderLifecycleUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:32:00.000Z'),
+        productEntity,
+        orderDraft: { id: 'order_draft_001', orderLabel: 'Order draft' },
+        currentStatus: 'handed_off',
+        blockedBy: [],
+        guardrails: ['Lifecycle guardrail'],
+      }),
+    };
+    const invoiceAcknowledgementUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        acknowledgementStatus: 'accepted',
+        blockedBy: [],
+        guardrails: ['Ack guardrail'],
+      }),
+    };
+    const paymentReadinessUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        workspaceStatus: 'ready_for_collection',
+        blockedBy: [],
+        guardrails: ['Payment guardrail'],
+      }),
+    };
+    const useCase = new GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase(
+      orderLifecycleUseCase as never,
+      invoiceAcknowledgementUseCase as never,
+      paymentReadinessUseCase as never,
+      () => new Date('2026-06-02T10:33:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute(
+        'saas-platform',
+        'product_entity_001',
+        'order_draft_001',
+      ),
+    ).resolves.toMatchObject({
+      currentStatus: 'awaiting_payment',
+      timeline: expect.arrayContaining([
+        expect.objectContaining({
+          key: 'awaiting_payment',
+          status: 'active',
+        }),
+      ]),
+    });
+  });
+
+  it('lists order post-sale lifecycles', async () => {
+    const listOrderDraftsUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:34:00.000Z'),
+        productEntity,
+        summary: {
+          headline: '1 order draft',
+          detail: 'Detalle',
+          totalOrderDrafts: 1,
+        },
+        orderDrafts: [
+          {
+            id: 'order_draft_001',
+            orderLabel: 'Order draft',
+            updatedAt: new Date('2026-06-02T10:34:00.000Z'),
+          },
+        ],
+      }),
+    };
+    const postSaleDetailUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        orderDraft: { id: 'order_draft_001', orderLabel: 'Order draft' },
+        currentStatus: 'invoicing',
+        nextStep: 'Abrir invoice draft',
+        generatedAt: new Date('2026-06-02T10:35:00.000Z'),
+      }),
+    };
+    const useCase = new ListTenantEcommerceOrderPostSaleLifecyclesUseCase(
+      listOrderDraftsUseCase as never,
+      postSaleDetailUseCase as never,
+      () => new Date('2026-06-02T10:36:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001'),
+    ).resolves.toMatchObject({
+      summary: { totalOrders: 1, invoicingCount: 1 },
+      orders: [
+        expect.objectContaining({
+          orderDraftId: 'order_draft_001',
+          currentStatus: 'invoicing',
         }),
       ],
     });

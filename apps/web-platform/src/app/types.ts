@@ -4032,6 +4032,115 @@ export interface EcommerceOrderStatusLifecycleDetailResponse {
   guardrails: string[];
 }
 
+export interface EcommerceInvoiceHandoffAcknowledgementResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  acknowledgementStatus: 'accepted' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  receivedArtifacts: string[];
+  missingSignals: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderPaymentReadinessWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  workspaceStatus: 'ready_for_collection' | 'needs_confirmation' | 'blocked';
+  summary: string;
+  paymentPlan: {
+    collectionChannel:
+      | 'whatsapp_growth'
+      | 'catalog_checkout'
+      | 'operator_follow_up';
+    pricingSnapshot: string;
+    billingIntent: string | null;
+    primaryCta: string;
+  };
+  invoiceSignal: {
+    acknowledgementStatus: 'accepted' | 'needs_data' | 'blocked';
+    detail: string;
+  };
+  closeoutSignal: {
+    closeoutStatus:
+      | 'ready_for_review'
+      | 'needs_customer_confirmation'
+      | 'blocked';
+    paymentReadinessStatus: 'ready' | 'needs_confirmation' | 'blocked';
+  };
+  readinessChecklist: string[];
+  frictionPoints: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderPostSaleLifecycleEntryResponse {
+  key: 'handed_off' | 'invoicing' | 'awaiting_payment' | 'paid' | 'blocked';
+  label: string;
+  status: 'completed' | 'active' | 'pending';
+  detail: string;
+}
+
+export interface EcommerceOrderPostSaleLifecycleSummaryResponse {
+  orderDraftId: string;
+  orderLabel: string;
+  currentStatus:
+    | 'handed_off'
+    | 'invoicing'
+    | 'awaiting_payment'
+    | 'paid'
+    | 'blocked';
+  nextStep: string;
+  updatedAt: string;
+}
+
+export interface EcommerceOrderPostSaleLifecycleRegistryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: {
+    totalOrders: number;
+    handedOffCount: number;
+    invoicingCount: number;
+    awaitingPaymentCount: number;
+    paidCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  orders: EcommerceOrderPostSaleLifecycleSummaryResponse[];
+}
+
+export interface EcommerceOrderPostSaleLifecycleDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  currentStatus:
+    | 'handed_off'
+    | 'invoicing'
+    | 'awaiting_payment'
+    | 'paid'
+    | 'blocked';
+  summary: string;
+  lastAction: string;
+  nextStep: string;
+  timeline: EcommerceOrderPostSaleLifecycleEntryResponse[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface AiMemoryWorkspaceAgentResponse {
   agentKey: string;
   title: string;

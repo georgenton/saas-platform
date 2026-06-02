@@ -34,9 +34,15 @@ import {
   TenantEcommerceOrderOpsPriorityQueueView,
   TenantEcommerceOrderInvoiceDraftBridgeView,
   TenantEcommerceInvoiceDraftHandoffWorkspaceView,
+  TenantEcommerceInvoiceHandoffAcknowledgementView,
   TenantEcommerceInvoiceDraftIntakeWorkspaceView,
   TenantEcommerceInvoiceDraftOpenBridgeView,
   TenantEcommerceInvoiceDraftLaunchBridgeView,
+  TenantEcommerceOrderPaymentReadinessWorkspaceView,
+  TenantEcommerceOrderPostSaleLifecycleDetailView,
+  TenantEcommerceOrderPostSaleLifecycleEntryView,
+  TenantEcommerceOrderPostSaleLifecycleRegistryView,
+  TenantEcommerceOrderPostSaleLifecycleSummaryView,
   TenantEcommerceOrderInvoicingBridgeView,
   TenantEcommerceOrderReviewWorkspaceView,
   TenantEcommerceOrderStatusLifecycleDetailView,
@@ -1401,6 +1407,107 @@ export interface EcommerceOrderOpsEscalationBoardResponseDto {
   entries: EcommerceOrderOpsEscalationBoardEntryResponseDto[];
 }
 
+export interface EcommerceInvoiceHandoffAcknowledgementResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  acknowledgementStatus: 'accepted' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  receivedArtifacts: string[];
+  missingSignals: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderPaymentReadinessWorkspaceResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  workspaceStatus: 'ready_for_collection' | 'needs_confirmation' | 'blocked';
+  summary: string;
+  paymentPlan: {
+    collectionChannel: 'landing' | 'catalog' | 'whatsapp';
+    pricingSnapshot: string;
+    billingIntent: string | null;
+    primaryCta: string;
+  };
+  invoiceSignal: {
+    acknowledgementStatus: 'accepted' | 'needs_data' | 'blocked';
+    detail: string;
+  };
+  closeoutSignal: {
+    closeoutStatus: 'ready_for_operator_closeout' | 'needs_data' | 'blocked';
+    paymentReadinessStatus: 'ready' | 'needs_customer_input' | 'blocked';
+  };
+  readinessChecklist: string[];
+  frictionPoints: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderPostSaleLifecycleSummaryResponseDto {
+  orderDraftId: string;
+  orderLabel: string;
+  currentStatus:
+    | 'handed_off'
+    | 'invoicing'
+    | 'awaiting_payment'
+    | 'paid'
+    | 'blocked';
+  nextStep: string;
+  updatedAt: string;
+}
+
+export interface EcommerceOrderPostSaleLifecycleRegistryResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  summary: {
+    totalOrders: number;
+    handedOffCount: number;
+    invoicingCount: number;
+    awaitingPaymentCount: number;
+    paidCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  orders: EcommerceOrderPostSaleLifecycleSummaryResponseDto[];
+}
+
+export interface EcommerceOrderPostSaleLifecycleDetailResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  currentStatus:
+    | 'handed_off'
+    | 'invoicing'
+    | 'awaiting_payment'
+    | 'paid'
+    | 'blocked';
+  summary: string;
+  lastAction: string;
+  nextStep: string;
+  timeline: Array<{
+    key: 'handed_off' | 'invoicing' | 'awaiting_payment' | 'paid' | 'blocked';
+    label: string;
+    status: 'completed' | 'active' | 'pending';
+    detail: string;
+  }>;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceLandingPageStructureResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -2601,6 +2708,92 @@ export function toEcommerceOrderOpsEscalationBoardResponseDto(
     escalationLanes: view.escalationLanes.map((lane) => ({ ...lane })),
     entries: view.entries.map((entry) =>
       toEcommerceOrderOpsEscalationBoardEntryResponseDto(entry),
+    ),
+  };
+}
+
+export function toEcommerceInvoiceHandoffAcknowledgementResponseDto(
+  view: TenantEcommerceInvoiceHandoffAcknowledgementView,
+): EcommerceInvoiceHandoffAcknowledgementResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    acknowledgementStatus: view.acknowledgementStatus,
+    summary: view.summary,
+    targetWorkspace: { ...view.targetWorkspace },
+    receivedArtifacts: [...view.receivedArtifacts],
+    missingSignals: [...view.missingSignals],
+    nextStep: view.nextStep,
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderPaymentReadinessWorkspaceResponseDto(
+  view: TenantEcommerceOrderPaymentReadinessWorkspaceView,
+): EcommerceOrderPaymentReadinessWorkspaceResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    workspaceStatus: view.workspaceStatus,
+    summary: view.summary,
+    paymentPlan: { ...view.paymentPlan },
+    invoiceSignal: { ...view.invoiceSignal },
+    closeoutSignal: { ...view.closeoutSignal },
+    readinessChecklist: [...view.readinessChecklist],
+    frictionPoints: [...view.frictionPoints],
+    nextStep: view.nextStep,
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderPostSaleLifecycleSummaryResponseDto(
+  view: TenantEcommerceOrderPostSaleLifecycleSummaryView,
+): EcommerceOrderPostSaleLifecycleSummaryResponseDto {
+  return {
+    orderDraftId: view.orderDraftId,
+    orderLabel: view.orderLabel,
+    currentStatus: view.currentStatus,
+    nextStep: view.nextStep,
+    updatedAt: view.updatedAt.toISOString(),
+  };
+}
+
+export function toEcommerceOrderPostSaleLifecycleDetailResponseDto(
+  view: TenantEcommerceOrderPostSaleLifecycleDetailView,
+): EcommerceOrderPostSaleLifecycleDetailResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    currentStatus: view.currentStatus,
+    summary: view.summary,
+    lastAction: view.lastAction,
+    nextStep: view.nextStep,
+    timeline: view.timeline.map((entry: TenantEcommerceOrderPostSaleLifecycleEntryView) => ({
+      ...entry,
+    })),
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderPostSaleLifecycleRegistryResponseDto(
+  view: TenantEcommerceOrderPostSaleLifecycleRegistryView,
+): EcommerceOrderPostSaleLifecycleRegistryResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    summary: { ...view.summary },
+    orders: view.orders.map((entry) =>
+      toEcommerceOrderPostSaleLifecycleSummaryResponseDto(entry),
     ),
   };
 }

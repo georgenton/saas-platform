@@ -95,12 +95,15 @@ export * from './lib/use-cases/get-tenant-ecommerce-invoice-draft-handoff-worksp
 export * from './lib/use-cases/request-tenant-ecommerce-invoice-handoff-acknowledgement.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-payment-readiness-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-payment-confirmation-workspace.use-case';
+export * from './lib/use-cases/request-tenant-ecommerce-order-payment-confirmation-decision.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-fulfillment-readiness-workspace.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-order-fulfillment-execution-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-status-lifecycle-detail.use-case';
 export * from './lib/use-cases/list-tenant-ecommerce-order-status-lifecycles.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-post-sale-lifecycle-detail.use-case';
 export * from './lib/use-cases/list-tenant-ecommerce-order-post-sale-lifecycles.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-revenue-tracking-summary.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-order-revenue-ops-board.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-operator-workboard.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-ops-priority-queue.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-ops-attention-workspace.use-case';

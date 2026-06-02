@@ -41,6 +41,7 @@ import {
   RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
   RequestTenantEcommerceOrderApprovalDecisionUseCase,
   RequestTenantEcommerceOrderHandoffDecisionUseCase,
+  RequestTenantEcommerceOrderPaymentConfirmationDecisionUseCase,
   RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
   RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
   RequestTenantEcommerceInvoiceDraftLaunchBridgeUseCase,
@@ -55,6 +56,7 @@ import {
   GetTenantEcommerceOrderHandoffExecutionWorkspaceUseCase,
   GetTenantEcommerceOrderHoldResolutionWorkspaceUseCase,
   GetTenantEcommerceOrderOpsEscalationBoardUseCase,
+  GetTenantEcommerceOrderRevenueOpsBoardUseCase,
   GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase,
   GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
   GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
@@ -65,6 +67,7 @@ import {
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
+  GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
   RequestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase,
   RequestTenantEcommerceProductEntityChannelDraftActionPacketUseCase,
@@ -6355,6 +6358,54 @@ describe('Ecommerce product entity use cases', () => {
     });
   });
 
+  it('requests one order payment confirmation decision', async () => {
+    const paymentConfirmationUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:38:00.000Z'),
+        productEntity,
+        orderDraft: {
+          id: 'order_draft_001',
+          orderLabel: 'Order draft',
+        },
+        confirmationStatus: 'ready_for_confirmation',
+        blockedBy: [],
+        guardrails: ['Payment confirmation guardrail'],
+      }),
+    };
+    const fulfillmentReadinessUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        blockedBy: [],
+        guardrails: ['Fulfillment guardrail'],
+      }),
+    };
+    const postSaleLifecycleUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        currentStatus: 'awaiting_payment',
+        blockedBy: [],
+        guardrails: ['Post-sale guardrail'],
+      }),
+    };
+    const useCase =
+      new RequestTenantEcommerceOrderPaymentConfirmationDecisionUseCase(
+        paymentConfirmationUseCase as never,
+        fulfillmentReadinessUseCase as never,
+        postSaleLifecycleUseCase as never,
+        () => new Date('2026-06-02T10:39:00.000Z'),
+      );
+
+    await expect(
+      useCase.execute(
+        'saas-platform',
+        'product_entity_001',
+        'order_draft_001',
+      ),
+    ).resolves.toMatchObject({
+      decision: 'confirmed',
+      owner: { productKey: 'ecommerce', role: 'operator' },
+    });
+  });
+
   it('loads one order fulfillment readiness workspace', async () => {
     const paymentConfirmationUseCase = {
       execute: jest.fn().mockResolvedValue({
@@ -6396,6 +6447,71 @@ describe('Ecommerce product entity use cases', () => {
       fulfillmentProfile: {
         fulfillmentType: 'service',
         deliveryChannel: 'whatsapp',
+      },
+    });
+  });
+
+  it('loads one order fulfillment execution workspace', async () => {
+    const paymentConfirmationDecisionUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:40:00.000Z'),
+        productEntity,
+        orderDraft: {
+          id: 'order_draft_001',
+          orderLabel: 'Order draft',
+        },
+        decision: 'confirmed',
+        blockedBy: [],
+        guardrails: ['Decision guardrail'],
+      }),
+    };
+    const fulfillmentReadinessUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:41:00.000Z'),
+        productEntity,
+        orderDraft: {
+          id: 'order_draft_001',
+          orderLabel: 'Order draft',
+        },
+        fulfillmentStatus: 'waiting_payment_confirmation',
+        summary: 'Esperando confirmación.',
+        fulfillmentProfile: {
+          fulfillmentType: 'service',
+          deliveryChannel: 'whatsapp',
+          ownerRole: 'operator',
+        },
+        blockedBy: [],
+        nextStep: 'Coordinar entrega.',
+        guardrails: ['Fulfillment guardrail'],
+      }),
+    };
+    const postSaleLifecycleUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        currentStatus: 'awaiting_payment',
+        blockedBy: [],
+        guardrails: ['Post-sale guardrail'],
+      }),
+    };
+    const useCase = new GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase(
+      paymentConfirmationDecisionUseCase as never,
+      fulfillmentReadinessUseCase as never,
+      postSaleLifecycleUseCase as never,
+      () => new Date('2026-06-02T10:42:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute(
+        'saas-platform',
+        'product_entity_001',
+        'order_draft_001',
+      ),
+    ).resolves.toMatchObject({
+      executionStatus: 'ready_to_execute',
+      executionSignals: {
+        paymentDecision: 'confirmed',
+        postSaleStatus: 'awaiting_payment',
       },
     });
   });
@@ -6453,6 +6569,75 @@ describe('Ecommerce product entity use cases', () => {
         expect.objectContaining({
           orderDraftId: 'order_draft_001',
           paymentConfirmationStatus: 'ready_for_confirmation',
+        }),
+      ],
+    });
+  });
+
+  it('loads one order revenue ops board', async () => {
+    const revenueTrackingUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:43:00.000Z'),
+        productEntity,
+        summary: {
+          totalOrders: 1,
+          headline: '1 order',
+          detail: 'Detalle',
+        },
+        paymentRollup: {
+          readyForConfirmationCount: 1,
+          needsReviewCount: 0,
+          blockedCount: 0,
+          confirmationBacklog: 'Hay backlog listo.',
+        },
+        valueSignals: {
+          expectedPricingSnapshots: ['Operator confirmed band'],
+          billingIntents: ['invoice'],
+        },
+        entries: [
+          {
+            orderDraftId: 'order_draft_001',
+            orderLabel: 'Order draft',
+            currentStatus: 'awaiting_payment',
+            paymentConfirmationStatus: 'ready_for_confirmation',
+            fulfillmentStatus: 'waiting_payment_confirmation',
+            pricingSnapshot: 'Operator confirmed band',
+            billingIntent: 'invoice',
+            nextStep: 'Confirmar cobro.',
+            updatedAt: new Date('2026-06-02T10:43:00.000Z'),
+          },
+        ],
+      }),
+    };
+    const paymentDecisionUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        decision: 'confirmed',
+      }),
+    };
+    const fulfillmentExecutionUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        executionStatus: 'ready_to_execute',
+        nextStep: 'Coordinar entrega.',
+      }),
+    };
+    const useCase = new GetTenantEcommerceOrderRevenueOpsBoardUseCase(
+      revenueTrackingUseCase as never,
+      paymentDecisionUseCase as never,
+      fulfillmentExecutionUseCase as never,
+      () => new Date('2026-06-02T10:44:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001'),
+    ).resolves.toMatchObject({
+      summary: { totalOrders: 1, awaitingPaymentCount: 1, highPriorityCount: 1 },
+      entries: [
+        expect.objectContaining({
+          orderDraftId: 'order_draft_001',
+          priorityBand: 'high',
+          paymentDecision: 'confirmed',
+          fulfillmentExecutionStatus: 'ready_to_execute',
         }),
       ],
     });

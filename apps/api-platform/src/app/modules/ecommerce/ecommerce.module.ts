@@ -25,6 +25,8 @@ import {
   GetTenantEcommerceOrderOpsAttentionWorkspaceUseCase,
   GetTenantEcommerceOrderOpsEscalationBoardUseCase,
   GetTenantEcommerceOrderOpsPriorityQueueUseCase,
+  GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
+  GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
   GetTenantEcommerceInvoiceDraftHandoffWorkspaceUseCase,
@@ -65,6 +67,7 @@ import {
   ListTenantEcommerceProductWorkspacesUseCase,
   ListTenantEcommerceSavedProductDraftsUseCase,
   ListTenantEcommerceOrderDraftsUseCase,
+  ListTenantEcommerceOrderPostSaleLifecyclesUseCase,
   ListTenantEcommerceOrderStatusLifecyclesUseCase,
   ListTenantEcommerceLaunchPlansUseCase,
   ListTenantEcommerceProductSetupsUseCase,
@@ -86,6 +89,7 @@ import {
   RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
   RequestTenantEcommerceOrderApprovalDecisionUseCase,
   RequestTenantEcommerceOrderHandoffDecisionUseCase,
+  RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
   RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
   RequestTenantEcommerceInvoiceDraftLaunchBridgeUseCase,
   RequestTenantEcommerceOrderRouteResolutionPacketUseCase,
@@ -1344,6 +1348,29 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
+      inject: [GetTenantEcommerceInvoiceDraftHandoffWorkspaceUseCase],
+      useFactory: (getTenantEcommerceInvoiceDraftHandoffWorkspaceUseCase) =>
+        new RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase(
+          getTenantEcommerceInvoiceDraftHandoffWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
+      inject: [
+        RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
+        RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
+      ],
+      useFactory: (
+        requestTenantEcommerceCheckoutCloseoutPacketUseCase,
+        requestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
+      ) =>
+        new GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase(
+          requestTenantEcommerceCheckoutCloseoutPacketUseCase,
+          requestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
       inject: [
         GetTenantEcommerceOrderDraftDetailUseCase,
@@ -1377,6 +1404,39 @@ import { EcommerceController } from './ecommerce.controller';
         new ListTenantEcommerceOrderStatusLifecyclesUseCase(
           listTenantEcommerceOrderDraftsUseCase,
           getTenantEcommerceOrderStatusLifecycleDetailUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
+      inject: [
+        GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
+        RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
+        GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderStatusLifecycleDetailUseCase,
+        requestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
+        getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
+      ) =>
+        new GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase(
+          getTenantEcommerceOrderStatusLifecycleDetailUseCase,
+          requestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
+          getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: ListTenantEcommerceOrderPostSaleLifecyclesUseCase,
+      inject: [
+        ListTenantEcommerceOrderDraftsUseCase,
+        GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
+      ],
+      useFactory: (
+        listTenantEcommerceOrderDraftsUseCase,
+        getTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
+      ) =>
+        new ListTenantEcommerceOrderPostSaleLifecyclesUseCase(
+          listTenantEcommerceOrderDraftsUseCase,
+          getTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
         ),
     },
     {

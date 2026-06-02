@@ -2370,3 +2370,111 @@ export interface TenantEcommerceOrderOpsEscalationBoardView {
   }>;
   entries: TenantEcommerceOrderOpsEscalationBoardEntryView[];
 }
+
+export interface TenantEcommerceInvoiceHandoffAcknowledgementView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  acknowledgementStatus: 'accepted' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  receivedArtifacts: string[];
+  missingSignals: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderPaymentReadinessWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  workspaceStatus: 'ready_for_collection' | 'needs_confirmation' | 'blocked';
+  summary: string;
+  paymentPlan: {
+    collectionChannel: 'landing' | 'catalog' | 'whatsapp';
+    pricingSnapshot: string;
+    billingIntent: string | null;
+    primaryCta: string;
+  };
+  invoiceSignal: {
+    acknowledgementStatus: 'accepted' | 'needs_data' | 'blocked';
+    detail: string;
+  };
+  closeoutSignal: {
+    closeoutStatus: 'ready_for_operator_closeout' | 'needs_data' | 'blocked';
+    paymentReadinessStatus: 'ready' | 'needs_customer_input' | 'blocked';
+  };
+  readinessChecklist: string[];
+  frictionPoints: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderPostSaleLifecycleEntryView {
+  key:
+    | 'handed_off'
+    | 'invoicing'
+    | 'awaiting_payment'
+    | 'paid'
+    | 'blocked';
+  label: string;
+  status: 'completed' | 'active' | 'pending';
+  detail: string;
+}
+
+export interface TenantEcommerceOrderPostSaleLifecycleSummaryView {
+  orderDraftId: string;
+  orderLabel: string;
+  currentStatus:
+    | 'handed_off'
+    | 'invoicing'
+    | 'awaiting_payment'
+    | 'paid'
+    | 'blocked';
+  nextStep: string;
+  updatedAt: Date;
+}
+
+export interface TenantEcommerceOrderPostSaleLifecycleRegistryView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  summary: {
+    totalOrders: number;
+    handedOffCount: number;
+    invoicingCount: number;
+    awaitingPaymentCount: number;
+    paidCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  orders: TenantEcommerceOrderPostSaleLifecycleSummaryView[];
+}
+
+export interface TenantEcommerceOrderPostSaleLifecycleDetailView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  currentStatus:
+    | 'handed_off'
+    | 'invoicing'
+    | 'awaiting_payment'
+    | 'paid'
+    | 'blocked';
+  summary: string;
+  lastAction: string;
+  nextStep: string;
+  timeline: TenantEcommerceOrderPostSaleLifecycleEntryView[];
+  blockedBy: string[];
+  guardrails: string[];
+}

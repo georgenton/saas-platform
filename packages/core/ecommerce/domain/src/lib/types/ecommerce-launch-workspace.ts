@@ -1953,3 +1953,89 @@ export interface TenantEcommerceOrderGrowthFollowUpWorkspaceView {
   blockedBy: string[];
   guardrails: string[];
 }
+
+export interface TenantEcommerceOrderApprovalDecisionView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  decision: 'approved' | 'needs_follow_up' | 'blocked';
+  summary: string;
+  owner: {
+    productKey: 'ecommerce';
+    role: 'operator';
+  };
+  rationale: string;
+  approvalChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderFiscalDataCompletionWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  workspaceStatus: 'ready' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+  };
+  requiredFields: string[];
+  missingFields: string[];
+  completionHints: Array<{
+    fieldKey: string;
+    label: string;
+    hint: string;
+  }>;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderStatusLifecycleEntryView {
+  key: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+  label: string;
+  status: 'completed' | 'active' | 'pending';
+  detail: string;
+}
+
+export interface TenantEcommerceOrderStatusLifecycleSummaryView {
+  orderDraftId: string;
+  orderLabel: string;
+  currentStatus: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+  lastAction: string;
+  nextStep: string;
+  updatedAt: Date;
+}
+
+export interface TenantEcommerceOrderStatusLifecycleRegistryView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  summary: {
+    totalOrders: number;
+    draftCount: number;
+    underReviewCount: number;
+    approvedCount: number;
+    handedOffCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  orders: TenantEcommerceOrderStatusLifecycleSummaryView[];
+}
+
+export interface TenantEcommerceOrderStatusLifecycleDetailView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  currentStatus: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+  summary: string;
+  lastAction: string;
+  nextStep: string;
+  timeline: TenantEcommerceOrderStatusLifecycleEntryView[];
+  blockedBy: string[];
+  guardrails: string[];
+}

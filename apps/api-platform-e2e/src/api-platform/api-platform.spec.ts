@@ -64,8 +64,10 @@ import {
   GetTenantEcommerceCatalogListingAssetUseCase,
   GetTenantEcommerceLiveStorefrontSessionWorkspaceUseCase,
   GetTenantEcommerceOrderDraftDetailUseCase,
+  GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
   GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
+  GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
   GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
   GetTenantEcommerceStorefrontReleaseControlWorkspaceUseCase,
   GetTenantEcommerceStorefrontGoLiveManifestUseCase,
@@ -92,6 +94,7 @@ import {
   ListTenantEcommerceProductEntityChannelReleaseCandidatesUseCase,
   ListTenantEcommerceSavedProductEntityChannelDraftsUseCase,
   ListTenantEcommerceOrderDraftsUseCase,
+  ListTenantEcommerceOrderStatusLifecyclesUseCase,
   RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
   RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
   SaveTenantEcommerceProductAuthoringDraftUseCase,
@@ -111,6 +114,7 @@ import {
   RequestTenantEcommerceCatalogMerchandisingPacketUseCase,
   RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
   RequestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
+  RequestTenantEcommerceOrderApprovalDecisionUseCase,
   RequestTenantEcommerceOrderInvoicingBridgeUseCase,
   RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
   RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
@@ -395,10 +399,16 @@ describe('API', () => {
   let getTenantEcommerceOrderDraftDetailUseCase: {
     execute: jest.Mock;
   };
+  let getTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
   let getTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase: {
     execute: jest.Mock;
   };
   let getTenantEcommerceOrderReviewWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcommerceOrderStatusLifecycleDetailUseCase: {
     execute: jest.Mock;
   };
   let getTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase: {
@@ -452,10 +462,16 @@ describe('API', () => {
   let listTenantEcommerceOrderDraftsUseCase: {
     execute: jest.Mock;
   };
+  let listTenantEcommerceOrderStatusLifecyclesUseCase: {
+    execute: jest.Mock;
+  };
   let requestTenantEcommerceCheckoutCustomerCapturePacketUseCase: {
     execute: jest.Mock;
   };
   let requestTenantEcommerceCheckoutCloseoutPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantEcommerceOrderApprovalDecisionUseCase: {
     execute: jest.Mock;
   };
   let requestTenantEcommerceOrderInvoicingBridgeUseCase: {
@@ -6588,6 +6604,302 @@ describe('API', () => {
         guardrails: ['Growth workspace guardrail'],
       }),
     };
+    requestTenantEcommerceOrderApprovalDecisionUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-01T11:59:00.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        orderDraft: {
+          id: 'order_draft_001',
+          tenantId: 'tenant_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          status: 'draft',
+          orderLabel:
+            'SaaS Platform Store flagship offer setup v2 order draft',
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          closingChannel: 'whatsapp',
+          captureStatus: 'ready_for_order_draft',
+          invoicingReadinessStatus: 'needs_data',
+          customerProfile: {
+            fullName: null,
+            email: null,
+            whatsappPhone: null,
+            billingIntent: null,
+            buyerCompany: null,
+            buyerTaxIdOrDocument: null,
+          },
+          requiredFields: ['full_name', 'email', 'whatsapp_phone'],
+          optionalFields: ['buyer_company', 'buyer_tax_id_or_document'],
+          operatorPrompts: ['Prompt uno', 'Prompt dos'],
+          missingFields: [
+            'buyer_legal_name',
+            'buyer_tax_id_or_document',
+            'billing_email',
+          ],
+          blockedBy: [],
+          guardrails: ['Guardrail'],
+          createdAt: new Date('2026-06-01T11:52:00.000Z'),
+          updatedAt: new Date('2026-06-01T11:52:00.000Z'),
+        },
+        decision: 'needs_follow_up',
+        summary:
+          'La orden todavía necesita follow-up antes de tratarla como aprobada.',
+        owner: {
+          productKey: 'ecommerce',
+          role: 'operator',
+        },
+        rationale: 'Falta completar datos fiscales del comprador.',
+        approvalChecklist: ['Validar buyer profile', 'Confirmar siguiente paso'],
+        blockedBy: [],
+        guardrails: ['Approval decision guardrail'],
+      }),
+    };
+    getTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-01T11:59:30.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        orderDraft: {
+          id: 'order_draft_001',
+          tenantId: 'tenant_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          status: 'draft',
+          orderLabel:
+            'SaaS Platform Store flagship offer setup v2 order draft',
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          closingChannel: 'whatsapp',
+          captureStatus: 'ready_for_order_draft',
+          invoicingReadinessStatus: 'needs_data',
+          customerProfile: {
+            fullName: null,
+            email: null,
+            whatsappPhone: null,
+            billingIntent: null,
+            buyerCompany: null,
+            buyerTaxIdOrDocument: null,
+          },
+          requiredFields: ['full_name', 'email', 'whatsapp_phone'],
+          optionalFields: ['buyer_company', 'buyer_tax_id_or_document'],
+          operatorPrompts: ['Prompt uno', 'Prompt dos'],
+          missingFields: [
+            'buyer_legal_name',
+            'buyer_tax_id_or_document',
+            'billing_email',
+          ],
+          blockedBy: [],
+          guardrails: ['Guardrail'],
+          createdAt: new Date('2026-06-01T11:52:00.000Z'),
+          updatedAt: new Date('2026-06-01T11:52:00.000Z'),
+        },
+        workspaceStatus: 'needs_data',
+        summary:
+          'La orden necesita completar datos fiscales antes del invoice draft.',
+        targetWorkspace: {
+          productKey: 'invoicing',
+          stage: 'electronic_invoicing_ec_mvp',
+        },
+        requiredFields: [
+          'buyer_legal_name',
+          'buyer_tax_id_or_document',
+          'billing_email',
+        ],
+        missingFields: [
+          'buyer_legal_name',
+          'buyer_tax_id_or_document',
+          'billing_email',
+        ],
+        completionHints: [
+          {
+            fieldKey: 'buyer_legal_name',
+            label: 'buyer legal name',
+            hint: 'Pedir nombre legal.',
+          },
+          {
+            fieldKey: 'buyer_tax_id_or_document',
+            label: 'buyer tax id or document',
+            hint: 'Pedir documento fiscal.',
+          },
+          {
+            fieldKey: 'billing_email',
+            label: 'billing email',
+            hint: 'Pedir correo de facturación.',
+          },
+        ],
+        blockedBy: [],
+        guardrails: ['Fiscal completion guardrail'],
+      }),
+    };
+    listTenantEcommerceOrderStatusLifecyclesUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-01T12:00:00.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        summary: {
+          totalOrders: 1,
+          draftCount: 0,
+          underReviewCount: 1,
+          approvedCount: 0,
+          handedOffCount: 0,
+          blockedCount: 0,
+          headline: '1 order draft en seguimiento operativo.',
+          detail: 'El lifecycle ayuda a ver qué sigue antes de handoff.',
+        },
+        orders: [
+          {
+            orderDraftId: 'order_draft_001',
+            orderLabel:
+              'SaaS Platform Store flagship offer setup v2 order draft',
+            currentStatus: 'under_review',
+            nextStep: 'Completar fiscal data completion',
+            updatedAt: new Date('2026-06-01T12:00:00.000Z'),
+          },
+        ],
+      }),
+    };
+    getTenantEcommerceOrderStatusLifecycleDetailUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-01T12:00:30.000Z'),
+        productEntity: {
+          tenantSlug: 'saas-platform',
+          generatedAt: new Date('2026-05-28T16:31:00.000Z'),
+          productEntityId: 'product_entity_001',
+          productSetupId: 'product_setup_001',
+          savedDraftId: 'saved_draft_001',
+          sourceDraftId: 'saas-platform:draft:core-offer',
+          status: 'needs_channel_assets',
+          title: 'SaaS Platform Store flagship offer setup v2',
+          productType: 'core_offer',
+          pricingBand: 'Operator confirmed band',
+          offerAngle: 'Promesa refinada para setup persistido',
+          primaryCta: 'Activar producto base',
+          suggestedChannels: ['catalog', 'landing'],
+          channelSequence: ['Landing step', 'Whatsapp close'],
+          promotedFromSetupAt: new Date('2026-05-28T16:31:00.000Z'),
+        },
+        orderDraft: {
+          id: 'order_draft_001',
+          tenantId: 'tenant_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          status: 'draft',
+          orderLabel:
+            'SaaS Platform Store flagship offer setup v2 order draft',
+          offerTitle: 'Catalog asset entity final',
+          pricingSnapshot: 'Operator confirmed band',
+          primaryCta: 'Activar producto base',
+          closingChannel: 'whatsapp',
+          captureStatus: 'ready_for_order_draft',
+          invoicingReadinessStatus: 'needs_data',
+          customerProfile: {
+            fullName: null,
+            email: null,
+            whatsappPhone: null,
+            billingIntent: null,
+            buyerCompany: null,
+            buyerTaxIdOrDocument: null,
+          },
+          requiredFields: ['full_name', 'email', 'whatsapp_phone'],
+          optionalFields: ['buyer_company', 'buyer_tax_id_or_document'],
+          operatorPrompts: ['Prompt uno', 'Prompt dos'],
+          missingFields: [
+            'buyer_legal_name',
+            'buyer_tax_id_or_document',
+            'billing_email',
+          ],
+          blockedBy: [],
+          guardrails: ['Guardrail'],
+          createdAt: new Date('2026-06-01T11:52:00.000Z'),
+          updatedAt: new Date('2026-06-01T11:52:00.000Z'),
+        },
+        currentStatus: 'under_review',
+        summary: 'La orden sigue en revisión operativa antes del handoff.',
+        timeline: [
+          {
+            key: 'draft_created',
+            title: 'Draft created',
+            status: 'completed',
+            detail: 'La orden ya existe como draft persistido.',
+          },
+          {
+            key: 'under_review',
+            title: 'Under review',
+            status: 'active',
+            detail: 'La revisión operativa sigue abierta.',
+          },
+          {
+            key: 'approval_decision',
+            title: 'Approval decision',
+            status: 'pending',
+            detail: 'Todavía falta decisión final.',
+          },
+          {
+            key: 'invoice_handoff',
+            title: 'Invoice handoff',
+            status: 'pending',
+            detail: 'El handoff fiscal todavía no está listo.',
+          },
+        ],
+        lastAction: 'Se cargó el review workspace y falta completar datos.',
+        nextStep: 'Completar fiscal data completion',
+        blockedBy: [],
+        guardrails: ['Lifecycle guardrail'],
+      }),
+    };
     requestTenantEcommerceProductEntityCommercializationPacketUseCase = {
       execute: jest.fn().mockResolvedValue({
         tenantSlug: 'saas-platform',
@@ -9326,8 +9638,12 @@ describe('API', () => {
       .useValue(listTenantEcommerceOrderDraftsUseCase)
       .overrideProvider(GetTenantEcommerceOrderDraftDetailUseCase)
       .useValue(getTenantEcommerceOrderDraftDetailUseCase)
+      .overrideProvider(GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase)
+      .useValue(getTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase)
       .overrideProvider(GetTenantEcommerceOrderReviewWorkspaceUseCase)
       .useValue(getTenantEcommerceOrderReviewWorkspaceUseCase)
+      .overrideProvider(RequestTenantEcommerceOrderApprovalDecisionUseCase)
+      .useValue(requestTenantEcommerceOrderApprovalDecisionUseCase)
       .overrideProvider(RequestTenantEcommerceCheckoutCustomerCapturePacketUseCase)
       .useValue(requestTenantEcommerceCheckoutCustomerCapturePacketUseCase)
       .overrideProvider(RequestTenantEcommerceCheckoutCloseoutPacketUseCase)
@@ -9340,6 +9656,10 @@ describe('API', () => {
       .useValue(requestTenantEcommerceOrderToGrowthConversationBridgeUseCase)
       .overrideProvider(GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase)
       .useValue(getTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase)
+      .overrideProvider(ListTenantEcommerceOrderStatusLifecyclesUseCase)
+      .useValue(listTenantEcommerceOrderStatusLifecyclesUseCase)
+      .overrideProvider(GetTenantEcommerceOrderStatusLifecycleDetailUseCase)
+      .useValue(getTenantEcommerceOrderStatusLifecycleDetailUseCase)
       .overrideProvider(GetTenantEcommerceStoreSetupWorkspaceUseCase)
       .useValue(getTenantEcommerceStoreSetupWorkspaceUseCase)
       .overrideProvider(GetTenantEcommerceLaunchWorkspaceUseCase)
@@ -14359,6 +14679,52 @@ describe('API', () => {
     );
   });
 
+  it('POST /api/ecommerce/tenants/:slug/product-entities/:productEntityId/order-drafts/:orderDraftId/request-approval-decision should return one approval decision', async () => {
+    await request(httpServer)
+      .post(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/order-drafts/order_draft_001/request-approval-decision',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.decision).toBe('needs_follow_up');
+        expect(response.body.owner.productKey).toBe('ecommerce');
+        expect(response.body.approvalChecklist).toContain(
+          'Validar buyer profile',
+        );
+      });
+
+    expect(
+      requestTenantEcommerceOrderApprovalDecisionUseCase.execute,
+    ).toHaveBeenCalledWith(
+      'saas-platform',
+      'product_entity_001',
+      'order_draft_001',
+    );
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/order-drafts/:orderDraftId/fiscal-data-completion-workspace should return one fiscal completion workspace', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/order-drafts/order_draft_001/fiscal-data-completion-workspace',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.workspaceStatus).toBe('needs_data');
+        expect(response.body.targetWorkspace.productKey).toBe('invoicing');
+        expect(response.body.missingFields).toContain('billing_email');
+      });
+
+    expect(
+      getTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith(
+      'saas-platform',
+      'product_entity_001',
+      'order_draft_001',
+    );
+  });
+
   it('POST /api/ecommerce/tenants/:slug/product-entities/:productEntityId/order-drafts/:orderDraftId/request-invoice-draft-bridge should return one invoice draft bridge', async () => {
     await request(httpServer)
       .post(
@@ -14400,6 +14766,49 @@ describe('API', () => {
 
     expect(
       getTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith(
+      'saas-platform',
+      'product_entity_001',
+      'order_draft_001',
+    );
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/order-status-lifecycles should return one order lifecycle registry', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/order-status-lifecycles',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.summary.totalOrders).toBe(1);
+        expect(response.body.orders[0].currentStatus).toBe(
+          'under_review',
+        );
+      });
+
+    expect(
+      listTenantEcommerceOrderStatusLifecyclesUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 'product_entity_001');
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/order-status-lifecycles/:orderDraftId should return one order lifecycle detail', async () => {
+    await request(httpServer)
+      .get(
+        '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/order-status-lifecycles/order_draft_001',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.currentStatus).toBe('under_review');
+        expect(response.body.timeline).toHaveLength(4);
+        expect(response.body.nextStep).toBe(
+          'Completar fiscal data completion',
+        );
+      });
+
+    expect(
+      getTenantEcommerceOrderStatusLifecycleDetailUseCase.execute,
     ).toHaveBeenCalledWith(
       'saas-platform',
       'product_entity_001',

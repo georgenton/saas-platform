@@ -3598,6 +3598,99 @@ export interface EcommerceOrderGrowthFollowUpWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface EcommerceOrderApprovalDecisionResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  decision: 'approved' | 'needs_follow_up' | 'blocked';
+  summary: string;
+  owner: {
+    productKey: 'ecommerce';
+    role: 'operator';
+  };
+  rationale: string;
+  approvalChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderFiscalDataCompletionWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  workspaceStatus: 'ready' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+  };
+  requiredFields: string[];
+  missingFields: string[];
+  completionHints: Array<{
+    fieldKey: string;
+    label: string;
+    hint: string;
+  }>;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderStatusLifecycleSummaryResponse {
+  orderDraftId: string;
+  orderLabel: string;
+  currentStatus:
+    | 'draft'
+    | 'under_review'
+    | 'approved'
+    | 'handed_off'
+    | 'blocked';
+  nextStep: string;
+  updatedAt: string;
+}
+
+export interface EcommerceOrderStatusLifecycleRegistryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: {
+    totalOrders: number;
+    draftCount: number;
+    underReviewCount: number;
+    approvedCount: number;
+    handedOffCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  orders: EcommerceOrderStatusLifecycleSummaryResponse[];
+}
+
+export interface EcommerceOrderStatusLifecycleDetailResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  currentStatus:
+    | 'draft'
+    | 'under_review'
+    | 'approved'
+    | 'handed_off'
+    | 'blocked';
+  summary: string;
+  lastAction: string;
+  nextStep: string;
+  timeline: Array<{
+    key: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+    label: string;
+    status: 'completed' | 'active' | 'pending';
+    detail: string;
+  }>;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface AiMemoryWorkspaceAgentResponse {
   agentKey: string;
   title: string;

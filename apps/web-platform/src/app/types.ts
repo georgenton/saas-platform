@@ -4158,6 +4158,29 @@ export interface EcommerceOrderPaymentConfirmationLogResponse {
   guardrails: string[];
 }
 
+export interface EcommerceOrderPaymentDisputeWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  disputeStatus: 'confirmed' | 'needs_review' | 'hold';
+  summary: string;
+  disputeProfile: {
+    disputeReason: string;
+    activeChannel: 'landing' | 'catalog' | 'whatsapp';
+    recommendedOwnerRole: 'operator';
+    expectedEvidence: string[];
+  };
+  resolutionPaths: Array<{
+    key: 'confirmed' | 'needs_review' | 'hold';
+    label: string;
+    detail: string;
+  }>;
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceOrderFulfillmentReadinessWorkspaceResponse {
   tenantSlug: string;
   generatedAt: string;
@@ -4238,6 +4261,26 @@ export interface EcommerceOrderFulfillmentDeliveryWorkspaceResponse {
       | 'paid'
       | 'blocked';
   };
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderFulfillmentCompletionPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  completionStatus: 'completed' | 'partial' | 'blocked';
+  summary: string;
+  deliveryResult: {
+    fulfillmentType: 'digital' | 'service' | 'physical';
+    deliveryMode: 'guided_handoff' | 'manual_execution' | 'service_activation';
+    ownerRole: 'operator';
+    resultLabel: string;
+  };
+  completionChecklist: string[];
+  operatorNotes: string[];
   nextStep: string;
   blockedBy: string[];
   guardrails: string[];
@@ -4418,6 +4461,42 @@ export interface EcommerceOrderPostSaleOpsBoardResponse {
     operatorBias: string;
   }>;
   entries: EcommerceOrderPostSaleOpsBoardEntryResponse[];
+}
+
+export interface EcommerceOrderPostSaleReportingBoardEntryResponse {
+  orderDraftId: string;
+  orderLabel: string;
+  reportingStatus: 'paid' | 'in_progress' | 'delivered' | 'blocked';
+  paymentLogStatus: 'confirmed' | 'needs_review' | 'disputed';
+  deliveryStatus: 'in_progress' | 'delivered' | 'blocked';
+  driftSignal:
+    | 'aligned'
+    | 'payment_without_delivery'
+    | 'delivery_without_paid_lifecycle';
+  nextAction: string;
+  updatedAt: string;
+}
+
+export interface EcommerceOrderPostSaleReportingBoardResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: {
+    totalOrders: number;
+    paidCount: number;
+    inProgressCount: number;
+    deliveredCount: number;
+    blockedCount: number;
+    divergenceCount: number;
+    headline: string;
+    detail: string;
+  };
+  reportingLanes: Array<{
+    laneKey: 'paid' | 'in_progress' | 'delivered' | 'blocked';
+    count: number;
+    operatorBias: string;
+  }>;
+  entries: EcommerceOrderPostSaleReportingBoardEntryResponse[];
 }
 
 export interface AiMemoryWorkspaceAgentResponse {

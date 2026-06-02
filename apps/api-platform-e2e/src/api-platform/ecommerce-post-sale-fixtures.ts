@@ -136,3 +136,99 @@ export function createEcommerceOrderPostSaleOpsBoardFixture() {
     ],
   };
 }
+
+export function createEcommerceOrderPaymentDisputeWorkspaceFixture() {
+  return {
+    tenantSlug: 'saas-platform',
+    generatedAt: new Date('2026-06-02T11:01:00.000Z'),
+    productEntity,
+    orderDraft,
+    disputeStatus: 'confirmed',
+    summary: 'El cobro está alineado y no requiere escalar una disputa real.',
+    disputeProfile: {
+      activeChannel: 'whatsapp',
+      disputeReason: 'Las señales de cobro están alineadas.',
+      recommendedOwnerRole: 'operator',
+      expectedEvidence: [
+        'Transferencia esperada',
+        'Pantallazo de confirmación',
+      ],
+    },
+    resolutionPaths: [
+      {
+        key: 'confirmed',
+        label: 'Confirmar cobro',
+        detail: 'Confirmar el mismo canal con el buyer.',
+      },
+      {
+        key: 'hold',
+        label: 'Escalar a hold',
+        detail: 'Escalar a hold si aparece contradicción fiscal.',
+      },
+    ],
+    nextStep: 'Continuar con fulfillment o marcar la orden como confirmada.',
+    blockedBy: [],
+    guardrails: ['Payment dispute guardrail'],
+  };
+}
+
+export function createEcommerceOrderFulfillmentCompletionPacketFixture() {
+  return {
+    tenantSlug: 'saas-platform',
+    generatedAt: new Date('2026-06-02T11:01:10.000Z'),
+    productEntity,
+    orderDraft,
+    completionStatus: 'partial',
+    summary: 'La entrega ya avanzó, pero todavía quedan cierres menores.',
+    deliveryResult: {
+      resultLabel: 'Activación en curso con evidencia parcial.',
+      deliveryMode: 'service_activation',
+      completionChannel: 'whatsapp',
+    },
+    completionChecklist: [
+      'Verificar activación con el buyer',
+      'Registrar confirmación operativa',
+    ],
+    operatorNotes: ['Buyer respondió', 'Falta cierre final de activación'],
+    nextStep: 'Cerrar la confirmación final y mover la orden a delivered.',
+    blockedBy: [],
+    guardrails: ['Fulfillment completion guardrail'],
+  };
+}
+
+export function createEcommerceOrderPostSaleReportingBoardFixture() {
+  return {
+    tenantSlug: 'saas-platform',
+    generatedAt: new Date('2026-06-02T11:01:20.000Z'),
+    productEntity,
+    summary: {
+      totalOrders: 1,
+      paidCount: 0,
+      inProgressCount: 1,
+      deliveredCount: 0,
+      blockedCount: 0,
+      divergenceCount: 1,
+      headline: 'Hay una orden activa con desvío entre cobro y entrega.',
+      detail: 'El reporting board ayuda a mirar órdenes vivas y cierres pendientes.',
+    },
+    reportingLanes: [
+      {
+        laneKey: 'in_progress',
+        count: 1,
+        operatorBias: 'Empujar entrega o resolver el desvío detectado.',
+      },
+    ],
+    entries: [
+      {
+        orderDraftId: 'order_draft_001',
+        orderLabel: 'SaaS Platform Store flagship offer setup v2 order draft',
+        reportingStatus: 'in_progress',
+        driftSignal: 'payment_without_delivery',
+        paymentLogStatus: 'confirmed',
+        deliveryStatus: 'in_progress',
+        nextAction: 'Cerrar fulfillment o revisar por qué aún no figura entregada.',
+        updatedAt: new Date('2026-06-02T11:01:20.000Z'),
+      },
+    ],
+  };
+}

@@ -79,6 +79,9 @@ export * from './lib/use-cases/request-tenant-ecommerce-order-invoicing-bridge.u
 export * from './lib/use-cases/request-tenant-ecommerce-order-to-invoice-readiness-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-checkout-closeout-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-order-to-growth-conversation-bridge.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-order-review-workspace.use-case';
+export * from './lib/use-cases/request-tenant-ecommerce-order-invoice-draft-bridge.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-order-growth-follow-up-workspace.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-setup-definition-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-workspace-readiness-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-launch-plan-activation-readiness.use-case';

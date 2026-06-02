@@ -17,6 +17,8 @@ import {
   GetTenantEcommerceCatalogListingAssetUseCase,
   GetTenantEcommerceLiveStorefrontSessionWorkspaceUseCase,
   GetTenantEcommerceOrderDraftDetailUseCase,
+  GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+  GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
   GetTenantEcommerceStorefrontReleaseCandidateBriefUseCase,
   GetTenantEcommerceStorefrontGoLiveManifestUseCase,
@@ -87,6 +89,7 @@ import {
   RequestTenantEcommerceWhatsappGrowthOperatorLaunchPacketUseCase,
   RequestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase,
   RequestTenantEcommerceOrderInvoicingBridgeUseCase,
+  RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
   RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
   RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
   RequestTenantEcommerceProductWorkspaceReadinessPacketUseCase,
@@ -1103,6 +1106,54 @@ import { EcommerceController } from './ecommerce.controller';
         new RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase(
           getTenantEcommerceOrderDraftDetailUseCase,
           requestTenantEcommerceWhatsappGrowthExecutionBridgeUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceOrderReviewWorkspaceUseCase,
+      inject: [
+        GetTenantEcommerceOrderDraftDetailUseCase,
+        RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
+        RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderDraftDetailUseCase,
+        requestTenantEcommerceCheckoutCloseoutPacketUseCase,
+        requestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
+      ) =>
+        new GetTenantEcommerceOrderReviewWorkspaceUseCase(
+          getTenantEcommerceOrderDraftDetailUseCase,
+          requestTenantEcommerceCheckoutCloseoutPacketUseCase,
+          requestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+      inject: [
+        GetTenantEcommerceOrderDraftDetailUseCase,
+        RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderDraftDetailUseCase,
+        requestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
+      ) =>
+        new RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase(
+          getTenantEcommerceOrderDraftDetailUseCase,
+          requestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+      inject: [
+        GetTenantEcommerceOrderDraftDetailUseCase,
+        RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderDraftDetailUseCase,
+        requestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
+      ) =>
+        new GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase(
+          getTenantEcommerceOrderDraftDetailUseCase,
+          requestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
         ),
     },
     {

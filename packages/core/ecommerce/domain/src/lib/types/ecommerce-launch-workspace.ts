@@ -2508,6 +2508,23 @@ export interface TenantEcommerceOrderPaymentConfirmationWorkspaceView {
   guardrails: string[];
 }
 
+export interface TenantEcommerceOrderPaymentConfirmationDecisionView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  decision: 'confirmed' | 'needs_review' | 'blocked';
+  summary: string;
+  owner: {
+    productKey: 'ecommerce';
+    role: 'operator';
+  };
+  rationale: string;
+  confirmationChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface TenantEcommerceOrderFulfillmentReadinessWorkspaceView {
   tenantSlug: string;
   generatedAt: Date;
@@ -2524,6 +2541,37 @@ export interface TenantEcommerceOrderFulfillmentReadinessWorkspaceView {
     ownerRole: 'operator';
   };
   prerequisites: string[];
+  blockedBy: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderFulfillmentExecutionWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  executionStatus: 'ready_to_execute' | 'waiting_payment_confirmation' | 'blocked';
+  summary: string;
+  fulfillmentProfile: {
+    fulfillmentType: 'digital' | 'service' | 'physical';
+    deliveryChannel: 'email' | 'whatsapp' | 'manual';
+    ownerRole: 'operator';
+  };
+  executionSignals: {
+    paymentDecision: 'confirmed' | 'needs_review' | 'blocked';
+    postSaleStatus:
+      | 'handed_off'
+      | 'invoicing'
+      | 'awaiting_payment'
+      | 'paid'
+      | 'blocked';
+    readinessStatus:
+      | 'ready_for_fulfillment'
+      | 'waiting_payment_confirmation'
+      | 'blocked';
+  };
+  executionChecklist: string[];
   blockedBy: string[];
   nextStep: string;
   guardrails: string[];
@@ -2577,4 +2625,41 @@ export interface TenantEcommerceOrderRevenueTrackingSummaryView {
     billingIntents: string[];
   };
   entries: TenantEcommerceOrderRevenueTrackingSummaryEntryView[];
+}
+
+export interface TenantEcommerceOrderRevenueOpsBoardEntryView {
+  orderDraftId: string;
+  orderLabel: string;
+  revenueStatus: 'awaiting_payment' | 'paid' | 'blocked';
+  priorityBand: 'critical' | 'high' | 'monitor';
+  paymentDecision: 'confirmed' | 'needs_review' | 'blocked';
+  fulfillmentExecutionStatus:
+    | 'ready_to_execute'
+    | 'waiting_payment_confirmation'
+    | 'blocked';
+  revenueImpact: string;
+  nextAction: string;
+  updatedAt: Date;
+}
+
+export interface TenantEcommerceOrderRevenueOpsBoardView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  summary: {
+    totalOrders: number;
+    criticalCount: number;
+    highPriorityCount: number;
+    paidCount: number;
+    awaitingPaymentCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  priorityLanes: Array<{
+    laneKey: 'critical' | 'high' | 'monitor';
+    count: number;
+    operatorBias: string;
+  }>;
+  entries: TenantEcommerceOrderRevenueOpsBoardEntryView[];
 }

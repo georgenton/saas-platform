@@ -4114,6 +4114,23 @@ export interface EcommerceOrderPaymentConfirmationWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface EcommerceOrderPaymentConfirmationDecisionResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  decision: 'confirmed' | 'needs_review' | 'blocked';
+  summary: string;
+  owner: {
+    productKey: 'ecommerce';
+    role: 'operator';
+  };
+  rationale: string;
+  confirmationChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceOrderFulfillmentReadinessWorkspaceResponse {
   tenantSlug: string;
   generatedAt: string;
@@ -4130,6 +4147,37 @@ export interface EcommerceOrderFulfillmentReadinessWorkspaceResponse {
     ownerRole: 'operator';
   };
   prerequisites: string[];
+  blockedBy: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcommerceOrderFulfillmentExecutionWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  executionStatus: 'ready_to_execute' | 'waiting_payment_confirmation' | 'blocked';
+  summary: string;
+  fulfillmentProfile: {
+    fulfillmentType: 'digital' | 'service' | 'physical';
+    deliveryChannel: 'email' | 'whatsapp' | 'manual';
+    ownerRole: 'operator';
+  };
+  executionSignals: {
+    paymentDecision: 'confirmed' | 'needs_review' | 'blocked';
+    postSaleStatus:
+      | 'handed_off'
+      | 'invoicing'
+      | 'awaiting_payment'
+      | 'paid'
+      | 'blocked';
+    readinessStatus:
+      | 'ready_for_fulfillment'
+      | 'waiting_payment_confirmation'
+      | 'blocked';
+  };
+  executionChecklist: string[];
   blockedBy: string[];
   nextStep: string;
   guardrails: string[];
@@ -4239,6 +4287,43 @@ export interface EcommerceOrderRevenueTrackingSummaryResponse {
     billingIntents: string[];
   };
   entries: EcommerceOrderRevenueTrackingSummaryEntryResponse[];
+}
+
+export interface EcommerceOrderRevenueOpsBoardEntryResponse {
+  orderDraftId: string;
+  orderLabel: string;
+  revenueStatus: 'awaiting_payment' | 'paid' | 'blocked';
+  priorityBand: 'critical' | 'high' | 'monitor';
+  paymentDecision: 'confirmed' | 'needs_review' | 'blocked';
+  fulfillmentExecutionStatus:
+    | 'ready_to_execute'
+    | 'waiting_payment_confirmation'
+    | 'blocked';
+  revenueImpact: string;
+  nextAction: string;
+  updatedAt: string;
+}
+
+export interface EcommerceOrderRevenueOpsBoardResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: {
+    totalOrders: number;
+    criticalCount: number;
+    highPriorityCount: number;
+    paidCount: number;
+    awaitingPaymentCount: number;
+    blockedCount: number;
+    headline: string;
+    detail: string;
+  };
+  priorityLanes: Array<{
+    laneKey: 'critical' | 'high' | 'monitor';
+    count: number;
+    operatorBias: string;
+  }>;
+  entries: EcommerceOrderRevenueOpsBoardEntryResponse[];
 }
 
 export interface AiMemoryWorkspaceAgentResponse {

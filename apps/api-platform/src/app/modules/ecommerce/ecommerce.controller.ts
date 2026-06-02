@@ -25,8 +25,10 @@ import {
   GetTenantEcommerceOrderOpsPriorityQueueUseCase,
   GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
   GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase,
+  GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
   GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
+  GetTenantEcommerceOrderRevenueOpsBoardUseCase,
   GetTenantEcommerceOrderRevenueTrackingSummaryUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
@@ -74,6 +76,7 @@ import {
   RequestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase,
   RequestTenantEcommerceOrderApprovalDecisionUseCase,
   RequestTenantEcommerceOrderHandoffDecisionUseCase,
+  RequestTenantEcommerceOrderPaymentConfirmationDecisionUseCase,
   RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
   RequestTenantEcommerceOrderInvoicingBridgeUseCase,
   RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
@@ -202,6 +205,7 @@ import {
   EcommerceOrderOpsAttentionWorkspaceResponseDto,
   EcommerceOrderOpsEscalationBoardResponseDto,
   EcommerceOrderOpsPriorityQueueResponseDto,
+  EcommerceOrderPaymentConfirmationDecisionResponseDto,
   EcommerceOrderInvoiceDraftBridgeResponseDto,
   EcommerceInvoiceDraftHandoffWorkspaceResponseDto,
   EcommerceInvoiceHandoffAcknowledgementResponseDto,
@@ -210,9 +214,11 @@ import {
   EcommerceInvoiceDraftLaunchBridgeResponseDto,
   EcommerceOrderPaymentReadinessWorkspaceResponseDto,
   EcommerceOrderPaymentConfirmationWorkspaceResponseDto,
+  EcommerceOrderFulfillmentExecutionWorkspaceResponseDto,
   EcommerceOrderFulfillmentReadinessWorkspaceResponseDto,
   EcommerceOrderPostSaleLifecycleDetailResponseDto,
   EcommerceOrderPostSaleLifecycleRegistryResponseDto,
+  EcommerceOrderRevenueOpsBoardResponseDto,
   EcommerceOrderRevenueTrackingSummaryResponseDto,
   EcommerceOrderRouteResolutionPacketResponseDto,
   EcommerceOrderApprovalDecisionResponseDto,
@@ -264,6 +270,7 @@ import {
   toEcommerceOrderOpsAttentionWorkspaceResponseDto,
   toEcommerceOrderOpsEscalationBoardResponseDto,
   toEcommerceOrderOpsPriorityQueueResponseDto,
+  toEcommerceOrderPaymentConfirmationDecisionResponseDto,
   toEcommerceOrderInvoiceDraftBridgeResponseDto,
   toEcommerceInvoiceDraftHandoffWorkspaceResponseDto,
   toEcommerceInvoiceHandoffAcknowledgementResponseDto,
@@ -272,9 +279,11 @@ import {
   toEcommerceInvoiceDraftLaunchBridgeResponseDto,
   toEcommerceOrderPaymentReadinessWorkspaceResponseDto,
   toEcommerceOrderPaymentConfirmationWorkspaceResponseDto,
+  toEcommerceOrderFulfillmentExecutionWorkspaceResponseDto,
   toEcommerceOrderFulfillmentReadinessWorkspaceResponseDto,
   toEcommerceOrderPostSaleLifecycleDetailResponseDto,
   toEcommerceOrderPostSaleLifecycleRegistryResponseDto,
+  toEcommerceOrderRevenueOpsBoardResponseDto,
   toEcommerceOrderRevenueTrackingSummaryResponseDto,
   toEcommerceOrderRouteResolutionPacketResponseDto,
   toEcommerceOrderApprovalDecisionResponseDto,
@@ -450,8 +459,11 @@ export class EcommerceController {
     private readonly getTenantEcommerceOrderOpsPriorityQueueUseCase: GetTenantEcommerceOrderOpsPriorityQueueUseCase,
     private readonly getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase: GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
     private readonly getTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase: GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase,
+    private readonly requestTenantEcommerceOrderPaymentConfirmationDecisionUseCase: RequestTenantEcommerceOrderPaymentConfirmationDecisionUseCase,
     private readonly getTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase: GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
+    private readonly getTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase: GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase,
     private readonly getTenantEcommerceOrderPostSaleLifecycleDetailUseCase: GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
+    private readonly getTenantEcommerceOrderRevenueOpsBoardUseCase: GetTenantEcommerceOrderRevenueOpsBoardUseCase,
     private readonly getTenantEcommerceOrderRevenueTrackingSummaryUseCase: GetTenantEcommerceOrderRevenueTrackingSummaryUseCase,
     private readonly getTenantEcommerceOrderStatusLifecycleDetailUseCase: GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
     private readonly getTenantEcommerceInvoiceDraftHandoffWorkspaceUseCase: GetTenantEcommerceInvoiceDraftHandoffWorkspaceUseCase,
@@ -2353,6 +2365,39 @@ export class EcommerceController {
     return toEcommerceOrderPaymentConfirmationWorkspaceResponseDto(workspace);
   }
 
+  @Post(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/request-payment-confirmation-decision',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantOrderPaymentConfirmationDecision(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderPaymentConfirmationDecisionResponseDto> {
+    const decision =
+      await this.requestTenantEcommerceOrderPaymentConfirmationDecisionUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        orderDraftId,
+      );
+
+    if (!decision) {
+      throw new NotFoundException(
+        `Order payment confirmation decision for order draft ${orderDraftId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceOrderPaymentConfirmationDecisionResponseDto(decision);
+  }
+
   @Get(
     ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/fulfillment-readiness-workspace',
   )
@@ -2384,6 +2429,39 @@ export class EcommerceController {
     }
 
     return toEcommerceOrderFulfillmentReadinessWorkspaceResponseDto(workspace);
+  }
+
+  @Get(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/fulfillment-execution-workspace',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantOrderFulfillmentExecutionWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderFulfillmentExecutionWorkspaceResponseDto> {
+    const workspace =
+      await this.getTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        orderDraftId,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Order fulfillment execution workspace for order draft ${orderDraftId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceOrderFulfillmentExecutionWorkspaceResponseDto(workspace);
   }
 
   @Get(':slug/product-entities/:productEntityId/order-operator-workboard')
@@ -2587,6 +2665,35 @@ export class EcommerceController {
     }
 
     return toEcommerceOrderRevenueTrackingSummaryResponseDto(summary);
+  }
+
+  @Get(':slug/product-entities/:productEntityId/order-revenue-ops-board')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantOrderRevenueOpsBoard(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderRevenueOpsBoardResponseDto> {
+    const board =
+      await this.getTenantEcommerceOrderRevenueOpsBoardUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+      );
+
+    if (!board) {
+      throw new NotFoundException(
+        `Order revenue ops board for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceOrderRevenueOpsBoardResponseDto(board);
   }
 
   @Get(

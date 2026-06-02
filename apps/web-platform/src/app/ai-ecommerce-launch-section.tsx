@@ -21,6 +21,7 @@ import {
   EcommerceCatalogCommercialCardResponse,
   EcommerceCatalogListingAssetResponse,
   EcommerceCatalogMerchandisingPacketResponse,
+  EcommerceCheckoutCloseoutPacketResponse,
   EcommerceCheckoutCustomerCapturePacketResponse,
   EcommerceCheckoutOrderIntakeWorkspaceResponse,
   EcommerceCatalogStorefrontPlacementPacketResponse,
@@ -35,12 +36,15 @@ import {
   EcommerceStorefrontReleaseControlWorkspaceResponse,
   EcommerceStorefrontGoLiveManifestResponse,
   EcommerceLiveStorefrontSessionWorkspaceResponse,
+  EcommerceOrderDraftDetailResponse,
+  EcommerceOrderDraftRegistryResponse,
   EcommerceStorefrontReleaseCandidateBriefResponse,
   EcommerceWhatsappSalesFlowResponse,
   EcommerceWhatsappGrowthActivationPacketResponse,
   EcommerceWhatsappGrowthExecutionBridgeResponse,
   EcommerceWhatsappGrowthLaunchAcknowledgementPacketResponse,
   EcommerceOrderInvoicingBridgeResponse,
+  EcommerceOrderToGrowthConversationBridgeResponse,
   EcommerceOrderToInvoiceReadinessPacketResponse,
   EcommerceWhatsappGrowthOperatorLaunchPacketResponse,
   EcommerceWhatsappGrowthActivationWorkspaceResponse,
@@ -182,6 +186,16 @@ type Props = {
   lastEcommerceCheckoutCustomerCapturePacket:
     | EcommerceCheckoutCustomerCapturePacketResponse
     | null;
+  tenantEcommerceOrderDraftRegistry: EcommerceOrderDraftRegistryResponse | null;
+  selectedTenantEcommerceOrderDraftDetail:
+    | EcommerceOrderDraftDetailResponse
+    | null;
+  lastEcommerceCheckoutCloseoutPacket:
+    | EcommerceCheckoutCloseoutPacketResponse
+    | null;
+  lastEcommerceOrderToGrowthConversationBridge:
+    | EcommerceOrderToGrowthConversationBridgeResponse
+    | null;
   selectedTenantEcommerceLandingPageStructure:
     | EcommerceLandingPageStructureResponse
     | null;
@@ -301,6 +315,10 @@ type Props = {
   ecommerceOrderInvoicingBridgeLoading: string | null;
   ecommerceCheckoutCustomerCapturePacketLoading: string | null;
   ecommerceOrderToInvoiceReadinessPacketLoading: string | null;
+  ecommerceOrderDraftSaveLoading: string | null;
+  tenantEcommerceOrderDraftDetailLoading: boolean;
+  ecommerceCheckoutCloseoutPacketLoading: string | null;
+  ecommerceOrderToGrowthConversationBridgeLoading: string | null;
   ecommerceWhatsappGrowthHandoffLoading: string | null;
   ecommerceWhatsappGrowthActivationPacketLoading: string | null;
   ecommerceWhatsappGrowthExecutionBridgeLoading: string | null;
@@ -430,6 +448,10 @@ type Props = {
   onRequestCatalogMerchandisingPacket: () => void;
   onLoadCheckoutOrderIntakeWorkspace: () => void;
   onRequestCheckoutCustomerCapturePacket: () => void;
+  onSaveOrderDraft: () => void;
+  onSelectOrderDraft: (orderDraftId: string) => void;
+  onRequestCheckoutCloseoutPacket: () => void;
+  onRequestOrderToGrowthConversationBridge: () => void;
   onRequestWhatsappGrowthHandoff: () => void;
   onLoadWhatsappGrowthActivationWorkspace: () => void;
   onRequestWhatsappGrowthActivationPacket: () => void;
@@ -496,6 +518,10 @@ export function AiEcommerceLaunchSection({
   lastEcommerceCatalogMerchandisingPacket,
   selectedTenantEcommerceCheckoutOrderIntakeWorkspace,
   lastEcommerceCheckoutCustomerCapturePacket,
+  tenantEcommerceOrderDraftRegistry,
+  selectedTenantEcommerceOrderDraftDetail,
+  lastEcommerceCheckoutCloseoutPacket,
+  lastEcommerceOrderToGrowthConversationBridge,
   selectedTenantEcommerceLandingPageStructure,
   selectedTenantEcommerceWhatsappSalesFlow,
   lastEcommerceWhatsappGrowthHandoff,
@@ -559,6 +585,10 @@ export function AiEcommerceLaunchSection({
   ecommerceOrderInvoicingBridgeLoading,
   ecommerceCheckoutCustomerCapturePacketLoading,
   ecommerceOrderToInvoiceReadinessPacketLoading,
+  ecommerceOrderDraftSaveLoading,
+  tenantEcommerceOrderDraftDetailLoading,
+  ecommerceCheckoutCloseoutPacketLoading,
+  ecommerceOrderToGrowthConversationBridgeLoading,
   ecommerceWhatsappGrowthHandoffLoading,
   ecommerceWhatsappGrowthActivationPacketLoading,
   ecommerceWhatsappGrowthExecutionBridgeLoading,
@@ -641,6 +671,10 @@ export function AiEcommerceLaunchSection({
   onRequestCatalogMerchandisingPacket,
   onLoadCheckoutOrderIntakeWorkspace,
   onRequestCheckoutCustomerCapturePacket,
+  onSaveOrderDraft,
+  onSelectOrderDraft,
+  onRequestCheckoutCloseoutPacket,
+  onRequestOrderToGrowthConversationBridge,
   onRequestWhatsappGrowthHandoff,
   onLoadWhatsappGrowthActivationWorkspace,
   onRequestWhatsappGrowthActivationPacket,
@@ -3686,6 +3720,22 @@ export function AiEcommerceLaunchSection({
                                     ? 'Preparando readiness...'
                                     : 'Solicitar order-to-invoice readiness'}
                                 </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceOrderDraftSaveLoading ===
+                                    lastEcommerceCheckoutCustomerCapturePacket
+                                      .productEntity.productEntityId
+                                  }
+                                  onClick={onSaveOrderDraft}
+                                  type="button"
+                                >
+                                  {ecommerceOrderDraftSaveLoading ===
+                                  lastEcommerceCheckoutCustomerCapturePacket
+                                    .productEntity.productEntityId
+                                    ? 'Guardando order draft...'
+                                    : 'Guardar order draft'}
+                                </button>
                               </div>
                             </div>
                           ) : null}
@@ -4655,6 +4705,237 @@ export function AiEcommerceLaunchSection({
                               <small>
                                 Checklist:{' '}
                                 {lastEcommerceOrderToInvoiceReadinessPacket.operatorChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {tenantEcommerceOrderDraftRegistry ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Order draft registry
+                                  </span>
+                                  <h4>
+                                    {
+                                      tenantEcommerceOrderDraftRegistry.summary
+                                        .headline
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {
+                                    tenantEcommerceOrderDraftRegistry.summary
+                                      .totalOrderDrafts
+                                  }{' '}
+                                  drafts
+                                </span>
+                              </div>
+                              <small>
+                                {
+                                  tenantEcommerceOrderDraftRegistry.summary
+                                    .detail
+                                }
+                              </small>
+                              {tenantEcommerceOrderDraftRegistry.orderDrafts
+                                .length > 0 ? (
+                                <div className={styles.inlineActions}>
+                                  {tenantEcommerceOrderDraftRegistry.orderDrafts.map(
+                                    (orderDraft) => (
+                                      <button
+                                        className={styles.secondaryButton}
+                                        key={orderDraft.id}
+                                        onClick={() =>
+                                          onSelectOrderDraft(orderDraft.id)
+                                        }
+                                        type="button"
+                                      >
+                                        {humanizeKey(orderDraft.status)} ·{' '}
+                                        {orderDraft.offerTitle}
+                                      </button>
+                                    ),
+                                  )}
+                                </div>
+                              ) : null}
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceOrderDraftDetail ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Order draft detail
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceOrderDraftDetail.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceOrderDraftDetail
+                                      .orderDraft.status,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Offer:{' '}
+                                {
+                                  selectedTenantEcommerceOrderDraftDetail
+                                    .orderDraft.offerTitle
+                                }{' '}
+                                ·{' '}
+                                {
+                                  selectedTenantEcommerceOrderDraftDetail
+                                    .orderDraft.pricingSnapshot
+                                }
+                              </small>
+                              <small>
+                                Missing fields:{' '}
+                                {selectedTenantEcommerceOrderDraftDetail.orderDraft
+                                  .missingFields.length > 0
+                                  ? selectedTenantEcommerceOrderDraftDetail.orderDraft.missingFields.join(
+                                      ' | ',
+                                    )
+                                  : 'Ninguno'}
+                              </small>
+                              <small>
+                                Next actions:{' '}
+                                {selectedTenantEcommerceOrderDraftDetail.nextActions.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceCheckoutCloseoutPacketLoading ===
+                                      selectedTenantEcommerceOrderDraftDetail
+                                        .orderDraft.id ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={onRequestCheckoutCloseoutPacket}
+                                  type="button"
+                                >
+                                  {ecommerceCheckoutCloseoutPacketLoading ===
+                                  selectedTenantEcommerceOrderDraftDetail
+                                    .orderDraft.id
+                                    ? 'Preparando closeout...'
+                                    : 'Solicitar checkout closeout'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceOrderToGrowthConversationBridgeLoading ===
+                                      selectedTenantEcommerceOrderDraftDetail
+                                        .orderDraft.id ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={
+                                    onRequestOrderToGrowthConversationBridge
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceOrderToGrowthConversationBridgeLoading ===
+                                  selectedTenantEcommerceOrderDraftDetail
+                                    .orderDraft.id
+                                    ? 'Preparando bridge...'
+                                    : 'Solicitar growth bridge'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                          {lastEcommerceCheckoutCloseoutPacket ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Checkout closeout packet
+                                  </span>
+                                  <h4>
+                                    {lastEcommerceCheckoutCloseoutPacket.summary}
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceCheckoutCloseoutPacket.closeoutStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Payment readiness:{' '}
+                                {humanizeKey(
+                                  lastEcommerceCheckoutCloseoutPacket
+                                    .paymentReadiness.status,
+                                )}{' '}
+                                ·{' '}
+                                {
+                                  lastEcommerceCheckoutCloseoutPacket
+                                    .paymentReadiness.hint
+                                }
+                              </small>
+                              <small>
+                                Invoicing readiness:{' '}
+                                {humanizeKey(
+                                  lastEcommerceCheckoutCloseoutPacket
+                                    .invoicingReadiness.status,
+                                )}{' '}
+                                ·{' '}
+                                {
+                                  lastEcommerceCheckoutCloseoutPacket
+                                    .invoicingReadiness.detail
+                                }
+                              </small>
+                              <small>
+                                Checklist:{' '}
+                                {lastEcommerceCheckoutCloseoutPacket.closeoutChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {lastEcommerceOrderToGrowthConversationBridge ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Order to Growth conversation bridge
+                                  </span>
+                                  <h4>
+                                    {
+                                      lastEcommerceOrderToGrowthConversationBridge.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceOrderToGrowthConversationBridge.bridgeStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Seed:{' '}
+                                {
+                                  lastEcommerceOrderToGrowthConversationBridge
+                                    .conversationSeed.leadLabel
+                                }{' '}
+                                ·{' '}
+                                {
+                                  lastEcommerceOrderToGrowthConversationBridge
+                                    .conversationSeed.opener
+                                }
+                              </small>
+                              <small>
+                                Handoff artifacts:{' '}
+                                {lastEcommerceOrderToGrowthConversationBridge.handoffArtifacts.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Follow-up checklist:{' '}
+                                {lastEcommerceOrderToGrowthConversationBridge.followUpChecklist.join(
                                   ' | ',
                                 )}
                               </small>

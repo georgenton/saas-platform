@@ -10,11 +10,13 @@ import {
 } from '@saas-platform/commercial-application';
 import {
   ECOMMERCE_PRODUCT_DRAFT_REPOSITORY,
+  ECOMMERCE_ORDER_DRAFT_REPOSITORY,
   ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
   GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
   GetTenantEcommerceCatalogCommercialCardUseCase,
   GetTenantEcommerceCatalogListingAssetUseCase,
   GetTenantEcommerceLiveStorefrontSessionWorkspaceUseCase,
+  GetTenantEcommerceOrderDraftDetailUseCase,
   GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
   GetTenantEcommerceStorefrontReleaseCandidateBriefUseCase,
   GetTenantEcommerceStorefrontGoLiveManifestUseCase,
@@ -50,6 +52,7 @@ import {
   GetTenantEcommerceLaunchWorkspaceUseCase,
   ListTenantEcommerceProductWorkspacesUseCase,
   ListTenantEcommerceSavedProductDraftsUseCase,
+  ListTenantEcommerceOrderDraftsUseCase,
   ListTenantEcommerceLaunchPlansUseCase,
   ListTenantEcommerceProductSetupsUseCase,
   ListTenantEcommerceProductEntitiesUseCase,
@@ -67,6 +70,7 @@ import {
   RequestTenantEcommerceCatalogStorefrontPlacementPacketUseCase,
   RequestTenantEcommerceCatalogMerchandisingPacketUseCase,
   RequestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
+  RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
   RequestTenantEcommerceChannelReleaseLaunchPacketUseCase,
   RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
   RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
@@ -83,11 +87,13 @@ import {
   RequestTenantEcommerceWhatsappGrowthOperatorLaunchPacketUseCase,
   RequestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase,
   RequestTenantEcommerceOrderInvoicingBridgeUseCase,
+  RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
   RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
   RequestTenantEcommerceProductWorkspaceReadinessPacketUseCase,
   RequestTenantEcommerceLaunchPlanActivationReadinessUseCase,
   SaveTenantEcommerceProductAuthoringDraftUseCase,
   SaveTenantEcommerceProductEntityChannelDraftUseCase,
+  SaveTenantEcommerceOrderDraftUseCase,
   UpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase,
   UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
   UpdateTenantEcommerceProductSetupEditableSnapshotUseCase,
@@ -1016,6 +1022,87 @@ import { EcommerceController } from './ecommerce.controller';
         new RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase(
           requestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
           requestTenantEcommerceOrderInvoicingBridgeUseCase,
+        ),
+    },
+    {
+      provide: SaveTenantEcommerceOrderDraftUseCase,
+      inject: [
+        GetTenantBySlugUseCase,
+        RequestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
+        RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
+        ECOMMERCE_ORDER_DRAFT_REPOSITORY,
+      ],
+      useFactory: (
+        getTenantBySlugUseCase,
+        requestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
+        requestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
+        ecommerceOrderDraftRepository,
+      ) =>
+        new SaveTenantEcommerceOrderDraftUseCase(
+          getTenantBySlugUseCase,
+          requestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
+          requestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
+          ecommerceOrderDraftRepository,
+        ),
+    },
+    {
+      provide: ListTenantEcommerceOrderDraftsUseCase,
+      inject: [
+        ECOMMERCE_ORDER_DRAFT_REPOSITORY,
+        GetTenantEcommerceProductEntityDetailUseCase,
+      ],
+      useFactory: (
+        ecommerceOrderDraftRepository,
+        getTenantEcommerceProductEntityDetailUseCase,
+      ) =>
+        new ListTenantEcommerceOrderDraftsUseCase(
+          ecommerceOrderDraftRepository,
+          getTenantEcommerceProductEntityDetailUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceOrderDraftDetailUseCase,
+      inject: [
+        ECOMMERCE_ORDER_DRAFT_REPOSITORY,
+        GetTenantEcommerceProductEntityDetailUseCase,
+      ],
+      useFactory: (
+        ecommerceOrderDraftRepository,
+        getTenantEcommerceProductEntityDetailUseCase,
+      ) =>
+        new GetTenantEcommerceOrderDraftDetailUseCase(
+          ecommerceOrderDraftRepository,
+          getTenantEcommerceProductEntityDetailUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
+      inject: [
+        GetTenantEcommerceOrderDraftDetailUseCase,
+        RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderDraftDetailUseCase,
+        requestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
+      ) =>
+        new RequestTenantEcommerceCheckoutCloseoutPacketUseCase(
+          getTenantEcommerceOrderDraftDetailUseCase,
+          requestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
+      inject: [
+        GetTenantEcommerceOrderDraftDetailUseCase,
+        RequestTenantEcommerceWhatsappGrowthExecutionBridgeUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderDraftDetailUseCase,
+        requestTenantEcommerceWhatsappGrowthExecutionBridgeUseCase,
+      ) =>
+        new RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase(
+          getTenantEcommerceOrderDraftDetailUseCase,
+          requestTenantEcommerceWhatsappGrowthExecutionBridgeUseCase,
         ),
     },
     {

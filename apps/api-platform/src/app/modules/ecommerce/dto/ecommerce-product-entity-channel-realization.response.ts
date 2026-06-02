@@ -2,6 +2,7 @@ import {
   TenantEcommerceCatalogAssetEntityWorkspaceView,
   TenantEcommerceCatalogCommercialCardView,
   TenantEcommerceCatalogListingAssetView,
+  TenantEcommerceCheckoutCustomerCapturePacketView,
   TenantEcommerceCheckoutOrderIntakeWorkspaceView,
   TenantEcommerceChannelReleaseApprovalPacketView,
   TenantEcommerceChannelReleaseExecutionReadinessView,
@@ -11,7 +12,9 @@ import {
   TenantEcommerceLandingAssetEntityWorkspaceView,
   TenantEcommerceLandingPublishArtifactView,
   TenantEcommerceLandingPageStructureView,
+  TenantEcommerceLiveStorefrontSessionWorkspaceView,
   TenantEcommerceOrderInvoicingBridgeView,
+  TenantEcommerceOrderToInvoiceReadinessPacketView,
   TenantEcommerceStorefrontReleaseCandidateBriefView,
   TenantEcommerceStorefrontGoLiveManifestView,
   TenantEcommerceStorefrontReleaseControlWorkspaceView,
@@ -661,6 +664,99 @@ export interface EcommerceStorefrontGoLiveManifestResponseDto {
   guardrails: string[];
 }
 
+export interface EcommerceLiveStorefrontSessionWorkspaceResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  sessionStatus: 'preview' | 'ready' | 'blocked';
+  summary: {
+    headline: string;
+    detail: string;
+  };
+  storefrontSnapshot: {
+    landingHeadline: string;
+    landingSubheadline: string;
+    primaryCta: string;
+    catalogTitle: string;
+    pricingPresentation: string;
+    closeChannel: 'landing' | 'catalog' | 'whatsapp';
+  };
+  releaseGate: {
+    goLiveStatus:
+      | 'ready_for_controlled_go_live'
+      | 'needs_checkout_foundation'
+      | 'blocked';
+    checkoutStatus:
+      | 'ready_for_order_intake'
+      | 'needs_storefront_alignment'
+      | 'blocked';
+    invoicingStatus:
+      | 'ready_for_invoice_handoff'
+      | 'needs_customer_fiscal_data'
+      | 'blocked';
+  };
+  channelSessions: Array<{
+    channelKey: 'landing' | 'catalog' | 'whatsapp';
+    status: 'ready' | 'warning' | 'blocked';
+    role: string;
+    detail: string;
+  }>;
+  sessionChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceCheckoutCustomerCapturePacketResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  captureStatus: 'ready_for_order_draft' | 'needs_customer_input' | 'blocked';
+  summary: string;
+  orderDraftSeed: EcommerceCheckoutOrderIntakeWorkspaceResponseDto['checkoutDraft'];
+  captureForm: {
+    requiredFields: string[];
+    optionalFields: string[];
+    validationRules: string[];
+  };
+  billingReadiness: {
+    status: 'ready' | 'needs_customer_input' | 'blocked';
+    hint: string;
+  };
+  operatorPrompts: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderToInvoiceReadinessPacketResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  readinessStatus: 'ready_to_invoice' | 'needs_data' | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  readinessSnapshot: {
+    captureStatus:
+      | 'ready_for_order_draft'
+      | 'needs_customer_input'
+      | 'blocked';
+    bridgeStatus:
+      | 'ready_for_invoice_handoff'
+      | 'needs_customer_fiscal_data'
+      | 'blocked';
+    buyerProfileStatus: 'ready' | 'needs_customer_fiscal_data' | 'blocked';
+  };
+  fiscalRequirements: string[];
+  missingFields: string[];
+  handoffArtifacts: string[];
+  operatorChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceLandingPageStructureResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -1246,6 +1342,66 @@ export function toEcommerceStorefrontGoLiveManifestResponseDto(
     operatorHandoff: { ...view.operatorHandoff },
     warnings: [...view.warnings],
     blockers: [...view.blockers],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceLiveStorefrontSessionWorkspaceResponseDto(
+  view: TenantEcommerceLiveStorefrontSessionWorkspaceView,
+): EcommerceLiveStorefrontSessionWorkspaceResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    sessionStatus: view.sessionStatus,
+    summary: { ...view.summary },
+    storefrontSnapshot: { ...view.storefrontSnapshot },
+    releaseGate: { ...view.releaseGate },
+    channelSessions: view.channelSessions.map((entry) => ({ ...entry })),
+    sessionChecklist: [...view.sessionChecklist],
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceCheckoutCustomerCapturePacketResponseDto(
+  view: TenantEcommerceCheckoutCustomerCapturePacketView,
+): EcommerceCheckoutCustomerCapturePacketResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    captureStatus: view.captureStatus,
+    summary: view.summary,
+    orderDraftSeed: { ...view.orderDraftSeed },
+    captureForm: {
+      requiredFields: [...view.captureForm.requiredFields],
+      optionalFields: [...view.captureForm.optionalFields],
+      validationRules: [...view.captureForm.validationRules],
+    },
+    billingReadiness: { ...view.billingReadiness },
+    operatorPrompts: [...view.operatorPrompts],
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderToInvoiceReadinessPacketResponseDto(
+  view: TenantEcommerceOrderToInvoiceReadinessPacketView,
+): EcommerceOrderToInvoiceReadinessPacketResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    readinessStatus: view.readinessStatus,
+    summary: view.summary,
+    targetWorkspace: { ...view.targetWorkspace },
+    readinessSnapshot: { ...view.readinessSnapshot },
+    fiscalRequirements: [...view.fiscalRequirements],
+    missingFields: [...view.missingFields],
+    handoffArtifacts: [...view.handoffArtifacts],
+    operatorChecklist: [...view.operatorChecklist],
+    blockedBy: [...view.blockedBy],
     guardrails: [...view.guardrails],
   };
 }

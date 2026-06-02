@@ -22,6 +22,7 @@ export * from './lib/use-cases/get-tenant-ecommerce-storefront-publish-review-wo
 export * from './lib/use-cases/get-tenant-ecommerce-storefront-release-candidate-brief.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-storefront-release-control-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-storefront-go-live-manifest.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-live-storefront-session-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-landing-publish-artifact.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-catalog-listing-asset.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-checkout-order-intake-workspace.use-case';
@@ -71,7 +72,9 @@ export * from './lib/use-cases/request-tenant-ecommerce-whatsapp-growth-activati
 export * from './lib/use-cases/request-tenant-ecommerce-whatsapp-growth-execution-bridge.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-whatsapp-growth-operator-launch-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-whatsapp-growth-launch-acknowledgement-packet.use-case';
+export * from './lib/use-cases/request-tenant-ecommerce-checkout-customer-capture-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-order-invoicing-bridge.use-case';
+export * from './lib/use-cases/request-tenant-ecommerce-order-to-invoice-readiness-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-setup-definition-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-workspace-readiness-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-launch-plan-activation-readiness.use-case';

@@ -14,6 +14,7 @@ import {
   GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
   GetTenantEcommerceCatalogCommercialCardUseCase,
   GetTenantEcommerceCatalogListingAssetUseCase,
+  GetTenantEcommerceLiveStorefrontSessionWorkspaceUseCase,
   GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
   GetTenantEcommerceStorefrontReleaseCandidateBriefUseCase,
   GetTenantEcommerceStorefrontGoLiveManifestUseCase,
@@ -65,6 +66,7 @@ import {
   RequestTenantEcommerceChannelReleaseApprovalPacketUseCase,
   RequestTenantEcommerceCatalogStorefrontPlacementPacketUseCase,
   RequestTenantEcommerceCatalogMerchandisingPacketUseCase,
+  RequestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
   RequestTenantEcommerceChannelReleaseLaunchPacketUseCase,
   RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
   RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
@@ -81,6 +83,7 @@ import {
   RequestTenantEcommerceWhatsappGrowthOperatorLaunchPacketUseCase,
   RequestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase,
   RequestTenantEcommerceOrderInvoicingBridgeUseCase,
+  RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
   RequestTenantEcommerceProductWorkspaceReadinessPacketUseCase,
   RequestTenantEcommerceLaunchPlanActivationReadinessUseCase,
   SaveTenantEcommerceProductAuthoringDraftUseCase,
@@ -704,6 +707,27 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: GetTenantEcommerceLiveStorefrontSessionWorkspaceUseCase,
+      inject: [
+        GetTenantEcommerceStorefrontGoLiveManifestUseCase,
+        GetTenantEcommerceLandingPublishArtifactUseCase,
+        GetTenantEcommerceCatalogListingAssetUseCase,
+        RequestTenantEcommerceWhatsappGrowthOperatorLaunchPacketUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceStorefrontGoLiveManifestUseCase,
+        getTenantEcommerceLandingPublishArtifactUseCase,
+        getTenantEcommerceCatalogListingAssetUseCase,
+        requestTenantEcommerceWhatsappGrowthOperatorLaunchPacketUseCase,
+      ) =>
+        new GetTenantEcommerceLiveStorefrontSessionWorkspaceUseCase(
+          getTenantEcommerceStorefrontGoLiveManifestUseCase,
+          getTenantEcommerceLandingPublishArtifactUseCase,
+          getTenantEcommerceCatalogListingAssetUseCase,
+          requestTenantEcommerceWhatsappGrowthOperatorLaunchPacketUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
       inject: [
         GetTenantEcommerceStoreProfileWorkspaceUseCase,
@@ -947,6 +971,24 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: RequestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
+      inject: [
+        GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
+        GetTenantEcommerceLiveStorefrontSessionWorkspaceUseCase,
+        RequestTenantEcommerceOrderInvoicingBridgeUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
+        getTenantEcommerceLiveStorefrontSessionWorkspaceUseCase,
+        requestTenantEcommerceOrderInvoicingBridgeUseCase,
+      ) =>
+        new RequestTenantEcommerceCheckoutCustomerCapturePacketUseCase(
+          getTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
+          getTenantEcommerceLiveStorefrontSessionWorkspaceUseCase,
+          requestTenantEcommerceOrderInvoicingBridgeUseCase,
+        ),
+    },
+    {
       provide: RequestTenantEcommerceOrderInvoicingBridgeUseCase,
       inject: [
         GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
@@ -959,6 +1001,21 @@ import { EcommerceController } from './ecommerce.controller';
         new RequestTenantEcommerceOrderInvoicingBridgeUseCase(
           getTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
           getTenantEcommerceStoreProfileWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
+      inject: [
+        RequestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
+        RequestTenantEcommerceOrderInvoicingBridgeUseCase,
+      ],
+      useFactory: (
+        requestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
+        requestTenantEcommerceOrderInvoicingBridgeUseCase,
+      ) =>
+        new RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase(
+          requestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
+          requestTenantEcommerceOrderInvoicingBridgeUseCase,
         ),
     },
     {

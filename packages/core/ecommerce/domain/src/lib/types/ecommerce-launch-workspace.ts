@@ -1873,3 +1873,83 @@ export interface TenantEcommerceOrderToGrowthConversationBridgeView {
   blockedBy: string[];
   guardrails: string[];
 }
+
+export interface TenantEcommerceOrderReviewWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  reviewStatus: 'ready_for_operator_review' | 'needs_data' | 'blocked';
+  summary: string;
+  reviewSnapshot: {
+    captureStatus: 'ready_for_order_draft' | 'needs_customer_input' | 'blocked';
+    closeoutStatus: 'ready_for_operator_closeout' | 'needs_data' | 'blocked';
+    invoiceReadinessStatus: 'ready_to_invoice' | 'needs_data' | 'blocked';
+    growthBridgeStatus:
+      | 'ready_for_growth_follow_up'
+      | 'needs_customer_confirmation'
+      | 'blocked';
+  };
+  reviewChecklist: string[];
+  nextActions: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderInvoiceDraftBridgeView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  bridgeStatus:
+    | 'ready_to_open_invoice_draft'
+    | 'needs_data'
+    | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'invoicing';
+    stage: 'electronic_invoicing_ec_mvp';
+    handoffMode: 'operator_assist';
+  };
+  invoiceDraftSeed: {
+    customerLabel: string;
+    documentHint: 'invoice';
+    offerTitle: string;
+    pricingSnapshot: string;
+    billingIntent: string | null;
+  };
+  requiredFields: string[];
+  missingFields: string[];
+  handoffArtifacts: string[];
+  operatorChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderGrowthFollowUpWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  workspaceStatus:
+    | 'ready_for_growth_follow_up'
+    | 'needs_customer_confirmation'
+    | 'blocked';
+  summary: string;
+  targetWorkspace: {
+    productKey: 'growth';
+    channel: 'whatsapp';
+    handoffMode: 'operator_assist';
+  };
+  followUpPlan: {
+    leadLabel: string;
+    opener: string;
+    nextStep: string;
+    objectionHint: string;
+    closeCta: string;
+  };
+  handoffArtifacts: string[];
+  operatorChecklist: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}

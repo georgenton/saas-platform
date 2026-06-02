@@ -61,7 +61,10 @@ import {
   EcommerceLandingPublishArtifactResponse,
   EcommerceLiveStorefrontSessionWorkspaceResponse,
   EcommerceOrderDraftDetailResponse,
+  EcommerceOrderGrowthFollowUpWorkspaceResponse,
+  EcommerceOrderInvoiceDraftBridgeResponse,
   EcommerceOrderDraftRegistryResponse,
+  EcommerceOrderReviewWorkspaceResponse,
   EcommerceOrderDraftSaveResponse,
   EcommerceOrderInvoicingBridgeResponse,
   EcommerceOrderToGrowthConversationBridgeResponse,
@@ -3073,6 +3076,69 @@ export async function requestTenantEcommerceOrderToGrowthConversationBridge(
     )}/request-growth-conversation-bridge`,
     {
       method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderReviewWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderReviewWorkspaceResponse> {
+  return request<EcommerceOrderReviewWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/review-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceOrderInvoiceDraftBridge(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderInvoiceDraftBridgeResponse> {
+  return request<EcommerceOrderInvoiceDraftBridgeResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/request-invoice-draft-bridge`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderGrowthFollowUpWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderGrowthFollowUpWorkspaceResponse> {
+  return request<EcommerceOrderGrowthFollowUpWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/growth-follow-up-workspace`,
+    {
+      method: 'GET',
       token,
     },
   );

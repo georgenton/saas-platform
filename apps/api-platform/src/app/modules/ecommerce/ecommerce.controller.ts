@@ -15,6 +15,8 @@ import {
   GetTenantEcommerceCatalogListingAssetUseCase,
   GetTenantEcommerceLiveStorefrontSessionWorkspaceUseCase,
   GetTenantEcommerceOrderDraftDetailUseCase,
+  GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
+  GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceCheckoutOrderIntakeWorkspaceUseCase,
   GetTenantEcommerceStorefrontReleaseCandidateBriefUseCase,
   GetTenantEcommerceStorefrontGoLiveManifestUseCase,
@@ -56,6 +58,7 @@ import {
   RequestTenantEcommerceWhatsappGrowthOperatorLaunchPacketUseCase,
   RequestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase,
   RequestTenantEcommerceOrderInvoicingBridgeUseCase,
+  RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
   RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
   RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
   SaveTenantEcommerceOrderDraftUseCase,
@@ -167,6 +170,8 @@ import {
   EcommerceOrderDraftDetailResponseDto,
   EcommerceOrderDraftRegistryResponseDto,
   EcommerceOrderDraftSaveResponseDto,
+  EcommerceOrderGrowthFollowUpWorkspaceResponseDto,
+  EcommerceOrderInvoiceDraftBridgeResponseDto,
   EcommerceChannelReleaseWorkbenchResponseDto,
   EcommerceLandingAssetEntityWorkspaceResponseDto,
   EcommerceLandingPublishArtifactResponseDto,
@@ -179,6 +184,7 @@ import {
   EcommerceWhatsappGrowthExecutionBridgeResponseDto,
   EcommerceWhatsappGrowthLaunchAcknowledgementPacketResponseDto,
   EcommerceOrderInvoicingBridgeResponseDto,
+  EcommerceOrderReviewWorkspaceResponseDto,
   EcommerceOrderToGrowthConversationBridgeResponseDto,
   EcommerceOrderToInvoiceReadinessPacketResponseDto,
   EcommerceWhatsappGrowthOperatorLaunchPacketResponseDto,
@@ -203,6 +209,8 @@ import {
   toEcommerceOrderDraftDetailResponseDto,
   toEcommerceOrderDraftRegistryResponseDto,
   toEcommerceOrderDraftSaveResponseDto,
+  toEcommerceOrderGrowthFollowUpWorkspaceResponseDto,
+  toEcommerceOrderInvoiceDraftBridgeResponseDto,
   toEcommerceChannelReleaseWorkbenchResponseDto,
   toEcommerceLandingAssetEntityWorkspaceResponseDto,
   toEcommerceLandingPublishArtifactResponseDto,
@@ -215,6 +223,7 @@ import {
   toEcommerceWhatsappGrowthExecutionBridgeResponseDto,
   toEcommerceWhatsappGrowthLaunchAcknowledgementPacketResponseDto,
   toEcommerceOrderInvoicingBridgeResponseDto,
+  toEcommerceOrderReviewWorkspaceResponseDto,
   toEcommerceOrderToGrowthConversationBridgeResponseDto,
   toEcommerceOrderToInvoiceReadinessPacketResponseDto,
   toEcommerceWhatsappGrowthOperatorLaunchPacketResponseDto,
@@ -361,6 +370,8 @@ export class EcommerceController {
     private readonly getTenantEcommerceStorefrontGoLiveManifestUseCase: GetTenantEcommerceStorefrontGoLiveManifestUseCase,
     private readonly getTenantEcommerceLiveStorefrontSessionWorkspaceUseCase: GetTenantEcommerceLiveStorefrontSessionWorkspaceUseCase,
     private readonly getTenantEcommerceOrderDraftDetailUseCase: GetTenantEcommerceOrderDraftDetailUseCase,
+    private readonly getTenantEcommerceOrderReviewWorkspaceUseCase: GetTenantEcommerceOrderReviewWorkspaceUseCase,
+    private readonly getTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase: GetTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase,
     private readonly getTenantEcommerceLandingPublishArtifactUseCase: GetTenantEcommerceLandingPublishArtifactUseCase,
     private readonly getTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase: GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
     private readonly getTenantEcommerceChannelReleaseWorkbenchUseCase: GetTenantEcommerceChannelReleaseWorkbenchUseCase,
@@ -395,6 +406,7 @@ export class EcommerceController {
     private readonly requestTenantEcommerceOrderInvoicingBridgeUseCase: RequestTenantEcommerceOrderInvoicingBridgeUseCase,
     private readonly requestTenantEcommerceCheckoutCustomerCapturePacketUseCase: RequestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
     private readonly requestTenantEcommerceCheckoutCloseoutPacketUseCase: RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
+    private readonly requestTenantEcommerceOrderInvoiceDraftBridgeUseCase: RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
     private readonly requestTenantEcommerceOrderToGrowthConversationBridgeUseCase: RequestTenantEcommerceOrderToGrowthConversationBridgeUseCase,
     private readonly requestTenantEcommerceOrderToInvoiceReadinessPacketUseCase: RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
     private readonly updateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase: UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
@@ -1785,6 +1797,39 @@ export class EcommerceController {
     return toEcommerceOrderDraftDetailResponseDto(detail);
   }
 
+  @Get(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/review-workspace',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantOrderReviewWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderReviewWorkspaceResponseDto> {
+    const workspace =
+      await this.getTenantEcommerceOrderReviewWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        orderDraftId,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Order review workspace for order draft ${orderDraftId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceOrderReviewWorkspaceResponseDto(workspace);
+  }
+
   @Get(':slug/product-entities/:productEntityId/landing-page-structure')
   @UseGuards(
     JwtAuthenticationGuard,
@@ -2114,6 +2159,39 @@ export class EcommerceController {
   }
 
   @Post(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/request-invoice-draft-bridge',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantOrderInvoiceDraftBridge(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderInvoiceDraftBridgeResponseDto> {
+    const bridge =
+      await this.requestTenantEcommerceOrderInvoiceDraftBridgeUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        orderDraftId,
+      );
+
+    if (!bridge) {
+      throw new NotFoundException(
+        `Invoice draft bridge for order draft ${orderDraftId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceOrderInvoiceDraftBridgeResponseDto(bridge);
+  }
+
+  @Post(
     ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/request-growth-conversation-bridge',
   )
   @UseGuards(
@@ -2144,6 +2222,39 @@ export class EcommerceController {
     }
 
     return toEcommerceOrderToGrowthConversationBridgeResponseDto(bridge);
+  }
+
+  @Get(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/growth-follow-up-workspace',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantOrderGrowthFollowUpWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderGrowthFollowUpWorkspaceResponseDto> {
+    const workspace =
+      await this.getTenantEcommerceOrderGrowthFollowUpWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        orderDraftId,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Growth follow-up workspace for order draft ${orderDraftId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceOrderGrowthFollowUpWorkspaceResponseDto(workspace);
   }
 
   @Get(':slug/product-entities/:productEntityId/channel-drafts/:channelKey')

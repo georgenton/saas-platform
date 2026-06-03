@@ -1805,6 +1805,27 @@ export interface TenantEcommerceOrderOperationalEventView {
   createdAt: Date;
 }
 
+export interface TenantEcommerceOrderOperationalReviewWorkspaceView {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  generatedAt: Date;
+  reviewStatus:
+    | 'ready_for_closeout'
+    | 'needs_operator_review'
+    | 'blocked';
+  summary: string;
+  latestEvent: TenantEcommerceOrderOperationalEventView | null;
+  phaseCounts: Array<{
+    eventType: TenantEcommerceOrderOperationalEventType;
+    count: number;
+  }>;
+  blockerSignals: string[];
+  driftSignals: string[];
+  recommendedActions: string[];
+  guardrails: string[];
+}
+
 export interface TenantEcommerceOrderCustomerProfileUpdateView {
   tenantSlug: string;
   generatedAt: Date;

@@ -88,6 +88,7 @@ import {
   EcommerceOrderFulfillmentAvailabilityWorkspaceResponse,
   EcommerceOrderInventoryReservationWorkspaceResponse,
   EcommerceOrderOperationalEventTimelineResponse,
+  EcommerceOrderOperationalReviewWorkspaceResponse,
   EcommerceOrderFulfillmentDeliveryWorkspaceResponse,
   EcommerceOrderFulfillmentExecutionWorkspaceResponse,
   EcommerceOrderFulfillmentReadinessWorkspaceResponse,
@@ -3779,6 +3780,27 @@ export async function fetchTenantEcommerceOrderOperationalEventTimeline(
     )}/order-drafts/${encodeURIComponent(
       orderDraftId,
     )}/operational-events${query ? `?${query}` : ''}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderOperationalReviewWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderOperationalReviewWorkspaceResponse> {
+  return request<EcommerceOrderOperationalReviewWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/operational-review-workspace`,
     {
       method: 'GET',
       token,

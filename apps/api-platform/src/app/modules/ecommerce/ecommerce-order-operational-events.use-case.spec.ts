@@ -1,4 +1,5 @@
 import {
+  GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
   ListTenantEcommerceOrderOperationalEventsUseCase,
   RecordTenantEcommerceOrderOperationalEventUseCase,
 } from '@saas-platform/ecommerce-application';
@@ -170,5 +171,73 @@ describe('Ecommerce order operational event use cases', () => {
       sourceWorkspace: 'inventory-reservation-workspace',
       limit: 5,
     });
+  });
+
+  it('builds one operational review workspace from timeline events', async () => {
+    const events = [
+      {
+        id: 'event_003',
+        tenantId: tenant.id,
+        tenantSlug: tenant.slug,
+        productEntityId: orderDraft.productEntityId,
+        orderDraftId: orderDraft.id,
+        dedupeKey:
+          'saas-platform:product_entity_001:order_draft_001:post_sale_closeout:order-post-sale-reporting-summary:in_progress',
+        eventType: 'post_sale_closeout' as const,
+        sourceWorkspace: 'order-post-sale-reporting-summary',
+        status: 'in_progress',
+        summary: 'Closeout has payment without delivery drift.',
+        payload: {
+          driftSignal: 'payment_without_delivery',
+          nextStep: 'Cerrar entrega antes del closeout estable.',
+        },
+        occurredAt: new Date('2026-06-03T18:55:00.000Z'),
+        createdAt: new Date('2026-06-03T18:55:01.000Z'),
+      },
+      {
+        id: 'event_002',
+        tenantId: tenant.id,
+        tenantSlug: tenant.slug,
+        productEntityId: orderDraft.productEntityId,
+        orderDraftId: orderDraft.id,
+        dedupeKey:
+          'saas-platform:product_entity_001:order_draft_001:inventory_reservation:inventory-reservation-workspace:blocked',
+        eventType: 'inventory_reservation' as const,
+        sourceWorkspace: 'inventory-reservation-workspace',
+        status: 'blocked',
+        summary: 'Capacity is blocked.',
+        payload: { blockedBy: ['capacity_review'] },
+        occurredAt: new Date('2026-06-03T18:50:00.000Z'),
+        createdAt: new Date('2026-06-03T18:50:01.000Z'),
+      },
+    ];
+    const listUseCase = {
+      execute: jest.fn().mockResolvedValue(events),
+    };
+    const useCase = new GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase(
+      listUseCase as never,
+      () => new Date('2026-06-03T19:00:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute(tenant.slug, orderDraft.productEntityId, orderDraft.id),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        tenantSlug: tenant.slug,
+        productEntityId: orderDraft.productEntityId,
+        orderDraftId: orderDraft.id,
+        generatedAt: new Date('2026-06-03T19:00:00.000Z'),
+        reviewStatus: 'blocked',
+        latestEvent: events[0],
+        blockerSignals: ['capacity_review', 'inventory-reservation-workspace: blocked'],
+        driftSignals: ['payment_without_delivery'],
+      }),
+    );
+    expect(listUseCase.execute).toHaveBeenCalledWith(
+      tenant.slug,
+      orderDraft.productEntityId,
+      orderDraft.id,
+      { limit: 50 },
+    );
   });
 });

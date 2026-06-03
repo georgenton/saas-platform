@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.66.0
+
+### Minor Changes
+
+- 6f362ec: Add ecommerce operational exception packets, operational health board, and timeline staleness signals.
+
 ## 0.65.0
 
 ### Minor Changes

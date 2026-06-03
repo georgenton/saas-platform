@@ -54,6 +54,7 @@ model Tenant {
   aiGuardedExecutionEvents AiGuardedExecutionEvent[]
   ecommerceProductDrafts EcommerceProductDraft[]
   ecommerceOrderDrafts EcommerceOrderDraft[]
+  ecommerceOrderOperationalEvents EcommerceOrderOperationalEvent[]
   ecommerceProductSetups EcommerceProductSetup[]
   ecommerceProductEntityChannelDrafts EcommerceProductEntityChannelDraft[]
   ecommerceProductEntities EcommerceProductEntity[]
@@ -758,12 +759,34 @@ model EcommerceOrderDraft {
   blockedByJson             String   @db.Text
   guardrailsJson            String   @db.Text
   tenant                    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  operationalEvents         EcommerceOrderOperationalEvent[]
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
 
   @@unique([tenantId, productEntityId])
   @@index([tenantSlug, productEntityId])
   @@index([tenantId, createdAt])
+}
+
+model EcommerceOrderOperationalEvent {
+  id              String   @id
+  tenantId        String
+  tenantSlug      String
+  productEntityId String
+  orderDraftId    String
+  eventType       String
+  sourceWorkspace String
+  status          String
+  summary         String
+  payloadJson     String   @db.Text
+  occurredAt      DateTime
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orderDraft      EcommerceOrderDraft @relation(fields: [orderDraftId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+
+  @@index([tenantSlug, productEntityId, orderDraftId, occurredAt], map: "EcommerceOrderOperationalEvent_order_lookup_idx")
+  @@index([tenantId, eventType, occurredAt], map: "EcommerceOrderOperationalEvent_event_type_idx")
+  @@index([tenantId, orderDraftId, occurredAt], map: "EcommerceOrderOperationalEvent_order_draft_idx")
 }
 
 model EcommerceProductSetup {

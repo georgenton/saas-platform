@@ -3744,7 +3744,33 @@ export async function fetchTenantEcommerceOrderOperationalEventTimeline(
   tenantSlug: string,
   productEntityId: string,
   orderDraftId: string,
+  filters: {
+    eventType?: EcommerceOrderOperationalEventTimelineResponse['events'][number]['eventType'];
+    status?: string;
+    sourceWorkspace?: string;
+    limit?: number;
+  } = {},
 ): Promise<EcommerceOrderOperationalEventTimelineResponse> {
+  const params = new URLSearchParams();
+
+  if (filters.eventType) {
+    params.set('eventType', filters.eventType);
+  }
+
+  if (filters.status) {
+    params.set('status', filters.status);
+  }
+
+  if (filters.sourceWorkspace) {
+    params.set('sourceWorkspace', filters.sourceWorkspace);
+  }
+
+  if (filters.limit) {
+    params.set('limit', String(filters.limit));
+  }
+
+  const query = params.toString();
+
   return request<EcommerceOrderOperationalEventTimelineResponse>(
     `/ecommerce/tenants/${encodeURIComponent(
       tenantSlug,
@@ -3752,7 +3778,7 @@ export async function fetchTenantEcommerceOrderOperationalEventTimeline(
       productEntityId,
     )}/order-drafts/${encodeURIComponent(
       orderDraftId,
-    )}/operational-events`,
+    )}/operational-events${query ? `?${query}` : ''}`,
     {
       method: 'GET',
       token,

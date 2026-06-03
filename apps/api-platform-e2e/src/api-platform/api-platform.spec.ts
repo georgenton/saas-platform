@@ -8348,6 +8348,14 @@ describe('API', () => {
             orderDraftId: string,
             command: any,
           ) => {
+            const dedupeKey = [
+              tenantSlug,
+              productEntityId,
+              orderDraftId,
+              command.eventType,
+              command.sourceWorkspace,
+              command.status,
+            ].join(':');
             const event = {
               id: `operational_event_${String(
                 ecommerceOrderOperationalEvents.length + 1,
@@ -8355,6 +8363,7 @@ describe('API', () => {
               tenantSlug,
               productEntityId,
               orderDraftId,
+              dedupeKey,
               eventType: command.eventType,
               sourceWorkspace: command.sourceWorkspace,
               status: command.status,
@@ -8371,6 +8380,20 @@ describe('API', () => {
                 ).padStart(2, '0')}:01.000Z`,
               ),
             };
+            const existingIndex = ecommerceOrderOperationalEvents.findIndex(
+              (candidate) => candidate.dedupeKey === dedupeKey,
+            );
+
+            if (existingIndex >= 0) {
+              ecommerceOrderOperationalEvents[existingIndex] = {
+                ...ecommerceOrderOperationalEvents[existingIndex],
+                summary: event.summary,
+                payload: event.payload,
+                occurredAt: event.occurredAt,
+              };
+
+              return ecommerceOrderOperationalEvents[existingIndex];
+            }
 
             ecommerceOrderOperationalEvents.unshift(event);
 
@@ -8379,9 +8402,23 @@ describe('API', () => {
         ),
     };
     listTenantEcommerceOrderOperationalEventsUseCase = {
-      execute: jest.fn().mockImplementation(async () => [
-        ...ecommerceOrderOperationalEvents,
-      ]),
+      execute: jest
+        .fn()
+        .mockImplementation(
+          async (
+            _tenantSlug: string,
+            _productEntityId: string,
+            _orderDraftId: string,
+            query?: any,
+          ) =>
+            ecommerceOrderOperationalEvents.filter(
+              (event) =>
+                (!query?.eventType || event.eventType === query.eventType) &&
+                (!query?.status || event.status === query.status) &&
+                (!query?.sourceWorkspace ||
+                  event.sourceWorkspace === query.sourceWorkspace),
+            ),
+        ),
     };
     getTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase = {
       execute: jest.fn().mockResolvedValue({
@@ -17036,8 +17073,11 @@ describe('API', () => {
   });
 
   it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/order-drafts/:orderDraftId/operational-events should return the persisted transactional timeline', async () => {
+    ecommerceOrderOperationalEvents = [];
     const orderDraftBasePath =
       '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/order-drafts/order_draft_001';
+    const productEntityBasePath =
+      '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001';
 
     await request(httpServer)
       .get(`${orderDraftBasePath}/payment-reconciliation-workspace`)
@@ -17076,6 +17116,11 @@ describe('API', () => {
       });
 
     await request(httpServer)
+      .get(`${orderDraftBasePath}/payment-reconciliation-workspace`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    await request(httpServer)
       .get(`${orderDraftBasePath}/operational-events`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
@@ -17083,6 +17128,7 @@ describe('API', () => {
         expect(response.body.tenantSlug).toBe('saas-platform');
         expect(response.body.productEntityId).toBe('product_entity_001');
         expect(response.body.orderDraftId).toBe('order_draft_001');
+        expect(response.body.summary.totalEvents).toBe(4);
         expect(response.body.events).toHaveLength(4);
         expect(response.body.events.map((event) => event.eventType)).toEqual([
           'returns_refunds_cancellation',
@@ -17095,15 +17141,52 @@ describe('API', () => {
         );
       });
 
+    await request(httpServer)
+      .get(
+        `${orderDraftBasePath}/operational-events?eventType=inventory_reservation&status=needs_capacity_review`,
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.summary.totalEvents).toBe(1);
+        expect(response.body.events).toHaveLength(1);
+        expect(response.body.events[0].eventType).toBe(
+          'inventory_reservation',
+        );
+        expect(response.body.events[0].dedupeKey).toContain(
+          'inventory_reservation',
+        );
+      });
+
+    await request(httpServer)
+      .get(`${productEntityBasePath}/order-post-sale-reporting-summary`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    await request(httpServer)
+      .get(`${orderDraftBasePath}/operational-events?eventType=post_sale_closeout`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.events).toHaveLength(1);
+        expect(response.body.events[0].eventType).toBe('post_sale_closeout');
+        expect(response.body.events[0].sourceWorkspace).toBe(
+          'order-post-sale-reporting-summary',
+        );
+      });
+
     expect(recordTenantEcommerceOrderOperationalEventUseCase.execute).toHaveBeenCalledTimes(
-      4,
+      6,
     );
     expect(
       listTenantEcommerceOrderOperationalEventsUseCase.execute,
-    ).toHaveBeenCalledWith(
+    ).toHaveBeenLastCalledWith(
       'saas-platform',
       'product_entity_001',
       'order_draft_001',
+      expect.objectContaining({
+        eventType: 'post_sale_closeout',
+      }),
     );
   });
 

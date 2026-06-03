@@ -4321,6 +4321,7 @@ export interface EcommerceOrderOperationalEventResponse {
   tenantSlug: string;
   productEntityId: string;
   orderDraftId: string;
+  dedupeKey: string;
   eventType:
     | 'payment_reconciliation'
     | 'fulfillment_availability'
@@ -4339,6 +4340,12 @@ export interface EcommerceOrderOperationalEventTimelineResponse {
   tenantSlug: string;
   productEntityId: string;
   orderDraftId: string;
+  summary: {
+    totalEvents: number;
+    latestStatus: string | null;
+    blockerCount: number;
+    latestNextStep: string | null;
+  };
   events: EcommerceOrderOperationalEventResponse[];
 }
 

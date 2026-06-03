@@ -12,6 +12,7 @@ type EcommerceOrderOperationalEventRow = {
   tenantSlug: string;
   productEntityId: string;
   orderDraftId: string;
+  dedupeKey: string;
   eventType: TenantEcommerceOrderOperationalEventType;
   sourceWorkspace: string;
   status: string;
@@ -30,16 +31,26 @@ export class PrismaEcommerceOrderOperationalEventRepository
   async record(
     command: Parameters<EcommerceOrderOperationalEventRepository['record']>[0],
   ): Promise<TenantEcommerceOrderOperationalEventView> {
-    const record = await this.delegate.create({
-      data: {
-        id: command.id,
-        tenantId: command.tenantId,
-        tenantSlug: command.tenantSlug,
-        productEntityId: command.productEntityId,
-        orderDraftId: command.orderDraftId,
-        eventType: command.eventType,
-        sourceWorkspace: command.sourceWorkspace,
-        status: command.status,
+    const data = {
+      id: command.id,
+      tenantId: command.tenantId,
+      tenantSlug: command.tenantSlug,
+      productEntityId: command.productEntityId,
+      orderDraftId: command.orderDraftId,
+      dedupeKey: command.dedupeKey,
+      eventType: command.eventType,
+      sourceWorkspace: command.sourceWorkspace,
+      status: command.status,
+      summary: command.summary,
+      payloadJson: JSON.stringify(command.payload),
+      occurredAt: command.occurredAt,
+    };
+    const record = await this.delegate.upsert({
+      where: {
+        dedupeKey: command.dedupeKey,
+      },
+      create: data,
+      update: {
         summary: command.summary,
         payloadJson: JSON.stringify(command.payload),
         occurredAt: command.occurredAt,
@@ -59,6 +70,11 @@ export class PrismaEcommerceOrderOperationalEventRepository
         tenantSlug: command.tenantSlug,
         productEntityId: command.productEntityId,
         orderDraftId: command.orderDraftId,
+        ...(command.eventType ? { eventType: command.eventType } : {}),
+        ...(command.status ? { status: command.status } : {}),
+        ...(command.sourceWorkspace
+          ? { sourceWorkspace: command.sourceWorkspace }
+          : {}),
       },
       orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }],
       take: command.limit ?? 20,
@@ -78,6 +94,7 @@ export class PrismaEcommerceOrderOperationalEventRepository
       tenantSlug: record.tenantSlug,
       productEntityId: record.productEntityId,
       orderDraftId: record.orderDraftId,
+      dedupeKey: record.dedupeKey,
       eventType: record.eventType,
       sourceWorkspace: record.sourceWorkspace,
       status: record.status,

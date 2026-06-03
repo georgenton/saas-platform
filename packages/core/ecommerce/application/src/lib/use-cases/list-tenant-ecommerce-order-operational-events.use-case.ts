@@ -1,6 +1,16 @@
-import { TenantEcommerceOrderOperationalEventView } from '@saas-platform/ecommerce-domain';
+import {
+  TenantEcommerceOrderOperationalEventType,
+  TenantEcommerceOrderOperationalEventView,
+} from '@saas-platform/ecommerce-domain';
 import { EcommerceOrderDraftRepository } from '../ports/ecommerce-order-draft.repository';
 import { EcommerceOrderOperationalEventRepository } from '../ports/ecommerce-order-operational-event.repository';
+
+export type ListTenantEcommerceOrderOperationalEventsQuery = {
+  eventType?: TenantEcommerceOrderOperationalEventType;
+  status?: string;
+  sourceWorkspace?: string;
+  limit?: number;
+};
 
 export class ListTenantEcommerceOrderOperationalEventsUseCase {
   constructor(
@@ -12,7 +22,7 @@ export class ListTenantEcommerceOrderOperationalEventsUseCase {
     tenantSlug: string,
     productEntityId: string,
     orderDraftId: string,
-    limit = 20,
+    query: ListTenantEcommerceOrderOperationalEventsQuery = {},
   ): Promise<TenantEcommerceOrderOperationalEventView[] | null> {
     const orderDraft =
       await this.ecommerceOrderDraftRepository.findByTenantSlugAndId(
@@ -28,7 +38,10 @@ export class ListTenantEcommerceOrderOperationalEventsUseCase {
       tenantSlug,
       productEntityId,
       orderDraftId,
-      limit,
+      eventType: query.eventType,
+      status: query.status?.trim() || undefined,
+      sourceWorkspace: query.sourceWorkspace?.trim() || undefined,
+      limit: query.limit ?? 20,
     });
   }
 }

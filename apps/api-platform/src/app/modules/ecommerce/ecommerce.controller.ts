@@ -5,6 +5,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -480,6 +481,16 @@ import { UpdateEcommerceOrderCustomerProfileRequestDto } from './dto/update-ecom
 
 @Controller('ecommerce/tenants')
 export class EcommerceController {
+  private static readonly OPERATIONAL_EVENT_TYPES = new Set<
+    TenantEcommerceOrderOperationalEventType
+  >([
+    'payment_reconciliation',
+    'fulfillment_availability',
+    'inventory_reservation',
+    'returns_refunds_cancellation',
+    'post_sale_closeout',
+  ]);
+
   constructor(
     private readonly getTenantEcommerceProductAuthoringDraftDetailUseCase: GetTenantEcommerceProductAuthoringDraftDetailUseCase,
     private readonly getTenantEcommerceLandingAssetEntityWorkspaceUseCase: GetTenantEcommerceLandingAssetEntityWorkspaceUseCase,
@@ -630,6 +641,20 @@ export class EcommerceController {
       orderDraftId,
       event,
     );
+  }
+
+  private toOperationalEventType(
+    eventType?: string,
+  ): TenantEcommerceOrderOperationalEventType | undefined {
+    if (!eventType) {
+      return undefined;
+    }
+
+    return EcommerceController.OPERATIONAL_EVENT_TYPES.has(
+      eventType as TenantEcommerceOrderOperationalEventType,
+    )
+      ? (eventType as TenantEcommerceOrderOperationalEventType)
+      : undefined;
   }
 
   @Get(':slug/store-setup-workspace')
@@ -3037,14 +3062,28 @@ export class EcommerceController {
     @Param('slug') slug: string,
     @Param('productEntityId') productEntityId: string,
     @Param('orderDraftId') orderDraftId: string,
+    @Query('eventType') eventType?: string,
+    @Query('status') status?: string,
+    @Query('sourceWorkspace') sourceWorkspace?: string,
+    @Query('limit') limit?: string,
     @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<EcommerceOrderOperationalEventTimelineResponseDto> {
     const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const parsedLimit = limit ? Number.parseInt(limit, 10) : undefined;
     const events =
       await this.listTenantEcommerceOrderOperationalEventsUseCase.execute(
         tenantSlug,
         productEntityId,
         orderDraftId,
+        {
+          eventType: this.toOperationalEventType(eventType),
+          status,
+          sourceWorkspace,
+          limit:
+            parsedLimit && Number.isFinite(parsedLimit)
+              ? Math.min(Math.max(parsedLimit, 1), 100)
+              : undefined,
+        },
       );
 
     if (!events) {
@@ -3367,9 +3406,10 @@ export class EcommerceController {
     @Param('productEntityId') productEntityId: string,
     @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<EcommerceOrderPostSaleReportingSummaryResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
     const summary =
       await this.getTenantEcommerceOrderPostSaleReportingSummaryUseCase.execute(
-        tenantAccess?.tenantSlug ?? slug,
+        tenantSlug,
         productEntityId,
       );
 
@@ -3378,6 +3418,39 @@ export class EcommerceController {
         `Order post-sale reporting summary for product entity ${productEntityId} was not found for tenant ${
           tenantAccess?.tenantSlug ?? slug
         }.`,
+      );
+    }
+
+    const board =
+      await this.getTenantEcommerceOrderPostSaleReportingBoardUseCase.execute(
+        tenantSlug,
+        productEntityId,
+      );
+
+    if (board) {
+      await Promise.all(
+        board.entries.map((entry) =>
+          this.recordOrderOperationalEvent(
+            tenantSlug,
+            productEntityId,
+            entry.orderDraftId,
+            {
+              eventType: 'post_sale_closeout',
+              sourceWorkspace: 'order-post-sale-reporting-summary',
+              status: entry.reportingStatus,
+              summary: `${entry.orderLabel}: ${entry.nextAction}`,
+              payload: {
+                paymentLogStatus: entry.paymentLogStatus,
+                deliveryStatus: entry.deliveryStatus,
+                driftSignal: entry.driftSignal,
+                nextStep: summary.nextFocus,
+                revenueSnapshot: summary.revenueSnapshot,
+                operationalHighlights: summary.operationalHighlights,
+                reportingSummary: summary.summary,
+              },
+            },
+          ),
+        ),
       );
     }
 

@@ -128,6 +128,7 @@ import {
   ListTenantEcommerceProductEntityChannelReleaseCandidatesUseCase,
   ListTenantEcommerceSavedProductEntityChannelDraftsUseCase,
   ListTenantEcommerceOrderDraftsUseCase,
+  ListTenantEcommerceOrderOperationalEventsUseCase,
   ListTenantEcommerceOrderPostSaleLifecyclesUseCase,
   ListTenantEcommerceOrderStatusLifecyclesUseCase,
   RequestTenantEcommerceProductAuthoringDraftBriefUseCase,
@@ -188,6 +189,7 @@ import {
   RequestTenantEcommerceWhatsappGrowthExecutionBridgeUseCase,
   RequestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase,
   RequestTenantEcommerceWhatsappGrowthOperatorLaunchPacketUseCase,
+  RecordTenantEcommerceOrderOperationalEventUseCase,
   GetTenantEcommerceWhatsappSalesFlowUseCase,
 } from '@saas-platform/ecommerce-application';
 import {
@@ -498,6 +500,13 @@ describe('API', () => {
   let requestTenantEcommerceOrderPaymentConfirmationDecisionUseCase: {
     execute: jest.Mock;
   };
+  let recordTenantEcommerceOrderOperationalEventUseCase: {
+    execute: jest.Mock;
+  };
+  let listTenantEcommerceOrderOperationalEventsUseCase: {
+    execute: jest.Mock;
+  };
+  let ecommerceOrderOperationalEvents: any[];
   let getTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase: {
     execute: jest.Mock;
   };
@@ -8328,6 +8337,52 @@ describe('API', () => {
         guardrails: ['Payment confirmation decision guardrail'],
       }),
     };
+    ecommerceOrderOperationalEvents = [];
+    recordTenantEcommerceOrderOperationalEventUseCase = {
+      execute: jest
+        .fn()
+        .mockImplementation(
+          async (
+            tenantSlug: string,
+            productEntityId: string,
+            orderDraftId: string,
+            command: any,
+          ) => {
+            const event = {
+              id: `operational_event_${String(
+                ecommerceOrderOperationalEvents.length + 1,
+              ).padStart(3, '0')}`,
+              tenantSlug,
+              productEntityId,
+              orderDraftId,
+              eventType: command.eventType,
+              sourceWorkspace: command.sourceWorkspace,
+              status: command.status,
+              summary: command.summary,
+              payload: command.payload ?? {},
+              occurredAt: new Date(
+                `2026-06-03T19:${String(
+                  ecommerceOrderOperationalEvents.length,
+                ).padStart(2, '0')}:00.000Z`,
+              ),
+              createdAt: new Date(
+                `2026-06-03T19:${String(
+                  ecommerceOrderOperationalEvents.length,
+                ).padStart(2, '0')}:01.000Z`,
+              ),
+            };
+
+            ecommerceOrderOperationalEvents.unshift(event);
+
+            return event;
+          },
+        ),
+    };
+    listTenantEcommerceOrderOperationalEventsUseCase = {
+      execute: jest.fn().mockImplementation(async () => [
+        ...ecommerceOrderOperationalEvents,
+      ]),
+    };
     getTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase = {
       execute: jest.fn().mockResolvedValue({
         tenantSlug: 'saas-platform',
@@ -11405,6 +11460,10 @@ describe('API', () => {
         RequestTenantEcommerceOrderPaymentConfirmationDecisionUseCase,
       )
       .useValue(requestTenantEcommerceOrderPaymentConfirmationDecisionUseCase)
+      .overrideProvider(RecordTenantEcommerceOrderOperationalEventUseCase)
+      .useValue(recordTenantEcommerceOrderOperationalEventUseCase)
+      .overrideProvider(ListTenantEcommerceOrderOperationalEventsUseCase)
+      .useValue(listTenantEcommerceOrderOperationalEventsUseCase)
       .overrideProvider(
         GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
       )
@@ -16969,6 +17028,78 @@ describe('API', () => {
 
     expect(
       getTenantEcommerceOrderPaymentConfirmationLogUseCase.execute,
+    ).toHaveBeenCalledWith(
+      'saas-platform',
+      'product_entity_001',
+      'order_draft_001',
+    );
+  });
+
+  it('GET /api/ecommerce/tenants/:slug/product-entities/:productEntityId/order-drafts/:orderDraftId/operational-events should return the persisted transactional timeline', async () => {
+    const orderDraftBasePath =
+      '/api/ecommerce/tenants/saas-platform/product-entities/product_entity_001/order-drafts/order_draft_001';
+
+    await request(httpServer)
+      .get(`${orderDraftBasePath}/payment-reconciliation-workspace`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.reconciliationStatus).toBe('reconciled');
+      });
+
+    await request(httpServer)
+      .get(`${orderDraftBasePath}/fulfillment-availability-workspace`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.availabilityStatus).toBe(
+          'needs_capacity_review',
+        );
+      });
+
+    await request(httpServer)
+      .get(`${orderDraftBasePath}/inventory-reservation-workspace`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.reservationStatus).toBe('needs_capacity_review');
+      });
+
+    await request(httpServer)
+      .get(`${orderDraftBasePath}/returns-refunds-cancellation-workspace`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.resolutionStatus).toBe(
+          'eligible_for_refund_review',
+        );
+      });
+
+    await request(httpServer)
+      .get(`${orderDraftBasePath}/operational-events`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.tenantSlug).toBe('saas-platform');
+        expect(response.body.productEntityId).toBe('product_entity_001');
+        expect(response.body.orderDraftId).toBe('order_draft_001');
+        expect(response.body.events).toHaveLength(4);
+        expect(response.body.events.map((event) => event.eventType)).toEqual([
+          'returns_refunds_cancellation',
+          'inventory_reservation',
+          'fulfillment_availability',
+          'payment_reconciliation',
+        ]);
+        expect(response.body.events[0].sourceWorkspace).toBe(
+          'returns-refunds-cancellation-workspace',
+        );
+      });
+
+    expect(recordTenantEcommerceOrderOperationalEventUseCase.execute).toHaveBeenCalledTimes(
+      4,
+    );
+    expect(
+      listTenantEcommerceOrderOperationalEventsUseCase.execute,
     ).toHaveBeenCalledWith(
       'saas-platform',
       'product_entity_001',

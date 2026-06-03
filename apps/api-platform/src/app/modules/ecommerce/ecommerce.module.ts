@@ -11,6 +11,7 @@ import {
 import {
   ECOMMERCE_PRODUCT_DRAFT_REPOSITORY,
   ECOMMERCE_ORDER_DRAFT_REPOSITORY,
+  ECOMMERCE_ORDER_OPERATIONAL_EVENT_REPOSITORY,
   ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
   GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
   GetTenantEcommerceCatalogCommercialCardUseCase,
@@ -82,6 +83,7 @@ import {
   ListTenantEcommerceSavedProductDraftsUseCase,
   ListTenantEcommerceOrderDraftsUseCase,
   ListTenantEcommerceOrderPostSaleLifecyclesUseCase,
+  ListTenantEcommerceOrderOperationalEventsUseCase,
   ListTenantEcommerceOrderStatusLifecyclesUseCase,
   ListTenantEcommerceLaunchPlansUseCase,
   ListTenantEcommerceProductSetupsUseCase,
@@ -132,6 +134,7 @@ import {
   RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
   RequestTenantEcommerceProductWorkspaceReadinessPacketUseCase,
   RequestTenantEcommerceLaunchPlanActivationReadinessUseCase,
+  RecordTenantEcommerceOrderOperationalEventUseCase,
   SaveTenantEcommerceProductAuthoringDraftUseCase,
   SaveTenantEcommerceProductEntityChannelDraftUseCase,
   SaveTenantEcommerceOrderDraftUseCase,
@@ -1709,6 +1712,39 @@ import { EcommerceController } from './ecommerce.controller';
           listTenantEcommerceOrderPostSaleLifecyclesUseCase,
           getTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase,
           getTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RecordTenantEcommerceOrderOperationalEventUseCase,
+      inject: [
+        GetTenantBySlugUseCase,
+        ECOMMERCE_ORDER_DRAFT_REPOSITORY,
+        ECOMMERCE_ORDER_OPERATIONAL_EVENT_REPOSITORY,
+      ],
+      useFactory: (
+        getTenantBySlugUseCase,
+        ecommerceOrderDraftRepository,
+        ecommerceOrderOperationalEventRepository,
+      ) =>
+        new RecordTenantEcommerceOrderOperationalEventUseCase(
+          getTenantBySlugUseCase,
+          ecommerceOrderDraftRepository,
+          ecommerceOrderOperationalEventRepository,
+        ),
+    },
+    {
+      provide: ListTenantEcommerceOrderOperationalEventsUseCase,
+      inject: [
+        ECOMMERCE_ORDER_DRAFT_REPOSITORY,
+        ECOMMERCE_ORDER_OPERATIONAL_EVENT_REPOSITORY,
+      ],
+      useFactory: (
+        ecommerceOrderDraftRepository,
+        ecommerceOrderOperationalEventRepository,
+      ) =>
+        new ListTenantEcommerceOrderOperationalEventsUseCase(
+          ecommerceOrderDraftRepository,
+          ecommerceOrderOperationalEventRepository,
         ),
     },
     {

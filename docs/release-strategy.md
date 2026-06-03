@@ -36,6 +36,8 @@ Recommended bump policy:
 - `minor`: new backward-compatible capabilities
 - `major`: breaking changes to contracts, runtime requirements, or deployment expectations
 
+For ongoing ecommerce slices, add a minor changeset whenever the PR introduces new API routes, DTOs, web clients, smoke-covered workflows, or operator workspaces. Use patch for fixes and hardening that do not add new capabilities.
+
 ## Release process
 
 1. Open a feature PR with a Conventional Commit title.

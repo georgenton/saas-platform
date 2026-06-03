@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.62.0
+
+### Minor Changes
+
+- 21d183d: Add a persistent ecommerce order operational event foundation for recording and listing transactional operations audit events by order draft.
+
 ## 0.61.0
 
 ### Minor Changes

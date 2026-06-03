@@ -4181,6 +4181,24 @@ export interface EcommerceOrderPaymentDisputeWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface EcommerceOrderPaymentDisputeResolutionPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  resolutionDecision: 'confirmed' | 'hold' | 'escalated';
+  summary: string;
+  resolutionOwner: {
+    productKey: 'ecommerce';
+    role: 'operator';
+  };
+  requiredEvidence: string[];
+  resolutionChecklist: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceOrderFulfillmentReadinessWorkspaceResponse {
   tenantSlug: string;
   generatedAt: string;
@@ -4280,6 +4298,26 @@ export interface EcommerceOrderFulfillmentCompletionPacketResponse {
     resultLabel: string;
   };
   completionChecklist: string[];
+  operatorNotes: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderFulfillmentDeliveryConfirmationPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  confirmationStatus: 'delivered' | 'partial' | 'blocked';
+  summary: string;
+  confirmationRecord: {
+    deliveryMode: 'guided_handoff' | 'manual_execution' | 'service_activation';
+    deliveryChannel: 'email' | 'whatsapp' | 'manual';
+    ownerRole: 'operator';
+    resultLabel: string;
+  };
+  evidenceChecklist: string[];
   operatorNotes: string[];
   nextStep: string;
   blockedBy: string[];
@@ -4497,6 +4535,30 @@ export interface EcommerceOrderPostSaleReportingBoardResponse {
     operatorBias: string;
   }>;
   entries: EcommerceOrderPostSaleReportingBoardEntryResponse[];
+}
+
+export interface EcommerceOrderPostSaleReportingSummaryResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  summary: {
+    totalOrders: number;
+    confirmedCount: number;
+    deliveredCount: number;
+    blockedCount: number;
+    disputedCount: number;
+    divergenceCount: number;
+    headline: string;
+    detail: string;
+  };
+  revenueSnapshot: {
+    expectedOrderCount: number;
+    confirmedOrderCount: number;
+    awaitingPaymentCount: number;
+    readyForFulfillmentCount: number;
+  };
+  operationalHighlights: string[];
+  nextFocus: string;
 }
 
 export interface AiMemoryWorkspaceAgentResponse {

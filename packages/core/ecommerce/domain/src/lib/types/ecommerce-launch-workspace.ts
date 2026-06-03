@@ -2836,3 +2836,65 @@ export interface TenantEcommerceOrderPostSaleReportingBoardView {
   }>;
   entries: TenantEcommerceOrderPostSaleReportingBoardEntryView[];
 }
+
+export interface TenantEcommerceOrderPaymentDisputeResolutionPacketView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  resolutionDecision: 'confirmed' | 'hold' | 'escalated';
+  summary: string;
+  resolutionOwner: {
+    productKey: 'ecommerce';
+    role: 'operator';
+  };
+  requiredEvidence: string[];
+  resolutionChecklist: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderFulfillmentDeliveryConfirmationPacketView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  confirmationStatus: 'delivered' | 'partial' | 'blocked';
+  summary: string;
+  confirmationRecord: {
+    deliveryMode: 'guided_handoff' | 'manual_execution' | 'service_activation';
+    deliveryChannel: 'email' | 'whatsapp' | 'manual';
+    ownerRole: 'operator';
+    resultLabel: string;
+  };
+  evidenceChecklist: string[];
+  operatorNotes: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderPostSaleReportingSummaryView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  summary: {
+    totalOrders: number;
+    confirmedCount: number;
+    deliveredCount: number;
+    blockedCount: number;
+    disputedCount: number;
+    divergenceCount: number;
+    headline: string;
+    detail: string;
+  };
+  revenueSnapshot: {
+    expectedOrderCount: number;
+    confirmedOrderCount: number;
+    awaitingPaymentCount: number;
+    readyForFulfillmentCount: number;
+  };
+  operationalHighlights: string[];
+  nextFocus: string;
+}

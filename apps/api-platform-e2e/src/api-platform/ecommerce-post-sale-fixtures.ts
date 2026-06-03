@@ -172,6 +172,32 @@ export function createEcommerceOrderPaymentDisputeWorkspaceFixture() {
   };
 }
 
+export function createEcommerceOrderPaymentDisputeResolutionPacketFixture() {
+  return {
+    tenantSlug: 'saas-platform',
+    generatedAt: new Date('2026-06-02T11:01:05.000Z'),
+    productEntity,
+    orderDraft,
+    resolutionDecision: 'confirmed',
+    summary: 'La disputa quedó resuelta y la orden puede seguir su curso.',
+    resolutionOwner: {
+      productKey: 'ecommerce',
+      role: 'operator',
+    },
+    requiredEvidence: [
+      'Transferencia esperada',
+      'Pantallazo de confirmación',
+    ],
+    resolutionChecklist: [
+      'Validar evidencia del buyer',
+      'Cerrar el frente operativo sin escalar hold',
+    ],
+    nextStep: 'Continuar hacia fulfillment controlado.',
+    blockedBy: [],
+    guardrails: ['Payment dispute resolution guardrail'],
+  };
+}
+
 export function createEcommerceOrderFulfillmentCompletionPacketFixture() {
   return {
     tenantSlug: 'saas-platform',
@@ -193,6 +219,34 @@ export function createEcommerceOrderFulfillmentCompletionPacketFixture() {
     nextStep: 'Cerrar la confirmación final y mover la orden a delivered.',
     blockedBy: [],
     guardrails: ['Fulfillment completion guardrail'],
+  };
+}
+
+export function createEcommerceOrderFulfillmentDeliveryConfirmationPacketFixture() {
+  return {
+    tenantSlug: 'saas-platform',
+    generatedAt: new Date('2026-06-02T11:01:15.000Z'),
+    productEntity,
+    orderDraft,
+    confirmationStatus: 'partial',
+    summary: 'La entrega ya tiene señales suficientes, aunque todavía falta cierre final.',
+    confirmationRecord: {
+      resultLabel: 'Activación parcialmente confirmada con evidencia operativa.',
+      deliveryMode: 'service_activation',
+      deliveryChannel: 'whatsapp',
+      ownerRole: 'operator',
+    },
+    evidenceChecklist: [
+      'Confirmación del buyer',
+      'Captura de activación compartida',
+    ],
+    operatorNotes: [
+      'Buyer respondió por WhatsApp.',
+      'Falta confirmación final de activación.',
+    ],
+    nextStep: 'Cerrar confirmación final y marcar la orden como delivered.',
+    blockedBy: [],
+    guardrails: ['Fulfillment delivery confirmation guardrail'],
   };
 }
 
@@ -230,5 +284,35 @@ export function createEcommerceOrderPostSaleReportingBoardFixture() {
         updatedAt: new Date('2026-06-02T11:01:20.000Z'),
       },
     ],
+  };
+}
+
+export function createEcommerceOrderPostSaleReportingSummaryFixture() {
+  return {
+    tenantSlug: 'saas-platform',
+    generatedAt: new Date('2026-06-02T11:01:25.000Z'),
+    productEntity,
+    summary: {
+      totalOrders: 1,
+      confirmedCount: 1,
+      deliveredCount: 0,
+      blockedCount: 0,
+      disputedCount: 0,
+      divergenceCount: 1,
+      headline: 'El post-sale sigue vivo con una orden confirmada y entrega pendiente.',
+      detail:
+        'Todavía hay desvío entre cobro confirmado y cierre final de entrega.',
+    },
+    revenueSnapshot: {
+      expectedOrderCount: 1,
+      confirmedOrderCount: 1,
+      awaitingPaymentCount: 0,
+      readyForFulfillmentCount: 1,
+    },
+    operationalHighlights: [
+      'Cobro confirmado por WhatsApp.',
+      'La entrega todavía no se marca como delivered.',
+    ],
+    nextFocus: 'Cerrar fulfillment para eliminar el desvío operativo visible.',
   };
 }

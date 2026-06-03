@@ -35,6 +35,7 @@ import {
   TenantEcommerceOrderPaymentConfirmationDecisionView,
   TenantEcommerceOrderPaymentConfirmationLogView,
   TenantEcommerceOrderPaymentDisputeWorkspaceView,
+  TenantEcommerceOrderPaymentDisputeResolutionPacketView,
   TenantEcommerceOrderPaymentConfirmationWorkspaceView,
   TenantEcommerceOrderInvoiceDraftBridgeView,
   TenantEcommerceInvoiceDraftHandoffWorkspaceView,
@@ -44,6 +45,7 @@ import {
   TenantEcommerceInvoiceDraftLaunchBridgeView,
   TenantEcommerceOrderFulfillmentDeliveryWorkspaceView,
   TenantEcommerceOrderFulfillmentCompletionPacketView,
+  TenantEcommerceOrderFulfillmentDeliveryConfirmationPacketView,
   TenantEcommerceOrderFulfillmentExecutionWorkspaceView,
   TenantEcommerceOrderFulfillmentReadinessWorkspaceView,
   TenantEcommerceOrderPaymentReadinessWorkspaceView,
@@ -53,6 +55,7 @@ import {
   TenantEcommerceOrderPostSaleOpsBoardView,
   TenantEcommerceOrderPostSaleReportingBoardEntryView,
   TenantEcommerceOrderPostSaleReportingBoardView,
+  TenantEcommerceOrderPostSaleReportingSummaryView,
   TenantEcommerceOrderPostSaleLifecycleRegistryView,
   TenantEcommerceOrderRevenueOpsBoardEntryView,
   TenantEcommerceOrderRevenueOpsBoardView,
@@ -1566,6 +1569,24 @@ export interface EcommerceOrderPaymentDisputeWorkspaceResponseDto {
   guardrails: string[];
 }
 
+export interface EcommerceOrderPaymentDisputeResolutionPacketResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  resolutionDecision: 'confirmed' | 'hold' | 'escalated';
+  summary: string;
+  resolutionOwner: {
+    productKey: 'ecommerce';
+    role: 'operator';
+  };
+  requiredEvidence: string[];
+  resolutionChecklist: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceOrderFulfillmentReadinessWorkspaceResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -1665,6 +1686,26 @@ export interface EcommerceOrderFulfillmentCompletionPacketResponseDto {
     resultLabel: string;
   };
   completionChecklist: string[];
+  operatorNotes: string[];
+  nextStep: string;
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderFulfillmentDeliveryConfirmationPacketResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  confirmationStatus: 'delivered' | 'partial' | 'blocked';
+  summary: string;
+  confirmationRecord: {
+    deliveryMode: 'guided_handoff' | 'manual_execution' | 'service_activation';
+    deliveryChannel: 'email' | 'whatsapp' | 'manual';
+    ownerRole: 'operator';
+    resultLabel: string;
+  };
+  evidenceChecklist: string[];
   operatorNotes: string[];
   nextStep: string;
   blockedBy: string[];
@@ -1880,6 +1921,30 @@ export interface EcommerceOrderPostSaleReportingBoardResponseDto {
     operatorBias: string;
   }>;
   entries: EcommerceOrderPostSaleReportingBoardEntryResponseDto[];
+}
+
+export interface EcommerceOrderPostSaleReportingSummaryResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  summary: {
+    totalOrders: number;
+    confirmedCount: number;
+    deliveredCount: number;
+    blockedCount: number;
+    disputedCount: number;
+    divergenceCount: number;
+    headline: string;
+    detail: string;
+  };
+  revenueSnapshot: {
+    expectedOrderCount: number;
+    confirmedOrderCount: number;
+    awaitingPaymentCount: number;
+    readyForFulfillmentCount: number;
+  };
+  operationalHighlights: string[];
+  nextFocus: string;
 }
 
 export interface EcommerceLandingPageStructureResponseDto {
@@ -3210,6 +3275,25 @@ export function toEcommerceOrderPaymentDisputeWorkspaceResponseDto(
   };
 }
 
+export function toEcommerceOrderPaymentDisputeResolutionPacketResponseDto(
+  view: TenantEcommerceOrderPaymentDisputeResolutionPacketView,
+): EcommerceOrderPaymentDisputeResolutionPacketResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    resolutionDecision: view.resolutionDecision,
+    summary: view.summary,
+    resolutionOwner: { ...view.resolutionOwner },
+    requiredEvidence: [...view.requiredEvidence],
+    resolutionChecklist: [...view.resolutionChecklist],
+    nextStep: view.nextStep,
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
 export function toEcommerceOrderFulfillmentReadinessWorkspaceResponseDto(
   view: TenantEcommerceOrderFulfillmentReadinessWorkspaceView,
 ): EcommerceOrderFulfillmentReadinessWorkspaceResponseDto {
@@ -3279,6 +3363,25 @@ export function toEcommerceOrderFulfillmentCompletionPacketResponseDto(
     summary: view.summary,
     deliveryResult: { ...view.deliveryResult },
     completionChecklist: [...view.completionChecklist],
+    operatorNotes: [...view.operatorNotes],
+    nextStep: view.nextStep,
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderFulfillmentDeliveryConfirmationPacketResponseDto(
+  view: TenantEcommerceOrderFulfillmentDeliveryConfirmationPacketView,
+): EcommerceOrderFulfillmentDeliveryConfirmationPacketResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    confirmationStatus: view.confirmationStatus,
+    summary: view.summary,
+    confirmationRecord: { ...view.confirmationRecord },
+    evidenceChecklist: [...view.evidenceChecklist],
     operatorNotes: [...view.operatorNotes],
     nextStep: view.nextStep,
     blockedBy: [...view.blockedBy],
@@ -3436,6 +3539,20 @@ export function toEcommerceOrderPostSaleReportingBoardResponseDto(
     entries: view.entries.map((entry) =>
       toEcommerceOrderPostSaleReportingBoardEntryResponseDto(entry),
     ),
+  };
+}
+
+export function toEcommerceOrderPostSaleReportingSummaryResponseDto(
+  view: TenantEcommerceOrderPostSaleReportingSummaryView,
+): EcommerceOrderPostSaleReportingSummaryResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    summary: { ...view.summary },
+    revenueSnapshot: { ...view.revenueSnapshot },
+    operationalHighlights: [...view.operationalHighlights],
+    nextFocus: view.nextFocus,
   };
 }
 

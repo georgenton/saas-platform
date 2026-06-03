@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.65.0
+
+### Minor Changes
+
+- 0581e0d: Add an ecommerce order operational review workspace that summarizes persisted timeline events, blocker signals, drift signals, phase counts, and recommended operator actions in the API and web console.
+
 ## 0.64.0
 
 ### Minor Changes

@@ -24,6 +24,7 @@
     "smoke:ai:ecommerce-launch": "node tools/smoke/run-ai-ecommerce-launch-smoke.mjs",
     "smoke:ai:ecommerce-post-sale-closeout": "node tools/smoke/run-ai-ecommerce-post-sale-closeout-smoke.mjs",
     "smoke:ai:ecommerce-invoice-handoff": "node tools/smoke/run-ai-ecommerce-invoice-handoff-smoke.mjs",
+    "smoke:ai:ecommerce-closeout": "node tools/smoke/run-ai-ecommerce-closeout-smoke-pack.mjs",
     "smoke:ai:guarded-execution-invoice-lane": "node tools/smoke/run-ai-guarded-execution-invoice-lane-smoke.mjs",
     "smoke:ai:guarded-execution-invoice-rejection-fallback": "node tools/smoke/run-ai-guarded-execution-invoice-rejection-fallback-smoke.mjs",
     "smoke:ai:closeout": "node tools/smoke/run-ai-closeout-smoke-pack.mjs",

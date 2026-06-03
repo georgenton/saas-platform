@@ -1,11 +1,9 @@
 import { TenantEcommerceOrderPaymentReadinessWorkspaceView } from '@saas-platform/ecommerce-domain';
-import { RequestTenantEcommerceCheckoutCloseoutPacketUseCase } from './request-tenant-ecommerce-checkout-closeout-packet.use-case';
-import { RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase } from './request-tenant-ecommerce-invoice-handoff-acknowledgement.use-case';
+import { GetTenantEcommerceOrderDraftDetailUseCase } from './get-tenant-ecommerce-order-draft-detail.use-case';
 
 export class GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase {
   constructor(
-    private readonly requestTenantEcommerceCheckoutCloseoutPacketUseCase: RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
-    private readonly requestTenantEcommerceInvoiceHandoffAcknowledgementUseCase: RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
+    private readonly getTenantEcommerceOrderDraftDetailUseCase: GetTenantEcommerceOrderDraftDetailUseCase,
     private readonly nowProvider: () => Date = () => new Date(),
   ) {}
 
@@ -14,50 +12,40 @@ export class GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase {
     productEntityId: string,
     orderDraftId: string,
   ): Promise<TenantEcommerceOrderPaymentReadinessWorkspaceView | null> {
-    const [closeoutPacket, invoiceAcknowledgement] = await Promise.all([
-      this.requestTenantEcommerceCheckoutCloseoutPacketUseCase.execute(
+    const orderDraftDetail =
+      await this.getTenantEcommerceOrderDraftDetailUseCase.execute(
         tenantSlug,
         productEntityId,
         orderDraftId,
-      ),
-      this.requestTenantEcommerceInvoiceHandoffAcknowledgementUseCase.execute(
-        tenantSlug,
-        productEntityId,
-        orderDraftId,
-      ),
-    ]);
+      );
 
-    if (!closeoutPacket || !invoiceAcknowledgement) {
+    if (!orderDraftDetail) {
       return null;
     }
 
-    const blockedBy = [
-      ...closeoutPacket.blockedBy,
-      ...invoiceAcknowledgement.blockedBy,
-    ];
+    const blockedBy = [...orderDraftDetail.blockedBy];
+    const missingFields = [...orderDraftDetail.orderDraft.missingFields];
 
     const workspaceStatus =
       blockedBy.length > 0
         ? 'blocked'
-        : closeoutPacket.paymentReadiness.status === 'ready' &&
-            invoiceAcknowledgement.acknowledgementStatus === 'accepted'
+        : orderDraftDetail.orderDraft.status === 'ready_for_review' &&
+            missingFields.length === 0
           ? 'ready_for_collection'
           : 'needs_confirmation';
 
     const frictionPoints = [
-      ...(closeoutPacket.paymentReadiness.status === 'ready'
+      ...missingFields.map((field) => `Completar ${field} antes del cobro.`),
+      ...(orderDraftDetail.orderDraft.status === 'ready_for_review'
         ? []
-        : [closeoutPacket.paymentReadiness.hint]),
-      ...(invoiceAcknowledgement.acknowledgementStatus === 'accepted'
-        ? []
-        : invoiceAcknowledgement.missingSignals),
+        : ['La orden todavía no está lista para revisión operativa.']),
     ];
 
     return {
       tenantSlug,
       generatedAt: this.nowProvider(),
-      productEntity: closeoutPacket.productEntity,
-      orderDraft: closeoutPacket.orderDraft,
+      productEntity: orderDraftDetail.productEntity,
+      orderDraft: orderDraftDetail.orderDraft,
       workspaceStatus,
       summary:
         workspaceStatus === 'ready_for_collection'
@@ -66,21 +54,29 @@ export class GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase {
             ? 'Todavía hay bloqueos y no conviene tratar esta orden como lista para cobro.'
             : 'La orden ya se puede revisar como cobro esperado, pero todavía necesita confirmaciones adicionales.',
       paymentPlan: {
-        collectionChannel: closeoutPacket.orderDraft.closingChannel,
-        pricingSnapshot: closeoutPacket.commercialSnapshot.pricingSnapshot,
-        billingIntent: closeoutPacket.orderDraft.customerProfile.billingIntent,
-        primaryCta: closeoutPacket.commercialSnapshot.primaryCta,
+        collectionChannel: orderDraftDetail.orderDraft.closingChannel,
+        pricingSnapshot: orderDraftDetail.orderDraft.pricingSnapshot,
+        billingIntent:
+          orderDraftDetail.orderDraft.customerProfile.billingIntent,
+        primaryCta: orderDraftDetail.orderDraft.primaryCta,
       },
       invoiceSignal: {
-        acknowledgementStatus: invoiceAcknowledgement.acknowledgementStatus,
+        acknowledgementStatus:
+          missingFields.length === 0 ? 'accepted' : 'needs_data',
         detail:
-          invoiceAcknowledgement.acknowledgementStatus === 'accepted'
+          missingFields.length === 0
             ? 'El handoff fiscal ya fue aceptado como preparación operable.'
-            : 'Todavía falta cerrar mejor el handoff hacia Invoicing antes de operar cobro con confianza.',
+            : 'Todavía falta cerrar mejor el buyer profile fiscal antes de operar cobro con confianza.',
       },
       closeoutSignal: {
-        closeoutStatus: closeoutPacket.closeoutStatus,
-        paymentReadinessStatus: closeoutPacket.paymentReadiness.status,
+        closeoutStatus:
+          orderDraftDetail.orderDraft.status === 'ready_for_review'
+            ? 'ready_for_operator_closeout'
+            : 'needs_data',
+        paymentReadinessStatus:
+          workspaceStatus === 'ready_for_collection'
+            ? 'ready'
+            : 'needs_customer_input',
       },
       readinessChecklist: [
         'Confirmar que el buyer entiende el siguiente paso de cobro.',
@@ -97,8 +93,7 @@ export class GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase {
       blockedBy,
       guardrails: [
         ...new Set([
-          ...closeoutPacket.guardrails,
-          ...invoiceAcknowledgement.guardrails,
+          ...orderDraftDetail.guardrails,
           'Este workspace modela readiness de cobro, no confirmación de pago real ni conciliación bancaria.',
         ]),
       ],

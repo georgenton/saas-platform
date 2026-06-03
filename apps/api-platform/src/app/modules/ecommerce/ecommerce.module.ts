@@ -1372,32 +1372,18 @@ import { EcommerceController } from './ecommerce.controller';
     },
     {
       provide: GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
-      inject: [
-        RequestTenantEcommerceCheckoutCloseoutPacketUseCase,
-        RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
-      ],
-      useFactory: (
-        requestTenantEcommerceCheckoutCloseoutPacketUseCase,
-        requestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
-      ) =>
+      inject: [GetTenantEcommerceOrderDraftDetailUseCase],
+      useFactory: (getTenantEcommerceOrderDraftDetailUseCase) =>
         new GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase(
-          requestTenantEcommerceCheckoutCloseoutPacketUseCase,
-          requestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
+          getTenantEcommerceOrderDraftDetailUseCase,
         ),
     },
     {
       provide: GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase,
-      inject: [
-        GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
-        GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
-      ],
-      useFactory: (
-        getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
-        getTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
-      ) =>
+      inject: [GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase],
+      useFactory: (getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase) =>
         new GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase(
           getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
-          getTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
         ),
     },
     {
@@ -1508,18 +1494,15 @@ import { EcommerceController } from './ecommerce.controller';
     {
       provide: GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
       inject: [
-        GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
-        RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
+        GetTenantEcommerceOrderDraftDetailUseCase,
         GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
       ],
       useFactory: (
-        getTenantEcommerceOrderStatusLifecycleDetailUseCase,
-        requestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
+        getTenantEcommerceOrderDraftDetailUseCase,
         getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
       ) =>
         new GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase(
-          getTenantEcommerceOrderStatusLifecycleDetailUseCase,
-          requestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
+          getTenantEcommerceOrderDraftDetailUseCase,
           getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
         ),
     },

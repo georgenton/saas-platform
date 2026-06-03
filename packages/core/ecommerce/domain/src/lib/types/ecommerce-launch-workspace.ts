@@ -1787,7 +1787,8 @@ export type TenantEcommerceOrderOperationalEventType =
   | 'fulfillment_availability'
   | 'inventory_reservation'
   | 'returns_refunds_cancellation'
-  | 'post_sale_closeout';
+  | 'post_sale_closeout'
+  | 'operational_exception_resolution';
 
 export interface TenantEcommerceOrderOperationalEventView {
   id: string;
@@ -1877,6 +1878,78 @@ export interface TenantEcommerceOrderOperationalHealthBoardView {
     driftCount: number;
     recommendedAction: string;
   }>;
+}
+
+export interface TenantEcommerceOrderInvoiceExecutionPacketView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  executionStatus: 'ready_for_invoice_execution' | 'needs_review' | 'blocked';
+  summary: string;
+  invoicePayload: {
+    customerLabel: string;
+    documentType: 'invoice';
+    offerTitle: string;
+    pricingSnapshot: string;
+    billingIntent: string | null;
+    sourceOrderDraftId: string;
+  };
+  readinessSignals: {
+    invoiceBridgeStatus: 'ready_to_open_invoice_draft' | 'needs_data' | 'blocked';
+    fiscalWorkspaceStatus: 'ready' | 'needs_data' | 'blocked';
+    paymentDecision: 'confirmed' | 'needs_review' | 'blocked';
+    operationalReviewStatus:
+      | 'ready_for_closeout'
+      | 'needs_operator_review'
+      | 'blocked';
+  };
+  requiredActions: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderOperationalExceptionResolutionView {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  generatedAt: Date;
+  resolutionStatus: 'resolved' | 'needs_follow_up' | 'blocked';
+  summary: string;
+  resolvedSignals: string[];
+  event: TenantEcommerceOrderOperationalEventView;
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantEcommerceCompletionDashboardView {
+  tenantSlug: string;
+  productEntityId: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  completionStatus: 'incomplete' | 'operationally_ready' | 'ready_for_live_run';
+  summary: {
+    headline: string;
+    detail: string;
+    readyLaneCount: number;
+    warningLaneCount: number;
+    blockedLaneCount: number;
+  };
+  lanes: Array<{
+    laneKey:
+      | 'storefront'
+      | 'checkout'
+      | 'orders'
+      | 'invoicing'
+      | 'payment'
+      | 'fulfillment'
+      | 'post_sale'
+      | 'operational_health';
+    status: 'ready' | 'warning' | 'blocked';
+    detail: string;
+  }>;
+  nextBestAction: string;
+  guardrails: string[];
 }
 
 export interface TenantEcommerceOrderCustomerProfileUpdateView {

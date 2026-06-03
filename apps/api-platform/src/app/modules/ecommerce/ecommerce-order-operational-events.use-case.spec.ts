@@ -4,6 +4,7 @@ import {
   ListTenantEcommerceOrderOperationalEventsUseCase,
   RecordTenantEcommerceOrderOperationalEventUseCase,
   RequestTenantEcommerceOrderOperationalExceptionPacketUseCase,
+  ResolveTenantEcommerceOrderOperationalExceptionUseCase,
 } from '@saas-platform/ecommerce-application';
 
 describe('Ecommerce order operational event use cases', () => {
@@ -244,6 +245,63 @@ describe('Ecommerce order operational event use cases', () => {
     );
   });
 
+  it('treats events before the latest operational exception resolution as resolved signals', async () => {
+    const events = [
+      {
+        id: 'event_004',
+        tenantId: tenant.id,
+        tenantSlug: tenant.slug,
+        productEntityId: orderDraft.productEntityId,
+        orderDraftId: orderDraft.id,
+        dedupeKey:
+          'saas-platform:product_entity_001:order_draft_001:operational_exception_resolution:operational-exception-resolution:resolved',
+        eventType: 'operational_exception_resolution' as const,
+        sourceWorkspace: 'operational-exception-resolution',
+        status: 'resolved',
+        summary: 'Operational drift resolved.',
+        payload: { resolvedSignals: ['payment_without_delivery'] },
+        occurredAt: new Date('2026-06-03T18:59:00.000Z'),
+        createdAt: new Date('2026-06-03T18:59:01.000Z'),
+      },
+      {
+        id: 'event_003',
+        tenantId: tenant.id,
+        tenantSlug: tenant.slug,
+        productEntityId: orderDraft.productEntityId,
+        orderDraftId: orderDraft.id,
+        dedupeKey:
+          'saas-platform:product_entity_001:order_draft_001:post_sale_closeout:order-post-sale-reporting-summary:in_progress',
+        eventType: 'post_sale_closeout' as const,
+        sourceWorkspace: 'order-post-sale-reporting-summary',
+        status: 'in_progress',
+        summary: 'Closeout has payment without delivery drift.',
+        payload: { driftSignal: 'payment_without_delivery' },
+        occurredAt: new Date('2026-06-03T18:55:00.000Z'),
+        createdAt: new Date('2026-06-03T18:55:01.000Z'),
+      },
+    ];
+    const useCase = new GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase(
+      { execute: jest.fn().mockResolvedValue(events) } as never,
+      () => new Date('2026-06-03T19:00:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute(tenant.slug, orderDraft.productEntityId, orderDraft.id),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        reviewStatus: 'ready_for_closeout',
+        blockerSignals: [],
+        driftSignals: [],
+        phaseCounts: expect.arrayContaining([
+          expect.objectContaining({
+            eventType: 'operational_exception_resolution',
+            count: 1,
+          }),
+        ]),
+      }),
+    );
+  });
+
   it('builds an operational exception packet from the review workspace', async () => {
     const reviewWorkspace = {
       tenantSlug: tenant.slug,
@@ -349,6 +407,66 @@ describe('Ecommerce order operational event use cases', () => {
             latestEventType: 'post_sale_closeout',
           }),
         ],
+      }),
+    );
+  });
+
+  it('records an operational exception resolution event from the packet', async () => {
+    const packet = {
+      tenantSlug: tenant.slug,
+      productEntityId: orderDraft.productEntityId,
+      orderDraftId: orderDraft.id,
+      generatedAt: new Date('2026-06-03T19:00:00.000Z'),
+      exceptionType: 'drift_resolution' as const,
+      severity: 'medium' as const,
+      ownerRole: 'operator' as const,
+      summary: 'Operational drift packet.',
+      evidenceChecklist: ['Evidencia drift: payment_without_delivery'],
+      resolutionSteps: ['Confirmar delivery antes del closeout.'],
+      guardrails: ['No auto-refund without review.'],
+    };
+    const event = {
+      id: 'event_004',
+      tenantId: tenant.id,
+      tenantSlug: tenant.slug,
+      productEntityId: orderDraft.productEntityId,
+      orderDraftId: orderDraft.id,
+      dedupeKey:
+        'saas-platform:product_entity_001:order_draft_001:operational_exception_resolution:operational-exception-resolution:needs_follow_up',
+      eventType: 'operational_exception_resolution' as const,
+      sourceWorkspace: 'operational-exception-resolution',
+      status: 'needs_follow_up',
+      summary: 'Resolución operativa registrada para drift_resolution.',
+      payload: { resolvedSignals: ['payment_without_delivery'] },
+      occurredAt: new Date('2026-06-03T19:05:00.000Z'),
+      createdAt: new Date('2026-06-03T19:05:01.000Z'),
+    };
+    const recordUseCase = {
+      execute: jest.fn().mockResolvedValue(event),
+    };
+    const useCase = new ResolveTenantEcommerceOrderOperationalExceptionUseCase(
+      { execute: jest.fn().mockResolvedValue(packet) } as never,
+      recordUseCase as never,
+      () => new Date('2026-06-03T19:06:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute(tenant.slug, orderDraft.productEntityId, orderDraft.id),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        resolutionStatus: 'needs_follow_up',
+        resolvedSignals: ['payment_without_delivery'],
+        event,
+      }),
+    );
+    expect(recordUseCase.execute).toHaveBeenCalledWith(
+      tenant.slug,
+      orderDraft.productEntityId,
+      orderDraft.id,
+      expect.objectContaining({
+        eventType: 'operational_exception_resolution',
+        sourceWorkspace: 'operational-exception-resolution',
+        status: 'needs_follow_up',
       }),
     );
   });

@@ -87,7 +87,10 @@ import {
   EcommerceOrderFulfillmentDeliveryConfirmationPacketResponse,
   EcommerceOrderFulfillmentAvailabilityWorkspaceResponse,
   EcommerceOrderInventoryReservationWorkspaceResponse,
+  EcommerceCompletionDashboardResponse,
+  EcommerceOrderInvoiceExecutionPacketResponse,
   EcommerceOrderOperationalExceptionPacketResponse,
+  EcommerceOrderOperationalExceptionResolutionResponse,
   EcommerceOrderOperationalEventTimelineResponse,
   EcommerceOrderOperationalHealthBoardResponse,
   EcommerceOrderOperationalReviewWorkspaceResponse,
@@ -3863,6 +3866,67 @@ export async function fetchTenantEcommerceOrderOperationalHealthBoard(
     )}/product-entities/${encodeURIComponent(
       productEntityId,
     )}/order-operational-health-board`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceOrderInvoiceExecutionPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderInvoiceExecutionPacketResponse> {
+  return request<EcommerceOrderInvoiceExecutionPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/request-invoice-execution-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function resolveTenantEcommerceOrderOperationalException(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderOperationalExceptionResolutionResponse> {
+  return request<EcommerceOrderOperationalExceptionResolutionResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/resolve-operational-exception`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify({}),
+    },
+  );
+}
+
+export async function fetchTenantEcommerceCompletionDashboard(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceCompletionDashboardResponse> {
+  return request<EcommerceCompletionDashboardResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/completion-dashboard`,
     {
       method: 'GET',
       token,

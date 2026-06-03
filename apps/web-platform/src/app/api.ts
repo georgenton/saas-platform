@@ -87,7 +87,9 @@ import {
   EcommerceOrderFulfillmentDeliveryConfirmationPacketResponse,
   EcommerceOrderFulfillmentAvailabilityWorkspaceResponse,
   EcommerceOrderInventoryReservationWorkspaceResponse,
+  EcommerceOrderOperationalExceptionPacketResponse,
   EcommerceOrderOperationalEventTimelineResponse,
+  EcommerceOrderOperationalHealthBoardResponse,
   EcommerceOrderOperationalReviewWorkspaceResponse,
   EcommerceOrderFulfillmentDeliveryWorkspaceResponse,
   EcommerceOrderFulfillmentExecutionWorkspaceResponse,
@@ -3822,6 +3824,45 @@ export async function fetchTenantEcommerceOrderFulfillmentExecutionWorkspace(
     )}/order-drafts/${encodeURIComponent(
       orderDraftId,
     )}/fulfillment-execution-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceOrderOperationalExceptionPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderOperationalExceptionPacketResponse> {
+  return request<EcommerceOrderOperationalExceptionPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/request-operational-exception-packet`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderOperationalHealthBoard(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceOrderOperationalHealthBoardResponse> {
+  return request<EcommerceOrderOperationalHealthBoardResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-operational-health-board`,
     {
       method: 'GET',
       token,

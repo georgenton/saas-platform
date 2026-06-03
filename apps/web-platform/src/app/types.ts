@@ -4358,6 +4358,7 @@ export interface EcommerceOrderOperationalReviewWorkspaceResponse {
     | 'ready_for_closeout'
     | 'needs_operator_review'
     | 'blocked';
+  stalenessStatus: 'fresh' | 'needs_follow_up' | 'stale';
   summary: string;
   latestEvent: EcommerceOrderOperationalEventResponse | null;
   phaseCounts: Array<{
@@ -4368,6 +4369,58 @@ export interface EcommerceOrderOperationalReviewWorkspaceResponse {
   driftSignals: string[];
   recommendedActions: string[];
   guardrails: string[];
+}
+
+export interface EcommerceOrderOperationalExceptionPacketResponse {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  generatedAt: string;
+  exceptionType:
+    | 'blocker_resolution'
+    | 'drift_resolution'
+    | 'stale_follow_up'
+    | 'closeout_missing';
+  severity: 'low' | 'medium' | 'high';
+  ownerRole: 'operator';
+  summary: string;
+  evidenceChecklist: string[];
+  resolutionSteps: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderOperationalHealthBoardResponse {
+  tenantSlug: string;
+  productEntityId: string;
+  generatedAt: string;
+  summary: {
+    totalOrdersTracked: number;
+    readyForCloseoutCount: number;
+    needsOperatorReviewCount: number;
+    blockedCount: number;
+    driftCount: number;
+    staleTimelineCount: number;
+    headline: string;
+    detail: string;
+  };
+  lanes: Array<{
+    laneKey: 'ready_for_closeout' | 'needs_operator_review' | 'blocked';
+    count: number;
+    operatorBias: string;
+  }>;
+  entries: Array<{
+    orderDraftId: string;
+    orderLabel: string;
+    reviewStatus:
+      | 'ready_for_closeout'
+      | 'needs_operator_review'
+      | 'blocked';
+    stalenessStatus: 'fresh' | 'needs_follow_up' | 'stale';
+    latestEventType: EcommerceOrderOperationalEventResponse['eventType'] | null;
+    blockerCount: number;
+    driftCount: number;
+    recommendedAction: string;
+  }>;
 }
 
 export interface EcommerceOrderFulfillmentExecutionWorkspaceResponse {

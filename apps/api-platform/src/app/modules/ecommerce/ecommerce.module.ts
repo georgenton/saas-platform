@@ -42,6 +42,7 @@ import {
   GetTenantEcommerceOrderRevenueOpsBoardUseCase,
   GetTenantEcommerceOrderRevenueTrackingSummaryUseCase,
   GetTenantEcommerceOrderPaymentReconciliationWorkspaceUseCase,
+  GetTenantEcommerceOrderOperationalHealthBoardUseCase,
   GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
@@ -110,6 +111,7 @@ import {
   RequestTenantEcommerceOrderFulfillmentCompletionPacketUseCase,
   RequestTenantEcommerceOrderPaymentDisputeResolutionPacketUseCase,
   RequestTenantEcommerceOrderFulfillmentDeliveryConfirmationPacketUseCase,
+  RequestTenantEcommerceOrderOperationalExceptionPacketUseCase,
   RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
   RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
   RequestTenantEcommerceInvoiceDraftLaunchBridgeUseCase,
@@ -1754,6 +1756,29 @@ import { EcommerceController } from './ecommerce.controller';
       useFactory: (listTenantEcommerceOrderOperationalEventsUseCase) =>
         new GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase(
           listTenantEcommerceOrderOperationalEventsUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceOrderOperationalExceptionPacketUseCase,
+      inject: [GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase],
+      useFactory: (getTenantEcommerceOrderOperationalReviewWorkspaceUseCase) =>
+        new RequestTenantEcommerceOrderOperationalExceptionPacketUseCase(
+          getTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceOrderOperationalHealthBoardUseCase,
+      inject: [
+        ListTenantEcommerceOrderDraftsUseCase,
+        GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
+      ],
+      useFactory: (
+        listTenantEcommerceOrderDraftsUseCase,
+        getTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
+      ) =>
+        new GetTenantEcommerceOrderOperationalHealthBoardUseCase(
+          listTenantEcommerceOrderDraftsUseCase,
+          getTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
         ),
     },
     {

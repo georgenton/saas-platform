@@ -1,7 +1,9 @@
 import {
+  GetTenantEcommerceOrderOperationalHealthBoardUseCase,
   GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
   ListTenantEcommerceOrderOperationalEventsUseCase,
   RecordTenantEcommerceOrderOperationalEventUseCase,
+  RequestTenantEcommerceOrderOperationalExceptionPacketUseCase,
 } from '@saas-platform/ecommerce-application';
 
 describe('Ecommerce order operational event use cases', () => {
@@ -228,6 +230,7 @@ describe('Ecommerce order operational event use cases', () => {
         orderDraftId: orderDraft.id,
         generatedAt: new Date('2026-06-03T19:00:00.000Z'),
         reviewStatus: 'blocked',
+        stalenessStatus: 'fresh',
         latestEvent: events[0],
         blockerSignals: ['capacity_review', 'inventory-reservation-workspace: blocked'],
         driftSignals: ['payment_without_delivery'],
@@ -238,6 +241,115 @@ describe('Ecommerce order operational event use cases', () => {
       orderDraft.productEntityId,
       orderDraft.id,
       { limit: 50 },
+    );
+  });
+
+  it('builds an operational exception packet from the review workspace', async () => {
+    const reviewWorkspace = {
+      tenantSlug: tenant.slug,
+      productEntityId: orderDraft.productEntityId,
+      orderDraftId: orderDraft.id,
+      generatedAt: new Date('2026-06-03T19:00:00.000Z'),
+      reviewStatus: 'needs_operator_review' as const,
+      stalenessStatus: 'fresh' as const,
+      summary: 'Operational review requires drift resolution.',
+      latestEvent: null,
+      phaseCounts: [],
+      blockerSignals: [],
+      driftSignals: ['payment_without_delivery'],
+      recommendedActions: ['Confirmar delivery antes del closeout.'],
+      guardrails: ['No auto-refund without review.'],
+    };
+    const reviewUseCase = {
+      execute: jest.fn().mockResolvedValue(reviewWorkspace),
+    };
+    const useCase =
+      new RequestTenantEcommerceOrderOperationalExceptionPacketUseCase(
+        reviewUseCase as never,
+        () => new Date('2026-06-03T19:05:00.000Z'),
+      );
+
+    await expect(
+      useCase.execute(tenant.slug, orderDraft.productEntityId, orderDraft.id),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        tenantSlug: tenant.slug,
+        productEntityId: orderDraft.productEntityId,
+        orderDraftId: orderDraft.id,
+        generatedAt: new Date('2026-06-03T19:05:00.000Z'),
+        exceptionType: 'drift_resolution',
+        severity: 'medium',
+        ownerRole: 'operator',
+        resolutionSteps: ['Confirmar delivery antes del closeout.'],
+      }),
+    );
+  });
+
+  it('builds an operational health board across tracked order drafts', async () => {
+    const registry = {
+      tenantSlug: tenant.slug,
+      generatedAt: new Date('2026-06-03T19:00:00.000Z'),
+      productEntity: {
+        productEntityId: orderDraft.productEntityId,
+        displayName: 'Flagship offer',
+      },
+      summary: {
+        totalOrderDrafts: 1,
+        draftCount: 0,
+        needsDataCount: 0,
+        readyForReviewCount: 1,
+        blockedCount: 0,
+        headline: 'One order draft.',
+        detail: 'Order draft registry.',
+      },
+      orderDrafts: [orderDraft],
+    };
+    const reviewWorkspace = {
+      tenantSlug: tenant.slug,
+      productEntityId: orderDraft.productEntityId,
+      orderDraftId: orderDraft.id,
+      generatedAt: new Date('2026-06-03T19:00:00.000Z'),
+      reviewStatus: 'needs_operator_review' as const,
+      stalenessStatus: 'needs_follow_up' as const,
+      summary: 'Operational review requires drift resolution.',
+      latestEvent: {
+        eventType: 'post_sale_closeout' as const,
+      },
+      phaseCounts: [],
+      blockerSignals: [],
+      driftSignals: ['payment_without_delivery'],
+      recommendedActions: ['Confirmar delivery antes del closeout.'],
+      guardrails: [],
+    };
+    const useCase = new GetTenantEcommerceOrderOperationalHealthBoardUseCase(
+      { execute: jest.fn().mockResolvedValue(registry) } as never,
+      { execute: jest.fn().mockResolvedValue(reviewWorkspace) } as never,
+      () => new Date('2026-06-03T19:10:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute(tenant.slug, orderDraft.productEntityId),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        tenantSlug: tenant.slug,
+        productEntityId: orderDraft.productEntityId,
+        generatedAt: new Date('2026-06-03T19:10:00.000Z'),
+        summary: expect.objectContaining({
+          totalOrdersTracked: 1,
+          needsOperatorReviewCount: 1,
+          driftCount: 1,
+          staleTimelineCount: 1,
+        }),
+        entries: [
+          expect.objectContaining({
+            orderDraftId: orderDraft.id,
+            orderLabel: orderDraft.orderLabel,
+            reviewStatus: 'needs_operator_review',
+            stalenessStatus: 'needs_follow_up',
+            latestEventType: 'post_sale_closeout',
+          }),
+        ],
+      }),
     );
   });
 });

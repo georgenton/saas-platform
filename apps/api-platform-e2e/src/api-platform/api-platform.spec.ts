@@ -17181,6 +17181,7 @@ describe('API', () => {
       .expect(200)
       .expect((response) => {
         expect(response.body.reviewStatus).toBe('needs_operator_review');
+        expect(response.body.stalenessStatus).toBe('fresh');
         expect(response.body.phaseCounts).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
@@ -17193,6 +17194,43 @@ describe('API', () => {
           'payment_without_delivery',
         );
         expect(response.body.recommendedActions.length).toBeGreaterThan(0);
+      });
+
+    await request(httpServer)
+      .post(`${orderDraftBasePath}/request-operational-exception-packet`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.exceptionType).toBe('drift_resolution');
+        expect(response.body.severity).toBe('medium');
+        expect(response.body.ownerRole).toBe('operator');
+        expect(response.body.evidenceChecklist).toEqual(
+          expect.arrayContaining([
+            expect.stringContaining('payment_without_delivery'),
+          ]),
+        );
+      });
+
+    await request(httpServer)
+      .get(`${productEntityBasePath}/order-operational-health-board`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.summary.totalOrdersTracked).toBeGreaterThan(0);
+        expect(response.body.summary.needsOperatorReviewCount).toBeGreaterThan(
+          0,
+        );
+        expect(response.body.summary.driftCount).toBeGreaterThan(0);
+        expect(response.body.entries).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              orderDraftId: 'order_draft_001',
+              reviewStatus: 'needs_operator_review',
+              stalenessStatus: 'fresh',
+              latestEventType: 'post_sale_closeout',
+            }),
+          ]),
+        );
       });
 
     expect(recordTenantEcommerceOrderOperationalEventUseCase.execute).toHaveBeenCalledTimes(

@@ -56,7 +56,9 @@ import {
   EcommerceOrderOperatorWorkboardResponse,
   EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentReconciliationWorkspaceResponse,
+  EcommerceOrderOperationalExceptionPacketResponse,
   EcommerceOrderOperationalEventTimelineResponse,
+  EcommerceOrderOperationalHealthBoardResponse,
   EcommerceOrderOperationalReviewWorkspaceResponse,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
@@ -322,6 +324,12 @@ type Props = {
   selectedTenantEcommerceOrderOperationalReviewWorkspace:
     | EcommerceOrderOperationalReviewWorkspaceResponse
     | null;
+  lastEcommerceOrderOperationalExceptionPacket:
+    | EcommerceOrderOperationalExceptionPacketResponse
+    | null;
+  tenantEcommerceOrderOperationalHealthBoard:
+    | EcommerceOrderOperationalHealthBoardResponse
+    | null;
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace:
     | EcommerceOrderFulfillmentExecutionWorkspaceResponse
     | null;
@@ -527,6 +535,8 @@ type Props = {
   tenantEcommerceOrderInventoryReservationWorkspaceLoading: boolean;
   tenantEcommerceOrderOperationalEventTimelineLoading: boolean;
   tenantEcommerceOrderOperationalReviewWorkspaceLoading: boolean;
+  ecommerceOrderOperationalExceptionPacketLoading: string | null;
+  tenantEcommerceOrderOperationalHealthBoardLoading: boolean;
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading: boolean;
   tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading: boolean;
   ecommerceOrderFulfillmentCompletionPacketLoading: string | null;
@@ -705,6 +715,8 @@ type Props = {
     filters?: EcommerceOperationalEventTimelineFilters,
   ) => void;
   onLoadOrderOperationalReviewWorkspace: () => void;
+  onRequestOrderOperationalExceptionPacket: () => void;
+  onLoadOrderOperationalHealthBoard: () => void;
   onLoadOrderFulfillmentExecutionWorkspace: () => void;
   onLoadOrderFulfillmentDeliveryWorkspace: () => void;
   onRequestOrderFulfillmentCompletionPacket: () => void;
@@ -818,6 +830,8 @@ export function AiEcommerceLaunchSection({
   selectedTenantEcommerceOrderInventoryReservationWorkspace,
   selectedTenantEcommerceOrderOperationalEventTimeline,
   selectedTenantEcommerceOrderOperationalReviewWorkspace,
+  lastEcommerceOrderOperationalExceptionPacket,
+  tenantEcommerceOrderOperationalHealthBoard,
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
   selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace,
   lastEcommerceOrderFulfillmentCompletionPacket,
@@ -929,6 +943,8 @@ export function AiEcommerceLaunchSection({
   tenantEcommerceOrderInventoryReservationWorkspaceLoading,
   tenantEcommerceOrderOperationalEventTimelineLoading,
   tenantEcommerceOrderOperationalReviewWorkspaceLoading,
+  ecommerceOrderOperationalExceptionPacketLoading,
+  tenantEcommerceOrderOperationalHealthBoardLoading,
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
   tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading,
   ecommerceOrderFulfillmentCompletionPacketLoading,
@@ -1058,6 +1074,8 @@ export function AiEcommerceLaunchSection({
   onLoadOrderInventoryReservationWorkspace,
   onLoadOrderOperationalEventTimeline,
   onLoadOrderOperationalReviewWorkspace,
+  onRequestOrderOperationalExceptionPacket,
+  onLoadOrderOperationalHealthBoard,
   onLoadOrderFulfillmentExecutionWorkspace,
   onLoadOrderFulfillmentDeliveryWorkspace,
   onRequestOrderFulfillmentCompletionPacket,
@@ -6092,6 +6110,37 @@ export function AiEcommerceLaunchSection({
                                 <button
                                   className={styles.secondaryButton}
                                   disabled={
+                                    ecommerceOrderOperationalExceptionPacketLoading ===
+                                      selectedTenantEcommerceOrderDraftDetail
+                                        ?.orderDraft.id ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={
+                                    onRequestOrderOperationalExceptionPacket
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceOrderOperationalExceptionPacketLoading ===
+                                  selectedTenantEcommerceOrderDraftDetail
+                                    ?.orderDraft.id
+                                    ? 'Solicitando packet...'
+                                    : 'Solicitar exception packet'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    tenantEcommerceOrderOperationalHealthBoardLoading
+                                  }
+                                  onClick={onLoadOrderOperationalHealthBoard}
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderOperationalHealthBoardLoading
+                                    ? 'Cargando health board...'
+                                    : 'Cargar health board'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
                                     tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading ||
                                     tenantEcommerceOrderDraftDetailLoading
                                   }
@@ -7281,6 +7330,12 @@ export function AiEcommerceLaunchSection({
                                   : 'sin eventos'}
                               </small>
                               <small>
+                                Staleness:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderOperationalReviewWorkspace.stalenessStatus,
+                                )}
+                              </small>
+                              <small>
                                 Phase counts:{' '}
                                 {selectedTenantEcommerceOrderOperationalReviewWorkspace.phaseCounts
                                   .map(
@@ -7313,6 +7368,105 @@ export function AiEcommerceLaunchSection({
                                   ' | ',
                                 )}
                               </small>
+                            </div>
+                          ) : null}
+                          {lastEcommerceOrderOperationalExceptionPacket ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Exception packet
+                                  </span>
+                                  <h4>
+                                    {
+                                      lastEcommerceOrderOperationalExceptionPacket.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceOrderOperationalExceptionPacket.severity,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Type:{' '}
+                                {humanizeKey(
+                                  lastEcommerceOrderOperationalExceptionPacket.exceptionType,
+                                )}
+                              </small>
+                              <small>
+                                Evidence:{' '}
+                                {lastEcommerceOrderOperationalExceptionPacket.evidenceChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Steps:{' '}
+                                {lastEcommerceOrderOperationalExceptionPacket.resolutionSteps.join(
+                                  ' | ',
+                                )}
+                              </small>
+                            </div>
+                          ) : null}
+                          {tenantEcommerceOrderOperationalHealthBoard ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Operational health board
+                                  </span>
+                                  <h4>
+                                    {
+                                      tenantEcommerceOrderOperationalHealthBoard
+                                        .summary.headline
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {
+                                    tenantEcommerceOrderOperationalHealthBoard
+                                      .summary.totalOrdersTracked
+                                  }{' '}
+                                  órdenes
+                                </span>
+                              </div>
+                              <small>
+                                {
+                                  tenantEcommerceOrderOperationalHealthBoard
+                                    .summary.detail
+                                }
+                              </small>
+                              <small>
+                                Lanes:{' '}
+                                {tenantEcommerceOrderOperationalHealthBoard.lanes
+                                  .map(
+                                    (lane) =>
+                                      `${humanizeKey(lane.laneKey)} ${lane.count}`,
+                                  )
+                                  .join(' | ')}
+                              </small>
+                              {tenantEcommerceOrderOperationalHealthBoard.entries
+                                .length > 0 ? (
+                                <div className={styles.stack}>
+                                  {tenantEcommerceOrderOperationalHealthBoard.entries.map(
+                                    (entry) => (
+                                      <div key={entry.orderDraftId}>
+                                        <strong>{entry.orderLabel}</strong>
+                                        <small>
+                                          {humanizeKey(entry.reviewStatus)} ·{' '}
+                                          {humanizeKey(
+                                            entry.stalenessStatus,
+                                          )}{' '}
+                                          · blockers {entry.blockerCount} ·
+                                          drift {entry.driftCount}
+                                        </small>
+                                        <small>{entry.recommendedAction}</small>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                              ) : null}
                             </div>
                           ) : null}
                           {selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace ? (

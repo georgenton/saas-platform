@@ -48,6 +48,7 @@ export class GetTenantEcommerceCompletionDashboardUseCase {
           goLiveDependencyStatus('storefront_release_control'),
         ),
         detail: goLiveDependencyDetail('storefront_release_control'),
+        ...this.buildLaneAction('storefront'),
       },
       {
         laneKey: 'checkout',
@@ -55,6 +56,7 @@ export class GetTenantEcommerceCompletionDashboardUseCase {
           goLiveDependencyStatus('checkout_order_intake'),
         ),
         detail: goLiveDependencyDetail('checkout_order_intake'),
+        ...this.buildLaneAction('checkout'),
       },
       {
         laneKey: 'orders',
@@ -65,6 +67,7 @@ export class GetTenantEcommerceCompletionDashboardUseCase {
               ? 'ready'
               : 'warning',
         detail: orderRegistry.summary.detail,
+        ...this.buildLaneAction('orders'),
       },
       {
         laneKey: 'invoicing',
@@ -72,6 +75,7 @@ export class GetTenantEcommerceCompletionDashboardUseCase {
           goLiveDependencyStatus('order_invoicing_bridge'),
         ),
         detail: goLiveDependencyDetail('order_invoicing_bridge'),
+        ...this.buildLaneAction('invoicing'),
       },
       {
         laneKey: 'payment',
@@ -81,6 +85,7 @@ export class GetTenantEcommerceCompletionDashboardUseCase {
           operationalHealthBoard.summary.driftCount > 0
             ? 'Hay drift operativo que puede afectar cobro o closeout.'
             : 'No hay drift activo reportado en health board.',
+        ...this.buildLaneAction('payment'),
       },
       {
         laneKey: 'fulfillment',
@@ -91,6 +96,7 @@ export class GetTenantEcommerceCompletionDashboardUseCase {
               ? 'warning'
               : 'ready',
         detail: operationalHealthBoard.summary.detail,
+        ...this.buildLaneAction('fulfillment'),
       },
       {
         laneKey: 'post_sale',
@@ -99,6 +105,7 @@ export class GetTenantEcommerceCompletionDashboardUseCase {
             ? 'ready'
             : 'warning',
         detail: operationalHealthBoard.summary.headline,
+        ...this.buildLaneAction('post_sale'),
       },
       {
         laneKey: 'operational_health',
@@ -110,8 +117,12 @@ export class GetTenantEcommerceCompletionDashboardUseCase {
               ? 'warning'
               : 'ready',
         detail: operationalHealthBoard.summary.detail,
+        ...this.buildLaneAction('operational_health'),
       },
-    ];
+    ].map((lane) => ({
+      ...lane,
+      blockingSignals: lane.status === 'ready' ? [] : [lane.detail],
+    })) as TenantEcommerceCompletionDashboardView['lanes'];
 
     const readyLaneCount = lanes.filter((lane) => lane.status === 'ready').length;
     const warningLaneCount = lanes.filter(
@@ -156,6 +167,56 @@ export class GetTenantEcommerceCompletionDashboardUseCase {
 
   private mapDependencyStatus(status: 'ready' | 'warning' | 'blocked') {
     return status;
+  }
+
+  private buildLaneAction(
+    laneKey: TenantEcommerceCompletionDashboardView['lanes'][number]['laneKey'],
+  ): Pick<
+    TenantEcommerceCompletionDashboardView['lanes'][number],
+    'recommendedActionKey' | 'targetSurface'
+  > {
+    const actions: Record<
+      TenantEcommerceCompletionDashboardView['lanes'][number]['laneKey'],
+      Pick<
+        TenantEcommerceCompletionDashboardView['lanes'][number],
+        'recommendedActionKey' | 'targetSurface'
+      >
+    > = {
+      storefront: {
+        recommendedActionKey: 'load_go_live_manifest',
+        targetSurface: 'storefront_go_live_manifest',
+      },
+      checkout: {
+        recommendedActionKey: 'load_checkout',
+        targetSurface: 'checkout_order_intake_workspace',
+      },
+      orders: {
+        recommendedActionKey: 'select_order',
+        targetSurface: 'order_draft_registry',
+      },
+      invoicing: {
+        recommendedActionKey: 'prepare_invoice',
+        targetSurface: 'invoice_execution_packet',
+      },
+      payment: {
+        recommendedActionKey: 'resolve_operational_exception',
+        targetSurface: 'operational_exception_resolution',
+      },
+      fulfillment: {
+        recommendedActionKey: 'load_health_board',
+        targetSurface: 'operational_health_board',
+      },
+      post_sale: {
+        recommendedActionKey: 'load_health_board',
+        targetSurface: 'operational_health_board',
+      },
+      operational_health: {
+        recommendedActionKey: 'request_live_run_readiness',
+        targetSurface: 'live_run_readiness_packet',
+      },
+    };
+
+    return actions[laneKey];
   }
 
   private resolveNextBestAction(

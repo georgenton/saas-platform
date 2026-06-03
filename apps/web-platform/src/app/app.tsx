@@ -116,7 +116,9 @@ import {
   fetchTenantEcommerceOrderFulfillmentExecutionWorkspace,
   fetchTenantEcommerceOrderFulfillmentReadinessWorkspace,
   fetchTenantEcommerceOrderInventoryReservationWorkspace,
+  requestTenantEcommerceOrderOperationalExceptionPacket,
   fetchTenantEcommerceOrderOperationalEventTimeline,
+  fetchTenantEcommerceOrderOperationalHealthBoard,
   fetchTenantEcommerceOrderOperationalReviewWorkspace,
   fetchTenantEcommerceOrderOpsPriorityQueue,
   fetchTenantEcommerceOrderReviewWorkspace,
@@ -376,7 +378,9 @@ import {
   EcommerceOrderOperatorWorkboardResponse,
   EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentReconciliationWorkspaceResponse,
+  EcommerceOrderOperationalExceptionPacketResponse,
   EcommerceOrderOperationalEventTimelineResponse,
+  EcommerceOrderOperationalHealthBoardResponse,
   EcommerceOrderOperationalReviewWorkspaceResponse,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
@@ -2201,6 +2205,14 @@ export function App() {
     setSelectedTenantEcommerceOrderOperationalReviewWorkspace,
   ] = useState<EcommerceOrderOperationalReviewWorkspaceResponse | null>(null);
   const [
+    lastEcommerceOrderOperationalExceptionPacket,
+    setLastEcommerceOrderOperationalExceptionPacket,
+  ] = useState<EcommerceOrderOperationalExceptionPacketResponse | null>(null);
+  const [
+    tenantEcommerceOrderOperationalHealthBoard,
+    setTenantEcommerceOrderOperationalHealthBoard,
+  ] = useState<EcommerceOrderOperationalHealthBoardResponse | null>(null);
+  const [
     selectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
     setSelectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
   ] = useState<EcommerceOrderFulfillmentExecutionWorkspaceResponse | null>(
@@ -2644,6 +2656,14 @@ export function App() {
   const [
     tenantEcommerceOrderOperationalReviewWorkspaceLoading,
     setTenantEcommerceOrderOperationalReviewWorkspaceLoading,
+  ] = useState(false);
+  const [
+    ecommerceOrderOperationalExceptionPacketLoading,
+    setEcommerceOrderOperationalExceptionPacketLoading,
+  ] = useState<string | null>(null);
+  const [
+    tenantEcommerceOrderOperationalHealthBoardLoading,
+    setTenantEcommerceOrderOperationalHealthBoardLoading,
   ] = useState(false);
   const [
     tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
@@ -5866,6 +5886,28 @@ export function App() {
       orderDraftId,
     );
   };
+  const requestTenantEcommerceOrderOperationalExceptionPacketSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+    orderDraftId: string,
+  ) => {
+    return requestTenantEcommerceOrderOperationalExceptionPacket(
+      token!,
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+    );
+  };
+  const fetchTenantEcommerceOrderOperationalHealthBoardSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+  ) => {
+    return fetchTenantEcommerceOrderOperationalHealthBoard(
+      token!,
+      tenantSlug,
+      productEntityId,
+    );
+  };
   const fetchTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface = async (
     tenantSlug: string,
     productEntityId: string,
@@ -6905,6 +6947,15 @@ export function App() {
       | null,
   ): void => {
     setSelectedTenantEcommerceOrderOperationalReviewWorkspace(workspace);
+  };
+  const applyTenantEcommerceOrderOperationalHealthBoardSurface = (
+    board:
+      | Awaited<
+          ReturnType<typeof fetchTenantEcommerceOrderOperationalHealthBoardSurface>
+        >
+      | null,
+  ): void => {
+    setTenantEcommerceOrderOperationalHealthBoard(board);
   };
   const applyTenantEcommerceOrderFulfillmentExecutionWorkspaceSurface = (
     workspace:
@@ -15926,6 +15977,8 @@ export function App() {
         applyTenantEcommerceOrderInventoryReservationWorkspaceSurface(null);
         applyTenantEcommerceOrderOperationalEventTimelineSurface(null);
         applyTenantEcommerceOrderOperationalReviewWorkspaceSurface(null);
+        setLastEcommerceOrderOperationalExceptionPacket(null);
+        applyTenantEcommerceOrderOperationalHealthBoardSurface(null);
         applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(null);
         applyTenantEcommerceOrderFulfillmentCompletionPacketSurface(null);
         applyTenantEcommerceOrderGrowthFollowUpWorkspaceSurface(null);
@@ -15966,6 +16019,8 @@ export function App() {
       applyTenantEcommerceOrderFulfillmentCompletionPacketSurface(null);
       applyTenantEcommerceOrderOperationalEventTimelineSurface(null);
       applyTenantEcommerceOrderOperationalReviewWorkspaceSurface(null);
+      setLastEcommerceOrderOperationalExceptionPacket(null);
+      applyTenantEcommerceOrderOperationalHealthBoardSurface(null);
       applyTenantEcommerceOrderGrowthFollowUpWorkspaceSurface(null);
       applyTenantEcommerceOrderStatusLifecycleDetailSurface(null);
       applyTenantEcommerceOrderPostSaleLifecycleDetailSurface(null);
@@ -16034,6 +16089,7 @@ export function App() {
         applyTenantEcommerceOrderInventoryReservationWorkspaceSurface(null);
         applyTenantEcommerceOrderOperationalEventTimelineSurface(null);
         applyTenantEcommerceOrderOperationalReviewWorkspaceSurface(null);
+        setLastEcommerceOrderOperationalExceptionPacket(null);
         applyTenantEcommerceOrderFulfillmentExecutionWorkspaceSurface(null);
         applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(null);
         applyTenantEcommerceOrderFulfillmentCompletionPacketSurface(null);
@@ -17354,6 +17410,93 @@ export function App() {
       );
     } finally {
       setTenantEcommerceOrderOperationalReviewWorkspaceLoading(false);
+    }
+  }
+
+  async function handleRequestTenantEcommerceOrderOperationalExceptionPacket() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceOrderDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const orderDraftId = selectedTenantEcommerceOrderDraftDetail.orderDraft.id;
+    setEcommerceOrderOperationalExceptionPacketLoading(orderDraftId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const packet =
+        await requestTenantEcommerceOrderOperationalExceptionPacketSurface(
+          tenantSlug,
+          productEntityId,
+          orderDraftId,
+        );
+
+      startTransition(() => {
+        setLastEcommerceOrderOperationalExceptionPacket(packet);
+        setEcommerceLaunchActionMessage(
+          `Operational exception packet ${humanizeKey(packet.exceptionType)} preparado.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceOrderOperationalExceptionPacket(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el operational exception packet.',
+      );
+    } finally {
+      setEcommerceOrderOperationalExceptionPacketLoading(null);
+    }
+  }
+
+  async function handleLoadTenantEcommerceOrderOperationalHealthBoard() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setTenantEcommerceOrderOperationalHealthBoardLoading(true);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const board =
+        await fetchTenantEcommerceOrderOperationalHealthBoardSurface(
+          tenantSlug,
+          productEntityId,
+        );
+
+      startTransition(() => {
+        applyTenantEcommerceOrderOperationalHealthBoardSurface(board);
+        setEcommerceLaunchActionMessage(
+          `Operational health board con ${board.summary.totalOrdersTracked} órdenes rastreadas.`,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceOrderOperationalHealthBoardSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el operational health board.',
+      );
+    } finally {
+      setTenantEcommerceOrderOperationalHealthBoardLoading(false);
     }
   }
 
@@ -21276,6 +21419,12 @@ export function App() {
             selectedTenantEcommerceOrderOperationalReviewWorkspace={
               selectedTenantEcommerceOrderOperationalReviewWorkspace
             }
+            lastEcommerceOrderOperationalExceptionPacket={
+              lastEcommerceOrderOperationalExceptionPacket
+            }
+            tenantEcommerceOrderOperationalHealthBoard={
+              tenantEcommerceOrderOperationalHealthBoard
+            }
             selectedTenantEcommerceOrderFulfillmentExecutionWorkspace={
               selectedTenantEcommerceOrderFulfillmentExecutionWorkspace
             }
@@ -21606,6 +21755,12 @@ export function App() {
             }
             tenantEcommerceOrderOperationalReviewWorkspaceLoading={
               tenantEcommerceOrderOperationalReviewWorkspaceLoading
+            }
+            ecommerceOrderOperationalExceptionPacketLoading={
+              ecommerceOrderOperationalExceptionPacketLoading
+            }
+            tenantEcommerceOrderOperationalHealthBoardLoading={
+              tenantEcommerceOrderOperationalHealthBoardLoading
             }
             tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading={
               tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading
@@ -21977,6 +22132,12 @@ export function App() {
             }}
             onLoadOrderOperationalReviewWorkspace={() => {
               void handleLoadTenantEcommerceOrderOperationalReviewWorkspace();
+            }}
+            onRequestOrderOperationalExceptionPacket={() => {
+              void handleRequestTenantEcommerceOrderOperationalExceptionPacket();
+            }}
+            onLoadOrderOperationalHealthBoard={() => {
+              void handleLoadTenantEcommerceOrderOperationalHealthBoard();
             }}
             onLoadOrderFulfillmentExecutionWorkspace={() => {
               void handleLoadTenantEcommerceOrderFulfillmentExecutionWorkspace();

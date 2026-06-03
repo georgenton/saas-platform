@@ -39,6 +39,7 @@ export class GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase {
     const blockerSignals = this.collectBlockerSignals(events);
     const driftSignals = this.collectDriftSignals(events);
     const latestEvent = events[0] ?? null;
+    const stalenessStatus = this.resolveStalenessStatus(latestEvent);
     const hasCloseout = events.some(
       (event) => event.eventType === 'post_sale_closeout',
     );
@@ -58,6 +59,7 @@ export class GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase {
       orderDraftId,
       generatedAt: this.nowProvider(),
       reviewStatus,
+      stalenessStatus,
       summary: this.buildSummary(reviewStatus, events.length, hasCloseout),
       latestEvent,
       phaseCounts: OPERATIONAL_EVENT_TYPES.map((eventType) => ({
@@ -79,6 +81,28 @@ export class GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase {
         'Si hay drift entre pago y entrega, resolverlo antes de tratar el closeout como estable.',
       ],
     };
+  }
+
+  private resolveStalenessStatus(
+    latestEvent: TenantEcommerceOrderOperationalEventView | null,
+  ): TenantEcommerceOrderOperationalReviewWorkspaceView['stalenessStatus'] {
+    if (!latestEvent) {
+      return 'stale';
+    }
+
+    const ageHours =
+      (this.nowProvider().getTime() - latestEvent.occurredAt.getTime()) /
+      (1000 * 60 * 60);
+
+    if (ageHours >= 48) {
+      return 'stale';
+    }
+
+    if (ageHours >= 24) {
+      return 'needs_follow_up';
+    }
+
+    return 'fresh';
   }
 
   private collectBlockerSignals(

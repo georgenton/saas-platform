@@ -67,6 +67,8 @@ import {
   TenantEcommerceOrderRevenueTrackingSummaryView,
   TenantEcommerceOrderPostSaleLifecycleSummaryView,
   TenantEcommerceOrderOperationalEventView,
+  TenantEcommerceOrderOperationalExceptionPacketView,
+  TenantEcommerceOrderOperationalHealthBoardView,
   TenantEcommerceOrderOperationalReviewWorkspaceView,
   TenantEcommerceOrderInvoicingBridgeView,
   TenantEcommerceOrderReviewWorkspaceView,
@@ -1776,6 +1778,7 @@ export interface EcommerceOrderOperationalReviewWorkspaceResponseDto {
     | 'ready_for_closeout'
     | 'needs_operator_review'
     | 'blocked';
+  stalenessStatus: 'fresh' | 'needs_follow_up' | 'stale';
   summary: string;
   latestEvent: EcommerceOrderOperationalEventResponseDto | null;
   phaseCounts: Array<{
@@ -1791,6 +1794,64 @@ export interface EcommerceOrderOperationalReviewWorkspaceResponseDto {
   driftSignals: string[];
   recommendedActions: string[];
   guardrails: string[];
+}
+
+export interface EcommerceOrderOperationalExceptionPacketResponseDto {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  generatedAt: string;
+  exceptionType:
+    | 'blocker_resolution'
+    | 'drift_resolution'
+    | 'stale_follow_up'
+    | 'closeout_missing';
+  severity: 'low' | 'medium' | 'high';
+  ownerRole: 'operator';
+  summary: string;
+  evidenceChecklist: string[];
+  resolutionSteps: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderOperationalHealthBoardResponseDto {
+  tenantSlug: string;
+  productEntityId: string;
+  generatedAt: string;
+  summary: {
+    totalOrdersTracked: number;
+    readyForCloseoutCount: number;
+    needsOperatorReviewCount: number;
+    blockedCount: number;
+    driftCount: number;
+    staleTimelineCount: number;
+    headline: string;
+    detail: string;
+  };
+  lanes: Array<{
+    laneKey: 'ready_for_closeout' | 'needs_operator_review' | 'blocked';
+    count: number;
+    operatorBias: string;
+  }>;
+  entries: Array<{
+    orderDraftId: string;
+    orderLabel: string;
+    reviewStatus:
+      | 'ready_for_closeout'
+      | 'needs_operator_review'
+      | 'blocked';
+    stalenessStatus: 'fresh' | 'needs_follow_up' | 'stale';
+    latestEventType:
+      | 'payment_reconciliation'
+      | 'fulfillment_availability'
+      | 'inventory_reservation'
+      | 'returns_refunds_cancellation'
+      | 'post_sale_closeout'
+      | null;
+    blockerCount: number;
+    driftCount: number;
+    recommendedAction: string;
+  }>;
 }
 
 export interface EcommerceOrderFulfillmentExecutionWorkspaceResponseDto {
@@ -3680,6 +3741,7 @@ export function toEcommerceOrderOperationalReviewWorkspaceResponseDto(
     orderDraftId: view.orderDraftId,
     generatedAt: view.generatedAt.toISOString(),
     reviewStatus: view.reviewStatus,
+    stalenessStatus: view.stalenessStatus,
     summary: view.summary,
     latestEvent: view.latestEvent
       ? toEcommerceOrderOperationalEventResponseDto(view.latestEvent)
@@ -3689,6 +3751,37 @@ export function toEcommerceOrderOperationalReviewWorkspaceResponseDto(
     driftSignals: [...view.driftSignals],
     recommendedActions: [...view.recommendedActions],
     guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderOperationalExceptionPacketResponseDto(
+  view: TenantEcommerceOrderOperationalExceptionPacketView,
+): EcommerceOrderOperationalExceptionPacketResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    productEntityId: view.productEntityId,
+    orderDraftId: view.orderDraftId,
+    generatedAt: view.generatedAt.toISOString(),
+    exceptionType: view.exceptionType,
+    severity: view.severity,
+    ownerRole: view.ownerRole,
+    summary: view.summary,
+    evidenceChecklist: [...view.evidenceChecklist],
+    resolutionSteps: [...view.resolutionSteps],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderOperationalHealthBoardResponseDto(
+  view: TenantEcommerceOrderOperationalHealthBoardView,
+): EcommerceOrderOperationalHealthBoardResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    productEntityId: view.productEntityId,
+    generatedAt: view.generatedAt.toISOString(),
+    summary: { ...view.summary },
+    lanes: view.lanes.map((lane) => ({ ...lane })),
+    entries: view.entries.map((entry) => ({ ...entry })),
   };
 }
 

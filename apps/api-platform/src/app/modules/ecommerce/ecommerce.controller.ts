@@ -40,6 +40,7 @@ import {
   GetTenantEcommerceOrderRevenueOpsBoardUseCase,
   GetTenantEcommerceOrderRevenueTrackingSummaryUseCase,
   GetTenantEcommerceOrderPaymentReconciliationWorkspaceUseCase,
+  GetTenantEcommerceOrderOperationalHealthBoardUseCase,
   GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
@@ -91,6 +92,7 @@ import {
   RequestTenantEcommerceOrderFulfillmentCompletionPacketUseCase,
   RequestTenantEcommerceOrderPaymentDisputeResolutionPacketUseCase,
   RequestTenantEcommerceOrderFulfillmentDeliveryConfirmationPacketUseCase,
+  RequestTenantEcommerceOrderOperationalExceptionPacketUseCase,
   RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
   RequestTenantEcommerceOrderInvoicingBridgeUseCase,
   RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
@@ -250,6 +252,8 @@ import {
   EcommerceOrderRevenueOpsBoardResponseDto,
   EcommerceOrderRevenueTrackingSummaryResponseDto,
   EcommerceOrderPaymentReconciliationWorkspaceResponseDto,
+  EcommerceOrderOperationalExceptionPacketResponseDto,
+  EcommerceOrderOperationalHealthBoardResponseDto,
   EcommerceOrderOperationalEventTimelineResponseDto,
   EcommerceOrderOperationalReviewWorkspaceResponseDto,
   EcommerceOrderRouteResolutionPacketResponseDto,
@@ -331,6 +335,8 @@ import {
   toEcommerceOrderRevenueOpsBoardResponseDto,
   toEcommerceOrderRevenueTrackingSummaryResponseDto,
   toEcommerceOrderPaymentReconciliationWorkspaceResponseDto,
+  toEcommerceOrderOperationalExceptionPacketResponseDto,
+  toEcommerceOrderOperationalHealthBoardResponseDto,
   toEcommerceOrderOperationalEventTimelineResponseDto,
   toEcommerceOrderOperationalReviewWorkspaceResponseDto,
   toEcommerceOrderRouteResolutionPacketResponseDto,
@@ -609,6 +615,8 @@ export class EcommerceController {
     private readonly recordTenantEcommerceOrderOperationalEventUseCase: RecordTenantEcommerceOrderOperationalEventUseCase,
     private readonly listTenantEcommerceOrderOperationalEventsUseCase: ListTenantEcommerceOrderOperationalEventsUseCase,
     private readonly getTenantEcommerceOrderOperationalReviewWorkspaceUseCase: GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
+    private readonly requestTenantEcommerceOrderOperationalExceptionPacketUseCase: RequestTenantEcommerceOrderOperationalExceptionPacketUseCase,
+    private readonly getTenantEcommerceOrderOperationalHealthBoardUseCase: GetTenantEcommerceOrderOperationalHealthBoardUseCase,
     private readonly promoteTenantEcommerceProductSetupToProductEntityUseCase: PromoteTenantEcommerceProductSetupToProductEntityUseCase,
     private readonly promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase: PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
     private readonly promoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase: PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
@@ -3134,6 +3142,66 @@ export class EcommerceController {
     }
 
     return toEcommerceOrderOperationalReviewWorkspaceResponseDto(workspace);
+  }
+
+  @Post(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/request-operational-exception-packet',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantOrderOperationalExceptionPacket(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderOperationalExceptionPacketResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const packet =
+      await this.requestTenantEcommerceOrderOperationalExceptionPacketUseCase.execute(
+        tenantSlug,
+        productEntityId,
+        orderDraftId,
+      );
+
+    if (!packet) {
+      throw new NotFoundException(
+        `Order operational exception packet for order draft ${orderDraftId} was not found for tenant ${tenantSlug}.`,
+      );
+    }
+
+    return toEcommerceOrderOperationalExceptionPacketResponseDto(packet);
+  }
+
+  @Get(':slug/product-entities/:productEntityId/order-operational-health-board')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantOrderOperationalHealthBoard(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderOperationalHealthBoardResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const board =
+      await this.getTenantEcommerceOrderOperationalHealthBoardUseCase.execute(
+        tenantSlug,
+        productEntityId,
+      );
+
+    if (!board) {
+      throw new NotFoundException(
+        `Order operational health board for product entity ${productEntityId} was not found for tenant ${tenantSlug}.`,
+      );
+    }
+
+    return toEcommerceOrderOperationalHealthBoardResponseDto(board);
   }
 
   @Get(':slug/product-entities/:productEntityId/order-operator-workboard')

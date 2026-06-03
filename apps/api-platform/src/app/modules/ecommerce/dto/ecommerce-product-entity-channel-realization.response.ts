@@ -31,6 +31,7 @@ import {
   TenantEcommerceOrderOpsAttentionWorkspaceView,
   TenantEcommerceOrderOpsEscalationBoardEntryView,
   TenantEcommerceOrderOpsEscalationBoardView,
+  TenantEcommerceOrderOpsEscalationResolutionView,
   TenantEcommerceOrderOpsPriorityQueueEntryView,
   TenantEcommerceOrderOpsPriorityQueueView,
   TenantEcommerceOrderPaymentConfirmationDecisionView,
@@ -38,6 +39,7 @@ import {
   TenantEcommerceOrderPaymentDisputeWorkspaceView,
   TenantEcommerceOrderPaymentDisputeResolutionPacketView,
   TenantEcommerceOrderPaymentConfirmationWorkspaceView,
+  TenantEcommerceLiveRunExecutionSummaryView,
   TenantEcommerceLiveRunReadinessPacketView,
   TenantEcommerceOrderInvoiceDraftBridgeView,
   TenantEcommerceOrderInvoiceDraftCreationBridgeView,
@@ -82,6 +84,7 @@ import {
   TenantEcommerceOrderStatusLifecycleSummaryView,
   TenantEcommerceOrderToGrowthConversationBridgeView,
   TenantEcommerceOrderToInvoiceReadinessPacketView,
+  TenantEcommerceOrderReturnsRefundsCancellationDecisionView,
   TenantEcommerceOrderReturnsRefundsCancellationWorkspaceView,
   TenantEcommerceCheckoutCloseoutPacketView,
   TenantEcommerceStorefrontReleaseCandidateBriefView,
@@ -1477,6 +1480,26 @@ export interface EcommerceOrderOpsEscalationBoardResponseDto {
   entries: EcommerceOrderOpsEscalationBoardEntryResponseDto[];
 }
 
+export interface EcommerceOrderOpsEscalationResolutionResponseDto {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  generatedAt: string;
+  resolutionStatus: 'resolved' | 'needs_follow_up' | 'blocked';
+  ownerRole: 'operator';
+  summary: string;
+  escalationSnapshot: {
+    escalationLevel: 'critical' | 'elevated' | 'monitor';
+    activeRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+    escalationReason: string;
+    nextAction: string;
+  };
+  resolutionActions: string[];
+  event: EcommerceOrderOperationalEventResponseDto;
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcommerceInvoiceHandoffAcknowledgementResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -2017,6 +2040,44 @@ export interface EcommerceLiveRunReadinessPacketResponseDto {
   guardrails: string[];
 }
 
+export interface EcommerceLiveRunExecutionSummaryResponseDto {
+  tenantSlug: string;
+  productEntityId: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  executionStatus:
+    | 'live_run_ready'
+    | 'live_run_needs_closeout'
+    | 'live_run_blocked';
+  summary: string;
+  readinessSnapshot: {
+    readinessStatus:
+      | 'ready_for_live_run'
+      | 'needs_operator_closeout'
+      | 'blocked';
+    openReadinessSignals: number;
+    blockedBy: string[];
+  };
+  operationsSnapshot: {
+    totalEscalations: number;
+    criticalCount: number;
+    elevatedCount: number;
+    monitorCount: number;
+  };
+  reportingSnapshot: {
+    totalOrders: number;
+    confirmedCount: number;
+    deliveredCount: number;
+    blockedCount: number;
+    disputedCount: number;
+    divergenceCount: number;
+  };
+  launchActions: string[];
+  riskRegister: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcommerceOrderFulfillmentExecutionWorkspaceResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -2147,6 +2208,29 @@ export interface EcommerceOrderReturnsRefundsCancellationWorkspaceResponseDto {
   }>;
   guardrailChecklist: string[];
   blockedBy: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcommerceOrderReturnsRefundsCancellationDecisionResponseDto {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  generatedAt: string;
+  decision:
+    | 'cancel_order'
+    | 'refund_review'
+    | 'return_review'
+    | 'escalate';
+  decisionStatus: 'accepted' | 'needs_review' | 'blocked';
+  summary: string;
+  lifecycleSignals: {
+    paymentLogStatus: 'confirmed' | 'needs_review' | 'disputed';
+    deliveryStatus: 'in_progress' | 'delivered' | 'blocked';
+    disputeStatus: 'confirmed' | 'needs_review' | 'hold';
+  };
+  requiredEvidence: string[];
+  event: EcommerceOrderOperationalEventResponseDto;
   nextStep: string;
   guardrails: string[];
 }
@@ -3618,6 +3702,25 @@ export function toEcommerceOrderOpsEscalationBoardResponseDto(
   };
 }
 
+export function toEcommerceOrderOpsEscalationResolutionResponseDto(
+  view: TenantEcommerceOrderOpsEscalationResolutionView,
+): EcommerceOrderOpsEscalationResolutionResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    productEntityId: view.productEntityId,
+    orderDraftId: view.orderDraftId,
+    generatedAt: view.generatedAt.toISOString(),
+    resolutionStatus: view.resolutionStatus,
+    ownerRole: view.ownerRole,
+    summary: view.summary,
+    escalationSnapshot: { ...view.escalationSnapshot },
+    resolutionActions: [...view.resolutionActions],
+    event: toEcommerceOrderOperationalEventResponseDto(view.event),
+    nextStep: view.nextStep,
+    guardrails: [...view.guardrails],
+  };
+}
+
 export function toEcommerceInvoiceHandoffAcknowledgementResponseDto(
   view: TenantEcommerceInvoiceHandoffAcknowledgementView,
 ): EcommerceInvoiceHandoffAcknowledgementResponseDto {
@@ -4036,6 +4139,29 @@ export function toEcommerceLiveRunReadinessPacketResponseDto(
   };
 }
 
+export function toEcommerceLiveRunExecutionSummaryResponseDto(
+  view: TenantEcommerceLiveRunExecutionSummaryView,
+): EcommerceLiveRunExecutionSummaryResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    productEntityId: view.productEntityId,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    executionStatus: view.executionStatus,
+    summary: view.summary,
+    readinessSnapshot: {
+      ...view.readinessSnapshot,
+      blockedBy: [...view.readinessSnapshot.blockedBy],
+    },
+    operationsSnapshot: { ...view.operationsSnapshot },
+    reportingSnapshot: { ...view.reportingSnapshot },
+    launchActions: [...view.launchActions],
+    riskRegister: [...view.riskRegister],
+    nextStep: view.nextStep,
+    guardrails: [...view.guardrails],
+  };
+}
+
 export function toEcommerceOrderFulfillmentExecutionWorkspaceResponseDto(
   view: TenantEcommerceOrderFulfillmentExecutionWorkspaceView,
 ): EcommerceOrderFulfillmentExecutionWorkspaceResponseDto {
@@ -4127,6 +4253,25 @@ export function toEcommerceOrderReturnsRefundsCancellationWorkspaceResponseDto(
     resolutionOptions: view.resolutionOptions.map((option) => ({ ...option })),
     guardrailChecklist: [...view.guardrailChecklist],
     blockedBy: [...view.blockedBy],
+    nextStep: view.nextStep,
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderReturnsRefundsCancellationDecisionResponseDto(
+  view: TenantEcommerceOrderReturnsRefundsCancellationDecisionView,
+): EcommerceOrderReturnsRefundsCancellationDecisionResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    productEntityId: view.productEntityId,
+    orderDraftId: view.orderDraftId,
+    generatedAt: view.generatedAt.toISOString(),
+    decision: view.decision,
+    decisionStatus: view.decisionStatus,
+    summary: view.summary,
+    lifecycleSignals: { ...view.lifecycleSignals },
+    requiredEvidence: [...view.requiredEvidence],
+    event: toEcommerceOrderOperationalEventResponseDto(view.event),
     nextStep: view.nextStep,
     guardrails: [...view.guardrails],
   };

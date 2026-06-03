@@ -53,10 +53,12 @@ import {
   EcommerceOrderDraftRegistryResponse,
   EcommerceOrderOpsAttentionWorkspaceResponse,
   EcommerceOrderOpsEscalationBoardResponse,
+  EcommerceOrderOpsEscalationResolutionResponse,
   EcommerceOrderOperatorWorkboardResponse,
   EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentReconciliationWorkspaceResponse,
   EcommerceCompletionDashboardResponse,
+  EcommerceLiveRunExecutionSummaryResponse,
   EcommerceLiveRunReadinessPacketResponse,
   EcommerceOrderInvoiceDraftCreationBridgeResponse,
   EcommerceOrderInvoiceExecutionPacketResponse,
@@ -87,6 +89,7 @@ import {
   EcommerceOrderStatusLifecycleRegistryResponse,
   EcommerceOrderInventoryReservationWorkspaceResponse,
   EcommerceOrderReturnsRefundsCancellationWorkspaceResponse,
+  EcommerceOrderReturnsRefundsCancellationDecisionResponse,
   EcommerceOrderFulfillmentExecutionWorkspaceResponse,
   EcommerceOrderFulfillmentReadinessWorkspaceResponse,
   EcommerceStorefrontReleaseCandidateBriefResponse,
@@ -348,6 +351,9 @@ type Props = {
   lastEcommerceLiveRunReadinessPacket:
     | EcommerceLiveRunReadinessPacketResponse
     | null;
+  lastEcommerceLiveRunExecutionSummary:
+    | EcommerceLiveRunExecutionSummaryResponse
+    | null;
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace:
     | EcommerceOrderFulfillmentExecutionWorkspaceResponse
     | null;
@@ -366,6 +372,9 @@ type Props = {
   selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace:
     | EcommerceOrderReturnsRefundsCancellationWorkspaceResponse
     | null;
+  lastEcommerceOrderReturnsRefundsCancellationDecision:
+    | EcommerceOrderReturnsRefundsCancellationDecisionResponse
+    | null;
   tenantEcommerceOrderOperatorWorkboard:
     | EcommerceOrderOperatorWorkboardResponse
     | null;
@@ -377,6 +386,9 @@ type Props = {
     | null;
   tenantEcommerceOrderOpsEscalationBoard:
     | EcommerceOrderOpsEscalationBoardResponse
+    | null;
+  lastEcommerceOrderOpsEscalationResolution:
+    | EcommerceOrderOpsEscalationResolutionResponse
     | null;
   tenantEcommerceOrderStatusLifecycleRegistry:
     | EcommerceOrderStatusLifecycleRegistryResponse
@@ -560,16 +572,19 @@ type Props = {
   tenantEcommerceOrderOperationalHealthBoardLoading: boolean;
   tenantEcommerceCompletionDashboardLoading: boolean;
   ecommerceLiveRunReadinessPacketLoading: boolean;
+  ecommerceLiveRunExecutionSummaryLoading: boolean;
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading: boolean;
   tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading: boolean;
   ecommerceOrderFulfillmentCompletionPacketLoading: string | null;
   ecommerceOrderFulfillmentDeliveryConfirmationPacketLoading: string | null;
   tenantEcommerceOrderGrowthFollowUpWorkspaceLoading: boolean;
   tenantEcommerceOrderReturnsRefundsCancellationWorkspaceLoading: boolean;
+  ecommerceOrderReturnsRefundsCancellationDecisionLoading: string | null;
   tenantEcommerceOrderOperatorWorkboardLoading: boolean;
   tenantEcommerceOrderOpsPriorityQueueLoading: boolean;
   tenantEcommerceOrderOpsAttentionWorkspaceLoading: boolean;
   tenantEcommerceOrderOpsEscalationBoardLoading: boolean;
+  ecommerceOrderOpsEscalationResolutionLoading: string | null;
   tenantEcommerceOrderStatusLifecycleDetailLoading: boolean;
   tenantEcommerceOrderPostSaleLifecycleRegistryLoading: boolean;
   tenantEcommerceOrderPostSaleLifecycleDetailLoading: boolean;
@@ -745,16 +760,19 @@ type Props = {
   onLoadOrderOperationalHealthBoard: () => void;
   onLoadEcommerceCompletionDashboard: () => void;
   onRequestEcommerceLiveRunReadinessPacket: () => void;
+  onRequestEcommerceLiveRunExecutionSummary: () => void;
   onLoadOrderFulfillmentExecutionWorkspace: () => void;
   onLoadOrderFulfillmentDeliveryWorkspace: () => void;
   onRequestOrderFulfillmentCompletionPacket: () => void;
   onRequestOrderFulfillmentDeliveryConfirmationPacket: () => void;
   onLoadOrderGrowthFollowUpWorkspace: () => void;
   onLoadOrderReturnsRefundsCancellationWorkspace: () => void;
+  onRequestOrderReturnsRefundsCancellationDecision: () => void;
   onLoadOrderOperatorWorkboard: () => void;
   onLoadOrderOpsPriorityQueue: () => void;
   onLoadOrderOpsAttentionWorkspace: () => void;
   onLoadOrderOpsEscalationBoard: () => void;
+  onResolveOrderOpsEscalation: (orderDraftId: string) => void;
   onSelectOrderStatusLifecycle: (orderDraftId: string) => void;
   onLoadOrderPostSaleLifecycleRegistry: () => void;
   onSelectOrderPostSaleLifecycle: (orderDraftId: string) => void;
@@ -865,16 +883,19 @@ export function AiEcommerceLaunchSection({
   tenantEcommerceOrderOperationalHealthBoard,
   tenantEcommerceCompletionDashboard,
   lastEcommerceLiveRunReadinessPacket,
+  lastEcommerceLiveRunExecutionSummary,
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
   selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace,
   lastEcommerceOrderFulfillmentCompletionPacket,
   lastEcommerceOrderFulfillmentDeliveryConfirmationPacket,
   selectedTenantEcommerceOrderGrowthFollowUpWorkspace,
   selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace,
+  lastEcommerceOrderReturnsRefundsCancellationDecision,
   tenantEcommerceOrderOperatorWorkboard,
   tenantEcommerceOrderOpsPriorityQueue,
   tenantEcommerceOrderOpsAttentionWorkspace,
   tenantEcommerceOrderOpsEscalationBoard,
+  lastEcommerceOrderOpsEscalationResolution,
   tenantEcommerceOrderStatusLifecycleRegistry,
   selectedTenantEcommerceOrderStatusLifecycleDetail,
   tenantEcommerceOrderPostSaleLifecycleRegistry,
@@ -983,16 +1004,19 @@ export function AiEcommerceLaunchSection({
   tenantEcommerceOrderOperationalHealthBoardLoading,
   tenantEcommerceCompletionDashboardLoading,
   ecommerceLiveRunReadinessPacketLoading,
+  ecommerceLiveRunExecutionSummaryLoading,
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
   tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading,
   ecommerceOrderFulfillmentCompletionPacketLoading,
   ecommerceOrderFulfillmentDeliveryConfirmationPacketLoading,
   tenantEcommerceOrderGrowthFollowUpWorkspaceLoading,
   tenantEcommerceOrderReturnsRefundsCancellationWorkspaceLoading,
+  ecommerceOrderReturnsRefundsCancellationDecisionLoading,
   tenantEcommerceOrderOperatorWorkboardLoading,
   tenantEcommerceOrderOpsPriorityQueueLoading,
   tenantEcommerceOrderOpsAttentionWorkspaceLoading,
   tenantEcommerceOrderOpsEscalationBoardLoading,
+  ecommerceOrderOpsEscalationResolutionLoading,
   tenantEcommerceOrderStatusLifecycleDetailLoading,
   tenantEcommerceOrderPostSaleLifecycleRegistryLoading,
   tenantEcommerceOrderPostSaleLifecycleDetailLoading,
@@ -1119,16 +1143,19 @@ export function AiEcommerceLaunchSection({
   onLoadOrderOperationalHealthBoard,
   onLoadEcommerceCompletionDashboard,
   onRequestEcommerceLiveRunReadinessPacket,
+  onRequestEcommerceLiveRunExecutionSummary,
   onLoadOrderFulfillmentExecutionWorkspace,
   onLoadOrderFulfillmentDeliveryWorkspace,
   onRequestOrderFulfillmentCompletionPacket,
   onRequestOrderFulfillmentDeliveryConfirmationPacket,
   onLoadOrderGrowthFollowUpWorkspace,
   onLoadOrderReturnsRefundsCancellationWorkspace,
+  onRequestOrderReturnsRefundsCancellationDecision,
   onLoadOrderOperatorWorkboard,
   onLoadOrderOpsPriorityQueue,
   onLoadOrderOpsAttentionWorkspace,
   onLoadOrderOpsEscalationBoard,
+  onResolveOrderOpsEscalation,
   onSelectOrderStatusLifecycle,
   onLoadOrderPostSaleLifecycleRegistry,
   onSelectOrderPostSaleLifecycle,
@@ -6261,6 +6288,20 @@ export function AiEcommerceLaunchSection({
                                 <button
                                   className={styles.secondaryButton}
                                   disabled={
+                                    ecommerceLiveRunExecutionSummaryLoading
+                                  }
+                                  onClick={
+                                    onRequestEcommerceLiveRunExecutionSummary
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceLiveRunExecutionSummaryLoading
+                                    ? 'Preparando execution...'
+                                    : 'Preparar execution summary'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
                                     tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading ||
                                     tenantEcommerceOrderDraftDetailLoading
                                   }
@@ -6376,6 +6417,25 @@ export function AiEcommerceLaunchSection({
                                   {tenantEcommerceOrderReturnsRefundsCancellationWorkspaceLoading
                                     ? 'Cargando returns/refunds...'
                                     : 'Cargar returns/refunds'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceOrderReturnsRefundsCancellationDecisionLoading ===
+                                      selectedTenantEcommerceOrderDraftDetail
+                                        ?.orderDraft.id ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={
+                                    onRequestOrderReturnsRefundsCancellationDecision
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceOrderReturnsRefundsCancellationDecisionLoading ===
+                                  selectedTenantEcommerceOrderDraftDetail
+                                    ?.orderDraft.id
+                                    ? 'Registrando decisión...'
+                                    : 'Registrar decisión returns'}
                                 </button>
                               </div>
                             </div>
@@ -7814,6 +7874,48 @@ export function AiEcommerceLaunchSection({
                               </small>
                             </div>
                           ) : null}
+                          {lastEcommerceLiveRunExecutionSummary ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Live run execution summary
+                                  </span>
+                                  <h4>
+                                    {lastEcommerceLiveRunExecutionSummary.summary}
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceLiveRunExecutionSummary.executionStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Ops:{' '}
+                                {
+                                  lastEcommerceLiveRunExecutionSummary
+                                    .operationsSnapshot.criticalCount
+                                }{' '}
+                                critical · Reporting:{' '}
+                                {
+                                  lastEcommerceLiveRunExecutionSummary
+                                    .reportingSnapshot.divergenceCount
+                                }{' '}
+                                divergencias
+                              </small>
+                              <small>
+                                Actions:{' '}
+                                {lastEcommerceLiveRunExecutionSummary.launchActions.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Next:{' '}
+                                {lastEcommerceLiveRunExecutionSummary.nextStep}
+                              </small>
+                            </div>
+                          ) : null}
                           {selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace ? (
                             <div className={styles.commercialCard}>
                               <div className={styles.sectionHeading}>
@@ -8013,6 +8115,46 @@ export function AiEcommerceLaunchSection({
                                 Next step:{' '}
                                 {
                                   selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace.nextStep
+                                }
+                              </small>
+                            </div>
+                          ) : null}
+                          {lastEcommerceOrderReturnsRefundsCancellationDecision ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Returns decision
+                                  </span>
+                                  <h4>
+                                    {
+                                      lastEcommerceOrderReturnsRefundsCancellationDecision.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceOrderReturnsRefundsCancellationDecision.decisionStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Decision:{' '}
+                                {humanizeKey(
+                                  lastEcommerceOrderReturnsRefundsCancellationDecision.decision,
+                                )}
+                              </small>
+                              <small>
+                                Evidence:{' '}
+                                {lastEcommerceOrderReturnsRefundsCancellationDecision.requiredEvidence.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Event:{' '}
+                                {
+                                  lastEcommerceOrderReturnsRefundsCancellationDecision
+                                    .event.dedupeKey
                                 }
                               </small>
                             </div>
@@ -8592,6 +8734,30 @@ export function AiEcommerceLaunchSection({
                                 ? 'Cargando escalations...'
                                 : 'Refrescar escalation board'}
                             </button>
+                            <button
+                              className={styles.ghostButton}
+                              disabled={
+                                !selectedTenantEcommerceOrderDraftDetail ||
+                                ecommerceOrderOpsEscalationResolutionLoading ===
+                                  selectedTenantEcommerceOrderDraftDetail
+                                    ?.orderDraft.id
+                              }
+                              onClick={() =>
+                                selectedTenantEcommerceOrderDraftDetail
+                                  ? onResolveOrderOpsEscalation(
+                                      selectedTenantEcommerceOrderDraftDetail
+                                        .orderDraft.id,
+                                    )
+                                  : undefined
+                              }
+                              type="button"
+                            >
+                              {ecommerceOrderOpsEscalationResolutionLoading ===
+                              selectedTenantEcommerceOrderDraftDetail
+                                ?.orderDraft.id
+                                ? 'Resolviendo escalation...'
+                                : 'Resolver escalation'}
+                            </button>
                           </div>
                           {tenantEcommerceOrderOperatorWorkboard ? (
                             <div className={styles.stack}>
@@ -8830,12 +8996,73 @@ export function AiEcommerceLaunchSection({
                                           >
                                             Abrir order draft
                                           </button>
+                                          <button
+                                            className={styles.ghostButton}
+                                            disabled={
+                                              ecommerceOrderOpsEscalationResolutionLoading ===
+                                              entry.orderDraftId
+                                            }
+                                            onClick={() =>
+                                              onResolveOrderOpsEscalation(
+                                                entry.orderDraftId,
+                                              )
+                                            }
+                                            type="button"
+                                          >
+                                            {ecommerceOrderOpsEscalationResolutionLoading ===
+                                            entry.orderDraftId
+                                              ? 'Resolviendo...'
+                                              : 'Resolver'}
+                                          </button>
                                         </div>
                                       </li>
                                     ),
                                   )}
                                 </ul>
                               )}
+                            </div>
+                          ) : null}
+                          {lastEcommerceOrderOpsEscalationResolution ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Escalation resolution
+                                  </span>
+                                  <h4>
+                                    {
+                                      lastEcommerceOrderOpsEscalationResolution.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceOrderOpsEscalationResolution.resolutionStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Snapshot:{' '}
+                                {humanizeKey(
+                                  lastEcommerceOrderOpsEscalationResolution
+                                    .escalationSnapshot.escalationLevel,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  lastEcommerceOrderOpsEscalationResolution
+                                    .escalationSnapshot.activeRoute,
+                                )}
+                              </small>
+                              <small>
+                                Actions:{' '}
+                                {lastEcommerceOrderOpsEscalationResolution.resolutionActions.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Next:{' '}
+                                {lastEcommerceOrderOpsEscalationResolution.nextStep}
+                              </small>
                             </div>
                           ) : null}
                           {tenantEcommerceOrderStatusLifecycleRegistry ? (

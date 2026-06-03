@@ -96,8 +96,11 @@ import {
   RequestTenantEcommerceOrderOperationalExceptionPacketUseCase,
   RequestTenantEcommerceOrderInvoiceExecutionPacketUseCase,
   RequestTenantEcommerceOrderInvoiceDraftCreationBridgeUseCase,
+  RequestTenantEcommerceOrderReturnsRefundsCancellationDecisionUseCase,
   ResolveTenantEcommerceOrderOperationalExceptionUseCase,
+  ResolveTenantEcommerceOrderOpsEscalationUseCase,
   RequestTenantEcommerceLiveRunReadinessPacketUseCase,
+  RequestTenantEcommerceLiveRunExecutionSummaryUseCase,
   RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
   RequestTenantEcommerceOrderInvoicingBridgeUseCase,
   RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
@@ -229,6 +232,7 @@ import {
   EcommerceOrderOperatorWorkboardResponseDto,
   EcommerceOrderOpsAttentionWorkspaceResponseDto,
   EcommerceOrderOpsEscalationBoardResponseDto,
+  EcommerceOrderOpsEscalationResolutionResponseDto,
   EcommerceOrderOpsPriorityQueueResponseDto,
   EcommerceOrderPaymentConfirmationDecisionResponseDto,
   EcommerceOrderPaymentConfirmationLogResponseDto,
@@ -258,6 +262,7 @@ import {
   EcommerceOrderRevenueTrackingSummaryResponseDto,
   EcommerceOrderPaymentReconciliationWorkspaceResponseDto,
   EcommerceCompletionDashboardResponseDto,
+  EcommerceLiveRunExecutionSummaryResponseDto,
   EcommerceLiveRunReadinessPacketResponseDto,
   EcommerceOrderInvoiceDraftCreationBridgeResponseDto,
   EcommerceOrderInvoiceExecutionPacketResponseDto,
@@ -291,6 +296,7 @@ import {
   EcommerceWhatsappSalesFlowResponseDto,
   EcommerceWhatsappChannelSequenceWorkspaceResponseDto,
   EcommerceOrderReturnsRefundsCancellationWorkspaceResponseDto,
+  EcommerceOrderReturnsRefundsCancellationDecisionResponseDto,
   toEcommerceCatalogCommercialCardResponseDto,
   toEcommerceCatalogListingAssetResponseDto,
   toEcommerceCatalogMerchandisingPacketResponseDto,
@@ -317,6 +323,7 @@ import {
   toEcommerceOrderOperatorWorkboardResponseDto,
   toEcommerceOrderOpsAttentionWorkspaceResponseDto,
   toEcommerceOrderOpsEscalationBoardResponseDto,
+  toEcommerceOrderOpsEscalationResolutionResponseDto,
   toEcommerceOrderOpsPriorityQueueResponseDto,
   toEcommerceOrderPaymentConfirmationDecisionResponseDto,
   toEcommerceOrderPaymentConfirmationLogResponseDto,
@@ -346,6 +353,7 @@ import {
   toEcommerceOrderRevenueTrackingSummaryResponseDto,
   toEcommerceOrderPaymentReconciliationWorkspaceResponseDto,
   toEcommerceCompletionDashboardResponseDto,
+  toEcommerceLiveRunExecutionSummaryResponseDto,
   toEcommerceLiveRunReadinessPacketResponseDto,
   toEcommerceOrderInvoiceDraftCreationBridgeResponseDto,
   toEcommerceOrderInvoiceExecutionPacketResponseDto,
@@ -379,6 +387,7 @@ import {
   toEcommerceWhatsappSalesFlowResponseDto,
   toEcommerceWhatsappChannelSequenceWorkspaceResponseDto,
   toEcommerceOrderReturnsRefundsCancellationWorkspaceResponseDto,
+  toEcommerceOrderReturnsRefundsCancellationDecisionResponseDto,
 } from './dto/ecommerce-product-entity-channel-realization.response';
 import {
   EcommerceProductEntityChannelAssetWorkspaceDetailResponseDto,
@@ -635,9 +644,12 @@ export class EcommerceController {
     private readonly getTenantEcommerceOrderOperationalHealthBoardUseCase: GetTenantEcommerceOrderOperationalHealthBoardUseCase,
     private readonly requestTenantEcommerceOrderInvoiceExecutionPacketUseCase: RequestTenantEcommerceOrderInvoiceExecutionPacketUseCase,
     private readonly requestTenantEcommerceOrderInvoiceDraftCreationBridgeUseCase: RequestTenantEcommerceOrderInvoiceDraftCreationBridgeUseCase,
+    private readonly requestTenantEcommerceOrderReturnsRefundsCancellationDecisionUseCase: RequestTenantEcommerceOrderReturnsRefundsCancellationDecisionUseCase,
     private readonly resolveTenantEcommerceOrderOperationalExceptionUseCase: ResolveTenantEcommerceOrderOperationalExceptionUseCase,
+    private readonly resolveTenantEcommerceOrderOpsEscalationUseCase: ResolveTenantEcommerceOrderOpsEscalationUseCase,
     private readonly getTenantEcommerceCompletionDashboardUseCase: GetTenantEcommerceCompletionDashboardUseCase,
     private readonly requestTenantEcommerceLiveRunReadinessPacketUseCase: RequestTenantEcommerceLiveRunReadinessPacketUseCase,
+    private readonly requestTenantEcommerceLiveRunExecutionSummaryUseCase: RequestTenantEcommerceLiveRunExecutionSummaryUseCase,
     private readonly promoteTenantEcommerceProductSetupToProductEntityUseCase: PromoteTenantEcommerceProductSetupToProductEntityUseCase,
     private readonly promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase: PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
     private readonly promoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase: PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
@@ -3082,6 +3094,52 @@ export class EcommerceController {
     );
   }
 
+  @Post(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/request-returns-refunds-cancellation-decision',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantOrderReturnsRefundsCancellationDecision(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @Body()
+    body: {
+      decision?:
+        | 'cancel_order'
+        | 'refund_review'
+        | 'return_review'
+        | 'escalate';
+      summary?: string;
+      requiredEvidence?: string[];
+      nextStep?: string;
+    } = {},
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderReturnsRefundsCancellationDecisionResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const decision =
+      await this.requestTenantEcommerceOrderReturnsRefundsCancellationDecisionUseCase.execute(
+        tenantSlug,
+        productEntityId,
+        orderDraftId,
+        body,
+      );
+
+    if (!decision) {
+      throw new NotFoundException(
+        `Order returns, refunds and cancellation decision for order draft ${orderDraftId} was not found for tenant ${tenantSlug}.`,
+      );
+    }
+
+    return toEcommerceOrderReturnsRefundsCancellationDecisionResponseDto(
+      decision,
+    );
+  }
+
   @Get(
     ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/operational-events',
   )
@@ -3392,6 +3450,34 @@ export class EcommerceController {
     return toEcommerceLiveRunReadinessPacketResponseDto(packet);
   }
 
+  @Post(':slug/product-entities/:productEntityId/request-live-run-execution-summary')
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async requestTenantEcommerceLiveRunExecutionSummary(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceLiveRunExecutionSummaryResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const summary =
+      await this.requestTenantEcommerceLiveRunExecutionSummaryUseCase.execute(
+        tenantSlug,
+        productEntityId,
+      );
+
+    if (!summary) {
+      throw new NotFoundException(
+        `Ecommerce live run execution summary for product entity ${productEntityId} was not found for tenant ${tenantSlug}.`,
+      );
+    }
+
+    return toEcommerceLiveRunExecutionSummaryResponseDto(summary);
+  }
+
   @Get(':slug/product-entities/:productEntityId/order-operator-workboard')
   @UseGuards(
     JwtAuthenticationGuard,
@@ -3506,6 +3592,46 @@ export class EcommerceController {
     }
 
     return toEcommerceOrderOpsEscalationBoardResponseDto(board);
+  }
+
+  @Post(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/resolve-order-ops-escalation',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async resolveTenantOrderOpsEscalation(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @Body()
+    body: {
+      resolutionStatus?: 'resolved' | 'needs_follow_up' | 'blocked';
+      summary?: string;
+      resolutionActions?: string[];
+      nextStep?: string;
+    } = {},
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderOpsEscalationResolutionResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const resolution =
+      await this.resolveTenantEcommerceOrderOpsEscalationUseCase.execute(
+        tenantSlug,
+        productEntityId,
+        orderDraftId,
+        body,
+      );
+
+    if (!resolution) {
+      throw new NotFoundException(
+        `Order ops escalation resolution for order draft ${orderDraftId} was not found for tenant ${tenantSlug}.`,
+      );
+    }
+
+    return toEcommerceOrderOpsEscalationResolutionResponseDto(resolution);
   }
 
   @Get(':slug/product-entities/:productEntityId/order-status-lifecycles')

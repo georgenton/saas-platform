@@ -154,6 +154,8 @@ import {
   RequestTenantEcommerceOrderHandoffDecisionUseCase,
   RequestTenantEcommerceOrderPaymentConfirmationDecisionUseCase,
   RequestTenantEcommerceOrderPaymentDisputeResolutionPacketUseCase,
+  RequestTenantEcommerceOrderReturnsRefundsCancellationDecisionUseCase,
+  ResolveTenantEcommerceOrderOpsEscalationUseCase,
   RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
   RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
   RequestTenantEcommerceInvoiceDraftLaunchBridgeUseCase,
@@ -189,6 +191,7 @@ import {
   RequestTenantEcommerceWhatsappGrowthExecutionBridgeUseCase,
   RequestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase,
   RequestTenantEcommerceWhatsappGrowthOperatorLaunchPacketUseCase,
+  RequestTenantEcommerceLiveRunExecutionSummaryUseCase,
   RecordTenantEcommerceOrderOperationalEventUseCase,
   GetTenantEcommerceWhatsappSalesFlowUseCase,
 } from '@saas-platform/ecommerce-application';
@@ -17116,6 +17119,19 @@ describe('API', () => {
       });
 
     await request(httpServer)
+      .post(`${orderDraftBasePath}/request-returns-refunds-cancellation-decision`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.decision).toBe('refund_review');
+        expect(response.body.decisionStatus).toBe('needs_review');
+        expect(response.body.event.eventType).toBe(
+          'returns_refunds_cancellation',
+        );
+        expect(response.body.requiredEvidence.length).toBeGreaterThan(0);
+      });
+
+    await request(httpServer)
       .get(`${orderDraftBasePath}/payment-reconciliation-workspace`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200);
@@ -17128,16 +17144,17 @@ describe('API', () => {
         expect(response.body.tenantSlug).toBe('saas-platform');
         expect(response.body.productEntityId).toBe('product_entity_001');
         expect(response.body.orderDraftId).toBe('order_draft_001');
-        expect(response.body.summary.totalEvents).toBe(4);
-        expect(response.body.events).toHaveLength(4);
+        expect(response.body.summary.totalEvents).toBe(5);
+        expect(response.body.events).toHaveLength(5);
         expect(response.body.events.map((event) => event.eventType)).toEqual([
+          'returns_refunds_cancellation',
           'returns_refunds_cancellation',
           'inventory_reservation',
           'fulfillment_availability',
           'payment_reconciliation',
         ]);
         expect(response.body.events[0].sourceWorkspace).toBe(
-          'returns-refunds-cancellation-workspace',
+          'returns-refunds-cancellation-decision',
         );
       });
 
@@ -17269,6 +17286,37 @@ describe('API', () => {
       });
 
     await request(httpServer)
+      .get(`${productEntityBasePath}/order-ops-escalation-board`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.summary.totalEscalations).toBeGreaterThan(0);
+        expect(response.body.entries).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              orderDraftId: 'order_draft_001',
+            }),
+          ]),
+        );
+      });
+
+    await request(httpServer)
+      .post(`${orderDraftBasePath}/resolve-order-ops-escalation`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.resolutionStatus).toEqual(
+          expect.stringMatching(/resolved|needs_follow_up|blocked/),
+        );
+        expect(response.body.event.eventType).toBe(
+          'operational_exception_resolution',
+        );
+        expect(response.body.escalationSnapshot.escalationLevel).toEqual(
+          expect.stringMatching(/critical|elevated|monitor/),
+        );
+      });
+
+    await request(httpServer)
       .get(`${orderDraftBasePath}/operational-review-workspace`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
@@ -17356,8 +17404,27 @@ describe('API', () => {
         expect(response.body.launchChecklist.length).toBeGreaterThan(0);
       });
 
+    await request(httpServer)
+      .post(`${productEntityBasePath}/request-live-run-execution-summary`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.executionStatus).toEqual(
+          expect.stringMatching(
+            /live_run_ready|live_run_needs_closeout|live_run_blocked/,
+          ),
+        );
+        expect(response.body.operationsSnapshot.totalEscalations).toEqual(
+          expect.any(Number),
+        );
+        expect(response.body.reportingSnapshot.totalOrders).toEqual(
+          expect.any(Number),
+        );
+        expect(response.body.launchActions.length).toBeGreaterThan(0);
+      });
+
     expect(recordTenantEcommerceOrderOperationalEventUseCase.execute).toHaveBeenCalledTimes(
-      7,
+      9,
     );
     expect(
       listTenantEcommerceOrderOperationalEventsUseCase.execute,

@@ -88,6 +88,7 @@ import {
   EcommerceOrderFulfillmentAvailabilityWorkspaceResponse,
   EcommerceOrderInventoryReservationWorkspaceResponse,
   EcommerceCompletionDashboardResponse,
+  EcommerceLiveRunExecutionSummaryResponse,
   EcommerceLiveRunReadinessPacketResponse,
   EcommerceOrderInvoiceDraftCreationBridgeResponse,
   EcommerceOrderInvoiceExecutionPacketResponse,
@@ -105,11 +106,13 @@ import {
   EcommerceOrderPostSaleReportingBoardResponse,
   EcommerceOrderPostSaleReportingSummaryResponse,
   EcommerceOrderReturnsRefundsCancellationWorkspaceResponse,
+  EcommerceOrderReturnsRefundsCancellationDecisionResponse,
   EcommerceOrderRevenueOpsBoardResponse,
   EcommerceOrderRevenueTrackingSummaryResponse,
   EcommerceOrderDraftRegistryResponse,
   EcommerceOrderOpsAttentionWorkspaceResponse,
   EcommerceOrderOpsEscalationBoardResponse,
+  EcommerceOrderOpsEscalationResolutionResponse,
   EcommerceOrderOperatorWorkboardResponse,
   EcommerceOrderOpsPriorityQueueResponse,
   EcommerceOrderReviewWorkspaceResponse,
@@ -3516,6 +3519,27 @@ export async function fetchTenantEcommerceOrderOpsEscalationBoard(
   );
 }
 
+export async function resolveTenantEcommerceOrderOpsEscalation(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderOpsEscalationResolutionResponse> {
+  return request<EcommerceOrderOpsEscalationResolutionResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/resolve-order-ops-escalation`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
 export async function fetchTenantEcommerceOrderGrowthFollowUpWorkspace(
   token: string,
   tenantSlug: string,
@@ -3975,6 +3999,24 @@ export async function requestTenantEcommerceLiveRunReadinessPacket(
   );
 }
 
+export async function requestTenantEcommerceLiveRunExecutionSummary(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceLiveRunExecutionSummaryResponse> {
+  return request<EcommerceLiveRunExecutionSummaryResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/request-live-run-execution-summary`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
 export async function fetchTenantEcommerceOrderFulfillmentDeliveryWorkspace(
   token: string,
   tenantSlug: string,
@@ -4054,6 +4096,27 @@ export async function fetchTenantEcommerceOrderReturnsRefundsCancellationWorkspa
     )}/returns-refunds-cancellation-workspace`,
     {
       method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceOrderReturnsRefundsCancellationDecision(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderReturnsRefundsCancellationDecisionResponse> {
+  return request<EcommerceOrderReturnsRefundsCancellationDecisionResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/request-returns-refunds-cancellation-decision`,
+    {
+      method: 'POST',
       token,
     },
   );

@@ -94,6 +94,7 @@ import {
   fetchTenantEcommerceOrderHoldResolutionWorkspace,
   fetchTenantEcommerceOrderOpsAttentionWorkspace,
   fetchTenantEcommerceOrderOpsEscalationBoard,
+  resolveTenantEcommerceOrderOpsEscalation,
   requestTenantEcommerceOrderPaymentConfirmationDecision,
   fetchTenantEcommerceOrderPaymentConfirmationLog,
   fetchTenantEcommerceOrderPaymentReconciliationWorkspace,
@@ -117,6 +118,7 @@ import {
   fetchTenantEcommerceOrderFulfillmentReadinessWorkspace,
   fetchTenantEcommerceOrderInventoryReservationWorkspace,
   fetchTenantEcommerceCompletionDashboard,
+  requestTenantEcommerceLiveRunExecutionSummary,
   requestTenantEcommerceLiveRunReadinessPacket,
   requestTenantEcommerceOrderInvoiceDraftCreationBridge,
   requestTenantEcommerceOrderInvoiceExecutionPacket,
@@ -128,6 +130,7 @@ import {
   fetchTenantEcommerceOrderOpsPriorityQueue,
   fetchTenantEcommerceOrderReviewWorkspace,
   fetchTenantEcommerceOrderReturnsRefundsCancellationWorkspace,
+  requestTenantEcommerceOrderReturnsRefundsCancellationDecision,
   fetchTenantEcommerceOrderStatusLifecycleDetail,
   fetchTenantEcommerceOrderStatusLifecycles,
   fetchTenantEcommerceInvoiceDraftHandoffWorkspace,
@@ -380,10 +383,12 @@ import {
   EcommerceOrderDraftRegistryResponse,
   EcommerceOrderOpsAttentionWorkspaceResponse,
   EcommerceOrderOpsEscalationBoardResponse,
+  EcommerceOrderOpsEscalationResolutionResponse,
   EcommerceOrderOperatorWorkboardResponse,
   EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentReconciliationWorkspaceResponse,
   EcommerceCompletionDashboardResponse,
+  EcommerceLiveRunExecutionSummaryResponse,
   EcommerceLiveRunReadinessPacketResponse,
   EcommerceOrderInvoiceDraftCreationBridgeResponse,
   EcommerceOrderInvoiceExecutionPacketResponse,
@@ -413,6 +418,7 @@ import {
   EcommerceOrderInventoryReservationWorkspaceResponse,
   EcommerceOrderOpsPriorityQueueResponse,
   EcommerceOrderReturnsRefundsCancellationWorkspaceResponse,
+  EcommerceOrderReturnsRefundsCancellationDecisionResponse,
   EcommerceOrderReviewWorkspaceResponse,
   EcommerceOrderStatusLifecycleDetailResponse,
   EcommerceOrderStatusLifecycleRegistryResponse,
@@ -2247,6 +2253,10 @@ export function App() {
     setLastEcommerceLiveRunReadinessPacket,
   ] = useState<EcommerceLiveRunReadinessPacketResponse | null>(null);
   const [
+    lastEcommerceLiveRunExecutionSummary,
+    setLastEcommerceLiveRunExecutionSummary,
+  ] = useState<EcommerceLiveRunExecutionSummaryResponse | null>(null);
+  const [
     selectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
     setSelectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
   ] = useState<EcommerceOrderFulfillmentExecutionWorkspaceResponse | null>(
@@ -2279,6 +2289,13 @@ export function App() {
       null,
     );
   const [
+    lastEcommerceOrderReturnsRefundsCancellationDecision,
+    setLastEcommerceOrderReturnsRefundsCancellationDecision,
+  ] =
+    useState<EcommerceOrderReturnsRefundsCancellationDecisionResponse | null>(
+      null,
+    );
+  const [
     tenantEcommerceOrderOperatorWorkboard,
     setTenantEcommerceOrderOperatorWorkboard,
   ] = useState<EcommerceOrderOperatorWorkboardResponse | null>(null);
@@ -2294,6 +2311,10 @@ export function App() {
     tenantEcommerceOrderOpsEscalationBoard,
     setTenantEcommerceOrderOpsEscalationBoard,
   ] = useState<EcommerceOrderOpsEscalationBoardResponse | null>(null);
+  const [
+    lastEcommerceOrderOpsEscalationResolution,
+    setLastEcommerceOrderOpsEscalationResolution,
+  ] = useState<EcommerceOrderOpsEscalationResolutionResponse | null>(null);
   const [
     tenantEcommerceOrderStatusLifecycleRegistry,
     setTenantEcommerceOrderStatusLifecycleRegistry,
@@ -2720,6 +2741,10 @@ export function App() {
     setEcommerceLiveRunReadinessPacketLoading,
   ] = useState(false);
   const [
+    ecommerceLiveRunExecutionSummaryLoading,
+    setEcommerceLiveRunExecutionSummaryLoading,
+  ] = useState(false);
+  const [
     tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
     setTenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
   ] = useState(false);
@@ -2744,6 +2769,10 @@ export function App() {
     setTenantEcommerceOrderReturnsRefundsCancellationWorkspaceLoading,
   ] = useState(false);
   const [
+    ecommerceOrderReturnsRefundsCancellationDecisionLoading,
+    setEcommerceOrderReturnsRefundsCancellationDecisionLoading,
+  ] = useState<string | null>(null);
+  const [
     tenantEcommerceOrderOperatorWorkboardLoading,
     setTenantEcommerceOrderOperatorWorkboardLoading,
   ] = useState(false);
@@ -2759,6 +2788,10 @@ export function App() {
     tenantEcommerceOrderOpsEscalationBoardLoading,
     setTenantEcommerceOrderOpsEscalationBoardLoading,
   ] = useState(false);
+  const [
+    ecommerceOrderOpsEscalationResolutionLoading,
+    setEcommerceOrderOpsEscalationResolutionLoading,
+  ] = useState<string | null>(null);
   const [
     tenantEcommerceOrderStatusLifecycleDetailLoading,
     setTenantEcommerceOrderStatusLifecycleDetailLoading,
@@ -6018,6 +6051,16 @@ export function App() {
       productEntityId,
     );
   };
+  const requestTenantEcommerceLiveRunExecutionSummarySurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+  ) => {
+    return requestTenantEcommerceLiveRunExecutionSummary(
+      token!,
+      tenantSlug,
+      productEntityId,
+    );
+  };
   const fetchTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface = async (
     tenantSlug: string,
     productEntityId: string,
@@ -6074,6 +6117,19 @@ export function App() {
       orderDraftId: string,
     ) => {
       return fetchTenantEcommerceOrderReturnsRefundsCancellationWorkspace(
+        token!,
+        tenantSlug,
+        productEntityId,
+        orderDraftId,
+      );
+    };
+  const requestTenantEcommerceOrderReturnsRefundsCancellationDecisionSurface =
+    async (
+      tenantSlug: string,
+      productEntityId: string,
+      orderDraftId: string,
+    ) => {
+      return requestTenantEcommerceOrderReturnsRefundsCancellationDecision(
         token!,
         tenantSlug,
         productEntityId,
@@ -6138,6 +6194,18 @@ export function App() {
       token!,
       tenantSlug,
       productEntityId,
+    );
+  };
+  const resolveTenantEcommerceOrderOpsEscalationSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+    orderDraftId: string,
+  ) => {
+    return resolveTenantEcommerceOrderOpsEscalation(
+      token!,
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
     );
   };
   const fetchTenantEcommerceOrderStatusLifecycleDetailSurface = async (
@@ -17847,6 +17915,48 @@ export function App() {
     }
   }
 
+  async function handleRequestTenantEcommerceLiveRunExecutionSummary() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setEcommerceLiveRunExecutionSummaryLoading(true);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const summary =
+        await requestTenantEcommerceLiveRunExecutionSummarySurface(
+          tenantSlug,
+          productEntityId,
+        );
+
+      startTransition(() => {
+        setLastEcommerceLiveRunExecutionSummary(summary);
+        setEcommerceLaunchActionMessage(
+          `Live run execution ${humanizeKey(summary.executionStatus)} preparado.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceLiveRunExecutionSummary(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el live run execution summary.',
+      );
+    } finally {
+      setEcommerceLiveRunExecutionSummaryLoading(false);
+    }
+  }
+
   async function handleLoadTenantEcommerceOrderFulfillmentExecutionWorkspace() {
     if (
       !token ||
@@ -18075,6 +18185,58 @@ export function App() {
       );
     } finally {
       setTenantEcommerceOrderReturnsRefundsCancellationWorkspaceLoading(false);
+    }
+  }
+
+  async function handleRequestTenantEcommerceOrderReturnsRefundsCancellationDecision() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceOrderDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const orderDraftId = selectedTenantEcommerceOrderDraftDetail.orderDraft.id;
+    setEcommerceOrderReturnsRefundsCancellationDecisionLoading(orderDraftId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const decision =
+        await requestTenantEcommerceOrderReturnsRefundsCancellationDecisionSurface(
+          tenantSlug,
+          productEntityId,
+          orderDraftId,
+        );
+      const timeline =
+        await fetchTenantEcommerceOrderOperationalEventTimelineSurface(
+          tenantSlug,
+          productEntityId,
+          orderDraftId,
+        );
+
+      startTransition(() => {
+        setLastEcommerceOrderReturnsRefundsCancellationDecision(decision);
+        applyTenantEcommerceOrderOperationalEventTimelineSurface(timeline);
+        setEcommerceLaunchActionMessage(
+          `Decision ${humanizeKey(decision.decision)} registrada con estado ${humanizeKey(decision.decisionStatus)}.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceOrderReturnsRefundsCancellationDecision(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo registrar la decisión de returns/refunds/cancellation.',
+      );
+    } finally {
+      setEcommerceOrderReturnsRefundsCancellationDecisionLoading(null);
     }
   }
 
@@ -18590,6 +18752,70 @@ export function App() {
       );
     } finally {
       setTenantEcommerceOrderOpsEscalationBoardLoading(false);
+    }
+  }
+
+  async function handleResolveTenantEcommerceOrderOpsEscalation(
+    orderDraftId?: string,
+  ) {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      return;
+    }
+
+    const resolvedOrderDraftId =
+      orderDraftId ?? selectedTenantEcommerceOrderDraftDetail?.orderDraft.id;
+
+    if (!resolvedOrderDraftId) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setEcommerceOrderOpsEscalationResolutionLoading(resolvedOrderDraftId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const resolution = await resolveTenantEcommerceOrderOpsEscalationSurface(
+        tenantSlug,
+        productEntityId,
+        resolvedOrderDraftId,
+      );
+      const [board, timeline] = await Promise.all([
+        fetchTenantEcommerceOrderOpsEscalationBoardSurface(
+          tenantSlug,
+          productEntityId,
+        ),
+        fetchTenantEcommerceOrderOperationalEventTimelineSurface(
+          tenantSlug,
+          productEntityId,
+          resolvedOrderDraftId,
+        ),
+      ]);
+
+      startTransition(() => {
+        setLastEcommerceOrderOpsEscalationResolution(resolution);
+        applyTenantEcommerceOrderOpsEscalationBoardSurface(board);
+        applyTenantEcommerceOrderOperationalEventTimelineSurface(timeline);
+        setEcommerceLaunchActionMessage(
+          `Escalación ${humanizeKey(resolution.resolutionStatus)} registrada para ${resolvedOrderDraftId}.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceOrderOpsEscalationResolution(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo resolver la escalation operativa.',
+      );
+    } finally {
+      setEcommerceOrderOpsEscalationResolutionLoading(null);
     }
   }
 
@@ -21787,6 +22013,9 @@ export function App() {
             lastEcommerceLiveRunReadinessPacket={
               lastEcommerceLiveRunReadinessPacket
             }
+            lastEcommerceLiveRunExecutionSummary={
+              lastEcommerceLiveRunExecutionSummary
+            }
             selectedTenantEcommerceOrderFulfillmentExecutionWorkspace={
               selectedTenantEcommerceOrderFulfillmentExecutionWorkspace
             }
@@ -21805,6 +22034,9 @@ export function App() {
             selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace={
               selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace
             }
+            lastEcommerceOrderReturnsRefundsCancellationDecision={
+              lastEcommerceOrderReturnsRefundsCancellationDecision
+            }
             tenantEcommerceOrderOperatorWorkboard={
               tenantEcommerceOrderOperatorWorkboard
             }
@@ -21816,6 +22048,9 @@ export function App() {
             }
             tenantEcommerceOrderOpsEscalationBoard={
               tenantEcommerceOrderOpsEscalationBoard
+            }
+            lastEcommerceOrderOpsEscalationResolution={
+              lastEcommerceOrderOpsEscalationResolution
             }
             tenantEcommerceOrderStatusLifecycleRegistry={
               tenantEcommerceOrderStatusLifecycleRegistry
@@ -22139,6 +22374,9 @@ export function App() {
             ecommerceLiveRunReadinessPacketLoading={
               ecommerceLiveRunReadinessPacketLoading
             }
+            ecommerceLiveRunExecutionSummaryLoading={
+              ecommerceLiveRunExecutionSummaryLoading
+            }
             tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading={
               tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading
             }
@@ -22157,6 +22395,9 @@ export function App() {
             tenantEcommerceOrderReturnsRefundsCancellationWorkspaceLoading={
               tenantEcommerceOrderReturnsRefundsCancellationWorkspaceLoading
             }
+            ecommerceOrderReturnsRefundsCancellationDecisionLoading={
+              ecommerceOrderReturnsRefundsCancellationDecisionLoading
+            }
             tenantEcommerceOrderOperatorWorkboardLoading={
               tenantEcommerceOrderOperatorWorkboardLoading
             }
@@ -22168,6 +22409,9 @@ export function App() {
             }
             tenantEcommerceOrderOpsEscalationBoardLoading={
               tenantEcommerceOrderOpsEscalationBoardLoading
+            }
+            ecommerceOrderOpsEscalationResolutionLoading={
+              ecommerceOrderOpsEscalationResolutionLoading
             }
             tenantEcommerceOrderStatusLifecycleDetailLoading={
               tenantEcommerceOrderStatusLifecycleDetailLoading
@@ -22531,6 +22775,9 @@ export function App() {
             onRequestEcommerceLiveRunReadinessPacket={() => {
               void handleRequestTenantEcommerceLiveRunReadinessPacket();
             }}
+            onRequestEcommerceLiveRunExecutionSummary={() => {
+              void handleRequestTenantEcommerceLiveRunExecutionSummary();
+            }}
             onLoadOrderFulfillmentExecutionWorkspace={() => {
               void handleLoadTenantEcommerceOrderFulfillmentExecutionWorkspace();
             }}
@@ -22549,6 +22796,9 @@ export function App() {
             onLoadOrderReturnsRefundsCancellationWorkspace={() => {
               void handleLoadTenantEcommerceOrderReturnsRefundsCancellationWorkspace();
             }}
+            onRequestOrderReturnsRefundsCancellationDecision={() => {
+              void handleRequestTenantEcommerceOrderReturnsRefundsCancellationDecision();
+            }}
             onLoadOrderOperatorWorkboard={() => {
               void handleLoadTenantEcommerceOrderOperatorWorkboard();
             }}
@@ -22560,6 +22810,9 @@ export function App() {
             }}
             onLoadOrderOpsEscalationBoard={() => {
               void handleLoadTenantEcommerceOrderOpsEscalationBoard();
+            }}
+            onResolveOrderOpsEscalation={(orderDraftId) => {
+              void handleResolveTenantEcommerceOrderOpsEscalation(orderDraftId);
             }}
             onSelectOrderStatusLifecycle={(orderDraftId) => {
               void handleLoadTenantEcommerceOrderStatusLifecycleDetail(

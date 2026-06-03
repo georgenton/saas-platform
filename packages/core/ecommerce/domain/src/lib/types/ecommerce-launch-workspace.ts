@@ -3243,6 +3243,25 @@ export interface TenantEcommerceOrderReturnsRefundsCancellationWorkspaceView {
   guardrails: string[];
 }
 
+export interface TenantEcommerceOrderReturnsRefundsCancellationDecisionView {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  generatedAt: Date;
+  decision:
+    | 'cancel_order'
+    | 'refund_review'
+    | 'return_review'
+    | 'escalate';
+  decisionStatus: 'accepted' | 'needs_review' | 'blocked';
+  summary: string;
+  lifecycleSignals: TenantEcommerceOrderReturnsRefundsCancellationWorkspaceView['lifecycleSignals'];
+  requiredEvidence: string[];
+  event: TenantEcommerceOrderOperationalEventView;
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface TenantEcommerceOrderFulfillmentDeliveryConfirmationPacketView {
   tenantSlug: string;
   generatedAt: Date;
@@ -3285,4 +3304,62 @@ export interface TenantEcommerceOrderPostSaleReportingSummaryView {
   };
   operationalHighlights: string[];
   nextFocus: string;
+}
+
+export interface TenantEcommerceOrderOpsEscalationResolutionView {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  generatedAt: Date;
+  resolutionStatus: 'resolved' | 'needs_follow_up' | 'blocked';
+  ownerRole: 'operator';
+  summary: string;
+  escalationSnapshot: {
+    escalationLevel: 'critical' | 'elevated' | 'monitor';
+    activeRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+    escalationReason: string;
+    nextAction: string;
+  };
+  resolutionActions: string[];
+  event: TenantEcommerceOrderOperationalEventView;
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantEcommerceLiveRunExecutionSummaryView {
+  tenantSlug: string;
+  productEntityId: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  executionStatus:
+    | 'live_run_ready'
+    | 'live_run_needs_closeout'
+    | 'live_run_blocked';
+  summary: string;
+  readinessSnapshot: {
+    readinessStatus:
+      | 'ready_for_live_run'
+      | 'needs_operator_closeout'
+      | 'blocked';
+    openReadinessSignals: number;
+    blockedBy: string[];
+  };
+  operationsSnapshot: {
+    totalEscalations: number;
+    criticalCount: number;
+    elevatedCount: number;
+    monitorCount: number;
+  };
+  reportingSnapshot: {
+    totalOrders: number;
+    confirmedCount: number;
+    deliveredCount: number;
+    blockedCount: number;
+    disputedCount: number;
+    divergenceCount: number;
+  };
+  launchActions: string[];
+  riskRegister: string[];
+  nextStep: string;
+  guardrails: string[];
 }

@@ -3992,6 +3992,26 @@ export interface EcommerceOrderOpsEscalationBoardResponse {
   entries: EcommerceOrderOpsEscalationBoardEntryResponse[];
 }
 
+export interface EcommerceOrderOpsEscalationResolutionResponse {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  generatedAt: string;
+  resolutionStatus: 'resolved' | 'needs_follow_up' | 'blocked';
+  ownerRole: 'operator';
+  summary: string;
+  escalationSnapshot: {
+    escalationLevel: 'critical' | 'elevated' | 'monitor';
+    activeRoute: 'invoicing' | 'growth_follow_up' | 'hold';
+    escalationReason: string;
+    nextAction: string;
+  };
+  resolutionActions: string[];
+  event: EcommerceOrderOperationalEventResponse;
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcommerceOrderStatusLifecycleSummaryResponse {
   orderDraftId: string;
   orderLabel: string;
@@ -4571,6 +4591,44 @@ export interface EcommerceLiveRunReadinessPacketResponse {
   guardrails: string[];
 }
 
+export interface EcommerceLiveRunExecutionSummaryResponse {
+  tenantSlug: string;
+  productEntityId: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  executionStatus:
+    | 'live_run_ready'
+    | 'live_run_needs_closeout'
+    | 'live_run_blocked';
+  summary: string;
+  readinessSnapshot: {
+    readinessStatus:
+      | 'ready_for_live_run'
+      | 'needs_operator_closeout'
+      | 'blocked';
+    openReadinessSignals: number;
+    blockedBy: string[];
+  };
+  operationsSnapshot: {
+    totalEscalations: number;
+    criticalCount: number;
+    elevatedCount: number;
+    monitorCount: number;
+  };
+  reportingSnapshot: {
+    totalOrders: number;
+    confirmedCount: number;
+    deliveredCount: number;
+    blockedCount: number;
+    disputedCount: number;
+    divergenceCount: number;
+  };
+  launchActions: string[];
+  riskRegister: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcommerceOrderFulfillmentExecutionWorkspaceResponse {
   tenantSlug: string;
   generatedAt: string;
@@ -4701,6 +4759,25 @@ export interface EcommerceOrderReturnsRefundsCancellationWorkspaceResponse {
   }>;
   guardrailChecklist: string[];
   blockedBy: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcommerceOrderReturnsRefundsCancellationDecisionResponse {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  generatedAt: string;
+  decision:
+    | 'cancel_order'
+    | 'refund_review'
+    | 'return_review'
+    | 'escalate';
+  decisionStatus: 'accepted' | 'needs_review' | 'blocked';
+  summary: string;
+  lifecycleSignals: EcommerceOrderReturnsRefundsCancellationWorkspaceResponse['lifecycleSignals'];
+  requiredEvidence: string[];
+  event: EcommerceOrderOperationalEventResponse;
   nextStep: string;
   guardrails: string[];
 }

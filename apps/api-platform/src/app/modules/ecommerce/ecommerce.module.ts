@@ -115,8 +115,11 @@ import {
   RequestTenantEcommerceOrderOperationalExceptionPacketUseCase,
   RequestTenantEcommerceOrderInvoiceExecutionPacketUseCase,
   RequestTenantEcommerceOrderInvoiceDraftCreationBridgeUseCase,
+  RequestTenantEcommerceOrderReturnsRefundsCancellationDecisionUseCase,
   ResolveTenantEcommerceOrderOperationalExceptionUseCase,
+  ResolveTenantEcommerceOrderOpsEscalationUseCase,
   RequestTenantEcommerceLiveRunReadinessPacketUseCase,
+  RequestTenantEcommerceLiveRunExecutionSummaryUseCase,
   RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
   RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
   RequestTenantEcommerceInvoiceDraftLaunchBridgeUseCase,
@@ -1705,6 +1708,22 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide:
+        RequestTenantEcommerceOrderReturnsRefundsCancellationDecisionUseCase,
+      inject: [
+        GetTenantEcommerceOrderReturnsRefundsCancellationWorkspaceUseCase,
+        RecordTenantEcommerceOrderOperationalEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderReturnsRefundsCancellationWorkspaceUseCase,
+        recordTenantEcommerceOrderOperationalEventUseCase,
+      ) =>
+        new RequestTenantEcommerceOrderReturnsRefundsCancellationDecisionUseCase(
+          getTenantEcommerceOrderReturnsRefundsCancellationWorkspaceUseCase,
+          recordTenantEcommerceOrderOperationalEventUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcommerceOrderRevenueTrackingSummaryUseCase,
       inject: [
         ListTenantEcommerceOrderPostSaleLifecyclesUseCase,
@@ -1831,6 +1850,21 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: ResolveTenantEcommerceOrderOpsEscalationUseCase,
+      inject: [
+        GetTenantEcommerceOrderOpsEscalationBoardUseCase,
+        RecordTenantEcommerceOrderOperationalEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderOpsEscalationBoardUseCase,
+        recordTenantEcommerceOrderOperationalEventUseCase,
+      ) =>
+        new ResolveTenantEcommerceOrderOpsEscalationUseCase(
+          getTenantEcommerceOrderOpsEscalationBoardUseCase,
+          recordTenantEcommerceOrderOperationalEventUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcommerceCompletionDashboardUseCase,
       inject: [
         GetTenantEcommerceStorefrontGoLiveManifestUseCase,
@@ -1854,6 +1888,24 @@ import { EcommerceController } from './ecommerce.controller';
       useFactory: (getTenantEcommerceCompletionDashboardUseCase) =>
         new RequestTenantEcommerceLiveRunReadinessPacketUseCase(
           getTenantEcommerceCompletionDashboardUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceLiveRunExecutionSummaryUseCase,
+      inject: [
+        RequestTenantEcommerceLiveRunReadinessPacketUseCase,
+        GetTenantEcommerceOrderOpsEscalationBoardUseCase,
+        GetTenantEcommerceOrderPostSaleReportingSummaryUseCase,
+      ],
+      useFactory: (
+        requestTenantEcommerceLiveRunReadinessPacketUseCase,
+        getTenantEcommerceOrderOpsEscalationBoardUseCase,
+        getTenantEcommerceOrderPostSaleReportingSummaryUseCase,
+      ) =>
+        new RequestTenantEcommerceLiveRunExecutionSummaryUseCase(
+          requestTenantEcommerceLiveRunReadinessPacketUseCase,
+          getTenantEcommerceOrderOpsEscalationBoardUseCase,
+          getTenantEcommerceOrderPostSaleReportingSummaryUseCase,
         ),
     },
     {

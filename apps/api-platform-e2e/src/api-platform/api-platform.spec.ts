@@ -17175,12 +17175,32 @@ describe('API', () => {
         );
       });
 
+    await request(httpServer)
+      .get(`${orderDraftBasePath}/operational-review-workspace`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.reviewStatus).toBe('needs_operator_review');
+        expect(response.body.phaseCounts).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              eventType: 'post_sale_closeout',
+              count: 1,
+            }),
+          ]),
+        );
+        expect(response.body.driftSignals).toContain(
+          'payment_without_delivery',
+        );
+        expect(response.body.recommendedActions.length).toBeGreaterThan(0);
+      });
+
     expect(recordTenantEcommerceOrderOperationalEventUseCase.execute).toHaveBeenCalledTimes(
       6,
     );
     expect(
       listTenantEcommerceOrderOperationalEventsUseCase.execute,
-    ).toHaveBeenLastCalledWith(
+    ).toHaveBeenCalledWith(
       'saas-platform',
       'product_entity_001',
       'order_draft_001',

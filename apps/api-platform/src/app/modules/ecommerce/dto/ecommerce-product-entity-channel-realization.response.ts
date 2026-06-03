@@ -67,6 +67,7 @@ import {
   TenantEcommerceOrderRevenueTrackingSummaryView,
   TenantEcommerceOrderPostSaleLifecycleSummaryView,
   TenantEcommerceOrderOperationalEventView,
+  TenantEcommerceOrderOperationalReviewWorkspaceView,
   TenantEcommerceOrderInvoicingBridgeView,
   TenantEcommerceOrderReviewWorkspaceView,
   TenantEcommerceOrderStatusLifecycleDetailView,
@@ -1764,6 +1765,32 @@ export interface EcommerceOrderOperationalEventTimelineResponseDto {
     latestNextStep: string | null;
   };
   events: EcommerceOrderOperationalEventResponseDto[];
+}
+
+export interface EcommerceOrderOperationalReviewWorkspaceResponseDto {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  generatedAt: string;
+  reviewStatus:
+    | 'ready_for_closeout'
+    | 'needs_operator_review'
+    | 'blocked';
+  summary: string;
+  latestEvent: EcommerceOrderOperationalEventResponseDto | null;
+  phaseCounts: Array<{
+    eventType:
+      | 'payment_reconciliation'
+      | 'fulfillment_availability'
+      | 'inventory_reservation'
+      | 'returns_refunds_cancellation'
+      | 'post_sale_closeout';
+    count: number;
+  }>;
+  blockerSignals: string[];
+  driftSignals: string[];
+  recommendedActions: string[];
+  guardrails: string[];
 }
 
 export interface EcommerceOrderFulfillmentExecutionWorkspaceResponseDto {
@@ -3641,6 +3668,27 @@ export function toEcommerceOrderOperationalEventTimelineResponseDto(
           : null,
     },
     events: events.map(toEcommerceOrderOperationalEventResponseDto),
+  };
+}
+
+export function toEcommerceOrderOperationalReviewWorkspaceResponseDto(
+  view: TenantEcommerceOrderOperationalReviewWorkspaceView,
+): EcommerceOrderOperationalReviewWorkspaceResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    productEntityId: view.productEntityId,
+    orderDraftId: view.orderDraftId,
+    generatedAt: view.generatedAt.toISOString(),
+    reviewStatus: view.reviewStatus,
+    summary: view.summary,
+    latestEvent: view.latestEvent
+      ? toEcommerceOrderOperationalEventResponseDto(view.latestEvent)
+      : null,
+    phaseCounts: view.phaseCounts.map((entry) => ({ ...entry })),
+    blockerSignals: [...view.blockerSignals],
+    driftSignals: [...view.driftSignals],
+    recommendedActions: [...view.recommendedActions],
+    guardrails: [...view.guardrails],
   };
 }
 

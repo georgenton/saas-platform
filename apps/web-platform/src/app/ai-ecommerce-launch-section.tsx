@@ -57,6 +57,7 @@ import {
   EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentReconciliationWorkspaceResponse,
   EcommerceOrderOperationalEventTimelineResponse,
+  EcommerceOrderOperationalReviewWorkspaceResponse,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationDecisionResponse,
@@ -318,6 +319,9 @@ type Props = {
   selectedTenantEcommerceOrderOperationalEventTimeline:
     | EcommerceOrderOperationalEventTimelineResponse
     | null;
+  selectedTenantEcommerceOrderOperationalReviewWorkspace:
+    | EcommerceOrderOperationalReviewWorkspaceResponse
+    | null;
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace:
     | EcommerceOrderFulfillmentExecutionWorkspaceResponse
     | null;
@@ -522,6 +526,7 @@ type Props = {
   tenantEcommerceOrderFulfillmentAvailabilityWorkspaceLoading: boolean;
   tenantEcommerceOrderInventoryReservationWorkspaceLoading: boolean;
   tenantEcommerceOrderOperationalEventTimelineLoading: boolean;
+  tenantEcommerceOrderOperationalReviewWorkspaceLoading: boolean;
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading: boolean;
   tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading: boolean;
   ecommerceOrderFulfillmentCompletionPacketLoading: string | null;
@@ -699,6 +704,7 @@ type Props = {
   onLoadOrderOperationalEventTimeline: (
     filters?: EcommerceOperationalEventTimelineFilters,
   ) => void;
+  onLoadOrderOperationalReviewWorkspace: () => void;
   onLoadOrderFulfillmentExecutionWorkspace: () => void;
   onLoadOrderFulfillmentDeliveryWorkspace: () => void;
   onRequestOrderFulfillmentCompletionPacket: () => void;
@@ -811,6 +817,7 @@ export function AiEcommerceLaunchSection({
   selectedTenantEcommerceOrderFulfillmentAvailabilityWorkspace,
   selectedTenantEcommerceOrderInventoryReservationWorkspace,
   selectedTenantEcommerceOrderOperationalEventTimeline,
+  selectedTenantEcommerceOrderOperationalReviewWorkspace,
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
   selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace,
   lastEcommerceOrderFulfillmentCompletionPacket,
@@ -921,6 +928,7 @@ export function AiEcommerceLaunchSection({
   tenantEcommerceOrderFulfillmentAvailabilityWorkspaceLoading,
   tenantEcommerceOrderInventoryReservationWorkspaceLoading,
   tenantEcommerceOrderOperationalEventTimelineLoading,
+  tenantEcommerceOrderOperationalReviewWorkspaceLoading,
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
   tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading,
   ecommerceOrderFulfillmentCompletionPacketLoading,
@@ -1049,6 +1057,7 @@ export function AiEcommerceLaunchSection({
   onLoadOrderFulfillmentAvailabilityWorkspace,
   onLoadOrderInventoryReservationWorkspace,
   onLoadOrderOperationalEventTimeline,
+  onLoadOrderOperationalReviewWorkspace,
   onLoadOrderFulfillmentExecutionWorkspace,
   onLoadOrderFulfillmentDeliveryWorkspace,
   onRequestOrderFulfillmentCompletionPacket,
@@ -6070,6 +6079,19 @@ export function AiEcommerceLaunchSection({
                                 <button
                                   className={styles.secondaryButton}
                                   disabled={
+                                    tenantEcommerceOrderOperationalReviewWorkspaceLoading ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={onLoadOrderOperationalReviewWorkspace}
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderOperationalReviewWorkspaceLoading
+                                    ? 'Cargando review...'
+                                    : 'Cargar review operativo'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
                                     tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading ||
                                     tenantEcommerceOrderDraftDetailLoading
                                   }
@@ -7225,6 +7247,72 @@ export function AiEcommerceLaunchSection({
                                   </small>
                                 )}
                               </div>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceOrderOperationalReviewWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Operational review
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceOrderOperationalReviewWorkspace.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceOrderOperationalReviewWorkspace.reviewStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Latest event:{' '}
+                                {selectedTenantEcommerceOrderOperationalReviewWorkspace.latestEvent
+                                  ? `${humanizeKey(
+                                      selectedTenantEcommerceOrderOperationalReviewWorkspace
+                                        .latestEvent.eventType,
+                                    )} · ${humanizeKey(
+                                      selectedTenantEcommerceOrderOperationalReviewWorkspace
+                                        .latestEvent.status,
+                                    )}`
+                                  : 'sin eventos'}
+                              </small>
+                              <small>
+                                Phase counts:{' '}
+                                {selectedTenantEcommerceOrderOperationalReviewWorkspace.phaseCounts
+                                  .map(
+                                    (entry) =>
+                                      `${humanizeKey(entry.eventType)} ${entry.count}`,
+                                  )
+                                  .join(' | ')}
+                              </small>
+                              {selectedTenantEcommerceOrderOperationalReviewWorkspace
+                                .blockerSignals.length > 0 ? (
+                                <small>
+                                  Blockers:{' '}
+                                  {selectedTenantEcommerceOrderOperationalReviewWorkspace.blockerSignals.join(
+                                    ' | ',
+                                  )}
+                                </small>
+                              ) : null}
+                              {selectedTenantEcommerceOrderOperationalReviewWorkspace
+                                .driftSignals.length > 0 ? (
+                                <small>
+                                  Drift:{' '}
+                                  {selectedTenantEcommerceOrderOperationalReviewWorkspace.driftSignals
+                                    .map(humanizeKey)
+                                    .join(' | ')}
+                                </small>
+                              ) : null}
+                              <small>
+                                Recommended actions:{' '}
+                                {selectedTenantEcommerceOrderOperationalReviewWorkspace.recommendedActions.join(
+                                  ' | ',
+                                )}
+                              </small>
                             </div>
                           ) : null}
                           {selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace ? (

@@ -40,6 +40,7 @@ import {
   GetTenantEcommerceOrderRevenueOpsBoardUseCase,
   GetTenantEcommerceOrderRevenueTrackingSummaryUseCase,
   GetTenantEcommerceOrderPaymentReconciliationWorkspaceUseCase,
+  GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
   GetTenantEcommerceInvoiceDraftHandoffWorkspaceUseCase,
@@ -250,6 +251,7 @@ import {
   EcommerceOrderRevenueTrackingSummaryResponseDto,
   EcommerceOrderPaymentReconciliationWorkspaceResponseDto,
   EcommerceOrderOperationalEventTimelineResponseDto,
+  EcommerceOrderOperationalReviewWorkspaceResponseDto,
   EcommerceOrderRouteResolutionPacketResponseDto,
   EcommerceOrderApprovalDecisionResponseDto,
   EcommerceChannelReleaseWorkbenchResponseDto,
@@ -330,6 +332,7 @@ import {
   toEcommerceOrderRevenueTrackingSummaryResponseDto,
   toEcommerceOrderPaymentReconciliationWorkspaceResponseDto,
   toEcommerceOrderOperationalEventTimelineResponseDto,
+  toEcommerceOrderOperationalReviewWorkspaceResponseDto,
   toEcommerceOrderRouteResolutionPacketResponseDto,
   toEcommerceOrderApprovalDecisionResponseDto,
   toEcommerceChannelReleaseWorkbenchResponseDto,
@@ -605,6 +608,7 @@ export class EcommerceController {
     private readonly listTenantEcommerceOrderStatusLifecyclesUseCase: ListTenantEcommerceOrderStatusLifecyclesUseCase,
     private readonly recordTenantEcommerceOrderOperationalEventUseCase: RecordTenantEcommerceOrderOperationalEventUseCase,
     private readonly listTenantEcommerceOrderOperationalEventsUseCase: ListTenantEcommerceOrderOperationalEventsUseCase,
+    private readonly getTenantEcommerceOrderOperationalReviewWorkspaceUseCase: GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
     private readonly promoteTenantEcommerceProductSetupToProductEntityUseCase: PromoteTenantEcommerceProductSetupToProductEntityUseCase,
     private readonly promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase: PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
     private readonly promoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase: PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
@@ -3098,6 +3102,38 @@ export class EcommerceController {
       orderDraftId,
       events,
     );
+  }
+
+  @Get(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/operational-review-workspace',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantOrderOperationalReviewWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderOperationalReviewWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const workspace =
+      await this.getTenantEcommerceOrderOperationalReviewWorkspaceUseCase.execute(
+        tenantSlug,
+        productEntityId,
+        orderDraftId,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Order operational review workspace for order draft ${orderDraftId} was not found for tenant ${tenantSlug}.`,
+      );
+    }
+
+    return toEcommerceOrderOperationalReviewWorkspaceResponseDto(workspace);
   }
 
   @Get(':slug/product-entities/:productEntityId/order-operator-workboard')

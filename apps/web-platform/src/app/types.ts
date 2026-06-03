@@ -4349,6 +4349,27 @@ export interface EcommerceOrderOperationalEventTimelineResponse {
   events: EcommerceOrderOperationalEventResponse[];
 }
 
+export interface EcommerceOrderOperationalReviewWorkspaceResponse {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  generatedAt: string;
+  reviewStatus:
+    | 'ready_for_closeout'
+    | 'needs_operator_review'
+    | 'blocked';
+  summary: string;
+  latestEvent: EcommerceOrderOperationalEventResponse | null;
+  phaseCounts: Array<{
+    eventType: EcommerceOrderOperationalEventResponse['eventType'];
+    count: number;
+  }>;
+  blockerSignals: string[];
+  driftSignals: string[];
+  recommendedActions: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceOrderFulfillmentExecutionWorkspaceResponse {
   tenantSlug: string;
   generatedAt: string;

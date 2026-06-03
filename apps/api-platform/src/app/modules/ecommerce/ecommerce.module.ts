@@ -42,6 +42,7 @@ import {
   GetTenantEcommerceOrderRevenueOpsBoardUseCase,
   GetTenantEcommerceOrderRevenueTrackingSummaryUseCase,
   GetTenantEcommerceOrderPaymentReconciliationWorkspaceUseCase,
+  GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
   GetTenantEcommerceInvoiceDraftHandoffWorkspaceUseCase,
@@ -1745,6 +1746,14 @@ import { EcommerceController } from './ecommerce.controller';
         new ListTenantEcommerceOrderOperationalEventsUseCase(
           ecommerceOrderDraftRepository,
           ecommerceOrderOperationalEventRepository,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
+      inject: [ListTenantEcommerceOrderOperationalEventsUseCase],
+      useFactory: (listTenantEcommerceOrderOperationalEventsUseCase) =>
+        new GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase(
+          listTenantEcommerceOrderOperationalEventsUseCase,
         ),
     },
     {

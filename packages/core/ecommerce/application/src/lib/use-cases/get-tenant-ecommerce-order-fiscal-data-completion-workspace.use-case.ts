@@ -42,6 +42,10 @@ export class GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase {
         : invoiceDraftBridge.missingFields.length === 0
           ? 'ready'
           : 'needs_data';
+    const buyerProfile = orderDraftDetail.orderDraft.customerProfile;
+    const completionHints = invoiceDraftBridge.requiredFields.map((fieldKey) =>
+      this.buildCompletionHint(fieldKey),
+    );
 
     return {
       tenantSlug,
@@ -61,28 +65,64 @@ export class GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase {
       },
       requiredFields: [...invoiceDraftBridge.requiredFields],
       missingFields: [...invoiceDraftBridge.missingFields],
-      completionHints: invoiceDraftBridge.requiredFields.map((fieldKey) => ({
-        fieldKey,
-        label: fieldKey.replace(/_/g, ' '),
-        hint:
-          fieldKey === 'buyer_legal_name'
-            ? 'Pedir el nombre legal exacto como debe salir en factura.'
-            : fieldKey === 'buyer_tax_id_or_document'
-              ? 'Confirmar RUC, cédula o documento equivalente del comprador.'
-              : fieldKey === 'billing_email'
-                ? 'Confirmar el correo que debe recibir la factura.'
-                : fieldKey === 'accepted_offer_snapshot'
-                  ? 'Guardar la referencia de la oferta cerrada y su pricing final.'
-                  : 'Completar este dato antes de abrir el draft de factura.',
-      })),
+      fiscalProfile: {
+        legalName: buyerProfile.buyerCompany ?? buyerProfile.fullName,
+        taxIdOrDocument: buyerProfile.buyerTaxIdOrDocument,
+        billingEmail: buyerProfile.email,
+        billingAddressStatus: 'recommended',
+        documentType: 'invoice',
+        documentIdHint: 'ruc_cedula_passport',
+      },
+      completionHints,
+      operatorChecklist: [
+        'Confirmar razón social o nombre exacto para el comprobante.',
+        'Validar identificador del comprador: RUC, cédula o pasaporte antes del handoff.',
+        'Confirmar correo fiscal que recibirá la factura electrónica.',
+        'Solicitar dirección fiscal si el operador todavía no la capturó.',
+        'Mantener tipo de comprobante sugerido como factura para este MVP.',
+      ],
       blockedBy,
       guardrails: [
         ...new Set([
           ...orderDraftDetail.guardrails,
           ...invoiceDraftBridge.guardrails,
           'No tratar este workspace como emisión final ni como validación fiscal automática.',
+          'Validar RUC, cédula o pasaporte con el comprador antes de crear una factura real.',
         ]),
       ],
+    };
+  }
+
+  private buildCompletionHint(fieldKey: string): {
+    fieldKey: string;
+    label: string;
+    hint: string;
+  } {
+    const hints: Record<string, { label: string; hint: string }> = {
+      buyer_legal_name: {
+        label: 'Razón social o nombre',
+        hint: 'Pedir el nombre legal exacto como debe salir en factura.',
+      },
+      buyer_tax_id_or_document: {
+        label: 'RUC, cédula o pasaporte',
+        hint: 'Confirmar RUC, cédula o pasaporte del comprador antes del handoff.',
+      },
+      billing_email: {
+        label: 'Correo fiscal',
+        hint: 'Confirmar el correo que debe recibir la factura electrónica.',
+      },
+      accepted_offer_snapshot: {
+        label: 'Oferta aceptada',
+        hint: 'Guardar la referencia de la oferta cerrada y su pricing final.',
+      },
+    };
+
+    return {
+      fieldKey,
+      label: hints[fieldKey]?.label ?? fieldKey.replace(/_/g, ' '),
+      hint:
+        hints[fieldKey]?.hint ??
+        'Completar este dato antes de abrir el draft de factura.',
     };
   }
 }

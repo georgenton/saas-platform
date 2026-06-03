@@ -1041,11 +1041,20 @@ export interface EcommerceOrderFiscalDataCompletionWorkspaceResponseDto {
   };
   requiredFields: string[];
   missingFields: string[];
+  fiscalProfile: {
+    legalName: string | null;
+    taxIdOrDocument: string | null;
+    billingEmail: string | null;
+    billingAddressStatus: 'recommended' | 'captured';
+    documentType: 'invoice';
+    documentIdHint: 'ruc_cedula_passport';
+  };
   completionHints: Array<{
     fieldKey: string;
     label: string;
     hint: string;
   }>;
+  operatorChecklist: string[];
   blockedBy: string[];
   guardrails: string[];
 }
@@ -2792,7 +2801,9 @@ export function toEcommerceOrderFiscalDataCompletionWorkspaceResponseDto(
     targetWorkspace: { ...view.targetWorkspace },
     requiredFields: [...view.requiredFields],
     missingFields: [...view.missingFields],
+    fiscalProfile: { ...view.fiscalProfile },
     completionHints: view.completionHints.map((entry) => ({ ...entry })),
+    operatorChecklist: [...view.operatorChecklist],
     blockedBy: [...view.blockedBy],
     guardrails: [...view.guardrails],
   };

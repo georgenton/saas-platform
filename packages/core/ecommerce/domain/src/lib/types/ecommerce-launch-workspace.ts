@@ -1984,11 +1984,20 @@ export interface TenantEcommerceOrderFiscalDataCompletionWorkspaceView {
   };
   requiredFields: string[];
   missingFields: string[];
+  fiscalProfile: {
+    legalName: string | null;
+    taxIdOrDocument: string | null;
+    billingEmail: string | null;
+    billingAddressStatus: 'recommended' | 'captured';
+    documentType: 'invoice';
+    documentIdHint: 'ruc_cedula_passport';
+  };
   completionHints: Array<{
     fieldKey: string;
     label: string;
     hint: string;
   }>;
+  operatorChecklist: string[];
   blockedBy: string[];
   guardrails: string[];
 }

@@ -6881,6 +6881,14 @@ describe('API', () => {
           'buyer_tax_id_or_document',
           'billing_email',
         ],
+        fiscalProfile: {
+          legalName: null,
+          taxIdOrDocument: null,
+          billingEmail: null,
+          billingAddressStatus: 'recommended',
+          documentType: 'invoice',
+          documentIdHint: 'ruc_cedula_passport',
+        },
         completionHints: [
           {
             fieldKey: 'buyer_legal_name',
@@ -6897,6 +6905,11 @@ describe('API', () => {
             label: 'billing email',
             hint: 'Pedir correo de facturación.',
           },
+        ],
+        operatorChecklist: [
+          'Confirmar razón social o nombre exacto.',
+          'Validar RUC, cédula o pasaporte.',
+          'Confirmar correo fiscal.',
         ],
         blockedBy: [],
         guardrails: ['Fiscal completion guardrail'],

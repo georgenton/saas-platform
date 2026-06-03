@@ -116,6 +116,7 @@ import {
   fetchTenantEcommerceOrderFulfillmentExecutionWorkspace,
   fetchTenantEcommerceOrderFulfillmentReadinessWorkspace,
   fetchTenantEcommerceOrderInventoryReservationWorkspace,
+  fetchTenantEcommerceOrderOperationalEventTimeline,
   fetchTenantEcommerceOrderOpsPriorityQueue,
   fetchTenantEcommerceOrderReviewWorkspace,
   fetchTenantEcommerceOrderReturnsRefundsCancellationWorkspace,
@@ -374,6 +375,7 @@ import {
   EcommerceOrderOperatorWorkboardResponse,
   EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentReconciliationWorkspaceResponse,
+  EcommerceOrderOperationalEventTimelineResponse,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationDecisionResponse,
@@ -2189,6 +2191,10 @@ export function App() {
     null,
   );
   const [
+    selectedTenantEcommerceOrderOperationalEventTimeline,
+    setSelectedTenantEcommerceOrderOperationalEventTimeline,
+  ] = useState<EcommerceOrderOperationalEventTimelineResponse | null>(null);
+  const [
     selectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
     setSelectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
   ] = useState<EcommerceOrderFulfillmentExecutionWorkspaceResponse | null>(
@@ -2624,6 +2630,10 @@ export function App() {
   const [
     tenantEcommerceOrderInventoryReservationWorkspaceLoading,
     setTenantEcommerceOrderInventoryReservationWorkspaceLoading,
+  ] = useState(false);
+  const [
+    tenantEcommerceOrderOperationalEventTimelineLoading,
+    setTenantEcommerceOrderOperationalEventTimelineLoading,
   ] = useState(false);
   const [
     tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
@@ -5815,6 +5825,18 @@ export function App() {
       orderDraftId,
     );
   };
+  const fetchTenantEcommerceOrderOperationalEventTimelineSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+    orderDraftId: string,
+  ) => {
+    return fetchTenantEcommerceOrderOperationalEventTimeline(
+      token!,
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+    );
+  };
   const fetchTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface = async (
     tenantSlug: string,
     productEntityId: string,
@@ -6832,6 +6854,17 @@ export function App() {
       | null,
   ): void => {
     setSelectedTenantEcommerceOrderInventoryReservationWorkspace(workspace);
+  };
+  const applyTenantEcommerceOrderOperationalEventTimelineSurface = (
+    timeline:
+      | Awaited<
+          ReturnType<
+            typeof fetchTenantEcommerceOrderOperationalEventTimelineSurface
+          >
+        >
+      | null,
+  ): void => {
+    setSelectedTenantEcommerceOrderOperationalEventTimeline(timeline);
   };
   const applyTenantEcommerceOrderFulfillmentExecutionWorkspaceSurface = (
     workspace:
@@ -15851,6 +15884,7 @@ export function App() {
         applyTenantEcommerceOrderFulfillmentReadinessWorkspaceSurface(null);
         applyTenantEcommerceOrderFulfillmentAvailabilityWorkspaceSurface(null);
         applyTenantEcommerceOrderInventoryReservationWorkspaceSurface(null);
+        applyTenantEcommerceOrderOperationalEventTimelineSurface(null);
         applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(null);
         applyTenantEcommerceOrderFulfillmentCompletionPacketSurface(null);
         applyTenantEcommerceOrderGrowthFollowUpWorkspaceSurface(null);
@@ -15889,6 +15923,7 @@ export function App() {
       applyTenantEcommerceOrderFulfillmentReadinessWorkspaceSurface(null);
       applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(null);
       applyTenantEcommerceOrderFulfillmentCompletionPacketSurface(null);
+      applyTenantEcommerceOrderOperationalEventTimelineSurface(null);
       applyTenantEcommerceOrderGrowthFollowUpWorkspaceSurface(null);
       applyTenantEcommerceOrderStatusLifecycleDetailSurface(null);
       applyTenantEcommerceOrderPostSaleLifecycleDetailSurface(null);
@@ -15955,6 +15990,7 @@ export function App() {
         applyTenantEcommerceOrderFulfillmentReadinessWorkspaceSurface(null);
         applyTenantEcommerceOrderFulfillmentAvailabilityWorkspaceSurface(null);
         applyTenantEcommerceOrderInventoryReservationWorkspaceSurface(null);
+        applyTenantEcommerceOrderOperationalEventTimelineSurface(null);
         applyTenantEcommerceOrderFulfillmentExecutionWorkspaceSurface(null);
         applyTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface(null);
         applyTenantEcommerceOrderFulfillmentCompletionPacketSurface(null);
@@ -17177,6 +17213,51 @@ export function App() {
       );
     } finally {
       setTenantEcommerceOrderInventoryReservationWorkspaceLoading(false);
+    }
+  }
+
+  async function handleLoadTenantEcommerceOrderOperationalEventTimeline() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceOrderDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const orderDraftId = selectedTenantEcommerceOrderDraftDetail.orderDraft.id;
+    setTenantEcommerceOrderOperationalEventTimelineLoading(true);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const result =
+        await fetchTenantEcommerceOrderOperationalEventTimelineSurface(
+          tenantSlug,
+          productEntityId,
+          orderDraftId,
+        );
+
+      startTransition(() => {
+        applyTenantEcommerceOrderOperationalEventTimelineSurface(result);
+        setEcommerceLaunchActionMessage(
+          `Operational timeline con ${result.events.length} eventos para la orden seleccionada.`,
+        );
+      });
+    } catch (error) {
+      applyTenantEcommerceOrderOperationalEventTimelineSurface(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar el operational event timeline.',
+      );
+    } finally {
+      setTenantEcommerceOrderOperationalEventTimelineLoading(false);
     }
   }
 
@@ -21093,6 +21174,9 @@ export function App() {
             selectedTenantEcommerceOrderInventoryReservationWorkspace={
               selectedTenantEcommerceOrderInventoryReservationWorkspace
             }
+            selectedTenantEcommerceOrderOperationalEventTimeline={
+              selectedTenantEcommerceOrderOperationalEventTimeline
+            }
             selectedTenantEcommerceOrderFulfillmentExecutionWorkspace={
               selectedTenantEcommerceOrderFulfillmentExecutionWorkspace
             }
@@ -21417,6 +21501,9 @@ export function App() {
             }
             tenantEcommerceOrderInventoryReservationWorkspaceLoading={
               tenantEcommerceOrderInventoryReservationWorkspaceLoading
+            }
+            tenantEcommerceOrderOperationalEventTimelineLoading={
+              tenantEcommerceOrderOperationalEventTimelineLoading
             }
             tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading={
               tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading
@@ -21780,6 +21867,9 @@ export function App() {
             }}
             onLoadOrderInventoryReservationWorkspace={() => {
               void handleLoadTenantEcommerceOrderInventoryReservationWorkspace();
+            }}
+            onLoadOrderOperationalEventTimeline={() => {
+              void handleLoadTenantEcommerceOrderOperationalEventTimeline();
             }}
             onLoadOrderFulfillmentExecutionWorkspace={() => {
               void handleLoadTenantEcommerceOrderFulfillmentExecutionWorkspace();

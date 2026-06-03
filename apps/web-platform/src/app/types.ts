@@ -4316,6 +4316,32 @@ export interface EcommerceOrderInventoryReservationWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface EcommerceOrderOperationalEventResponse {
+  id: string;
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  eventType:
+    | 'payment_reconciliation'
+    | 'fulfillment_availability'
+    | 'inventory_reservation'
+    | 'returns_refunds_cancellation'
+    | 'post_sale_closeout';
+  sourceWorkspace: string;
+  status: string;
+  summary: string;
+  payload: Record<string, unknown>;
+  occurredAt: string;
+  createdAt: string;
+}
+
+export interface EcommerceOrderOperationalEventTimelineResponse {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  events: EcommerceOrderOperationalEventResponse[];
+}
+
 export interface EcommerceOrderFulfillmentExecutionWorkspaceResponse {
   tenantSlug: string;
   generatedAt: string;

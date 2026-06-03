@@ -56,6 +56,7 @@ import {
   EcommerceOrderOperatorWorkboardResponse,
   EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentReconciliationWorkspaceResponse,
+  EcommerceOrderOperationalEventTimelineResponse,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationDecisionResponse,
@@ -307,6 +308,9 @@ type Props = {
   selectedTenantEcommerceOrderInventoryReservationWorkspace:
     | EcommerceOrderInventoryReservationWorkspaceResponse
     | null;
+  selectedTenantEcommerceOrderOperationalEventTimeline:
+    | EcommerceOrderOperationalEventTimelineResponse
+    | null;
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace:
     | EcommerceOrderFulfillmentExecutionWorkspaceResponse
     | null;
@@ -510,6 +514,7 @@ type Props = {
   tenantEcommerceOrderFulfillmentReadinessWorkspaceLoading: boolean;
   tenantEcommerceOrderFulfillmentAvailabilityWorkspaceLoading: boolean;
   tenantEcommerceOrderInventoryReservationWorkspaceLoading: boolean;
+  tenantEcommerceOrderOperationalEventTimelineLoading: boolean;
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading: boolean;
   tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading: boolean;
   ecommerceOrderFulfillmentCompletionPacketLoading: string | null;
@@ -684,6 +689,7 @@ type Props = {
   onLoadOrderFulfillmentReadinessWorkspace: () => void;
   onLoadOrderFulfillmentAvailabilityWorkspace: () => void;
   onLoadOrderInventoryReservationWorkspace: () => void;
+  onLoadOrderOperationalEventTimeline: () => void;
   onLoadOrderFulfillmentExecutionWorkspace: () => void;
   onLoadOrderFulfillmentDeliveryWorkspace: () => void;
   onRequestOrderFulfillmentCompletionPacket: () => void;
@@ -795,6 +801,7 @@ export function AiEcommerceLaunchSection({
   selectedTenantEcommerceOrderFulfillmentReadinessWorkspace,
   selectedTenantEcommerceOrderFulfillmentAvailabilityWorkspace,
   selectedTenantEcommerceOrderInventoryReservationWorkspace,
+  selectedTenantEcommerceOrderOperationalEventTimeline,
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
   selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace,
   lastEcommerceOrderFulfillmentCompletionPacket,
@@ -904,6 +911,7 @@ export function AiEcommerceLaunchSection({
   tenantEcommerceOrderFulfillmentReadinessWorkspaceLoading,
   tenantEcommerceOrderFulfillmentAvailabilityWorkspaceLoading,
   tenantEcommerceOrderInventoryReservationWorkspaceLoading,
+  tenantEcommerceOrderOperationalEventTimelineLoading,
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
   tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading,
   ecommerceOrderFulfillmentCompletionPacketLoading,
@@ -1031,6 +1039,7 @@ export function AiEcommerceLaunchSection({
   onLoadOrderFulfillmentReadinessWorkspace,
   onLoadOrderFulfillmentAvailabilityWorkspace,
   onLoadOrderInventoryReservationWorkspace,
+  onLoadOrderOperationalEventTimeline,
   onLoadOrderFulfillmentExecutionWorkspace,
   onLoadOrderFulfillmentDeliveryWorkspace,
   onRequestOrderFulfillmentCompletionPacket,
@@ -6029,6 +6038,19 @@ export function AiEcommerceLaunchSection({
                                 <button
                                   className={styles.secondaryButton}
                                   disabled={
+                                    tenantEcommerceOrderOperationalEventTimelineLoading ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={onLoadOrderOperationalEventTimeline}
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderOperationalEventTimelineLoading
+                                    ? 'Cargando timeline...'
+                                    : 'Cargar timeline operativo'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
                                     tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading ||
                                     tenantEcommerceOrderDraftDetailLoading
                                   }
@@ -6964,6 +6986,61 @@ export function AiEcommerceLaunchSection({
                                   selectedTenantEcommerceOrderInventoryReservationWorkspace.nextStep
                                 }
                               </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceOrderOperationalEventTimeline ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Operational timeline
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceOrderOperationalEventTimeline.events.length
+                                    }{' '}
+                                    eventos persistidos
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {
+                                    selectedTenantEcommerceOrderOperationalEventTimeline.orderDraftId
+                                  }
+                                </span>
+                              </div>
+                              <div className={styles.stack}>
+                                {selectedTenantEcommerceOrderOperationalEventTimeline.events.length >
+                                0 ? (
+                                  selectedTenantEcommerceOrderOperationalEventTimeline.events.map(
+                                    (event) => (
+                                      <div
+                                        className={styles.invoiceItemCard}
+                                        key={event.id}
+                                      >
+                                        <div
+                                          className={styles.invoiceCardHeader}
+                                        >
+                                          <strong>
+                                            {humanizeKey(event.eventType)}
+                                          </strong>
+                                          <span className={styles.statusPill}>
+                                            {humanizeKey(event.status)}
+                                          </span>
+                                        </div>
+                                        <small>
+                                          {event.sourceWorkspace} ·{' '}
+                                          {formatDate(event.occurredAt)}
+                                        </small>
+                                        <small>{event.summary}</small>
+                                      </div>
+                                    ),
+                                  )
+                                ) : (
+                                  <small>
+                                    Sin eventos persistidos para esta orden.
+                                  </small>
+                                )}
+                              </div>
                             </div>
                           ) : null}
                           {selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace ? (

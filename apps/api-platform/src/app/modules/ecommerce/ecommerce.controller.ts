@@ -120,6 +120,7 @@ import {
   ListTenantEcommerceProductEntityChannelAssetWorkspacesUseCase,
   ListTenantEcommerceProductEntityChannelReleaseCandidatesUseCase,
   ListTenantEcommerceSavedProductEntityChannelDraftsUseCase,
+  ListTenantEcommerceOrderOperationalEventsUseCase,
   PromoteTenantEcommerceProductSetupToProductEntityUseCase,
   PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
   PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
@@ -135,9 +136,11 @@ import {
   PromoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
   RequestTenantEcommerceProductWorkspaceReadinessPacketUseCase,
   RequestTenantEcommerceLaunchPlanActivationReadinessUseCase,
+  RecordTenantEcommerceOrderOperationalEventUseCase,
   UpdateTenantEcommerceProductWorkspaceEditableSnapshotUseCase,
   GetTenantEcommerceOrderReturnsRefundsCancellationWorkspaceUseCase,
 } from '@saas-platform/ecommerce-application';
+import type { TenantEcommerceOrderOperationalEventType } from '@saas-platform/ecommerce-domain';
 import { ProductNotFoundError } from '@saas-platform/catalog-application';
 import {
   TENANT_PERMISSIONS,
@@ -245,6 +248,7 @@ import {
   EcommerceOrderRevenueOpsBoardResponseDto,
   EcommerceOrderRevenueTrackingSummaryResponseDto,
   EcommerceOrderPaymentReconciliationWorkspaceResponseDto,
+  EcommerceOrderOperationalEventTimelineResponseDto,
   EcommerceOrderRouteResolutionPacketResponseDto,
   EcommerceOrderApprovalDecisionResponseDto,
   EcommerceChannelReleaseWorkbenchResponseDto,
@@ -324,6 +328,7 @@ import {
   toEcommerceOrderRevenueOpsBoardResponseDto,
   toEcommerceOrderRevenueTrackingSummaryResponseDto,
   toEcommerceOrderPaymentReconciliationWorkspaceResponseDto,
+  toEcommerceOrderOperationalEventTimelineResponseDto,
   toEcommerceOrderRouteResolutionPacketResponseDto,
   toEcommerceOrderApprovalDecisionResponseDto,
   toEcommerceChannelReleaseWorkbenchResponseDto,
@@ -587,6 +592,8 @@ export class EcommerceController {
     private readonly listTenantEcommerceOrderDraftsUseCase: ListTenantEcommerceOrderDraftsUseCase,
     private readonly listTenantEcommerceOrderPostSaleLifecyclesUseCase: ListTenantEcommerceOrderPostSaleLifecyclesUseCase,
     private readonly listTenantEcommerceOrderStatusLifecyclesUseCase: ListTenantEcommerceOrderStatusLifecyclesUseCase,
+    private readonly recordTenantEcommerceOrderOperationalEventUseCase: RecordTenantEcommerceOrderOperationalEventUseCase,
+    private readonly listTenantEcommerceOrderOperationalEventsUseCase: ListTenantEcommerceOrderOperationalEventsUseCase,
     private readonly promoteTenantEcommerceProductSetupToProductEntityUseCase: PromoteTenantEcommerceProductSetupToProductEntityUseCase,
     private readonly promoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase: PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
     private readonly promoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase: PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
@@ -604,6 +611,26 @@ export class EcommerceController {
     private readonly listTenantEcommerceLaunchPlansUseCase: ListTenantEcommerceLaunchPlansUseCase,
     private readonly requestTenantEcommerceLaunchPlanActivationReadinessUseCase: RequestTenantEcommerceLaunchPlanActivationReadinessUseCase,
   ) {}
+
+  private async recordOrderOperationalEvent(
+    tenantSlug: string,
+    productEntityId: string,
+    orderDraftId: string,
+    event: {
+      eventType: TenantEcommerceOrderOperationalEventType;
+      sourceWorkspace: string;
+      status: string;
+      summary: string;
+      payload: Record<string, unknown>;
+    },
+  ): Promise<void> {
+    await this.recordTenantEcommerceOrderOperationalEventUseCase.execute(
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+      event,
+    );
+  }
 
   @Get(':slug/store-setup-workspace')
   @UseGuards(
@@ -2559,9 +2586,10 @@ export class EcommerceController {
     @Param('orderDraftId') orderDraftId: string,
     @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<EcommerceOrderPaymentReconciliationWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
     const workspace =
       await this.getTenantEcommerceOrderPaymentReconciliationWorkspaceUseCase.execute(
-        tenantAccess?.tenantSlug ?? slug,
+        tenantSlug,
         productEntityId,
         orderDraftId,
       );
@@ -2573,6 +2601,26 @@ export class EcommerceController {
         }.`,
       );
     }
+
+    await this.recordOrderOperationalEvent(
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+      {
+        eventType: 'payment_reconciliation',
+        sourceWorkspace: 'payment-reconciliation-workspace',
+        status: workspace.reconciliationStatus,
+        summary: workspace.summary,
+        payload: {
+          paymentAttempt: workspace.paymentAttempt,
+          reconciliationSignals: workspace.reconciliationSignals,
+          reconciliationChecklist: workspace.reconciliationChecklist,
+          blockedBy: workspace.blockedBy,
+          nextStep: workspace.nextStep,
+          guardrails: workspace.guardrails,
+        },
+      },
+    );
 
     return toEcommerceOrderPaymentReconciliationWorkspaceResponseDto(workspace);
   }
@@ -2691,9 +2739,10 @@ export class EcommerceController {
     @Param('orderDraftId') orderDraftId: string,
     @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<EcommerceOrderFulfillmentAvailabilityWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
     const workspace =
       await this.getTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase.execute(
-        tenantAccess?.tenantSlug ?? slug,
+        tenantSlug,
         productEntityId,
         orderDraftId,
       );
@@ -2705,6 +2754,26 @@ export class EcommerceController {
         }.`,
       );
     }
+
+    await this.recordOrderOperationalEvent(
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+      {
+        eventType: 'fulfillment_availability',
+        sourceWorkspace: 'fulfillment-availability-workspace',
+        status: workspace.availabilityStatus,
+        summary: workspace.summary,
+        payload: {
+          inventoryMode: workspace.inventoryMode,
+          availabilitySignals: workspace.availabilitySignals,
+          capacityChecklist: workspace.capacityChecklist,
+          blockedBy: workspace.blockedBy,
+          nextStep: workspace.nextStep,
+          guardrails: workspace.guardrails,
+        },
+      },
+    );
 
     return toEcommerceOrderFulfillmentAvailabilityWorkspaceResponseDto(
       workspace,
@@ -2726,9 +2795,10 @@ export class EcommerceController {
     @Param('orderDraftId') orderDraftId: string,
     @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<EcommerceOrderInventoryReservationWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
     const workspace =
       await this.getTenantEcommerceOrderInventoryReservationWorkspaceUseCase.execute(
-        tenantAccess?.tenantSlug ?? slug,
+        tenantSlug,
         productEntityId,
         orderDraftId,
       );
@@ -2740,6 +2810,26 @@ export class EcommerceController {
         }.`,
       );
     }
+
+    await this.recordOrderOperationalEvent(
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+      {
+        eventType: 'inventory_reservation',
+        sourceWorkspace: 'inventory-reservation-workspace',
+        status: workspace.reservationStatus,
+        summary: workspace.summary,
+        payload: {
+          reservationMode: workspace.reservationMode,
+          reservationSignal: workspace.reservationSignal,
+          reservationChecklist: workspace.reservationChecklist,
+          blockedBy: workspace.blockedBy,
+          nextStep: workspace.nextStep,
+          guardrails: workspace.guardrails,
+        },
+      },
+    );
 
     return toEcommerceOrderInventoryReservationWorkspaceResponseDto(workspace);
   }
@@ -2893,9 +2983,10 @@ export class EcommerceController {
     @Param('orderDraftId') orderDraftId: string,
     @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<EcommerceOrderReturnsRefundsCancellationWorkspaceResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
     const workspace =
       await this.getTenantEcommerceOrderReturnsRefundsCancellationWorkspaceUseCase.execute(
-        tenantAccess?.tenantSlug ?? slug,
+        tenantSlug,
         productEntityId,
         orderDraftId,
       );
@@ -2908,8 +2999,65 @@ export class EcommerceController {
       );
     }
 
+    await this.recordOrderOperationalEvent(
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+      {
+        eventType: 'returns_refunds_cancellation',
+        sourceWorkspace: 'returns-refunds-cancellation-workspace',
+        status: workspace.resolutionStatus,
+        summary: workspace.summary,
+        payload: {
+          lifecycleSignals: workspace.lifecycleSignals,
+          resolutionOptions: workspace.resolutionOptions,
+          guardrailChecklist: workspace.guardrailChecklist,
+          blockedBy: workspace.blockedBy,
+          nextStep: workspace.nextStep,
+          guardrails: workspace.guardrails,
+        },
+      },
+    );
+
     return toEcommerceOrderReturnsRefundsCancellationWorkspaceResponseDto(
       workspace,
+    );
+  }
+
+  @Get(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/operational-events',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantOrderOperationalEventTimeline(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderOperationalEventTimelineResponseDto> {
+    const tenantSlug = tenantAccess?.tenantSlug ?? slug;
+    const events =
+      await this.listTenantEcommerceOrderOperationalEventsUseCase.execute(
+        tenantSlug,
+        productEntityId,
+        orderDraftId,
+      );
+
+    if (!events) {
+      throw new NotFoundException(
+        `Order operational event timeline for order draft ${orderDraftId} was not found for tenant ${tenantSlug}.`,
+      );
+    }
+
+    return toEcommerceOrderOperationalEventTimelineResponseDto(
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+      events,
     );
   }
 

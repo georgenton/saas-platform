@@ -66,6 +66,7 @@ import {
   TenantEcommerceOrderRevenueTrackingSummaryEntryView,
   TenantEcommerceOrderRevenueTrackingSummaryView,
   TenantEcommerceOrderPostSaleLifecycleSummaryView,
+  TenantEcommerceOrderOperationalEventView,
   TenantEcommerceOrderInvoicingBridgeView,
   TenantEcommerceOrderReviewWorkspaceView,
   TenantEcommerceOrderStatusLifecycleDetailView,
@@ -1730,6 +1731,32 @@ export interface EcommerceOrderInventoryReservationWorkspaceResponseDto {
   blockedBy: string[];
   nextStep: string;
   guardrails: string[];
+}
+
+export interface EcommerceOrderOperationalEventResponseDto {
+  id: string;
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  eventType:
+    | 'payment_reconciliation'
+    | 'fulfillment_availability'
+    | 'inventory_reservation'
+    | 'returns_refunds_cancellation'
+    | 'post_sale_closeout';
+  sourceWorkspace: string;
+  status: string;
+  summary: string;
+  payload: Record<string, unknown>;
+  occurredAt: string;
+  createdAt: string;
+}
+
+export interface EcommerceOrderOperationalEventTimelineResponseDto {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  events: EcommerceOrderOperationalEventResponseDto[];
 }
 
 export interface EcommerceOrderFulfillmentExecutionWorkspaceResponseDto {
@@ -3551,6 +3578,38 @@ export function toEcommerceOrderInventoryReservationWorkspaceResponseDto(
     blockedBy: [...view.blockedBy],
     nextStep: view.nextStep,
     guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderOperationalEventResponseDto(
+  view: TenantEcommerceOrderOperationalEventView,
+): EcommerceOrderOperationalEventResponseDto {
+  return {
+    id: view.id,
+    tenantSlug: view.tenantSlug,
+    productEntityId: view.productEntityId,
+    orderDraftId: view.orderDraftId,
+    eventType: view.eventType,
+    sourceWorkspace: view.sourceWorkspace,
+    status: view.status,
+    summary: view.summary,
+    payload: { ...view.payload },
+    occurredAt: view.occurredAt.toISOString(),
+    createdAt: view.createdAt.toISOString(),
+  };
+}
+
+export function toEcommerceOrderOperationalEventTimelineResponseDto(
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+  events: TenantEcommerceOrderOperationalEventView[],
+): EcommerceOrderOperationalEventTimelineResponseDto {
+  return {
+    tenantSlug,
+    productEntityId,
+    orderDraftId,
+    events: events.map(toEcommerceOrderOperationalEventResponseDto),
   };
 }
 

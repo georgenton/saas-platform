@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.63.0
+
+### Minor Changes
+
+- 3bd667a: Persist ecommerce transactional operational events from payment, fulfillment, inventory, and returns workspaces, expose the order operational timeline API, and surface it in the web console.
+
 ## 0.62.0
 
 ### Minor Changes

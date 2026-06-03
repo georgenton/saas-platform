@@ -494,11 +494,34 @@ Not implemented yet.
 
 ### Current repository status
 
-The product exists in the catalog seed, but the domain is not implemented yet.
+The product has moved past catalog seed status and now exists as an implemented
+domain slice.
 
-Catalog seed evidence:
+Implemented surfaces include:
 
-- `packages/infra/prisma/prisma/migrations/20260423190000_platform_catalog/migration.sql`
+- product authoring, product setup, product entities, channel drafts, channel
+  assets and release candidates
+- storefront preview, go-live readiness and live storefront session workspaces
+- checkout customer capture, order draft persistence and order operator boards
+- invoice handoff, payment confirmation, dispute handling, fulfillment
+  readiness, delivery confirmation and post-sale reporting
+- web clients, Nest API surfaces, Prisma repositories and ecommerce closeout
+  smokes
+
+Current persistence foundation:
+
+- product drafts
+- product setups
+- product entities
+- product entity channel drafts
+- order drafts
+
+Current boundary:
+
+Ecommerce is still an operator-assisted commerce domain, not a full
+transactional commerce engine. Payments, shipping, refunds, inventory stock and
+carrier/provider integrations are represented as readiness/workspace/packet
+surfaces before live external execution is introduced.
 
 ## Product: Billing & Revenue Ops
 
@@ -799,12 +822,14 @@ Launch the next major product on top of the existing platform and shared foundat
 
 ### Recommended slices
 
-1. catalog domain
-2. storefront basics
-3. cart and checkout
-4. orders
-5. post-purchase communication
-6. AI content helper
+1. keep the conceptual map aligned with the implemented ecommerce domain
+2. complete editable order buyer/fiscal profile operations
+3. add fulfillment and inventory availability foundations
+4. introduce real stock/capacity reservations on product entities
+5. introduce provider-backed payment capture and reconciliation
+6. introduce refunds, returns and cancellation operations
+7. add shipping/tracking provider handoffs
+8. add AI content and merchandising helpers on top of stable commerce contracts
 
 ### Why this is the next major product after Ecuador invoicing
 
@@ -908,110 +933,110 @@ If we want to keep the roadmap practical, the next implementation sequence shoul
    - rendered template snapshots are now persisted durably on outbound sends, unlocking faithful template retries
    - first tenant-scoped ready-now retry runner foundation now also in place and ready to be attached to scheduled execution
    - deeper provider semantics are now also in place across reporting and operations:
-      - failure classes like rate limiting, recipient issues, policy blocks, and auth/configuration problems
-      - failure phase split between immediate send rejection and asynchronous delivery failure
-      - retry posture derived from those semantics instead of only raw delivery status
-      - dashboard-oriented operational summaries and alerts derived from the same provider semantics
-      - finer Meta-inspired taxonomies like throughput limits, template/policy blocks, quality holds, and configuration failures
-      - calibrated operational thresholds now also live with the summary itself instead of only in consumer logic
-      - tenant-scoped operational monitor execution now also exists and can optionally trigger ready-now retries for a scheduler
-      - a real in-process scheduler hook can now run that monitor periodically from the API runtime when enabled by env
-      - that scheduler can now also emit structured monitor snapshots to external observability via HTTP webhook
-      - a local collector and smoke path now exist so the observability cable can be verified end-to-end before wiring a third-party platform
-      - a first direct web consumer of the operational summary, alert view, monitor trigger, and conversation workbench now also exists in `web-platform`
-      - that consumer now also exposes an operator brief, resettable workbench policy, contextual empty states, and a clearer manual monitor readout for tenant operators
-      - richer dashboard flows now also exist in that consumer, including drill-down inspection plus shared alert acknowledgements and shared monitor-run history backed by API persistence
-      - that shared run history now also powers first-pass calibration analytics for thresholds, alert recurrence, and manual-vs-scheduler operational mix
-      - a first cross-tenant fleet console now also exists on top of that shared state, so operators can rank multiple tenancies, inspect shared hotspots, and jump into the tenant that needs attention first
-      - that fleet console now also exposes first escalation and staffing lenses, using monitor + workbench data to highlight which queues likely need intervention or more owner capacity
-      - that fleet console now also exposes first runbooks and a first cross-tenant ownership queue, so the shared state starts turning into explicit operator workflows instead of remaining only descriptive
-      - those operator workflows now also have a first persisted shared queue of operational cases:
-         - `alert_escalation`, `ownership_routing`, and `follow_up` now persist as tenant-scoped operational cases instead of staying fully derived in the consumer
-         - those cases already support first lifecycle transitions like create-or-reopen by source, take/in-progress, resolve, and reopen
-         - `follow_up` cases now also expose a first explicit state lane:
-            - `pending_team`
-            - `scheduled`
-            - `waiting_customer`
-         - that lets operators distinguish "still owed by the team" from "already scheduled" and "waiting on customer" without prematurely resolving the shared case
-         - those cases now also expose first explicit routing-policy lanes like:
-            - `growth_ops`
-            - `escalation_review`
-            - `owner_assignment`
-            - `follow_up_team`
-            - `follow_up_waiting_customer`
-         - that routing layer turns the shared queue from a generic backlog into a first policy-aware operator surface
-         - the consumer now also groups and filters those shared cases by routing lane, so fleet and tenant operators can read each lane as a distinct queue instead of a single flat backlog
-         - a first automated `review-routing` pass now also exists, so overdue `follow_up` or `ownership_routing` work can be promoted into `escalation_review` without waiting for a human to manually reshuffle every case
-         - a first explicit `auto-assign` pass now also exists on top of those lanes:
-            - it only reviews cases in team-owned lanes like `owner_assignment`, `follow_up_team`, and `escalation_review`
-            - it first tries to inherit the existing thread owner when that owner is still an eligible Growth operator
-            - otherwise it falls back to the eligible tenant member with the lowest open workload
-            - when the source thread still has no owner, that same pass can also align `ConversationThread.assigneeUserId`
-         - that first pass now also supports explicit policy packs like:
-            - `balanced`
-            - `owner_queue_first`
-            - `follow_up_first`
-         - those packs are no longer only transient UI choices:
-            - each tenant can now persist its default operational auto-assignment pack
-            - `POST /operational-cases/auto-assign` can run without an explicit override and fall back to that tenant-scoped default
-            - the web workspace now lets operators save the default pack before triggering new auto-assignment passes
-         - that means the operational queue no longer only escalates and re-routes work; it can now also propose and apply a first shared ownership decision under multiple operator-facing strategies
-         - the fleet console and tenant workspace now consume that shared queue so operators can promote derived pressure into explicit shared work
-    - current explicit limitation is now narrower: legacy template messages sent before snapshot persistence still cannot be retried faithfully
-    - next pressure is now operational hardening on top of these semantics:
-      - calibrating thresholds with production-like traffic instead of only synthetic fixtures
-      - expansion of taxonomy detail as new Meta/provider codes appear in the wild
-      - externalizing scheduler state/telemetry beyond process logs once this starts running in shared environments
-      - deciding when these tenant-configurable policy packs should graduate into richer staffing automation or deeper SLA-specific follow-up state machines
-      - keeping the core explicitly multi-channel instead of letting it collapse into a WhatsApp-only product:
-         - WhatsApp is the first strong channel, but `Growth` should stay modeled around shared concepts like lead, thread, message, opportunity, operational case, and owner workflow
-         - future channel adapters should be able to plug into that same core for Instagram Messages, Facebook Messenger, and other conversational inboxes without forking the product model
-         - each new channel should ideally pressure the adapter/provider layer more than the core Growth workflow layer
-      - splitting the product experience into two maturity modes on top of the same backend truth:
-         - an expert operator surface for real commercial teams
-         - a simplified or assisted surface for small businesses that need lead capture and follow-up without already knowing Growth operations or marketing mechanics
-         - that means the platform should not assume every tenant wants the full control tower UI all the time
-      - evolving toward an AI-assisted Growth workspace for simple businesses:
-         - suggested next actions
-         - suggested replies
-         - lead warmth / priority hints
-         - follow-up reminders expressed in business language instead of routing jargon
-         - lightweight playbooks that help a non-expert user move leads forward without understanding every operational term
-      - evolving toward AI-assisted assignment and triage, but in staged maturity:
-         - first as recommendations or confidence-scored suggestions
-         - then as guardrailed automation for narrow lanes
-         - only later as broader autonomous ownership decisions if the auditability and historical confidence support it
-         - deterministic rules should remain the safety rail under those AI decisions instead of disappearing completely
-      - deciding when to introduce a dedicated `Growth Assist` style experience:
-         - same backend entities and workflows
-         - different language, fewer controls, and stronger guidance
-         - explicit translation from operator semantics like lanes, monitor state, and routing policy into simpler “who should I reply to now?” guidance
-         - a first guided surface now already exists in the web workspace:
-            - it turns workbench pressure, operational cases, waiting-customer queues, channel health, and saved auto-assignment policy into a simpler daily agenda
-            - it still uses deterministic rules and the same backend truth; the simplification is in language and framing, not in a second product model
-            - it now also includes first opinionated commercial cues:
-               - simple conversation warmth hints
-               - suggested reply openers
-               - lightweight playbooks derived from current queue and channel pressure
-         - that guided surface now also started to consolidate into a dedicated backend contract:
-            - `GET /conversations/assist/daily-agenda`
-            - the API now publishes a simplified agenda made of tasks, conversation cues, playbooks, waiting-customer reminders, and channel-health guidance
-            - this is important because future AI assistance can now grow on top of an explicit assisted contract instead of staying trapped in frontend-only heuristics
-            - that contract now also started to graduate from “light cues” into more explicit coaching primitives:
-               - `replySuggestions` with reason, goal, draft, follow-up prompt, and checklist
-               - `nextActions` with “if you only do 3 things today” style prioritization, rationale, and recommended move
-               - `leadWarmthSummary` and `leadWarmthHints` so the guided workspace can explain heat, cadence, and risk in business language
-               - playbooks with clearer `whenToUse` guidance, concrete `steps`, explicit `goal`, what to `avoid`, and a `successSignal`
-            - that matters because a future AI layer can now replace or enhance explicit coaching fields instead of inventing a second response model from scratch
-         - next pressure after that first guided surface is no longer “whether” to simplify Growth, but how much of that surface should become:
-            - AI-suggested next actions
-            - AI-suggested replies
-            - lead warmth hints
-            - more explicit `Growth Assist` playbooks for non-expert operators
-         - important architectural clarification:
-            - those future AI suggestions should be implemented as agents on top of the transversal AI platform
-            - `Growth Assist` itself should remain a domain/workspace surface, not a second AI runtime hidden inside the product
-            - the existing deterministic agenda contract is valuable precisely because it gives the future AI layer a stable surface to consume and enhance
+     - failure classes like rate limiting, recipient issues, policy blocks, and auth/configuration problems
+     - failure phase split between immediate send rejection and asynchronous delivery failure
+     - retry posture derived from those semantics instead of only raw delivery status
+     - dashboard-oriented operational summaries and alerts derived from the same provider semantics
+     - finer Meta-inspired taxonomies like throughput limits, template/policy blocks, quality holds, and configuration failures
+     - calibrated operational thresholds now also live with the summary itself instead of only in consumer logic
+     - tenant-scoped operational monitor execution now also exists and can optionally trigger ready-now retries for a scheduler
+     - a real in-process scheduler hook can now run that monitor periodically from the API runtime when enabled by env
+     - that scheduler can now also emit structured monitor snapshots to external observability via HTTP webhook
+     - a local collector and smoke path now exist so the observability cable can be verified end-to-end before wiring a third-party platform
+     - a first direct web consumer of the operational summary, alert view, monitor trigger, and conversation workbench now also exists in `web-platform`
+     - that consumer now also exposes an operator brief, resettable workbench policy, contextual empty states, and a clearer manual monitor readout for tenant operators
+     - richer dashboard flows now also exist in that consumer, including drill-down inspection plus shared alert acknowledgements and shared monitor-run history backed by API persistence
+     - that shared run history now also powers first-pass calibration analytics for thresholds, alert recurrence, and manual-vs-scheduler operational mix
+     - a first cross-tenant fleet console now also exists on top of that shared state, so operators can rank multiple tenancies, inspect shared hotspots, and jump into the tenant that needs attention first
+     - that fleet console now also exposes first escalation and staffing lenses, using monitor + workbench data to highlight which queues likely need intervention or more owner capacity
+     - that fleet console now also exposes first runbooks and a first cross-tenant ownership queue, so the shared state starts turning into explicit operator workflows instead of remaining only descriptive
+     - those operator workflows now also have a first persisted shared queue of operational cases:
+       - `alert_escalation`, `ownership_routing`, and `follow_up` now persist as tenant-scoped operational cases instead of staying fully derived in the consumer
+       - those cases already support first lifecycle transitions like create-or-reopen by source, take/in-progress, resolve, and reopen
+       - `follow_up` cases now also expose a first explicit state lane:
+         - `pending_team`
+         - `scheduled`
+         - `waiting_customer`
+       - that lets operators distinguish "still owed by the team" from "already scheduled" and "waiting on customer" without prematurely resolving the shared case
+       - those cases now also expose first explicit routing-policy lanes like:
+         - `growth_ops`
+         - `escalation_review`
+         - `owner_assignment`
+         - `follow_up_team`
+         - `follow_up_waiting_customer`
+       - that routing layer turns the shared queue from a generic backlog into a first policy-aware operator surface
+       - the consumer now also groups and filters those shared cases by routing lane, so fleet and tenant operators can read each lane as a distinct queue instead of a single flat backlog
+       - a first automated `review-routing` pass now also exists, so overdue `follow_up` or `ownership_routing` work can be promoted into `escalation_review` without waiting for a human to manually reshuffle every case
+       - a first explicit `auto-assign` pass now also exists on top of those lanes:
+         - it only reviews cases in team-owned lanes like `owner_assignment`, `follow_up_team`, and `escalation_review`
+         - it first tries to inherit the existing thread owner when that owner is still an eligible Growth operator
+         - otherwise it falls back to the eligible tenant member with the lowest open workload
+         - when the source thread still has no owner, that same pass can also align `ConversationThread.assigneeUserId`
+       - that first pass now also supports explicit policy packs like:
+         - `balanced`
+         - `owner_queue_first`
+         - `follow_up_first`
+       - those packs are no longer only transient UI choices:
+         - each tenant can now persist its default operational auto-assignment pack
+         - `POST /operational-cases/auto-assign` can run without an explicit override and fall back to that tenant-scoped default
+         - the web workspace now lets operators save the default pack before triggering new auto-assignment passes
+       - that means the operational queue no longer only escalates and re-routes work; it can now also propose and apply a first shared ownership decision under multiple operator-facing strategies
+       - the fleet console and tenant workspace now consume that shared queue so operators can promote derived pressure into explicit shared work
+   - current explicit limitation is now narrower: legacy template messages sent before snapshot persistence still cannot be retried faithfully
+   - next pressure is now operational hardening on top of these semantics:
+     - calibrating thresholds with production-like traffic instead of only synthetic fixtures
+     - expansion of taxonomy detail as new Meta/provider codes appear in the wild
+     - externalizing scheduler state/telemetry beyond process logs once this starts running in shared environments
+     - deciding when these tenant-configurable policy packs should graduate into richer staffing automation or deeper SLA-specific follow-up state machines
+     - keeping the core explicitly multi-channel instead of letting it collapse into a WhatsApp-only product:
+       - WhatsApp is the first strong channel, but `Growth` should stay modeled around shared concepts like lead, thread, message, opportunity, operational case, and owner workflow
+       - future channel adapters should be able to plug into that same core for Instagram Messages, Facebook Messenger, and other conversational inboxes without forking the product model
+       - each new channel should ideally pressure the adapter/provider layer more than the core Growth workflow layer
+     - splitting the product experience into two maturity modes on top of the same backend truth:
+       - an expert operator surface for real commercial teams
+       - a simplified or assisted surface for small businesses that need lead capture and follow-up without already knowing Growth operations or marketing mechanics
+       - that means the platform should not assume every tenant wants the full control tower UI all the time
+     - evolving toward an AI-assisted Growth workspace for simple businesses:
+       - suggested next actions
+       - suggested replies
+       - lead warmth / priority hints
+       - follow-up reminders expressed in business language instead of routing jargon
+       - lightweight playbooks that help a non-expert user move leads forward without understanding every operational term
+     - evolving toward AI-assisted assignment and triage, but in staged maturity:
+       - first as recommendations or confidence-scored suggestions
+       - then as guardrailed automation for narrow lanes
+       - only later as broader autonomous ownership decisions if the auditability and historical confidence support it
+       - deterministic rules should remain the safety rail under those AI decisions instead of disappearing completely
+     - deciding when to introduce a dedicated `Growth Assist` style experience:
+       - same backend entities and workflows
+       - different language, fewer controls, and stronger guidance
+       - explicit translation from operator semantics like lanes, monitor state, and routing policy into simpler “who should I reply to now?” guidance
+       - a first guided surface now already exists in the web workspace:
+         - it turns workbench pressure, operational cases, waiting-customer queues, channel health, and saved auto-assignment policy into a simpler daily agenda
+         - it still uses deterministic rules and the same backend truth; the simplification is in language and framing, not in a second product model
+         - it now also includes first opinionated commercial cues:
+           - simple conversation warmth hints
+           - suggested reply openers
+           - lightweight playbooks derived from current queue and channel pressure
+       - that guided surface now also started to consolidate into a dedicated backend contract:
+         - `GET /conversations/assist/daily-agenda`
+         - the API now publishes a simplified agenda made of tasks, conversation cues, playbooks, waiting-customer reminders, and channel-health guidance
+         - this is important because future AI assistance can now grow on top of an explicit assisted contract instead of staying trapped in frontend-only heuristics
+         - that contract now also started to graduate from “light cues” into more explicit coaching primitives:
+           - `replySuggestions` with reason, goal, draft, follow-up prompt, and checklist
+           - `nextActions` with “if you only do 3 things today” style prioritization, rationale, and recommended move
+           - `leadWarmthSummary` and `leadWarmthHints` so the guided workspace can explain heat, cadence, and risk in business language
+           - playbooks with clearer `whenToUse` guidance, concrete `steps`, explicit `goal`, what to `avoid`, and a `successSignal`
+         - that matters because a future AI layer can now replace or enhance explicit coaching fields instead of inventing a second response model from scratch
+       - next pressure after that first guided surface is no longer “whether” to simplify Growth, but how much of that surface should become:
+         - AI-suggested next actions
+         - AI-suggested replies
+         - lead warmth hints
+         - more explicit `Growth Assist` playbooks for non-expert operators
+       - important architectural clarification:
+         - those future AI suggestions should be implemented as agents on top of the transversal AI platform
+         - `Growth Assist` itself should remain a domain/workspace surface, not a second AI runtime hidden inside the product
+         - the existing deterministic agenda contract is valuable precisely because it gives the future AI layer a stable surface to consume and enhance
 5. `Ecommerce` first domain slice
    - catalog plus orders
 

@@ -100,6 +100,7 @@ export * from './lib/use-cases/get-tenant-ecommerce-order-payment-confirmation-l
 export * from './lib/use-cases/get-tenant-ecommerce-order-payment-dispute-workspace.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-order-payment-dispute-resolution-packet.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-fulfillment-readiness-workspace.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-order-fulfillment-availability-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-fulfillment-execution-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-fulfillment-delivery-workspace.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-order-fulfillment-completion-packet.use-case';
@@ -117,6 +118,7 @@ export * from './lib/use-cases/get-tenant-ecommerce-order-operator-workboard.use
 export * from './lib/use-cases/get-tenant-ecommerce-order-ops-priority-queue.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-ops-attention-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-ops-escalation-board.use-case';
+export * from './lib/use-cases/update-tenant-ecommerce-order-customer-profile.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-setup-definition-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-workspace-readiness-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-launch-plan-activation-readiness.use-case';

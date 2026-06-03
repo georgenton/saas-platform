@@ -80,8 +80,11 @@ import {
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationWorkspaceResponse,
+  EcommerceOrderCustomerProfileUpdateRequest,
+  EcommerceOrderCustomerProfileUpdateResponse,
   EcommerceOrderFulfillmentCompletionPacketResponse,
   EcommerceOrderFulfillmentDeliveryConfirmationPacketResponse,
+  EcommerceOrderFulfillmentAvailabilityWorkspaceResponse,
   EcommerceOrderFulfillmentDeliveryWorkspaceResponse,
   EcommerceOrderFulfillmentExecutionWorkspaceResponse,
   EcommerceOrderFulfillmentReadinessWorkspaceResponse,
@@ -269,7 +272,11 @@ function extractFileNameFromDisposition(value: string | null): string | null {
 async function requestDownload(
   path: string,
   options: RequestInit & { token: string },
-): Promise<{ content: string; fileName: string | null; contentType: string | null }> {
+): Promise<{
+  content: string;
+  fileName: string | null;
+  contentType: string | null;
+}> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
@@ -865,7 +872,11 @@ export async function downloadInvoiceElectronicRideHtml(
   token: string,
   tenantSlug: string,
   invoiceId: string,
-): Promise<{ content: string; fileName: string | null; contentType: string | null }> {
+): Promise<{
+  content: string;
+  fileName: string | null;
+  contentType: string | null;
+}> {
   return requestDownload(
     `/invoicing/tenants/${encodeURIComponent(
       tenantSlug,
@@ -900,7 +911,11 @@ export async function downloadInvoiceElectronicXmlPreview(
   token: string,
   tenantSlug: string,
   invoiceId: string,
-): Promise<{ content: string; fileName: string | null; contentType: string | null }> {
+): Promise<{
+  content: string;
+  fileName: string | null;
+  contentType: string | null;
+}> {
   return requestDownload(
     `/invoicing/tenants/${encodeURIComponent(
       tenantSlug,
@@ -1152,7 +1167,12 @@ export async function updateInvoiceElectronicStatus(
   tenantSlug: string,
   invoiceId: string,
   body: {
-    electronicStatus?: 'pending_submission' | 'submitted' | 'authorized' | 'rejected' | null;
+    electronicStatus?:
+      | 'pending_submission'
+      | 'submitted'
+      | 'authorized'
+      | 'rejected'
+      | null;
     accessKey?: string | null;
     authorizationNumber?: string | null;
     authorizedAt?: string | null;
@@ -1485,7 +1505,11 @@ export async function fetchTenantAiActivityFeed(
   tenantSlug: string,
   options?: {
     limit?: number;
-    type?: 'all' | 'suggestion_run_prepared' | 'approval_requested' | 'approval_reviewed';
+    type?:
+      | 'all'
+      | 'suggestion_run_prepared'
+      | 'approval_requested'
+      | 'approval_reviewed';
   },
 ): Promise<AiActivityFeedResponse> {
   const searchParams = new URLSearchParams();
@@ -2081,9 +2105,7 @@ export async function requestTenantEcommerceProductEntityChannelDraftActionPacke
       tenantSlug,
     )}/product-entities/${encodeURIComponent(
       productEntityId,
-    )}/channel-drafts/${encodeURIComponent(
-      channelKey,
-    )}/request-action-packet`,
+    )}/channel-drafts/${encodeURIComponent(channelKey)}/request-action-packet`,
     {
       method: 'POST',
       token,
@@ -2894,6 +2916,29 @@ export async function fetchTenantEcommerceOrderDraftDetail(
   );
 }
 
+export async function updateTenantEcommerceOrderCustomerProfile(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+  body: EcommerceOrderCustomerProfileUpdateRequest,
+): Promise<EcommerceOrderCustomerProfileUpdateResponse> {
+  return request<EcommerceOrderCustomerProfileUpdateResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/update-customer-profile`,
+    {
+      method: 'POST',
+      token,
+      body,
+    },
+  );
+}
+
 export async function fetchTenantEcommerceLandingPageStructure(
   token: string,
   tenantSlug: string,
@@ -3127,9 +3172,7 @@ export async function fetchTenantEcommerceOrderReviewWorkspace(
       tenantSlug,
     )}/product-entities/${encodeURIComponent(
       productEntityId,
-    )}/order-drafts/${encodeURIComponent(
-      orderDraftId,
-    )}/review-workspace`,
+    )}/order-drafts/${encodeURIComponent(orderDraftId)}/review-workspace`,
     {
       method: 'GET',
       token,
@@ -3622,6 +3665,27 @@ export async function fetchTenantEcommerceOrderFulfillmentReadinessWorkspace(
     )}/order-drafts/${encodeURIComponent(
       orderDraftId,
     )}/fulfillment-readiness-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderFulfillmentAvailabilityWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderFulfillmentAvailabilityWorkspaceResponse> {
+  return request<EcommerceOrderFulfillmentAvailabilityWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/fulfillment-availability-workspace`,
     {
       method: 'GET',
       token,
@@ -4270,9 +4334,7 @@ export async function fetchTenantAiSuggestionRunDetail(
   suggestionRunId: string,
 ): Promise<AiSuggestionRunDetailResponse> {
   return request<AiSuggestionRunDetailResponse>(
-    `/ai/tenants/${encodeURIComponent(
-      tenantSlug,
-    )}/agents/${encodeURIComponent(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/agents/${encodeURIComponent(
       agentKey,
     )}/suggestion-runs/${encodeURIComponent(suggestionRunId)}`,
     {
@@ -4387,9 +4449,7 @@ export async function requestTenantAiSuggestionRunApproval(
   },
 ): Promise<AiApprovalRequestResponse> {
   return request<AiApprovalRequestResponse>(
-    `/ai/tenants/${encodeURIComponent(
-      tenantSlug,
-    )}/agents/${encodeURIComponent(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/agents/${encodeURIComponent(
       agentKey,
     )}/suggestion-runs/${encodeURIComponent(suggestionRunId)}/approval-requests`,
     {
@@ -4411,9 +4471,7 @@ export async function reviewTenantAiApprovalRequest(
   },
 ): Promise<AiApprovalRequestResponse> {
   return request<AiApprovalRequestResponse>(
-    `/ai/tenants/${encodeURIComponent(
-      tenantSlug,
-    )}/agents/${encodeURIComponent(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/agents/${encodeURIComponent(
       agentKey,
     )}/approval-requests/${encodeURIComponent(requestId)}/review`,
     {
@@ -4436,9 +4494,7 @@ export async function executeTenantAiGuardedExecution(
   },
 ): Promise<AiGuardedExecutionExecutionResponse> {
   return request<AiGuardedExecutionExecutionResponse>(
-    `/ai/tenants/${encodeURIComponent(
-      tenantSlug,
-    )}/agents/${encodeURIComponent(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/agents/${encodeURIComponent(
       agentKey,
     )}/approval-requests/${encodeURIComponent(requestId)}/guarded-execution`,
     {
@@ -4461,9 +4517,7 @@ export async function rollbackTenantAiGuardedExecution(
   },
 ): Promise<AiGuardedExecutionRollbackExecutionResponse> {
   return request<AiGuardedExecutionRollbackExecutionResponse>(
-    `/ai/tenants/${encodeURIComponent(
-      tenantSlug,
-    )}/agents/${encodeURIComponent(
+    `/ai/tenants/${encodeURIComponent(tenantSlug)}/agents/${encodeURIComponent(
       agentKey,
     )}/approval-requests/${encodeURIComponent(requestId)}/guarded-execution-rollback`,
     {

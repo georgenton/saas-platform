@@ -1208,10 +1208,7 @@ export interface AiOperatingModelAgentResponse {
   guardedExecutionCandidate: {
     toolKey: string;
     title: string;
-    targetKind:
-      | 'growth_operational_case'
-      | 'invoice'
-      | 'ecommerce_launch_plan';
+    targetKind: 'growth_operational_case' | 'invoice' | 'ecommerce_launch_plan';
     operatingLane:
       | 'operational_case_assignment_lane'
       | 'single_record_execution_lane';
@@ -1219,9 +1216,7 @@ export interface AiOperatingModelAgentResponse {
     safeFallbackMode:
       | 'suggestion_only'
       | 'suggestion_only_with_manual_assignment';
-    preferredPilotTypeWhenReady:
-      | 'human_gate_then_execute'
-      | 'shadow_review';
+    preferredPilotTypeWhenReady: 'human_gate_then_execute' | 'shadow_review';
     targetSelectionLabel: string;
     emptyTargetSelectionLabel: string;
     executeActionLabel: string;
@@ -1534,7 +1529,10 @@ export interface AiMemoryRetrievalResponse {
     scope: 'tenant' | 'domain' | 'agent';
     domainKey: 'growth' | 'invoicing' | 'ecommerce' | null;
     agentKey: string | null;
-    sourceKind: 'operator_note' | 'approval_memory' | 'guarded_execution_memory';
+    sourceKind:
+      | 'operator_note'
+      | 'approval_memory'
+      | 'guarded_execution_memory';
     freshness: 'working_memory' | 'durable_memory';
     title: string;
     summary: string;
@@ -1623,7 +1621,8 @@ export interface AiEcommerceLaunchPlanResponse {
 
 export type EcommerceLaunchPlanResponse = AiEcommerceLaunchPlanResponse;
 
-export type EcommerceLaunchWorkspaceResponse = AiEcommerceLaunchWorkspaceResponse;
+export type EcommerceLaunchWorkspaceResponse =
+  AiEcommerceLaunchWorkspaceResponse;
 
 export interface EcommerceLaunchPlanRegistryResponse {
   tenantSlug: string;
@@ -2008,10 +2007,7 @@ export interface EcommerceProductSetupResponse {
   productSetupId: string;
   savedDraftId: string;
   sourceDraftId: string;
-  status:
-    | 'draft_setup'
-    | 'needs_commercial_connections'
-    | 'needs_activation';
+  status: 'draft_setup' | 'needs_commercial_connections' | 'needs_activation';
   title: string;
   productType: 'core_offer' | 'entry_offer' | 'upsell';
   pricingBand: string | null;
@@ -2076,10 +2072,7 @@ export interface EcommerceProductEntityResponse {
   productSetupId: string;
   savedDraftId: string;
   sourceDraftId: string;
-  status:
-    | 'draft_catalog_product'
-    | 'needs_channel_assets'
-    | 'needs_activation';
+  status: 'draft_catalog_product' | 'needs_channel_assets' | 'needs_activation';
   title: string;
   productType: 'core_offer' | 'entry_offer' | 'upsell';
   pricingBand: string | null;
@@ -2503,7 +2496,10 @@ export interface EcommerceLandingAssetEntityWorkspaceResponse {
   generatedAt: string;
   productEntity: EcommerceProductEntityResponse;
   assetEntity: EcommerceProductEntityChannelAssetEntityResponse;
-  workspaceStatus: 'ready_for_landing_assembly' | 'needs_publish_copy' | 'blocked';
+  workspaceStatus:
+    | 'ready_for_landing_assembly'
+    | 'needs_publish_copy'
+    | 'blocked';
   hero: {
     headline: string;
     subheadline: string;
@@ -2522,7 +2518,10 @@ export interface EcommerceCatalogAssetEntityWorkspaceResponse {
   generatedAt: string;
   productEntity: EcommerceProductEntityResponse;
   assetEntity: EcommerceProductEntityChannelAssetEntityResponse;
-  workspaceStatus: 'ready_for_catalog_assembly' | 'needs_publish_copy' | 'blocked';
+  workspaceStatus:
+    | 'ready_for_catalog_assembly'
+    | 'needs_publish_copy'
+    | 'blocked';
   merchandisingCard: {
     title: string;
     pricingSnapshot: string;
@@ -2611,7 +2610,11 @@ export interface EcommerceChannelReleaseExecutionReadinessResponse {
   summary: string;
   channels: Array<{
     channelKey: 'landing' | 'catalog' | 'whatsapp';
-    releaseStatus: 'candidate_ready' | 'needs_publish_copy' | 'blocked' | 'missing';
+    releaseStatus:
+      | 'candidate_ready'
+      | 'needs_publish_copy'
+      | 'blocked'
+      | 'missing';
     executionOwner: 'ecommerce' | 'growth' | 'shared';
     executionChecklist: string[];
     launchWindow: string;
@@ -2635,11 +2638,7 @@ export interface EcommerceChannelReleaseHandoffPacketResponse {
   };
   channels: Array<{
     channelKey: 'landing' | 'catalog' | 'whatsapp';
-    readiness:
-      | 'candidate_ready'
-      | 'needs_publish_copy'
-      | 'blocked'
-      | 'missing';
+    readiness: 'candidate_ready' | 'needs_publish_copy' | 'blocked' | 'missing';
     handoffOwner: 'ecommerce' | 'growth' | 'shared';
     blockerType: 'none' | 'warning' | 'blocker';
     minimumArtifacts: string[];
@@ -2675,11 +2674,7 @@ export interface EcommerceStorefrontPreviewWorkspaceResponse {
   };
   releaseSignals: Array<{
     channelKey: 'landing' | 'catalog' | 'whatsapp';
-    status:
-      | 'candidate_ready'
-      | 'needs_publish_copy'
-      | 'blocked'
-      | 'missing';
+    status: 'candidate_ready' | 'needs_publish_copy' | 'blocked' | 'missing';
     detail: string;
   }>;
   previewChecklist: string[];
@@ -2761,11 +2756,7 @@ export interface EcommerceChannelReleaseApprovalPacketResponse {
   approvalOwner: 'ecommerce' | 'growth' | 'shared';
   channels: Array<{
     channelKey: 'landing' | 'catalog' | 'whatsapp';
-    readiness:
-      | 'candidate_ready'
-      | 'needs_publish_copy'
-      | 'blocked'
-      | 'missing';
+    readiness: 'candidate_ready' | 'needs_publish_copy' | 'blocked' | 'missing';
     approvalDecision: 'approve' | 'review' | 'block';
     rationale: string;
   }>;
@@ -3381,10 +3372,7 @@ export interface EcommerceOrderToInvoiceReadinessPacketResponse {
     handoffMode: 'operator_assist';
   };
   readinessSnapshot: {
-    captureStatus:
-      | 'ready_for_order_draft'
-      | 'needs_customer_input'
-      | 'blocked';
+    captureStatus: 'ready_for_order_draft' | 'needs_customer_input' | 'blocked';
     bridgeStatus:
       | 'ready_for_invoice_handoff'
       | 'needs_customer_fiscal_data'
@@ -3436,6 +3424,26 @@ export interface EcommerceOrderDraftSaveResponse {
   summary: string;
   orderDraft: EcommerceOrderDraftResponse;
 }
+
+export interface EcommerceOrderCustomerProfileUpdateResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  summary: string;
+  orderDraft: EcommerceOrderDraftResponse;
+  readinessSnapshot: {
+    buyerProfileStatus: 'ready' | 'needs_customer_fiscal_data' | 'blocked';
+    missingFields: string[];
+    handoffStatus:
+      | 'ready_for_invoice_handoff'
+      | 'needs_customer_fiscal_data'
+      | 'blocked';
+  };
+  nextActions: string[];
+}
+
+export type EcommerceOrderCustomerProfileUpdateRequest = Partial<
+  EcommerceOrderDraftResponse['customerProfile']
+>;
 
 export interface EcommerceOrderDraftRegistryResponse {
   tenantSlug: string;
@@ -3545,10 +3553,7 @@ export interface EcommerceOrderInvoiceDraftBridgeResponse {
   generatedAt: string;
   productEntity: EcommerceProductEntityResponse;
   orderDraft: EcommerceOrderDraftResponse;
-  bridgeStatus:
-    | 'ready_to_open_invoice_draft'
-    | 'needs_data'
-    | 'blocked';
+  bridgeStatus: 'ready_to_open_invoice_draft' | 'needs_data' | 'blocked';
   summary: string;
   targetWorkspace: {
     productKey: 'invoicing';
@@ -4229,12 +4234,41 @@ export interface EcommerceOrderFulfillmentReadinessWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface EcommerceOrderFulfillmentAvailabilityWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  availabilityStatus:
+    | 'available_for_fulfillment'
+    | 'needs_capacity_review'
+    | 'blocked';
+  inventoryMode: 'capacity_signal' | 'stock_signal' | 'not_tracked_yet';
+  summary: string;
+  availabilitySignals: {
+    paymentStatus: 'confirmed' | 'waiting_payment_confirmation' | 'blocked';
+    fulfillmentStatus:
+      | 'ready_for_fulfillment'
+      | 'waiting_payment_confirmation'
+      | 'blocked';
+    buyerContactStatus: 'ready' | 'needs_contact_data';
+    productType: EcommerceProductEntityResponse['productType'];
+  };
+  capacityChecklist: string[];
+  blockedBy: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcommerceOrderFulfillmentExecutionWorkspaceResponse {
   tenantSlug: string;
   generatedAt: string;
   productEntity: EcommerceProductEntityResponse;
   orderDraft: EcommerceOrderDraftResponse;
-  executionStatus: 'ready_to_execute' | 'waiting_payment_confirmation' | 'blocked';
+  executionStatus:
+    | 'ready_to_execute'
+    | 'waiting_payment_confirmation'
+    | 'blocked';
   summary: string;
   fulfillmentProfile: {
     fulfillmentType: 'digital' | 'service' | 'physical';
@@ -4479,7 +4513,11 @@ export interface EcommerceOrderRevenueOpsBoardResponse {
 export interface EcommerceOrderPostSaleOpsBoardEntryResponse {
   orderDraftId: string;
   orderLabel: string;
-  opsStatus: 'awaiting_payment' | 'ready_for_fulfillment' | 'in_progress' | 'blocked';
+  opsStatus:
+    | 'awaiting_payment'
+    | 'ready_for_fulfillment'
+    | 'in_progress'
+    | 'blocked';
   priorityBand: 'critical' | 'high' | 'monitor';
   paymentLogStatus: 'confirmed' | 'needs_review' | 'disputed';
   deliveryStatus: 'in_progress' | 'delivered' | 'blocked';
@@ -4503,7 +4541,11 @@ export interface EcommerceOrderPostSaleOpsBoardResponse {
     detail: string;
   };
   focusLanes: Array<{
-    laneKey: 'awaiting_payment' | 'ready_for_fulfillment' | 'in_progress' | 'blocked';
+    laneKey:
+      | 'awaiting_payment'
+      | 'ready_for_fulfillment'
+      | 'in_progress'
+      | 'blocked';
     count: number;
     operatorBias: string;
   }>;
@@ -5104,7 +5146,10 @@ export interface AiGuardedExecutionRollbackWorkspaceAgentResponse {
   rolloutPhase: 'phase_1' | 'phase_2' | 'hold';
   simulatedSlaStatus: 'on_track' | 'at_risk' | 'breached';
   runbookStatus: 'ready_to_document' | 'needs_design' | 'not_available';
-  rollbackStatus: 'ready_with_rollback' | 'needs_rollback_design' | 'not_applicable';
+  rollbackStatus:
+    | 'ready_with_rollback'
+    | 'needs_rollback_design'
+    | 'not_applicable';
   rollbackOwner: string;
   blastRadius: 'single_record' | 'single_queue_lane' | 'no_execution_scope';
   rollbackTriggerSummary: string[];
@@ -5140,7 +5185,10 @@ export interface AiGuardedExecutionAuditWorkspaceAgentResponse {
   rolloutPhase: 'phase_1' | 'phase_2' | 'hold';
   simulatedSlaStatus: 'on_track' | 'at_risk' | 'breached';
   runbookStatus: 'ready_to_document' | 'needs_design' | 'not_available';
-  rollbackStatus: 'ready_with_rollback' | 'needs_rollback_design' | 'not_applicable';
+  rollbackStatus:
+    | 'ready_with_rollback'
+    | 'needs_rollback_design'
+    | 'not_applicable';
   auditStatus: 'ready_for_audit' | 'needs_evidence_design' | 'not_applicable';
   auditOwner: string;
   safeFallbackMode: string;
@@ -5177,7 +5225,10 @@ export interface AiGuardedExecutionLaunchWorkspaceAgentResponse {
   rolloutPhase: 'phase_1' | 'phase_2' | 'hold';
   simulatedSlaStatus: 'on_track' | 'at_risk' | 'breached';
   runbookStatus: 'ready_to_document' | 'needs_design' | 'not_available';
-  rollbackStatus: 'ready_with_rollback' | 'needs_rollback_design' | 'not_applicable';
+  rollbackStatus:
+    | 'ready_with_rollback'
+    | 'needs_rollback_design'
+    | 'not_applicable';
   auditStatus: 'ready_for_audit' | 'needs_evidence_design' | 'not_applicable';
   launchStatus: 'ready_to_launch' | 'pilot_only' | 'hold';
   launchWindow: 'current_window' | 'next_window' | 'defer';

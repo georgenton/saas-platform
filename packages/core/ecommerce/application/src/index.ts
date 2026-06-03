@@ -128,6 +128,9 @@ export * from './lib/use-cases/list-tenant-ecommerce-order-operational-events.us
 export * from './lib/use-cases/get-tenant-ecommerce-order-operational-review-workspace.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-order-operational-exception-packet.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-operational-health-board.use-case';
+export * from './lib/use-cases/request-tenant-ecommerce-order-invoice-execution-packet.use-case';
+export * from './lib/use-cases/resolve-tenant-ecommerce-order-operational-exception.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-completion-dashboard.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-setup-definition-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-workspace-readiness-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-launch-plan-activation-readiness.use-case';

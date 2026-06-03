@@ -4327,7 +4327,8 @@ export interface EcommerceOrderOperationalEventResponse {
     | 'fulfillment_availability'
     | 'inventory_reservation'
     | 'returns_refunds_cancellation'
-    | 'post_sale_closeout';
+    | 'post_sale_closeout'
+    | 'operational_exception_resolution';
   sourceWorkspace: string;
   status: string;
   summary: string;
@@ -4421,6 +4422,81 @@ export interface EcommerceOrderOperationalHealthBoardResponse {
     driftCount: number;
     recommendedAction: string;
   }>;
+}
+
+export interface EcommerceOrderInvoiceExecutionPacketResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  executionStatus: 'ready_for_invoice_execution' | 'needs_review' | 'blocked';
+  summary: string;
+  invoicePayload: {
+    customerLabel: string;
+    documentType: 'invoice';
+    offerTitle: string;
+    pricingSnapshot: string;
+    billingIntent: string | null;
+    sourceOrderDraftId: string;
+  };
+  readinessSignals: {
+    invoiceBridgeStatus:
+      | 'ready_to_open_invoice_draft'
+      | 'needs_data'
+      | 'blocked';
+    fiscalWorkspaceStatus: 'ready' | 'needs_data' | 'blocked';
+    paymentDecision: 'confirmed' | 'needs_review' | 'blocked';
+    operationalReviewStatus:
+      | 'ready_for_closeout'
+      | 'needs_operator_review'
+      | 'blocked';
+  };
+  requiredActions: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderOperationalExceptionResolutionResponse {
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  generatedAt: string;
+  resolutionStatus: 'resolved' | 'needs_follow_up' | 'blocked';
+  summary: string;
+  resolvedSignals: string[];
+  event: EcommerceOrderOperationalEventResponse;
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcommerceCompletionDashboardResponse {
+  tenantSlug: string;
+  productEntityId: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  completionStatus: 'incomplete' | 'operationally_ready' | 'ready_for_live_run';
+  summary: {
+    headline: string;
+    detail: string;
+    readyLaneCount: number;
+    warningLaneCount: number;
+    blockedLaneCount: number;
+  };
+  lanes: Array<{
+    laneKey:
+      | 'storefront'
+      | 'checkout'
+      | 'orders'
+      | 'invoicing'
+      | 'payment'
+      | 'fulfillment'
+      | 'post_sale'
+      | 'operational_health';
+    status: 'ready' | 'warning' | 'blocked';
+    detail: string;
+  }>;
+  nextBestAction: string;
+  guardrails: string[];
 }
 
 export interface EcommerceOrderFulfillmentExecutionWorkspaceResponse {

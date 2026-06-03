@@ -11,6 +11,7 @@ const OPERATIONAL_EVENT_TYPES: TenantEcommerceOrderOperationalEventType[] = [
   'inventory_reservation',
   'returns_refunds_cancellation',
   'post_sale_closeout',
+  'operational_exception_resolution',
 ];
 
 export class GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase {
@@ -36,14 +37,15 @@ export class GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase {
       return null;
     }
 
-    const blockerSignals = this.collectBlockerSignals(events);
-    const driftSignals = this.collectDriftSignals(events);
+    const activeSignalEvents = this.resolveActiveSignalEvents(events);
+    const blockerSignals = this.collectBlockerSignals(activeSignalEvents);
+    const driftSignals = this.collectDriftSignals(activeSignalEvents);
     const latestEvent = events[0] ?? null;
     const stalenessStatus = this.resolveStalenessStatus(latestEvent);
     const hasCloseout = events.some(
       (event) => event.eventType === 'post_sale_closeout',
     );
-    const hasBlockedStatus = events.some((event) =>
+    const hasBlockedStatus = activeSignalEvents.some((event) =>
       event.status.toLowerCase().includes('blocked'),
     );
     const reviewStatus =
@@ -131,6 +133,18 @@ export class GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase {
         }),
       ),
     ];
+  }
+
+  private resolveActiveSignalEvents(
+    events: TenantEcommerceOrderOperationalEventView[],
+  ): TenantEcommerceOrderOperationalEventView[] {
+    const latestResolutionIndex = events.findIndex(
+      (event) => event.eventType === 'operational_exception_resolution',
+    );
+
+    return latestResolutionIndex >= 0
+      ? events.slice(0, latestResolutionIndex)
+      : events;
   }
 
   private collectDriftSignals(

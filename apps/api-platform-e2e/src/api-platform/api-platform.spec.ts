@@ -17212,6 +17212,22 @@ describe('API', () => {
       });
 
     await request(httpServer)
+      .post(`${orderDraftBasePath}/request-invoice-execution-packet`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.executionStatus).toBe('needs_review');
+        expect(response.body.readinessSignals.operationalReviewStatus).toBe(
+          'needs_operator_review',
+        );
+        expect(response.body.requiredActions).toEqual(
+          expect.arrayContaining([
+            expect.stringContaining('payment_without_delivery'),
+          ]),
+        );
+      });
+
+    await request(httpServer)
       .get(`${productEntityBasePath}/order-operational-health-board`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
@@ -17233,8 +17249,68 @@ describe('API', () => {
         );
       });
 
+    await request(httpServer)
+      .post(`${orderDraftBasePath}/resolve-operational-exception`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        resolutionSummary: 'Delivery evidence reconciled with payment.',
+        resolvedSignals: ['payment_without_delivery'],
+        nextStep: 'Reload operational review before invoice execution.',
+      })
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.resolutionStatus).toBe('needs_follow_up');
+        expect(response.body.event.eventType).toBe(
+          'operational_exception_resolution',
+        );
+        expect(response.body.resolvedSignals).toContain(
+          'payment_without_delivery',
+        );
+      });
+
+    await request(httpServer)
+      .get(`${orderDraftBasePath}/operational-review-workspace`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.reviewStatus).toBe('ready_for_closeout');
+        expect(response.body.driftSignals).toEqual([]);
+      });
+
+    await request(httpServer)
+      .post(`${orderDraftBasePath}/request-invoice-execution-packet`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.executionStatus).toEqual(
+          expect.stringMatching(/ready_for_invoice_execution|needs_review/),
+        );
+        expect(response.body.readinessSignals.operationalReviewStatus).toBe(
+          'ready_for_closeout',
+        );
+      });
+
+    await request(httpServer)
+      .get(`${productEntityBasePath}/completion-dashboard`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.completionStatus).toEqual(
+          expect.stringMatching(
+            /incomplete|operationally_ready|ready_for_live_run/,
+          ),
+        );
+        expect(response.body.lanes).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ laneKey: 'operational_health' }),
+            expect.objectContaining({ laneKey: 'invoicing' }),
+          ]),
+        );
+        expect(response.body.nextBestAction).toEqual(expect.any(String));
+      });
+
     expect(recordTenantEcommerceOrderOperationalEventUseCase.execute).toHaveBeenCalledTimes(
-      6,
+      7,
     );
     expect(
       listTenantEcommerceOrderOperationalEventsUseCase.execute,

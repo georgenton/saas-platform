@@ -44,6 +44,7 @@ import {
   GetTenantEcommerceOrderPaymentReconciliationWorkspaceUseCase,
   GetTenantEcommerceOrderOperationalHealthBoardUseCase,
   GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
+  GetTenantEcommerceCompletionDashboardUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
   GetTenantEcommerceInvoiceDraftHandoffWorkspaceUseCase,
@@ -112,6 +113,8 @@ import {
   RequestTenantEcommerceOrderPaymentDisputeResolutionPacketUseCase,
   RequestTenantEcommerceOrderFulfillmentDeliveryConfirmationPacketUseCase,
   RequestTenantEcommerceOrderOperationalExceptionPacketUseCase,
+  RequestTenantEcommerceOrderInvoiceExecutionPacketUseCase,
+  ResolveTenantEcommerceOrderOperationalExceptionUseCase,
   RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
   RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
   RequestTenantEcommerceInvoiceDraftLaunchBridgeUseCase,
@@ -1779,6 +1782,60 @@ import { EcommerceController } from './ecommerce.controller';
         new GetTenantEcommerceOrderOperationalHealthBoardUseCase(
           listTenantEcommerceOrderDraftsUseCase,
           getTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceOrderInvoiceExecutionPacketUseCase,
+      inject: [
+        RequestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+        GetTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+        RequestTenantEcommerceOrderPaymentConfirmationDecisionUseCase,
+        GetTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
+      ],
+      useFactory: (
+        requestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+        getTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+        requestTenantEcommerceOrderPaymentConfirmationDecisionUseCase,
+        getTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
+      ) =>
+        new RequestTenantEcommerceOrderInvoiceExecutionPacketUseCase(
+          requestTenantEcommerceOrderInvoiceDraftBridgeUseCase,
+          getTenantEcommerceOrderFiscalDataCompletionWorkspaceUseCase,
+          requestTenantEcommerceOrderPaymentConfirmationDecisionUseCase,
+          getTenantEcommerceOrderOperationalReviewWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: ResolveTenantEcommerceOrderOperationalExceptionUseCase,
+      inject: [
+        RequestTenantEcommerceOrderOperationalExceptionPacketUseCase,
+        RecordTenantEcommerceOrderOperationalEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcommerceOrderOperationalExceptionPacketUseCase,
+        recordTenantEcommerceOrderOperationalEventUseCase,
+      ) =>
+        new ResolveTenantEcommerceOrderOperationalExceptionUseCase(
+          requestTenantEcommerceOrderOperationalExceptionPacketUseCase,
+          recordTenantEcommerceOrderOperationalEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcommerceCompletionDashboardUseCase,
+      inject: [
+        GetTenantEcommerceStorefrontGoLiveManifestUseCase,
+        ListTenantEcommerceOrderDraftsUseCase,
+        GetTenantEcommerceOrderOperationalHealthBoardUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceStorefrontGoLiveManifestUseCase,
+        listTenantEcommerceOrderDraftsUseCase,
+        getTenantEcommerceOrderOperationalHealthBoardUseCase,
+      ) =>
+        new GetTenantEcommerceCompletionDashboardUseCase(
+          getTenantEcommerceStorefrontGoLiveManifestUseCase,
+          listTenantEcommerceOrderDraftsUseCase,
+          getTenantEcommerceOrderOperationalHealthBoardUseCase,
         ),
     },
     {

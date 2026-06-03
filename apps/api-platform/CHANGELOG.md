@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.69.0
+
+### Minor Changes
+
+- 45ae5fb: Add ecommerce returns decision, ops escalation resolution, and live run execution summary surfaces.
+
 ## 0.68.0
 
 ### Minor Changes

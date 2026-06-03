@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.61.0
+
+### Minor Changes
+
+- e2b4c04: Expose ecommerce transactional operations workspaces in the web console, including payment reconciliation, fulfillment availability, inventory reservation, and returns, refunds, and cancellation review.
+
 ## 0.60.0
 
 ### Minor Changes

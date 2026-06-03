@@ -49,8 +49,10 @@ import {
   TenantEcommerceOrderFulfillmentDeliveryConfirmationPacketView,
   TenantEcommerceOrderFulfillmentExecutionWorkspaceView,
   TenantEcommerceOrderFulfillmentAvailabilityWorkspaceView,
+  TenantEcommerceOrderInventoryReservationWorkspaceView,
   TenantEcommerceOrderFulfillmentReadinessWorkspaceView,
   TenantEcommerceOrderPaymentReadinessWorkspaceView,
+  TenantEcommerceOrderPaymentReconciliationWorkspaceView,
   TenantEcommerceOrderPostSaleLifecycleDetailView,
   TenantEcommerceOrderPostSaleLifecycleEntryView,
   TenantEcommerceOrderPostSaleOpsBoardEntryView,
@@ -71,6 +73,7 @@ import {
   TenantEcommerceOrderStatusLifecycleSummaryView,
   TenantEcommerceOrderToGrowthConversationBridgeView,
   TenantEcommerceOrderToInvoiceReadinessPacketView,
+  TenantEcommerceOrderReturnsRefundsCancellationWorkspaceView,
   TenantEcommerceCheckoutCloseoutPacketView,
   TenantEcommerceStorefrontReleaseCandidateBriefView,
   TenantEcommerceStorefrontGoLiveManifestView,
@@ -1585,6 +1588,40 @@ export interface EcommerceOrderPaymentConfirmationLogResponseDto {
   guardrails: string[];
 }
 
+export interface EcommerceOrderPaymentReconciliationWorkspaceResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  reconciliationStatus: 'reconciled' | 'needs_review' | 'blocked';
+  summary: string;
+  paymentAttempt: {
+    attemptStatus:
+      | 'pending'
+      | 'confirmed'
+      | 'needs_review'
+      | 'failed'
+      | 'reversed';
+    collectionChannel: 'landing' | 'catalog' | 'whatsapp';
+    pricingSnapshot: string;
+    evidenceHints: string[];
+  };
+  reconciliationSignals: {
+    paymentLogStatus: 'confirmed' | 'needs_review' | 'disputed';
+    paymentDecision: 'confirmed' | 'needs_review' | 'blocked';
+    postSaleStatus:
+      | 'handed_off'
+      | 'invoicing'
+      | 'awaiting_payment'
+      | 'paid'
+      | 'blocked';
+  };
+  reconciliationChecklist: string[];
+  blockedBy: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcommerceOrderPaymentDisputeWorkspaceResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -1668,6 +1705,28 @@ export interface EcommerceOrderFulfillmentAvailabilityWorkspaceResponseDto {
     productType: EcommerceProductEntityResponseDto['productType'];
   };
   capacityChecklist: string[];
+  blockedBy: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcommerceOrderInventoryReservationWorkspaceResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  reservationStatus: 'reserved' | 'needs_capacity_review' | 'blocked';
+  reservationMode: 'capacity_hold' | 'stock_hold' | 'manual_hold';
+  summary: string;
+  reservationSignal: {
+    availabilityStatus:
+      | 'available_for_fulfillment'
+      | 'needs_capacity_review'
+      | 'blocked';
+    inventoryMode: 'capacity_signal' | 'stock_signal' | 'not_tracked_yet';
+    reservationScope: 'order_draft';
+  };
+  reservationChecklist: string[];
   blockedBy: string[];
   nextStep: string;
   guardrails: string[];
@@ -1777,6 +1836,33 @@ export interface EcommerceOrderFulfillmentDeliveryConfirmationPacketResponseDto 
   operatorNotes: string[];
   nextStep: string;
   blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface EcommerceOrderReturnsRefundsCancellationWorkspaceResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  resolutionStatus:
+    | 'eligible_for_cancellation'
+    | 'eligible_for_refund_review'
+    | 'return_review'
+    | 'blocked';
+  summary: string;
+  lifecycleSignals: {
+    paymentLogStatus: 'confirmed' | 'needs_review' | 'disputed';
+    deliveryStatus: 'in_progress' | 'delivered' | 'blocked';
+    disputeStatus: 'confirmed' | 'needs_review' | 'hold';
+  };
+  resolutionOptions: Array<{
+    key: 'cancel' | 'refund_review' | 'return_review' | 'escalate';
+    label: string;
+    detail: string;
+  }>;
+  guardrailChecklist: string[];
+  blockedBy: string[];
+  nextStep: string;
   guardrails: string[];
 }
 
@@ -3348,6 +3434,28 @@ export function toEcommerceOrderPaymentConfirmationLogResponseDto(
   };
 }
 
+export function toEcommerceOrderPaymentReconciliationWorkspaceResponseDto(
+  view: TenantEcommerceOrderPaymentReconciliationWorkspaceView,
+): EcommerceOrderPaymentReconciliationWorkspaceResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    reconciliationStatus: view.reconciliationStatus,
+    summary: view.summary,
+    paymentAttempt: {
+      ...view.paymentAttempt,
+      evidenceHints: [...view.paymentAttempt.evidenceHints],
+    },
+    reconciliationSignals: { ...view.reconciliationSignals },
+    reconciliationChecklist: [...view.reconciliationChecklist],
+    blockedBy: [...view.blockedBy],
+    nextStep: view.nextStep,
+    guardrails: [...view.guardrails],
+  };
+}
+
 export function toEcommerceOrderPaymentDisputeWorkspaceResponseDto(
   view: TenantEcommerceOrderPaymentDisputeWorkspaceView,
 ): EcommerceOrderPaymentDisputeWorkspaceResponseDto {
@@ -3427,6 +3535,25 @@ export function toEcommerceOrderFulfillmentAvailabilityWorkspaceResponseDto(
   };
 }
 
+export function toEcommerceOrderInventoryReservationWorkspaceResponseDto(
+  view: TenantEcommerceOrderInventoryReservationWorkspaceView,
+): EcommerceOrderInventoryReservationWorkspaceResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    reservationStatus: view.reservationStatus,
+    reservationMode: view.reservationMode,
+    summary: view.summary,
+    reservationSignal: { ...view.reservationSignal },
+    reservationChecklist: [...view.reservationChecklist],
+    blockedBy: [...view.blockedBy],
+    nextStep: view.nextStep,
+    guardrails: [...view.guardrails],
+  };
+}
+
 export function toEcommerceOrderFulfillmentExecutionWorkspaceResponseDto(
   view: TenantEcommerceOrderFulfillmentExecutionWorkspaceView,
 ): EcommerceOrderFulfillmentExecutionWorkspaceResponseDto {
@@ -3500,6 +3627,25 @@ export function toEcommerceOrderFulfillmentDeliveryConfirmationPacketResponseDto
     operatorNotes: [...view.operatorNotes],
     nextStep: view.nextStep,
     blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceOrderReturnsRefundsCancellationWorkspaceResponseDto(
+  view: TenantEcommerceOrderReturnsRefundsCancellationWorkspaceView,
+): EcommerceOrderReturnsRefundsCancellationWorkspaceResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    resolutionStatus: view.resolutionStatus,
+    summary: view.summary,
+    lifecycleSignals: { ...view.lifecycleSignals },
+    resolutionOptions: view.resolutionOptions.map((option) => ({ ...option })),
+    guardrailChecklist: [...view.guardrailChecklist],
+    blockedBy: [...view.blockedBy],
+    nextStep: view.nextStep,
     guardrails: [...view.guardrails],
   };
 }

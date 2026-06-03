@@ -33,12 +33,14 @@ import {
   GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase,
+  GetTenantEcommerceOrderInventoryReservationWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
   GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
   GetTenantEcommerceOrderPostSaleOpsBoardUseCase,
   GetTenantEcommerceOrderPostSaleReportingBoardUseCase,
   GetTenantEcommerceOrderRevenueOpsBoardUseCase,
   GetTenantEcommerceOrderRevenueTrackingSummaryUseCase,
+  GetTenantEcommerceOrderPaymentReconciliationWorkspaceUseCase,
   GetTenantEcommerceOrderReviewWorkspaceUseCase,
   GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
   GetTenantEcommerceInvoiceDraftHandoffWorkspaceUseCase,
@@ -138,6 +140,7 @@ import {
   UpdateTenantEcommerceProductSetupEditableSnapshotUseCase,
   UpdateTenantEcommerceProductWorkspaceEditableSnapshotUseCase,
   UpdateTenantEcommerceOrderCustomerProfileUseCase,
+  GetTenantEcommerceOrderReturnsRefundsCancellationWorkspaceUseCase,
 } from '@saas-platform/ecommerce-application';
 import { FEATURE_FLAG_REPOSITORY } from '@saas-platform/feature-flags-application';
 import {
@@ -1460,6 +1463,14 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: GetTenantEcommerceOrderPaymentReconciliationWorkspaceUseCase,
+      inject: [GetTenantEcommerceOrderPaymentConfirmationLogUseCase],
+      useFactory: (getTenantEcommerceOrderPaymentConfirmationLogUseCase) =>
+        new GetTenantEcommerceOrderPaymentReconciliationWorkspaceUseCase(
+          getTenantEcommerceOrderPaymentConfirmationLogUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcommerceOrderPaymentDisputeWorkspaceUseCase,
       inject: [
         GetTenantEcommerceOrderPaymentConfirmationLogUseCase,
@@ -1584,6 +1595,16 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: GetTenantEcommerceOrderInventoryReservationWorkspaceUseCase,
+      inject: [GetTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase],
+      useFactory: (
+        getTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase,
+      ) =>
+        new GetTenantEcommerceOrderInventoryReservationWorkspaceUseCase(
+          getTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase,
       inject: [
         RequestTenantEcommerceOrderPaymentConfirmationDecisionUseCase,
@@ -1651,6 +1672,25 @@ import { EcommerceController } from './ecommerce.controller';
         new RequestTenantEcommerceOrderFulfillmentDeliveryConfirmationPacketUseCase(
           getTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
           requestTenantEcommerceOrderFulfillmentCompletionPacketUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantEcommerceOrderReturnsRefundsCancellationWorkspaceUseCase,
+      inject: [
+        GetTenantEcommerceOrderPaymentConfirmationLogUseCase,
+        GetTenantEcommerceOrderPaymentDisputeWorkspaceUseCase,
+        GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantEcommerceOrderPaymentConfirmationLogUseCase,
+        getTenantEcommerceOrderPaymentDisputeWorkspaceUseCase,
+        getTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
+      ) =>
+        new GetTenantEcommerceOrderReturnsRefundsCancellationWorkspaceUseCase(
+          getTenantEcommerceOrderPaymentConfirmationLogUseCase,
+          getTenantEcommerceOrderPaymentDisputeWorkspaceUseCase,
+          getTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
         ),
     },
     {

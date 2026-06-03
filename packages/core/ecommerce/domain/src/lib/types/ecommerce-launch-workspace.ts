@@ -2598,6 +2598,28 @@ export interface TenantEcommerceOrderFulfillmentAvailabilityWorkspaceView {
   guardrails: string[];
 }
 
+export interface TenantEcommerceOrderInventoryReservationWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  reservationStatus: 'reserved' | 'needs_capacity_review' | 'blocked';
+  reservationMode: 'capacity_hold' | 'stock_hold' | 'manual_hold';
+  summary: string;
+  reservationSignal: {
+    availabilityStatus:
+      | 'available_for_fulfillment'
+      | 'needs_capacity_review'
+      | 'blocked';
+    inventoryMode: 'capacity_signal' | 'stock_signal' | 'not_tracked_yet';
+    reservationScope: 'order_draft';
+  };
+  reservationChecklist: string[];
+  blockedBy: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface TenantEcommerceOrderFulfillmentExecutionWorkspaceView {
   tenantSlug: string;
   generatedAt: Date;
@@ -2743,6 +2765,40 @@ export interface TenantEcommerceOrderPaymentConfirmationLogView {
   };
   auditTrail: string[];
   blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderPaymentReconciliationWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  reconciliationStatus: 'reconciled' | 'needs_review' | 'blocked';
+  summary: string;
+  paymentAttempt: {
+    attemptStatus:
+      | 'pending'
+      | 'confirmed'
+      | 'needs_review'
+      | 'failed'
+      | 'reversed';
+    collectionChannel: 'landing' | 'catalog' | 'whatsapp';
+    pricingSnapshot: string;
+    evidenceHints: string[];
+  };
+  reconciliationSignals: {
+    paymentLogStatus: 'confirmed' | 'needs_review' | 'disputed';
+    paymentDecision: 'confirmed' | 'needs_review' | 'blocked';
+    postSaleStatus:
+      | 'handed_off'
+      | 'invoicing'
+      | 'awaiting_payment'
+      | 'paid'
+      | 'blocked';
+  };
+  reconciliationChecklist: string[];
+  blockedBy: string[];
+  nextStep: string;
   guardrails: string[];
 }
 
@@ -2915,6 +2971,33 @@ export interface TenantEcommerceOrderPaymentDisputeResolutionPacketView {
   resolutionChecklist: string[];
   nextStep: string;
   blockedBy: string[];
+  guardrails: string[];
+}
+
+export interface TenantEcommerceOrderReturnsRefundsCancellationWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  resolutionStatus:
+    | 'eligible_for_cancellation'
+    | 'eligible_for_refund_review'
+    | 'return_review'
+    | 'blocked';
+  summary: string;
+  lifecycleSignals: {
+    paymentLogStatus: 'confirmed' | 'needs_review' | 'disputed';
+    deliveryStatus: 'in_progress' | 'delivered' | 'blocked';
+    disputeStatus: 'confirmed' | 'needs_review' | 'hold';
+  };
+  resolutionOptions: Array<{
+    key: 'cancel' | 'refund_review' | 'return_review' | 'escalate';
+    label: string;
+    detail: string;
+  }>;
+  guardrailChecklist: string[];
+  blockedBy: string[];
+  nextStep: string;
   guardrails: string[];
 }
 

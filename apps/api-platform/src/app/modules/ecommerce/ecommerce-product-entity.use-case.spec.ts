@@ -6765,6 +6765,7 @@ describe('Ecommerce product entity use cases', () => {
       execute: jest.fn().mockResolvedValue({
         nextStep: 'Salir de hold si no hay fricción.',
         blockedBy: [],
+        guardrails: ['Hold guardrail'],
       }),
     };
     const useCase =
@@ -6875,8 +6876,10 @@ describe('Ecommerce product entity use cases', () => {
     const completionPacketUseCase = {
       execute: jest.fn().mockResolvedValue({
         completionStatus: 'partial',
+        completionChecklist: ['Cerrar activación con el buyer'],
         operatorNotes: ['Falta confirmación final'],
         blockedBy: [],
+        guardrails: ['Completion guardrail'],
       }),
     };
     const useCase =
@@ -7046,6 +7049,9 @@ describe('Ecommerce product entity use cases', () => {
           confirmedOrderCount: 1,
           awaitingPaymentCount: 0,
           readyForFulfillmentCount: 1,
+        },
+        paymentRollup: {
+          confirmationBacklog: 'No hay backlog pendiente.',
         },
       }),
     };

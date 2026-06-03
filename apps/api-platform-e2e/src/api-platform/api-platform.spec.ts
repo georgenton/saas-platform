@@ -17291,6 +17291,26 @@ describe('API', () => {
       });
 
     await request(httpServer)
+      .post(`${orderDraftBasePath}/request-invoice-draft-creation-bridge`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.creationStatus).toEqual(
+          expect.stringMatching(
+            /ready_to_create_invoice_draft|needs_customer_mapping|blocked/,
+          ),
+        );
+        expect(response.body.invoicingTarget.invoiceEndpoint).toContain(
+          '/api/invoicing/tenants/saas-platform/invoices',
+        );
+        expect(response.body.invoicingTarget.submitSri).toBe(false);
+        expect(response.body.invoiceCreateRequest.status).toBe('draft');
+        expect(response.body.itemCreateRequests[0].description).toEqual(
+          expect.any(String),
+        );
+      });
+
+    await request(httpServer)
       .get(`${productEntityBasePath}/completion-dashboard`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
@@ -17302,11 +17322,38 @@ describe('API', () => {
         );
         expect(response.body.lanes).toEqual(
           expect.arrayContaining([
+            expect.objectContaining({
+              laneKey: 'operational_health',
+              recommendedActionKey: expect.any(String),
+              targetSurface: expect.any(String),
+            }),
+            expect.objectContaining({
+              laneKey: 'invoicing',
+              recommendedActionKey: expect.any(String),
+              targetSurface: expect.any(String),
+            }),
+          ]),
+        );
+        expect(response.body.nextBestAction).toEqual(expect.any(String));
+      });
+
+    await request(httpServer)
+      .post(`${productEntityBasePath}/request-live-run-readiness-packet`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.readinessStatus).toEqual(
+          expect.stringMatching(
+            /ready_for_live_run|needs_operator_closeout|blocked/,
+          ),
+        );
+        expect(response.body.readinessSignals).toEqual(
+          expect.arrayContaining([
             expect.objectContaining({ laneKey: 'operational_health' }),
             expect.objectContaining({ laneKey: 'invoicing' }),
           ]),
         );
-        expect(response.body.nextBestAction).toEqual(expect.any(String));
+        expect(response.body.launchChecklist.length).toBeGreaterThan(0);
       });
 
     expect(recordTenantEcommerceOrderOperationalEventUseCase.execute).toHaveBeenCalledTimes(

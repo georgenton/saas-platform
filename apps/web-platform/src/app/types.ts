@@ -4469,6 +4469,40 @@ export interface EcommerceOrderOperationalExceptionResolutionResponse {
   guardrails: string[];
 }
 
+export interface EcommerceOrderInvoiceDraftCreationBridgeResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  orderDraft: EcommerceOrderDraftResponse;
+  creationStatus:
+    | 'ready_to_create_invoice_draft'
+    | 'needs_customer_mapping'
+    | 'blocked';
+  summary: string;
+  invoicingTarget: {
+    invoiceEndpoint: string;
+    itemEndpointTemplate: string;
+    requiredPermission: 'invoicing.invoices.manage';
+    submitSri: false;
+  };
+  invoiceCreateRequest: {
+    customerId: string | null;
+    customerLabel: string;
+    currency: 'USD';
+    status: 'draft';
+    notes: string;
+  };
+  itemCreateRequests: Array<{
+    description: string;
+    quantity: number;
+    unitPriceInCents: number;
+    taxRateId: string | null;
+  }>;
+  requiredActions: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceCompletionDashboardResponse {
   tenantSlug: string;
   productEntityId: string;
@@ -4494,8 +4528,46 @@ export interface EcommerceCompletionDashboardResponse {
       | 'operational_health';
     status: 'ready' | 'warning' | 'blocked';
     detail: string;
+    blockingSignals: string[];
+    recommendedActionKey:
+      | 'load_go_live_manifest'
+      | 'load_checkout'
+      | 'select_order'
+      | 'prepare_invoice'
+      | 'resolve_operational_exception'
+      | 'load_health_board'
+      | 'request_live_run_readiness';
+    targetSurface:
+      | 'storefront_go_live_manifest'
+      | 'checkout_order_intake_workspace'
+      | 'order_draft_registry'
+      | 'invoice_execution_packet'
+      | 'operational_exception_resolution'
+      | 'operational_health_board'
+      | 'live_run_readiness_packet';
   }>;
   nextBestAction: string;
+  guardrails: string[];
+}
+
+export interface EcommerceLiveRunReadinessPacketResponse {
+  tenantSlug: string;
+  productEntityId: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponse;
+  readinessStatus:
+    | 'ready_for_live_run'
+    | 'needs_operator_closeout'
+    | 'blocked';
+  summary: string;
+  readinessSignals: Array<{
+    laneKey: EcommerceCompletionDashboardResponse['lanes'][number]['laneKey'];
+    status: 'ready' | 'warning' | 'blocked';
+    detail: string;
+  }>;
+  launchChecklist: string[];
+  blockedBy: string[];
+  nextStep: string;
   guardrails: string[];
 }
 

@@ -88,6 +88,8 @@ import {
   EcommerceOrderFulfillmentAvailabilityWorkspaceResponse,
   EcommerceOrderInventoryReservationWorkspaceResponse,
   EcommerceCompletionDashboardResponse,
+  EcommerceLiveRunReadinessPacketResponse,
+  EcommerceOrderInvoiceDraftCreationBridgeResponse,
   EcommerceOrderInvoiceExecutionPacketResponse,
   EcommerceOrderOperationalExceptionPacketResponse,
   EcommerceOrderOperationalExceptionResolutionResponse,
@@ -3894,6 +3896,27 @@ export async function requestTenantEcommerceOrderInvoiceExecutionPacket(
   );
 }
 
+export async function requestTenantEcommerceOrderInvoiceDraftCreationBridge(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderInvoiceDraftCreationBridgeResponse> {
+  return request<EcommerceOrderInvoiceDraftCreationBridgeResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/request-invoice-draft-creation-bridge`,
+    {
+      method: 'POST',
+      token,
+    },
+  );
+}
+
 export async function resolveTenantEcommerceOrderOperationalException(
   token: string,
   tenantSlug: string,
@@ -3929,6 +3952,24 @@ export async function fetchTenantEcommerceCompletionDashboard(
     )}/completion-dashboard`,
     {
       method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestTenantEcommerceLiveRunReadinessPacket(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+): Promise<EcommerceLiveRunReadinessPacketResponse> {
+  return request<EcommerceLiveRunReadinessPacketResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/request-live-run-readiness-packet`,
+    {
+      method: 'POST',
       token,
     },
   );

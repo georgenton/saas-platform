@@ -57,6 +57,8 @@ import {
   EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentReconciliationWorkspaceResponse,
   EcommerceCompletionDashboardResponse,
+  EcommerceLiveRunReadinessPacketResponse,
+  EcommerceOrderInvoiceDraftCreationBridgeResponse,
   EcommerceOrderInvoiceExecutionPacketResponse,
   EcommerceOrderOperationalExceptionPacketResponse,
   EcommerceOrderOperationalExceptionResolutionResponse,
@@ -330,6 +332,9 @@ type Props = {
   lastEcommerceOrderInvoiceExecutionPacket:
     | EcommerceOrderInvoiceExecutionPacketResponse
     | null;
+  lastEcommerceOrderInvoiceDraftCreationBridge:
+    | EcommerceOrderInvoiceDraftCreationBridgeResponse
+    | null;
   lastEcommerceOrderOperationalExceptionPacket:
     | EcommerceOrderOperationalExceptionPacketResponse
     | null;
@@ -340,6 +345,9 @@ type Props = {
     | EcommerceOrderOperationalHealthBoardResponse
     | null;
   tenantEcommerceCompletionDashboard: EcommerceCompletionDashboardResponse | null;
+  lastEcommerceLiveRunReadinessPacket:
+    | EcommerceLiveRunReadinessPacketResponse
+    | null;
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace:
     | EcommerceOrderFulfillmentExecutionWorkspaceResponse
     | null;
@@ -546,10 +554,12 @@ type Props = {
   tenantEcommerceOrderOperationalEventTimelineLoading: boolean;
   tenantEcommerceOrderOperationalReviewWorkspaceLoading: boolean;
   ecommerceOrderInvoiceExecutionPacketLoading: string | null;
+  ecommerceOrderInvoiceDraftCreationBridgeLoading: string | null;
   ecommerceOrderOperationalExceptionPacketLoading: string | null;
   ecommerceOrderOperationalExceptionResolutionLoading: string | null;
   tenantEcommerceOrderOperationalHealthBoardLoading: boolean;
   tenantEcommerceCompletionDashboardLoading: boolean;
+  ecommerceLiveRunReadinessPacketLoading: boolean;
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading: boolean;
   tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading: boolean;
   ecommerceOrderFulfillmentCompletionPacketLoading: string | null;
@@ -729,10 +739,12 @@ type Props = {
   ) => void;
   onLoadOrderOperationalReviewWorkspace: () => void;
   onRequestOrderInvoiceExecutionPacket: () => void;
+  onRequestOrderInvoiceDraftCreationBridge: () => void;
   onRequestOrderOperationalExceptionPacket: () => void;
   onResolveOrderOperationalException: () => void;
   onLoadOrderOperationalHealthBoard: () => void;
   onLoadEcommerceCompletionDashboard: () => void;
+  onRequestEcommerceLiveRunReadinessPacket: () => void;
   onLoadOrderFulfillmentExecutionWorkspace: () => void;
   onLoadOrderFulfillmentDeliveryWorkspace: () => void;
   onRequestOrderFulfillmentCompletionPacket: () => void;
@@ -847,10 +859,12 @@ export function AiEcommerceLaunchSection({
   selectedTenantEcommerceOrderOperationalEventTimeline,
   selectedTenantEcommerceOrderOperationalReviewWorkspace,
   lastEcommerceOrderInvoiceExecutionPacket,
+  lastEcommerceOrderInvoiceDraftCreationBridge,
   lastEcommerceOrderOperationalExceptionPacket,
   lastEcommerceOrderOperationalExceptionResolution,
   tenantEcommerceOrderOperationalHealthBoard,
   tenantEcommerceCompletionDashboard,
+  lastEcommerceLiveRunReadinessPacket,
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
   selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace,
   lastEcommerceOrderFulfillmentCompletionPacket,
@@ -963,10 +977,12 @@ export function AiEcommerceLaunchSection({
   tenantEcommerceOrderOperationalEventTimelineLoading,
   tenantEcommerceOrderOperationalReviewWorkspaceLoading,
   ecommerceOrderInvoiceExecutionPacketLoading,
+  ecommerceOrderInvoiceDraftCreationBridgeLoading,
   ecommerceOrderOperationalExceptionPacketLoading,
   ecommerceOrderOperationalExceptionResolutionLoading,
   tenantEcommerceOrderOperationalHealthBoardLoading,
   tenantEcommerceCompletionDashboardLoading,
+  ecommerceLiveRunReadinessPacketLoading,
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
   tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading,
   ecommerceOrderFulfillmentCompletionPacketLoading,
@@ -1097,10 +1113,12 @@ export function AiEcommerceLaunchSection({
   onLoadOrderOperationalEventTimeline,
   onLoadOrderOperationalReviewWorkspace,
   onRequestOrderInvoiceExecutionPacket,
+  onRequestOrderInvoiceDraftCreationBridge,
   onRequestOrderOperationalExceptionPacket,
   onResolveOrderOperationalException,
   onLoadOrderOperationalHealthBoard,
   onLoadEcommerceCompletionDashboard,
+  onRequestEcommerceLiveRunReadinessPacket,
   onLoadOrderFulfillmentExecutionWorkspace,
   onLoadOrderFulfillmentDeliveryWorkspace,
   onRequestOrderFulfillmentCompletionPacket,
@@ -6200,6 +6218,25 @@ export function AiEcommerceLaunchSection({
                                 <button
                                   className={styles.secondaryButton}
                                   disabled={
+                                    ecommerceOrderInvoiceDraftCreationBridgeLoading ===
+                                      selectedTenantEcommerceOrderDraftDetail
+                                        ?.orderDraft.id ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={
+                                    onRequestOrderInvoiceDraftCreationBridge
+                                  }
+                                  type="button"
+                                >
+                                  {ecommerceOrderInvoiceDraftCreationBridgeLoading ===
+                                  selectedTenantEcommerceOrderDraftDetail
+                                    ?.orderDraft.id
+                                    ? 'Preparando draft...'
+                                    : 'Preparar invoice draft'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
                                     tenantEcommerceCompletionDashboardLoading
                                   }
                                   onClick={onLoadEcommerceCompletionDashboard}
@@ -6208,6 +6245,18 @@ export function AiEcommerceLaunchSection({
                                   {tenantEcommerceCompletionDashboardLoading
                                     ? 'Cargando completion...'
                                     : 'Cargar completion'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    ecommerceLiveRunReadinessPacketLoading
+                                  }
+                                  onClick={onRequestEcommerceLiveRunReadinessPacket}
+                                  type="button"
+                                >
+                                  {ecommerceLiveRunReadinessPacketLoading
+                                    ? 'Preparando live run...'
+                                    : 'Preparar live run'}
                                 </button>
                                 <button
                                   className={styles.secondaryButton}
@@ -7575,6 +7624,53 @@ export function AiEcommerceLaunchSection({
                               ) : null}
                             </div>
                           ) : null}
+                          {lastEcommerceOrderInvoiceDraftCreationBridge ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Invoice draft creation
+                                  </span>
+                                  <h4>
+                                    {
+                                      lastEcommerceOrderInvoiceDraftCreationBridge.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceOrderInvoiceDraftCreationBridge.creationStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Target:{' '}
+                                {
+                                  lastEcommerceOrderInvoiceDraftCreationBridge
+                                    .invoicingTarget.invoiceEndpoint
+                                }
+                              </small>
+                              <small>
+                                Customer:{' '}
+                                {
+                                  lastEcommerceOrderInvoiceDraftCreationBridge
+                                    .invoiceCreateRequest.customerLabel
+                                }{' '}
+                                · customerId{' '}
+                                {lastEcommerceOrderInvoiceDraftCreationBridge
+                                  .invoiceCreateRequest.customerId ?? 'pendiente'}
+                              </small>
+                              <small>
+                                Items:{' '}
+                                {lastEcommerceOrderInvoiceDraftCreationBridge.itemCreateRequests
+                                  .map(
+                                    (item) =>
+                                      `${item.description} ${item.unitPriceInCents}`,
+                                  )
+                                  .join(' | ')}
+                              </small>
+                            </div>
+                          ) : null}
                           {tenantEcommerceOrderOperationalHealthBoard ? (
                             <div className={styles.commercialCard}>
                               <div className={styles.sectionHeading}>
@@ -7674,6 +7770,44 @@ export function AiEcommerceLaunchSection({
                                     (lane) =>
                                       `${humanizeKey(lane.laneKey)} ${humanizeKey(
                                         lane.status,
+                                      )} -> ${humanizeKey(
+                                        lane.recommendedActionKey,
+                                      )}`,
+                                  )
+                                  .join(' | ')}
+                              </small>
+                            </div>
+                          ) : null}
+                          {lastEcommerceLiveRunReadinessPacket ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Live run readiness
+                                  </span>
+                                  <h4>
+                                    {
+                                      lastEcommerceLiveRunReadinessPacket.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    lastEcommerceLiveRunReadinessPacket.readinessStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Next:{' '}
+                                {lastEcommerceLiveRunReadinessPacket.nextStep}
+                              </small>
+                              <small>
+                                Signals:{' '}
+                                {lastEcommerceLiveRunReadinessPacket.readinessSignals
+                                  .map(
+                                    (signal) =>
+                                      `${humanizeKey(signal.laneKey)} ${humanizeKey(
+                                        signal.status,
                                       )}`,
                                   )
                                   .join(' | ')}

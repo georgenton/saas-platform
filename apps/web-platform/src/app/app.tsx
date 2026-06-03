@@ -117,6 +117,8 @@ import {
   fetchTenantEcommerceOrderFulfillmentReadinessWorkspace,
   fetchTenantEcommerceOrderInventoryReservationWorkspace,
   fetchTenantEcommerceCompletionDashboard,
+  requestTenantEcommerceLiveRunReadinessPacket,
+  requestTenantEcommerceOrderInvoiceDraftCreationBridge,
   requestTenantEcommerceOrderInvoiceExecutionPacket,
   requestTenantEcommerceOrderOperationalExceptionPacket,
   resolveTenantEcommerceOrderOperationalException,
@@ -382,6 +384,8 @@ import {
   EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentReconciliationWorkspaceResponse,
   EcommerceCompletionDashboardResponse,
+  EcommerceLiveRunReadinessPacketResponse,
+  EcommerceOrderInvoiceDraftCreationBridgeResponse,
   EcommerceOrderInvoiceExecutionPacketResponse,
   EcommerceOrderOperationalExceptionPacketResponse,
   EcommerceOrderOperationalExceptionResolutionResponse,
@@ -2215,6 +2219,11 @@ export function App() {
     setLastEcommerceOrderInvoiceExecutionPacket,
   ] = useState<EcommerceOrderInvoiceExecutionPacketResponse | null>(null);
   const [
+    lastEcommerceOrderInvoiceDraftCreationBridge,
+    setLastEcommerceOrderInvoiceDraftCreationBridge,
+  ] =
+    useState<EcommerceOrderInvoiceDraftCreationBridgeResponse | null>(null);
+  const [
     lastEcommerceOrderOperationalExceptionPacket,
     setLastEcommerceOrderOperationalExceptionPacket,
   ] = useState<EcommerceOrderOperationalExceptionPacketResponse | null>(null);
@@ -2233,6 +2242,10 @@ export function App() {
     tenantEcommerceCompletionDashboard,
     setTenantEcommerceCompletionDashboard,
   ] = useState<EcommerceCompletionDashboardResponse | null>(null);
+  const [
+    lastEcommerceLiveRunReadinessPacket,
+    setLastEcommerceLiveRunReadinessPacket,
+  ] = useState<EcommerceLiveRunReadinessPacketResponse | null>(null);
   const [
     selectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
     setSelectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
@@ -2683,6 +2696,10 @@ export function App() {
     setEcommerceOrderInvoiceExecutionPacketLoading,
   ] = useState<string | null>(null);
   const [
+    ecommerceOrderInvoiceDraftCreationBridgeLoading,
+    setEcommerceOrderInvoiceDraftCreationBridgeLoading,
+  ] = useState<string | null>(null);
+  const [
     ecommerceOrderOperationalExceptionPacketLoading,
     setEcommerceOrderOperationalExceptionPacketLoading,
   ] = useState<string | null>(null);
@@ -2697,6 +2714,10 @@ export function App() {
   const [
     tenantEcommerceCompletionDashboardLoading,
     setTenantEcommerceCompletionDashboardLoading,
+  ] = useState(false);
+  const [
+    ecommerceLiveRunReadinessPacketLoading,
+    setEcommerceLiveRunReadinessPacketLoading,
   ] = useState(false);
   const [
     tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
@@ -5953,6 +5974,18 @@ export function App() {
       orderDraftId,
     );
   };
+  const requestTenantEcommerceOrderInvoiceDraftCreationBridgeSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+    orderDraftId: string,
+  ) => {
+    return requestTenantEcommerceOrderInvoiceDraftCreationBridge(
+      token!,
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+    );
+  };
   const resolveTenantEcommerceOrderOperationalExceptionSurface = async (
     tenantSlug: string,
     productEntityId: string,
@@ -5970,6 +6003,16 @@ export function App() {
     productEntityId: string,
   ) => {
     return fetchTenantEcommerceCompletionDashboard(
+      token!,
+      tenantSlug,
+      productEntityId,
+    );
+  };
+  const requestTenantEcommerceLiveRunReadinessPacketSurface = async (
+    tenantSlug: string,
+    productEntityId: string,
+  ) => {
+    return requestTenantEcommerceLiveRunReadinessPacket(
       token!,
       tenantSlug,
       productEntityId,
@@ -17619,6 +17662,51 @@ export function App() {
     }
   }
 
+  async function handleRequestTenantEcommerceOrderInvoiceDraftCreationBridge() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail ||
+      !selectedTenantEcommerceOrderDraftDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    const orderDraftId = selectedTenantEcommerceOrderDraftDetail.orderDraft.id;
+    setEcommerceOrderInvoiceDraftCreationBridgeLoading(orderDraftId);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const bridge =
+        await requestTenantEcommerceOrderInvoiceDraftCreationBridgeSurface(
+          tenantSlug,
+          productEntityId,
+          orderDraftId,
+        );
+
+      startTransition(() => {
+        setLastEcommerceOrderInvoiceDraftCreationBridge(bridge);
+        setEcommerceLaunchActionMessage(
+          `Invoice draft creation bridge ${humanizeKey(bridge.creationStatus)} preparado.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceOrderInvoiceDraftCreationBridge(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el invoice draft creation bridge.',
+      );
+    } finally {
+      setEcommerceOrderInvoiceDraftCreationBridgeLoading(null);
+    }
+  }
+
   async function handleResolveTenantEcommerceOrderOperationalException() {
     if (
       !token ||
@@ -17715,6 +17803,47 @@ export function App() {
       );
     } finally {
       setTenantEcommerceCompletionDashboardLoading(false);
+    }
+  }
+
+  async function handleRequestTenantEcommerceLiveRunReadinessPacket() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !canReadTenantEntitlements ||
+      !selectedTenantEcommerceProductEntityDetail
+    ) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const productEntityId =
+      selectedTenantEcommerceProductEntityDetail.productEntity.productEntityId;
+    setEcommerceLiveRunReadinessPacketLoading(true);
+    setEcommerceLaunchError(null);
+    setEcommerceLaunchActionMessage(null);
+
+    try {
+      const packet = await requestTenantEcommerceLiveRunReadinessPacketSurface(
+        tenantSlug,
+        productEntityId,
+      );
+
+      startTransition(() => {
+        setLastEcommerceLiveRunReadinessPacket(packet);
+        setEcommerceLaunchActionMessage(
+          `Live run readiness ${humanizeKey(packet.readinessStatus)} preparado.`,
+        );
+      });
+    } catch (error) {
+      setLastEcommerceLiveRunReadinessPacket(null);
+      setEcommerceLaunchError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar el live run readiness packet.',
+      );
+    } finally {
+      setEcommerceLiveRunReadinessPacketLoading(false);
     }
   }
 
@@ -21640,6 +21769,9 @@ export function App() {
             lastEcommerceOrderInvoiceExecutionPacket={
               lastEcommerceOrderInvoiceExecutionPacket
             }
+            lastEcommerceOrderInvoiceDraftCreationBridge={
+              lastEcommerceOrderInvoiceDraftCreationBridge
+            }
             lastEcommerceOrderOperationalExceptionPacket={
               lastEcommerceOrderOperationalExceptionPacket
             }
@@ -21651,6 +21783,9 @@ export function App() {
             }
             tenantEcommerceCompletionDashboard={
               tenantEcommerceCompletionDashboard
+            }
+            lastEcommerceLiveRunReadinessPacket={
+              lastEcommerceLiveRunReadinessPacket
             }
             selectedTenantEcommerceOrderFulfillmentExecutionWorkspace={
               selectedTenantEcommerceOrderFulfillmentExecutionWorkspace
@@ -21986,6 +22121,9 @@ export function App() {
             ecommerceOrderInvoiceExecutionPacketLoading={
               ecommerceOrderInvoiceExecutionPacketLoading
             }
+            ecommerceOrderInvoiceDraftCreationBridgeLoading={
+              ecommerceOrderInvoiceDraftCreationBridgeLoading
+            }
             ecommerceOrderOperationalExceptionPacketLoading={
               ecommerceOrderOperationalExceptionPacketLoading
             }
@@ -21997,6 +22135,9 @@ export function App() {
             }
             tenantEcommerceCompletionDashboardLoading={
               tenantEcommerceCompletionDashboardLoading
+            }
+            ecommerceLiveRunReadinessPacketLoading={
+              ecommerceLiveRunReadinessPacketLoading
             }
             tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading={
               tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading
@@ -22372,6 +22513,9 @@ export function App() {
             onRequestOrderInvoiceExecutionPacket={() => {
               void handleRequestTenantEcommerceOrderInvoiceExecutionPacket();
             }}
+            onRequestOrderInvoiceDraftCreationBridge={() => {
+              void handleRequestTenantEcommerceOrderInvoiceDraftCreationBridge();
+            }}
             onRequestOrderOperationalExceptionPacket={() => {
               void handleRequestTenantEcommerceOrderOperationalExceptionPacket();
             }}
@@ -22383,6 +22527,9 @@ export function App() {
             }}
             onLoadEcommerceCompletionDashboard={() => {
               void handleLoadTenantEcommerceCompletionDashboard();
+            }}
+            onRequestEcommerceLiveRunReadinessPacket={() => {
+              void handleRequestTenantEcommerceLiveRunReadinessPacket();
             }}
             onLoadOrderFulfillmentExecutionWorkspace={() => {
               void handleLoadTenantEcommerceOrderFulfillmentExecutionWorkspace();

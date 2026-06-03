@@ -114,7 +114,9 @@ import {
   RequestTenantEcommerceOrderFulfillmentDeliveryConfirmationPacketUseCase,
   RequestTenantEcommerceOrderOperationalExceptionPacketUseCase,
   RequestTenantEcommerceOrderInvoiceExecutionPacketUseCase,
+  RequestTenantEcommerceOrderInvoiceDraftCreationBridgeUseCase,
   ResolveTenantEcommerceOrderOperationalExceptionUseCase,
+  RequestTenantEcommerceLiveRunReadinessPacketUseCase,
   RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
   RequestTenantEcommerceInvoiceDraftOpenBridgeUseCase,
   RequestTenantEcommerceInvoiceDraftLaunchBridgeUseCase,
@@ -1806,6 +1808,14 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: RequestTenantEcommerceOrderInvoiceDraftCreationBridgeUseCase,
+      inject: [RequestTenantEcommerceOrderInvoiceExecutionPacketUseCase],
+      useFactory: (requestTenantEcommerceOrderInvoiceExecutionPacketUseCase) =>
+        new RequestTenantEcommerceOrderInvoiceDraftCreationBridgeUseCase(
+          requestTenantEcommerceOrderInvoiceExecutionPacketUseCase,
+        ),
+    },
+    {
       provide: ResolveTenantEcommerceOrderOperationalExceptionUseCase,
       inject: [
         RequestTenantEcommerceOrderOperationalExceptionPacketUseCase,
@@ -1836,6 +1846,14 @@ import { EcommerceController } from './ecommerce.controller';
           getTenantEcommerceStorefrontGoLiveManifestUseCase,
           listTenantEcommerceOrderDraftsUseCase,
           getTenantEcommerceOrderOperationalHealthBoardUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcommerceLiveRunReadinessPacketUseCase,
+      inject: [GetTenantEcommerceCompletionDashboardUseCase],
+      useFactory: (getTenantEcommerceCompletionDashboardUseCase) =>
+        new RequestTenantEcommerceLiveRunReadinessPacketUseCase(
+          getTenantEcommerceCompletionDashboardUseCase,
         ),
     },
     {

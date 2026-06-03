@@ -38,7 +38,9 @@ import {
   TenantEcommerceOrderPaymentDisputeWorkspaceView,
   TenantEcommerceOrderPaymentDisputeResolutionPacketView,
   TenantEcommerceOrderPaymentConfirmationWorkspaceView,
+  TenantEcommerceLiveRunReadinessPacketView,
   TenantEcommerceOrderInvoiceDraftBridgeView,
+  TenantEcommerceOrderInvoiceDraftCreationBridgeView,
   TenantEcommerceOrderInvoiceExecutionPacketView,
   TenantEcommerceInvoiceDraftHandoffWorkspaceView,
   TenantEcommerceInvoiceHandoffAcknowledgementView,
@@ -1905,6 +1907,40 @@ export interface EcommerceOrderOperationalExceptionResolutionResponseDto {
   guardrails: string[];
 }
 
+export interface EcommerceOrderInvoiceDraftCreationBridgeResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  orderDraft: EcommerceOrderDraftResponseDto;
+  creationStatus:
+    | 'ready_to_create_invoice_draft'
+    | 'needs_customer_mapping'
+    | 'blocked';
+  summary: string;
+  invoicingTarget: {
+    invoiceEndpoint: string;
+    itemEndpointTemplate: string;
+    requiredPermission: 'invoicing.invoices.manage';
+    submitSri: false;
+  };
+  invoiceCreateRequest: {
+    customerId: string | null;
+    customerLabel: string;
+    currency: 'USD';
+    status: 'draft';
+    notes: string;
+  };
+  itemCreateRequests: Array<{
+    description: string;
+    quantity: number;
+    unitPriceInCents: number;
+    taxRateId: string | null;
+  }>;
+  requiredActions: string[];
+  blockedBy: string[];
+  guardrails: string[];
+}
+
 export interface EcommerceCompletionDashboardResponseDto {
   tenantSlug: string;
   productEntityId: string;
@@ -1930,8 +1966,54 @@ export interface EcommerceCompletionDashboardResponseDto {
       | 'operational_health';
     status: 'ready' | 'warning' | 'blocked';
     detail: string;
+    blockingSignals: string[];
+    recommendedActionKey:
+      | 'load_go_live_manifest'
+      | 'load_checkout'
+      | 'select_order'
+      | 'prepare_invoice'
+      | 'resolve_operational_exception'
+      | 'load_health_board'
+      | 'request_live_run_readiness';
+    targetSurface:
+      | 'storefront_go_live_manifest'
+      | 'checkout_order_intake_workspace'
+      | 'order_draft_registry'
+      | 'invoice_execution_packet'
+      | 'operational_exception_resolution'
+      | 'operational_health_board'
+      | 'live_run_readiness_packet';
   }>;
   nextBestAction: string;
+  guardrails: string[];
+}
+
+export interface EcommerceLiveRunReadinessPacketResponseDto {
+  tenantSlug: string;
+  productEntityId: string;
+  generatedAt: string;
+  productEntity: EcommerceProductEntityResponseDto;
+  readinessStatus:
+    | 'ready_for_live_run'
+    | 'needs_operator_closeout'
+    | 'blocked';
+  summary: string;
+  readinessSignals: Array<{
+    laneKey:
+      | 'storefront'
+      | 'checkout'
+      | 'orders'
+      | 'invoicing'
+      | 'payment'
+      | 'fulfillment'
+      | 'post_sale'
+      | 'operational_health';
+    status: 'ready' | 'warning' | 'blocked';
+    detail: string;
+  }>;
+  launchChecklist: string[];
+  blockedBy: string[];
+  nextStep: string;
   guardrails: string[];
 }
 
@@ -3901,6 +3983,25 @@ export function toEcommerceOrderOperationalExceptionResolutionResponseDto(
   };
 }
 
+export function toEcommerceOrderInvoiceDraftCreationBridgeResponseDto(
+  view: TenantEcommerceOrderInvoiceDraftCreationBridgeView,
+): EcommerceOrderInvoiceDraftCreationBridgeResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    orderDraft: toEcommerceOrderDraftResponseDto(view.orderDraft),
+    creationStatus: view.creationStatus,
+    summary: view.summary,
+    invoicingTarget: { ...view.invoicingTarget },
+    invoiceCreateRequest: { ...view.invoiceCreateRequest },
+    itemCreateRequests: view.itemCreateRequests.map((item) => ({ ...item })),
+    requiredActions: [...view.requiredActions],
+    blockedBy: [...view.blockedBy],
+    guardrails: [...view.guardrails],
+  };
+}
+
 export function toEcommerceCompletionDashboardResponseDto(
   view: TenantEcommerceCompletionDashboardView,
 ): EcommerceCompletionDashboardResponseDto {
@@ -3913,6 +4014,24 @@ export function toEcommerceCompletionDashboardResponseDto(
     summary: { ...view.summary },
     lanes: view.lanes.map((lane) => ({ ...lane })),
     nextBestAction: view.nextBestAction,
+    guardrails: [...view.guardrails],
+  };
+}
+
+export function toEcommerceLiveRunReadinessPacketResponseDto(
+  view: TenantEcommerceLiveRunReadinessPacketView,
+): EcommerceLiveRunReadinessPacketResponseDto {
+  return {
+    tenantSlug: view.tenantSlug,
+    productEntityId: view.productEntityId,
+    generatedAt: view.generatedAt.toISOString(),
+    productEntity: toEcommerceProductEntityResponseDto(view.productEntity),
+    readinessStatus: view.readinessStatus,
+    summary: view.summary,
+    readinessSignals: view.readinessSignals.map((signal) => ({ ...signal })),
+    launchChecklist: [...view.launchChecklist],
+    blockedBy: [...view.blockedBy],
+    nextStep: view.nextStep,
     guardrails: [...view.guardrails],
   };
 }

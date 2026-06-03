@@ -1,11 +1,9 @@
 import { TenantEcommerceOrderPaymentConfirmationWorkspaceView } from '@saas-platform/ecommerce-domain';
 import { GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase } from './get-tenant-ecommerce-order-payment-readiness-workspace.use-case';
-import { GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase } from './get-tenant-ecommerce-order-post-sale-lifecycle-detail.use-case';
 
 export class GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase {
   constructor(
     private readonly getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase: GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
-    private readonly getTenantEcommerceOrderPostSaleLifecycleDetailUseCase: GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
     private readonly nowProvider: () => Date = () => new Date(),
   ) {}
 
@@ -14,40 +12,36 @@ export class GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase {
     productEntityId: string,
     orderDraftId: string,
   ): Promise<TenantEcommerceOrderPaymentConfirmationWorkspaceView | null> {
-    const [paymentReadiness, postSaleLifecycle] = await Promise.all([
-      this.getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase.execute(
+    const paymentReadiness =
+      await this.getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase.execute(
         tenantSlug,
         productEntityId,
         orderDraftId,
-      ),
-      this.getTenantEcommerceOrderPostSaleLifecycleDetailUseCase.execute(
-        tenantSlug,
-        productEntityId,
-        orderDraftId,
-      ),
-    ]);
+      );
 
-    if (!paymentReadiness || !postSaleLifecycle) {
+    if (!paymentReadiness) {
       return null;
     }
 
-    const blockedBy = [
-      ...paymentReadiness.blockedBy,
-      ...postSaleLifecycle.blockedBy,
-    ];
+    const blockedBy = [...paymentReadiness.blockedBy];
+    const lifecycleStatus =
+      paymentReadiness.workspaceStatus === 'ready_for_collection'
+        ? 'awaiting_payment'
+        : paymentReadiness.workspaceStatus === 'blocked'
+          ? 'blocked'
+          : 'invoicing';
 
     const confirmationStatus =
       blockedBy.length > 0
         ? 'blocked'
-        : paymentReadiness.workspaceStatus === 'ready_for_collection' &&
-            postSaleLifecycle.currentStatus === 'awaiting_payment'
+        : paymentReadiness.workspaceStatus === 'ready_for_collection'
           ? 'ready_for_confirmation'
           : 'needs_review';
 
     const evidenceHints = [
       `Pricing snapshot esperado: ${paymentReadiness.paymentPlan.pricingSnapshot}`,
       `Billing intent declarado: ${paymentReadiness.paymentPlan.billingIntent ?? 'sin billing intent todavía'}`,
-      `Estado post-sale actual: ${postSaleLifecycle.currentStatus}`,
+      `Estado post-sale derivado: ${lifecycleStatus}`,
       ...paymentReadiness.frictionPoints,
     ];
 
@@ -67,15 +61,13 @@ export class GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase {
         ...paymentReadiness.paymentPlan,
       },
       lifecycleSignal: {
-        currentStatus: postSaleLifecycle.currentStatus,
+        currentStatus: lifecycleStatus,
         detail:
-          postSaleLifecycle.currentStatus === 'awaiting_payment'
+          lifecycleStatus === 'awaiting_payment'
             ? 'La orden ya está posicionada como cobro pendiente dentro del lifecycle post-sale.'
-            : postSaleLifecycle.currentStatus === 'invoicing'
+            : lifecycleStatus === 'invoicing'
               ? 'La orden todavía está más cargada hacia frente fiscal que a confirmación de cobro.'
-              : postSaleLifecycle.currentStatus === 'blocked'
-                ? 'El lifecycle post-sale todavía muestra bloqueos explícitos.'
-                : 'La orden sigue transitando post-sale, pero aún no está en su mejor punto para confirmación.',
+              : 'El lifecycle post-sale todavía muestra bloqueos explícitos.',
       },
       confirmationChecklist: [
         'Verificar que el buyer reconoce el siguiente paso de cobro.',
@@ -93,7 +85,6 @@ export class GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase {
       guardrails: [
         ...new Set([
           ...paymentReadiness.guardrails,
-          ...postSaleLifecycle.guardrails,
           'Este workspace prepara confirmación de cobro; no sustituye conciliación bancaria ni registro contable.',
         ]),
       ],

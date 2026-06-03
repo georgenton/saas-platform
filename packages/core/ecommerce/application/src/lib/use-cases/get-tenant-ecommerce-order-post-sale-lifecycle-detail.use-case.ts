@@ -2,14 +2,12 @@ import {
   TenantEcommerceOrderPostSaleLifecycleDetailView,
   TenantEcommerceOrderPostSaleLifecycleEntryView,
 } from '@saas-platform/ecommerce-domain';
-import { GetTenantEcommerceOrderStatusLifecycleDetailUseCase } from './get-tenant-ecommerce-order-status-lifecycle-detail.use-case';
+import { GetTenantEcommerceOrderDraftDetailUseCase } from './get-tenant-ecommerce-order-draft-detail.use-case';
 import { GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase } from './get-tenant-ecommerce-order-payment-readiness-workspace.use-case';
-import { RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase } from './request-tenant-ecommerce-invoice-handoff-acknowledgement.use-case';
 
 export class GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase {
   constructor(
-    private readonly getTenantEcommerceOrderStatusLifecycleDetailUseCase: GetTenantEcommerceOrderStatusLifecycleDetailUseCase,
-    private readonly requestTenantEcommerceInvoiceHandoffAcknowledgementUseCase: RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase,
+    private readonly getTenantEcommerceOrderDraftDetailUseCase: GetTenantEcommerceOrderDraftDetailUseCase,
     private readonly getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase: GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase,
     private readonly nowProvider: () => Date = () => new Date(),
   ) {}
@@ -19,32 +17,25 @@ export class GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase {
     productEntityId: string,
     orderDraftId: string,
   ): Promise<TenantEcommerceOrderPostSaleLifecycleDetailView | null> {
-    const [orderLifecycle, invoiceAcknowledgement, paymentReadiness] =
-      await Promise.all([
-        this.getTenantEcommerceOrderStatusLifecycleDetailUseCase.execute(
-          tenantSlug,
-          productEntityId,
-          orderDraftId,
-        ),
-        this.requestTenantEcommerceInvoiceHandoffAcknowledgementUseCase.execute(
-          tenantSlug,
-          productEntityId,
-          orderDraftId,
-        ),
-        this.getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase.execute(
-          tenantSlug,
-          productEntityId,
-          orderDraftId,
-        ),
-      ]);
+    const [orderDraftDetail, paymentReadiness] = await Promise.all([
+      this.getTenantEcommerceOrderDraftDetailUseCase.execute(
+        tenantSlug,
+        productEntityId,
+        orderDraftId,
+      ),
+      this.getTenantEcommerceOrderPaymentReadinessWorkspaceUseCase.execute(
+        tenantSlug,
+        productEntityId,
+        orderDraftId,
+      ),
+    ]);
 
-    if (!orderLifecycle || !invoiceAcknowledgement || !paymentReadiness) {
+    if (!orderDraftDetail || !paymentReadiness) {
       return null;
     }
 
     const blockedBy = [
-      ...orderLifecycle.blockedBy,
-      ...invoiceAcknowledgement.blockedBy,
+      ...orderDraftDetail.blockedBy,
       ...paymentReadiness.blockedBy,
     ];
 
@@ -53,17 +44,15 @@ export class GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase {
         ? 'blocked'
         : paymentReadiness.workspaceStatus === 'ready_for_collection'
           ? 'awaiting_payment'
-          : invoiceAcknowledgement.acknowledgementStatus === 'accepted'
+          : orderDraftDetail.orderDraft.status === 'ready_for_review'
             ? 'invoicing'
-            : orderLifecycle.currentStatus === 'handed_off'
-              ? 'handed_off'
-              : 'handed_off';
+            : 'handed_off';
 
     return {
       tenantSlug,
       generatedAt: this.nowProvider(),
-      productEntity: orderLifecycle.productEntity,
-      orderDraft: orderLifecycle.orderDraft,
+      productEntity: orderDraftDetail.productEntity,
+      orderDraft: orderDraftDetail.orderDraft,
       currentStatus,
       summary:
         currentStatus === 'awaiting_payment'
@@ -93,8 +82,7 @@ export class GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase {
       blockedBy,
       guardrails: [
         ...new Set([
-          ...orderLifecycle.guardrails,
-          ...invoiceAcknowledgement.guardrails,
+          ...orderDraftDetail.guardrails,
           ...paymentReadiness.guardrails,
           'Este lifecycle post-sale es fundacional; no sustituye fulfillment, conciliación ni reporting definitivo.',
         ]),
@@ -106,13 +94,8 @@ export class GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase {
     currentStatus: TenantEcommerceOrderPostSaleLifecycleDetailView['currentStatus'],
     blockedBy: string[],
   ): TenantEcommerceOrderPostSaleLifecycleEntryView[] {
-    const orderedKeys: TenantEcommerceOrderPostSaleLifecycleEntryView['key'][] = [
-      'handed_off',
-      'invoicing',
-      'awaiting_payment',
-      'paid',
-      'blocked',
-    ];
+    const orderedKeys: TenantEcommerceOrderPostSaleLifecycleEntryView['key'][] =
+      ['handed_off', 'invoicing', 'awaiting_payment', 'paid', 'blocked'];
 
     const activeIndex = orderedKeys.indexOf(currentStatus);
 

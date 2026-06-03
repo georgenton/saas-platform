@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.68.0
+
+### Minor Changes
+
+- ff70fe8: Add ecommerce invoice draft creation bridges, completion dashboard drilldowns, and live run readiness packets.
+
 ## 0.67.0
 
 ### Minor Changes

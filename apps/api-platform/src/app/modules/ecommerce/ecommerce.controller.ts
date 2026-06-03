@@ -30,6 +30,7 @@ import {
   GetTenantEcommerceOrderPostSaleReportingSummaryUseCase,
   GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase,
+  GetTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
   GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
   GetTenantEcommerceOrderPostSaleOpsBoardUseCase,
@@ -105,6 +106,7 @@ import {
   RequestTenantEcommerceProductSetupDefinitionPacketUseCase,
   SaveTenantEcommerceProductAuthoringDraftUseCase,
   UpdateTenantEcommerceProductSetupEditableSnapshotUseCase,
+  UpdateTenantEcommerceOrderCustomerProfileUseCase,
   GetTenantEcommerceProductAuthoringWorkspaceUseCase,
   GetTenantEcommerceLaunchPlanDetailUseCase,
   GetTenantEcommerceStoreProfileWorkspaceUseCase,
@@ -133,9 +135,7 @@ import {
   RequestTenantEcommerceLaunchPlanActivationReadinessUseCase,
   UpdateTenantEcommerceProductWorkspaceEditableSnapshotUseCase,
 } from '@saas-platform/ecommerce-application';
-import {
-  ProductNotFoundError,
-} from '@saas-platform/catalog-application';
+import { ProductNotFoundError } from '@saas-platform/catalog-application';
 import {
   TENANT_PERMISSIONS,
   TenantAccessContext,
@@ -203,6 +203,7 @@ import {
   EcommerceLandingPageStructureResponseDto,
   EcommerceLiveStorefrontSessionWorkspaceResponseDto,
   EcommerceOrderDraftDetailResponseDto,
+  EcommerceOrderCustomerProfileUpdateResponseDto,
   EcommerceOrderDraftRegistryResponseDto,
   EcommerceOrderDraftSaveResponseDto,
   EcommerceOrderFiscalDataCompletionWorkspaceResponseDto,
@@ -227,6 +228,7 @@ import {
   EcommerceOrderPaymentReadinessWorkspaceResponseDto,
   EcommerceOrderPaymentConfirmationWorkspaceResponseDto,
   EcommerceOrderFulfillmentDeliveryWorkspaceResponseDto,
+  EcommerceOrderFulfillmentAvailabilityWorkspaceResponseDto,
   EcommerceOrderFulfillmentCompletionPacketResponseDto,
   EcommerceOrderFulfillmentDeliveryConfirmationPacketResponseDto,
   EcommerceOrderFulfillmentExecutionWorkspaceResponseDto,
@@ -277,6 +279,7 @@ import {
   toEcommerceLandingPageStructureResponseDto,
   toEcommerceLiveStorefrontSessionWorkspaceResponseDto,
   toEcommerceOrderDraftDetailResponseDto,
+  toEcommerceOrderCustomerProfileUpdateResponseDto,
   toEcommerceOrderDraftRegistryResponseDto,
   toEcommerceOrderDraftSaveResponseDto,
   toEcommerceOrderFiscalDataCompletionWorkspaceResponseDto,
@@ -301,6 +304,7 @@ import {
   toEcommerceOrderPaymentReadinessWorkspaceResponseDto,
   toEcommerceOrderPaymentConfirmationWorkspaceResponseDto,
   toEcommerceOrderFulfillmentDeliveryWorkspaceResponseDto,
+  toEcommerceOrderFulfillmentAvailabilityWorkspaceResponseDto,
   toEcommerceOrderFulfillmentCompletionPacketResponseDto,
   toEcommerceOrderFulfillmentDeliveryConfirmationPacketResponseDto,
   toEcommerceOrderFulfillmentExecutionWorkspaceResponseDto,
@@ -458,6 +462,7 @@ import {
   RequestEcommerceLaunchPlanActivationReadinessResponseDto,
   toRequestEcommerceLaunchPlanActivationReadinessResponseDto,
 } from './dto/request-ecommerce-launch-plan-activation-readiness.response';
+import { UpdateEcommerceOrderCustomerProfileRequestDto } from './dto/update-ecommerce-order-customer-profile.request';
 
 @Controller('ecommerce/tenants')
 export class EcommerceController {
@@ -491,6 +496,7 @@ export class EcommerceController {
     private readonly getTenantEcommerceOrderPaymentDisputeWorkspaceUseCase: GetTenantEcommerceOrderPaymentDisputeWorkspaceUseCase,
     private readonly requestTenantEcommerceOrderPaymentDisputeResolutionPacketUseCase: RequestTenantEcommerceOrderPaymentDisputeResolutionPacketUseCase,
     private readonly getTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase: GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
+    private readonly getTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase: GetTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase,
     private readonly getTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase: GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase,
     private readonly getTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase: GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
     private readonly requestTenantEcommerceOrderFulfillmentCompletionPacketUseCase: RequestTenantEcommerceOrderFulfillmentCompletionPacketUseCase,
@@ -576,6 +582,7 @@ export class EcommerceController {
     private readonly promoteTenantEcommerceProductWorkspaceToProductSetupUseCase: PromoteTenantEcommerceProductWorkspaceToProductSetupUseCase,
     private readonly promoteTenantEcommerceSavedDraftToProductWorkspaceUseCase: PromoteTenantEcommerceSavedDraftToProductWorkspaceUseCase,
     private readonly saveTenantEcommerceOrderDraftUseCase: SaveTenantEcommerceOrderDraftUseCase,
+    private readonly updateTenantEcommerceOrderCustomerProfileUseCase: UpdateTenantEcommerceOrderCustomerProfileUseCase,
     private readonly requestTenantEcommerceProductWorkspaceReadinessPacketUseCase: RequestTenantEcommerceProductWorkspaceReadinessPacketUseCase,
     private readonly updateTenantEcommerceProductWorkspaceEditableSnapshotUseCase: UpdateTenantEcommerceProductWorkspaceEditableSnapshotUseCase,
     private readonly getTenantEcommerceLaunchPlanDetailUseCase: GetTenantEcommerceLaunchPlanDetailUseCase,
@@ -725,10 +732,9 @@ export class EcommerceController {
     @Param('slug') slug: string,
     @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<EcommerceProductSetupRegistryResponseDto> {
-    const registry =
-      await this.listTenantEcommerceProductSetupsUseCase.execute(
-        tenantAccess?.tenantSlug ?? slug,
-      );
+    const registry = await this.listTenantEcommerceProductSetupsUseCase.execute(
+      tenantAccess?.tenantSlug ?? slug,
+    );
 
     return toEcommerceProductSetupRegistryResponseDto(registry);
   }
@@ -836,9 +842,7 @@ export class EcommerceController {
       );
     }
 
-    return toEcommerceProductEntityChannelAssetsWorkspaceResponseDto(
-      workspace,
-    );
+    return toEcommerceProductEntityChannelAssetsWorkspaceResponseDto(workspace);
   }
 
   @Get(':slug/product-entities/:productEntityId/channel-asset-drafts-workspace')
@@ -903,7 +907,9 @@ export class EcommerceController {
     );
   }
 
-  @Get(':slug/product-entities/:productEntityId/channel-asset-workspaces/:channelKey')
+  @Get(
+    ':slug/product-entities/:productEntityId/channel-asset-workspaces/:channelKey',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -937,7 +943,7 @@ export class EcommerceController {
   }
 
   @Post(
-    ':slug/product-entities/:productEntityId/channel-asset-workspaces/:channelKey/request-publish-packet'
+    ':slug/product-entities/:productEntityId/channel-asset-workspaces/:channelKey/request-publish-packet',
   )
   @UseGuards(
     JwtAuthenticationGuard,
@@ -1002,7 +1008,9 @@ export class EcommerceController {
     );
   }
 
-  @Get(':slug/product-entities/:productEntityId/channel-asset-entities/:channelKey')
+  @Get(
+    ':slug/product-entities/:productEntityId/channel-asset-entities/:channelKey',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -1034,7 +1042,7 @@ export class EcommerceController {
   }
 
   @Post(
-    ':slug/product-entities/:productEntityId/channel-asset-entities/:channelKey/update-editable-snapshot'
+    ':slug/product-entities/:productEntityId/channel-asset-entities/:channelKey/update-editable-snapshot',
   )
   @UseGuards(
     JwtAuthenticationGuard,
@@ -1072,7 +1080,7 @@ export class EcommerceController {
   }
 
   @Post(
-    ':slug/product-entities/:productEntityId/channel-asset-entities/:channelKey/request-publish-preparation-packet'
+    ':slug/product-entities/:productEntityId/channel-asset-entities/:channelKey/request-publish-preparation-packet',
   )
   @UseGuards(
     JwtAuthenticationGuard,
@@ -1107,7 +1115,7 @@ export class EcommerceController {
   }
 
   @Post(
-    ':slug/product-entities/:productEntityId/channel-asset-workspaces/:channelKey/promote-to-channel-asset-entity'
+    ':slug/product-entities/:productEntityId/channel-asset-workspaces/:channelKey/promote-to-channel-asset-entity',
   )
   @UseGuards(
     JwtAuthenticationGuard,
@@ -1172,7 +1180,9 @@ export class EcommerceController {
     );
   }
 
-  @Get(':slug/product-entities/:productEntityId/channel-release-candidates/:channelKey')
+  @Get(
+    ':slug/product-entities/:productEntityId/channel-release-candidates/:channelKey',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -1206,7 +1216,7 @@ export class EcommerceController {
   }
 
   @Post(
-    ':slug/product-entities/:productEntityId/channel-asset-entities/:channelKey/promote-to-release-candidate'
+    ':slug/product-entities/:productEntityId/channel-asset-entities/:channelKey/promote-to-release-candidate',
   )
   @UseGuards(
     JwtAuthenticationGuard,
@@ -1356,7 +1366,9 @@ export class EcommerceController {
     return toEcommerceStorefrontPreviewWorkspaceResponseDto(workspace);
   }
 
-  @Get(':slug/product-entities/:productEntityId/storefront-publish-review-workspace')
+  @Get(
+    ':slug/product-entities/:productEntityId/storefront-publish-review-workspace',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -1385,7 +1397,9 @@ export class EcommerceController {
     return toEcommerceStorefrontPublishReviewWorkspaceResponseDto(workspace);
   }
 
-  @Get(':slug/product-entities/:productEntityId/storefront-release-candidate-brief')
+  @Get(
+    ':slug/product-entities/:productEntityId/storefront-release-candidate-brief',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -1414,7 +1428,9 @@ export class EcommerceController {
     return toEcommerceStorefrontReleaseCandidateBriefResponseDto(brief);
   }
 
-  @Get(':slug/product-entities/:productEntityId/storefront-release-control-workspace')
+  @Get(
+    ':slug/product-entities/:productEntityId/storefront-release-control-workspace',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -1472,7 +1488,9 @@ export class EcommerceController {
     return toEcommerceStorefrontGoLiveManifestResponseDto(manifest);
   }
 
-  @Get(':slug/product-entities/:productEntityId/live-storefront-session-workspace')
+  @Get(
+    ':slug/product-entities/:productEntityId/live-storefront-session-workspace',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -1530,7 +1548,9 @@ export class EcommerceController {
     return toEcommerceLandingPublishArtifactResponseDto(artifact);
   }
 
-  @Get(':slug/product-entities/:productEntityId/whatsapp-channel-sequence-workspace')
+  @Get(
+    ':slug/product-entities/:productEntityId/whatsapp-channel-sequence-workspace',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -1588,7 +1608,9 @@ export class EcommerceController {
     return toEcommerceChannelReleaseWorkbenchResponseDto(workbench);
   }
 
-  @Get(':slug/product-entities/:productEntityId/channel-release-execution-readiness')
+  @Get(
+    ':slug/product-entities/:productEntityId/channel-release-execution-readiness',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -1617,7 +1639,9 @@ export class EcommerceController {
     return toEcommerceChannelReleaseExecutionReadinessResponseDto(readiness);
   }
 
-  @Post(':slug/product-entities/:productEntityId/request-release-handoff-packet')
+  @Post(
+    ':slug/product-entities/:productEntityId/request-release-handoff-packet',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -1646,7 +1670,9 @@ export class EcommerceController {
     return toEcommerceChannelReleaseHandoffPacketResponseDto(packet);
   }
 
-  @Post(':slug/product-entities/:productEntityId/request-release-approval-packet')
+  @Post(
+    ':slug/product-entities/:productEntityId/request-release-approval-packet',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -1764,7 +1790,9 @@ export class EcommerceController {
     return toEcommerceCatalogStorefrontPlacementPacketResponseDto(packet);
   }
 
-  @Post(':slug/product-entities/:productEntityId/request-catalog-merchandising-packet')
+  @Post(
+    ':slug/product-entities/:productEntityId/request-catalog-merchandising-packet',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -1793,7 +1821,9 @@ export class EcommerceController {
     return toEcommerceCatalogMerchandisingPacketResponseDto(packet);
   }
 
-  @Get(':slug/product-entities/:productEntityId/checkout-order-intake-workspace')
+  @Get(
+    ':slug/product-entities/:productEntityId/checkout-order-intake-workspace',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -1822,7 +1852,9 @@ export class EcommerceController {
     return toEcommerceCheckoutOrderIntakeWorkspaceResponseDto(workspace);
   }
 
-  @Post(':slug/product-entities/:productEntityId/request-checkout-customer-capture-packet')
+  @Post(
+    ':slug/product-entities/:productEntityId/request-checkout-customer-capture-packet',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -1935,6 +1967,41 @@ export class EcommerceController {
     }
 
     return toEcommerceOrderDraftDetailResponseDto(detail);
+  }
+
+  @Post(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/update-customer-profile',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async updateTenantOrderCustomerProfile(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @Body() body: UpdateEcommerceOrderCustomerProfileRequestDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderCustomerProfileUpdateResponseDto> {
+    const updated =
+      await this.updateTenantEcommerceOrderCustomerProfileUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        orderDraftId,
+        body,
+      );
+
+    if (!updated) {
+      throw new NotFoundException(
+        `Order draft ${orderDraftId} for product entity ${productEntityId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceOrderCustomerProfileUpdateResponseDto(updated);
   }
 
   @Get(
@@ -2330,9 +2397,7 @@ export class EcommerceController {
       );
     }
 
-    return toEcommerceInvoiceHandoffAcknowledgementResponseDto(
-      acknowledgement,
-    );
+    return toEcommerceInvoiceHandoffAcknowledgementResponseDto(acknowledgement);
   }
 
   @Get(
@@ -2564,6 +2629,41 @@ export class EcommerceController {
     }
 
     return toEcommerceOrderFulfillmentReadinessWorkspaceResponseDto(workspace);
+  }
+
+  @Get(
+    ':slug/product-entities/:productEntityId/order-drafts/:orderDraftId/fulfillment-availability-workspace',
+  )
+  @UseGuards(
+    JwtAuthenticationGuard,
+    TenantMembershipGuard,
+    TenantPermissionGuard,
+  )
+  @RequireTenantPermission(TENANT_PERMISSIONS.ENTITLEMENTS_READ)
+  async getTenantOrderFulfillmentAvailabilityWorkspace(
+    @Param('slug') slug: string,
+    @Param('productEntityId') productEntityId: string,
+    @Param('orderDraftId') orderDraftId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcommerceOrderFulfillmentAvailabilityWorkspaceResponseDto> {
+    const workspace =
+      await this.getTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+        productEntityId,
+        orderDraftId,
+      );
+
+    if (!workspace) {
+      throw new NotFoundException(
+        `Order fulfillment availability workspace for order draft ${orderDraftId} was not found for tenant ${
+          tenantAccess?.tenantSlug ?? slug
+        }.`,
+      );
+    }
+
+    return toEcommerceOrderFulfillmentAvailabilityWorkspaceResponseDto(
+      workspace,
+    );
   }
 
   @Get(
@@ -2961,7 +3061,9 @@ export class EcommerceController {
     return toEcommerceOrderPostSaleOpsBoardResponseDto(board);
   }
 
-  @Get(':slug/product-entities/:productEntityId/order-post-sale-reporting-board')
+  @Get(
+    ':slug/product-entities/:productEntityId/order-post-sale-reporting-board',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -2990,7 +3092,9 @@ export class EcommerceController {
     return toEcommerceOrderPostSaleReportingBoardResponseDto(board);
   }
 
-  @Get(':slug/product-entities/:productEntityId/order-post-sale-reporting-summary')
+  @Get(
+    ':slug/product-entities/:productEntityId/order-post-sale-reporting-summary',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -3142,7 +3246,9 @@ export class EcommerceController {
     return toEcommerceWhatsappSalesFlowResponseDto(flow);
   }
 
-  @Post(':slug/product-entities/:productEntityId/request-whatsapp-growth-handoff')
+  @Post(
+    ':slug/product-entities/:productEntityId/request-whatsapp-growth-handoff',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -3171,7 +3277,9 @@ export class EcommerceController {
     return toEcommerceWhatsappGrowthHandoffResponseDto(handoff);
   }
 
-  @Get(':slug/product-entities/:productEntityId/whatsapp-growth-activation-workspace')
+  @Get(
+    ':slug/product-entities/:productEntityId/whatsapp-growth-activation-workspace',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -3200,7 +3308,9 @@ export class EcommerceController {
     return toEcommerceWhatsappGrowthActivationWorkspaceResponseDto(workspace);
   }
 
-  @Post(':slug/product-entities/:productEntityId/request-whatsapp-growth-activation-packet')
+  @Post(
+    ':slug/product-entities/:productEntityId/request-whatsapp-growth-activation-packet',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -3229,7 +3339,9 @@ export class EcommerceController {
     return toEcommerceWhatsappGrowthActivationPacketResponseDto(packet);
   }
 
-  @Post(':slug/product-entities/:productEntityId/request-whatsapp-growth-execution-bridge')
+  @Post(
+    ':slug/product-entities/:productEntityId/request-whatsapp-growth-execution-bridge',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -3322,7 +3434,9 @@ export class EcommerceController {
     );
   }
 
-  @Post(':slug/product-entities/:productEntityId/request-order-invoicing-bridge')
+  @Post(
+    ':slug/product-entities/:productEntityId/request-order-invoicing-bridge',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -3351,7 +3465,9 @@ export class EcommerceController {
     return toEcommerceOrderInvoicingBridgeResponseDto(packet);
   }
 
-  @Post(':slug/product-entities/:productEntityId/request-order-to-invoice-readiness-packet')
+  @Post(
+    ':slug/product-entities/:productEntityId/request-order-to-invoice-readiness-packet',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -3544,7 +3660,7 @@ export class EcommerceController {
   }
 
   @Post(
-    ':slug/product-entities/:productEntityId/channel-drafts/:channelKey/request-action-packet'
+    ':slug/product-entities/:productEntityId/channel-drafts/:channelKey/request-action-packet',
   )
   @UseGuards(
     JwtAuthenticationGuard,
@@ -3579,7 +3695,7 @@ export class EcommerceController {
   }
 
   @Post(
-    ':slug/product-entities/:productEntityId/channel-drafts/:channelKey/request-publish-readiness-packet'
+    ':slug/product-entities/:productEntityId/channel-drafts/:channelKey/request-publish-readiness-packet',
   )
   @UseGuards(
     JwtAuthenticationGuard,
@@ -3614,7 +3730,7 @@ export class EcommerceController {
   }
 
   @Get(
-    ':slug/product-entities/:productEntityId/channel-drafts/:channelKey/publish-preparation-workspace'
+    ':slug/product-entities/:productEntityId/channel-drafts/:channelKey/publish-preparation-workspace',
   )
   @UseGuards(
     JwtAuthenticationGuard,
@@ -3679,7 +3795,9 @@ export class EcommerceController {
     );
   }
 
-  @Get(':slug/product-entities/:productEntityId/saved-channel-drafts/:channelKey')
+  @Get(
+    ':slug/product-entities/:productEntityId/saved-channel-drafts/:channelKey',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -3710,7 +3828,9 @@ export class EcommerceController {
     return toEcommerceSavedProductEntityChannelDraftDetailResponseDto(detail);
   }
 
-  @Post(':slug/product-entities/:productEntityId/channel-drafts/:channelKey/save')
+  @Post(
+    ':slug/product-entities/:productEntityId/channel-drafts/:channelKey/save',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -3734,7 +3854,7 @@ export class EcommerceController {
   }
 
   @Post(
-    ':slug/product-entities/:productEntityId/saved-channel-drafts/:channelKey/promote-to-channel-asset-workspace'
+    ':slug/product-entities/:productEntityId/saved-channel-drafts/:channelKey/promote-to-channel-asset-workspace',
   )
   @UseGuards(
     JwtAuthenticationGuard,
@@ -3769,7 +3889,7 @@ export class EcommerceController {
   }
 
   @Post(
-    ':slug/product-entities/:productEntityId/saved-channel-drafts/:channelKey/update-editable-snapshot'
+    ':slug/product-entities/:productEntityId/saved-channel-drafts/:channelKey/update-editable-snapshot',
   )
   @UseGuards(
     JwtAuthenticationGuard,
@@ -3812,7 +3932,9 @@ export class EcommerceController {
     );
   }
 
-  @Post(':slug/product-entities/:productEntityId/request-commercialization-packet')
+  @Post(
+    ':slug/product-entities/:productEntityId/request-commercialization-packet',
+  )
   @UseGuards(
     JwtAuthenticationGuard,
     TenantMembershipGuard,
@@ -4129,9 +4251,7 @@ export class EcommerceController {
       );
     }
 
-    return toPromoteEcommerceSavedDraftToProductWorkspaceResponseDto(
-      workspace,
-    );
+    return toPromoteEcommerceSavedDraftToProductWorkspaceResponseDto(workspace);
   }
 
   @Post(':slug/product-workspaces/:savedDraftId/promote-to-product-setup')
@@ -4230,9 +4350,7 @@ export class EcommerceController {
       );
     }
 
-    return toRequestEcommerceProductWorkspaceReadinessPacketResponseDto(
-      packet,
-    );
+    return toRequestEcommerceProductWorkspaceReadinessPacketResponseDto(packet);
   }
 
   @Get(':slug/launch-workspace')
@@ -4310,10 +4428,9 @@ export class EcommerceController {
     @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<EcommerceLaunchPlanRegistryResponseDto> {
     try {
-      const registry =
-        await this.listTenantEcommerceLaunchPlansUseCase.execute(
-          tenantAccess?.tenantSlug ?? slug,
-        );
+      const registry = await this.listTenantEcommerceLaunchPlansUseCase.execute(
+        tenantAccess?.tenantSlug ?? slug,
+      );
 
       return toEcommerceLaunchPlanRegistryResponseDto(registry);
     } catch (error) {

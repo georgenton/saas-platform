@@ -234,7 +234,11 @@ export interface TenantEcommerceProductAuthoringWorkspaceView {
     draftCount: number;
   };
   readinessChecklist: Array<{
-    key: 'store_profile' | 'catalog_foundation' | 'invoicing_connection' | 'growth_handoff';
+    key:
+      | 'store_profile'
+      | 'catalog_foundation'
+      | 'invoicing_connection'
+      | 'growth_handoff';
     title: string;
     status: 'ready' | 'warning' | 'blocked';
     detail: string;
@@ -384,10 +388,7 @@ export interface TenantEcommerceProductSetupView {
   productSetupId: string;
   savedDraftId: string;
   sourceDraftId: string;
-  status:
-    | 'draft_setup'
-    | 'needs_commercial_connections'
-    | 'needs_activation';
+  status: 'draft_setup' | 'needs_commercial_connections' | 'needs_activation';
   title: string;
   productType: 'core_offer' | 'entry_offer' | 'upsell';
   pricingBand: string | null;
@@ -444,10 +445,7 @@ export interface TenantEcommerceProductEntityView {
   productSetupId: string;
   savedDraftId: string;
   sourceDraftId: string;
-  status:
-    | 'draft_catalog_product'
-    | 'needs_channel_assets'
-    | 'needs_activation';
+  status: 'draft_catalog_product' | 'needs_channel_assets' | 'needs_activation';
   title: string;
   productType: 'core_offer' | 'entry_offer' | 'upsell';
   pricingBand: string | null;
@@ -855,7 +853,10 @@ export interface TenantEcommerceLandingAssetEntityWorkspaceView {
   generatedAt: Date;
   productEntity: TenantEcommerceProductEntityView;
   assetEntity: TenantEcommerceProductEntityChannelAssetEntityView;
-  workspaceStatus: 'ready_for_landing_assembly' | 'needs_publish_copy' | 'blocked';
+  workspaceStatus:
+    | 'ready_for_landing_assembly'
+    | 'needs_publish_copy'
+    | 'blocked';
   hero: {
     headline: string;
     subheadline: string;
@@ -874,7 +875,10 @@ export interface TenantEcommerceCatalogAssetEntityWorkspaceView {
   generatedAt: Date;
   productEntity: TenantEcommerceProductEntityView;
   assetEntity: TenantEcommerceProductEntityChannelAssetEntityView;
-  workspaceStatus: 'ready_for_catalog_assembly' | 'needs_publish_copy' | 'blocked';
+  workspaceStatus:
+    | 'ready_for_catalog_assembly'
+    | 'needs_publish_copy'
+    | 'blocked';
   merchandisingCard: {
     title: string;
     pricingSnapshot: string;
@@ -991,11 +995,7 @@ export interface TenantEcommerceChannelReleaseHandoffPacketView {
   };
   channels: Array<{
     channelKey: 'landing' | 'catalog' | 'whatsapp';
-    readiness:
-      | 'candidate_ready'
-      | 'needs_publish_copy'
-      | 'blocked'
-      | 'missing';
+    readiness: 'candidate_ready' | 'needs_publish_copy' | 'blocked' | 'missing';
     handoffOwner: 'ecommerce' | 'growth' | 'shared';
     blockerType: 'none' | 'warning' | 'blocker';
     minimumArtifacts: string[];
@@ -1019,11 +1019,7 @@ export interface TenantEcommerceChannelReleaseApprovalPacketView {
   approvalOwner: 'ecommerce' | 'growth' | 'shared';
   channels: Array<{
     channelKey: 'landing' | 'catalog' | 'whatsapp';
-    readiness:
-      | 'candidate_ready'
-      | 'needs_publish_copy'
-      | 'blocked'
-      | 'missing';
+    readiness: 'candidate_ready' | 'needs_publish_copy' | 'blocked' | 'missing';
     approvalDecision: 'approve' | 'review' | 'block';
     rationale: string;
   }>;
@@ -1057,11 +1053,7 @@ export interface TenantEcommerceStorefrontPreviewWorkspaceView {
   };
   releaseSignals: Array<{
     channelKey: 'landing' | 'catalog' | 'whatsapp';
-    status:
-      | 'candidate_ready'
-      | 'needs_publish_copy'
-      | 'blocked'
-      | 'missing';
+    status: 'candidate_ready' | 'needs_publish_copy' | 'blocked' | 'missing';
     detail: string;
   }>;
   previewChecklist: string[];
@@ -1737,10 +1729,7 @@ export interface TenantEcommerceOrderToInvoiceReadinessPacketView {
     handoffMode: 'operator_assist';
   };
   readinessSnapshot: {
-    captureStatus:
-      | 'ready_for_order_draft'
-      | 'needs_customer_input'
-      | 'blocked';
+    captureStatus: 'ready_for_order_draft' | 'needs_customer_input' | 'blocked';
     bridgeStatus:
       | 'ready_for_invoice_handoff'
       | 'needs_customer_fiscal_data'
@@ -1791,6 +1780,22 @@ export interface TenantEcommerceOrderDraftSaveView {
   generatedAt: Date;
   summary: string;
   orderDraft: TenantEcommerceOrderDraftView;
+}
+
+export interface TenantEcommerceOrderCustomerProfileUpdateView {
+  tenantSlug: string;
+  generatedAt: Date;
+  summary: string;
+  orderDraft: TenantEcommerceOrderDraftView;
+  readinessSnapshot: {
+    buyerProfileStatus: 'ready' | 'needs_customer_fiscal_data' | 'blocked';
+    missingFields: string[];
+    handoffStatus:
+      | 'ready_for_invoice_handoff'
+      | 'needs_customer_fiscal_data'
+      | 'blocked';
+  };
+  nextActions: string[];
 }
 
 export interface TenantEcommerceOrderDraftRegistryView {
@@ -1901,10 +1906,7 @@ export interface TenantEcommerceOrderInvoiceDraftBridgeView {
   generatedAt: Date;
   productEntity: TenantEcommerceProductEntityView;
   orderDraft: TenantEcommerceOrderDraftView;
-  bridgeStatus:
-    | 'ready_to_open_invoice_draft'
-    | 'needs_data'
-    | 'blocked';
+  bridgeStatus: 'ready_to_open_invoice_draft' | 'needs_data' | 'blocked';
   summary: string;
   targetWorkspace: {
     productKey: 'invoicing';
@@ -2012,7 +2014,12 @@ export interface TenantEcommerceOrderStatusLifecycleEntryView {
 export interface TenantEcommerceOrderStatusLifecycleSummaryView {
   orderDraftId: string;
   orderLabel: string;
-  currentStatus: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+  currentStatus:
+    | 'draft'
+    | 'under_review'
+    | 'approved'
+    | 'handed_off'
+    | 'blocked';
   lastAction: string;
   nextStep: string;
   updatedAt: Date;
@@ -2040,7 +2047,12 @@ export interface TenantEcommerceOrderStatusLifecycleDetailView {
   generatedAt: Date;
   productEntity: TenantEcommerceProductEntityView;
   orderDraft: TenantEcommerceOrderDraftView;
-  currentStatus: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+  currentStatus:
+    | 'draft'
+    | 'under_review'
+    | 'approved'
+    | 'handed_off'
+    | 'blocked';
   summary: string;
   lastAction: string;
   nextStep: string;
@@ -2099,7 +2111,12 @@ export interface TenantEcommerceInvoiceDraftIntakeWorkspaceView {
 export interface TenantEcommerceOrderOperatorWorkboardEntryView {
   orderDraftId: string;
   orderLabel: string;
-  currentStatus: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+  currentStatus:
+    | 'draft'
+    | 'under_review'
+    | 'approved'
+    | 'handed_off'
+    | 'blocked';
   handoffRoute: 'invoicing' | 'growth_follow_up' | 'hold';
   priority: 'high' | 'medium' | 'low';
   attentionReason: string;
@@ -2186,7 +2203,12 @@ export interface TenantEcommerceInvoiceDraftOpenBridgeView {
 export interface TenantEcommerceOrderOpsPriorityQueueEntryView {
   orderDraftId: string;
   orderLabel: string;
-  currentStatus: 'draft' | 'under_review' | 'approved' | 'handed_off' | 'blocked';
+  currentStatus:
+    | 'draft'
+    | 'under_review'
+    | 'approved'
+    | 'handed_off'
+    | 'blocked';
   activeRoute: 'invoicing' | 'growth_follow_up' | 'hold';
   priorityBand: 'critical' | 'high' | 'medium' | 'low';
   priorityScore: number;
@@ -2428,12 +2450,7 @@ export interface TenantEcommerceOrderPaymentReadinessWorkspaceView {
 }
 
 export interface TenantEcommerceOrderPostSaleLifecycleEntryView {
-  key:
-    | 'handed_off'
-    | 'invoicing'
-    | 'awaiting_payment'
-    | 'paid'
-    | 'blocked';
+  key: 'handed_off' | 'invoicing' | 'awaiting_payment' | 'paid' | 'blocked';
   label: string;
   status: 'completed' | 'active' | 'pending';
   detail: string;
@@ -2555,12 +2572,41 @@ export interface TenantEcommerceOrderFulfillmentReadinessWorkspaceView {
   guardrails: string[];
 }
 
+export interface TenantEcommerceOrderFulfillmentAvailabilityWorkspaceView {
+  tenantSlug: string;
+  generatedAt: Date;
+  productEntity: TenantEcommerceProductEntityView;
+  orderDraft: TenantEcommerceOrderDraftView;
+  availabilityStatus:
+    | 'available_for_fulfillment'
+    | 'needs_capacity_review'
+    | 'blocked';
+  inventoryMode: 'capacity_signal' | 'stock_signal' | 'not_tracked_yet';
+  summary: string;
+  availabilitySignals: {
+    paymentStatus: 'confirmed' | 'waiting_payment_confirmation' | 'blocked';
+    fulfillmentStatus:
+      | 'ready_for_fulfillment'
+      | 'waiting_payment_confirmation'
+      | 'blocked';
+    buyerContactStatus: 'ready' | 'needs_contact_data';
+    productType: TenantEcommerceProductEntityView['productType'];
+  };
+  capacityChecklist: string[];
+  blockedBy: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface TenantEcommerceOrderFulfillmentExecutionWorkspaceView {
   tenantSlug: string;
   generatedAt: Date;
   productEntity: TenantEcommerceProductEntityView;
   orderDraft: TenantEcommerceOrderDraftView;
-  executionStatus: 'ready_to_execute' | 'waiting_payment_confirmation' | 'blocked';
+  executionStatus:
+    | 'ready_to_execute'
+    | 'waiting_payment_confirmation'
+    | 'blocked';
   summary: string;
   fulfillmentProfile: {
     fulfillmentType: 'digital' | 'service' | 'physical';
@@ -2736,7 +2782,11 @@ export interface TenantEcommerceOrderFulfillmentDeliveryWorkspaceView {
 export interface TenantEcommerceOrderPostSaleOpsBoardEntryView {
   orderDraftId: string;
   orderLabel: string;
-  opsStatus: 'awaiting_payment' | 'ready_for_fulfillment' | 'in_progress' | 'blocked';
+  opsStatus:
+    | 'awaiting_payment'
+    | 'ready_for_fulfillment'
+    | 'in_progress'
+    | 'blocked';
   priorityBand: 'critical' | 'high' | 'monitor';
   paymentLogStatus: 'confirmed' | 'needs_review' | 'disputed';
   deliveryStatus: 'in_progress' | 'delivered' | 'blocked';
@@ -2760,7 +2810,11 @@ export interface TenantEcommerceOrderPostSaleOpsBoardView {
     detail: string;
   };
   focusLanes: Array<{
-    laneKey: 'awaiting_payment' | 'ready_for_fulfillment' | 'in_progress' | 'blocked';
+    laneKey:
+      | 'awaiting_payment'
+      | 'ready_for_fulfillment'
+      | 'in_progress'
+      | 'blocked';
     count: number;
     operatorBias: string;
   }>;

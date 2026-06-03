@@ -41,4 +41,13 @@ export interface EcommerceOrderDraftRepository {
     tenantSlug: string,
     productEntityId: string,
   ): Promise<TenantEcommerceOrderDraftView | null>;
+  updateCustomerProfile(command: {
+    tenantSlug: string;
+    orderDraftId: string;
+    status: 'draft' | 'needs_data' | 'ready_for_review' | 'blocked';
+    invoicingReadinessStatus: 'ready_to_invoice' | 'needs_data' | 'blocked';
+    customerProfile: TenantEcommerceOrderDraftView['customerProfile'];
+    missingFields: string[];
+    blockedBy: string[];
+  }): Promise<TenantEcommerceOrderDraftView | null>;
 }

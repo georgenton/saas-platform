@@ -75,6 +75,7 @@ import {
   GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase,
   RequestTenantEcommerceOrderFulfillmentCompletionPacketUseCase,
   RequestTenantEcommerceOrderFulfillmentDeliveryConfirmationPacketUseCase,
+  GetTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
   GetTenantEcommerceOrderPostSaleOpsBoardUseCase,
@@ -86,6 +87,7 @@ import {
   RequestTenantEcommerceWhatsappGrowthHandoffUseCase,
   SaveTenantEcommerceProductEntityChannelDraftUseCase,
   SaveTenantEcommerceOrderDraftUseCase,
+  UpdateTenantEcommerceOrderCustomerProfileUseCase,
   ListTenantEcommerceOrderDraftsUseCase,
   GetTenantEcommerceOrderDraftDetailUseCase,
   ListTenantEcommerceOrderPostSaleLifecyclesUseCase,
@@ -148,12 +150,13 @@ describe('Ecommerce product entity use cases', () => {
     const ecommerceProductEntityRepository = {
       save: jest.fn().mockResolvedValue(productEntity),
     };
-    const useCase = new PromoteTenantEcommerceProductSetupToProductEntityUseCase(
-      ecommerceProductSetupRepository as never,
-      ecommerceProductEntityRepository as never,
-      () => new Date('2026-05-28T16:31:00.000Z'),
-      () => 'product_entity_001',
-    );
+    const useCase =
+      new PromoteTenantEcommerceProductSetupToProductEntityUseCase(
+        ecommerceProductSetupRepository as never,
+        ecommerceProductEntityRepository as never,
+        () => new Date('2026-05-28T16:31:00.000Z'),
+        () => 'product_entity_001',
+      );
 
     await expect(
       useCase.execute('saas-platform', 'product_setup_001'),
@@ -386,11 +389,7 @@ describe('Ecommerce product entity use cases', () => {
           status: 'needs_core_copy',
           headline:
             'Todavia falta cerrar narrativa y recovery CTA antes de abrir la secuencia draft de WhatsApp.',
-          sequence: [
-            'Opening message',
-            'Follow-up branch',
-            'Recovery CTA',
-          ],
+          sequence: ['Opening message', 'Follow-up branch', 'Recovery CTA'],
           recommendedOwner: 'growth',
         },
       },
@@ -428,10 +427,11 @@ describe('Ecommerce product entity use cases', () => {
         getChannelAssetsWorkspaceUseCase,
         () => new Date('2026-05-28T16:39:00.000Z'),
       );
-    const useCase = new GetTenantEcommerceProductEntityChannelDraftDetailUseCase(
-      getChannelAssetDraftsWorkspaceUseCase,
-      () => new Date('2026-05-28T16:40:00.000Z'),
-    );
+    const useCase =
+      new GetTenantEcommerceProductEntityChannelDraftDetailUseCase(
+        getChannelAssetDraftsWorkspaceUseCase,
+        () => new Date('2026-05-28T16:40:00.000Z'),
+      );
 
     await expect(
       useCase.execute('saas-platform', 'product_entity_001', 'landing'),
@@ -833,11 +833,12 @@ describe('Ecommerce product entity use cases', () => {
       ecommerceProductEntityRepository as never,
       () => new Date('2026-05-28T16:33:00.000Z'),
     );
-    const useCase = new ListTenantEcommerceSavedProductEntityChannelDraftsUseCase(
-      ecommerceProductEntityChannelDraftRepository as never,
-      getDetailUseCase,
-      () => new Date('2026-05-28T16:45:00.000Z'),
-    );
+    const useCase =
+      new ListTenantEcommerceSavedProductEntityChannelDraftsUseCase(
+        ecommerceProductEntityChannelDraftRepository as never,
+        getDetailUseCase,
+        () => new Date('2026-05-28T16:45:00.000Z'),
+      );
 
     await expect(
       useCase.execute('saas-platform', 'product_entity_001'),
@@ -893,44 +894,47 @@ describe('Ecommerce product entity use cases', () => {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
     };
     const ecommerceProductEntityChannelDraftRepository = {
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_001',
-        tenantId: 'tenant_001',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'landing',
-        status: 'saved_channel_draft',
-        preparationStatus: 'needs_core_copy',
-        handoffOwner: 'shared',
-        title: 'SaaS Platform Store flagship offer setup v2 landing draft',
-        summary:
-          'Todavia conviene cerrar copy base antes de preparar el staging del draft de landing.',
-        headline:
-          'Todavia falta cerrar promesa y CTA antes de abrir el draft de landing.',
-        draftBlueprint: ['Hero promise'],
-        publishChecklist: ['Hero QA'],
-        recommendedArtifacts: ['Landing publish checklist'],
-        nextMilestone:
-          'Cerrar copy base y checks de landing antes de tratar el draft como staging operable.',
-        blockedBy: [
-          'Todavia faltan assets base de canal para abrir drafts operativos consistentes.',
-        ],
-        guardrails: [
-          'No tratar esta entidad como checkout ni inventario final todavia.',
-        ],
-        createdAt: new Date('2026-05-28T16:44:00.000Z'),
-        updatedAt: new Date('2026-05-28T16:44:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_001',
+          tenantId: 'tenant_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'landing',
+          status: 'saved_channel_draft',
+          preparationStatus: 'needs_core_copy',
+          handoffOwner: 'shared',
+          title: 'SaaS Platform Store flagship offer setup v2 landing draft',
+          summary:
+            'Todavia conviene cerrar copy base antes de preparar el staging del draft de landing.',
+          headline:
+            'Todavia falta cerrar promesa y CTA antes de abrir el draft de landing.',
+          draftBlueprint: ['Hero promise'],
+          publishChecklist: ['Hero QA'],
+          recommendedArtifacts: ['Landing publish checklist'],
+          nextMilestone:
+            'Cerrar copy base y checks de landing antes de tratar el draft como staging operable.',
+          blockedBy: [
+            'Todavia faltan assets base de canal para abrir drafts operativos consistentes.',
+          ],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          createdAt: new Date('2026-05-28T16:44:00.000Z'),
+          updatedAt: new Date('2026-05-28T16:44:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
       () => new Date('2026-05-28T16:33:00.000Z'),
     );
-    const useCase = new GetTenantEcommerceSavedProductEntityChannelDraftDetailUseCase(
-      ecommerceProductEntityChannelDraftRepository as never,
-      getDetailUseCase,
-      () => new Date('2026-05-28T16:46:00.000Z'),
-    );
+    const useCase =
+      new GetTenantEcommerceSavedProductEntityChannelDraftDetailUseCase(
+        ecommerceProductEntityChannelDraftRepository as never,
+        getDetailUseCase,
+        () => new Date('2026-05-28T16:46:00.000Z'),
+      );
 
     await expect(
       useCase.execute('saas-platform', 'product_entity_001', 'landing'),
@@ -1002,7 +1006,9 @@ describe('Ecommerce product entity use cases', () => {
           recommendedArtifacts: ['Landing publish checklist'],
           nextMilestone: 'Original next milestone',
           blockedBy: [],
-          guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
           createdAt: new Date('2026-05-28T16:44:00.000Z'),
           updatedAt: new Date('2026-05-28T16:44:00.000Z'),
         }),
@@ -1023,7 +1029,9 @@ describe('Ecommerce product entity use cases', () => {
         recommendedArtifacts: ['New artifact'],
         nextMilestone: 'Updated next milestone',
         blockedBy: [],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
+        guardrails: [
+          'No tratar esta entidad como checkout ni inventario final todavia.',
+        ],
         createdAt: new Date('2026-05-28T16:44:00.000Z'),
         updatedAt: new Date('2026-05-28T16:47:00.000Z'),
       }),
@@ -1049,7 +1057,9 @@ describe('Ecommerce product entity use cases', () => {
         recommendedArtifacts: ['New artifact'],
         nextMilestone: 'Updated next milestone',
         blockedBy: [],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
+        guardrails: [
+          'No tratar esta entidad como checkout ni inventario final todavia.',
+        ],
         createdAt: new Date('2026-05-28T16:44:00.000Z'),
         updatedAt: new Date('2026-05-28T16:47:00.000Z'),
       },
@@ -1060,7 +1070,9 @@ describe('Ecommerce product entity use cases', () => {
         'Mantener el draft separado de publicación viva por ahora.',
       ],
       blockedBy: [],
-      guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
+      guardrails: [
+        'No tratar esta entidad como checkout ni inventario final todavia.',
+      ],
     };
     const getSavedDraftDetailUseCase = {
       execute: jest.fn().mockResolvedValue(expectedDetail),
@@ -1111,7 +1123,9 @@ describe('Ecommerce product entity use cases', () => {
         recommendedArtifacts: ['New artifact'],
         nextMilestone: 'Updated next milestone',
         blockedBy: [],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
+        guardrails: [
+          'No tratar esta entidad como checkout ni inventario final todavia.',
+        ],
         promotedToAssetWorkspaceAt: new Date('2026-05-28T16:48:00.000Z'),
         createdAt: new Date('2026-05-28T16:44:00.000Z'),
         updatedAt: new Date('2026-05-28T16:48:00.000Z'),
@@ -1178,7 +1192,9 @@ describe('Ecommerce product entity use cases', () => {
           recommendedArtifacts: ['New artifact'],
           nextMilestone: 'Updated next milestone',
           blockedBy: [],
-          guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
           promotedToAssetWorkspaceAt: new Date('2026-05-28T16:48:00.000Z'),
           createdAt: new Date('2026-05-28T16:44:00.000Z'),
           updatedAt: new Date('2026-05-28T16:48:00.000Z'),
@@ -1256,28 +1272,32 @@ describe('Ecommerce product entity use cases', () => {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
     };
     const ecommerceProductEntityChannelDraftRepository = {
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_001',
-        tenantId: 'tenant_001',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'landing',
-        status: 'saved_channel_draft',
-        preparationStatus: 'needs_core_copy',
-        handoffOwner: 'shared',
-        title: 'Landing staging draft actualizado',
-        summary: 'Original summary',
-        headline: 'Updated headline',
-        draftBlueprint: ['New hero', 'New CTA'],
-        publishChecklist: ['Hero QA'],
-        recommendedArtifacts: ['New artifact'],
-        nextMilestone: 'Updated next milestone',
-        blockedBy: ['Pending copy review'],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
-        promotedToAssetWorkspaceAt: new Date('2026-05-28T16:48:00.000Z'),
-        createdAt: new Date('2026-05-28T16:44:00.000Z'),
-        updatedAt: new Date('2026-05-28T16:48:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_001',
+          tenantId: 'tenant_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'landing',
+          status: 'saved_channel_draft',
+          preparationStatus: 'needs_core_copy',
+          handoffOwner: 'shared',
+          title: 'Landing staging draft actualizado',
+          summary: 'Original summary',
+          headline: 'Updated headline',
+          draftBlueprint: ['New hero', 'New CTA'],
+          publishChecklist: ['Hero QA'],
+          recommendedArtifacts: ['New artifact'],
+          nextMilestone: 'Updated next milestone',
+          blockedBy: ['Pending copy review'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          promotedToAssetWorkspaceAt: new Date('2026-05-28T16:48:00.000Z'),
+          createdAt: new Date('2026-05-28T16:44:00.000Z'),
+          updatedAt: new Date('2026-05-28T16:48:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
@@ -1340,28 +1360,32 @@ describe('Ecommerce product entity use cases', () => {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
     };
     const ecommerceProductEntityChannelDraftRepository = {
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_001',
-        tenantId: 'tenant_001',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'landing',
-        status: 'saved_channel_draft',
-        preparationStatus: 'needs_core_copy',
-        handoffOwner: 'shared',
-        title: 'Landing staging draft actualizado',
-        summary: 'Original summary',
-        headline: 'Updated headline',
-        draftBlueprint: ['New hero', 'New CTA'],
-        publishChecklist: ['Hero QA'],
-        recommendedArtifacts: ['New artifact'],
-        nextMilestone: 'Updated next milestone',
-        blockedBy: ['Pending copy review'],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
-        promotedToAssetWorkspaceAt: new Date('2026-05-28T16:48:00.000Z'),
-        createdAt: new Date('2026-05-28T16:44:00.000Z'),
-        updatedAt: new Date('2026-05-28T16:48:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_001',
+          tenantId: 'tenant_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'landing',
+          status: 'saved_channel_draft',
+          preparationStatus: 'needs_core_copy',
+          handoffOwner: 'shared',
+          title: 'Landing staging draft actualizado',
+          summary: 'Original summary',
+          headline: 'Updated headline',
+          draftBlueprint: ['New hero', 'New CTA'],
+          publishChecklist: ['Hero QA'],
+          recommendedArtifacts: ['New artifact'],
+          nextMilestone: 'Updated next milestone',
+          blockedBy: ['Pending copy review'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          promotedToAssetWorkspaceAt: new Date('2026-05-28T16:48:00.000Z'),
+          createdAt: new Date('2026-05-28T16:44:00.000Z'),
+          updatedAt: new Date('2026-05-28T16:48:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
@@ -1426,7 +1450,9 @@ describe('Ecommerce product entity use cases', () => {
         recommendedArtifacts: ['New artifact'],
         nextMilestone: 'Updated next milestone',
         blockedBy: ['Pending copy review'],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
+        guardrails: [
+          'No tratar esta entidad como checkout ni inventario final todavia.',
+        ],
         promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
         createdAt: new Date('2026-05-28T16:44:00.000Z'),
         updatedAt: new Date('2026-05-28T16:53:00.000Z'),
@@ -1489,7 +1515,9 @@ describe('Ecommerce product entity use cases', () => {
           recommendedArtifacts: ['New artifact'],
           nextMilestone: 'Updated next milestone',
           blockedBy: ['Pending copy review'],
-          guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
           promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
           createdAt: new Date('2026-05-28T16:44:00.000Z'),
           updatedAt: new Date('2026-05-28T16:53:00.000Z'),
@@ -1524,7 +1552,8 @@ describe('Ecommerce product entity use cases', () => {
         draftAssetEntityCount: 0,
         needsPublishCopyCount: 1,
         blockedCount: 0,
-        headline: 'Ecommerce ya tiene entities persistidas de assets por canal.',
+        headline:
+          'Ecommerce ya tiene entities persistidas de assets por canal.',
         detail:
           'Este registro marca el paso entre workspace de asset y artifact persistido operable por canal.',
       },
@@ -1562,28 +1591,32 @@ describe('Ecommerce product entity use cases', () => {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
     };
     const ecommerceProductEntityChannelDraftRepository = {
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_001',
-        tenantId: 'tenant_001',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'landing',
-        status: 'saved_channel_draft',
-        preparationStatus: 'needs_core_copy',
-        handoffOwner: 'shared',
-        title: 'Landing staging draft actualizado',
-        summary: 'Original summary',
-        headline: 'Updated headline',
-        draftBlueprint: ['New hero', 'New CTA'],
-        publishChecklist: ['Hero QA'],
-        recommendedArtifacts: ['New artifact'],
-        nextMilestone: 'Updated next milestone',
-        blockedBy: ['Pending copy review'],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
-        promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
-        createdAt: new Date('2026-05-28T16:44:00.000Z'),
-        updatedAt: new Date('2026-05-28T16:53:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_001',
+          tenantId: 'tenant_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'landing',
+          status: 'saved_channel_draft',
+          preparationStatus: 'needs_core_copy',
+          handoffOwner: 'shared',
+          title: 'Landing staging draft actualizado',
+          summary: 'Original summary',
+          headline: 'Updated headline',
+          draftBlueprint: ['New hero', 'New CTA'],
+          publishChecklist: ['Hero QA'],
+          recommendedArtifacts: ['New artifact'],
+          nextMilestone: 'Updated next milestone',
+          blockedBy: ['Pending copy review'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
+          createdAt: new Date('2026-05-28T16:44:00.000Z'),
+          updatedAt: new Date('2026-05-28T16:53:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
@@ -1641,28 +1674,32 @@ describe('Ecommerce product entity use cases', () => {
     };
     const ecommerceProductEntityChannelDraftRepository = {
       updateEditableSnapshot: jest.fn().mockResolvedValue({}),
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_001',
-        tenantId: 'tenant_001',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'landing',
-        status: 'saved_channel_draft',
-        preparationStatus: 'needs_core_copy',
-        handoffOwner: 'shared',
-        title: 'Landing asset entity final',
-        summary: 'Original summary',
-        headline: 'Headline final',
-        draftBlueprint: ['Hero final', 'CTA final'],
-        publishChecklist: ['Hero QA'],
-        recommendedArtifacts: ['Landing packet'],
-        nextMilestone: 'QA final de landing',
-        blockedBy: ['Pending copy review'],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
-        promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
-        createdAt: new Date('2026-05-28T16:44:00.000Z'),
-        updatedAt: new Date('2026-05-28T16:56:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_001',
+          tenantId: 'tenant_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'landing',
+          status: 'saved_channel_draft',
+          preparationStatus: 'needs_core_copy',
+          handoffOwner: 'shared',
+          title: 'Landing asset entity final',
+          summary: 'Original summary',
+          headline: 'Headline final',
+          draftBlueprint: ['Hero final', 'CTA final'],
+          publishChecklist: ['Hero QA'],
+          recommendedArtifacts: ['Landing packet'],
+          nextMilestone: 'QA final de landing',
+          blockedBy: ['Pending copy review'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
+          createdAt: new Date('2026-05-28T16:44:00.000Z'),
+          updatedAt: new Date('2026-05-28T16:56:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
@@ -1708,28 +1745,32 @@ describe('Ecommerce product entity use cases', () => {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
     };
     const ecommerceProductEntityChannelDraftRepository = {
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_001',
-        tenantId: 'tenant_001',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'landing',
-        status: 'saved_channel_draft',
-        preparationStatus: 'needs_core_copy',
-        handoffOwner: 'shared',
-        title: 'Landing asset entity final',
-        summary: 'Original summary',
-        headline: 'Headline final',
-        draftBlueprint: ['Hero final', 'CTA final'],
-        publishChecklist: ['Hero QA'],
-        recommendedArtifacts: ['Landing packet'],
-        nextMilestone: 'QA final de landing',
-        blockedBy: ['Pending copy review'],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
-        promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
-        createdAt: new Date('2026-05-28T16:44:00.000Z'),
-        updatedAt: new Date('2026-05-28T16:56:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_001',
+          tenantId: 'tenant_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'landing',
+          status: 'saved_channel_draft',
+          preparationStatus: 'needs_core_copy',
+          handoffOwner: 'shared',
+          title: 'Landing asset entity final',
+          summary: 'Original summary',
+          headline: 'Headline final',
+          draftBlueprint: ['Hero final', 'CTA final'],
+          publishChecklist: ['Hero QA'],
+          recommendedArtifacts: ['Landing packet'],
+          nextMilestone: 'QA final de landing',
+          blockedBy: ['Pending copy review'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
+          createdAt: new Date('2026-05-28T16:44:00.000Z'),
+          updatedAt: new Date('2026-05-28T16:56:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
@@ -1792,7 +1833,9 @@ describe('Ecommerce product entity use cases', () => {
         recommendedArtifacts: ['Landing packet'],
         nextMilestone: 'QA final de landing',
         blockedBy: ['Pending copy review'],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
+        guardrails: [
+          'No tratar esta entidad como checkout ni inventario final todavia.',
+        ],
       }),
     };
     const useCase =
@@ -1829,7 +1872,9 @@ describe('Ecommerce product entity use cases', () => {
           recommendedArtifacts: ['Landing packet'],
           nextMilestone: 'QA final de landing',
           blockedBy: ['Pending copy review'],
-          guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
           promotedToReleaseCandidateAt: new Date('2026-05-28T16:58:00.000Z'),
         },
       ]),
@@ -1864,23 +1909,27 @@ describe('Ecommerce product entity use cases', () => {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
     };
     const ecommerceProductEntityChannelDraftRepository = {
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_001',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'landing',
-        preparationStatus: 'needs_core_copy',
-        handoffOwner: 'shared',
-        title: 'Landing asset entity final',
-        headline: 'Headline final',
-        draftBlueprint: ['Hero final', 'CTA final'],
-        publishChecklist: ['Hero QA'],
-        recommendedArtifacts: ['Landing packet'],
-        nextMilestone: 'QA final de landing',
-        blockedBy: ['Pending copy review'],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
-        promotedToReleaseCandidateAt: new Date('2026-05-28T16:58:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'landing',
+          preparationStatus: 'needs_core_copy',
+          handoffOwner: 'shared',
+          title: 'Landing asset entity final',
+          headline: 'Headline final',
+          draftBlueprint: ['Hero final', 'CTA final'],
+          publishChecklist: ['Hero QA'],
+          recommendedArtifacts: ['Landing packet'],
+          nextMilestone: 'QA final de landing',
+          blockedBy: ['Pending copy review'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          promotedToReleaseCandidateAt: new Date('2026-05-28T16:58:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
@@ -1915,23 +1964,27 @@ describe('Ecommerce product entity use cases', () => {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
     };
     const ecommerceProductEntityChannelDraftRepository = {
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_001',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'landing',
-        preparationStatus: 'needs_core_copy',
-        handoffOwner: 'shared',
-        title: 'Landing asset entity final',
-        headline: 'Headline final',
-        draftBlueprint: ['Hero final', 'CTA final'],
-        publishChecklist: ['Hero QA'],
-        recommendedArtifacts: ['Landing packet'],
-        nextMilestone: 'QA final de landing',
-        blockedBy: ['Pending copy review'],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
-        promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'landing',
+          preparationStatus: 'needs_core_copy',
+          handoffOwner: 'shared',
+          title: 'Landing asset entity final',
+          headline: 'Headline final',
+          draftBlueprint: ['Hero final', 'CTA final'],
+          publishChecklist: ['Hero QA'],
+          recommendedArtifacts: ['Landing packet'],
+          nextMilestone: 'QA final de landing',
+          blockedBy: ['Pending copy review'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
@@ -1975,23 +2028,27 @@ describe('Ecommerce product entity use cases', () => {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
     };
     const ecommerceProductEntityChannelDraftRepository = {
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_002',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'catalog',
-        preparationStatus: 'ready_to_stage',
-        handoffOwner: 'ecommerce',
-        title: 'Catalog asset entity final',
-        headline: 'Catalog headline final',
-        publishChecklist: ['Pricing QA'],
-        recommendedArtifacts: ['Catalog pricing card'],
-        draftBlueprint: ['Offer bullets', 'Pricing snapshot'],
-        nextMilestone: 'QA final de catalogo',
-        blockedBy: [],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
-        promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_002',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'catalog',
+          preparationStatus: 'ready_to_stage',
+          handoffOwner: 'ecommerce',
+          title: 'Catalog asset entity final',
+          headline: 'Catalog headline final',
+          publishChecklist: ['Pricing QA'],
+          recommendedArtifacts: ['Catalog pricing card'],
+          draftBlueprint: ['Offer bullets', 'Pricing snapshot'],
+          nextMilestone: 'QA final de catalogo',
+          blockedBy: [],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
@@ -2033,23 +2090,27 @@ describe('Ecommerce product entity use cases', () => {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
     };
     const ecommerceProductEntityChannelDraftRepository = {
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_002',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'catalog',
-        preparationStatus: 'ready_to_stage',
-        handoffOwner: 'ecommerce',
-        title: 'Catalog asset entity final',
-        headline: 'Catalog headline final',
-        publishChecklist: ['Pricing QA'],
-        recommendedArtifacts: ['Catalog pricing card'],
-        draftBlueprint: ['Offer bullets', 'Pricing snapshot'],
-        nextMilestone: 'QA final de catalogo',
-        blockedBy: [],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
-        promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_002',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'catalog',
+          preparationStatus: 'ready_to_stage',
+          handoffOwner: 'ecommerce',
+          title: 'Catalog asset entity final',
+          headline: 'Catalog headline final',
+          publishChecklist: ['Pricing QA'],
+          recommendedArtifacts: ['Catalog pricing card'],
+          draftBlueprint: ['Offer bullets', 'Pricing snapshot'],
+          nextMilestone: 'QA final de catalogo',
+          blockedBy: [],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
@@ -2150,7 +2211,8 @@ describe('Ecommerce product entity use cases', () => {
             releaseStatus: 'needs_publish_copy',
             executionOwner: 'shared',
             executionChecklist: ['Hero QA'],
-            launchWindow: 'Ajustar copy y artifacts antes de release controlado',
+            launchWindow:
+              'Ajustar copy y artifacts antes de release controlado',
             blockedBy: ['Pending copy review'],
           },
         ],
@@ -2242,11 +2304,12 @@ describe('Ecommerce product entity use cases', () => {
         guardrails: ['Approval guardrail'],
       }),
     };
-    const useCase = new GetTenantEcommerceStorefrontPublishReviewWorkspaceUseCase(
-      previewUseCase as never,
-      approvalUseCase as never,
-      () => new Date('2026-05-28T17:08:15.000Z'),
-    );
+    const useCase =
+      new GetTenantEcommerceStorefrontPublishReviewWorkspaceUseCase(
+        previewUseCase as never,
+        approvalUseCase as never,
+        () => new Date('2026-05-28T17:08:15.000Z'),
+      );
 
     await expect(
       useCase.execute('saas-platform', 'product_entity_001'),
@@ -2354,23 +2417,27 @@ describe('Ecommerce product entity use cases', () => {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
     };
     const ecommerceProductEntityChannelDraftRepository = {
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_003',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'whatsapp',
-        preparationStatus: 'ready_to_stage',
-        handoffOwner: 'growth',
-        title: 'Whatsapp asset entity final',
-        headline: 'Mensaje de apertura final',
-        publishChecklist: ['Sequence QA'],
-        recommendedArtifacts: ['Recovery branch', 'Close note'],
-        draftBlueprint: ['Follow-up angle', 'Recovery CTA'],
-        nextMilestone: 'QA final de whatsapp',
-        blockedBy: [],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
-        promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_003',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'whatsapp',
+          preparationStatus: 'ready_to_stage',
+          handoffOwner: 'growth',
+          title: 'Whatsapp asset entity final',
+          headline: 'Mensaje de apertura final',
+          publishChecklist: ['Sequence QA'],
+          recommendedArtifacts: ['Recovery branch', 'Close note'],
+          draftBlueprint: ['Follow-up angle', 'Recovery CTA'],
+          nextMilestone: 'QA final de whatsapp',
+          blockedBy: [],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
@@ -2428,7 +2495,9 @@ describe('Ecommerce product entity use cases', () => {
           recommendedArtifacts: ['Landing packet'],
           nextMilestone: 'QA final de landing',
           blockedBy: ['Pending copy review'],
-          guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
           promotedToReleaseCandidateAt: new Date('2026-05-28T16:58:00.000Z'),
         },
       ]),
@@ -2502,7 +2571,9 @@ describe('Ecommerce product entity use cases', () => {
           recommendedArtifacts: ['Landing packet'],
           nextMilestone: 'QA final de landing',
           blockedBy: ['Pending copy review'],
-          guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
           promotedToReleaseCandidateAt: new Date('2026-05-28T16:58:00.000Z'),
         },
       ]),
@@ -2573,7 +2644,9 @@ describe('Ecommerce product entity use cases', () => {
           recommendedArtifacts: ['Landing packet'],
           nextMilestone: 'QA final de landing',
           blockedBy: ['Pending copy review'],
-          guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
           promotedToReleaseCandidateAt: new Date('2026-05-28T16:58:00.000Z'),
         },
       ]),
@@ -2592,22 +2665,24 @@ describe('Ecommerce product entity use cases', () => {
         ),
         () => new Date('2026-05-28T16:59:00.000Z'),
       );
-    const getWorkbenchUseCase = new GetTenantEcommerceChannelReleaseWorkbenchUseCase(
-      getDetailUseCase,
-      listReleaseCandidatesUseCase,
-      () => new Date('2026-05-28T17:04:00.000Z'),
-    );
+    const getWorkbenchUseCase =
+      new GetTenantEcommerceChannelReleaseWorkbenchUseCase(
+        getDetailUseCase,
+        listReleaseCandidatesUseCase,
+        () => new Date('2026-05-28T17:04:00.000Z'),
+      );
     const getReadinessUseCase =
       new GetTenantEcommerceChannelReleaseExecutionReadinessUseCase(
         getDetailUseCase,
         listReleaseCandidatesUseCase,
         () => new Date('2026-05-28T17:05:00.000Z'),
       );
-    const useCase = new RequestTenantEcommerceChannelReleaseHandoffPacketUseCase(
-      getReadinessUseCase,
-      getWorkbenchUseCase,
-      () => new Date('2026-05-28T17:05:30.000Z'),
-    );
+    const useCase =
+      new RequestTenantEcommerceChannelReleaseHandoffPacketUseCase(
+        getReadinessUseCase,
+        getWorkbenchUseCase,
+        () => new Date('2026-05-28T17:05:30.000Z'),
+      );
 
     await expect(
       useCase.execute('saas-platform', 'product_entity_001'),
@@ -2640,7 +2715,8 @@ describe('Ecommerce product entity use cases', () => {
             releaseStatus: 'needs_publish_copy',
             executionOwner: 'shared',
             executionChecklist: ['Hero QA'],
-            launchWindow: 'Ajustar copy y artifacts antes de release controlado',
+            launchWindow:
+              'Ajustar copy y artifacts antes de release controlado',
             blockedBy: ['Pending copy review'],
           },
         ],
@@ -2668,11 +2744,12 @@ describe('Ecommerce product entity use cases', () => {
         guardrails: ['Handoff guardrail'],
       }),
     };
-    const useCase = new RequestTenantEcommerceChannelReleaseApprovalPacketUseCase(
-      readinessUseCase as never,
-      handoffUseCase as never,
-      () => new Date('2026-05-28T17:05:45.000Z'),
-    );
+    const useCase =
+      new RequestTenantEcommerceChannelReleaseApprovalPacketUseCase(
+        readinessUseCase as never,
+        handoffUseCase as never,
+        () => new Date('2026-05-28T17:05:45.000Z'),
+      );
 
     await expect(
       useCase.execute('saas-platform', 'product_entity_001'),
@@ -2702,7 +2779,8 @@ describe('Ecommerce product entity use cases', () => {
             releaseStatus: 'needs_publish_copy',
             executionOwner: 'shared',
             executionChecklist: ['Hero QA'],
-            launchWindow: 'Ajustar copy y artifacts antes de release controlado',
+            launchWindow:
+              'Ajustar copy y artifacts antes de release controlado',
             blockedBy: ['Pending copy review'],
           },
         ],
@@ -2913,12 +2991,13 @@ describe('Ecommerce product entity use cases', () => {
         guardrails: ['Workbench guardrail'],
       }),
     };
-    const useCase = new GetTenantEcommerceStorefrontReleaseCandidateBriefUseCase(
-      landingArtifactUseCase as never,
-      catalogListingUseCase as never,
-      releaseWorkbenchUseCase as never,
-      () => new Date('2026-05-28T17:09:10.000Z'),
-    );
+    const useCase =
+      new GetTenantEcommerceStorefrontReleaseCandidateBriefUseCase(
+        landingArtifactUseCase as never,
+        catalogListingUseCase as never,
+        releaseWorkbenchUseCase as never,
+        () => new Date('2026-05-28T17:09:10.000Z'),
+      );
 
     await expect(
       useCase.execute('saas-platform', 'product_entity_001'),
@@ -3011,12 +3090,13 @@ describe('Ecommerce product entity use cases', () => {
         guardrails: ['Launch guardrail'],
       }),
     };
-    const useCase = new GetTenantEcommerceStorefrontReleaseControlWorkspaceUseCase(
-      briefUseCase as never,
-      publishReviewUseCase as never,
-      launchPacketUseCase as never,
-      () => new Date('2026-05-28T17:10:00.000Z'),
-    );
+    const useCase =
+      new GetTenantEcommerceStorefrontReleaseControlWorkspaceUseCase(
+        briefUseCase as never,
+        publishReviewUseCase as never,
+        launchPacketUseCase as never,
+        () => new Date('2026-05-28T17:10:00.000Z'),
+      );
 
     await expect(
       useCase.execute('saas-platform', 'product_entity_001'),
@@ -3038,23 +3118,27 @@ describe('Ecommerce product entity use cases', () => {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
     };
     const ecommerceProductEntityChannelDraftRepository = {
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_001',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'landing',
-        preparationStatus: 'needs_core_copy',
-        handoffOwner: 'shared',
-        title: 'Landing asset entity final',
-        headline: 'Headline final',
-        draftBlueprint: ['Hero final', 'CTA final'],
-        publishChecklist: ['Hero QA'],
-        recommendedArtifacts: ['Landing packet'],
-        nextMilestone: 'QA final de landing',
-        blockedBy: ['Pending copy review'],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
-        promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_001',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'landing',
+          preparationStatus: 'needs_core_copy',
+          handoffOwner: 'shared',
+          title: 'Landing asset entity final',
+          headline: 'Headline final',
+          draftBlueprint: ['Hero final', 'CTA final'],
+          publishChecklist: ['Hero QA'],
+          recommendedArtifacts: ['Landing packet'],
+          nextMilestone: 'QA final de landing',
+          blockedBy: ['Pending copy review'],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
@@ -3102,23 +3186,27 @@ describe('Ecommerce product entity use cases', () => {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
     };
     const ecommerceProductEntityChannelDraftRepository = {
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_003',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'whatsapp',
-        preparationStatus: 'ready_to_stage',
-        handoffOwner: 'growth',
-        title: 'Whatsapp asset entity final',
-        headline: 'Mensaje de apertura final',
-        draftBlueprint: ['Follow-up angle', 'Recovery CTA'],
-        publishChecklist: ['Sequence QA'],
-        recommendedArtifacts: ['Recovery branch', 'Close note'],
-        nextMilestone: 'QA final de whatsapp',
-        blockedBy: [],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
-        promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_003',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'whatsapp',
+          preparationStatus: 'ready_to_stage',
+          handoffOwner: 'growth',
+          title: 'Whatsapp asset entity final',
+          headline: 'Mensaje de apertura final',
+          draftBlueprint: ['Follow-up angle', 'Recovery CTA'],
+          publishChecklist: ['Sequence QA'],
+          recommendedArtifacts: ['Recovery branch', 'Close note'],
+          nextMilestone: 'QA final de whatsapp',
+          blockedBy: [],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
@@ -3162,23 +3250,27 @@ describe('Ecommerce product entity use cases', () => {
       findByTenantSlugAndId: jest.fn().mockResolvedValue(productEntity),
     };
     const ecommerceProductEntityChannelDraftRepository = {
-      findByTenantSlugAndProductEntityIdAndChannelKey: jest.fn().mockResolvedValue({
-        id: 'channel_draft_003',
-        tenantSlug: 'saas-platform',
-        productEntityId: 'product_entity_001',
-        channelKey: 'whatsapp',
-        preparationStatus: 'ready_to_stage',
-        handoffOwner: 'growth',
-        title: 'Whatsapp asset entity final',
-        headline: 'Mensaje de apertura final',
-        publishChecklist: ['Sequence QA'],
-        recommendedArtifacts: ['Recovery branch', 'Close note'],
-        draftBlueprint: ['Follow-up angle', 'Recovery CTA'],
-        nextMilestone: 'QA final de whatsapp',
-        blockedBy: [],
-        guardrails: ['No tratar esta entidad como checkout ni inventario final todavia.'],
-        promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
-      }),
+      findByTenantSlugAndProductEntityIdAndChannelKey: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'channel_draft_003',
+          tenantSlug: 'saas-platform',
+          productEntityId: 'product_entity_001',
+          channelKey: 'whatsapp',
+          preparationStatus: 'ready_to_stage',
+          handoffOwner: 'growth',
+          title: 'Whatsapp asset entity final',
+          headline: 'Mensaje de apertura final',
+          publishChecklist: ['Sequence QA'],
+          recommendedArtifacts: ['Recovery branch', 'Close note'],
+          draftBlueprint: ['Follow-up angle', 'Recovery CTA'],
+          nextMilestone: 'QA final de whatsapp',
+          blockedBy: [],
+          guardrails: [
+            'No tratar esta entidad como checkout ni inventario final todavia.',
+          ],
+          promotedToAssetEntityAt: new Date('2026-05-28T16:53:00.000Z'),
+        }),
     };
     const getDetailUseCase = new GetTenantEcommerceProductEntityDetailUseCase(
       ecommerceProductEntityRepository as never,
@@ -3251,10 +3343,11 @@ describe('Ecommerce product entity use cases', () => {
         guardrails: ['Growth guardrail'],
       }),
     };
-    const useCase = new GetTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase(
-      handoffUseCase as never,
-      () => new Date('2026-05-28T17:08:30.000Z'),
-    );
+    const useCase =
+      new GetTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase(
+        handoffUseCase as never,
+        () => new Date('2026-05-28T17:08:30.000Z'),
+      );
 
     await expect(
       useCase.execute('saas-platform', 'product_entity_001'),
@@ -3300,10 +3393,11 @@ describe('Ecommerce product entity use cases', () => {
         guardrails: ['Growth guardrail'],
       }),
     };
-    const useCase = new RequestTenantEcommerceWhatsappGrowthActivationPacketUseCase(
-      activationWorkspaceUseCase as never,
-      () => new Date('2026-05-28T17:08:45.000Z'),
-    );
+    const useCase =
+      new RequestTenantEcommerceWhatsappGrowthActivationPacketUseCase(
+        activationWorkspaceUseCase as never,
+        () => new Date('2026-05-28T17:08:45.000Z'),
+      );
 
     await expect(
       useCase.execute('saas-platform', 'product_entity_001'),
@@ -3376,11 +3470,12 @@ describe('Ecommerce product entity use cases', () => {
         guardrails: ['Activation guardrail'],
       }),
     };
-    const useCase = new RequestTenantEcommerceWhatsappGrowthExecutionBridgeUseCase(
-      handoffUseCase as never,
-      activationPacketUseCase as never,
-      () => new Date('2026-05-28T17:09:00.000Z'),
-    );
+    const useCase =
+      new RequestTenantEcommerceWhatsappGrowthExecutionBridgeUseCase(
+        handoffUseCase as never,
+        activationPacketUseCase as never,
+        () => new Date('2026-05-28T17:09:00.000Z'),
+      );
 
     await expect(
       useCase.execute('saas-platform', 'product_entity_001'),
@@ -3808,7 +3903,10 @@ describe('Ecommerce product entity use cases', () => {
         tenantSlug: 'saas-platform',
         generatedAt: new Date('2026-05-28T17:00:00.000Z'),
         productEntity,
-        assetEntity: { channelKey: 'landing', title: 'Landing asset entity final' },
+        assetEntity: {
+          channelKey: 'landing',
+          title: 'Landing asset entity final',
+        },
         artifactStatus: 'ready_for_release_candidate',
         summary: {
           headline: 'Landing lista',
@@ -3836,7 +3934,10 @@ describe('Ecommerce product entity use cases', () => {
         tenantSlug: 'saas-platform',
         generatedAt: new Date('2026-05-28T17:01:00.000Z'),
         productEntity,
-        assetEntity: { channelKey: 'catalog', title: 'Catalog asset entity final' },
+        assetEntity: {
+          channelKey: 'catalog',
+          title: 'Catalog asset entity final',
+        },
         commercialStatus: 'ready_for_storefront_card',
         card: {
           title: 'Catalog asset entity final',
@@ -3855,7 +3956,10 @@ describe('Ecommerce product entity use cases', () => {
         tenantSlug: 'saas-platform',
         generatedAt: new Date('2026-05-28T17:12:00.000Z'),
         productEntity,
-        assetEntity: { channelKey: 'whatsapp', title: 'Whatsapp asset entity final' },
+        assetEntity: {
+          channelKey: 'whatsapp',
+          title: 'Whatsapp asset entity final',
+        },
         acknowledgementStatus: 'ready_for_growth_launch_acknowledgement',
         summary: 'WhatsApp listo para acknowledgement final.',
         targetWorkspace: {
@@ -4015,7 +4119,10 @@ describe('Ecommerce product entity use cases', () => {
         tenantSlug: 'saas-platform',
         generatedAt: new Date('2026-05-28T17:11:00.000Z'),
         productEntity,
-        assetEntity: { channelKey: 'catalog', title: 'Catalog asset entity final' },
+        assetEntity: {
+          channelKey: 'catalog',
+          title: 'Catalog asset entity final',
+        },
         merchandisingStatus: 'ready_for_merchandising_review',
         card: {
           title: 'Catalog asset entity final',
@@ -4040,7 +4147,10 @@ describe('Ecommerce product entity use cases', () => {
         tenantSlug: 'saas-platform',
         generatedAt: new Date('2026-05-28T17:12:00.000Z'),
         productEntity,
-        assetEntity: { channelKey: 'whatsapp', title: 'Whatsapp asset entity final' },
+        assetEntity: {
+          channelKey: 'whatsapp',
+          title: 'Whatsapp asset entity final',
+        },
         acknowledgementStatus: 'ready_for_growth_launch_acknowledgement',
         summary: 'WhatsApp listo.',
         targetWorkspace: {
@@ -4210,7 +4320,10 @@ describe('Ecommerce product entity use cases', () => {
         tenantSlug: 'saas-platform',
         generatedAt: new Date('2026-05-28T17:09:20.000Z'),
         productEntity,
-        assetEntity: { channelKey: 'catalog', title: 'Catalog asset entity final' },
+        assetEntity: {
+          channelKey: 'catalog',
+          title: 'Catalog asset entity final',
+        },
         listingStatus: 'ready_for_storefront_listing',
         card: {
           title: 'Catalog asset entity final',
@@ -4232,7 +4345,10 @@ describe('Ecommerce product entity use cases', () => {
         tenantSlug: 'saas-platform',
         generatedAt: new Date('2026-05-28T17:09:30.000Z'),
         productEntity,
-        assetEntity: { channelKey: 'whatsapp', title: 'Whatsapp asset entity final' },
+        assetEntity: {
+          channelKey: 'whatsapp',
+          title: 'Whatsapp asset entity final',
+        },
         launchStatus: 'ready_for_growth_operator_launch',
         summary: 'WhatsApp launch listo.',
         targetWorkspace: {
@@ -4444,11 +4560,12 @@ describe('Ecommerce product entity use cases', () => {
         guardrails: ['Bridge guardrail'],
       }),
     };
-    const useCase = new RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase(
-      capturePacketUseCase as never,
-      invoicingBridgeUseCase as never,
-      () => new Date('2026-05-28T17:30:00.000Z'),
-    );
+    const useCase =
+      new RequestTenantEcommerceOrderToInvoiceReadinessPacketUseCase(
+        capturePacketUseCase as never,
+        invoicingBridgeUseCase as never,
+        () => new Date('2026-05-28T17:30:00.000Z'),
+      );
 
     await expect(
       useCase.execute('saas-platform', 'product_entity_001'),
@@ -4610,6 +4727,88 @@ describe('Ecommerce product entity use cases', () => {
     });
   });
 
+  it('updates one ecommerce order customer profile and unlocks fiscal readiness', async () => {
+    const existingOrderDraft = {
+      id: 'order_draft_001',
+      tenantId: 'tenant_001',
+      tenantSlug: 'saas-platform',
+      productEntityId: 'product_entity_001',
+      status: 'needs_data' as const,
+      orderLabel: 'Order draft',
+      offerTitle: 'Catalog asset entity final',
+      pricingSnapshot: 'Operator confirmed band',
+      primaryCta: 'Activar producto base',
+      closingChannel: 'landing' as const,
+      captureStatus: 'ready_for_order_draft' as const,
+      invoicingReadinessStatus: 'needs_data' as const,
+      customerProfile: {
+        fullName: null,
+        email: null,
+        whatsappPhone: null,
+        billingIntent: null,
+        buyerCompany: null,
+        buyerTaxIdOrDocument: null,
+      },
+      requiredFields: ['full_name'],
+      optionalFields: ['buyer_company'],
+      operatorPrompts: ['Prompt'],
+      missingFields: [
+        'buyer_legal_name',
+        'buyer_tax_id_or_document',
+        'billing_email',
+      ],
+      blockedBy: [],
+      guardrails: ['Guardrail'],
+      createdAt: new Date('2026-05-28T17:31:00.000Z'),
+      updatedAt: new Date('2026-05-28T17:31:00.000Z'),
+    };
+    const repository = {
+      findByTenantSlugAndId: jest.fn().mockResolvedValue(existingOrderDraft),
+      updateCustomerProfile: jest.fn().mockImplementation(async (command) => ({
+        ...existingOrderDraft,
+        status: command.status,
+        invoicingReadinessStatus: command.invoicingReadinessStatus,
+        customerProfile: { ...command.customerProfile },
+        missingFields: [...command.missingFields],
+        blockedBy: [...command.blockedBy],
+        updatedAt: new Date('2026-06-03T11:00:00.000Z'),
+      })),
+    };
+    const useCase = new UpdateTenantEcommerceOrderCustomerProfileUseCase(
+      repository as never,
+      () => new Date('2026-06-03T11:00:00.000Z'),
+    );
+
+    await expect(
+      useCase.execute(
+        'saas-platform',
+        'product_entity_001',
+        'order_draft_001',
+        {
+          fullName: 'Buyer One',
+          email: 'buyer@example.com',
+          billingIntent: 'invoice',
+          buyerCompany: 'Buyer Company',
+          buyerTaxIdOrDocument: '0999999999001',
+        },
+      ),
+    ).resolves.toMatchObject({
+      orderDraft: {
+        status: 'ready_for_review',
+        invoicingReadinessStatus: 'ready_to_invoice',
+        customerProfile: {
+          buyerCompany: 'Buyer Company',
+          buyerTaxIdOrDocument: '0999999999001',
+        },
+        missingFields: [],
+      },
+      readinessSnapshot: {
+        buyerProfileStatus: 'ready',
+        handoffStatus: 'ready_for_invoice_handoff',
+      },
+    });
+  });
+
   it('requests one checkout closeout packet', async () => {
     const orderDraftDetailUseCase = {
       execute: jest.fn().mockResolvedValue({
@@ -4684,11 +4883,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       closeoutStatus: 'ready_for_operator_closeout',
       commercialSnapshot: {
@@ -4793,11 +4988,7 @@ describe('Ecommerce product entity use cases', () => {
       );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       bridgeStatus: 'ready_for_growth_follow_up',
       conversationSeed: {
@@ -4907,11 +5098,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       reviewStatus: 'ready_for_operator_review',
       reviewSnapshot: {
@@ -4995,11 +5182,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       bridgeStatus: 'ready_to_open_invoice_draft',
       invoiceDraftSeed: {
@@ -5083,11 +5266,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       workspaceStatus: 'ready_for_growth_follow_up',
       followUpPlan: {
@@ -5132,11 +5311,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       decision: 'approved',
       owner: { productKey: 'ecommerce', role: 'operator' },
@@ -5209,11 +5384,7 @@ describe('Ecommerce product entity use cases', () => {
       );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       workspaceStatus: 'needs_data',
       missingFields: ['buyer_legal_name', 'billing_email'],
@@ -5291,11 +5462,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       handoffStatus: 'ready',
       route: 'invoicing',
@@ -5380,11 +5547,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       workspaceStatus: 'ready_to_open_invoice_draft',
       commercialSnapshot: {
@@ -5465,11 +5628,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       currentStatus: 'handed_off',
       nextStep: expect.any(String),
@@ -5625,11 +5784,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       executionStatus: 'ready_for_execution',
       activeRoute: 'invoicing',
@@ -5689,11 +5844,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       bridgeStatus: 'ready_to_open',
       payload: { documentHint: 'invoice' },
@@ -5795,11 +5946,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       resolutionStatus: 'ready_to_resolve',
       currentRoute: 'hold',
@@ -5858,11 +6005,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       launchStatus: 'ready_to_launch',
       launchPayload: { routeConfirmed: true, documentHint: 'invoice' },
@@ -5992,11 +6135,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       resolutionStatus: 'ready_to_reroute',
       recommendedRoute: 'invoicing',
@@ -6049,11 +6188,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       workspaceStatus: 'ready_for_invoice_handoff',
       routeSnapshot: {
@@ -6166,17 +6301,14 @@ describe('Ecommerce product entity use cases', () => {
         guardrails: ['Handoff guardrail'],
       }),
     };
-    const useCase = new RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase(
-      invoiceDraftHandoffWorkspaceUseCase as never,
-      () => new Date('2026-06-02T10:29:00.000Z'),
-    );
+    const useCase =
+      new RequestTenantEcommerceInvoiceHandoffAcknowledgementUseCase(
+        invoiceDraftHandoffWorkspaceUseCase as never,
+        () => new Date('2026-06-02T10:29:00.000Z'),
+      );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       acknowledgementStatus: 'accepted',
       receivedArtifacts: ['Order draft snapshot'],
@@ -6184,75 +6316,55 @@ describe('Ecommerce product entity use cases', () => {
   });
 
   it('loads one order payment readiness workspace', async () => {
-    const checkoutCloseoutPacketUseCase = {
+    const orderDraftDetailUseCase = {
       execute: jest.fn().mockResolvedValue({
         tenantSlug: 'saas-platform',
         generatedAt: new Date('2026-06-02T10:30:00.000Z'),
         productEntity,
         orderDraft: {
           id: 'order_draft_001',
+          status: 'ready_for_review',
           orderLabel: 'Order draft',
-          closingChannel: 'whatsapp_growth',
-          customerProfile: { billingIntent: 'invoice' },
-        },
-        closeoutStatus: 'ready_for_review',
-        commercialSnapshot: {
+          closingChannel: 'whatsapp',
           pricingSnapshot: 'Operator confirmed band',
           primaryCta: 'Activar producto base',
+          customerProfile: { billingIntent: 'invoice' },
+          missingFields: [],
         },
-        paymentReadiness: {
-          status: 'ready',
-          hint: 'Todo listo.',
-        },
+        summary: 'Order detail listo.',
         blockedBy: [],
-        guardrails: ['Closeout guardrail'],
-      }),
-    };
-    const invoiceAcknowledgementUseCase = {
-      execute: jest.fn().mockResolvedValue({
-        acknowledgementStatus: 'accepted',
-        missingSignals: [],
-        blockedBy: [],
-        guardrails: ['Ack guardrail'],
+        guardrails: ['Order guardrail'],
       }),
     };
     const useCase = new GetTenantEcommerceOrderPaymentReadinessWorkspaceUseCase(
-      checkoutCloseoutPacketUseCase as never,
-      invoiceAcknowledgementUseCase as never,
+      orderDraftDetailUseCase as never,
       () => new Date('2026-06-02T10:31:00.000Z'),
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       workspaceStatus: 'ready_for_collection',
       paymentPlan: {
-        collectionChannel: 'whatsapp_growth',
+        collectionChannel: 'whatsapp',
       },
     });
   });
 
   it('loads one order post-sale lifecycle detail', async () => {
-    const orderLifecycleUseCase = {
+    const orderDraftDetailUseCase = {
       execute: jest.fn().mockResolvedValue({
         tenantSlug: 'saas-platform',
         generatedAt: new Date('2026-06-02T10:32:00.000Z'),
         productEntity,
-        orderDraft: { id: 'order_draft_001', orderLabel: 'Order draft' },
-        currentStatus: 'handed_off',
+        orderDraft: {
+          id: 'order_draft_001',
+          status: 'ready_for_review',
+          orderLabel: 'Order draft',
+        },
+        summary: 'Order detail listo.',
         blockedBy: [],
-        guardrails: ['Lifecycle guardrail'],
-      }),
-    };
-    const invoiceAcknowledgementUseCase = {
-      execute: jest.fn().mockResolvedValue({
-        acknowledgementStatus: 'accepted',
-        blockedBy: [],
-        guardrails: ['Ack guardrail'],
+        guardrails: ['Order guardrail'],
       }),
     };
     const paymentReadinessUseCase = {
@@ -6263,18 +6375,13 @@ describe('Ecommerce product entity use cases', () => {
       }),
     };
     const useCase = new GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase(
-      orderLifecycleUseCase as never,
-      invoiceAcknowledgementUseCase as never,
+      orderDraftDetailUseCase as never,
       paymentReadinessUseCase as never,
       () => new Date('2026-06-02T10:33:00.000Z'),
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       currentStatus: 'awaiting_payment',
       timeline: expect.arrayContaining([
@@ -6364,25 +6471,14 @@ describe('Ecommerce product entity use cases', () => {
         guardrails: ['Payment readiness guardrail'],
       }),
     };
-    const postSaleLifecycleUseCase = {
-      execute: jest.fn().mockResolvedValue({
-        currentStatus: 'awaiting_payment',
-        blockedBy: [],
-        guardrails: ['Post-sale guardrail'],
-      }),
-    };
-    const useCase = new GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase(
-      paymentReadinessUseCase as never,
-      postSaleLifecycleUseCase as never,
-      () => new Date('2026-06-02T10:38:00.000Z'),
-    );
+    const useCase =
+      new GetTenantEcommerceOrderPaymentConfirmationWorkspaceUseCase(
+        paymentReadinessUseCase as never,
+        () => new Date('2026-06-02T10:38:00.000Z'),
+      );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       confirmationStatus: 'ready_for_confirmation',
       expectedCollection: {
@@ -6428,11 +6524,7 @@ describe('Ecommerce product entity use cases', () => {
       );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       decision: 'confirmed',
       owner: { productKey: 'ecommerce', role: 'operator' },
@@ -6463,23 +6555,62 @@ describe('Ecommerce product entity use cases', () => {
         guardrails: ['Post-sale guardrail'],
       }),
     };
-    const useCase = new GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase(
-      paymentConfirmationUseCase as never,
-      postSaleLifecycleUseCase as never,
-      () => new Date('2026-06-02T10:40:00.000Z'),
-    );
+    const useCase =
+      new GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase(
+        paymentConfirmationUseCase as never,
+        postSaleLifecycleUseCase as never,
+        () => new Date('2026-06-02T10:40:00.000Z'),
+      );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       fulfillmentStatus: 'waiting_payment_confirmation',
       fulfillmentProfile: {
         fulfillmentType: 'service',
         deliveryChannel: 'whatsapp',
+      },
+    });
+  });
+
+  it('loads one order fulfillment availability workspace', async () => {
+    const fulfillmentReadinessUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:40:00.000Z'),
+        productEntity,
+        orderDraft: {
+          id: 'order_draft_001',
+          orderLabel: 'Order draft',
+          customerProfile: {
+            email: 'buyer@example.com',
+            whatsappPhone: null,
+          },
+        },
+        fulfillmentStatus: 'ready_for_fulfillment',
+        fulfillmentProfile: {
+          fulfillmentType: 'service',
+          deliveryChannel: 'email',
+          ownerRole: 'operator',
+        },
+        blockedBy: [],
+        guardrails: ['Fulfillment guardrail'],
+      }),
+    };
+    const useCase =
+      new GetTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase(
+        fulfillmentReadinessUseCase as never,
+        () => new Date('2026-06-03T11:10:00.000Z'),
+      );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
+    ).resolves.toMatchObject({
+      availabilityStatus: 'available_for_fulfillment',
+      inventoryMode: 'capacity_signal',
+      availabilitySignals: {
+        paymentStatus: 'confirmed',
+        buyerContactStatus: 'ready',
       },
     });
   });
@@ -6527,19 +6658,16 @@ describe('Ecommerce product entity use cases', () => {
         guardrails: ['Post-sale guardrail'],
       }),
     };
-    const useCase = new GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase(
-      paymentConfirmationDecisionUseCase as never,
-      fulfillmentReadinessUseCase as never,
-      postSaleLifecycleUseCase as never,
-      () => new Date('2026-06-02T10:42:00.000Z'),
-    );
+    const useCase =
+      new GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase(
+        paymentConfirmationDecisionUseCase as never,
+        fulfillmentReadinessUseCase as never,
+        postSaleLifecycleUseCase as never,
+        () => new Date('2026-06-02T10:42:00.000Z'),
+      );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       executionStatus: 'ready_to_execute',
       executionSignals: {
@@ -6599,11 +6727,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       logStatus: 'confirmed',
       decisionSignal: {
@@ -6656,19 +6780,16 @@ describe('Ecommerce product entity use cases', () => {
         guardrails: ['Post-sale guardrail'],
       }),
     };
-    const useCase = new GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase(
-      paymentConfirmationLogUseCase as never,
-      fulfillmentExecutionUseCase as never,
-      postSaleLifecycleUseCase as never,
-      () => new Date('2026-06-02T10:45:00.000Z'),
-    );
+    const useCase =
+      new GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase(
+        paymentConfirmationLogUseCase as never,
+        fulfillmentExecutionUseCase as never,
+        postSaleLifecycleUseCase as never,
+        () => new Date('2026-06-02T10:45:00.000Z'),
+      );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       deliveryStatus: 'in_progress',
       deliveryProfile: {
@@ -6721,11 +6842,7 @@ describe('Ecommerce product entity use cases', () => {
     );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       disputeStatus: 'confirmed',
       disputeProfile: {
@@ -6776,11 +6893,7 @@ describe('Ecommerce product entity use cases', () => {
       );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       resolutionDecision: 'confirmed',
       resolutionOwner: {
@@ -6836,11 +6949,7 @@ describe('Ecommerce product entity use cases', () => {
       );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       completionStatus: 'partial',
       deliveryResult: {
@@ -6890,11 +6999,7 @@ describe('Ecommerce product entity use cases', () => {
       );
 
     await expect(
-      useCase.execute(
-        'saas-platform',
-        'product_entity_001',
-        'order_draft_001',
-      ),
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
     ).resolves.toMatchObject({
       confirmationStatus: 'partial',
       confirmationRecord: {
@@ -7130,7 +7235,11 @@ describe('Ecommerce product entity use cases', () => {
     await expect(
       useCase.execute('saas-platform', 'product_entity_001'),
     ).resolves.toMatchObject({
-      summary: { totalOrders: 1, awaitingPaymentCount: 1, highPriorityCount: 1 },
+      summary: {
+        totalOrders: 1,
+        awaitingPaymentCount: 1,
+        highPriorityCount: 1,
+      },
       entries: [
         expect.objectContaining({
           orderDraftId: 'order_draft_001',

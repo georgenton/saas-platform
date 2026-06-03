@@ -121,7 +121,36 @@ export class PrismaEcommerceOrderDraftRepository
     return record ? this.toView(record as EcommerceOrderDraftRow) : null;
   }
 
-  private toView(record: EcommerceOrderDraftRow): TenantEcommerceOrderDraftView {
+  async updateCustomerProfile(
+    command: Parameters<
+      EcommerceOrderDraftRepository['updateCustomerProfile']
+    >[0],
+  ): Promise<TenantEcommerceOrderDraftView | null> {
+    const existing = await this.delegate.findFirst({
+      where: { tenantSlug: command.tenantSlug, id: command.orderDraftId },
+    });
+
+    if (!existing) {
+      return null;
+    }
+
+    const record = await this.delegate.update({
+      where: { id: command.orderDraftId },
+      data: {
+        status: command.status,
+        invoicingReadinessStatus: command.invoicingReadinessStatus,
+        customerProfileJson: JSON.stringify(command.customerProfile),
+        missingFieldsJson: JSON.stringify(command.missingFields),
+        blockedByJson: JSON.stringify(command.blockedBy),
+      },
+    });
+
+    return this.toView(record as EcommerceOrderDraftRow);
+  }
+
+  private toView(
+    record: EcommerceOrderDraftRow,
+  ): TenantEcommerceOrderDraftView {
     return {
       id: record.id,
       tenantId: record.tenantId,

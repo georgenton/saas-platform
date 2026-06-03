@@ -32,6 +32,7 @@ import {
   GetTenantEcommerceOrderPostSaleReportingSummaryUseCase,
   GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase,
+  GetTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
   GetTenantEcommerceOrderPostSaleLifecycleDetailUseCase,
   GetTenantEcommerceOrderPostSaleOpsBoardUseCase,
@@ -136,6 +137,7 @@ import {
   UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
   UpdateTenantEcommerceProductSetupEditableSnapshotUseCase,
   UpdateTenantEcommerceProductWorkspaceEditableSnapshotUseCase,
+  UpdateTenantEcommerceOrderCustomerProfileUseCase,
 } from '@saas-platform/ecommerce-application';
 import { FEATURE_FLAG_REPOSITORY } from '@saas-platform/feature-flags-application';
 import {
@@ -227,7 +229,8 @@ import { EcommerceController } from './ecommerce.controller';
     {
       provide: GetTenantBySlugUseCase,
       inject: [TENANT_REPOSITORY],
-      useFactory: (tenantRepository) => new GetTenantBySlugUseCase(tenantRepository),
+      useFactory: (tenantRepository) =>
+        new GetTenantBySlugUseCase(tenantRepository),
     },
     {
       provide: GetTenantEcommerceStoreProfileWorkspaceUseCase,
@@ -276,7 +279,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
+      provide:
+        RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase,
       inject: [GetTenantEcommerceProductAuthoringDraftDetailUseCase],
       useFactory: (getTenantEcommerceProductAuthoringDraftDetailUseCase) =>
         new RequestTenantEcommerceProductAuthoringDraftRefinementPacketUseCase(
@@ -385,7 +389,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: RequestTenantEcommerceProductEntityCommercializationPacketUseCase,
+      provide:
+        RequestTenantEcommerceProductEntityCommercializationPacketUseCase,
       inject: [GetTenantEcommerceProductEntityDetailUseCase],
       useFactory: (getTenantEcommerceProductEntityDetailUseCase) =>
         new RequestTenantEcommerceProductEntityCommercializationPacketUseCase(
@@ -401,16 +406,21 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
+      provide:
+        GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
       inject: [GetTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase],
-      useFactory: (getTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase) =>
+      useFactory: (
+        getTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase,
+      ) =>
         new GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase(
           getTenantEcommerceProductEntityChannelAssetsWorkspaceUseCase,
         ),
     },
     {
       provide: GetTenantEcommerceProductEntityChannelDraftDetailUseCase,
-      inject: [GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase],
+      inject: [
+        GetTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
+      ],
       useFactory: (
         getTenantEcommerceProductEntityChannelAssetDraftsWorkspaceUseCase,
       ) =>
@@ -419,7 +429,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: RequestTenantEcommerceProductEntityChannelDraftActionPacketUseCase,
+      provide:
+        RequestTenantEcommerceProductEntityChannelDraftActionPacketUseCase,
       inject: [GetTenantEcommerceProductEntityChannelDraftDetailUseCase],
       useFactory: (getTenantEcommerceProductEntityChannelDraftDetailUseCase) =>
         new RequestTenantEcommerceProductEntityChannelDraftActionPacketUseCase(
@@ -427,7 +438,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: RequestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase,
+      provide:
+        RequestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase,
       inject: [GetTenantEcommerceProductEntityChannelDraftDetailUseCase],
       useFactory: (getTenantEcommerceProductEntityChannelDraftDetailUseCase) =>
         new RequestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase(
@@ -435,7 +447,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: GetTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceUseCase,
+      provide:
+        GetTenantEcommerceProductEntityChannelDraftPublishPreparationWorkspaceUseCase,
       inject: [
         GetTenantEcommerceProductEntityChannelDraftDetailUseCase,
         RequestTenantEcommerceProductEntityChannelDraftPublishReadinessPacketUseCase,
@@ -486,7 +499,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: PromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
+      provide:
+        PromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase,
       inject: [ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY],
       useFactory: (ecommerceProductEntityChannelDraftRepository) =>
         new PromoteTenantEcommerceSavedProductEntityChannelDraftToChannelAssetWorkspaceUseCase(
@@ -494,7 +508,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
+      provide:
+        PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase,
       inject: [ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY],
       useFactory: (ecommerceProductEntityChannelDraftRepository) =>
         new PromoteTenantEcommerceProductEntityChannelAssetWorkspaceToChannelAssetEntityUseCase(
@@ -538,7 +553,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: GetTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase,
+      provide:
+        GetTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase,
       inject: [
         ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
         GetTenantEcommerceProductEntityDetailUseCase,
@@ -574,7 +590,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: UpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase,
+      provide:
+        UpdateTenantEcommerceProductEntityChannelAssetEntityEditableSnapshotUseCase,
       inject: [
         ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
         GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
@@ -589,7 +606,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: RequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase,
+      provide:
+        RequestTenantEcommerceProductEntityChannelAssetEntityPublishPreparationPacketUseCase,
       inject: [GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase],
       useFactory: (
         getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
@@ -599,7 +617,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
+      provide:
+        PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase,
       inject: [ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY],
       useFactory: (ecommerceProductEntityChannelDraftRepository) =>
         new PromoteTenantEcommerceProductEntityChannelAssetEntityToReleaseCandidateUseCase(
@@ -625,7 +644,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: GetTenantEcommerceProductEntityChannelReleaseCandidateDetailUseCase,
+      provide:
+        GetTenantEcommerceProductEntityChannelReleaseCandidateDetailUseCase,
       inject: [
         ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
         GetTenantEcommerceProductEntityDetailUseCase,
@@ -645,7 +665,9 @@ import { EcommerceController } from './ecommerce.controller';
     {
       provide: GetTenantEcommerceLandingAssetEntityWorkspaceUseCase,
       inject: [GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase],
-      useFactory: (getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase) =>
+      useFactory: (
+        getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+      ) =>
         new GetTenantEcommerceLandingAssetEntityWorkspaceUseCase(
           getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
         ),
@@ -653,7 +675,9 @@ import { EcommerceController } from './ecommerce.controller';
     {
       provide: GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase,
       inject: [GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase],
-      useFactory: (getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase) =>
+      useFactory: (
+        getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+      ) =>
         new GetTenantEcommerceCatalogAssetEntityWorkspaceUseCase(
           getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
         ),
@@ -810,7 +834,9 @@ import { EcommerceController } from './ecommerce.controller';
     {
       provide: GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase,
       inject: [GetTenantEcommerceProductEntityChannelAssetEntityDetailUseCase],
-      useFactory: (getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase) =>
+      useFactory: (
+        getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
+      ) =>
         new GetTenantEcommerceWhatsappChannelSequenceWorkspaceUseCase(
           getTenantEcommerceProductEntityChannelAssetEntityDetailUseCase,
         ),
@@ -961,7 +987,9 @@ import { EcommerceController } from './ecommerce.controller';
     {
       provide: RequestTenantEcommerceWhatsappGrowthActivationPacketUseCase,
       inject: [GetTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase],
-      useFactory: (getTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase) =>
+      useFactory: (
+        getTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase,
+      ) =>
         new RequestTenantEcommerceWhatsappGrowthActivationPacketUseCase(
           getTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase,
         ),
@@ -997,7 +1025,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: RequestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase,
+      provide:
+        RequestTenantEcommerceWhatsappGrowthLaunchAcknowledgementPacketUseCase,
       inject: [
         GetTenantEcommerceWhatsappGrowthActivationWorkspaceUseCase,
         RequestTenantEcommerceWhatsappGrowthActivationPacketUseCase,
@@ -1080,6 +1109,14 @@ import { EcommerceController } from './ecommerce.controller';
           getTenantBySlugUseCase,
           requestTenantEcommerceCheckoutCustomerCapturePacketUseCase,
           requestTenantEcommerceOrderToInvoiceReadinessPacketUseCase,
+          ecommerceOrderDraftRepository,
+        ),
+    },
+    {
+      provide: UpdateTenantEcommerceOrderCustomerProfileUseCase,
+      inject: [ECOMMERCE_ORDER_DRAFT_REPOSITORY],
+      useFactory: (ecommerceOrderDraftRepository) =>
+        new UpdateTenantEcommerceOrderCustomerProfileUseCase(
           ecommerceOrderDraftRepository,
         ),
     },
@@ -1537,6 +1574,16 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
+      provide: GetTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase,
+      inject: [GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase],
+      useFactory: (
+        getTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
+      ) =>
+        new GetTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase(
+          getTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcommerceOrderFulfillmentExecutionWorkspaceUseCase,
       inject: [
         RequestTenantEcommerceOrderPaymentConfirmationDecisionUseCase,
@@ -1591,7 +1638,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: RequestTenantEcommerceOrderFulfillmentDeliveryConfirmationPacketUseCase,
+      provide:
+        RequestTenantEcommerceOrderFulfillmentDeliveryConfirmationPacketUseCase,
       inject: [
         GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
         RequestTenantEcommerceOrderFulfillmentCompletionPacketUseCase,
@@ -1777,8 +1825,11 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: RequestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase,
-      inject: [GetTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase],
+      provide:
+        RequestTenantEcommerceProductEntityChannelAssetPublishPacketUseCase,
+      inject: [
+        GetTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase,
+      ],
       useFactory: (
         getTenantEcommerceProductEntityChannelAssetWorkspaceDetailUseCase,
       ) =>
@@ -1802,7 +1853,8 @@ import { EcommerceController } from './ecommerce.controller';
         ),
     },
     {
-      provide: UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
+      provide:
+        UpdateTenantEcommerceSavedProductEntityChannelDraftEditableSnapshotUseCase,
       inject: [
         ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
         GetTenantEcommerceSavedProductEntityChannelDraftDetailUseCase,
@@ -1921,7 +1973,10 @@ import { EcommerceController } from './ecommerce.controller';
       provide: ResolveTenantAccessUseCase,
       inject: [TENANT_REPOSITORY, TENANT_ACCESS_REPOSITORY],
       useFactory: (tenantRepository, tenantAccessRepository) =>
-        new ResolveTenantAccessUseCase(tenantRepository, tenantAccessRepository),
+        new ResolveTenantAccessUseCase(
+          tenantRepository,
+          tenantAccessRepository,
+        ),
     },
     TenantMembershipGuard,
     TenantPermissionGuard,

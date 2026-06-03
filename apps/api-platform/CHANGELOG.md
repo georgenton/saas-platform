@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.64.0
+
+### Minor Changes
+
+- 2b13a8a: Add idempotent ecommerce operational timeline events, closeout event capture from post-sale reporting, filtered timeline APIs, and operator timeline filters in the web console.
+
 ## 0.63.0
 
 ### Minor Changes

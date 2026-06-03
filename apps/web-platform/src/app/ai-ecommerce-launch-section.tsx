@@ -55,6 +55,7 @@ import {
   EcommerceOrderOpsEscalationBoardResponse,
   EcommerceOrderOperatorWorkboardResponse,
   EcommerceOrderPaymentConfirmationLogResponse,
+  EcommerceOrderPaymentReconciliationWorkspaceResponse,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationDecisionResponse,
@@ -67,6 +68,7 @@ import {
   EcommerceOrderPostSaleLifecycleRegistryResponse,
   EcommerceOrderRevenueOpsBoardResponse,
   EcommerceOrderRevenueTrackingSummaryResponse,
+  EcommerceOrderFulfillmentAvailabilityWorkspaceResponse,
   EcommerceOrderFulfillmentCompletionPacketResponse,
   EcommerceOrderFulfillmentDeliveryConfirmationPacketResponse,
   EcommerceOrderFulfillmentDeliveryWorkspaceResponse,
@@ -74,6 +76,8 @@ import {
   EcommerceOrderReviewWorkspaceResponse,
   EcommerceOrderStatusLifecycleDetailResponse,
   EcommerceOrderStatusLifecycleRegistryResponse,
+  EcommerceOrderInventoryReservationWorkspaceResponse,
+  EcommerceOrderReturnsRefundsCancellationWorkspaceResponse,
   EcommerceOrderFulfillmentExecutionWorkspaceResponse,
   EcommerceOrderFulfillmentReadinessWorkspaceResponse,
   EcommerceStorefrontReleaseCandidateBriefResponse,
@@ -285,6 +289,9 @@ type Props = {
   selectedTenantEcommerceOrderPaymentConfirmationLog:
     | EcommerceOrderPaymentConfirmationLogResponse
     | null;
+  selectedTenantEcommerceOrderPaymentReconciliationWorkspace:
+    | EcommerceOrderPaymentReconciliationWorkspaceResponse
+    | null;
   selectedTenantEcommerceOrderPaymentDisputeWorkspace:
     | EcommerceOrderPaymentDisputeWorkspaceResponse
     | null;
@@ -293,6 +300,12 @@ type Props = {
     | null;
   selectedTenantEcommerceOrderFulfillmentReadinessWorkspace:
     | EcommerceOrderFulfillmentReadinessWorkspaceResponse
+    | null;
+  selectedTenantEcommerceOrderFulfillmentAvailabilityWorkspace:
+    | EcommerceOrderFulfillmentAvailabilityWorkspaceResponse
+    | null;
+  selectedTenantEcommerceOrderInventoryReservationWorkspace:
+    | EcommerceOrderInventoryReservationWorkspaceResponse
     | null;
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace:
     | EcommerceOrderFulfillmentExecutionWorkspaceResponse
@@ -308,6 +321,9 @@ type Props = {
     | null;
   selectedTenantEcommerceOrderGrowthFollowUpWorkspace:
     | EcommerceOrderGrowthFollowUpWorkspaceResponse
+    | null;
+  selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace:
+    | EcommerceOrderReturnsRefundsCancellationWorkspaceResponse
     | null;
   tenantEcommerceOrderOperatorWorkboard:
     | EcommerceOrderOperatorWorkboardResponse
@@ -488,14 +504,18 @@ type Props = {
   tenantEcommerceOrderPaymentConfirmationWorkspaceLoading: boolean;
   ecommerceOrderPaymentConfirmationDecisionLoading: string | null;
   tenantEcommerceOrderPaymentConfirmationLogLoading: boolean;
+  tenantEcommerceOrderPaymentReconciliationWorkspaceLoading: boolean;
   tenantEcommerceOrderPaymentDisputeWorkspaceLoading: boolean;
   ecommerceOrderPaymentDisputeResolutionPacketLoading: string | null;
   tenantEcommerceOrderFulfillmentReadinessWorkspaceLoading: boolean;
+  tenantEcommerceOrderFulfillmentAvailabilityWorkspaceLoading: boolean;
+  tenantEcommerceOrderInventoryReservationWorkspaceLoading: boolean;
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading: boolean;
   tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading: boolean;
   ecommerceOrderFulfillmentCompletionPacketLoading: string | null;
   ecommerceOrderFulfillmentDeliveryConfirmationPacketLoading: string | null;
   tenantEcommerceOrderGrowthFollowUpWorkspaceLoading: boolean;
+  tenantEcommerceOrderReturnsRefundsCancellationWorkspaceLoading: boolean;
   tenantEcommerceOrderOperatorWorkboardLoading: boolean;
   tenantEcommerceOrderOpsPriorityQueueLoading: boolean;
   tenantEcommerceOrderOpsAttentionWorkspaceLoading: boolean;
@@ -658,14 +678,18 @@ type Props = {
   onLoadOrderPaymentConfirmationWorkspace: () => void;
   onRequestOrderPaymentConfirmationDecision: () => void;
   onLoadOrderPaymentConfirmationLog: () => void;
+  onLoadOrderPaymentReconciliationWorkspace: () => void;
   onLoadOrderPaymentDisputeWorkspace: () => void;
   onRequestOrderPaymentDisputeResolutionPacket: () => void;
   onLoadOrderFulfillmentReadinessWorkspace: () => void;
+  onLoadOrderFulfillmentAvailabilityWorkspace: () => void;
+  onLoadOrderInventoryReservationWorkspace: () => void;
   onLoadOrderFulfillmentExecutionWorkspace: () => void;
   onLoadOrderFulfillmentDeliveryWorkspace: () => void;
   onRequestOrderFulfillmentCompletionPacket: () => void;
   onRequestOrderFulfillmentDeliveryConfirmationPacket: () => void;
   onLoadOrderGrowthFollowUpWorkspace: () => void;
+  onLoadOrderReturnsRefundsCancellationWorkspace: () => void;
   onLoadOrderOperatorWorkboard: () => void;
   onLoadOrderOpsPriorityQueue: () => void;
   onLoadOrderOpsAttentionWorkspace: () => void;
@@ -765,14 +789,18 @@ export function AiEcommerceLaunchSection({
   selectedTenantEcommerceOrderPaymentConfirmationWorkspace,
   lastEcommerceOrderPaymentConfirmationDecision,
   selectedTenantEcommerceOrderPaymentConfirmationLog,
+  selectedTenantEcommerceOrderPaymentReconciliationWorkspace,
   selectedTenantEcommerceOrderPaymentDisputeWorkspace,
   lastEcommerceOrderPaymentDisputeResolutionPacket,
   selectedTenantEcommerceOrderFulfillmentReadinessWorkspace,
+  selectedTenantEcommerceOrderFulfillmentAvailabilityWorkspace,
+  selectedTenantEcommerceOrderInventoryReservationWorkspace,
   selectedTenantEcommerceOrderFulfillmentExecutionWorkspace,
   selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace,
   lastEcommerceOrderFulfillmentCompletionPacket,
   lastEcommerceOrderFulfillmentDeliveryConfirmationPacket,
   selectedTenantEcommerceOrderGrowthFollowUpWorkspace,
+  selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace,
   tenantEcommerceOrderOperatorWorkboard,
   tenantEcommerceOrderOpsPriorityQueue,
   tenantEcommerceOrderOpsAttentionWorkspace,
@@ -870,14 +898,18 @@ export function AiEcommerceLaunchSection({
   tenantEcommerceOrderPaymentConfirmationWorkspaceLoading,
   ecommerceOrderPaymentConfirmationDecisionLoading,
   tenantEcommerceOrderPaymentConfirmationLogLoading,
+  tenantEcommerceOrderPaymentReconciliationWorkspaceLoading,
   tenantEcommerceOrderPaymentDisputeWorkspaceLoading,
   ecommerceOrderPaymentDisputeResolutionPacketLoading,
   tenantEcommerceOrderFulfillmentReadinessWorkspaceLoading,
+  tenantEcommerceOrderFulfillmentAvailabilityWorkspaceLoading,
+  tenantEcommerceOrderInventoryReservationWorkspaceLoading,
   tenantEcommerceOrderFulfillmentExecutionWorkspaceLoading,
   tenantEcommerceOrderFulfillmentDeliveryWorkspaceLoading,
   ecommerceOrderFulfillmentCompletionPacketLoading,
   ecommerceOrderFulfillmentDeliveryConfirmationPacketLoading,
   tenantEcommerceOrderGrowthFollowUpWorkspaceLoading,
+  tenantEcommerceOrderReturnsRefundsCancellationWorkspaceLoading,
   tenantEcommerceOrderOperatorWorkboardLoading,
   tenantEcommerceOrderOpsPriorityQueueLoading,
   tenantEcommerceOrderOpsAttentionWorkspaceLoading,
@@ -993,14 +1025,18 @@ export function AiEcommerceLaunchSection({
   onLoadOrderPaymentConfirmationWorkspace,
   onRequestOrderPaymentConfirmationDecision,
   onLoadOrderPaymentConfirmationLog,
+  onLoadOrderPaymentReconciliationWorkspace,
   onLoadOrderPaymentDisputeWorkspace,
   onRequestOrderPaymentDisputeResolutionPacket,
   onLoadOrderFulfillmentReadinessWorkspace,
+  onLoadOrderFulfillmentAvailabilityWorkspace,
+  onLoadOrderInventoryReservationWorkspace,
   onLoadOrderFulfillmentExecutionWorkspace,
   onLoadOrderFulfillmentDeliveryWorkspace,
   onRequestOrderFulfillmentCompletionPacket,
   onRequestOrderFulfillmentDeliveryConfirmationPacket,
   onLoadOrderGrowthFollowUpWorkspace,
+  onLoadOrderReturnsRefundsCancellationWorkspace,
   onLoadOrderOperatorWorkboard,
   onLoadOrderOpsPriorityQueue,
   onLoadOrderOpsAttentionWorkspace,
@@ -5901,6 +5937,21 @@ export function AiEcommerceLaunchSection({
                                 <button
                                   className={styles.secondaryButton}
                                   disabled={
+                                    tenantEcommerceOrderPaymentReconciliationWorkspaceLoading ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={
+                                    onLoadOrderPaymentReconciliationWorkspace
+                                  }
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderPaymentReconciliationWorkspaceLoading
+                                    ? 'Cargando reconciliation...'
+                                    : 'Cargar reconciliation'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
                                     tenantEcommerceOrderPaymentDisputeWorkspaceLoading ||
                                     tenantEcommerceOrderDraftDetailLoading
                                   }
@@ -5944,6 +5995,36 @@ export function AiEcommerceLaunchSection({
                                   {tenantEcommerceOrderFulfillmentReadinessWorkspaceLoading
                                     ? 'Cargando fulfillment readiness...'
                                     : 'Cargar fulfillment readiness'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    tenantEcommerceOrderFulfillmentAvailabilityWorkspaceLoading ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={
+                                    onLoadOrderFulfillmentAvailabilityWorkspace
+                                  }
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderFulfillmentAvailabilityWorkspaceLoading
+                                    ? 'Cargando availability...'
+                                    : 'Cargar availability'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    tenantEcommerceOrderInventoryReservationWorkspaceLoading ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={
+                                    onLoadOrderInventoryReservationWorkspace
+                                  }
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderInventoryReservationWorkspaceLoading
+                                    ? 'Cargando reservation...'
+                                    : 'Cargar reservation'}
                                 </button>
                                 <button
                                   className={styles.secondaryButton}
@@ -6048,6 +6129,21 @@ export function AiEcommerceLaunchSection({
                                   {tenantEcommerceOrderPostSaleLifecycleDetailLoading
                                     ? 'Cargando post-sale...'
                                     : 'Cargar post-sale'}
+                                </button>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    tenantEcommerceOrderReturnsRefundsCancellationWorkspaceLoading ||
+                                    tenantEcommerceOrderDraftDetailLoading
+                                  }
+                                  onClick={
+                                    onLoadOrderReturnsRefundsCancellationWorkspace
+                                  }
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderReturnsRefundsCancellationWorkspaceLoading
+                                    ? 'Cargando returns/refunds...'
+                                    : 'Cargar returns/refunds'}
                                 </button>
                               </div>
                             </div>
@@ -6557,6 +6653,73 @@ export function AiEcommerceLaunchSection({
                               </small>
                             </div>
                           ) : null}
+                          {selectedTenantEcommerceOrderPaymentReconciliationWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Payment reconciliation workspace
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceOrderPaymentReconciliationWorkspace.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceOrderPaymentReconciliationWorkspace.reconciliationStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Attempt:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderPaymentReconciliationWorkspace
+                                    .paymentAttempt.attemptStatus,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderPaymentReconciliationWorkspace
+                                    .paymentAttempt.collectionChannel,
+                                )}{' '}
+                                ·{' '}
+                                {
+                                  selectedTenantEcommerceOrderPaymentReconciliationWorkspace
+                                    .paymentAttempt.pricingSnapshot
+                                }
+                              </small>
+                              <small>
+                                Signals:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderPaymentReconciliationWorkspace
+                                    .reconciliationSignals.paymentLogStatus,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderPaymentReconciliationWorkspace
+                                    .reconciliationSignals.paymentDecision,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderPaymentReconciliationWorkspace
+                                    .reconciliationSignals.postSaleStatus,
+                                )}
+                              </small>
+                              <small>
+                                Checklist:{' '}
+                                {selectedTenantEcommerceOrderPaymentReconciliationWorkspace.reconciliationChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Next step:{' '}
+                                {
+                                  selectedTenantEcommerceOrderPaymentReconciliationWorkspace.nextStep
+                                }
+                              </small>
+                            </div>
+                          ) : null}
                           {selectedTenantEcommerceOrderPaymentDisputeWorkspace ? (
                             <div className={styles.commercialCard}>
                               <div className={styles.sectionHeading}>
@@ -6694,6 +6857,111 @@ export function AiEcommerceLaunchSection({
                                 Next step:{' '}
                                 {
                                   selectedTenantEcommerceOrderFulfillmentReadinessWorkspace.nextStep
+                                }
+                              </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceOrderFulfillmentAvailabilityWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Fulfillment availability workspace
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceOrderFulfillmentAvailabilityWorkspace.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceOrderFulfillmentAvailabilityWorkspace.availabilityStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Inventory mode:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderFulfillmentAvailabilityWorkspace.inventoryMode,
+                                )}
+                              </small>
+                              <small>
+                                Signals:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderFulfillmentAvailabilityWorkspace
+                                    .availabilitySignals.paymentStatus,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderFulfillmentAvailabilityWorkspace
+                                    .availabilitySignals.fulfillmentStatus,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderFulfillmentAvailabilityWorkspace
+                                    .availabilitySignals.buyerContactStatus,
+                                )}
+                              </small>
+                              <small>
+                                Capacity checklist:{' '}
+                                {selectedTenantEcommerceOrderFulfillmentAvailabilityWorkspace.capacityChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Next step:{' '}
+                                {
+                                  selectedTenantEcommerceOrderFulfillmentAvailabilityWorkspace.nextStep
+                                }
+                              </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceOrderInventoryReservationWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Inventory reservation workspace
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceOrderInventoryReservationWorkspace.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceOrderInventoryReservationWorkspace.reservationStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Reservation:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderInventoryReservationWorkspace.reservationMode,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderInventoryReservationWorkspace
+                                    .reservationSignal.availabilityStatus,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderInventoryReservationWorkspace
+                                    .reservationSignal.inventoryMode,
+                                )}
+                              </small>
+                              <small>
+                                Checklist:{' '}
+                                {selectedTenantEcommerceOrderInventoryReservationWorkspace.reservationChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Next step:{' '}
+                                {
+                                  selectedTenantEcommerceOrderInventoryReservationWorkspace.nextStep
                                 }
                               </small>
                             </div>
@@ -6841,6 +7109,62 @@ export function AiEcommerceLaunchSection({
                                 Next step:{' '}
                                 {
                                   lastEcommerceOrderFulfillmentDeliveryConfirmationPacket.nextStep
+                                }
+                              </small>
+                            </div>
+                          ) : null}
+                          {selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Returns/refunds/cancellation workspace
+                                  </span>
+                                  <h4>
+                                    {
+                                      selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace.summary
+                                    }
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {humanizeKey(
+                                    selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace.resolutionStatus,
+                                  )}
+                                </span>
+                              </div>
+                              <small>
+                                Lifecycle signals:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace
+                                    .lifecycleSignals.paymentLogStatus,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace
+                                    .lifecycleSignals.deliveryStatus,
+                                )}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace
+                                    .lifecycleSignals.disputeStatus,
+                                )}
+                              </small>
+                              <small>
+                                Options:{' '}
+                                {selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace.resolutionOptions
+                                  .map((entry) => `${entry.label}: ${entry.detail}`)
+                                  .join(' | ')}
+                              </small>
+                              <small>
+                                Guardrail checklist:{' '}
+                                {selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace.guardrailChecklist.join(
+                                  ' | ',
+                                )}
+                              </small>
+                              <small>
+                                Next step:{' '}
+                                {
+                                  selectedTenantEcommerceOrderReturnsRefundsCancellationWorkspace.nextStep
                                 }
                               </small>
                             </div>

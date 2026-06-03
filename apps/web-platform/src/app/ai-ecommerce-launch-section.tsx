@@ -1321,15 +1321,29 @@ export function AiEcommerceLaunchSection({
         )} · score ${entry.priorityScore}`,
         nextStep: entry.recommendedAction,
       }))
-    : (tenantEcommerceOrderOperatorWorkboard?.entries ?? [])
+    : tenantEcommerceOrderOperatorWorkboard
+      ? tenantEcommerceOrderOperatorWorkboard.entries
+          .slice(0, 3)
+          .map((entry) => ({
+            orderDraftId: entry.orderDraftId,
+            label: entry.orderLabel,
+            meta: `${humanizeKey(entry.handoffRoute)} · ${humanizeKey(
+              entry.priority,
+            )}`,
+            nextStep: entry.nextStep,
+          }))
+    : (tenantEcommerceOrderDraftRegistry?.orderDrafts ?? [])
         .slice(0, 3)
         .map((entry) => ({
-          orderDraftId: entry.orderDraftId,
+          orderDraftId: entry.id,
           label: entry.orderLabel,
-          meta: `${humanizeKey(entry.handoffRoute)} · ${humanizeKey(
-            entry.priority,
+          meta: `${humanizeKey(entry.status)} · ${humanizeKey(
+            entry.closingChannel,
           )}`,
-          nextStep: entry.nextStep,
+          nextStep:
+            entry.missingFields.length > 0
+              ? `Completar ${entry.missingFields.join(' | ')}`
+              : entry.operatorPrompts[0] ?? 'Abrir el order draft.',
         }));
   const orderCommandCenterHasSignal =
     orderCommandCenterMetrics.length > 0 ||
@@ -5428,8 +5442,60 @@ export function AiEcommerceLaunchSection({
                                     .join(' | ')}
                                 </small>
                               ) : null}
+                              <div className={styles.inlineActions}>
+                                <button
+                                  className={styles.ghostButton}
+                                  disabled={
+                                    tenantEcommerceOrderOperatorWorkboardLoading ||
+                                    tenantEcommerceProductEntityDetailLoading
+                                  }
+                                  onClick={onLoadOrderOperatorWorkboard}
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderOperatorWorkboardLoading
+                                    ? 'Cargando workboard...'
+                                    : 'Refrescar workboard'}
+                                </button>
+                                <button
+                                  className={styles.ghostButton}
+                                  disabled={
+                                    tenantEcommerceOrderOpsPriorityQueueLoading ||
+                                    tenantEcommerceProductEntityDetailLoading
+                                  }
+                                  onClick={onLoadOrderOpsPriorityQueue}
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderOpsPriorityQueueLoading
+                                    ? 'Cargando queue...'
+                                    : 'Refrescar priority queue'}
+                                </button>
+                              </div>
                               {selectedTenantEcommerceOrderDraftDetail ? (
                                 <div className={styles.inlineActions}>
+                                  <button
+                                    className={styles.ghostButton}
+                                    disabled={
+                                      tenantEcommerceOrderPaymentReadinessWorkspaceLoading ||
+                                      tenantEcommerceOrderDraftDetailLoading
+                                    }
+                                    onClick={onLoadOrderPaymentReadinessWorkspace}
+                                    type="button"
+                                  >
+                                    Cargar payment
+                                  </button>
+                                  <button
+                                    className={styles.ghostButton}
+                                    disabled={
+                                      tenantEcommerceOrderFulfillmentReadinessWorkspaceLoading ||
+                                      tenantEcommerceOrderDraftDetailLoading
+                                    }
+                                    onClick={
+                                      onLoadOrderFulfillmentReadinessWorkspace
+                                    }
+                                    type="button"
+                                  >
+                                    Cargar fulfillment
+                                  </button>
                                   <button
                                     className={styles.ghostButton}
                                     disabled={

@@ -77,6 +77,7 @@ import {
   EcommerceOrderPaymentReadinessWorkspaceResponse,
   EcommerceOrderPaymentConfirmationDecisionResponse,
   EcommerceOrderPaymentConfirmationLogResponse,
+  EcommerceOrderPaymentReconciliationWorkspaceResponse,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationWorkspaceResponse,
@@ -85,6 +86,7 @@ import {
   EcommerceOrderFulfillmentCompletionPacketResponse,
   EcommerceOrderFulfillmentDeliveryConfirmationPacketResponse,
   EcommerceOrderFulfillmentAvailabilityWorkspaceResponse,
+  EcommerceOrderInventoryReservationWorkspaceResponse,
   EcommerceOrderFulfillmentDeliveryWorkspaceResponse,
   EcommerceOrderFulfillmentExecutionWorkspaceResponse,
   EcommerceOrderFulfillmentReadinessWorkspaceResponse,
@@ -93,6 +95,7 @@ import {
   EcommerceOrderPostSaleOpsBoardResponse,
   EcommerceOrderPostSaleReportingBoardResponse,
   EcommerceOrderPostSaleReportingSummaryResponse,
+  EcommerceOrderReturnsRefundsCancellationWorkspaceResponse,
   EcommerceOrderRevenueOpsBoardResponse,
   EcommerceOrderRevenueTrackingSummaryResponse,
   EcommerceOrderDraftRegistryResponse,
@@ -3609,6 +3612,27 @@ export async function fetchTenantEcommerceOrderPaymentConfirmationLog(
   );
 }
 
+export async function fetchTenantEcommerceOrderPaymentReconciliationWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderPaymentReconciliationWorkspaceResponse> {
+  return request<EcommerceOrderPaymentReconciliationWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/payment-reconciliation-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function fetchTenantEcommerceOrderPaymentDisputeWorkspace(
   token: string,
   tenantSlug: string,
@@ -3686,6 +3710,27 @@ export async function fetchTenantEcommerceOrderFulfillmentAvailabilityWorkspace(
     )}/order-drafts/${encodeURIComponent(
       orderDraftId,
     )}/fulfillment-availability-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderInventoryReservationWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderInventoryReservationWorkspaceResponse> {
+  return request<EcommerceOrderInventoryReservationWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/inventory-reservation-workspace`,
     {
       method: 'GET',
       token,
@@ -3772,6 +3817,27 @@ export async function requestTenantEcommerceOrderFulfillmentDeliveryConfirmation
     )}/request-fulfillment-delivery-confirmation-packet`,
     {
       method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchTenantEcommerceOrderReturnsRefundsCancellationWorkspace(
+  token: string,
+  tenantSlug: string,
+  productEntityId: string,
+  orderDraftId: string,
+): Promise<EcommerceOrderReturnsRefundsCancellationWorkspaceResponse> {
+  return request<EcommerceOrderReturnsRefundsCancellationWorkspaceResponse>(
+    `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(
+      productEntityId,
+    )}/order-drafts/${encodeURIComponent(
+      orderDraftId,
+    )}/returns-refunds-cancellation-workspace`,
+    {
+      method: 'GET',
       token,
     },
   );

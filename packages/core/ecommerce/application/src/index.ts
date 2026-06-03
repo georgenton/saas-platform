@@ -101,6 +101,7 @@ export * from './lib/use-cases/get-tenant-ecommerce-order-payment-dispute-worksp
 export * from './lib/use-cases/request-tenant-ecommerce-order-payment-dispute-resolution-packet.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-fulfillment-readiness-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-fulfillment-availability-workspace.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-order-inventory-reservation-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-fulfillment-execution-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-fulfillment-delivery-workspace.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-order-fulfillment-completion-packet.use-case';
@@ -110,6 +111,7 @@ export * from './lib/use-cases/list-tenant-ecommerce-order-status-lifecycles.use
 export * from './lib/use-cases/get-tenant-ecommerce-order-post-sale-lifecycle-detail.use-case';
 export * from './lib/use-cases/list-tenant-ecommerce-order-post-sale-lifecycles.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-revenue-tracking-summary.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-order-payment-reconciliation-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-revenue-ops-board.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-post-sale-ops-board.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-post-sale-reporting-board.use-case';
@@ -119,6 +121,7 @@ export * from './lib/use-cases/get-tenant-ecommerce-order-ops-priority-queue.use
 export * from './lib/use-cases/get-tenant-ecommerce-order-ops-attention-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-ops-escalation-board.use-case';
 export * from './lib/use-cases/update-tenant-ecommerce-order-customer-profile.use-case';
+export * from './lib/use-cases/get-tenant-ecommerce-order-returns-refunds-cancellation-workspace.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-setup-definition-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-workspace-readiness-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-launch-plan-activation-readiness.use-case';

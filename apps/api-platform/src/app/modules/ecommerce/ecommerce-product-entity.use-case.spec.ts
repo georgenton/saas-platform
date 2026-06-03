@@ -58,6 +58,7 @@ import {
   GetTenantEcommerceOrderHoldResolutionWorkspaceUseCase,
   GetTenantEcommerceOrderOpsEscalationBoardUseCase,
   GetTenantEcommerceOrderPaymentConfirmationLogUseCase,
+  GetTenantEcommerceOrderPaymentReconciliationWorkspaceUseCase,
   GetTenantEcommerceOrderPaymentDisputeWorkspaceUseCase,
   GetTenantEcommerceOrderPostSaleReportingSummaryUseCase,
   GetTenantEcommerceOrderRevenueOpsBoardUseCase,
@@ -76,6 +77,7 @@ import {
   RequestTenantEcommerceOrderFulfillmentCompletionPacketUseCase,
   RequestTenantEcommerceOrderFulfillmentDeliveryConfirmationPacketUseCase,
   GetTenantEcommerceOrderFulfillmentAvailabilityWorkspaceUseCase,
+  GetTenantEcommerceOrderInventoryReservationWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentDeliveryWorkspaceUseCase,
   GetTenantEcommerceOrderFulfillmentReadinessWorkspaceUseCase,
   GetTenantEcommerceOrderPostSaleOpsBoardUseCase,
@@ -88,6 +90,7 @@ import {
   SaveTenantEcommerceProductEntityChannelDraftUseCase,
   SaveTenantEcommerceOrderDraftUseCase,
   UpdateTenantEcommerceOrderCustomerProfileUseCase,
+  GetTenantEcommerceOrderReturnsRefundsCancellationWorkspaceUseCase,
   ListTenantEcommerceOrderDraftsUseCase,
   GetTenantEcommerceOrderDraftDetailUseCase,
   ListTenantEcommerceOrderPostSaleLifecyclesUseCase,
@@ -6615,6 +6618,39 @@ describe('Ecommerce product entity use cases', () => {
     });
   });
 
+  it('loads one order inventory reservation workspace', async () => {
+    const availabilityUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-03T11:10:00.000Z'),
+        productEntity,
+        orderDraft: {
+          id: 'order_draft_001',
+          orderLabel: 'Order draft',
+        },
+        availabilityStatus: 'available_for_fulfillment',
+        inventoryMode: 'capacity_signal',
+        blockedBy: [],
+        guardrails: ['Availability guardrail'],
+      }),
+    };
+    const useCase =
+      new GetTenantEcommerceOrderInventoryReservationWorkspaceUseCase(
+        availabilityUseCase as never,
+        () => new Date('2026-06-03T11:12:00.000Z'),
+      );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
+    ).resolves.toMatchObject({
+      reservationStatus: 'reserved',
+      reservationMode: 'capacity_hold',
+      reservationSignal: {
+        reservationScope: 'order_draft',
+      },
+    });
+  });
+
   it('loads one order fulfillment execution workspace', async () => {
     const paymentConfirmationDecisionUseCase = {
       execute: jest.fn().mockResolvedValue({
@@ -6733,6 +6769,47 @@ describe('Ecommerce product entity use cases', () => {
       decisionSignal: {
         paymentDecision: 'confirmed',
         postSaleStatus: 'awaiting_payment',
+      },
+    });
+  });
+
+  it('loads one order payment reconciliation workspace', async () => {
+    const paymentLogUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:43:00.000Z'),
+        productEntity,
+        orderDraft: {
+          id: 'order_draft_001',
+          orderLabel: 'Order draft',
+          pricingSnapshot: 'Operator confirmed band',
+        },
+        logStatus: 'confirmed',
+        confirmationRecord: {
+          confirmationChannel: 'whatsapp',
+          evidenceHints: ['Transferencia esperada'],
+        },
+        decisionSignal: {
+          paymentDecision: 'confirmed',
+          postSaleStatus: 'awaiting_payment',
+        },
+        blockedBy: [],
+        guardrails: ['Payment log guardrail'],
+      }),
+    };
+    const useCase =
+      new GetTenantEcommerceOrderPaymentReconciliationWorkspaceUseCase(
+        paymentLogUseCase as never,
+        () => new Date('2026-06-03T11:20:00.000Z'),
+      );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
+    ).resolves.toMatchObject({
+      reconciliationStatus: 'reconciled',
+      paymentAttempt: {
+        attemptStatus: 'confirmed',
+        collectionChannel: 'whatsapp',
       },
     });
   });
@@ -7004,6 +7081,55 @@ describe('Ecommerce product entity use cases', () => {
       confirmationStatus: 'partial',
       confirmationRecord: {
         deliveryMode: 'service_activation',
+      },
+    });
+  });
+
+  it('loads one order returns refunds cancellation workspace', async () => {
+    const paymentLogUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        tenantSlug: 'saas-platform',
+        generatedAt: new Date('2026-06-02T10:43:00.000Z'),
+        productEntity,
+        orderDraft: {
+          id: 'order_draft_001',
+          orderLabel: 'Order draft',
+        },
+        logStatus: 'confirmed',
+        blockedBy: [],
+        guardrails: ['Payment log guardrail'],
+      }),
+    };
+    const disputeWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        disputeStatus: 'needs_review',
+        blockedBy: [],
+        guardrails: ['Dispute guardrail'],
+      }),
+    };
+    const deliveryWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        deliveryStatus: 'in_progress',
+        blockedBy: [],
+        guardrails: ['Delivery guardrail'],
+      }),
+    };
+    const useCase =
+      new GetTenantEcommerceOrderReturnsRefundsCancellationWorkspaceUseCase(
+        paymentLogUseCase as never,
+        disputeWorkspaceUseCase as never,
+        deliveryWorkspaceUseCase as never,
+        () => new Date('2026-06-03T11:25:00.000Z'),
+      );
+
+    await expect(
+      useCase.execute('saas-platform', 'product_entity_001', 'order_draft_001'),
+    ).resolves.toMatchObject({
+      resolutionStatus: 'eligible_for_refund_review',
+      lifecycleSignals: {
+        paymentLogStatus: 'confirmed',
+        deliveryStatus: 'in_progress',
+        disputeStatus: 'needs_review',
       },
     });
   });

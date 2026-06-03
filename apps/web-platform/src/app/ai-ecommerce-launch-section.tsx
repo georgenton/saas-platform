@@ -1144,6 +1144,120 @@ export function AiEcommerceLaunchSection({
     setAssetEntityNextMilestone(assetEntity.nextMilestone);
   }, [selectedTenantEcommerceProductEntityChannelAssetEntityDetail]);
 
+  const postSaleOperatorMetrics = tenantEcommerceOrderPostSaleReportingSummary
+    ? [
+        {
+          label: 'Orders',
+          value:
+            tenantEcommerceOrderPostSaleReportingSummary.summary.totalOrders,
+        },
+        {
+          label: 'Confirmed',
+          value:
+            tenantEcommerceOrderPostSaleReportingSummary.summary.confirmedCount,
+        },
+        {
+          label: 'Delivered',
+          value:
+            tenantEcommerceOrderPostSaleReportingSummary.summary.deliveredCount,
+        },
+        {
+          label: 'Blocked',
+          value:
+            tenantEcommerceOrderPostSaleReportingSummary.summary.blockedCount,
+        },
+        {
+          label: 'Drift',
+          value:
+            tenantEcommerceOrderPostSaleReportingSummary.summary.divergenceCount,
+        },
+      ]
+    : [];
+  const postSaleOperatorNextActions = [
+    selectedTenantEcommerceOrderPaymentDisputeWorkspace
+      ? `Dispute: ${selectedTenantEcommerceOrderPaymentDisputeWorkspace.nextStep}`
+      : null,
+    selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace
+      ? `Delivery: ${selectedTenantEcommerceOrderFulfillmentDeliveryWorkspace.nextStep}`
+      : null,
+    tenantEcommerceOrderPostSaleReportingSummary
+      ? `Reporting: ${tenantEcommerceOrderPostSaleReportingSummary.nextFocus}`
+      : null,
+    tenantEcommerceOrderRevenueTrackingSummary
+      ? `Revenue: ${tenantEcommerceOrderRevenueTrackingSummary.paymentRollup.confirmationBacklog}`
+      : null,
+  ].filter((entry): entry is string => Boolean(entry));
+  const postSaleOperatorHasSignal =
+    postSaleOperatorMetrics.length > 0 ||
+    postSaleOperatorNextActions.length > 0 ||
+    Boolean(tenantEcommerceOrderPostSaleOpsBoard);
+  const invoiceHandoffMissingFields = [
+    ...(lastEcommerceOrderToInvoiceReadinessPacket?.missingFields ?? []),
+    ...(lastEcommerceOrderInvoiceDraftBridge?.missingFields ?? []),
+    ...(selectedTenantEcommerceOrderFiscalDataCompletionWorkspace
+      ?.missingFields ?? []),
+    ...(selectedTenantEcommerceInvoiceDraftIntakeWorkspace?.fiscalSnapshot
+      .missingFields ?? []),
+    ...(lastEcommerceInvoiceDraftOpenBridge?.fiscalSnapshot.missingFields ??
+      []),
+  ];
+  const invoiceHandoffArtifacts = [
+    ...(lastEcommerceOrderToInvoiceReadinessPacket?.handoffArtifacts ?? []),
+    ...(lastEcommerceOrderInvoiceDraftBridge?.handoffArtifacts ?? []),
+    ...(selectedTenantEcommerceInvoiceDraftIntakeWorkspace?.handoffArtifacts ??
+      []),
+    ...(lastEcommerceInvoiceDraftOpenBridge?.handoffArtifacts ?? []),
+    ...(lastEcommerceInvoiceDraftLaunchBridge?.fiscalArtifacts ?? []),
+    ...(selectedTenantEcommerceInvoiceDraftHandoffWorkspace?.handoffArtifacts ??
+      []),
+    ...(lastEcommerceInvoiceHandoffAcknowledgement?.receivedArtifacts ?? []),
+  ];
+  const invoiceHandoffStatus =
+    lastEcommerceInvoiceHandoffAcknowledgement?.acknowledgementStatus ??
+    selectedTenantEcommerceInvoiceDraftHandoffWorkspace?.workspaceStatus ??
+    lastEcommerceInvoiceDraftLaunchBridge?.launchStatus ??
+    lastEcommerceInvoiceDraftOpenBridge?.bridgeStatus ??
+    selectedTenantEcommerceInvoiceDraftIntakeWorkspace?.workspaceStatus ??
+    lastEcommerceOrderInvoiceDraftBridge?.bridgeStatus ??
+    lastEcommerceOrderToInvoiceReadinessPacket?.readinessStatus ??
+    lastEcommerceOrderInvoicingBridge?.bridgeStatus;
+  const invoiceHandoffNextStep =
+    lastEcommerceInvoiceHandoffAcknowledgement?.nextStep ??
+    selectedTenantEcommerceInvoiceDraftHandoffWorkspace?.nextStep ??
+    selectedTenantEcommerceOrderFiscalDataCompletionWorkspace
+      ?.completionHints[0]?.hint ??
+    lastEcommerceOrderToInvoiceReadinessPacket?.operatorChecklist[0] ??
+    selectedTenantEcommerceInvoiceDraftIntakeWorkspace?.operatorChecklist[0];
+  const invoiceHandoffSignals = [
+    lastEcommerceOrderInvoicingBridge
+      ? `Bridge: ${humanizeKey(lastEcommerceOrderInvoicingBridge.bridgeStatus)}`
+      : null,
+    lastEcommerceOrderToInvoiceReadinessPacket
+      ? `Readiness: ${humanizeKey(
+          lastEcommerceOrderToInvoiceReadinessPacket.readinessStatus,
+        )}`
+      : null,
+    lastEcommerceOrderInvoiceDraftBridge
+      ? `Draft bridge: ${humanizeKey(
+          lastEcommerceOrderInvoiceDraftBridge.bridgeStatus,
+        )}`
+      : null,
+    selectedTenantEcommerceInvoiceDraftHandoffWorkspace
+      ? `Handoff: ${humanizeKey(
+          selectedTenantEcommerceInvoiceDraftHandoffWorkspace.workspaceStatus,
+        )}`
+      : null,
+    lastEcommerceInvoiceHandoffAcknowledgement
+      ? `Ack: ${humanizeKey(
+          lastEcommerceInvoiceHandoffAcknowledgement.acknowledgementStatus,
+        )}`
+      : null,
+  ].filter((entry): entry is string => Boolean(entry));
+  const invoiceHandoffHasSignal =
+    invoiceHandoffSignals.length > 0 ||
+    invoiceHandoffArtifacts.length > 0 ||
+    invoiceHandoffMissingFields.length > 0;
+
   return (
     <section className={styles.adminPanel}>
       <div className={styles.sectionHeading}>
@@ -4956,6 +5070,53 @@ export function AiEcommerceLaunchSection({
                               </small>
                             </div>
                           ) : null}
+                          {invoiceHandoffHasSignal ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Invoice handoff readiness
+                                  </span>
+                                  <h4>
+                                    {lastEcommerceInvoiceHandoffAcknowledgement?.summary ??
+                                      selectedTenantEcommerceInvoiceDraftHandoffWorkspace?.summary ??
+                                      lastEcommerceOrderToInvoiceReadinessPacket?.summary ??
+                                      lastEcommerceOrderInvoicingBridge?.summary ??
+                                      'Ecommerce to Ecuador invoicing handoff is being assembled.'}
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {invoiceHandoffStatus
+                                    ? humanizeKey(invoiceHandoffStatus)
+                                    : 'live'}
+                                </span>
+                              </div>
+                              {invoiceHandoffSignals.length > 0 ? (
+                                <small>
+                                  Signals: {invoiceHandoffSignals.join(' | ')}
+                                </small>
+                              ) : null}
+                              <small>
+                                Missing fiscal fields:{' '}
+                                {invoiceHandoffMissingFields.length > 0
+                                  ? Array.from(
+                                      new Set(invoiceHandoffMissingFields),
+                                    ).join(' | ')
+                                  : 'Ninguno'}
+                              </small>
+                              {invoiceHandoffArtifacts.length > 0 ? (
+                                <small>
+                                  Handoff artifacts:{' '}
+                                  {Array.from(
+                                    new Set(invoiceHandoffArtifacts),
+                                  ).join(' | ')}
+                                </small>
+                              ) : null}
+                              {invoiceHandoffNextStep ? (
+                                <small>Next step: {invoiceHandoffNextStep}</small>
+                              ) : null}
+                            </div>
+                          ) : null}
                           {lastEcommerceOrderInvoicingBridge ? (
                             <div className={styles.commercialCard}>
                               <div className={styles.sectionHeading}>
@@ -7333,6 +7494,69 @@ export function AiEcommerceLaunchSection({
                                 : 'Cargar revenue ops board'}
                             </button>
                           </div>
+                          {postSaleOperatorHasSignal ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Post-sale operator health
+                                  </span>
+                                  <h4>
+                                    {tenantEcommerceOrderPostSaleReportingSummary
+                                      ?.summary.headline ??
+                                      tenantEcommerceOrderPostSaleOpsBoard
+                                        ?.summary.headline ??
+                                      'Carga summary, ops o revenue para ver el estado operativo.'}
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {tenantEcommerceOrderPostSaleReportingSummary
+                                    ? `${tenantEcommerceOrderPostSaleReportingSummary.summary.divergenceCount} drift`
+                                    : 'live'}
+                                </span>
+                              </div>
+                              {postSaleOperatorMetrics.length > 0 ? (
+                                <small>
+                                  {postSaleOperatorMetrics
+                                    .map(
+                                      (metric) =>
+                                        `${metric.label}: ${metric.value}`,
+                                    )
+                                    .join(' | ')}
+                                </small>
+                              ) : null}
+                              {tenantEcommerceOrderPostSaleOpsBoard ? (
+                                <small>
+                                  Ops lanes:{' '}
+                                  {tenantEcommerceOrderPostSaleOpsBoard.focusLanes
+                                    .map(
+                                      (lane) =>
+                                        `${humanizeKey(lane.laneKey)} (${lane.count})`,
+                                    )
+                                    .join(' | ')}
+                                </small>
+                              ) : null}
+                              {postSaleOperatorNextActions.length > 0 ? (
+                                <ul className={styles.customerList}>
+                                  {postSaleOperatorNextActions
+                                    .slice(0, 4)
+                                    .map((action) => (
+                                      <li
+                                        className={styles.customerListItem}
+                                        key={action}
+                                      >
+                                        <div
+                                          className={styles.customerListPrimary}
+                                        >
+                                          <strong>{action.split(':')[0]}</strong>
+                                          <small>{action}</small>
+                                        </div>
+                                      </li>
+                                    ))}
+                                </ul>
+                              ) : null}
+                            </div>
+                          ) : null}
                           {tenantEcommerceOrderPostSaleLifecycleRegistry ? (
                             <div className={styles.stack}>
                               <small>

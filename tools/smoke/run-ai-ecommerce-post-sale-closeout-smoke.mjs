@@ -24,6 +24,109 @@ function requireOrderDraft(result, orderDraftId, label) {
   }
 }
 
+function pickProductEntity(registry, requestedProductEntityId) {
+  const productEntities = requireArray(
+    registry?.productEntities,
+    'productEntities',
+  );
+
+  if (requestedProductEntityId) {
+    return (
+      productEntities.find(
+        (entry) => entry.productEntityId === requestedProductEntityId,
+      ) ?? null
+    );
+  }
+
+  return (
+    productEntities.find((entry) => entry.status !== 'needs_activation') ??
+    productEntities[0] ??
+    null
+  );
+}
+
+function pickOrderDraft(registry, requestedOrderDraftId) {
+  const orderDrafts = requireArray(registry?.orderDrafts, 'orderDrafts');
+
+  if (requestedOrderDraftId) {
+    return orderDrafts.find((entry) => entry.id === requestedOrderDraftId) ?? null;
+  }
+
+  return (
+    orderDrafts.find((entry) => entry.status !== 'blocked') ??
+    orderDrafts[0] ??
+    null
+  );
+}
+
+async function resolveSmokeTargets({
+  baseUrl,
+  tenantSlug,
+  requestedProductEntityId,
+  requestedOrderDraftId,
+  token,
+}) {
+  const productRegistry = await apiRequest({
+    baseUrl,
+    path: `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities`,
+    token,
+    method: 'GET',
+  });
+
+  const productEntity = pickProductEntity(
+    productRegistry,
+    requestedProductEntityId,
+  );
+
+  if (!productEntity) {
+    throw new Error(
+      `No ecommerce product entity was found for tenant ${tenantSlug}. Create or promote a product entity before running this smoke.`,
+    );
+  }
+
+  const productEntityId = productEntity.productEntityId;
+  const orderDraftRegistry = await apiRequest({
+    baseUrl,
+    path: `/ecommerce/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-entities/${encodeURIComponent(productEntityId)}/order-drafts`,
+    token,
+    method: 'GET',
+  });
+
+  let orderDraft = pickOrderDraft(orderDraftRegistry, requestedOrderDraftId);
+  let orderDraftCreated = false;
+
+  if (!orderDraft && !requestedOrderDraftId) {
+    const saveResponse = await apiRequest({
+      baseUrl,
+      path: `/ecommerce/tenants/${encodeURIComponent(
+        tenantSlug,
+      )}/product-entities/${encodeURIComponent(productEntityId)}/save-order-draft`,
+      token,
+      method: 'POST',
+    });
+    orderDraft = saveResponse.orderDraft ?? null;
+    orderDraftCreated = Boolean(orderDraft);
+  }
+
+  if (!orderDraft) {
+    throw new Error(
+      `No ecommerce order draft was found for productEntityId=${productEntityId}. Run without --order-draft-id to let the smoke create one, or create an order draft first.`,
+    );
+  }
+
+  return {
+    orderDraft,
+    orderDraftCreated,
+    productEntity,
+    productRegistrySummary: productRegistry.summary,
+    orderDraftRegistrySummary: orderDraftRegistry.summary,
+  };
+}
+
 async function main() {
   loadDotEnv();
 
@@ -31,15 +134,25 @@ async function main() {
     getArg('base-url', 'http://127.0.0.1:3000/api'),
   );
   const tenantSlug = getArg('tenant-slug', 'saas-platform-local');
-  const productEntityId = getArg('product-entity-id', '');
-  const orderDraftId = getArg('order-draft-id', '');
+  const requestedProductEntityId = getArg('product-entity-id', '');
+  const requestedOrderDraftId = getArg('order-draft-id', '');
   const token = resolveToken();
 
-  if (!productEntityId || !orderDraftId) {
-    throw new Error(
-      'Post-sale closeout smoke requires --product-entity-id and --order-draft-id.',
-    );
-  }
+  const {
+    orderDraft,
+    orderDraftCreated,
+    productEntity,
+    productRegistrySummary,
+    orderDraftRegistrySummary,
+  } = await resolveSmokeTargets({
+    baseUrl,
+    tenantSlug,
+    requestedProductEntityId,
+    requestedOrderDraftId,
+    token,
+  });
+  const productEntityId = productEntity.productEntityId;
+  const orderDraftId = orderDraft.id;
 
   const basePath = `/ecommerce/tenants/${encodeURIComponent(
     tenantSlug,
@@ -121,7 +234,18 @@ async function main() {
   printSection('AI Ecommerce Post-Sale Closeout Smoke');
   printLine('tenantSlug', tenantSlug);
   printLine('productEntityId', productEntityId);
+  printLine('productTitle', productEntity.title);
   printLine('orderDraftId', orderDraftId);
+  printLine('orderLabel', orderDraft.orderLabel);
+  printLine('orderDraftCreated', orderDraftCreated ? 'yes' : 'no');
+  printLine(
+    'availableProductEntities',
+    productRegistrySummary?.totalProductEntities ?? 'unknown',
+  );
+  printLine(
+    'availableOrderDrafts',
+    orderDraftRegistrySummary?.totalOrderDrafts ?? 'unknown',
+  );
 
   printSection('Payment Dispute');
   printLine('workspaceStatus', paymentDisputeWorkspace.disputeStatus);

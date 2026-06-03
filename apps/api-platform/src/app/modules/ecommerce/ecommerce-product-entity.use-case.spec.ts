@@ -5217,6 +5217,30 @@ describe('Ecommerce product entity use cases', () => {
     ).resolves.toMatchObject({
       workspaceStatus: 'needs_data',
       missingFields: ['buyer_legal_name', 'billing_email'],
+      fiscalProfile: {
+        documentType: 'invoice',
+        documentIdHint: 'ruc_cedula_passport',
+        billingAddressStatus: 'recommended',
+      },
+      completionHints: expect.arrayContaining([
+        expect.objectContaining({
+          fieldKey: 'buyer_legal_name',
+          label: 'Razón social o nombre',
+        }),
+        expect.objectContaining({
+          fieldKey: 'buyer_tax_id_or_document',
+          label: 'RUC, cédula o pasaporte',
+        }),
+        expect.objectContaining({
+          fieldKey: 'billing_email',
+          label: 'Correo fiscal',
+        }),
+      ]),
+      operatorChecklist: expect.arrayContaining([
+        'Confirmar razón social o nombre exacto para el comprobante.',
+        'Validar identificador del comprador: RUC, cédula o pasaporte antes del handoff.',
+        'Confirmar correo fiscal que recibirá la factura electrónica.',
+      ]),
     });
   });
 

@@ -1257,6 +1257,84 @@ export function AiEcommerceLaunchSection({
     invoiceHandoffSignals.length > 0 ||
     invoiceHandoffArtifacts.length > 0 ||
     invoiceHandoffMissingFields.length > 0;
+  const orderCommandCenterMetrics = tenantEcommerceOrderDraftRegistry
+    ? [
+        {
+          label: 'Drafts',
+          value: tenantEcommerceOrderDraftRegistry.summary.draftCount,
+        },
+        {
+          label: 'Needs data',
+          value: tenantEcommerceOrderDraftRegistry.summary.needsDataCount,
+        },
+        {
+          label: 'Ready',
+          value: tenantEcommerceOrderDraftRegistry.summary.readyForReviewCount,
+        },
+        {
+          label: 'Blocked',
+          value: tenantEcommerceOrderDraftRegistry.summary.blockedCount,
+        },
+      ]
+    : [];
+  const orderCommandCenterSignals = [
+    selectedTenantEcommerceOrderDraftDetail
+      ? `Order: ${humanizeKey(
+          selectedTenantEcommerceOrderDraftDetail.orderDraft.status,
+        )}`
+      : null,
+    lastEcommerceOrderHandoffDecision
+      ? `Route: ${humanizeKey(lastEcommerceOrderHandoffDecision.route)}`
+      : null,
+    selectedTenantEcommerceOrderPaymentReadinessWorkspace
+      ? `Payment: ${humanizeKey(
+          selectedTenantEcommerceOrderPaymentReadinessWorkspace.workspaceStatus,
+        )}`
+      : null,
+    selectedTenantEcommerceOrderFulfillmentReadinessWorkspace
+      ? `Fulfillment: ${humanizeKey(
+          selectedTenantEcommerceOrderFulfillmentReadinessWorkspace.fulfillmentStatus,
+        )}`
+      : null,
+    selectedTenantEcommerceOrderPostSaleLifecycleDetail
+      ? `Post-sale: ${humanizeKey(
+          selectedTenantEcommerceOrderPostSaleLifecycleDetail.currentStatus,
+        )}`
+      : null,
+    invoiceHandoffStatus
+      ? `Invoice: ${humanizeKey(invoiceHandoffStatus)}`
+      : null,
+  ].filter((entry): entry is string => Boolean(entry));
+  const orderCommandCenterNextActions = [
+    ...(selectedTenantEcommerceOrderDraftDetail?.nextActions ?? []),
+    selectedTenantEcommerceOrderPaymentReadinessWorkspace?.nextStep,
+    selectedTenantEcommerceOrderFulfillmentReadinessWorkspace?.nextStep,
+    selectedTenantEcommerceOrderPostSaleLifecycleDetail?.nextStep,
+    invoiceHandoffNextStep,
+  ].filter((entry): entry is string => Boolean(entry));
+  const orderCommandCenterEntries = tenantEcommerceOrderOpsPriorityQueue
+    ? tenantEcommerceOrderOpsPriorityQueue.entries.slice(0, 3).map((entry) => ({
+        orderDraftId: entry.orderDraftId,
+        label: entry.orderLabel,
+        meta: `${humanizeKey(entry.activeRoute)} · ${humanizeKey(
+          entry.priorityBand,
+        )} · score ${entry.priorityScore}`,
+        nextStep: entry.recommendedAction,
+      }))
+    : (tenantEcommerceOrderOperatorWorkboard?.entries ?? [])
+        .slice(0, 3)
+        .map((entry) => ({
+          orderDraftId: entry.orderDraftId,
+          label: entry.orderLabel,
+          meta: `${humanizeKey(entry.handoffRoute)} · ${humanizeKey(
+            entry.priority,
+          )}`,
+          nextStep: entry.nextStep,
+        }));
+  const orderCommandCenterHasSignal =
+    orderCommandCenterMetrics.length > 0 ||
+    orderCommandCenterSignals.length > 0 ||
+    orderCommandCenterEntries.length > 0;
 
   return (
     <section className={styles.adminPanel}>
@@ -5272,6 +5350,131 @@ export function AiEcommerceLaunchSection({
                               ) : null}
                             </div>
                           ) : null}
+                          {orderCommandCenterHasSignal ? (
+                            <div className={styles.commercialCard}>
+                              <div className={styles.sectionHeading}>
+                                <div>
+                                  <span className={styles.label}>
+                                    Order command center
+                                  </span>
+                                  <h4>
+                                    {tenantEcommerceOrderOperatorWorkboard
+                                      ?.summary.headline ??
+                                      tenantEcommerceOrderDraftRegistry?.summary
+                                        .headline ??
+                                      'Carga orders y ops para coordinar la ejecución.'}
+                                  </h4>
+                                </div>
+                                <span className={styles.badge}>
+                                  {tenantEcommerceOrderOpsPriorityQueue
+                                    ? `${tenantEcommerceOrderOpsPriorityQueue.summary.totalOrders} prioritized`
+                                    : tenantEcommerceOrderDraftRegistry
+                                      ? `${tenantEcommerceOrderDraftRegistry.summary.totalOrderDrafts} orders`
+                                      : 'live'}
+                                </span>
+                              </div>
+                              {orderCommandCenterMetrics.length > 0 ? (
+                                <small>
+                                  {orderCommandCenterMetrics
+                                    .map(
+                                      (metric) =>
+                                        `${metric.label}: ${metric.value}`,
+                                    )
+                                    .join(' | ')}
+                                </small>
+                              ) : null}
+                              {orderCommandCenterSignals.length > 0 ? (
+                                <small>
+                                  Signals:{' '}
+                                  {orderCommandCenterSignals.join(' | ')}
+                                </small>
+                              ) : null}
+                              {orderCommandCenterEntries.length > 0 ? (
+                                <ul className={styles.customerList}>
+                                  {orderCommandCenterEntries.map((entry) => (
+                                    <li
+                                      className={styles.customerListItem}
+                                      key={entry.orderDraftId}
+                                    >
+                                      <div
+                                        className={styles.customerListPrimary}
+                                      >
+                                        <strong>{entry.label}</strong>
+                                        <small>{entry.meta}</small>
+                                        <small>{entry.nextStep}</small>
+                                      </div>
+                                      <div className={styles.inlineActions}>
+                                        <button
+                                          className={styles.ghostButton}
+                                          onClick={() =>
+                                            onSelectOrderDraft(
+                                              entry.orderDraftId,
+                                            )
+                                          }
+                                          type="button"
+                                        >
+                                          Abrir order draft
+                                        </button>
+                                      </div>
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : null}
+                              {orderCommandCenterNextActions.length > 0 ? (
+                                <small>
+                                  Next actions:{' '}
+                                  {orderCommandCenterNextActions
+                                    .slice(0, 4)
+                                    .join(' | ')}
+                                </small>
+                              ) : null}
+                              {selectedTenantEcommerceOrderDraftDetail ? (
+                                <div className={styles.inlineActions}>
+                                  <button
+                                    className={styles.ghostButton}
+                                    disabled={
+                                      tenantEcommerceOrderFiscalDataCompletionWorkspaceLoading ||
+                                      tenantEcommerceOrderDraftDetailLoading
+                                    }
+                                    onClick={
+                                      onLoadOrderFiscalDataCompletionWorkspace
+                                    }
+                                    type="button"
+                                  >
+                                    Cargar fiscal
+                                  </button>
+                                  <button
+                                    className={styles.ghostButton}
+                                    disabled={
+                                      tenantEcommerceInvoiceDraftHandoffWorkspaceLoading ||
+                                      tenantEcommerceOrderDraftDetailLoading
+                                    }
+                                    onClick={onLoadInvoiceDraftHandoffWorkspace}
+                                    type="button"
+                                  >
+                                    Cargar invoice handoff
+                                  </button>
+                                  <button
+                                    className={styles.ghostButton}
+                                    disabled={
+                                      tenantEcommerceOrderPostSaleLifecycleDetailLoading ===
+                                      selectedTenantEcommerceOrderDraftDetail
+                                        .orderDraft.id
+                                    }
+                                    onClick={() =>
+                                      onSelectOrderPostSaleLifecycle(
+                                        selectedTenantEcommerceOrderDraftDetail
+                                          .orderDraft.id,
+                                      )
+                                    }
+                                    type="button"
+                                  >
+                                    Cargar post-sale
+                                  </button>
+                                </div>
+                              ) : null}
+                            </div>
+                          ) : null}
                           {selectedTenantEcommerceOrderDraftDetail ? (
                             <div className={styles.commercialCard}>
                               <div className={styles.sectionHeading}>
@@ -6043,10 +6246,41 @@ export function AiEcommerceLaunchSection({
                                   : 'Ninguno'}
                               </small>
                               <small>
+                                Fiscal profile:{' '}
+                                {selectedTenantEcommerceOrderFiscalDataCompletionWorkspace
+                                  .fiscalProfile.legalName ?? 'Nombre pendiente'}{' '}
+                                ·{' '}
+                                {selectedTenantEcommerceOrderFiscalDataCompletionWorkspace
+                                  .fiscalProfile.taxIdOrDocument ??
+                                  'RUC/cédula/pasaporte pendiente'}{' '}
+                                ·{' '}
+                                {selectedTenantEcommerceOrderFiscalDataCompletionWorkspace
+                                  .fiscalProfile.billingEmail ??
+                                  'email fiscal pendiente'}{' '}
+                                ·{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderFiscalDataCompletionWorkspace
+                                    .fiscalProfile.documentType,
+                                )}
+                              </small>
+                              <small>
+                                Address:{' '}
+                                {humanizeKey(
+                                  selectedTenantEcommerceOrderFiscalDataCompletionWorkspace
+                                    .fiscalProfile.billingAddressStatus,
+                                )}
+                              </small>
+                              <small>
                                 Hints:{' '}
                                 {selectedTenantEcommerceOrderFiscalDataCompletionWorkspace.completionHints
                                   .map((entry) => `${entry.label}: ${entry.hint}`)
                                   .join(' | ')}
+                              </small>
+                              <small>
+                                Checklist:{' '}
+                                {selectedTenantEcommerceOrderFiscalDataCompletionWorkspace.operatorChecklist.join(
+                                  ' | ',
+                                )}
                               </small>
                               <small>
                                 Target workspace:{' '}

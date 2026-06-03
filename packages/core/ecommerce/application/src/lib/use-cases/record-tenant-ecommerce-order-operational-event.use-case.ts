@@ -43,6 +43,17 @@ export class RecordTenantEcommerceOrderOperationalEventUseCase {
     }
 
     const occurredAt = this.nowProvider();
+    const sourceWorkspace = command.sourceWorkspace.trim();
+    const status = command.status.trim();
+    const summary = command.summary.trim();
+    const dedupeKey = [
+      tenantSlug,
+      productEntityId,
+      orderDraftId,
+      command.eventType,
+      sourceWorkspace,
+      status,
+    ].join(':');
 
     return this.ecommerceOrderOperationalEventRepository.record({
       id: this.idGenerator(),
@@ -50,10 +61,11 @@ export class RecordTenantEcommerceOrderOperationalEventUseCase {
       tenantSlug,
       productEntityId,
       orderDraftId,
+      dedupeKey,
       eventType: command.eventType,
-      sourceWorkspace: command.sourceWorkspace.trim(),
-      status: command.status.trim(),
-      summary: command.summary.trim(),
+      sourceWorkspace,
+      status,
+      summary,
       payload: command.payload ?? {},
       occurredAt,
     });

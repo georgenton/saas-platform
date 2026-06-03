@@ -81,6 +81,8 @@ describe('Ecommerce order operational event use cases', () => {
       tenantSlug: tenant.slug,
       productEntityId: orderDraft.productEntityId,
       orderDraftId: orderDraft.id,
+      dedupeKey:
+        'saas-platform:product_entity_001:order_draft_001:payment_reconciliation:payment-reconciliation-workspace:reconciled',
       eventType: 'payment_reconciliation',
       sourceWorkspace: 'payment-reconciliation-workspace',
       status: 'reconciled',
@@ -99,6 +101,8 @@ describe('Ecommerce order operational event use cases', () => {
         tenantSlug: tenant.slug,
         productEntityId: orderDraft.productEntityId,
         orderDraftId: orderDraft.id,
+        dedupeKey:
+          'saas-platform:product_entity_001:order_draft_001:payment_reconciliation:payment-reconciliation-workspace:reconciled',
       }),
     );
   });
@@ -128,6 +132,8 @@ describe('Ecommerce order operational event use cases', () => {
         tenantSlug: tenant.slug,
         productEntityId: orderDraft.productEntityId,
         orderDraftId: orderDraft.id,
+        dedupeKey:
+          'saas-platform:product_entity_001:order_draft_001:inventory_reservation:inventory-reservation-workspace:reserved',
         eventType: 'inventory_reservation' as const,
         sourceWorkspace: 'inventory-reservation-workspace',
         status: 'reserved',
@@ -146,7 +152,12 @@ describe('Ecommerce order operational event use cases', () => {
     );
 
     await expect(
-      useCase.execute(tenant.slug, orderDraft.productEntityId, orderDraft.id, 5),
+      useCase.execute(tenant.slug, orderDraft.productEntityId, orderDraft.id, {
+        eventType: 'inventory_reservation',
+        status: 'reserved',
+        sourceWorkspace: 'inventory-reservation-workspace',
+        limit: 5,
+      }),
     ).resolves.toEqual(events);
     expect(
       ecommerceOrderOperationalEventRepository.listLatestByOrderDraft,
@@ -154,6 +165,9 @@ describe('Ecommerce order operational event use cases', () => {
       tenantSlug: tenant.slug,
       productEntityId: orderDraft.productEntityId,
       orderDraftId: orderDraft.id,
+      eventType: 'inventory_reservation',
+      status: 'reserved',
+      sourceWorkspace: 'inventory-reservation-workspace',
       limit: 5,
     });
   });

@@ -1795,6 +1795,7 @@ export interface TenantEcommerceOrderOperationalEventView {
   tenantSlug: string;
   productEntityId: string;
   orderDraftId: string;
+  dedupeKey: string;
   eventType: TenantEcommerceOrderOperationalEventType;
   sourceWorkspace: string;
   status: string;

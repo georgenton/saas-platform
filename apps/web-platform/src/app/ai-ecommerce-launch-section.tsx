@@ -127,6 +127,13 @@ import {
   RequestEcommerceLaunchPlanActivationReadinessResponse,
 } from './types';
 
+type EcommerceOperationalEventTimelineFilters = {
+  eventType?: EcommerceOrderOperationalEventTimelineResponse['events'][number]['eventType'];
+  status?: string;
+  sourceWorkspace?: string;
+  limit?: number;
+};
+
 type Props = {
   hasSession: boolean;
   hasCurrentTenancy: boolean;
@@ -689,7 +696,9 @@ type Props = {
   onLoadOrderFulfillmentReadinessWorkspace: () => void;
   onLoadOrderFulfillmentAvailabilityWorkspace: () => void;
   onLoadOrderInventoryReservationWorkspace: () => void;
-  onLoadOrderOperationalEventTimeline: () => void;
+  onLoadOrderOperationalEventTimeline: (
+    filters?: EcommerceOperationalEventTimelineFilters,
+  ) => void;
   onLoadOrderFulfillmentExecutionWorkspace: () => void;
   onLoadOrderFulfillmentDeliveryWorkspace: () => void;
   onRequestOrderFulfillmentCompletionPacket: () => void;
@@ -1105,6 +1114,12 @@ export function AiEcommerceLaunchSection({
   const [assetEntityRecommendedArtifacts, setAssetEntityRecommendedArtifacts] =
     useState('');
   const [assetEntityNextMilestone, setAssetEntityNextMilestone] = useState('');
+  const [
+    operationalEventTimelineFilters,
+    setOperationalEventTimelineFilters,
+  ] = useState<EcommerceOperationalEventTimelineFilters>({
+    limit: 20,
+  });
 
   useEffect(() => {
     const snapshot =
@@ -6041,7 +6056,11 @@ export function AiEcommerceLaunchSection({
                                     tenantEcommerceOrderOperationalEventTimelineLoading ||
                                     tenantEcommerceOrderDraftDetailLoading
                                   }
-                                  onClick={onLoadOrderOperationalEventTimeline}
+                                  onClick={() =>
+                                    onLoadOrderOperationalEventTimeline(
+                                      operationalEventTimelineFilters,
+                                    )
+                                  }
                                   type="button"
                                 >
                                   {tenantEcommerceOrderOperationalEventTimelineLoading
@@ -7008,6 +7027,171 @@ export function AiEcommerceLaunchSection({
                                   }
                                 </span>
                               </div>
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Event type</span>
+                                  <select
+                                    className={styles.selectField}
+                                    onChange={(event) =>
+                                      setOperationalEventTimelineFilters(
+                                        (current) => ({
+                                          ...current,
+                                          eventType:
+                                            event.target.value === ''
+                                              ? undefined
+                                              : (event.target
+                                                  .value as EcommerceOperationalEventTimelineFilters['eventType']),
+                                        }),
+                                      )
+                                    }
+                                    value={
+                                      operationalEventTimelineFilters.eventType ??
+                                      ''
+                                    }
+                                  >
+                                    <option value="">Todos</option>
+                                    <option value="payment_reconciliation">
+                                      Payment reconciliation
+                                    </option>
+                                    <option value="fulfillment_availability">
+                                      Fulfillment availability
+                                    </option>
+                                    <option value="inventory_reservation">
+                                      Inventory reservation
+                                    </option>
+                                    <option value="returns_refunds_cancellation">
+                                      Returns/refunds
+                                    </option>
+                                    <option value="post_sale_closeout">
+                                      Post-sale closeout
+                                    </option>
+                                  </select>
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Status</span>
+                                  <input
+                                    onChange={(event) =>
+                                      setOperationalEventTimelineFilters(
+                                        (current) => ({
+                                          ...current,
+                                          status:
+                                            event.target.value.trim() ||
+                                            undefined,
+                                        }),
+                                      )
+                                    }
+                                    placeholder="needs_capacity_review"
+                                    value={
+                                      operationalEventTimelineFilters.status ??
+                                      ''
+                                    }
+                                  />
+                                </label>
+                              </div>
+                              <div className={styles.invoiceInlineGrid}>
+                                <label className={styles.field}>
+                                  <span>Source</span>
+                                  <select
+                                    className={styles.selectField}
+                                    onChange={(event) =>
+                                      setOperationalEventTimelineFilters(
+                                        (current) => ({
+                                          ...current,
+                                          sourceWorkspace:
+                                            event.target.value || undefined,
+                                        }),
+                                      )
+                                    }
+                                    value={
+                                      operationalEventTimelineFilters.sourceWorkspace ??
+                                      ''
+                                    }
+                                  >
+                                    <option value="">Todas</option>
+                                    <option value="payment-reconciliation-workspace">
+                                      Payment reconciliation
+                                    </option>
+                                    <option value="fulfillment-availability-workspace">
+                                      Fulfillment availability
+                                    </option>
+                                    <option value="inventory-reservation-workspace">
+                                      Inventory reservation
+                                    </option>
+                                    <option value="returns-refunds-cancellation-workspace">
+                                      Returns/refunds
+                                    </option>
+                                    <option value="order-post-sale-reporting-summary">
+                                      Post-sale summary
+                                    </option>
+                                  </select>
+                                </label>
+                                <label className={styles.field}>
+                                  <span>Limit</span>
+                                  <select
+                                    className={styles.selectField}
+                                    onChange={(event) =>
+                                      setOperationalEventTimelineFilters(
+                                        (current) => ({
+                                          ...current,
+                                          limit: Number(event.target.value),
+                                        }),
+                                      )
+                                    }
+                                    value={
+                                      operationalEventTimelineFilters.limit ??
+                                      20
+                                    }
+                                  >
+                                    <option value={10}>10</option>
+                                    <option value={20}>20</option>
+                                    <option value={50}>50</option>
+                                    <option value={100}>100</option>
+                                  </select>
+                                </label>
+                              </div>
+                              <div className={styles.actionRow}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  disabled={
+                                    tenantEcommerceOrderOperationalEventTimelineLoading
+                                  }
+                                  onClick={() =>
+                                    onLoadOrderOperationalEventTimeline(
+                                      operationalEventTimelineFilters,
+                                    )
+                                  }
+                                  type="button"
+                                >
+                                  {tenantEcommerceOrderOperationalEventTimelineLoading
+                                    ? 'Aplicando filtros...'
+                                    : 'Aplicar filtros'}
+                                </button>
+                              </div>
+                              <small>
+                                Latest status:{' '}
+                                {selectedTenantEcommerceOrderOperationalEventTimeline
+                                  .summary.latestStatus
+                                  ? humanizeKey(
+                                      selectedTenantEcommerceOrderOperationalEventTimeline
+                                        .summary.latestStatus,
+                                    )
+                                  : 'sin eventos'}{' '}
+                                · Blockers:{' '}
+                                {
+                                  selectedTenantEcommerceOrderOperationalEventTimeline
+                                    .summary.blockerCount
+                                }
+                              </small>
+                              {selectedTenantEcommerceOrderOperationalEventTimeline
+                                .summary.latestNextStep ? (
+                                <small>
+                                  Next step:{' '}
+                                  {
+                                    selectedTenantEcommerceOrderOperationalEventTimeline
+                                      .summary.latestNextStep
+                                  }
+                                </small>
+                              ) : null}
                               <div className={styles.stack}>
                                 {selectedTenantEcommerceOrderOperationalEventTimeline.events.length >
                                 0 ? (

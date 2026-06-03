@@ -774,6 +774,7 @@ model EcommerceOrderOperationalEvent {
   tenantSlug      String
   productEntityId String
   orderDraftId    String
+  dedupeKey       String   @unique
   eventType       String
   sourceWorkspace String
   status          String
@@ -785,6 +786,7 @@ model EcommerceOrderOperationalEvent {
   createdAt       DateTime @default(now())
 
   @@index([tenantSlug, productEntityId, orderDraftId, occurredAt], map: "EcommerceOrderOperationalEvent_order_lookup_idx")
+  @@index([tenantSlug, productEntityId, orderDraftId, eventType], map: "EcommerceOrderOperationalEvent_order_event_type_idx")
   @@index([tenantId, eventType, occurredAt], map: "EcommerceOrderOperationalEvent_event_type_idx")
   @@index([tenantId, orderDraftId, occurredAt], map: "EcommerceOrderOperationalEvent_order_draft_idx")
 }

@@ -5829,12 +5829,19 @@ export function App() {
     tenantSlug: string,
     productEntityId: string,
     orderDraftId: string,
+    filters: {
+      eventType?: EcommerceOrderOperationalEventTimelineResponse['events'][number]['eventType'];
+      status?: string;
+      sourceWorkspace?: string;
+      limit?: number;
+    } = {},
   ) => {
     return fetchTenantEcommerceOrderOperationalEventTimeline(
       token!,
       tenantSlug,
       productEntityId,
       orderDraftId,
+      filters,
     );
   };
   const fetchTenantEcommerceOrderFulfillmentDeliveryWorkspaceSurface = async (
@@ -17216,7 +17223,14 @@ export function App() {
     }
   }
 
-  async function handleLoadTenantEcommerceOrderOperationalEventTimeline() {
+  async function handleLoadTenantEcommerceOrderOperationalEventTimeline(
+    filters: {
+      eventType?: EcommerceOrderOperationalEventTimelineResponse['events'][number]['eventType'];
+      status?: string;
+      sourceWorkspace?: string;
+      limit?: number;
+    } = {},
+  ) {
     if (
       !token ||
       !currentTenancy ||
@@ -17241,6 +17255,7 @@ export function App() {
           tenantSlug,
           productEntityId,
           orderDraftId,
+          filters,
         );
 
       startTransition(() => {
@@ -21868,8 +21883,10 @@ export function App() {
             onLoadOrderInventoryReservationWorkspace={() => {
               void handleLoadTenantEcommerceOrderInventoryReservationWorkspace();
             }}
-            onLoadOrderOperationalEventTimeline={() => {
-              void handleLoadTenantEcommerceOrderOperationalEventTimeline();
+            onLoadOrderOperationalEventTimeline={(filters) => {
+              void handleLoadTenantEcommerceOrderOperationalEventTimeline(
+                filters,
+              );
             }}
             onLoadOrderFulfillmentExecutionWorkspace={() => {
               void handleLoadTenantEcommerceOrderFulfillmentExecutionWorkspace();

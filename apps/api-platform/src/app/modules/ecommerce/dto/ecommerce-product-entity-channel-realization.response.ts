@@ -1738,6 +1738,7 @@ export interface EcommerceOrderOperationalEventResponseDto {
   tenantSlug: string;
   productEntityId: string;
   orderDraftId: string;
+  dedupeKey: string;
   eventType:
     | 'payment_reconciliation'
     | 'fulfillment_availability'
@@ -1756,6 +1757,12 @@ export interface EcommerceOrderOperationalEventTimelineResponseDto {
   tenantSlug: string;
   productEntityId: string;
   orderDraftId: string;
+  summary: {
+    totalEvents: number;
+    latestStatus: string | null;
+    blockerCount: number;
+    latestNextStep: string | null;
+  };
   events: EcommerceOrderOperationalEventResponseDto[];
 }
 
@@ -3589,6 +3596,7 @@ export function toEcommerceOrderOperationalEventResponseDto(
     tenantSlug: view.tenantSlug,
     productEntityId: view.productEntityId,
     orderDraftId: view.orderDraftId,
+    dedupeKey: view.dedupeKey,
     eventType: view.eventType,
     sourceWorkspace: view.sourceWorkspace,
     status: view.status,
@@ -3605,10 +3613,33 @@ export function toEcommerceOrderOperationalEventTimelineResponseDto(
   orderDraftId: string,
   events: TenantEcommerceOrderOperationalEventView[],
 ): EcommerceOrderOperationalEventTimelineResponseDto {
+  const latestEvent = events[0] ?? null;
+  const blockerCount = events.filter(
+    (event) => {
+      const blockedBy = event.payload.blockedBy;
+      const blockers = event.payload.blockers;
+
+      return (
+        event.status.toLowerCase().includes('blocked') ||
+        (Array.isArray(blockedBy) && blockedBy.length > 0) ||
+        (Array.isArray(blockers) && blockers.length > 0)
+      );
+    },
+  ).length;
+
   return {
     tenantSlug,
     productEntityId,
     orderDraftId,
+    summary: {
+      totalEvents: events.length,
+      latestStatus: latestEvent?.status ?? null,
+      blockerCount,
+      latestNextStep:
+        typeof latestEvent?.payload.nextStep === 'string'
+          ? latestEvent.payload.nextStep
+          : null,
+    },
     events: events.map(toEcommerceOrderOperationalEventResponseDto),
   };
 }

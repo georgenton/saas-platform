@@ -10,6 +10,7 @@ export interface EcommerceOrderOperationalEventRepository {
     tenantSlug: string;
     productEntityId: string;
     orderDraftId: string;
+    dedupeKey: string;
     eventType: TenantEcommerceOrderOperationalEventType;
     sourceWorkspace: string;
     status: string;
@@ -22,6 +23,9 @@ export interface EcommerceOrderOperationalEventRepository {
     tenantSlug: string;
     productEntityId: string;
     orderDraftId: string;
+    eventType?: TenantEcommerceOrderOperationalEventType;
+    status?: string;
+    sourceWorkspace?: string;
     limit?: number;
   }): Promise<TenantEcommerceOrderOperationalEventView[]>;
 }

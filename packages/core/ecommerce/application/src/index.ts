@@ -2,6 +2,7 @@ export * from './lib/errors/ecommerce-product-authoring-draft-not-found.error';
 export * from './lib/errors/ecommerce-launch-plan-not-found.error';
 export * from './lib/ports/ecommerce-product-draft.repository';
 export * from './lib/ports/ecommerce-order-draft.repository';
+export * from './lib/ports/ecommerce-order-operational-event.repository';
 export * from './lib/ports/ecommerce-product-entity-channel-draft.repository';
 export * from './lib/ports/ecommerce-product-entity.repository';
 export * from './lib/ports/ecommerce-product-setup.repository';
@@ -122,6 +123,8 @@ export * from './lib/use-cases/get-tenant-ecommerce-order-ops-attention-workspac
 export * from './lib/use-cases/get-tenant-ecommerce-order-ops-escalation-board.use-case';
 export * from './lib/use-cases/update-tenant-ecommerce-order-customer-profile.use-case';
 export * from './lib/use-cases/get-tenant-ecommerce-order-returns-refunds-cancellation-workspace.use-case';
+export * from './lib/use-cases/record-tenant-ecommerce-order-operational-event.use-case';
+export * from './lib/use-cases/list-tenant-ecommerce-order-operational-events.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-setup-definition-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-product-workspace-readiness-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecommerce-launch-plan-activation-readiness.use-case';

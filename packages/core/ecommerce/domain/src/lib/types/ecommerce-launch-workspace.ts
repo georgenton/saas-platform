@@ -1782,6 +1782,28 @@ export interface TenantEcommerceOrderDraftSaveView {
   orderDraft: TenantEcommerceOrderDraftView;
 }
 
+export type TenantEcommerceOrderOperationalEventType =
+  | 'payment_reconciliation'
+  | 'fulfillment_availability'
+  | 'inventory_reservation'
+  | 'returns_refunds_cancellation'
+  | 'post_sale_closeout';
+
+export interface TenantEcommerceOrderOperationalEventView {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  productEntityId: string;
+  orderDraftId: string;
+  eventType: TenantEcommerceOrderOperationalEventType;
+  sourceWorkspace: string;
+  status: string;
+  summary: string;
+  payload: Record<string, unknown>;
+  occurredAt: Date;
+  createdAt: Date;
+}
+
 export interface TenantEcommerceOrderCustomerProfileUpdateView {
   tenantSlug: string;
   generatedAt: Date;

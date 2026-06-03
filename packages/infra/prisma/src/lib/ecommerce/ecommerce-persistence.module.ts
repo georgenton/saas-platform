@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import {
   ECOMMERCE_PRODUCT_DRAFT_REPOSITORY,
   ECOMMERCE_ORDER_DRAFT_REPOSITORY,
+  ECOMMERCE_ORDER_OPERATIONAL_EVENT_REPOSITORY,
   ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
   ECOMMERCE_PRODUCT_ENTITY_REPOSITORY,
   ECOMMERCE_PRODUCT_SETUP_REPOSITORY,
@@ -9,6 +10,7 @@ import {
 import { PrismaModule } from '../prisma.module';
 import { PrismaEcommerceProductDraftRepository } from './prisma-ecommerce-product-draft.repository';
 import { PrismaEcommerceOrderDraftRepository } from './prisma-ecommerce-order-draft.repository';
+import { PrismaEcommerceOrderOperationalEventRepository } from './prisma-ecommerce-order-operational-event.repository';
 import { PrismaEcommerceProductEntityChannelDraftRepository } from './prisma-ecommerce-product-entity-channel-draft.repository';
 import { PrismaEcommerceProductEntityRepository } from './prisma-ecommerce-product-entity.repository';
 import { PrismaEcommerceProductSetupRepository } from './prisma-ecommerce-product-setup.repository';
@@ -18,6 +20,7 @@ import { PrismaEcommerceProductSetupRepository } from './prisma-ecommerce-produc
   providers: [
     PrismaEcommerceProductDraftRepository,
     PrismaEcommerceOrderDraftRepository,
+    PrismaEcommerceOrderOperationalEventRepository,
     PrismaEcommerceProductEntityChannelDraftRepository,
     PrismaEcommerceProductEntityRepository,
     PrismaEcommerceProductSetupRepository,
@@ -28,6 +31,10 @@ import { PrismaEcommerceProductSetupRepository } from './prisma-ecommerce-produc
     {
       provide: ECOMMERCE_ORDER_DRAFT_REPOSITORY,
       useExisting: PrismaEcommerceOrderDraftRepository,
+    },
+    {
+      provide: ECOMMERCE_ORDER_OPERATIONAL_EVENT_REPOSITORY,
+      useExisting: PrismaEcommerceOrderOperationalEventRepository,
     },
     {
       provide: ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
@@ -45,6 +52,7 @@ import { PrismaEcommerceProductSetupRepository } from './prisma-ecommerce-produc
   exports: [
     ECOMMERCE_PRODUCT_DRAFT_REPOSITORY,
     ECOMMERCE_ORDER_DRAFT_REPOSITORY,
+    ECOMMERCE_ORDER_OPERATIONAL_EVENT_REPOSITORY,
     ECOMMERCE_PRODUCT_ENTITY_CHANNEL_DRAFT_REPOSITORY,
     ECOMMERCE_PRODUCT_ENTITY_REPOSITORY,
     ECOMMERCE_PRODUCT_SETUP_REPOSITORY,

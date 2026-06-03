@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.67.0
+
+### Minor Changes
+
+- 1f4c2eb: Add ecommerce invoice execution packets, operational exception resolution, and completion dashboard surfaces.
+
 ## 0.66.0
 
 ### Minor Changes

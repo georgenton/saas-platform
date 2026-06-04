@@ -27,6 +27,11 @@ export type EcuadorTaxDueStatus =
   | 'upcoming'
   | 'unscheduled';
 export type EcuadorTaxReviewPriority = 'critical' | 'high' | 'normal';
+export type EcuadorTaxPeriodWorkspaceStatus =
+  | 'blocked'
+  | 'needs_review'
+  | 'ready_for_accountant'
+  | 'ready_for_declaration';
 
 export interface EcuadorTaxpayerProfileView {
   tenantSlug: string;
@@ -221,6 +226,60 @@ export interface EcuadorTaxDeclarationDraftPacketView {
     calendarEntryCount: number;
     evidenceSummary: EcuadorTaxEvidenceSummaryView;
   };
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPeriodWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  status: EcuadorTaxPeriodWorkspaceStatus;
+  taxpayerProfile: EcuadorTaxpayerProfileView;
+  calendarEntries: EcuadorTaxCalendarEntryView[];
+  dueAlerts: EcuadorTaxDueMonitorAlertView[];
+  preparationPacket: EcuadorTaxPeriodPreparationPacketView;
+  declarationDraftPacket: EcuadorTaxDeclarationDraftPacketView;
+  blockers: string[];
+  nextActions: string[];
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantReviewPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  executiveSummary: string;
+  workspaceStatus: EcuadorTaxPeriodWorkspaceStatus;
+  declarationSections: EcuadorTaxDeclarationDraftPacketView['declarationSections'];
+  suggestedQuestions: string[];
+  missingEvidence: string[];
+  calendarAlerts: EcuadorTaxDueMonitorAlertView[];
+  incompleteThirdPartyIds: string[];
+  handoffChecklist: string[];
+  responsibilityGuardrails: string[];
+  nextStep: string;
+}
+
+export interface EcuadorTaxAuditReadinessView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  generatedOutputs: Array<{
+    eventType: string;
+    generated: boolean;
+    source: string;
+    recommendedPersistence: string;
+  }>;
+  missingPersistence: string[];
+  recommendedAuditEvents: Array<{
+    eventType: string;
+    reason: string;
+    minimumPayload: string[];
+  }>;
   nextStep: string;
   guardrails: string[];
 }

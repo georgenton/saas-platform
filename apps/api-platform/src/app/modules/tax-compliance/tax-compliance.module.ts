@@ -19,11 +19,14 @@ import {
   PARTY_DIRECTORY_REPOSITORY,
 } from '@saas-platform/parties-application';
 import {
+  GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxObligationCalendarUseCase,
+  GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
+  RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
 } from '@saas-platform/tax-compliance-application';
@@ -177,6 +180,43 @@ import { TaxComplianceController } from './tax-compliance.controller';
         new RequestTenantEcuadorTaxDeclarationDraftPacketUseCase(
           requestTenantEcuadorTaxPeriodPreparationPacketUseCase,
           getTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxPeriodWorkspaceUseCase,
+      inject: [
+        GetTenantEcuadorTaxObligationCalendarUseCase,
+        GetTenantEcuadorTaxDueMonitorUseCase,
+        RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+        RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxObligationCalendarUseCase,
+        getTenantEcuadorTaxDueMonitorUseCase,
+        requestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+        requestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+      ) =>
+        new GetTenantEcuadorTaxPeriodWorkspaceUseCase(
+          getTenantEcuadorTaxObligationCalendarUseCase,
+          getTenantEcuadorTaxDueMonitorUseCase,
+          requestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+          requestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
+      inject: [GetTenantEcuadorTaxPeriodWorkspaceUseCase],
+      useFactory: (getTenantEcuadorTaxPeriodWorkspaceUseCase) =>
+        new RequestTenantEcuadorTaxAccountantReviewPacketUseCase(
+          getTenantEcuadorTaxPeriodWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAuditReadinessUseCase,
+      inject: [GetTenantEcuadorTaxPeriodWorkspaceUseCase],
+      useFactory: (getTenantEcuadorTaxPeriodWorkspaceUseCase) =>
+        new GetTenantEcuadorTaxAuditReadinessUseCase(
+          getTenantEcuadorTaxPeriodWorkspaceUseCase,
         ),
     },
     {

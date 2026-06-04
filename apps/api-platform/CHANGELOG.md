@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.75.0
+
+### Minor Changes
+
+- 02ae67c: Add the Ecuador tax operator console surface, ecommerce evidence bridge, and derived sales tax book foundation.
+
 ## 0.74.0
 
 ### Minor Changes

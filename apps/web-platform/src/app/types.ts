@@ -870,6 +870,196 @@ export interface WhatsappOutboundReportingSummaryResponse {
   operationalAlerts: WhatsappOperationalAlertResponse[];
 }
 
+export interface EcuadorTaxEvidenceSummaryResponse {
+  invoicing: {
+    invoiceCount: number;
+    statusBreakdown: Array<{ status: string; count: number }>;
+    totalsByCurrency: Array<{
+      currency: string;
+      subtotalInCents: number;
+      taxInCents: number;
+      totalInCents: number;
+      paidInCents: number;
+      outstandingTotalInCents: number;
+    }>;
+    monthlyTotals: Array<{
+      month: string;
+      currency: string;
+      invoiceCount: number;
+      totalInCents: number;
+      taxInCents: number;
+    }>;
+  };
+  parties: {
+    totalParties: number;
+    completeParties: number;
+    needsReviewParties: number;
+    issueSummaries: Array<{ issue: string; count: number }>;
+    incompletePartyIds: string[];
+  };
+  ecommerce: {
+    status: string;
+    orderCount: number;
+    readyToInvoiceCount: number;
+    blockedCount: number;
+    needsFiscalDataCount: number;
+    confirmedPaymentEventCount: number;
+    disputedPaymentEventCount: number;
+    deliveredEventCount: number;
+    period: string;
+    notes: string[];
+  };
+}
+
+export interface EcuadorTaxEcommerceEvidenceSummaryResponse {
+  tenantSlug: string;
+  period: string;
+  generatedAt: string;
+  status: string;
+  orderCount: number;
+  readyToInvoiceCount: number;
+  blockedCount: number;
+  needsFiscalDataCount: number;
+  confirmedPaymentEventCount: number;
+  disputedPaymentEventCount: number;
+  deliveredEventCount: number;
+  orderHighlights: Array<{
+    orderDraftId: string;
+    productEntityId: string;
+    orderLabel: string;
+    invoicingReadinessStatus: string;
+    status: string;
+    updatedAt: string;
+  }>;
+  notes: string[];
+}
+
+export interface EcuadorTaxSalesBookResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  source: string;
+  readinessStatus: string;
+  totalsByCurrency: Array<{
+    currency: string;
+    documentCount: number;
+    subtotalInCents: number;
+    taxInCents: number;
+    totalInCents: number;
+    paidInCents: number;
+    outstandingTotalInCents: number;
+  }>;
+  documentRows: Array<{
+    invoiceId: string;
+    number: string;
+    documentCode: string | null;
+    status: string;
+    electronicStatus: string | null;
+    issuedAt: string;
+    currency: string;
+    subtotalInCents: number;
+    taxInCents: number;
+    totalInCents: number;
+    paidInCents: number;
+    outstandingTotalInCents: number;
+    customerId: string;
+    buyerIdentification: string | null;
+    buyerName: string | null;
+    blockers: string[];
+  }>;
+  ecommerceEvidence: EcuadorTaxEcommerceEvidenceSummaryResponse;
+  blockers: string[];
+  reviewNotes: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPeriodWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  status: string;
+  evidenceSummary?: EcuadorTaxEvidenceSummaryResponse;
+  preparationPacket: {
+    readinessStatus: string;
+    salesBookPreview: {
+      readinessStatus: string;
+      documentCount: number;
+      blockerCount: number;
+      ecommerceOrderCount: number;
+    };
+    evidenceSummary: EcuadorTaxEvidenceSummaryResponse;
+    blockedBy: string[];
+    nextStep: string;
+  };
+  declarationDraftPacket: {
+    readinessStatus: string;
+    declarationSections: Array<{
+      section: string;
+      readinessStatus: string;
+      source: string;
+      summary: string;
+      blockers: string[];
+    }>;
+    sourcePackets: {
+      salesBookReadinessStatus: string;
+    };
+    nextStep: string;
+  };
+  salesBook: EcuadorTaxSalesBookResponse;
+  blockers: string[];
+  nextActions: string[];
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantReviewResponse {
+  id: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  status: string;
+  requestedByUserId: string | null;
+  requestedByEmail: string | null;
+  summary: string;
+  questions: string[];
+  transitionHistory: Array<{
+    status: string;
+    transitionedAt: string;
+    transitionedByUserId: string | null;
+    note: string | null;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EcuadorTaxComplianceEventResponse {
+  id: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  eventType: string;
+  source: string;
+  payload: Record<string, unknown>;
+  occurredAt: string;
+  createdAt: string;
+}
+
+export interface EcuadorTaxDeclarationApprovalPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  latestAccountantReview: EcuadorTaxAccountantReviewResponse | null;
+  approvalReadiness: string;
+  remainingBlockers: string[];
+  availableAuditEvents: EcuadorTaxComplianceEventResponse[];
+  approvalChecklist: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface WhatsappRetryRunnerExecutionResponse {
   sourceMessageId: string;
   sourceExternalMessageId: string | null;

@@ -78,6 +78,12 @@ import {
   EcommerceOrderPaymentConfirmationDecisionResponse,
   EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentReconciliationWorkspaceResponse,
+  EcuadorTaxAccountantReviewResponse,
+  EcuadorTaxComplianceEventResponse,
+  EcuadorTaxDeclarationApprovalPacketResponse,
+  EcuadorTaxEcommerceEvidenceSummaryResponse,
+  EcuadorTaxPeriodWorkspaceResponse,
+  EcuadorTaxSalesBookResponse,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationWorkspaceResponse,
@@ -972,6 +978,155 @@ export async function fetchInvoicingReportSummary(
 ): Promise<InvoicingReportSummaryResponse> {
   return request<InvoicingReportSummaryResponse>(
     `/invoicing/tenants/${encodeURIComponent(tenantSlug)}/reports/summary`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxPeriodWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPeriodWorkspaceResponse> {
+  return request<EcuadorTaxPeriodWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/period-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxEcommerceEvidence(
+  token: string,
+  tenantSlug: string,
+  period: string,
+): Promise<EcuadorTaxEcommerceEvidenceSummaryResponse> {
+  return request<EcuadorTaxEcommerceEvidenceSummaryResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/ecommerce-evidence?period=${encodeURIComponent(period)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxSalesBook(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxSalesBookResponse> {
+  return request<EcuadorTaxSalesBookResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/sales-book?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxEvents(
+  token: string,
+  tenantSlug: string,
+  period: string,
+): Promise<EcuadorTaxComplianceEventResponse[]> {
+  return request<EcuadorTaxComplianceEventResponse[]>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/events?period=${encodeURIComponent(period)}&limit=20`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxAccountantReviews(
+  token: string,
+  tenantSlug: string,
+  period: string,
+): Promise<EcuadorTaxAccountantReviewResponse[]> {
+  return request<EcuadorTaxAccountantReviewResponse[]>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accountant-reviews?period=${encodeURIComponent(period)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestEcuadorTaxAccountantReview(
+  token: string,
+  tenantSlug: string,
+  body: {
+    period: string;
+    year: number;
+    requestedByUserId?: string | null;
+    requestedByEmail?: string | null;
+  },
+): Promise<EcuadorTaxAccountantReviewResponse> {
+  return request<EcuadorTaxAccountantReviewResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accountant-review/request`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function transitionEcuadorTaxAccountantReview(
+  token: string,
+  tenantSlug: string,
+  reviewId: string,
+  body: {
+    status: 'pending_accountant' | 'in_review' | 'changes_requested' | 'approved';
+    transitionedByUserId?: string | null;
+    note?: string | null;
+  },
+): Promise<EcuadorTaxAccountantReviewResponse> {
+  return request<EcuadorTaxAccountantReviewResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accountant-review/${encodeURIComponent(reviewId)}/transition`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchEcuadorTaxDeclarationApprovalPacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxDeclarationApprovalPacketResponse> {
+  return request<EcuadorTaxDeclarationApprovalPacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/declaration-approval-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
     {
       method: 'GET',
       token,

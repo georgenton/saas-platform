@@ -199,6 +199,7 @@ import {
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
+  GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
   GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
@@ -210,6 +211,7 @@ import {
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+  RequestTenantEcuadorTaxSalesBookUseCase,
   TransitionTenantEcuadorTaxAccountantReviewUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
@@ -821,12 +823,16 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let getTenantEcuadorTaxDueMonitorUseCase: { execute: jest.Mock };
+  let getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase: {
+    execute: jest.Mock;
+  };
   let getTenantEcuadorTaxPeriodWorkspaceUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxAuditReadinessUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxObligationMatrixUseCase: { execute: jest.Mock };
   let requestTenantEcuadorTaxPeriodPreparationPacketUseCase: {
     execute: jest.Mock;
   };
+  let requestTenantEcuadorTaxSalesBookUseCase: { execute: jest.Mock };
   let requestTenantEcuadorTaxDeclarationDraftPacketUseCase: {
     execute: jest.Mock;
   };
@@ -2510,12 +2516,26 @@ describe('API', () => {
         incompletePartyIds: ['customer_globex'],
       },
       ecommerce: {
-        status: 'not_connected_yet' as const,
+        status: 'requires_review' as const,
+        orderCount: 1,
+        readyToInvoiceCount: 0,
+        blockedCount: 0,
+        needsFiscalDataCount: 1,
+        confirmedPaymentEventCount: 1,
+        disputedPaymentEventCount: 0,
+        deliveredEventCount: 0,
+        period: '2026-06',
         notes: [
-          'Ecommerce ya expone reporting post-sale por orden, pero este packet aun no consume un agregado tributario tenant-wide.',
-          'El siguiente bridge debe consolidar ventas Ecommerce por periodo antes de sugerir declaracion.',
+          '1 ordenes ecommerce aportan evidencia operativa del periodo.',
+          '1 ordenes requieren datos fiscales antes de declarar.',
         ],
       },
+    },
+    salesBookPreview: {
+      readinessStatus: 'blocked' as const,
+      documentCount: 2,
+      blockerCount: 1,
+      ecommerceOrderCount: 1,
     },
     evidenceChecklist: [
       'Ventas facturadas y documentos electronicos emitidos en el periodo',
@@ -2597,6 +2617,79 @@ describe('API', () => {
       'El monitor solo alerta obligaciones derivadas del calendario operacional actual.',
     ],
   };
+  const ecuadorTaxEcommerceEvidenceSummary = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    generatedAt: taxComplianceGeneratedAt,
+    status: 'requires_review' as const,
+    orderCount: 1,
+    readyToInvoiceCount: 0,
+    blockedCount: 0,
+    needsFiscalDataCount: 1,
+    confirmedPaymentEventCount: 1,
+    disputedPaymentEventCount: 0,
+    deliveredEventCount: 0,
+    orderHighlights: [
+      {
+        orderDraftId: 'order_draft_001',
+        productEntityId: 'product_entity_001',
+        orderLabel: 'Orden SaaS Platform',
+        invoicingReadinessStatus: 'needs_data',
+        status: 'needs_data',
+        updatedAt: taxComplianceGeneratedAt,
+      },
+    ],
+    notes: ecuadorTaxPeriodPreparationPacket.evidenceSummary.ecommerce.notes,
+  };
+  const ecuadorTaxSalesBook = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    source: 'invoicing_and_ecommerce_operational_evidence' as const,
+    readinessStatus: 'blocked' as const,
+    totalsByCurrency: [
+      {
+        currency: 'USD',
+        documentCount: 1,
+        subtotalInCents: 10000,
+        taxInCents: 1200,
+        totalInCents: 11200,
+        paidInCents: 2500,
+        outstandingTotalInCents: 8700,
+      },
+    ],
+    documentRows: [
+      {
+        invoiceId: 'invoice_001',
+        number: '001-001-000000001',
+        documentCode: '01',
+        status: 'issued',
+        electronicStatus: 'authorized',
+        issuedAt: new Date('2026-06-04T12:00:00.000Z'),
+        currency: 'USD',
+        subtotalInCents: 10000,
+        taxInCents: 1200,
+        totalInCents: 11200,
+        paidInCents: 2500,
+        outstandingTotalInCents: 8700,
+        customerId: 'customer_acme',
+        buyerIdentification: '1790012345001',
+        buyerName: 'Acme S.A.',
+        blockers: [],
+      },
+    ],
+    ecommerceEvidence: ecuadorTaxEcommerceEvidenceSummary,
+    blockers: ['ecommerce_evidence.needs_fiscal_data'],
+    reviewNotes: [
+      '1 documentos de venta alimentan el libro tributario.',
+      'Ecommerce aporta señales operativas que requieren conciliacion humana.',
+    ],
+    nextStep: 'Resolver blockers del libro de ventas antes de preparar declaracion.',
+    guardrails: [
+      'Este libro tributario es derivado y operativo; no reemplaza libros contables oficiales.',
+    ],
+  };
   const ecuadorTaxDeclarationDraftPacket = {
     tenantSlug: 'saas-platform',
     period: '2026-06',
@@ -2610,6 +2703,13 @@ describe('API', () => {
         source: 'invoicing_issuer_profile',
         summary: 'Contribuyente SaaS Platform S.A. con regimen general.',
         blockers: [],
+      },
+      {
+        section: 'sales_book',
+        readinessStatus: 'blocked' as const,
+        source: 'tax_sales_book',
+        summary: '2 documentos de venta y 1 ordenes ecommerce conectadas al periodo.',
+        blockers: ['tax_sales_book.blockers_present'],
       },
       {
         section: 'party_fiscal_evidence',
@@ -2634,6 +2734,7 @@ describe('API', () => {
       preparationPacketGeneratedAt: taxComplianceGeneratedAt,
       calendarEntryCount: 2,
       evidenceSummary: ecuadorTaxPeriodPreparationPacket.evidenceSummary,
+      salesBookReadinessStatus: 'blocked' as const,
     },
     nextStep: 'Resolver blockers antes de preparar borrador de declaracion.',
     guardrails: [
@@ -2652,6 +2753,7 @@ describe('API', () => {
     dueAlerts: ecuadorTaxDueMonitor.alerts,
     preparationPacket: ecuadorTaxPeriodPreparationPacket,
     declarationDraftPacket: ecuadorTaxDeclarationDraftPacket,
+    salesBook: ecuadorTaxSalesBook,
     blockers: ['party_fiscal_profile.customer_globex'],
     nextActions: [
       'Resolver blockers fiscales y evidencia incompleta antes de avanzar.',
@@ -11254,6 +11356,9 @@ describe('API', () => {
     getTenantEcuadorTaxDueMonitorUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxDueMonitor),
     };
+    getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxEcommerceEvidenceSummary),
+    };
     getTenantEcuadorTaxPeriodWorkspaceUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxPeriodWorkspace),
     };
@@ -11265,6 +11370,9 @@ describe('API', () => {
     };
     requestTenantEcuadorTaxPeriodPreparationPacketUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxPeriodPreparationPacket),
+    };
+    requestTenantEcuadorTaxSalesBookUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxSalesBook),
     };
     requestTenantEcuadorTaxDeclarationDraftPacketUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxDeclarationDraftPacket),
@@ -11770,6 +11878,8 @@ describe('API', () => {
       .useValue(getTenantEcuadorTaxCalendarReviewWorkspaceUseCase)
       .overrideProvider(GetTenantEcuadorTaxDueMonitorUseCase)
       .useValue(getTenantEcuadorTaxDueMonitorUseCase)
+      .overrideProvider(GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase)
+      .useValue(getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase)
       .overrideProvider(GetTenantEcuadorTaxPeriodWorkspaceUseCase)
       .useValue(getTenantEcuadorTaxPeriodWorkspaceUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
@@ -11778,6 +11888,8 @@ describe('API', () => {
       .useValue(getTenantEcuadorTaxObligationMatrixUseCase)
       .overrideProvider(RequestTenantEcuadorTaxPeriodPreparationPacketUseCase)
       .useValue(requestTenantEcuadorTaxPeriodPreparationPacketUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxSalesBookUseCase)
+      .useValue(requestTenantEcuadorTaxSalesBookUseCase)
       .overrideProvider(RequestTenantEcuadorTaxDeclarationDraftPacketUseCase)
       .useValue(requestTenantEcuadorTaxDeclarationDraftPacketUseCase)
       .overrideProvider(RequestTenantEcuadorTaxAccountantReviewPacketUseCase)
@@ -13852,12 +13964,26 @@ describe('API', () => {
             incompletePartyIds: ['customer_globex'],
           },
           ecommerce: {
-            status: 'not_connected_yet',
+            status: 'requires_review',
+            orderCount: 1,
+            readyToInvoiceCount: 0,
+            blockedCount: 0,
+            needsFiscalDataCount: 1,
+            confirmedPaymentEventCount: 1,
+            disputedPaymentEventCount: 0,
+            deliveredEventCount: 0,
+            period: '2026-06',
             notes: [
-              'Ecommerce ya expone reporting post-sale por orden, pero este packet aun no consume un agregado tributario tenant-wide.',
-              'El siguiente bridge debe consolidar ventas Ecommerce por periodo antes de sugerir declaracion.',
+              '1 ordenes ecommerce aportan evidencia operativa del periodo.',
+              '1 ordenes requieren datos fiscales antes de declarar.',
             ],
           },
+        },
+        salesBookPreview: {
+          readinessStatus: 'blocked',
+          documentCount: 2,
+          blockerCount: 1,
+          ecommerceOrderCount: 1,
         },
         evidenceChecklist: [
           'Ventas facturadas y documentos electronicos emitidos en el periodo',
@@ -13903,6 +14029,12 @@ describe('API', () => {
           source: 'invoicing_issuer_profile',
         },
         {
+          section: 'sales_book',
+          readinessStatus: 'blocked',
+          source: 'tax_sales_book',
+          blockers: ['tax_sales_book.blockers_present'],
+        },
+        {
           section: 'party_fiscal_evidence',
           readinessStatus: 'needs_review',
           source: 'party_fiscal_readiness_summary',
@@ -13924,9 +14056,11 @@ describe('API', () => {
             incompletePartyIds: ['customer_globex'],
           },
           ecommerce: {
-            status: 'not_connected_yet',
+            status: 'requires_review',
+            orderCount: 1,
           },
         },
+        salesBookReadinessStatus: 'blocked',
       },
       nextStep: 'Resolver blockers antes de preparar borrador de declaracion.',
     });
@@ -13975,6 +14109,14 @@ describe('API', () => {
         period: '2026-06',
         readinessStatus: 'blocked',
       },
+      salesBook: {
+        period: '2026-06',
+        readinessStatus: 'blocked',
+        ecommerceEvidence: {
+          orderCount: 1,
+          status: 'requires_review',
+        },
+      },
       blockers: ['party_fiscal_profile.customer_globex'],
       nextActions: [
         'Resolver blockers fiscales y evidencia incompleta antes de avanzar.',
@@ -13987,6 +14129,80 @@ describe('API', () => {
       period: '2026-06',
       year: 2026,
       asOfDate: '2026-02-10',
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/ecommerce-evidence should return ecommerce tax evidence', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/ecommerce-evidence?period=2026-06',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      generatedAt: '2026-06-04T12:00:00.000Z',
+      status: 'requires_review',
+      orderCount: 1,
+      needsFiscalDataCount: 1,
+      orderHighlights: [
+        {
+          orderDraftId: 'order_draft_001',
+          productEntityId: 'product_entity_001',
+          invoicingReadinessStatus: 'needs_data',
+        },
+      ],
+    });
+
+    expect(
+      getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/sales-book should return a derived tax sales book', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/sales-book?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      readinessStatus: 'blocked',
+      totalsByCurrency: [
+        {
+          currency: 'USD',
+          documentCount: 1,
+          totalInCents: 11200,
+          taxInCents: 1200,
+        },
+      ],
+      documentRows: [
+        {
+          invoiceId: 'invoice_001',
+          electronicStatus: 'authorized',
+          totalInCents: 11200,
+        },
+      ],
+      ecommerceEvidence: {
+        status: 'requires_review',
+        orderCount: 1,
+      },
+      blockers: ['ecommerce_evidence.needs_fiscal_data'],
+    });
+
+    expect(requestTenantEcuadorTaxSalesBookUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
     });
   });
 

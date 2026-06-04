@@ -3,9 +3,11 @@ export * from './lib/use-cases/get-tenant-ecuador-tax-obligation-calendar.use-ca
 export * from './lib/errors/tax-compliance-accountant-review-not-found.error';
 export * from './lib/ports/id-generators';
 export * from './lib/ports/tax-compliance-accountant-review.repository';
+export * from './lib/ports/tax-compliance-ecommerce-evidence.repository';
 export * from './lib/ports/tax-compliance-event.repository';
 export * from './lib/ports/tokens';
 export * from './lib/use-cases/get-tenant-ecuador-tax-calendar-review-workspace.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-ecommerce-evidence-summary.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-audit-readiness.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-due-monitor.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-taxpayer-profile.use-case';
@@ -18,4 +20,5 @@ export * from './lib/use-cases/request-tenant-ecuador-tax-accountant-review.use-
 export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-approval-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-draft-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-period-preparation-packet.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-sales-book.use-case';
 export * from './lib/use-cases/transition-tenant-ecuador-tax-accountant-review.use-case';

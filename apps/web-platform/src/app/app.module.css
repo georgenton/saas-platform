@@ -156,6 +156,13 @@
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.formGrid {
+  align-items: end;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .field span {
   color: #4f473e;
   font-size: 0.86rem;
@@ -303,10 +310,45 @@
 
 .badgeRow,
 .tokenList,
-.actionRow {
+.actionRow,
+.buttonRow {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.compactList {
+  color: #4f473e;
+  display: grid;
+  gap: 8px;
+  line-height: 1.5;
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.invoiceList {
+  display: grid;
+  gap: 10px;
+}
+
+.invoiceListItem {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(87, 72, 59, 0.1);
+  border-radius: 18px;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  justify-content: space-between;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.invoiceListItem small {
+  color: #73685d;
+  display: block;
+  margin-top: 4px;
 }
 
 .badge,

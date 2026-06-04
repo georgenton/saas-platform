@@ -76,6 +76,16 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
           ? 'persisted'
           : 'persist_when_transitioned',
       },
+      {
+        eventType: 'tax_sales_book_generated',
+        generated: false,
+        source: 'tax_sales_book',
+        recommendedPersistence: persistedEventTypes.has(
+          'tax_sales_book_generated',
+        )
+          ? 'persisted'
+          : 'persist_when_requested',
+      },
     ];
     const missingPersistence = generatedOutputs
       .filter((output) => output.recommendedPersistence.startsWith('persist_'))
@@ -113,6 +123,16 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
           eventType: 'due_monitor_reviewed',
           reason: 'Audita alertas revisadas y obligaciones proximas o vencidas.',
           minimumPayload: ['tenantSlug', 'period', 'alerts', 'asOfDate'],
+        },
+        {
+          eventType: 'tax_sales_book_generated',
+          reason: 'Audita libro de ventas derivado y evidencia ecommerce conectada.',
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'documentCount',
+            'ecommerceOrderCount',
+          ],
         },
       ],
       nextStep:

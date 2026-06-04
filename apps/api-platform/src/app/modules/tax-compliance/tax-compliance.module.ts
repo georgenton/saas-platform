@@ -22,6 +22,7 @@ import {
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
+  GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
@@ -34,8 +35,10 @@ import {
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+  RequestTenantEcuadorTaxSalesBookUseCase,
   TAX_COMPLIANCE_ACCOUNTANT_REVIEW_ID_GENERATOR,
   TAX_COMPLIANCE_ACCOUNTANT_REVIEW_REPOSITORY,
+  TAX_COMPLIANCE_ECOMMERCE_EVIDENCE_REPOSITORY,
   TAX_COMPLIANCE_EVENT_ID_GENERATOR,
   TAX_COMPLIANCE_EVENT_REPOSITORY,
   TransitionTenantEcuadorTaxAccountantReviewUseCase,
@@ -162,21 +165,60 @@ import { TaxComplianceController } from './tax-compliance.controller';
         ),
     },
     {
+      provide: GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
+      inject: [TENANT_REPOSITORY, TAX_COMPLIANCE_ECOMMERCE_EVIDENCE_REPOSITORY],
+      useFactory: (tenantRepository, ecommerceEvidenceRepository) =>
+        new GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase(
+          tenantRepository,
+          ecommerceEvidenceRepository,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxSalesBookUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+        PAYMENT_REPOSITORY,
+        GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        tenantRepository,
+        invoiceRepository,
+        invoiceItemRepository,
+        paymentRepository,
+        getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxSalesBookUseCase(
+          tenantRepository,
+          invoiceRepository,
+          invoiceItemRepository,
+          paymentRepository,
+          getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
       provide: RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
       inject: [
         GetTenantEcuadorTaxObligationMatrixUseCase,
         GetTenantInvoicingReportSummaryUseCase,
         GetTenantPartyFiscalReadinessSummaryUseCase,
+        GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
       ],
       useFactory: (
         getTenantEcuadorTaxObligationMatrixUseCase,
         getTenantInvoicingReportSummaryUseCase,
         getTenantPartyFiscalReadinessSummaryUseCase,
+        getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
       ) =>
         new RequestTenantEcuadorTaxPeriodPreparationPacketUseCase(
           getTenantEcuadorTaxObligationMatrixUseCase,
           getTenantInvoicingReportSummaryUseCase,
           getTenantPartyFiscalReadinessSummaryUseCase,
+          getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
         ),
     },
     {
@@ -201,18 +243,21 @@ import { TaxComplianceController } from './tax-compliance.controller';
         GetTenantEcuadorTaxDueMonitorUseCase,
         RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
         RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+        RequestTenantEcuadorTaxSalesBookUseCase,
       ],
       useFactory: (
         getTenantEcuadorTaxObligationCalendarUseCase,
         getTenantEcuadorTaxDueMonitorUseCase,
         requestTenantEcuadorTaxPeriodPreparationPacketUseCase,
         requestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+        requestTenantEcuadorTaxSalesBookUseCase,
       ) =>
         new GetTenantEcuadorTaxPeriodWorkspaceUseCase(
           getTenantEcuadorTaxObligationCalendarUseCase,
           getTenantEcuadorTaxDueMonitorUseCase,
           requestTenantEcuadorTaxPeriodPreparationPacketUseCase,
           requestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+          requestTenantEcuadorTaxSalesBookUseCase,
         ),
     },
     {

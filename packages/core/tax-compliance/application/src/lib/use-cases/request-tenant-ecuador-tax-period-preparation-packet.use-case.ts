@@ -5,6 +5,7 @@ import {
   EcuadorTaxPeriodPreparationPacketView,
   EcuadorTaxReadinessStatus,
 } from '@saas-platform/tax-compliance-domain';
+import { GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase } from './get-tenant-ecuador-tax-ecommerce-evidence-summary.use-case';
 import { GetTenantEcuadorTaxObligationMatrixUseCase } from './get-tenant-ecuador-tax-obligation-matrix.use-case';
 
 export class RequestTenantEcuadorTaxPeriodPreparationPacketUseCase {
@@ -12,6 +13,7 @@ export class RequestTenantEcuadorTaxPeriodPreparationPacketUseCase {
     private readonly getTenantEcuadorTaxObligationMatrixUseCase: GetTenantEcuadorTaxObligationMatrixUseCase,
     private readonly getTenantInvoicingReportSummaryUseCase: GetTenantInvoicingReportSummaryUseCase,
     private readonly getTenantPartyFiscalReadinessSummaryUseCase: GetTenantPartyFiscalReadinessSummaryUseCase,
+    private readonly getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase?: GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
     private readonly nowProvider: () => Date = () => new Date(),
   ) {}
 
@@ -21,9 +23,16 @@ export class RequestTenantEcuadorTaxPeriodPreparationPacketUseCase {
   ): Promise<EcuadorTaxPeriodPreparationPacketView> {
     const matrix =
       await this.getTenantEcuadorTaxObligationMatrixUseCase.execute(tenantSlug);
-    const [invoicingSummary, partyFiscalSummary] = await Promise.all([
+    const [invoicingSummary, partyFiscalSummary, ecommerceEvidence] =
+      await Promise.all([
       this.getTenantInvoicingReportSummaryUseCase.execute(tenantSlug),
       this.getTenantPartyFiscalReadinessSummaryUseCase.execute(tenantSlug),
+      this.getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase
+        ? this.getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase.execute({
+            tenantSlug,
+            period,
+          })
+        : Promise.resolve(null),
     ]);
     const evidenceSummary: EcuadorTaxEvidenceSummaryView = {
       invoicing: {
@@ -61,11 +70,21 @@ export class RequestTenantEcuadorTaxPeriodPreparationPacketUseCase {
         ),
       },
       ecommerce: {
-        status: 'not_connected_yet',
-        notes: [
-          'Ecommerce ya expone reporting post-sale por orden, pero este packet aun no consume un agregado tributario tenant-wide.',
-          'El siguiente bridge debe consolidar ventas Ecommerce por periodo antes de sugerir declaracion.',
-        ],
+        status: ecommerceEvidence?.status ?? 'no_activity',
+        orderCount: ecommerceEvidence?.orderCount ?? 0,
+        readyToInvoiceCount: ecommerceEvidence?.readyToInvoiceCount ?? 0,
+        blockedCount: ecommerceEvidence?.blockedCount ?? 0,
+        needsFiscalDataCount: ecommerceEvidence?.needsFiscalDataCount ?? 0,
+        confirmedPaymentEventCount:
+          ecommerceEvidence?.confirmedPaymentEventCount ?? 0,
+        disputedPaymentEventCount:
+          ecommerceEvidence?.disputedPaymentEventCount ?? 0,
+        deliveredEventCount: ecommerceEvidence?.deliveredEventCount ?? 0,
+        period,
+        notes:
+          ecommerceEvidence?.notes ?? [
+            'Ecommerce no tiene actividad tributaria conectada para este periodo.',
+          ],
       },
     };
 
@@ -79,6 +98,12 @@ export class RequestTenantEcuadorTaxPeriodPreparationPacketUseCase {
       ...partyFiscalSummary.incompleteParties.map(
         (party) => `party_fiscal_profile.${party.id}`,
       ),
+      ...((ecommerceEvidence?.needsFiscalDataCount ?? 0) > 0
+        ? ['ecommerce_evidence.needs_fiscal_data']
+        : []),
+      ...((ecommerceEvidence?.disputedPaymentEventCount ?? 0) > 0
+        ? ['ecommerce_evidence.payment_disputes_open']
+        : []),
     ];
 
     const readinessStatus = getPacketReadinessStatus(
@@ -96,6 +121,12 @@ export class RequestTenantEcuadorTaxPeriodPreparationPacketUseCase {
       obligations: matrix.obligations,
       readinessStatus,
       evidenceSummary,
+      salesBookPreview: {
+        readinessStatus,
+        documentCount: invoicingSummary.invoiceCount,
+        blockerCount: blockedBy.length,
+        ecommerceOrderCount: ecommerceEvidence?.orderCount ?? 0,
+      },
       evidenceChecklist: [
         'Ventas facturadas y documentos electronicos emitidos en el periodo',
         'Comprobantes de compra y gasto que sustenten credito tributario o deducibilidad',
@@ -127,6 +158,7 @@ export class RequestTenantEcuadorTaxPeriodPreparationPacketUseCase {
     };
   }
 }
+
 
 function getPacketReadinessStatus(
   blockedBy: string[],

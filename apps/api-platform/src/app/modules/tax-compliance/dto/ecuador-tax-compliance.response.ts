@@ -13,7 +13,9 @@ import {
   EcuadorTaxIncomeTaxEvidencePacketView,
   EcuadorTaxObligationMatrixView,
   EcuadorTaxObligationCalendarView,
+  EcuadorTaxObligationSettingsView,
   EcuadorTaxObligationView,
+  EcuadorTaxPeriodEvidenceVaultView,
   EcuadorTaxPeriodCloseoutPacketView,
   EcuadorTaxPeriodWorkspaceView,
   EcuadorTaxPeriodPreparationPacketView,
@@ -25,6 +27,7 @@ import {
   EcuadorTaxSupplierFiscalReadinessWorkspaceView,
   EcuadorTaxpayerProfileView,
   EcuadorTaxVatDeclarationReadinessPacketView,
+  EcuadorTaxVatDeclarationDraftView,
   EcuadorTaxVatInputOutputReconciliationPacketView,
   EcuadorTaxWithholdingDraftBridgePacketView,
   EcuadorTaxWithholdingDraftExecutionPacketView,
@@ -72,6 +75,27 @@ export interface EcuadorTaxObligationMatrixResponseDto {
   generatedAt: string;
   taxpayerProfile: EcuadorTaxpayerProfileResponseDto;
   obligations: EcuadorTaxObligationResponseDto[];
+  persistedSettings: EcuadorTaxObligationSettingsResponseDto | null;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxObligationSettingsResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  source: string;
+  regime: string;
+  accountingObligated: boolean | null;
+  specialTaxpayerCode: string | null;
+  ninthDigit: string | null;
+  obligations: Array<{
+    key: string;
+    applies: boolean;
+    frequency: string;
+    notes: string[];
+  }>;
+  updatedByUserId: string | null;
+  updatedByEmail: string | null;
+  updatedAt: string | null;
   guardrails: string[];
 }
 
@@ -583,6 +607,30 @@ export interface EcuadorTaxVatInputOutputReconciliationPacketResponseDto {
   guardrails: string[];
 }
 
+export interface EcuadorTaxVatDeclarationDraftResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  vatObligation: EcuadorTaxCalendarEntryResponseDto | null;
+  outputVatByCurrency: EcuadorTaxVatDeclarationReadinessPacketResponseDto['vatSummaryByCurrency'];
+  inputVatByCurrency: EcuadorTaxVatInputOutputReconciliationPacketResponseDto['inputVatByCurrency'];
+  netVatByCurrency: EcuadorTaxVatInputOutputReconciliationPacketResponseDto['netVatByCurrency'];
+  declarationSections: Array<{
+    key: string;
+    label: string;
+    readinessStatus: string;
+    amountInCents: number;
+    currency: string | null;
+    notes: string[];
+  }>;
+  blockers: string[];
+  accountantQuestions: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxIncomeTaxEvidencePacketResponseDto {
   tenantSlug: string;
   period: string;
@@ -770,6 +818,32 @@ export interface EcuadorTaxAuditReadinessResponseDto {
   guardrails: string[];
 }
 
+export interface EcuadorTaxPeriodEvidenceVaultResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  folders: Array<{
+    key: string;
+    label: string;
+    readinessStatus: string;
+    artifactCount: number;
+    missingItems: string[];
+    nextStep: string;
+  }>;
+  exportedSummary: {
+    salesDocuments: number;
+    purchaseDocuments: number;
+    withholdingCandidates: number;
+    accountantReviews: number;
+    auditEventCount: number;
+  };
+  missingItems: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export function toEcuadorTaxpayerProfileResponseDto(
   profile: EcuadorTaxpayerProfileView,
 ): EcuadorTaxpayerProfileResponseDto {
@@ -828,7 +902,34 @@ export function toEcuadorTaxObligationMatrixResponseDto(
     obligations: matrix.obligations.map((obligation) =>
       toEcuadorTaxObligationResponseDto(obligation),
     ),
+    persistedSettings: matrix.persistedSettings
+      ? toEcuadorTaxObligationSettingsResponseDto(matrix.persistedSettings)
+      : null,
     guardrails: [...matrix.guardrails],
+  };
+}
+
+export function toEcuadorTaxObligationSettingsResponseDto(
+  settings: EcuadorTaxObligationSettingsView,
+): EcuadorTaxObligationSettingsResponseDto {
+  return {
+    tenantSlug: settings.tenantSlug,
+    generatedAt: settings.generatedAt.toISOString(),
+    source: settings.source,
+    regime: settings.regime,
+    accountingObligated: settings.accountingObligated,
+    specialTaxpayerCode: settings.specialTaxpayerCode,
+    ninthDigit: settings.ninthDigit,
+    obligations: settings.obligations.map((obligation) => ({
+      key: obligation.key,
+      applies: obligation.applies,
+      frequency: obligation.frequency,
+      notes: [...obligation.notes],
+    })),
+    updatedByUserId: settings.updatedByUserId,
+    updatedByEmail: settings.updatedByEmail,
+    updatedAt: settings.updatedAt ? settings.updatedAt.toISOString() : null,
+    guardrails: [...settings.guardrails],
   };
 }
 
@@ -1513,6 +1614,36 @@ export function toEcuadorTaxVatInputOutputReconciliationPacketResponseDto(
   };
 }
 
+export function toEcuadorTaxVatDeclarationDraftResponseDto(
+  draft: EcuadorTaxVatDeclarationDraftView,
+): EcuadorTaxVatDeclarationDraftResponseDto {
+  return {
+    tenantSlug: draft.tenantSlug,
+    period: draft.period,
+    year: draft.year,
+    generatedAt: draft.generatedAt.toISOString(),
+    readinessStatus: draft.readinessStatus,
+    vatObligation: draft.vatObligation
+      ? toEcuadorTaxCalendarEntryResponseDto(draft.vatObligation)
+      : null,
+    outputVatByCurrency: draft.outputVatByCurrency.map((total) => ({
+      ...total,
+    })),
+    inputVatByCurrency: draft.inputVatByCurrency.map((total) => ({
+      ...total,
+    })),
+    netVatByCurrency: draft.netVatByCurrency.map((total) => ({ ...total })),
+    declarationSections: draft.declarationSections.map((section) => ({
+      ...section,
+      notes: [...section.notes],
+    })),
+    blockers: [...draft.blockers],
+    accountantQuestions: [...draft.accountantQuestions],
+    nextStep: draft.nextStep,
+    guardrails: [...draft.guardrails],
+  };
+}
+
 export function toEcuadorTaxIncomeTaxEvidencePacketResponseDto(
   packet: EcuadorTaxIncomeTaxEvidencePacketView,
 ): EcuadorTaxIncomeTaxEvidencePacketResponseDto {
@@ -1710,6 +1841,26 @@ export function toEcuadorTaxAuditReadinessResponseDto(
     })),
     nextStep: readiness.nextStep,
     guardrails: [...readiness.guardrails],
+  };
+}
+
+export function toEcuadorTaxPeriodEvidenceVaultResponseDto(
+  vault: EcuadorTaxPeriodEvidenceVaultView,
+): EcuadorTaxPeriodEvidenceVaultResponseDto {
+  return {
+    tenantSlug: vault.tenantSlug,
+    period: vault.period,
+    year: vault.year,
+    generatedAt: vault.generatedAt.toISOString(),
+    readinessStatus: vault.readinessStatus,
+    folders: vault.folders.map((folder) => ({
+      ...folder,
+      missingItems: [...folder.missingItems],
+    })),
+    exportedSummary: { ...vault.exportedSummary },
+    missingItems: [...vault.missingItems],
+    nextStep: vault.nextStep,
+    guardrails: [...vault.guardrails],
   };
 }
 

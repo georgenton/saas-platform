@@ -32,6 +32,8 @@ import {
   GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxObligationCalendarUseCase,
+  GetTenantEcuadorTaxObligationSettingsUseCase,
+  GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
   GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
@@ -51,6 +53,7 @@ import {
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
   RequestTenantEcuadorTaxSalesBookUseCase,
   RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase,
+  RequestTenantEcuadorTaxVatDeclarationDraftUseCase,
   RequestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase,
   RequestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase,
   RequestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
@@ -62,6 +65,7 @@ import {
   TAX_COMPLIANCE_PURCHASE_EXPENSE_EVIDENCE_REPOSITORY,
   TAX_COMPLIANCE_WITHHOLDING_DRAFT_EXECUTOR,
   TransitionTenantEcuadorTaxAccountantReviewUseCase,
+  UpsertTenantEcuadorTaxObligationSettingsUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
   CatalogPersistenceModule,
@@ -121,11 +125,48 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
         ),
     },
     {
+      provide: GetTenantEcuadorTaxObligationSettingsUseCase,
+      inject: [
+        GetTenantEcuadorTaxpayerProfileUseCase,
+        ListTenantEcuadorTaxComplianceEventsUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxpayerProfileUseCase,
+        listTenantEcuadorTaxComplianceEventsUseCase,
+      ) =>
+        new GetTenantEcuadorTaxObligationSettingsUseCase(
+          getTenantEcuadorTaxpayerProfileUseCase,
+          listTenantEcuadorTaxComplianceEventsUseCase,
+        ),
+    },
+    {
+      provide: UpsertTenantEcuadorTaxObligationSettingsUseCase,
+      inject: [
+        GetTenantEcuadorTaxObligationSettingsUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxObligationSettingsUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new UpsertTenantEcuadorTaxObligationSettingsUseCase(
+          getTenantEcuadorTaxObligationSettingsUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcuadorTaxObligationMatrixUseCase,
-      inject: [GetTenantEcuadorTaxpayerProfileUseCase],
-      useFactory: (getTenantEcuadorTaxpayerProfileUseCase) =>
+      inject: [
+        GetTenantEcuadorTaxpayerProfileUseCase,
+        GetTenantEcuadorTaxObligationSettingsUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxpayerProfileUseCase,
+        getTenantEcuadorTaxObligationSettingsUseCase,
+      ) =>
         new GetTenantEcuadorTaxObligationMatrixUseCase(
           getTenantEcuadorTaxpayerProfileUseCase,
+          getTenantEcuadorTaxObligationSettingsUseCase,
         ),
     },
     {
@@ -550,6 +591,21 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
         ),
     },
     {
+      provide: RequestTenantEcuadorTaxVatDeclarationDraftUseCase,
+      inject: [
+        RequestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxVatDeclarationDraftUseCase(
+          requestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
       inject: [
         TENANT_REPOSITORY,
@@ -706,6 +762,45 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
         new GetTenantEcuadorTaxAuditReadinessUseCase(
           getTenantEcuadorTaxPeriodWorkspaceUseCase,
           listTenantEcuadorTaxComplianceEventsUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
+      inject: [
+        RequestTenantEcuadorTaxSalesBookUseCase,
+        GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
+        RequestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
+        RequestTenantEcuadorTaxVatDeclarationDraftUseCase,
+        GetTenantEcuadorTaxAccountantWorkbenchUseCase,
+        RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
+        GetTenantEcuadorTaxAuditReadinessUseCase,
+        ListTenantEcuadorTaxAccountantReviewsUseCase,
+        ListTenantEcuadorTaxComplianceEventsUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxSalesBookUseCase,
+        getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
+        requestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
+        requestTenantEcuadorTaxVatDeclarationDraftUseCase,
+        getTenantEcuadorTaxAccountantWorkbenchUseCase,
+        requestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
+        getTenantEcuadorTaxAuditReadinessUseCase,
+        listTenantEcuadorTaxAccountantReviewsUseCase,
+        listTenantEcuadorTaxComplianceEventsUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxPeriodEvidenceVaultUseCase(
+          requestTenantEcuadorTaxSalesBookUseCase,
+          getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
+          requestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
+          requestTenantEcuadorTaxVatDeclarationDraftUseCase,
+          getTenantEcuadorTaxAccountantWorkbenchUseCase,
+          requestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
+          getTenantEcuadorTaxAuditReadinessUseCase,
+          listTenantEcuadorTaxAccountantReviewsUseCase,
+          listTenantEcuadorTaxComplianceEventsUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
         ),
     },
     {

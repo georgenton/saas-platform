@@ -195,6 +195,36 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
           ? 'persisted'
           : 'persist_when_requested',
       },
+      {
+        eventType: 'tax_obligation_settings_upserted',
+        generated: persistedEventTypes.has('tax_obligation_settings_upserted'),
+        source: 'tax_obligation_settings',
+        recommendedPersistence: persistedEventTypes.has(
+          'tax_obligation_settings_upserted',
+        )
+          ? 'persisted'
+          : 'persist_when_configured',
+      },
+      {
+        eventType: 'vat_declaration_draft_requested',
+        generated: false,
+        source: 'vat_declaration_draft',
+        recommendedPersistence: persistedEventTypes.has(
+          'vat_declaration_draft_requested',
+        )
+          ? 'persisted'
+          : 'persist_when_requested',
+      },
+      {
+        eventType: 'period_evidence_vault_reviewed',
+        generated: false,
+        source: 'period_evidence_vault',
+        recommendedPersistence: persistedEventTypes.has(
+          'period_evidence_vault_reviewed',
+        )
+          ? 'persisted'
+          : 'persist_when_requested',
+      },
     ];
     const missingPersistence = generatedOutputs
       .filter((output) => output.recommendedPersistence.startsWith('persist_'))

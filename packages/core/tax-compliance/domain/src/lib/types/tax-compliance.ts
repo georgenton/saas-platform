@@ -42,6 +42,16 @@ export type EcuadorTaxPeriodCloseoutStatus =
   | 'needs_review'
   | 'ready_for_accountant'
   | 'ready_for_external_filing';
+export type EcuadorTaxVatApprovalStatus =
+  | 'draft'
+  | 'needs_accountant_review'
+  | 'changes_requested'
+  | 'approved_for_external_filing';
+export type EcuadorTaxOperationalCloseoutStatus =
+  | 'open'
+  | 'in_review'
+  | 'ready_for_external_filing'
+  | 'closed_operationally';
 export type EcuadorTaxPurchaseExpenseCategory =
   | 'inventory'
   | 'services'
@@ -76,7 +86,10 @@ export type EcuadorTaxComplianceEventType =
   | 'accountant_workbench_reviewed'
   | 'tax_obligation_settings_upserted'
   | 'vat_declaration_draft_requested'
-  | 'period_evidence_vault_reviewed';
+  | 'period_evidence_vault_reviewed'
+  | 'vat_declaration_approval_transitioned'
+  | 'withholding_registry_reviewed'
+  | 'period_operational_closeout_transitioned';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -656,6 +669,25 @@ export interface EcuadorTaxVatDeclarationDraftView {
   guardrails: string[];
 }
 
+export interface EcuadorTaxVatDeclarationApprovalView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  status: EcuadorTaxVatApprovalStatus;
+  draft: EcuadorTaxVatDeclarationDraftView;
+  transitionHistory: Array<{
+    status: EcuadorTaxVatApprovalStatus;
+    transitionedAt: Date;
+    transitionedByUserId: string | null;
+    transitionedByEmail: string | null;
+    note: string | null;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxIncomeTaxEvidencePacketView {
   tenantSlug: string;
   period: string;
@@ -773,6 +805,33 @@ export interface EcuadorTaxWithholdingDraftExecutionPacketView {
   guardrails: string[];
 }
 
+export interface EcuadorTaxWithholdingRegistryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  summary: {
+    salesCandidateCount: number;
+    purchaseCandidateCount: number;
+    executedDraftCount: number;
+    pendingSupportCount: number;
+  };
+  rows: Array<{
+    key: string;
+    source: 'sales_candidate' | 'purchase_candidate' | 'executed_draft';
+    label: string;
+    readinessStatus: EcuadorTaxReadinessStatus;
+    amountInCents: number;
+    currency: string;
+    supportReference: string | null;
+    nextStep: string;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxRuleCatalogView {
   tenantSlug: string;
   generatedAt: Date;
@@ -844,6 +903,33 @@ export interface EcuadorTaxPeriodEvidenceVaultView {
     auditEventCount: number;
   };
   missingItems: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxOperationalCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  status: EcuadorTaxOperationalCloseoutStatus;
+  checklist: Array<{
+    key: string;
+    label: string;
+    completed: boolean;
+    blocker: string | null;
+  }>;
+  vatApprovalStatus: EcuadorTaxVatApprovalStatus;
+  withholdingReadinessStatus: EcuadorTaxReadinessStatus;
+  evidenceVaultStatus: EcuadorTaxReadinessStatus;
+  transitionHistory: Array<{
+    status: EcuadorTaxOperationalCloseoutStatus;
+    transitionedAt: Date;
+    transitionedByUserId: string | null;
+    transitionedByEmail: string | null;
+    note: string | null;
+  }>;
+  blockers: string[];
   nextStep: string;
   guardrails: string[];
 }

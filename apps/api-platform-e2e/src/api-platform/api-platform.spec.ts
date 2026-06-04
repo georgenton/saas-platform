@@ -205,13 +205,16 @@ import {
   GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxObligationSettingsUseCase,
+  GetTenantEcuadorTaxOperationalCloseoutUseCase,
   GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
   GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
   GetTenantEcuadorTaxRuleCatalogUseCase,
   GetTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
+  GetTenantEcuadorTaxVatDeclarationApprovalUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
+  GetTenantEcuadorTaxWithholdingRegistryUseCase,
   ListTenantEcuadorTaxAccountantReviewsUseCase,
   ListTenantEcuadorTaxComplianceEventsUseCase,
   RecordTenantEcuadorTaxPurchaseExpenseEvidenceUseCase,
@@ -229,6 +232,8 @@ import {
   RequestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase,
   RequestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
   TransitionTenantEcuadorTaxAccountantReviewUseCase,
+  TransitionTenantEcuadorTaxOperationalCloseoutUseCase,
+  TransitionTenantEcuadorTaxVatDeclarationApprovalUseCase,
   UpsertTenantEcuadorTaxObligationSettingsUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
@@ -874,7 +879,16 @@ describe('API', () => {
   let requestTenantEcuadorTaxVatDeclarationDraftUseCase: {
     execute: jest.Mock;
   };
+  let getTenantEcuadorTaxVatDeclarationApprovalUseCase: { execute: jest.Mock };
+  let transitionTenantEcuadorTaxVatDeclarationApprovalUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcuadorTaxWithholdingRegistryUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxPeriodEvidenceVaultUseCase: { execute: jest.Mock };
+  let getTenantEcuadorTaxOperationalCloseoutUseCase: { execute: jest.Mock };
+  let transitionTenantEcuadorTaxOperationalCloseoutUseCase: {
+    execute: jest.Mock;
+  };
   let getTenantEcuadorTaxAuditReadinessUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxObligationMatrixUseCase: { execute: jest.Mock };
   let requestTenantEcuadorTaxPeriodPreparationPacketUseCase: {
@@ -3337,6 +3351,26 @@ describe('API', () => {
     nextStep: 'Enviar borrador IVA al contador.',
     guardrails: ['No representa formulario SRI.'],
   };
+  const ecuadorTaxVatDeclarationApproval = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    status: 'approved_for_external_filing' as const,
+    draft: ecuadorTaxVatDeclarationDraft,
+    transitionHistory: [
+      {
+        status: 'approved_for_external_filing' as const,
+        transitionedAt: taxComplianceGeneratedAt,
+        transitionedByUserId: 'user_owner',
+        transitionedByEmail: 'owner@saas-platform.test',
+        note: 'Approved from e2e.',
+      },
+    ],
+    blockers: [],
+    nextStep: 'Usar aprobacion IVA como prerequisito de closeout operacional.',
+    guardrails: ['No presenta formulario SRI.'],
+  };
   const ecuadorTaxRuleCatalog = {
     tenantSlug: 'saas-platform',
     generatedAt: taxComplianceGeneratedAt,
@@ -3448,6 +3482,62 @@ describe('API', () => {
     missingItems: [],
     nextStep: 'Enviar carpeta fiscal al contador.',
     guardrails: ['No reemplaza archivo contable oficial.'],
+  };
+  const ecuadorTaxWithholdingRegistry = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    summary: {
+      salesCandidateCount: 1,
+      purchaseCandidateCount: 1,
+      executedDraftCount: 1,
+      pendingSupportCount: 2,
+    },
+    rows: [
+      {
+        key: 'executed:withholding_001',
+        source: 'executed_draft' as const,
+        label: '001-002-000000001',
+        readinessStatus: 'ready' as const,
+        amountInCents: 0,
+        currency: 'USD',
+        supportReference: 'invoice_001',
+        nextStep: 'Revisar emision/autorizacion desde Invoicing.',
+      },
+    ],
+    blockers: [],
+    nextStep: 'Completar soportes pendientes.',
+    guardrails: ['No reemplaza anexo oficial.'],
+  };
+  const ecuadorTaxOperationalCloseout = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    status: 'ready_for_external_filing' as const,
+    checklist: [
+      {
+        key: 'vat_approved',
+        label: 'IVA aprobado para presentacion externa',
+        completed: true,
+        blocker: null,
+      },
+      {
+        key: 'withholdings_reviewed',
+        label: 'Retenciones revisadas',
+        completed: false,
+        blocker: 'withholding.registry_not_ready',
+      },
+    ],
+    vatApprovalStatus: 'approved_for_external_filing' as const,
+    withholdingReadinessStatus: 'needs_review' as const,
+    evidenceVaultStatus: 'needs_review' as const,
+    transitionHistory: [],
+    blockers: ['withholding.registry_not_ready'],
+    nextStep: 'Completar IVA, retenciones y carpeta fiscal antes de cerrar.',
+    guardrails: ['No equivale a declaracion presentada.'],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
@@ -12033,8 +12123,23 @@ describe('API', () => {
     requestTenantEcuadorTaxVatDeclarationDraftUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxVatDeclarationDraft),
     };
+    getTenantEcuadorTaxVatDeclarationApprovalUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxVatDeclarationApproval),
+    };
+    transitionTenantEcuadorTaxVatDeclarationApprovalUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxVatDeclarationApproval),
+    };
+    getTenantEcuadorTaxWithholdingRegistryUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxWithholdingRegistry),
+    };
     getTenantEcuadorTaxPeriodEvidenceVaultUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxPeriodEvidenceVault),
+    };
+    getTenantEcuadorTaxOperationalCloseoutUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxOperationalCloseout),
+    };
+    transitionTenantEcuadorTaxOperationalCloseoutUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxOperationalCloseout),
     };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
@@ -12594,8 +12699,18 @@ describe('API', () => {
       .useValue(upsertTenantEcuadorTaxObligationSettingsUseCase)
       .overrideProvider(RequestTenantEcuadorTaxVatDeclarationDraftUseCase)
       .useValue(requestTenantEcuadorTaxVatDeclarationDraftUseCase)
+      .overrideProvider(GetTenantEcuadorTaxVatDeclarationApprovalUseCase)
+      .useValue(getTenantEcuadorTaxVatDeclarationApprovalUseCase)
+      .overrideProvider(TransitionTenantEcuadorTaxVatDeclarationApprovalUseCase)
+      .useValue(transitionTenantEcuadorTaxVatDeclarationApprovalUseCase)
+      .overrideProvider(GetTenantEcuadorTaxWithholdingRegistryUseCase)
+      .useValue(getTenantEcuadorTaxWithholdingRegistryUseCase)
       .overrideProvider(GetTenantEcuadorTaxPeriodEvidenceVaultUseCase)
       .useValue(getTenantEcuadorTaxPeriodEvidenceVaultUseCase)
+      .overrideProvider(GetTenantEcuadorTaxOperationalCloseoutUseCase)
+      .useValue(getTenantEcuadorTaxOperationalCloseoutUseCase)
+      .overrideProvider(TransitionTenantEcuadorTaxOperationalCloseoutUseCase)
+      .useValue(transitionTenantEcuadorTaxOperationalCloseoutUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -15285,6 +15400,37 @@ describe('API', () => {
 	    });
 	  });
 
+	  it('GET /api/tax-compliance/tenants/:slug/ec/withholding-registry should return withholding registry', async () => {
+	    const response = await request(httpServer)
+	      .get(
+	        '/api/tax-compliance/tenants/saas-platform/ec/withholding-registry?period=2026-06&year=2026',
+	      )
+	      .set('Authorization', `Bearer ${ownerToken}`)
+	      .expect(200);
+
+	    expect(response.body).toMatchObject({
+	      tenantSlug: 'saas-platform',
+	      period: '2026-06',
+	      readinessStatus: 'needs_review',
+	      summary: {
+	        executedDraftCount: 1,
+	        pendingSupportCount: 2,
+	      },
+	      rows: [
+	        {
+	          key: 'executed:withholding_001',
+	          source: 'executed_draft',
+	        },
+	      ],
+	    });
+
+	    expect(getTenantEcuadorTaxWithholdingRegistryUseCase.execute).toHaveBeenCalledWith({
+	      tenantSlug: 'saas-platform',
+	      period: '2026-06',
+	      year: 2026,
+	    });
+	  });
+
 	  it('GET /api/tax-compliance/tenants/:slug/ec/tax-rule-catalog should return Ecuador tax rules', async () => {
 	    const response = await request(httpServer)
 	      .get(
@@ -15493,6 +15639,61 @@ describe('API', () => {
 	    });
 	  });
 
+	  it('GET /api/tax-compliance/tenants/:slug/ec/vat-declaration-approval should return VAT approval state', async () => {
+	    const response = await request(httpServer)
+	      .get(
+	        '/api/tax-compliance/tenants/saas-platform/ec/vat-declaration-approval?period=2026-06&year=2026',
+	      )
+	      .set('Authorization', `Bearer ${ownerToken}`)
+	      .expect(200);
+
+	    expect(response.body).toMatchObject({
+	      tenantSlug: 'saas-platform',
+	      period: '2026-06',
+	      status: 'approved_for_external_filing',
+	      transitionHistory: [
+	        {
+	          status: 'approved_for_external_filing',
+	          transitionedByUserId: 'user_owner',
+	        },
+	      ],
+	    });
+
+	    expect(getTenantEcuadorTaxVatDeclarationApprovalUseCase.execute).toHaveBeenCalledWith({
+	      tenantSlug: 'saas-platform',
+	      period: '2026-06',
+	      year: 2026,
+	    });
+	  });
+
+	  it('POST /api/tax-compliance/tenants/:slug/ec/vat-declaration-approval/transitions should transition VAT approval', async () => {
+	    const response = await request(httpServer)
+	      .post(
+	        '/api/tax-compliance/tenants/saas-platform/ec/vat-declaration-approval/transitions',
+	      )
+	      .set('Authorization', `Bearer ${ownerToken}`)
+	      .send({
+	        period: '2026-06',
+	        year: 2026,
+	        status: 'approved_for_external_filing',
+	        transitionedByUserId: 'user_owner',
+	      })
+	      .expect(201);
+
+	    expect(response.body.status).toBe('approved_for_external_filing');
+	    expect(
+	      transitionTenantEcuadorTaxVatDeclarationApprovalUseCase.execute,
+	    ).toHaveBeenCalledWith({
+	      tenantSlug: 'saas-platform',
+	      period: '2026-06',
+	      year: 2026,
+	      status: 'approved_for_external_filing',
+	      transitionedByUserId: 'user_owner',
+	      transitionedByEmail: undefined,
+	      note: undefined,
+	    });
+	  });
+
   it('GET /api/tax-compliance/tenants/:slug/ec/income-tax-evidence-packet should return income tax evidence', async () => {
     const response = await request(httpServer)
       .get(
@@ -15610,6 +15811,62 @@ describe('API', () => {
       tenantSlug: 'saas-platform',
       period: '2026-06',
       year: 2026,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/operational-closeout should return closeout 2 state', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/operational-closeout?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      status: 'ready_for_external_filing',
+      vatApprovalStatus: 'approved_for_external_filing',
+      withholdingReadinessStatus: 'needs_review',
+      blockers: ['withholding.registry_not_ready'],
+    });
+
+    expect(getTenantEcuadorTaxOperationalCloseoutUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/tax-compliance/tenants/:slug/ec/operational-closeout/transitions should transition closeout 2 state', async () => {
+    const response = await request(httpServer)
+      .post(
+        '/api/tax-compliance/tenants/saas-platform/ec/operational-closeout/transitions',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        status: 'closed_operationally',
+        transitionedByUserId: 'user_owner',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      status: 'ready_for_external_filing',
+    });
+
+    expect(
+      transitionTenantEcuadorTaxOperationalCloseoutUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      status: 'closed_operationally',
+      transitionedByUserId: 'user_owner',
+      transitionedByEmail: undefined,
+      note: undefined,
     });
   });
 

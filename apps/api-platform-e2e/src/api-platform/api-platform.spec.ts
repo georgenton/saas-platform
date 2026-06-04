@@ -203,6 +203,7 @@ import {
   GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
+  GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
   ListTenantEcuadorTaxAccountantReviewsUseCase,
   ListTenantEcuadorTaxComplianceEventsUseCase,
@@ -210,8 +211,10 @@ import {
   RequestTenantEcuadorTaxAccountantReviewUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+  RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
   RequestTenantEcuadorTaxSalesBookUseCase,
+  RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase,
   TransitionTenantEcuadorTaxAccountantReviewUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
@@ -827,6 +830,9 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let getTenantEcuadorTaxPeriodWorkspaceUseCase: { execute: jest.Mock };
+  let getTenantEcuadorTaxReconciliationWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
   let getTenantEcuadorTaxAuditReadinessUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxObligationMatrixUseCase: { execute: jest.Mock };
   let requestTenantEcuadorTaxPeriodPreparationPacketUseCase: {
@@ -846,6 +852,12 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let requestTenantEcuadorTaxDeclarationApprovalPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantEcuadorTaxPeriodCloseoutPacketUseCase: {
     execute: jest.Mock;
   };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
@@ -2840,6 +2852,41 @@ describe('API', () => {
       },
     ],
   };
+  const ecuadorTaxReconciliationWorkspace = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    status: 'blocked' as const,
+    salesBook: ecuadorTaxSalesBook,
+    ecommerceEvidence: ecuadorTaxEcommerceEvidenceSummary,
+    accountantReviews: [approvedEcuadorTaxAccountantReview],
+    checks: [
+      {
+        key: 'third_party_fiscal_data',
+        source: 'parties',
+        readinessStatus: 'blocked' as const,
+        summary: '1 terceros requieren completar datos fiscales.',
+        blockers: ['party.customer_globex.fiscal_data_incomplete'],
+      },
+      {
+        key: 'accountant_review',
+        source: 'accountant_review',
+        readinessStatus: 'ready' as const,
+        summary: 'La ultima revision de contador esta aprobada.',
+        blockers: [],
+      },
+    ],
+    blockers: ['party.customer_globex.fiscal_data_incomplete'],
+    reviewNotes: [
+      '2 documentos tributarios y 2 ordenes ecommerce cruzadas para 2026-06.',
+    ],
+    nextStep:
+      'Resolver diferencias bloqueantes antes de preparar IVA o cierre del periodo.',
+    guardrails: [
+      'La conciliacion compara evidencia operacional y tributaria; no reemplaza revision contable.',
+    ],
+  };
   const ecuadorTaxDeclarationApprovalPacket = {
     tenantSlug: 'saas-platform',
     period: '2026-06',
@@ -2857,6 +2904,72 @@ describe('API', () => {
     ],
     nextStep: 'Resolver blockers antes de declarar.',
     guardrails: ['Este packet no presenta formularios al SRI.'],
+  };
+  const ecuadorTaxVatDeclarationReadinessPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'blocked' as const,
+    reconciliationStatus: ecuadorTaxReconciliationWorkspace.status,
+    vatObligation: ecuadorTaxObligationCalendar.entries[0],
+    salesTotalsByCurrency: ecuadorTaxSalesBook.totalsByCurrency,
+    vatSummaryByCurrency: [
+      {
+        currency: 'USD',
+        taxableBaseInCents: 25000,
+        vatInCents: 3000,
+        documentCount: 2,
+      },
+    ],
+    blockers: ecuadorTaxReconciliationWorkspace.blockers,
+    accountantQuestions: [
+      'Que ajustes necesita el periodo antes de declarar IVA?',
+    ],
+    supportChecklist: [
+      'Libro de ventas del periodo generado y revisado.',
+      'Conciliacion ecommerce-invoicing-parties sin diferencias bloqueantes.',
+    ],
+    nextStep: 'Resolver blockers antes de preparar declaracion IVA.',
+    guardrails: [
+      'Este packet prepara soporte IVA; no calcula formulario oficial ni presenta al SRI.',
+    ],
+  };
+  const ecuadorTaxPeriodCloseoutPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    closeoutStatus: 'blocked' as const,
+    workspaceStatus: ecuadorTaxPeriodWorkspace.status,
+    salesBookStatus: ecuadorTaxSalesBook.readinessStatus,
+    reconciliationStatus: ecuadorTaxReconciliationWorkspace.status,
+    vatReadinessStatus: ecuadorTaxVatDeclarationReadinessPacket.readinessStatus,
+    latestAccountantReview: approvedEcuadorTaxAccountantReview,
+    approvalReadiness: ecuadorTaxDeclarationApprovalPacket.approvalReadiness,
+    ledgerCompleteness: {
+      requiredEventTypes: [
+        'tax_sales_book_generated',
+        'tax_reconciliation_reviewed',
+        'vat_readiness_packet_requested',
+        'accountant_review_transitioned',
+      ],
+      presentEventTypes: ['accountant_review_transitioned'],
+      missingEventTypes: [
+        'tax_sales_book_generated',
+        'tax_reconciliation_reviewed',
+        'vat_readiness_packet_requested',
+      ],
+    },
+    closeoutChecklist: [
+      'Libro de ventas generado y sin blockers.',
+      'Conciliacion ecommerce-invoicing-parties revisada.',
+    ],
+    blockers: ['party.customer_globex.fiscal_data_incomplete'],
+    nextStep: 'Resolver blockers tributarios antes de cerrar el periodo.',
+    guardrails: [
+      'El closeout es un cierre operacional interno; no equivale a declaracion presentada.',
+    ],
   };
   const ecuadorTaxAuditReadiness = {
     tenantSlug: 'saas-platform',
@@ -11362,6 +11475,9 @@ describe('API', () => {
     getTenantEcuadorTaxPeriodWorkspaceUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxPeriodWorkspace),
     };
+    getTenantEcuadorTaxReconciliationWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxReconciliationWorkspace),
+    };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
     };
@@ -11394,6 +11510,12 @@ describe('API', () => {
     };
     requestTenantEcuadorTaxDeclarationApprovalPacketUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxDeclarationApprovalPacket),
+    };
+    requestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxVatDeclarationReadinessPacket),
+    };
+    requestTenantEcuadorTaxPeriodCloseoutPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxPeriodCloseoutPacket),
     };
     listTenantConversationThreadsUseCase = {
       execute: jest.fn().mockResolvedValue([conversationThread]),
@@ -11882,6 +12004,8 @@ describe('API', () => {
       .useValue(getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase)
       .overrideProvider(GetTenantEcuadorTaxPeriodWorkspaceUseCase)
       .useValue(getTenantEcuadorTaxPeriodWorkspaceUseCase)
+      .overrideProvider(GetTenantEcuadorTaxReconciliationWorkspaceUseCase)
+      .useValue(getTenantEcuadorTaxReconciliationWorkspaceUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -11904,6 +12028,10 @@ describe('API', () => {
       .useValue(transitionTenantEcuadorTaxAccountantReviewUseCase)
       .overrideProvider(RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase)
       .useValue(requestTenantEcuadorTaxDeclarationApprovalPacketUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase)
+      .useValue(requestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase)
+      .useValue(requestTenantEcuadorTaxPeriodCloseoutPacketUseCase)
       .overrideProvider(GetTenantConversationThreadByIdUseCase)
       .useValue(getTenantConversationThreadByIdUseCase)
       .overrideProvider(GetTenantGrowthConversationWorkbenchUseCase)
@@ -14200,6 +14328,121 @@ describe('API', () => {
     });
 
     expect(requestTenantEcuadorTaxSalesBookUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/reconciliation-workspace should return period reconciliation', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/reconciliation-workspace?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      generatedAt: '2026-06-04T12:00:00.000Z',
+      status: 'blocked',
+      ecommerceEvidence: {
+        status: 'requires_review',
+        orderCount: 1,
+      },
+      blockers: ['party.customer_globex.fiscal_data_incomplete'],
+    });
+    expect(response.body.checks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: 'third_party_fiscal_data',
+          readinessStatus: 'blocked',
+          blockers: ['party.customer_globex.fiscal_data_incomplete'],
+        }),
+      ]),
+    );
+
+    expect(
+      getTenantEcuadorTaxReconciliationWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/vat-declaration-readiness-packet should return VAT readiness', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/vat-declaration-readiness-packet?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      readinessStatus: 'blocked',
+      reconciliationStatus: 'blocked',
+      vatObligation: {
+        obligationKey: 'vat',
+      },
+      vatSummaryByCurrency: [
+        {
+          currency: 'USD',
+          taxableBaseInCents: 25000,
+          vatInCents: 3000,
+          documentCount: 2,
+        },
+      ],
+      blockers: ['party.customer_globex.fiscal_data_incomplete'],
+    });
+
+    expect(
+      requestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/period-closeout-packet should return closeout readiness', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/period-closeout-packet?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      closeoutStatus: 'blocked',
+      workspaceStatus: 'blocked',
+      reconciliationStatus: 'blocked',
+      vatReadinessStatus: 'blocked',
+      latestAccountantReview: {
+        id: 'tax_review_001',
+        status: 'approved',
+      },
+      ledgerCompleteness: {
+        missingEventTypes: [
+          'tax_sales_book_generated',
+          'tax_reconciliation_reviewed',
+          'vat_readiness_packet_requested',
+        ],
+      },
+      blockers: ['party.customer_globex.fiscal_data_incomplete'],
+    });
+
+    expect(
+      requestTenantEcuadorTaxPeriodCloseoutPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',
       year: 2026,

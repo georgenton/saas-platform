@@ -82,8 +82,11 @@ import {
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
+  EcuadorTaxPeriodCloseoutPacketResponse,
   EcuadorTaxPeriodWorkspaceResponse,
+  EcuadorTaxReconciliationWorkspaceResponse,
   EcuadorTaxSalesBookResponse,
+  EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationWorkspaceResponse,
@@ -1030,6 +1033,63 @@ export async function fetchEcuadorTaxSalesBook(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/sales-book?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxReconciliationWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxReconciliationWorkspaceResponse> {
+  return request<EcuadorTaxReconciliationWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/reconciliation-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxVatDeclarationReadinessPacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxVatDeclarationReadinessPacketResponse> {
+  return request<EcuadorTaxVatDeclarationReadinessPacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/vat-declaration-readiness-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxPeriodCloseoutPacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPeriodCloseoutPacketResponse> {
+  return request<EcuadorTaxPeriodCloseoutPacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/period-closeout-packet?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

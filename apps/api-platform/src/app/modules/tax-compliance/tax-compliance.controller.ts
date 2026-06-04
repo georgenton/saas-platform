@@ -17,6 +17,7 @@ import {
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
+  GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
   ListTenantEcuadorTaxAccountantReviewsUseCase,
   ListTenantEcuadorTaxComplianceEventsUseCase,
@@ -24,8 +25,10 @@ import {
   RequestTenantEcuadorTaxAccountantReviewUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+  RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
   RequestTenantEcuadorTaxSalesBookUseCase,
+  RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase,
   TaxComplianceAccountantReviewNotFoundError,
   TransitionTenantEcuadorTaxAccountantReviewUseCase,
 } from '@saas-platform/tax-compliance-application';
@@ -49,10 +52,13 @@ import {
   EcuadorTaxDeclarationDraftPacketResponseDto,
   EcuadorTaxDueMonitorResponseDto,
   EcuadorTaxEcommerceEvidenceSummaryResponseDto,
+  EcuadorTaxPeriodCloseoutPacketResponseDto,
   EcuadorTaxPeriodWorkspaceResponseDto,
   EcuadorTaxPeriodPreparationPacketResponseDto,
+  EcuadorTaxReconciliationWorkspaceResponseDto,
   EcuadorTaxSalesBookResponseDto,
   EcuadorTaxpayerProfileResponseDto,
+  EcuadorTaxVatDeclarationReadinessPacketResponseDto,
   toEcuadorTaxAccountantReviewResponseDto,
   toEcuadorTaxAccountantReviewPacketResponseDto,
   toEcuadorTaxAuditReadinessResponseDto,
@@ -64,10 +70,13 @@ import {
   toEcuadorTaxEcommerceEvidenceSummaryResponseDto,
   toEcuadorTaxObligationCalendarResponseDto,
   toEcuadorTaxObligationMatrixResponseDto,
+  toEcuadorTaxPeriodCloseoutPacketResponseDto,
   toEcuadorTaxPeriodWorkspaceResponseDto,
   toEcuadorTaxPeriodPreparationPacketResponseDto,
+  toEcuadorTaxReconciliationWorkspaceResponseDto,
   toEcuadorTaxSalesBookResponseDto,
   toEcuadorTaxpayerProfileResponseDto,
+  toEcuadorTaxVatDeclarationReadinessPacketResponseDto,
 } from './dto/ecuador-tax-compliance.response';
 
 type TenantAccessContext = {
@@ -114,6 +123,9 @@ export class TaxComplianceController {
     private readonly transitionTenantEcuadorTaxAccountantReviewUseCase: TransitionTenantEcuadorTaxAccountantReviewUseCase,
     private readonly requestTenantEcuadorTaxDeclarationApprovalPacketUseCase: RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
     private readonly requestTenantEcuadorTaxSalesBookUseCase: RequestTenantEcuadorTaxSalesBookUseCase,
+    private readonly getTenantEcuadorTaxReconciliationWorkspaceUseCase: GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
+    private readonly requestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase: RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase,
+    private readonly requestTenantEcuadorTaxPeriodCloseoutPacketUseCase: RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
   ) {}
 
   @Get(':slug/ec/taxpayer-profile')
@@ -330,6 +342,86 @@ export class TaxComplianceController {
       });
 
       return toEcuadorTaxSalesBookResponseDto(book);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/reconciliation-workspace')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async getReconciliationWorkspace(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxReconciliationWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantEcuadorTaxReconciliationWorkspaceUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxReconciliationWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/vat-declaration-readiness-packet')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async getVatDeclarationReadinessPacket(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxVatDeclarationReadinessPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period,
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxVatDeclarationReadinessPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/period-closeout-packet')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async getPeriodCloseoutPacket(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxPeriodCloseoutPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantEcuadorTaxPeriodCloseoutPacketUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxPeriodCloseoutPacketResponseDto(packet);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

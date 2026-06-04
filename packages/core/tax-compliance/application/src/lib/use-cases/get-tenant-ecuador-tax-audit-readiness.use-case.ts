@@ -86,6 +86,36 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
           ? 'persisted'
           : 'persist_when_requested',
       },
+      {
+        eventType: 'tax_reconciliation_reviewed',
+        generated: false,
+        source: 'tax_reconciliation_workspace',
+        recommendedPersistence: persistedEventTypes.has(
+          'tax_reconciliation_reviewed',
+        )
+          ? 'persisted'
+          : 'persist_when_requested',
+      },
+      {
+        eventType: 'vat_readiness_packet_requested',
+        generated: false,
+        source: 'vat_declaration_readiness_packet',
+        recommendedPersistence: persistedEventTypes.has(
+          'vat_readiness_packet_requested',
+        )
+          ? 'persisted'
+          : 'persist_when_requested',
+      },
+      {
+        eventType: 'period_closeout_packet_requested',
+        generated: false,
+        source: 'period_closeout_packet',
+        recommendedPersistence: persistedEventTypes.has(
+          'period_closeout_packet_requested',
+        )
+          ? 'persisted'
+          : 'persist_when_requested',
+      },
     ];
     const missingPersistence = generatedOutputs
       .filter((output) => output.recommendedPersistence.startsWith('persist_'))
@@ -132,6 +162,37 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
             'period',
             'documentCount',
             'ecommerceOrderCount',
+          ],
+        },
+        {
+          eventType: 'tax_reconciliation_reviewed',
+          reason: 'Audita conciliacion entre libro de ventas, ecommerce, terceros y revision humana.',
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'status',
+            'checkCount',
+            'blockerCount',
+          ],
+        },
+        {
+          eventType: 'vat_readiness_packet_requested',
+          reason: 'Audita soporte preparado para declaracion IVA del periodo.',
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'readinessStatus',
+            'vatSummaryByCurrency',
+          ],
+        },
+        {
+          eventType: 'period_closeout_packet_requested',
+          reason: 'Audita cierre operativo del periodo y completitud del ledger.',
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'closeoutStatus',
+            'missingEventTypes',
           ],
         },
       ],

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.77.0
+
+### Minor Changes
+
+- 7dd9ad5: Add Ecuador tax purchase evidence, VAT input/output reconciliation, and income tax evidence workflows.
+
 ## 0.76.0
 
 ### Minor Changes

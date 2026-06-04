@@ -156,6 +156,26 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
           : 'persist_when_requested',
       },
       {
+        eventType: 'withholding_draft_bridge_requested',
+        generated: false,
+        source: 'withholding_draft_bridge_packet',
+        recommendedPersistence: persistedEventTypes.has(
+          'withholding_draft_bridge_requested',
+        )
+          ? 'persisted'
+          : 'persist_when_requested',
+      },
+      {
+        eventType: 'tax_rule_catalog_reviewed',
+        generated: false,
+        source: 'tax_rule_catalog',
+        recommendedPersistence: persistedEventTypes.has(
+          'tax_rule_catalog_reviewed',
+        )
+          ? 'persisted'
+          : 'persist_when_requested',
+      },
+      {
         eventType: 'vat_input_output_reconciliation_requested',
         generated: false,
         source: 'vat_input_output_reconciliation_packet',
@@ -322,6 +342,29 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
             'readinessStatus',
             'salesCandidateCount',
             'purchaseCandidateCount',
+          ],
+        },
+        {
+          eventType: 'withholding_draft_bridge_requested',
+          reason:
+            'Audita preparacion de input operativo para crear borrador de retencion en Invoicing.',
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'candidateType',
+            'candidateId',
+            'hasCreateWithholdingDraftInput',
+          ],
+        },
+        {
+          eventType: 'tax_rule_catalog_reviewed',
+          reason:
+            'Audita reglas fiscales operativas usadas para explicar IVA, renta y retenciones.',
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'ruleCount',
+            'obligationKeys',
           ],
         },
         {

@@ -205,6 +205,7 @@ import {
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
   GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
+  GetTenantEcuadorTaxRuleCatalogUseCase,
   GetTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
   ListTenantEcuadorTaxAccountantReviewsUseCase,
@@ -220,6 +221,7 @@ import {
   RequestTenantEcuadorTaxSalesBookUseCase,
   RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase,
   RequestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase,
+  RequestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase,
   RequestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
   TransitionTenantEcuadorTaxAccountantReviewUseCase,
 } from '@saas-platform/tax-compliance-application';
@@ -849,6 +851,12 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let requestTenantEcuadorTaxWithholdingEvidencePacketUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcuadorTaxRuleCatalogUseCase: {
     execute: jest.Mock;
   };
   let getTenantEcuadorTaxAuditReadinessUseCase: { execute: jest.Mock };
@@ -3200,6 +3208,78 @@ describe('API', () => {
     nextStep: 'Resolver readiness de proveedores antes de cerrar retenciones.',
     guardrails: [
       'Este packet prepara evidencia; no emite comprobantes de retencion oficiales.',
+    ],
+  };
+  const ecuadorTaxWithholdingDraftBridgePacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'ready' as const,
+    source: 'withholding_evidence_packet' as const,
+    selectedCandidate: {
+      candidateType: 'sale' as const,
+      candidateId: 'invoice_001',
+      label: '001-001-000000001',
+      currency: 'USD',
+      taxableBaseInCents: 25000,
+      vatInCents: 3000,
+      candidateReason: 'Venta con contraparte juridica requiere revision.',
+    },
+    createWithholdingDraftInput: {
+      sourceInvoiceId: 'invoice_001',
+      reason: 'Retencion preparada desde Tax Compliance 2026-06',
+      amountInCents: 25000,
+      taxRateId: null,
+      number: null,
+      issuedAt: null,
+      notes:
+        'Bridge operativo: revisar codigo y porcentaje con contador antes de emitir.',
+    },
+    bridgeChecklist: [
+      'Confirmar que la factura fuente corresponde al comprobante de retencion.',
+    ],
+    blockers: [],
+    nextStep: 'Crear borrador de retencion en Invoicing con el input sugerido.',
+    guardrails: [
+      'Este bridge prepara input operativo; no emite ni autoriza comprobantes automaticamente.',
+    ],
+  };
+  const ecuadorTaxRuleCatalog = {
+    tenantSlug: 'saas-platform',
+    generatedAt: taxComplianceGeneratedAt,
+    country: 'EC' as const,
+    readinessStatus: 'needs_review' as const,
+    rules: [
+      {
+        ruleKey: 'ec.vat.input_credit.requires_valid_purchase_support',
+        obligationKey: 'vat' as const,
+        title: 'Credito IVA requiere soporte de compra valido',
+        appliesToCategory: null,
+        appliesWhen: ['purchase_expense_evidence.status_is_ready'],
+        operationalEffect:
+          'Permite considerar IVA de compras como credito tributario operativo.',
+        accountantReviewRecommended: true,
+        evidenceInputs: ['purchase_expense_evidence'],
+        guardrails: ['No reemplaza validacion oficial SRI.'],
+      },
+      {
+        ruleKey: 'ec.withholding.sales_candidate.requires_source_invoice',
+        obligationKey: 'withholding' as const,
+        title: 'Retencion operativa debe nacer de factura fuente',
+        appliesToCategory: null,
+        appliesWhen: ['candidate_has_invoice_id'],
+        operationalEffect:
+          'Permite preparar input para borrador de comprobante de retencion.',
+        accountantReviewRecommended: true,
+        evidenceInputs: ['withholding_evidence_packet.salesCandidates'],
+        guardrails: ['No emite automaticamente.'],
+      },
+    ],
+    blockers: [],
+    nextStep: 'Usar reglas para explicar IVA, renta y retenciones.',
+    guardrails: [
+      'Catalogo operacional; no sustituye normativa oficial ni criterio profesional.',
     ],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
@@ -11761,6 +11841,14 @@ describe('API', () => {
     requestTenantEcuadorTaxWithholdingEvidencePacketUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxWithholdingEvidencePacket),
     };
+    requestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(ecuadorTaxWithholdingDraftBridgePacket),
+    };
+    getTenantEcuadorTaxRuleCatalogUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxRuleCatalog),
+    };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
     };
@@ -12305,6 +12393,10 @@ describe('API', () => {
       .useValue(getTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase)
       .overrideProvider(RequestTenantEcuadorTaxWithholdingEvidencePacketUseCase)
       .useValue(requestTenantEcuadorTaxWithholdingEvidencePacketUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase)
+      .useValue(requestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase)
+      .overrideProvider(GetTenantEcuadorTaxRuleCatalogUseCase)
+      .useValue(getTenantEcuadorTaxRuleCatalogUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -14905,6 +14997,77 @@ describe('API', () => {
 	    expect(
 	      requestTenantEcuadorTaxWithholdingEvidencePacketUseCase.execute,
 	    ).toHaveBeenCalledWith({
+	      tenantSlug: 'saas-platform',
+	      period: '2026-06',
+	      year: 2026,
+	    });
+	  });
+
+	  it('POST /api/tax-compliance/tenants/:slug/ec/withholding-draft-bridge-packet should return withholding bridge input', async () => {
+	    const response = await request(httpServer)
+	      .post(
+	        '/api/tax-compliance/tenants/saas-platform/ec/withholding-draft-bridge-packet',
+	      )
+	      .set('Authorization', `Bearer ${ownerToken}`)
+	      .send({
+	        period: '2026-06',
+	        year: 2026,
+	        candidateType: 'sale',
+	        candidateId: 'invoice_001',
+	      })
+	      .expect(201);
+
+	    expect(response.body).toMatchObject({
+	      tenantSlug: 'saas-platform',
+	      period: '2026-06',
+	      readinessStatus: 'ready',
+	      selectedCandidate: {
+	        candidateType: 'sale',
+	        candidateId: 'invoice_001',
+	      },
+	      createWithholdingDraftInput: {
+	        sourceInvoiceId: 'invoice_001',
+	        amountInCents: 25000,
+	      },
+	    });
+
+	    expect(
+	      requestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase.execute,
+	    ).toHaveBeenCalledWith({
+	      tenantSlug: 'saas-platform',
+	      period: '2026-06',
+	      year: 2026,
+	      candidateType: 'sale',
+	      candidateId: 'invoice_001',
+	      taxRateId: undefined,
+	    });
+	  });
+
+	  it('GET /api/tax-compliance/tenants/:slug/ec/tax-rule-catalog should return Ecuador tax rules', async () => {
+	    const response = await request(httpServer)
+	      .get(
+	        '/api/tax-compliance/tenants/saas-platform/ec/tax-rule-catalog?period=2026-06&year=2026',
+	      )
+	      .set('Authorization', `Bearer ${ownerToken}`)
+	      .expect(200);
+
+	    expect(response.body).toMatchObject({
+	      tenantSlug: 'saas-platform',
+	      country: 'EC',
+	      readinessStatus: 'needs_review',
+	      rules: [
+	        {
+	          ruleKey: 'ec.vat.input_credit.requires_valid_purchase_support',
+	          obligationKey: 'vat',
+	        },
+	        {
+	          ruleKey: 'ec.withholding.sales_candidate.requires_source_invoice',
+	          obligationKey: 'withholding',
+	        },
+	      ],
+	    });
+
+	    expect(getTenantEcuadorTaxRuleCatalogUseCase.execute).toHaveBeenCalledWith({
 	      tenantSlug: 'saas-platform',
 	      period: '2026-06',
 	      year: 2026,

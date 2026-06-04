@@ -60,6 +60,7 @@ model Tenant {
   ecommerceProductEntities EcommerceProductEntity[]
   taxComplianceEvents TaxComplianceEvent[]
   taxComplianceAccountantReviews TaxComplianceAccountantReview[]
+  taxCompliancePurchaseExpenseEvidence TaxCompliancePurchaseExpenseEvidence[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
@@ -831,6 +832,39 @@ model TaxComplianceAccountantReview {
   @@index([tenantId, period, updatedAt], map: "TaxComplianceAccountantReview_period_idx")
   @@index([tenantSlug, period, updatedAt], map: "TaxComplianceAccountantReview_slug_period_idx")
   @@index([tenantId, status, updatedAt], map: "TaxComplianceAccountantReview_status_idx")
+}
+
+model TaxCompliancePurchaseExpenseEvidence {
+  id                 String   @id
+  tenantId           String
+  tenantSlug         String
+  period             String
+  year               Int
+  supplierPartyId    String?
+  supplierName       String
+  supplierTaxpayerId String?
+  documentNumber     String?
+  documentCode       String?
+  issuedAt           DateTime?
+  category           String
+  currency           String
+  subtotalInCents    Int
+  vatInCents         Int
+  totalInCents       Int
+  deductible         Boolean?
+  supportReference   String?
+  status             String
+  readinessStatus    String
+  blockersJson       String   @db.Text
+  reviewNotesJson    String   @db.Text
+  occurredAt         DateTime
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([tenantId, period, createdAt], map: "TaxCompliancePurchaseExpenseEvidence_period_idx")
+  @@index([tenantSlug, period, createdAt], map: "TaxCompliancePurchaseExpenseEvidence_slug_period_idx")
+  @@index([tenantId, supplierTaxpayerId, period], map: "TaxCompliancePurchaseExpenseEvidence_supplier_idx")
 }
 
 model EcommerceProductSetup {

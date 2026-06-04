@@ -19,11 +19,13 @@ import {
   EcuadorTaxPurchaseExpenseEvidenceRecordView,
   EcuadorTaxPurchaseExpenseEvidenceWorkspaceView,
   EcuadorTaxReconciliationWorkspaceView,
+  EcuadorTaxRuleCatalogView,
   EcuadorTaxSalesBookView,
   EcuadorTaxSupplierFiscalReadinessWorkspaceView,
   EcuadorTaxpayerProfileView,
   EcuadorTaxVatDeclarationReadinessPacketView,
   EcuadorTaxVatInputOutputReconciliationPacketView,
+  EcuadorTaxWithholdingDraftBridgePacketView,
   EcuadorTaxWithholdingEvidencePacketView,
 } from '@saas-platform/tax-compliance-domain';
 
@@ -639,6 +641,58 @@ export interface EcuadorTaxWithholdingEvidencePacketResponseDto {
   blockers: string[];
   accountantQuestions: string[];
   supportChecklist: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxWithholdingDraftBridgePacketResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  source: string;
+  selectedCandidate: {
+    candidateType: string;
+    candidateId: string;
+    label: string;
+    currency: string;
+    taxableBaseInCents: number;
+    vatInCents: number;
+    candidateReason: string;
+  } | null;
+  createWithholdingDraftInput: {
+    sourceInvoiceId: string;
+    reason: string;
+    amountInCents: number;
+    taxRateId: string | null;
+    number: string | null;
+    issuedAt: string | null;
+    notes: string | null;
+  } | null;
+  bridgeChecklist: string[];
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxRuleCatalogResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  country: string;
+  readinessStatus: string;
+  rules: Array<{
+    ruleKey: string;
+    obligationKey: string;
+    title: string;
+    appliesToCategory: string | null;
+    appliesWhen: string[];
+    operationalEffect: string;
+    accountantReviewRecommended: boolean;
+    evidenceInputs: string[];
+    guardrails: string[];
+  }>;
+  blockers: string[];
   nextStep: string;
   guardrails: string[];
 }
@@ -1482,6 +1536,59 @@ export function toEcuadorTaxWithholdingEvidencePacketResponseDto(
     supportChecklist: [...packet.supportChecklist],
     nextStep: packet.nextStep,
     guardrails: [...packet.guardrails],
+  };
+}
+
+export function toEcuadorTaxWithholdingDraftBridgePacketResponseDto(
+  packet: EcuadorTaxWithholdingDraftBridgePacketView,
+): EcuadorTaxWithholdingDraftBridgePacketResponseDto {
+  return {
+    tenantSlug: packet.tenantSlug,
+    period: packet.period,
+    year: packet.year,
+    generatedAt: packet.generatedAt.toISOString(),
+    readinessStatus: packet.readinessStatus,
+    source: packet.source,
+    selectedCandidate: packet.selectedCandidate
+      ? { ...packet.selectedCandidate }
+      : null,
+    createWithholdingDraftInput: packet.createWithholdingDraftInput
+      ? {
+          ...packet.createWithholdingDraftInput,
+          issuedAt: packet.createWithholdingDraftInput.issuedAt
+            ? packet.createWithholdingDraftInput.issuedAt.toISOString()
+            : null,
+        }
+      : null,
+    bridgeChecklist: [...packet.bridgeChecklist],
+    blockers: [...packet.blockers],
+    nextStep: packet.nextStep,
+    guardrails: [...packet.guardrails],
+  };
+}
+
+export function toEcuadorTaxRuleCatalogResponseDto(
+  catalog: EcuadorTaxRuleCatalogView,
+): EcuadorTaxRuleCatalogResponseDto {
+  return {
+    tenantSlug: catalog.tenantSlug,
+    generatedAt: catalog.generatedAt.toISOString(),
+    country: catalog.country,
+    readinessStatus: catalog.readinessStatus,
+    rules: catalog.rules.map((rule) => ({
+      ruleKey: rule.ruleKey,
+      obligationKey: rule.obligationKey,
+      title: rule.title,
+      appliesToCategory: rule.appliesToCategory,
+      appliesWhen: [...rule.appliesWhen],
+      operationalEffect: rule.operationalEffect,
+      accountantReviewRecommended: rule.accountantReviewRecommended,
+      evidenceInputs: [...rule.evidenceInputs],
+      guardrails: [...rule.guardrails],
+    })),
+    blockers: [...catalog.blockers],
+    nextStep: catalog.nextStep,
+    guardrails: [...catalog.guardrails],
   };
 }
 

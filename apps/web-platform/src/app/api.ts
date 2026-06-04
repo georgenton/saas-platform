@@ -92,8 +92,11 @@ import {
   EcuadorTaxSupplierFiscalReadinessWorkspaceResponse,
   EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcuadorTaxVatInputOutputReconciliationPacketResponse,
+  EcuadorTaxWithholdingDraftBridgePacketResponse,
   EcuadorTaxWithholdingEvidencePacketResponse,
+  EcuadorTaxRuleCatalogResponse,
   RecordEcuadorTaxPurchaseExpenseEvidenceRequest,
+  RequestEcuadorTaxWithholdingDraftBridgePacketRequest,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationWorkspaceResponse,
@@ -1171,6 +1174,42 @@ export async function fetchEcuadorTaxWithholdingEvidencePacket(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/withholding-evidence-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestEcuadorTaxWithholdingDraftBridgePacket(
+  token: string,
+  tenantSlug: string,
+  body: RequestEcuadorTaxWithholdingDraftBridgePacketRequest,
+): Promise<EcuadorTaxWithholdingDraftBridgePacketResponse> {
+  return request<EcuadorTaxWithholdingDraftBridgePacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/withholding-draft-bridge-packet`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchEcuadorTaxRuleCatalog(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxRuleCatalogResponse> {
+  return request<EcuadorTaxRuleCatalogResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/tax-rule-catalog?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

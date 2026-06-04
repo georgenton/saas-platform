@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.72.0
+
+### Minor Changes
+
+- 00dd5f1: Add Ecuador tax calendar review workspace, due monitor alerts, and declaration draft packets for accountant review.
+
 ## 0.71.0
 
 ### Minor Changes

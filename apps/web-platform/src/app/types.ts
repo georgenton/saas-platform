@@ -1264,6 +1264,91 @@ export interface EcuadorTaxVatInputOutputReconciliationPacketResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxObligationSettingsResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  source: string;
+  regime: string;
+  accountingObligated: boolean | null;
+  specialTaxpayerCode: string | null;
+  ninthDigit: string | null;
+  obligations: Array<{
+    key: string;
+    applies: boolean;
+    frequency: string;
+    notes: string[];
+  }>;
+  updatedByUserId: string | null;
+  updatedByEmail: string | null;
+  updatedAt: string | null;
+  guardrails: string[];
+}
+
+export interface UpsertEcuadorTaxObligationSettingsRequest {
+  regime?: 'general' | 'rimpe_entrepreneur' | 'rimpe_popular_business' | 'unknown';
+  accountingObligated?: boolean | null;
+  specialTaxpayerCode?: string | null;
+  ninthDigit?: string | null;
+  obligations?: Array<{
+    key: 'vat' | 'income_tax' | 'withholding' | 'annexes';
+    applies: boolean;
+    frequency: 'monthly' | 'semiannual' | 'annual' | 'event_driven' | 'unknown';
+    notes?: string[];
+  }>;
+  updatedByUserId?: string | null;
+  updatedByEmail?: string | null;
+}
+
+export interface EcuadorTaxVatDeclarationDraftResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  vatObligation: EcuadorTaxVatDeclarationReadinessPacketResponse['vatObligation'];
+  outputVatByCurrency: EcuadorTaxVatDeclarationReadinessPacketResponse['vatSummaryByCurrency'];
+  inputVatByCurrency: EcuadorTaxVatInputOutputReconciliationPacketResponse['inputVatByCurrency'];
+  netVatByCurrency: EcuadorTaxVatInputOutputReconciliationPacketResponse['netVatByCurrency'];
+  declarationSections: Array<{
+    key: string;
+    label: string;
+    readinessStatus: string;
+    amountInCents: number;
+    currency: string | null;
+    notes: string[];
+  }>;
+  blockers: string[];
+  accountantQuestions: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPeriodEvidenceVaultResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  folders: Array<{
+    key: string;
+    label: string;
+    readinessStatus: string;
+    artifactCount: number;
+    missingItems: string[];
+    nextStep: string;
+  }>;
+  exportedSummary: {
+    salesDocuments: number;
+    purchaseDocuments: number;
+    withholdingCandidates: number;
+    accountantReviews: number;
+    auditEventCount: number;
+  };
+  missingItems: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxIncomeTaxEvidencePacketResponse {
   tenantSlug: string;
   period: string;

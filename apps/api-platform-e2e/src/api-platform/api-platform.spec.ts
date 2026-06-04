@@ -204,6 +204,8 @@ import {
   GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
   GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
+  GetTenantEcuadorTaxObligationSettingsUseCase,
+  GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
   GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
@@ -222,10 +224,12 @@ import {
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
   RequestTenantEcuadorTaxSalesBookUseCase,
   RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase,
+  RequestTenantEcuadorTaxVatDeclarationDraftUseCase,
   RequestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase,
   RequestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase,
   RequestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
   TransitionTenantEcuadorTaxAccountantReviewUseCase,
+  UpsertTenantEcuadorTaxObligationSettingsUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
   AutoAssignTenantGrowthOperationalCasesUseCase,
@@ -865,6 +869,12 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let getTenantEcuadorTaxAccountantWorkbenchUseCase: { execute: jest.Mock };
+  let getTenantEcuadorTaxObligationSettingsUseCase: { execute: jest.Mock };
+  let upsertTenantEcuadorTaxObligationSettingsUseCase: { execute: jest.Mock };
+  let requestTenantEcuadorTaxVatDeclarationDraftUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcuadorTaxPeriodEvidenceVaultUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxAuditReadinessUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxObligationMatrixUseCase: { execute: jest.Mock };
   let requestTenantEcuadorTaxPeriodPreparationPacketUseCase: {
@@ -3272,6 +3282,61 @@ describe('API', () => {
     nextStep: 'Revisar borrador de retencion en Invoicing.',
     guardrails: ['No firma ni envia al SRI automaticamente.'],
   };
+  const ecuadorTaxObligationSettings = {
+    tenantSlug: 'saas-platform',
+    generatedAt: taxComplianceGeneratedAt,
+    source: 'tax_compliance_event_ledger' as const,
+    regime: 'general' as const,
+    accountingObligated: true,
+    specialTaxpayerCode: null,
+    ninthDigit: '9',
+    obligations: [
+      {
+        key: 'vat' as const,
+        applies: true,
+        frequency: 'monthly' as const,
+        notes: ['IVA mensual configurado para el tenant.'],
+      },
+      {
+        key: 'income_tax' as const,
+        applies: true,
+        frequency: 'annual' as const,
+        notes: ['Renta anual configurada para el tenant.'],
+      },
+    ],
+    updatedByUserId: 'user_owner',
+    updatedByEmail: 'owner@saas-platform.test',
+    updatedAt: taxComplianceGeneratedAt,
+    guardrails: ['Configuracion auditable; no presenta declaraciones.'],
+  };
+  const ecuadorTaxVatDeclarationDraft = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    vatObligation: null,
+    outputVatByCurrency:
+      ecuadorTaxVatInputOutputReconciliationPacket.outputVatByCurrency,
+    inputVatByCurrency:
+      ecuadorTaxVatInputOutputReconciliationPacket.inputVatByCurrency,
+    netVatByCurrency:
+      ecuadorTaxVatInputOutputReconciliationPacket.netVatByCurrency,
+    declarationSections: [
+      {
+        key: 'estimated_payable_USD',
+        label: 'IVA estimado por pagar USD',
+        readinessStatus: 'needs_review' as const,
+        amountInCents: 1200,
+        currency: 'USD',
+        notes: ['Estimacion operacional.'],
+      },
+    ],
+    blockers: [],
+    accountantQuestions: ['Validar credito tributario IVA.'],
+    nextStep: 'Enviar borrador IVA al contador.',
+    guardrails: ['No representa formulario SRI.'],
+  };
   const ecuadorTaxRuleCatalog = {
     tenantSlug: 'saas-platform',
     generatedAt: taxComplianceGeneratedAt,
@@ -3348,6 +3413,41 @@ describe('API', () => {
     latestAccountantReview: approvedEcuadorTaxAccountantReview,
     nextStep: 'Usar workbench para revisar el periodo con contador.',
     guardrails: ['No reemplaza contabilidad completa.'],
+  };
+  const ecuadorTaxPeriodEvidenceVault = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    folders: [
+      {
+        key: 'sales_book',
+        label: 'Libro de ventas',
+        readinessStatus: 'ready' as const,
+        artifactCount: 2,
+        missingItems: [],
+        nextStep: 'Libro listo.',
+      },
+      {
+        key: 'vat_declaration',
+        label: 'Borrador IVA',
+        readinessStatus: 'needs_review' as const,
+        artifactCount: 1,
+        missingItems: [],
+        nextStep: 'Validar IVA.',
+      },
+    ],
+    exportedSummary: {
+      salesDocuments: 2,
+      purchaseDocuments: 1,
+      withholdingCandidates: 2,
+      accountantReviews: 1,
+      auditEventCount: 6,
+    },
+    missingItems: [],
+    nextStep: 'Enviar carpeta fiscal al contador.',
+    guardrails: ['No reemplaza archivo contable oficial.'],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
@@ -11924,6 +12024,18 @@ describe('API', () => {
     getTenantEcuadorTaxAccountantWorkbenchUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAccountantWorkbench),
     };
+    getTenantEcuadorTaxObligationSettingsUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxObligationSettings),
+    };
+    upsertTenantEcuadorTaxObligationSettingsUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxObligationSettings),
+    };
+    requestTenantEcuadorTaxVatDeclarationDraftUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxVatDeclarationDraft),
+    };
+    getTenantEcuadorTaxPeriodEvidenceVaultUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxPeriodEvidenceVault),
+    };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
     };
@@ -12476,6 +12588,14 @@ describe('API', () => {
       .useValue(getTenantEcuadorTaxRuleCatalogUseCase)
       .overrideProvider(GetTenantEcuadorTaxAccountantWorkbenchUseCase)
       .useValue(getTenantEcuadorTaxAccountantWorkbenchUseCase)
+      .overrideProvider(GetTenantEcuadorTaxObligationSettingsUseCase)
+      .useValue(getTenantEcuadorTaxObligationSettingsUseCase)
+      .overrideProvider(UpsertTenantEcuadorTaxObligationSettingsUseCase)
+      .useValue(upsertTenantEcuadorTaxObligationSettingsUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxVatDeclarationDraftUseCase)
+      .useValue(requestTenantEcuadorTaxVatDeclarationDraftUseCase)
+      .overrideProvider(GetTenantEcuadorTaxPeriodEvidenceVaultUseCase)
+      .useValue(getTenantEcuadorTaxPeriodEvidenceVaultUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -14473,6 +14593,7 @@ describe('API', () => {
             ],
           },
         ],
+        persistedSettings: null,
         guardrails: [
           'Esta matriz es una base operativa; no sustituye la validacion final del SRI ni criterio contable.',
         ],
@@ -15232,6 +15353,73 @@ describe('API', () => {
 	    });
 	  });
 
+	  it('GET /api/tax-compliance/tenants/:slug/ec/obligation-settings should return persisted settings', async () => {
+	    const response = await request(httpServer)
+	      .get(
+	        '/api/tax-compliance/tenants/saas-platform/ec/obligation-settings',
+	      )
+	      .set('Authorization', `Bearer ${ownerToken}`)
+	      .expect(200);
+
+	    expect(response.body).toMatchObject({
+	      tenantSlug: 'saas-platform',
+	      source: 'tax_compliance_event_ledger',
+	      regime: 'general',
+	      obligations: [
+	        {
+	          key: 'vat',
+	          applies: true,
+	          frequency: 'monthly',
+	        },
+	        {
+	          key: 'income_tax',
+	          applies: true,
+	          frequency: 'annual',
+	        },
+	      ],
+	    });
+
+	    expect(getTenantEcuadorTaxObligationSettingsUseCase.execute).toHaveBeenCalledWith({
+	      tenantSlug: 'saas-platform',
+	    });
+	  });
+
+	  it('POST /api/tax-compliance/tenants/:slug/ec/obligation-settings should persist settings', async () => {
+	    const response = await request(httpServer)
+	      .post(
+	        '/api/tax-compliance/tenants/saas-platform/ec/obligation-settings',
+	      )
+	      .set('Authorization', `Bearer ${ownerToken}`)
+	      .send({
+	        regime: 'general',
+	        accountingObligated: true,
+	        ninthDigit: '9',
+	        obligations: ecuadorTaxObligationSettings.obligations,
+	        updatedByUserId: 'user_owner',
+	        updatedByEmail: 'owner@saas-platform.test',
+	      })
+	      .expect(201);
+
+	    expect(response.body).toMatchObject({
+	      tenantSlug: 'saas-platform',
+	      source: 'tax_compliance_event_ledger',
+	      regime: 'general',
+	    });
+
+	    expect(
+	      upsertTenantEcuadorTaxObligationSettingsUseCase.execute,
+	    ).toHaveBeenCalledWith({
+	      tenantSlug: 'saas-platform',
+	      regime: 'general',
+	      accountingObligated: true,
+	      specialTaxpayerCode: undefined,
+	      ninthDigit: '9',
+	      obligations: ecuadorTaxObligationSettings.obligations,
+	      updatedByUserId: 'user_owner',
+	      updatedByEmail: 'owner@saas-platform.test',
+	    });
+	  });
+
 	  it('GET /api/tax-compliance/tenants/:slug/ec/vat-input-output-reconciliation-packet should return VAT net reconciliation', async () => {
     const response = await request(httpServer)
       .get(
@@ -15274,6 +15462,36 @@ describe('API', () => {
       year: 2026,
     });
   });
+
+	  it('GET /api/tax-compliance/tenants/:slug/ec/vat-declaration-draft should return VAT declaration draft', async () => {
+	    const response = await request(httpServer)
+	      .get(
+	        '/api/tax-compliance/tenants/saas-platform/ec/vat-declaration-draft?period=2026-06&year=2026',
+	      )
+	      .set('Authorization', `Bearer ${ownerToken}`)
+	      .expect(200);
+
+	    expect(response.body).toMatchObject({
+	      tenantSlug: 'saas-platform',
+	      period: '2026-06',
+	      readinessStatus: 'needs_review',
+	      declarationSections: [
+	        {
+	          key: 'estimated_payable_USD',
+	          amountInCents: 1200,
+	          currency: 'USD',
+	        },
+	      ],
+	    });
+
+	    expect(
+	      requestTenantEcuadorTaxVatDeclarationDraftUseCase.execute,
+	    ).toHaveBeenCalledWith({
+	      tenantSlug: 'saas-platform',
+	      period: '2026-06',
+	      year: 2026,
+	    });
+	  });
 
   it('GET /api/tax-compliance/tenants/:slug/ec/income-tax-evidence-packet should return income tax evidence', async () => {
     const response = await request(httpServer)
@@ -15351,6 +15569,44 @@ describe('API', () => {
     expect(
       requestTenantEcuadorTaxPeriodCloseoutPacketUseCase.execute,
     ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/period-evidence-vault should return period evidence vault', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/period-evidence-vault?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      readinessStatus: 'needs_review',
+      exportedSummary: {
+        salesDocuments: 2,
+        purchaseDocuments: 1,
+        withholdingCandidates: 2,
+        accountantReviews: 1,
+        auditEventCount: 6,
+      },
+      folders: [
+        {
+          key: 'sales_book',
+          readinessStatus: 'ready',
+        },
+        {
+          key: 'vat_declaration',
+          readinessStatus: 'needs_review',
+        },
+      ],
+    });
+
+    expect(getTenantEcuadorTaxPeriodEvidenceVaultUseCase.execute).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',
       year: 2026,

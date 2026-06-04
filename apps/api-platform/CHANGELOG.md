@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.74.0
+
+### Minor Changes
+
+- 8ed5fd2: Add Ecuador tax compliance workflow persistence for audit events, accountant review lifecycle, and declaration approval packets.
+
 ## 0.73.0
 
 ### Minor Changes

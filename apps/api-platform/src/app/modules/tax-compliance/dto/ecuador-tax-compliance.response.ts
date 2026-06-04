@@ -1,10 +1,14 @@
 import {
+  EcuadorTaxAccountantReviewPacketView,
+  EcuadorTaxAuditReadinessView,
   EcuadorTaxCalendarReviewWorkspaceView,
   EcuadorTaxDeclarationDraftPacketView,
   EcuadorTaxDueMonitorView,
+  EcuadorTaxEvidenceSummaryView,
   EcuadorTaxObligationMatrixView,
   EcuadorTaxObligationCalendarView,
   EcuadorTaxObligationView,
+  EcuadorTaxPeriodWorkspaceView,
   EcuadorTaxPeriodPreparationPacketView,
   EcuadorTaxpayerProfileView,
 } from '@saas-platform/tax-compliance-domain';
@@ -203,6 +207,60 @@ export interface EcuadorTaxDeclarationDraftPacketResponseDto {
   guardrails: string[];
 }
 
+export interface EcuadorTaxPeriodWorkspaceResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  status: string;
+  taxpayerProfile: EcuadorTaxpayerProfileResponseDto;
+  calendarEntries: EcuadorTaxCalendarEntryResponseDto[];
+  dueAlerts: EcuadorTaxDueMonitorResponseDto['alerts'];
+  preparationPacket: EcuadorTaxPeriodPreparationPacketResponseDto;
+  declarationDraftPacket: EcuadorTaxDeclarationDraftPacketResponseDto;
+  blockers: string[];
+  nextActions: string[];
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantReviewPacketResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  executiveSummary: string;
+  workspaceStatus: string;
+  declarationSections: EcuadorTaxDeclarationDraftPacketResponseDto['declarationSections'];
+  suggestedQuestions: string[];
+  missingEvidence: string[];
+  calendarAlerts: EcuadorTaxDueMonitorResponseDto['alerts'];
+  incompleteThirdPartyIds: string[];
+  handoffChecklist: string[];
+  responsibilityGuardrails: string[];
+  nextStep: string;
+}
+
+export interface EcuadorTaxAuditReadinessResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  generatedOutputs: Array<{
+    eventType: string;
+    generated: boolean;
+    source: string;
+    recommendedPersistence: string;
+  }>;
+  missingPersistence: string[];
+  recommendedAuditEvents: Array<{
+    eventType: string;
+    reason: string;
+    minimumPayload: string[];
+  }>;
+  nextStep: string;
+  guardrails: string[];
+}
+
 export function toEcuadorTaxpayerProfileResponseDto(
   profile: EcuadorTaxpayerProfileView,
 ): EcuadorTaxpayerProfileResponseDto {
@@ -347,6 +405,37 @@ export function toEcuadorTaxDueMonitorResponseDto(
   };
 }
 
+function toEcuadorTaxDueMonitorAlertResponseDto(
+  alert: EcuadorTaxDueMonitorView['alerts'][number],
+): EcuadorTaxDueMonitorResponseDto['alerts'][number] {
+  return {
+    obligationKey: alert.obligationKey,
+    label: alert.label,
+    period: alert.period,
+    dueDate: alert.dueDate,
+    dueStatus: alert.dueStatus,
+    daysUntilDue: alert.daysUntilDue,
+    severity: alert.severity,
+    message: alert.message,
+  };
+}
+
+function toEcuadorTaxCalendarEntryResponseDto(
+  entry: EcuadorTaxObligationCalendarView['entries'][number],
+): EcuadorTaxCalendarEntryResponseDto {
+  return {
+    obligationKey: entry.obligationKey,
+    label: entry.label,
+    period: entry.period,
+    frequency: entry.frequency,
+    dueDate: entry.dueDate,
+    dueDay: entry.dueDay,
+    source: entry.source,
+    readinessStatus: entry.readinessStatus,
+    notes: [...entry.notes],
+  };
+}
+
 export function toEcuadorTaxPeriodPreparationPacketResponseDto(
   packet: EcuadorTaxPeriodPreparationPacketView,
 ): EcuadorTaxPeriodPreparationPacketResponseDto {
@@ -451,8 +540,92 @@ export function toEcuadorTaxDeclarationDraftPacketResponseDto(
   };
 }
 
+export function toEcuadorTaxPeriodWorkspaceResponseDto(
+  workspace: EcuadorTaxPeriodWorkspaceView,
+): EcuadorTaxPeriodWorkspaceResponseDto {
+  return {
+    tenantSlug: workspace.tenantSlug,
+    period: workspace.period,
+    year: workspace.year,
+    generatedAt: workspace.generatedAt.toISOString(),
+    status: workspace.status,
+    taxpayerProfile: toEcuadorTaxpayerProfileResponseDto(
+      workspace.taxpayerProfile,
+    ),
+    calendarEntries: workspace.calendarEntries.map((entry) =>
+      toEcuadorTaxCalendarEntryResponseDto(entry),
+    ),
+    dueAlerts: workspace.dueAlerts.map((alert) =>
+      toEcuadorTaxDueMonitorAlertResponseDto(alert),
+    ),
+    preparationPacket: toEcuadorTaxPeriodPreparationPacketResponseDto(
+      workspace.preparationPacket,
+    ),
+    declarationDraftPacket: toEcuadorTaxDeclarationDraftPacketResponseDto(
+      workspace.declarationDraftPacket,
+    ),
+    blockers: [...workspace.blockers],
+    nextActions: [...workspace.nextActions],
+    guardrails: [...workspace.guardrails],
+  };
+}
+
+export function toEcuadorTaxAccountantReviewPacketResponseDto(
+  packet: EcuadorTaxAccountantReviewPacketView,
+): EcuadorTaxAccountantReviewPacketResponseDto {
+  return {
+    tenantSlug: packet.tenantSlug,
+    period: packet.period,
+    year: packet.year,
+    generatedAt: packet.generatedAt.toISOString(),
+    executiveSummary: packet.executiveSummary,
+    workspaceStatus: packet.workspaceStatus,
+    declarationSections: packet.declarationSections.map((section) => ({
+      section: section.section,
+      readinessStatus: section.readinessStatus,
+      source: section.source,
+      summary: section.summary,
+      blockers: [...section.blockers],
+    })),
+    suggestedQuestions: [...packet.suggestedQuestions],
+    missingEvidence: [...packet.missingEvidence],
+    calendarAlerts: packet.calendarAlerts.map((alert) =>
+      toEcuadorTaxDueMonitorAlertResponseDto(alert),
+    ),
+    incompleteThirdPartyIds: [...packet.incompleteThirdPartyIds],
+    handoffChecklist: [...packet.handoffChecklist],
+    responsibilityGuardrails: [...packet.responsibilityGuardrails],
+    nextStep: packet.nextStep,
+  };
+}
+
+export function toEcuadorTaxAuditReadinessResponseDto(
+  readiness: EcuadorTaxAuditReadinessView,
+): EcuadorTaxAuditReadinessResponseDto {
+  return {
+    tenantSlug: readiness.tenantSlug,
+    period: readiness.period,
+    year: readiness.year,
+    generatedAt: readiness.generatedAt.toISOString(),
+    generatedOutputs: readiness.generatedOutputs.map((output) => ({
+      eventType: output.eventType,
+      generated: output.generated,
+      source: output.source,
+      recommendedPersistence: output.recommendedPersistence,
+    })),
+    missingPersistence: [...readiness.missingPersistence],
+    recommendedAuditEvents: readiness.recommendedAuditEvents.map((event) => ({
+      eventType: event.eventType,
+      reason: event.reason,
+      minimumPayload: [...event.minimumPayload],
+    })),
+    nextStep: readiness.nextStep,
+    guardrails: [...readiness.guardrails],
+  };
+}
+
 function toEvidenceSummaryResponseDto(
-  evidenceSummary: EcuadorTaxEvidenceSummaryResponseDto,
+  evidenceSummary: EcuadorTaxEvidenceSummaryView,
 ): EcuadorTaxEvidenceSummaryResponseDto {
   return {
     invoicing: {

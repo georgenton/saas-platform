@@ -7,18 +7,25 @@ import {
 } from '@saas-platform/commercial-application';
 import { FEATURE_FLAG_REPOSITORY } from '@saas-platform/feature-flags-application';
 import {
+  CreateTenantWithholdingUseCase,
   CUSTOMER_REPOSITORY,
   GetTenantInvoicingReportSummaryUseCase,
+  INVOICE_ID_GENERATOR,
   INVOICE_ITEM_REPOSITORY,
+  INVOICE_ITEM_ID_GENERATOR,
+  INVOICE_NUMBERING_SETTINGS_REPOSITORY,
   INVOICE_REPOSITORY,
   ISSUER_PROFILE_REPOSITORY,
   PAYMENT_REPOSITORY,
+  TAX_RATE_REPOSITORY,
 } from '@saas-platform/invoicing-application';
 import {
   GetTenantPartyFiscalReadinessSummaryUseCase,
   PARTY_DIRECTORY_REPOSITORY,
 } from '@saas-platform/parties-application';
 import {
+  ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
+  GetTenantEcuadorTaxAccountantWorkbenchUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
@@ -53,6 +60,7 @@ import {
   TAX_COMPLIANCE_EVENT_ID_GENERATOR,
   TAX_COMPLIANCE_EVENT_REPOSITORY,
   TAX_COMPLIANCE_PURCHASE_EXPENSE_EVIDENCE_REPOSITORY,
+  TAX_COMPLIANCE_WITHHOLDING_DRAFT_EXECUTOR,
   TransitionTenantEcuadorTaxAccountantReviewUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
@@ -74,6 +82,7 @@ import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import { TaxComplianceController } from './tax-compliance.controller';
+import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft-executor';
 
 @Module({
   imports: [
@@ -597,6 +606,90 @@ import { TaxComplianceController } from './tax-compliance.controller';
       ) =>
         new RequestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase(
           requestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: CreateTenantWithholdingUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+        INVOICE_ID_GENERATOR,
+        INVOICE_ITEM_ID_GENERATOR,
+        INVOICE_NUMBERING_SETTINGS_REPOSITORY,
+        TAX_RATE_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        invoiceRepository,
+        invoiceItemRepository,
+        invoiceIdGenerator,
+        invoiceItemIdGenerator,
+        invoiceNumberingSettingsRepository,
+        taxRateRepository,
+      ) =>
+        new CreateTenantWithholdingUseCase(
+          tenantRepository,
+          invoiceRepository,
+          invoiceItemRepository,
+          invoiceIdGenerator,
+          invoiceItemIdGenerator,
+          invoiceNumberingSettingsRepository,
+          taxRateRepository,
+        ),
+    },
+    {
+      provide: TAX_COMPLIANCE_WITHHOLDING_DRAFT_EXECUTOR,
+      inject: [CreateTenantWithholdingUseCase],
+      useFactory: (createTenantWithholdingUseCase) =>
+        new InvoicingWithholdingDraftExecutor(createTenantWithholdingUseCase),
+    },
+    {
+      provide: ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
+      inject: [
+        RequestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase,
+        TAX_COMPLIANCE_WITHHOLDING_DRAFT_EXECUTOR,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase,
+        taxComplianceWithholdingDraftExecutor,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase(
+          requestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase,
+          taxComplianceWithholdingDraftExecutor,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAccountantWorkbenchUseCase,
+      inject: [
+        RequestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase,
+        RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
+        RequestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
+        GetTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
+        GetTenantEcuadorTaxRuleCatalogUseCase,
+        ListTenantEcuadorTaxAccountantReviewsUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase,
+        requestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
+        requestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
+        getTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
+        getTenantEcuadorTaxRuleCatalogUseCase,
+        listTenantEcuadorTaxAccountantReviewsUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxAccountantWorkbenchUseCase(
+          requestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase,
+          requestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
+          requestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
+          getTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
+          getTenantEcuadorTaxRuleCatalogUseCase,
+          listTenantEcuadorTaxAccountantReviewsUseCase,
           recordTenantEcuadorTaxComplianceEventUseCase,
         ),
     },

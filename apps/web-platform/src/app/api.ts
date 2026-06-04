@@ -78,6 +78,7 @@ import {
   EcommerceOrderPaymentConfirmationDecisionResponse,
   EcommerceOrderPaymentConfirmationLogResponse,
   EcommerceOrderPaymentReconciliationWorkspaceResponse,
+  EcuadorTaxAccountantWorkbenchResponse,
   EcuadorTaxAccountantReviewResponse,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
@@ -93,8 +94,10 @@ import {
   EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcuadorTaxVatInputOutputReconciliationPacketResponse,
   EcuadorTaxWithholdingDraftBridgePacketResponse,
+  EcuadorTaxWithholdingDraftExecutionPacketResponse,
   EcuadorTaxWithholdingEvidencePacketResponse,
   EcuadorTaxRuleCatalogResponse,
+  ExecuteEcuadorTaxWithholdingDraftBridgeRequest,
   RecordEcuadorTaxPurchaseExpenseEvidenceRequest,
   RequestEcuadorTaxWithholdingDraftBridgePacketRequest,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
@@ -1200,6 +1203,23 @@ export async function requestEcuadorTaxWithholdingDraftBridgePacket(
   );
 }
 
+export async function executeEcuadorTaxWithholdingDraftBridge(
+  token: string,
+  tenantSlug: string,
+  body: ExecuteEcuadorTaxWithholdingDraftBridgeRequest,
+): Promise<EcuadorTaxWithholdingDraftExecutionPacketResponse> {
+  return request<EcuadorTaxWithholdingDraftExecutionPacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/withholding-draft-bridge/execute`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
 export async function fetchEcuadorTaxRuleCatalog(
   token: string,
   tenantSlug: string,
@@ -1210,6 +1230,25 @@ export async function fetchEcuadorTaxRuleCatalog(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/tax-rule-catalog?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxAccountantWorkbench(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountantWorkbenchResponse> {
+  return request<EcuadorTaxAccountantWorkbenchResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accountant-workbench?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

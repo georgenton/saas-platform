@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { INVOICING_PERMISSIONS } from '@saas-platform/invoicing-application';
 import {
+  ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
+  GetTenantEcuadorTaxAccountantWorkbenchUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
@@ -52,6 +54,7 @@ import {
   EcuadorTaxObligationMatrixResponseDto,
   EcuadorTaxObligationCalendarResponseDto,
   EcuadorTaxAccountantReviewResponseDto,
+  EcuadorTaxAccountantWorkbenchResponseDto,
   EcuadorTaxComplianceEventResponseDto,
   EcuadorTaxDeclarationApprovalPacketResponseDto,
   EcuadorTaxAccountantReviewPacketResponseDto,
@@ -74,7 +77,9 @@ import {
   EcuadorTaxVatDeclarationReadinessPacketResponseDto,
   EcuadorTaxVatInputOutputReconciliationPacketResponseDto,
   EcuadorTaxWithholdingDraftBridgePacketResponseDto,
+  EcuadorTaxWithholdingDraftExecutionPacketResponseDto,
   EcuadorTaxWithholdingEvidencePacketResponseDto,
+  toEcuadorTaxAccountantWorkbenchResponseDto,
   toEcuadorTaxAccountantReviewResponseDto,
   toEcuadorTaxAccountantReviewPacketResponseDto,
   toEcuadorTaxAuditReadinessResponseDto,
@@ -100,6 +105,7 @@ import {
   toEcuadorTaxVatDeclarationReadinessPacketResponseDto,
   toEcuadorTaxVatInputOutputReconciliationPacketResponseDto,
   toEcuadorTaxWithholdingDraftBridgePacketResponseDto,
+  toEcuadorTaxWithholdingDraftExecutionPacketResponseDto,
   toEcuadorTaxWithholdingEvidencePacketResponseDto,
 } from './dto/ecuador-tax-compliance.response';
 
@@ -152,6 +158,12 @@ interface RequestWithholdingDraftBridgeBodyDto {
   taxRateId?: string | null;
 }
 
+interface ExecuteWithholdingDraftBridgeBodyDto
+  extends RequestWithholdingDraftBridgeBodyDto {
+  number?: string | null;
+  issuedAt?: string | null;
+}
+
 @Controller('tax-compliance/tenants')
 @UseGuards(
   JwtAuthenticationGuard,
@@ -189,7 +201,9 @@ export class TaxComplianceController {
     private readonly getTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase: GetTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
     private readonly requestTenantEcuadorTaxWithholdingEvidencePacketUseCase: RequestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
     private readonly requestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase: RequestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase,
+    private readonly executeTenantEcuadorTaxWithholdingDraftBridgeUseCase: ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
     private readonly getTenantEcuadorTaxRuleCatalogUseCase: GetTenantEcuadorTaxRuleCatalogUseCase,
+    private readonly getTenantEcuadorTaxAccountantWorkbenchUseCase: GetTenantEcuadorTaxAccountantWorkbenchUseCase,
   ) {}
 
   @Get(':slug/ec/taxpayer-profile')
@@ -650,6 +664,38 @@ export class TaxComplianceController {
     }
   }
 
+  @Post(':slug/ec/withholding-draft-bridge/execute')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_MANAGE)
+  async executeWithholdingDraftBridge(
+    @Param('slug') slug: string,
+    @Body() body: ExecuteWithholdingDraftBridgeBodyDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxWithholdingDraftExecutionPacketResponseDto> {
+    try {
+      const packet =
+        await this.executeTenantEcuadorTaxWithholdingDraftBridgeUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period: body.period ?? 'current',
+            year: body.year ?? resolveCalendarYear(),
+            candidateType: body.candidateType,
+            candidateId: body.candidateId,
+            taxRateId: body.taxRateId,
+            number: body.number,
+            issuedAt: body.issuedAt ? new Date(body.issuedAt) : null,
+          },
+        );
+
+      return toEcuadorTaxWithholdingDraftExecutionPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Get(':slug/ec/tax-rule-catalog')
   @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
   async getTaxRuleCatalog(
@@ -666,6 +712,32 @@ export class TaxComplianceController {
       });
 
       return toEcuadorTaxRuleCatalogResponseDto(catalog);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/accountant-workbench')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async getAccountantWorkbench(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountantWorkbenchResponseDto> {
+    try {
+      const workbench =
+        await this.getTenantEcuadorTaxAccountantWorkbenchUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxAccountantWorkbenchResponseDto(workbench);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

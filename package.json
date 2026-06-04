@@ -18,6 +18,7 @@
     "smoke:ec:issuer-alignment": "node tools/smoke/run-ec-issuer-alignment-smoke.mjs",
     "smoke:ec:sandbox-bootstrap": "node tools/smoke/run-ec-issuer-alignment-smoke.mjs --bootstrap-remote-sandbox",
     "smoke:ec:remote-submit": "node tools/smoke/run-ec-remote-submission-smoke.mjs",
+    "smoke:ec:tax-compliance-operational": "node tools/smoke/run-ec-tax-compliance-operational-smoke.mjs",
     "smoke:ai:guarded-execution-growth-lane": "node tools/smoke/run-ai-guarded-execution-growth-lane-smoke.mjs",
     "smoke:ai:guarded-execution-rejection-fallback": "node tools/smoke/run-ai-guarded-execution-rejection-fallback-smoke.mjs",
     "smoke:ai:retrieval-fed-run": "node tools/smoke/run-ai-retrieval-fed-run-smoke.mjs",

@@ -1,6 +1,7 @@
 import {
   EcuadorTaxAccountantReviewPacketView,
   EcuadorTaxAccountantReviewView,
+  EcuadorTaxAccountantWorkbenchView,
   EcuadorTaxAuditReadinessView,
   EcuadorTaxCalendarReviewWorkspaceView,
   EcuadorTaxComplianceEventView,
@@ -26,6 +27,7 @@ import {
   EcuadorTaxVatDeclarationReadinessPacketView,
   EcuadorTaxVatInputOutputReconciliationPacketView,
   EcuadorTaxWithholdingDraftBridgePacketView,
+  EcuadorTaxWithholdingDraftExecutionPacketView,
   EcuadorTaxWithholdingEvidencePacketView,
 } from '@saas-platform/tax-compliance-domain';
 
@@ -676,6 +678,28 @@ export interface EcuadorTaxWithholdingDraftBridgePacketResponseDto {
   guardrails: string[];
 }
 
+export interface EcuadorTaxWithholdingDraftExecutionPacketResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  bridgePacket: EcuadorTaxWithholdingDraftBridgePacketResponseDto;
+  withholdingDraft: {
+    id: string;
+    number: string;
+    status: string;
+    documentCode: string | null;
+    sourceInvoiceId: string | null;
+    sourceInvoiceNumber: string | null;
+    amountInCents: number;
+    currency: string;
+  } | null;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxRuleCatalogResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -693,6 +717,34 @@ export interface EcuadorTaxRuleCatalogResponseDto {
     guardrails: string[];
   }>;
   blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantWorkbenchResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  summary: {
+    blockingSectionCount: number;
+    needsReviewSectionCount: number;
+    readySectionCount: number;
+    accountantReviewCount: number;
+    ruleCount: number;
+  };
+  sections: Array<{
+    key: string;
+    label: string;
+    readinessStatus: string;
+    blockerCount: number;
+    questionCount: number;
+    nextStep: string;
+  }>;
+  blockers: string[];
+  accountantQuestions: string[];
+  latestAccountantReview: EcuadorTaxAccountantReviewResponseDto | null;
   nextStep: string;
   guardrails: string[];
 }
@@ -1567,6 +1619,27 @@ export function toEcuadorTaxWithholdingDraftBridgePacketResponseDto(
   };
 }
 
+export function toEcuadorTaxWithholdingDraftExecutionPacketResponseDto(
+  packet: EcuadorTaxWithholdingDraftExecutionPacketView,
+): EcuadorTaxWithholdingDraftExecutionPacketResponseDto {
+  return {
+    tenantSlug: packet.tenantSlug,
+    period: packet.period,
+    year: packet.year,
+    generatedAt: packet.generatedAt.toISOString(),
+    readinessStatus: packet.readinessStatus,
+    bridgePacket: toEcuadorTaxWithholdingDraftBridgePacketResponseDto(
+      packet.bridgePacket,
+    ),
+    withholdingDraft: packet.withholdingDraft
+      ? { ...packet.withholdingDraft }
+      : null,
+    blockers: [...packet.blockers],
+    nextStep: packet.nextStep,
+    guardrails: [...packet.guardrails],
+  };
+}
+
 export function toEcuadorTaxRuleCatalogResponseDto(
   catalog: EcuadorTaxRuleCatalogView,
 ): EcuadorTaxRuleCatalogResponseDto {
@@ -1589,6 +1662,29 @@ export function toEcuadorTaxRuleCatalogResponseDto(
     blockers: [...catalog.blockers],
     nextStep: catalog.nextStep,
     guardrails: [...catalog.guardrails],
+  };
+}
+
+export function toEcuadorTaxAccountantWorkbenchResponseDto(
+  workbench: EcuadorTaxAccountantWorkbenchView,
+): EcuadorTaxAccountantWorkbenchResponseDto {
+  return {
+    tenantSlug: workbench.tenantSlug,
+    period: workbench.period,
+    year: workbench.year,
+    generatedAt: workbench.generatedAt.toISOString(),
+    readinessStatus: workbench.readinessStatus,
+    summary: { ...workbench.summary },
+    sections: workbench.sections.map((section) => ({ ...section })),
+    blockers: [...workbench.blockers],
+    accountantQuestions: [...workbench.accountantQuestions],
+    latestAccountantReview: workbench.latestAccountantReview
+      ? toEcuadorTaxAccountantReviewResponseDto(
+          workbench.latestAccountantReview,
+        )
+      : null,
+    nextStep: workbench.nextStep,
+    guardrails: [...workbench.guardrails],
   };
 }
 

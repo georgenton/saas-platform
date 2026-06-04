@@ -102,6 +102,8 @@ import {
   requestTenantEcommerceOrderPaymentDisputeResolutionPacket,
   fetchTenantEcommerceOrderPaymentConfirmationWorkspace,
   fetchTenantEcommerceOrderPaymentReadinessWorkspace,
+  executeEcuadorTaxWithholdingDraftBridge,
+  fetchEcuadorTaxAccountantWorkbench,
   fetchEcuadorTaxAccountantReviews,
   fetchEcuadorTaxDeclarationApprovalPacket,
   fetchEcuadorTaxEcommerceEvidence,
@@ -492,6 +494,7 @@ import {
   EcommerceStoreSetupWorkspaceResponse,
   EcommerceLaunchWorkspaceResponse,
   EcuadorTaxAccountantReviewResponse,
+  EcuadorTaxAccountantWorkbenchResponse,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
@@ -506,6 +509,7 @@ import {
   EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcuadorTaxVatInputOutputReconciliationPacketResponse,
   EcuadorTaxWithholdingDraftBridgePacketResponse,
+  EcuadorTaxWithholdingDraftExecutionPacketResponse,
   EcuadorTaxWithholdingEvidencePacketResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSignatureMaterialInspectionResponse,
@@ -1948,8 +1952,16 @@ export function App() {
     taxComplianceWithholdingDraftBridgePacket,
     setTaxComplianceWithholdingDraftBridgePacket,
   ] = useState<EcuadorTaxWithholdingDraftBridgePacketResponse | null>(null);
+  const [
+    taxComplianceWithholdingDraftExecutionPacket,
+    setTaxComplianceWithholdingDraftExecutionPacket,
+  ] = useState<EcuadorTaxWithholdingDraftExecutionPacketResponse | null>(null);
   const [taxComplianceRuleCatalog, setTaxComplianceRuleCatalog] =
     useState<EcuadorTaxRuleCatalogResponse | null>(null);
+  const [
+    taxComplianceAccountantWorkbench,
+    setTaxComplianceAccountantWorkbench,
+  ] = useState<EcuadorTaxAccountantWorkbenchResponse | null>(null);
   const [taxComplianceLoading, setTaxComplianceLoading] = useState(false);
   const [taxComplianceActionLoading, setTaxComplianceActionLoading] =
     useState<string | null>(null);
@@ -19103,6 +19115,7 @@ export function App() {
         nextSupplierReadinessWorkspace,
         nextWithholdingEvidencePacket,
         nextRuleCatalog,
+        nextAccountantWorkbench,
       ] = await Promise.all([
         fetchEcuadorTaxPeriodWorkspace(token, tenantSlug, taxCompliancePeriod, year),
         fetchEcuadorTaxEcommerceEvidence(token, tenantSlug, taxCompliancePeriod),
@@ -19164,6 +19177,12 @@ export function App() {
           year,
         ),
         fetchEcuadorTaxRuleCatalog(token, tenantSlug, taxCompliancePeriod, year),
+        fetchEcuadorTaxAccountantWorkbench(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
       ]);
 
       startTransition(() => {
@@ -19184,6 +19203,7 @@ export function App() {
         );
         setTaxComplianceWithholdingEvidencePacket(nextWithholdingEvidencePacket);
         setTaxComplianceRuleCatalog(nextRuleCatalog);
+        setTaxComplianceAccountantWorkbench(nextAccountantWorkbench);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -19354,6 +19374,54 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo preparar bridge de retencion.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleExecuteTaxWithholdingDraftBridge() {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      return;
+    }
+
+    const candidateId =
+      taxComplianceWithholdingDraftBridgePacket?.selectedCandidate
+        ?.candidateType === 'sale'
+        ? taxComplianceWithholdingDraftBridgePacket.selectedCandidate
+            .candidateId
+        : (taxComplianceWithholdingEvidencePacket?.salesCandidates[0]
+            ?.invoiceId ?? null);
+    const explicitNumber = `001-002-${String(Date.now()).slice(-9).padStart(9, '0')}`;
+    setTaxComplianceActionLoading('withholding-draft-execute');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const packet = await executeEcuadorTaxWithholdingDraftBridge(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          period: taxCompliancePeriod,
+          year: resolveNumericYear(taxComplianceYear),
+          candidateType: 'sale',
+          candidateId,
+          number: explicitNumber,
+        },
+      );
+      setTaxComplianceWithholdingDraftExecutionPacket(packet);
+      setTaxComplianceWithholdingDraftBridgePacket(packet.bridgePacket);
+      setTaxComplianceActionMessage(
+        packet.withholdingDraft
+          ? `Draft de retencion ${packet.withholdingDraft.number} creado en Invoicing.`
+          : `Ejecucion de retencion ${humanizeKey(packet.readinessStatus)}.`,
+      );
+      await refreshTaxComplianceWorkspace();
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo crear el draft de retencion.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -33924,6 +33992,21 @@ export function App() {
                     >
                       Preparar
                     </button>
+                    <button
+                      className={styles.primaryButton}
+                      disabled={
+                        taxComplianceActionLoading ===
+                          'withholding-draft-execute' ||
+                        !taxComplianceWithholdingEvidencePacket
+                          ?.salesCandidates.length
+                      }
+                      onClick={() =>
+                        void handleExecuteTaxWithholdingDraftBridge()
+                      }
+                      type="button"
+                    >
+                      Crear draft
+                    </button>
                   </div>
                   {taxComplianceWithholdingEvidencePacket ? (
                     <div className={styles.stack}>
@@ -33980,6 +34063,31 @@ export function App() {
                           </div>
                           <p className={styles.muted}>
                             {taxComplianceWithholdingDraftBridgePacket.nextStep}
+                          </p>
+                        </div>
+                      ) : null}
+                      {taxComplianceWithholdingDraftExecutionPacket
+                        ?.withholdingDraft ? (
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>
+                              {
+                                taxComplianceWithholdingDraftExecutionPacket
+                                  .withholdingDraft.number
+                              }
+                            </strong>
+                            <span className={styles.statusPill}>
+                              {humanizeKey(
+                                taxComplianceWithholdingDraftExecutionPacket
+                                  .withholdingDraft.status,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceWithholdingDraftExecutionPacket
+                                .nextStep
+                            }
                           </p>
                         </div>
                       ) : null}
@@ -34040,6 +34148,72 @@ export function App() {
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className={styles.stack}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>Accountant</span>
+                    <h3>Workbench fiscal</h3>
+                  </div>
+                  {taxComplianceAccountantWorkbench ? (
+                    <span className={styles.statusPill}>
+                      {humanizeKey(
+                        taxComplianceAccountantWorkbench.readinessStatus,
+                      )}
+                    </span>
+                  ) : null}
+                </div>
+                {taxComplianceAccountantWorkbench ? (
+                  <div className={styles.stack}>
+                    <div className={styles.commercialGrid}>
+                      {taxComplianceAccountantWorkbench.sections.map(
+                        (section) => (
+                          <div
+                            className={styles.commercialCard}
+                            key={section.key}
+                          >
+                            <span className={styles.muted}>
+                              {section.label}
+                            </span>
+                            <strong>
+                              {humanizeKey(section.readinessStatus)}
+                            </strong>
+                            <span className={styles.muted}>
+                              {section.blockerCount} blockers ·{' '}
+                              {section.questionCount} preguntas
+                            </span>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                    <div className={styles.invoiceItemCard}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>
+                          {
+                            taxComplianceAccountantWorkbench.summary
+                              .ruleCount
+                          }{' '}
+                          reglas fiscales
+                        </strong>
+                        <span className={styles.statusPill}>
+                          {
+                            taxComplianceAccountantWorkbench.summary
+                              .accountantReviewCount
+                          }{' '}
+                          revisiones
+                        </span>
+                      </div>
+                      <p className={styles.muted}>
+                        {taxComplianceAccountantWorkbench.nextStep}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.emptyState}>
+                    <p>Carga un periodo para ver el workbench fiscal.</p>
+                  </div>
+                )}
               </div>
 
               <div className={styles.twoColumn}>

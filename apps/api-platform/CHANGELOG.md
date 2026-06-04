@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.76.0
+
+### Minor Changes
+
+- adfb77e: Add Ecuador tax reconciliation, VAT readiness, and period closeout workflows.
+
 ## 0.75.0
 
 ### Minor Changes

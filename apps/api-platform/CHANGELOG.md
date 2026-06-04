@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.79.0
+
+### Minor Changes
+
+- 7a87cfd: Persist Ecuador purchase expense evidence and add withholding draft bridge plus tax rule catalog workflows.
+
 ## 0.78.0
 
 ### Minor Changes

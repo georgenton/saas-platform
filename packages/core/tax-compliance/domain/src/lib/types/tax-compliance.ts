@@ -52,6 +52,11 @@ export type EcuadorTaxOperationalCloseoutStatus =
   | 'in_review'
   | 'ready_for_external_filing'
   | 'closed_operationally';
+export type EcuadorTaxFilingHandoffStatus =
+  | 'payment_pending'
+  | 'filed_externally'
+  | 'paid_externally'
+  | 'filing_rejected';
 export type EcuadorTaxPurchaseExpenseCategory =
   | 'inventory'
   | 'services'
@@ -89,7 +94,10 @@ export type EcuadorTaxComplianceEventType =
   | 'period_evidence_vault_reviewed'
   | 'vat_declaration_approval_transitioned'
   | 'withholding_registry_reviewed'
-  | 'period_operational_closeout_transitioned';
+  | 'period_operational_closeout_transitioned'
+  | 'tax_filing_handoff_recorded'
+  | 'tax_annexes_readiness_reviewed'
+  | 'tax_accounting_bridge_preview_requested';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -929,6 +937,84 @@ export interface EcuadorTaxOperationalCloseoutView {
     transitionedByEmail: string | null;
     note: string | null;
   }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxFilingHandoffView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  status: EcuadorTaxFilingHandoffStatus | null;
+  externalReference: string | null;
+  filedAt: Date | null;
+  paidAt: Date | null;
+  amountPaidInCents: number | null;
+  currency: string | null;
+  responsibleUserId: string | null;
+  responsibleEmail: string | null;
+  note: string | null;
+  operationalCloseoutStatus: EcuadorTaxOperationalCloseoutStatus;
+  transitionHistory: Array<{
+    status: EcuadorTaxFilingHandoffStatus;
+    recordedAt: Date;
+    externalReference: string | null;
+    responsibleUserId: string | null;
+    responsibleEmail: string | null;
+    note: string | null;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAnnexesReadinessView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  annexes: Array<{
+    key: string;
+    label: string;
+    applies: boolean;
+    readinessStatus: EcuadorTaxReadinessStatus;
+    evidenceSources: string[];
+    blockerCount: number;
+    blockers: string[];
+    nextStep: string;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingBridgePreviewView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  entries: Array<{
+    key: string;
+    label: string;
+    source: string;
+    debitInCents: number;
+    creditInCents: number;
+    currency: string;
+    accountHint: string | null;
+    requiresChartOfAccounts: boolean;
+    notes: string[];
+  }>;
+  summary: {
+    entryCount: number;
+    requiresChartOfAccountsCount: number;
+    salesDocuments: number;
+    purchaseDocuments: number;
+    withholdingCandidates: number;
+  };
   blockers: string[];
   nextStep: string;
   guardrails: string[];

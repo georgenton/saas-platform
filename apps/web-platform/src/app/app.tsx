@@ -103,11 +103,14 @@ import {
   fetchTenantEcommerceOrderPaymentConfirmationWorkspace,
   fetchTenantEcommerceOrderPaymentReadinessWorkspace,
   executeEcuadorTaxWithholdingDraftBridge,
+  fetchEcuadorTaxAccountingBridgePreview,
   fetchEcuadorTaxAccountantWorkbench,
   fetchEcuadorTaxAccountantReviews,
+  fetchEcuadorTaxAnnexesReadiness,
   fetchEcuadorTaxDeclarationApprovalPacket,
   fetchEcuadorTaxEcommerceEvidence,
   fetchEcuadorTaxEvents,
+  fetchEcuadorTaxFilingHandoff,
   fetchEcuadorTaxIncomeTaxEvidencePacket,
   fetchEcuadorTaxObligationSettings,
   fetchEcuadorTaxPeriodCloseoutPacket,
@@ -125,6 +128,7 @@ import {
   fetchEcuadorTaxVatInputOutputReconciliationPacket,
   fetchEcuadorTaxWithholdingEvidencePacket,
   fetchEcuadorTaxWithholdingRegistry,
+  recordEcuadorTaxFilingHandoff,
   recordEcuadorTaxPurchaseExpenseEvidence,
   requestEcuadorTaxWithholdingDraftBridgePacket,
   transitionEcuadorTaxOperationalCloseout,
@@ -504,9 +508,12 @@ import {
   EcommerceLaunchWorkspaceResponse,
   EcuadorTaxAccountantReviewResponse,
   EcuadorTaxAccountantWorkbenchResponse,
+  EcuadorTaxAccountingBridgePreviewResponse,
+  EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
+  EcuadorTaxFilingHandoffResponse,
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
   EcuadorTaxOperationalCloseoutResponse,
@@ -2001,6 +2008,14 @@ export function App() {
     taxComplianceOperationalCloseout,
     setTaxComplianceOperationalCloseout,
   ] = useState<EcuadorTaxOperationalCloseoutResponse | null>(null);
+  const [taxComplianceFilingHandoff, setTaxComplianceFilingHandoff] =
+    useState<EcuadorTaxFilingHandoffResponse | null>(null);
+  const [taxComplianceAnnexesReadiness, setTaxComplianceAnnexesReadiness] =
+    useState<EcuadorTaxAnnexesReadinessResponse | null>(null);
+  const [
+    taxComplianceAccountingBridgePreview,
+    setTaxComplianceAccountingBridgePreview,
+  ] = useState<EcuadorTaxAccountingBridgePreviewResponse | null>(null);
   const [taxComplianceLoading, setTaxComplianceLoading] = useState(false);
   const [taxComplianceActionLoading, setTaxComplianceActionLoading] =
     useState<string | null>(null);
@@ -19161,6 +19176,9 @@ export function App() {
         nextAccountantWorkbench,
         nextPeriodEvidenceVault,
         nextOperationalCloseout,
+        nextFilingHandoff,
+        nextAnnexesReadiness,
+        nextAccountingBridgePreview,
       ] = await Promise.all([
         fetchEcuadorTaxPeriodWorkspace(token, tenantSlug, taxCompliancePeriod, year),
         fetchEcuadorTaxEcommerceEvidence(token, tenantSlug, taxCompliancePeriod),
@@ -19259,6 +19277,24 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchEcuadorTaxFilingHandoff(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAnnexesReadiness(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAccountingBridgePreview(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
       ]);
 
       startTransition(() => {
@@ -19286,6 +19322,9 @@ export function App() {
         setTaxComplianceAccountantWorkbench(nextAccountantWorkbench);
         setTaxCompliancePeriodEvidenceVault(nextPeriodEvidenceVault);
         setTaxComplianceOperationalCloseout(nextOperationalCloseout);
+        setTaxComplianceFilingHandoff(nextFilingHandoff);
+        setTaxComplianceAnnexesReadiness(nextAnnexesReadiness);
+        setTaxComplianceAccountingBridgePreview(nextAccountingBridgePreview);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -19553,6 +19592,51 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo cerrar operacionalmente el periodo.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRecordTaxFilingHandoff() {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      return;
+    }
+
+    const payable = taxComplianceVatDeclarationDraft?.netVatByCurrency[0];
+    const now = new Date().toISOString();
+    setTaxComplianceActionLoading('record-tax-filing-handoff');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const handoff = await recordEcuadorTaxFilingHandoff(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          period: taxCompliancePeriod,
+          year: resolveNumericYear(taxComplianceYear),
+          status: 'paid_externally',
+          externalReference: `EXT-${taxCompliancePeriod}`,
+          filedAt: now,
+          paidAt: now,
+          amountPaidInCents: payable?.estimatedVatPayableInCents ?? null,
+          currency: payable?.currency ?? 'USD',
+          responsibleUserId: session?.user.id ?? null,
+          responsibleEmail: session?.user.email ?? null,
+          note: 'External tax filing handoff recorded from tax compliance console.',
+        },
+      );
+      setTaxComplianceFilingHandoff(handoff);
+      setTaxComplianceActionMessage(
+        `Handoff registrado como ${humanizeKey(handoff.status ?? 'pending')}.`,
+      );
+      await refreshTaxComplianceWorkspace();
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo registrar el handoff de presentacion/pago.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -28146,6 +28230,176 @@ export function App() {
                 ) : (
                   <div className={styles.emptyState}>
                     <p>Carga un período para revisar cierre operacional.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Filing handoff</span>
+                      <h3>Presentación y pago externo</h3>
+                    </div>
+                    {taxComplianceFilingHandoff?.status ? (
+                      <span className={styles.statusPill}>
+                        {humanizeKey(taxComplianceFilingHandoff.status)}
+                      </span>
+                    ) : null}
+                  </div>
+                  {taxComplianceFilingHandoff ? (
+                    <div className={styles.invoiceItemCard}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>
+                          {taxComplianceFilingHandoff.externalReference ??
+                            'Sin referencia'}
+                        </strong>
+                        <button
+                          className={styles.ghostButton}
+                          disabled={
+                            taxComplianceActionLoading ===
+                            'record-tax-filing-handoff'
+                          }
+                          onClick={() => void handleRecordTaxFilingHandoff()}
+                          type="button"
+                        >
+                          Registrar pago
+                        </button>
+                      </div>
+                      <p className={styles.muted}>
+                        {taxComplianceFilingHandoff.nextStep}
+                      </p>
+                      <p className={styles.muted}>
+                        Closeout:{' '}
+                        {humanizeKey(
+                          taxComplianceFilingHandoff.operationalCloseoutStatus,
+                        )}{' '}
+                        · {taxComplianceFilingHandoff.blockers.length} blockers
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un período para registrar presentación externa.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Annexes</span>
+                      <h3>Readiness de anexos</h3>
+                    </div>
+                    {taxComplianceAnnexesReadiness ? (
+                      <span className={styles.statusPill}>
+                        {humanizeKey(
+                          taxComplianceAnnexesReadiness.readinessStatus,
+                        )}
+                      </span>
+                    ) : null}
+                  </div>
+                  {taxComplianceAnnexesReadiness ? (
+                    <div className={styles.stack}>
+                      <div className={styles.commercialGrid}>
+                        {taxComplianceAnnexesReadiness.annexes.map((annex) => (
+                          <div className={styles.commercialCard} key={annex.key}>
+                            <span className={styles.muted}>{annex.label}</span>
+                            <strong>{humanizeKey(annex.readinessStatus)}</strong>
+                            <span className={styles.muted}>
+                              {annex.applies ? 'aplica' : 'no aplica'} ·{' '}
+                              {annex.blockerCount} blockers
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className={styles.muted}>
+                        {taxComplianceAnnexesReadiness.nextStep}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un período para revisar anexos.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.stack}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>Accounting bridge</span>
+                    <h3>Preview contable tributario</h3>
+                  </div>
+                  {taxComplianceAccountingBridgePreview ? (
+                    <span className={styles.statusPill}>
+                      {humanizeKey(
+                        taxComplianceAccountingBridgePreview.readinessStatus,
+                      )}
+                    </span>
+                  ) : null}
+                </div>
+                {taxComplianceAccountingBridgePreview ? (
+                  <div className={styles.stack}>
+                    <div className={styles.commercialGrid}>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Entradas</span>
+                        <strong>
+                          {
+                            taxComplianceAccountingBridgePreview.summary
+                              .entryCount
+                          }
+                        </strong>
+                        <span className={styles.muted}>
+                          {
+                            taxComplianceAccountingBridgePreview.summary
+                              .requiresChartOfAccountsCount
+                          }{' '}
+                          requieren plan de cuentas
+                        </span>
+                      </div>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Ventas</span>
+                        <strong>
+                          {
+                            taxComplianceAccountingBridgePreview.summary
+                              .salesDocuments
+                          }
+                        </strong>
+                        <span className={styles.muted}>documentos</span>
+                      </div>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Compras</span>
+                        <strong>
+                          {
+                            taxComplianceAccountingBridgePreview.summary
+                              .purchaseDocuments
+                          }
+                        </strong>
+                        <span className={styles.muted}>soportes</span>
+                      </div>
+                    </div>
+                    <div className={styles.invoiceItemCard}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>
+                          {taxComplianceAccountingBridgePreview.entries[0]
+                            ?.label ?? 'Sin entradas'}
+                        </strong>
+                        <span className={styles.statusPill}>
+                          {
+                            taxComplianceAccountingBridgePreview.summary
+                              .withholdingCandidates
+                          }{' '}
+                          retenciones
+                        </span>
+                      </div>
+                      <p className={styles.muted}>
+                        {taxComplianceAccountingBridgePreview.nextStep}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.emptyState}>
+                    <p>Carga un período para ver preview contable.</p>
                   </div>
                 )}
               </div>

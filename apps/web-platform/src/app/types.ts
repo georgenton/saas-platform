@@ -1422,6 +1422,98 @@ export interface EcuadorTaxOperationalCloseoutResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxFilingHandoffResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  status: string | null;
+  externalReference: string | null;
+  filedAt: string | null;
+  paidAt: string | null;
+  amountPaidInCents: number | null;
+  currency: string | null;
+  responsibleUserId: string | null;
+  responsibleEmail: string | null;
+  note: string | null;
+  operationalCloseoutStatus: string;
+  transitionHistory: Array<{
+    status: string;
+    recordedAt: string;
+    externalReference: string | null;
+    responsibleUserId: string | null;
+    responsibleEmail: string | null;
+    note: string | null;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface RecordEcuadorTaxFilingHandoffRequest {
+  period: string;
+  year: number;
+  status: string;
+  externalReference?: string | null;
+  filedAt?: string | null;
+  paidAt?: string | null;
+  amountPaidInCents?: number | null;
+  currency?: string | null;
+  responsibleUserId?: string | null;
+  responsibleEmail?: string | null;
+  note?: string | null;
+}
+
+export interface EcuadorTaxAnnexesReadinessResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  annexes: Array<{
+    key: string;
+    label: string;
+    applies: boolean;
+    readinessStatus: string;
+    evidenceSources: string[];
+    blockerCount: number;
+    blockers: string[];
+    nextStep: string;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingBridgePreviewResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  entries: Array<{
+    key: string;
+    label: string;
+    source: string;
+    debitInCents: number;
+    creditInCents: number;
+    currency: string;
+    accountHint: string | null;
+    requiresChartOfAccounts: boolean;
+    notes: string[];
+  }>;
+  summary: {
+    entryCount: number;
+    requiresChartOfAccountsCount: number;
+    salesDocuments: number;
+    purchaseDocuments: number;
+    withholdingCandidates: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface TransitionEcuadorTaxWorkflowRequest {
   period: string;
   year: number;

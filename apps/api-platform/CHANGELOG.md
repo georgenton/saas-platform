@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.73.0
+
+### Minor Changes
+
+- b16ef37: Add Ecuador tax period workspaces, accountant review packets, and audit readiness contracts.
+
 ## 0.72.0
 
 ### Minor Changes

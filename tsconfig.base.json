@@ -68,6 +68,12 @@
       "@saas-platform/parties-domain": [
         "packages/core/parties/domain/src/index.ts"
       ],
+      "@saas-platform/tax-compliance-application": [
+        "packages/core/tax-compliance/application/src/index.ts"
+      ],
+      "@saas-platform/tax-compliance-domain": [
+        "packages/core/tax-compliance/domain/src/index.ts"
+      ],
       "@saas-platform/infra-prisma": [
         "packages/infra/prisma/src/index.ts"
       ],

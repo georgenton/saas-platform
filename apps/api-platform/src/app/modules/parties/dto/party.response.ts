@@ -12,8 +12,22 @@ export interface PartyResponseDto {
   roles: string[];
   kind: string;
   sourceContext: string;
+  fiscalProfile: PartyFiscalProfileResponseDto | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PartyFiscalProfileResponseDto {
+  country: string;
+  taxpayerId: string | null;
+  taxpayerName: string;
+  identificationType: string | null;
+  fiscalAddress: string | null;
+  email: string | null;
+  roles: string[];
+  completenessStatus: string;
+  missingFields: string[];
+  reviewNotes: string[];
 }
 
 export const toPartyResponseDto = (party: Party): PartyResponseDto => {
@@ -31,6 +45,20 @@ export const toPartyResponseDto = (party: Party): PartyResponseDto => {
     roles: [...data.roles],
     kind: data.kind,
     sourceContext: data.sourceContext,
+    fiscalProfile: data.fiscalProfile
+      ? {
+          country: data.fiscalProfile.country,
+          taxpayerId: data.fiscalProfile.taxpayerId,
+          taxpayerName: data.fiscalProfile.taxpayerName,
+          identificationType: data.fiscalProfile.identificationType,
+          fiscalAddress: data.fiscalProfile.fiscalAddress,
+          email: data.fiscalProfile.email,
+          roles: [...data.fiscalProfile.roles],
+          completenessStatus: data.fiscalProfile.completenessStatus,
+          missingFields: [...data.fiscalProfile.missingFields],
+          reviewNotes: [...data.fiscalProfile.reviewNotes],
+        }
+      : null,
     createdAt: data.createdAt.toISOString(),
     updatedAt: data.updatedAt.toISOString(),
   };

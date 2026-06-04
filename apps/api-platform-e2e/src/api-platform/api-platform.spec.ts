@@ -196,6 +196,11 @@ import {
   GetTenantEcommerceWhatsappSalesFlowUseCase,
 } from '@saas-platform/ecommerce-application';
 import {
+  GetTenantEcuadorTaxObligationMatrixUseCase,
+  GetTenantEcuadorTaxpayerProfileUseCase,
+  RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+} from '@saas-platform/tax-compliance-application';
+import {
   AutoAssignTenantGrowthOperationalCasesUseCase,
   AssignTenantConversationThreadUseCase,
   AssignTenantOpportunityUseCase,
@@ -796,6 +801,11 @@ describe('API', () => {
   let metaWhatsappWebhookTenantResolver: { resolve: jest.Mock };
   let listTenantCustomersUseCase: { execute: jest.Mock };
   let listTenantPartiesUseCase: { execute: jest.Mock };
+  let getTenantEcuadorTaxpayerProfileUseCase: { execute: jest.Mock };
+  let getTenantEcuadorTaxObligationMatrixUseCase: { execute: jest.Mock };
+  let requestTenantEcuadorTaxPeriodPreparationPacketUseCase: {
+    execute: jest.Mock;
+  };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
   let listTenantInvoicePaymentsUseCase: { execute: jest.Mock };
   let listTenantInvoiceSummariesUseCase: { execute: jest.Mock };
@@ -1133,6 +1143,18 @@ describe('API', () => {
     roles: ['customer'],
     kind: 'organization',
     sourceContext: 'invoicing_customer',
+    fiscalProfile: {
+      country: 'EC',
+      taxpayerId: '1790012345001',
+      taxpayerName: 'Acme Corp',
+      identificationType: '04',
+      fiscalAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+      email: 'billing@acme.dev',
+      roles: ['customer'],
+      completenessStatus: 'complete',
+      missingFields: [],
+      reviewNotes: [],
+    },
     createdAt: customerCreatedAt,
     updatedAt: customerCreatedAt,
   });
@@ -1148,6 +1170,23 @@ describe('API', () => {
     roles: ['customer'],
     kind: 'unknown',
     sourceContext: 'invoicing_customer',
+    fiscalProfile: {
+      country: 'EC',
+      taxpayerId: null,
+      taxpayerName: 'Globex LLC',
+      identificationType: null,
+      fiscalAddress: null,
+      email: null,
+      roles: ['customer'],
+      completenessStatus: 'needs_review',
+      missingFields: [
+        'taxpayer_id',
+        'identification_type',
+        'fiscal_address',
+        'email',
+      ],
+      reviewNotes: [],
+    },
     createdAt: new Date('2026-04-27T15:10:00.000Z'),
     updatedAt: new Date('2026-04-27T15:10:00.000Z'),
   });
@@ -2242,6 +2281,101 @@ describe('API', () => {
     createdAt: new Date('2026-04-29T16:00:00.000Z'),
     updatedAt: new Date('2026-04-29T16:00:00.000Z'),
   });
+  const taxComplianceGeneratedAt = new Date('2026-06-04T12:00:00.000Z');
+  const ecuadorTaxpayerProfile = {
+    tenantSlug: 'saas-platform',
+    tenantId: 'tenant_123',
+    generatedAt: taxComplianceGeneratedAt,
+    country: 'EC' as const,
+    legalName: 'SaaS Platform S.A.',
+    commercialName: 'SaaS Platform',
+    taxpayerId: '1790012345001',
+    regime: 'general' as const,
+    accountingObligated: true,
+    specialTaxpayerCode: null,
+    matrixAddress: 'Av. Principal y Calle Secundaria',
+    establishmentAddress: 'Sucursal Matriz',
+    source: 'invoicing_issuer_profile' as const,
+    readinessStatus: 'needs_review' as const,
+    missingFields: [],
+    reviewNotes: [
+      'accounting_obligated_taxpayer_should_have_accountant_review',
+    ],
+    thirdPartyFiscalSummary: {
+      totalParties: 2,
+      completeParties: 1,
+      needsReviewParties: 1,
+      missingFieldCounts: {
+        taxpayer_id: 1,
+        identification_type: 1,
+        fiscal_address: 1,
+        email: 1,
+      },
+    },
+  };
+  const ecuadorTaxObligations = [
+    {
+      key: 'vat' as const,
+      label: 'IVA',
+      applies: true,
+      frequency: 'monthly' as const,
+      source: 'sri_rule_of_thumb' as const,
+      readinessStatus: 'needs_review' as const,
+      dependsOn: [
+        'invoicing_sales',
+        'purchase_evidence',
+        'tax_rates',
+        'party_fiscal_profiles',
+      ],
+      notes: ['Periodicidad mensual como punto de partida operativo.'],
+    },
+    {
+      key: 'income_tax' as const,
+      label: 'Impuesto a la Renta',
+      applies: true,
+      frequency: 'annual' as const,
+      source: 'sri_rule_of_thumb' as const,
+      readinessStatus: 'needs_review' as const,
+      dependsOn: ['annual_income', 'deductible_expenses', 'withholdings'],
+      notes: [
+        'La fecha de vencimiento depende del tipo de contribuyente y del noveno digito del RUC cuando aplique.',
+      ],
+    },
+  ];
+  const ecuadorTaxObligationMatrix = {
+    tenantSlug: 'saas-platform',
+    generatedAt: taxComplianceGeneratedAt,
+    taxpayerProfile: ecuadorTaxpayerProfile,
+    obligations: ecuadorTaxObligations,
+    guardrails: [
+      'Esta matriz es una base operativa; no sustituye la validacion final del SRI ni criterio contable.',
+    ],
+  };
+  const ecuadorTaxPeriodPreparationPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    generatedAt: taxComplianceGeneratedAt,
+    taxpayerProfile: ecuadorTaxpayerProfile,
+    obligations: ecuadorTaxObligations,
+    readinessStatus: 'needs_review' as const,
+    evidenceChecklist: [
+      'Ventas facturadas y documentos electronicos emitidos en el periodo',
+      'Comprobantes de compra y gasto que sustenten credito tributario o deducibilidad',
+    ],
+    accountantHandoff: {
+      recommended: true,
+      reason:
+        'Hay condiciones tributarias que requieren revision humana antes de declarar.',
+      packetSummary:
+        'Packet de preparacion tributaria EC con perfil del contribuyente, matriz de obligaciones, evidencias requeridas y bloqueos operativos.',
+    },
+    blockedBy: [],
+    nextStep:
+      'Enviar packet al contador o responsable tributario para validar periodicidad, obligaciones y evidencias.',
+    guardrails: [
+      'Esta matriz es una base operativa; no sustituye la validacion final del SRI ni criterio contable.',
+    ],
+  };
   const electronicSignatureSettings = ElectronicSignatureSettings.create({
     id: 'signature_settings_001',
     tenantId: 'tenant_123',
@@ -10675,6 +10809,15 @@ describe('API', () => {
     listTenantPartiesUseCase = {
       execute: jest.fn().mockResolvedValue([acmeParty, globexParty]),
     };
+    getTenantEcuadorTaxpayerProfileUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxpayerProfile),
+    };
+    getTenantEcuadorTaxObligationMatrixUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxObligationMatrix),
+    };
+    requestTenantEcuadorTaxPeriodPreparationPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxPeriodPreparationPacket),
+    };
     listTenantConversationThreadsUseCase = {
       execute: jest.fn().mockResolvedValue([conversationThread]),
     };
@@ -11148,6 +11291,12 @@ describe('API', () => {
       .useValue(getTenantInvoiceItemByIdUseCase)
       .overrideProvider(GetTenantPartyByIdUseCase)
       .useValue(getTenantPartyByIdUseCase)
+      .overrideProvider(GetTenantEcuadorTaxpayerProfileUseCase)
+      .useValue(getTenantEcuadorTaxpayerProfileUseCase)
+      .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
+      .useValue(getTenantEcuadorTaxObligationMatrixUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxPeriodPreparationPacketUseCase)
+      .useValue(requestTenantEcuadorTaxPeriodPreparationPacketUseCase)
       .overrideProvider(GetTenantConversationThreadByIdUseCase)
       .useValue(getTenantConversationThreadByIdUseCase)
       .overrideProvider(GetTenantGrowthConversationWorkbenchUseCase)
@@ -12631,6 +12780,18 @@ describe('API', () => {
           roles: ['customer'],
           kind: 'organization',
           sourceContext: 'invoicing_customer',
+          fiscalProfile: {
+            country: 'EC',
+            taxpayerId: '1790012345001',
+            taxpayerName: 'Acme Corp',
+            identificationType: '04',
+            fiscalAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+            email: 'billing@acme.dev',
+            roles: ['customer'],
+            completenessStatus: 'complete',
+            missingFields: [],
+            reviewNotes: [],
+          },
           createdAt: '2026-04-27T15:00:00.000Z',
           updatedAt: '2026-04-27T15:00:00.000Z',
         },
@@ -12646,6 +12807,23 @@ describe('API', () => {
           roles: ['customer'],
           kind: 'unknown',
           sourceContext: 'invoicing_customer',
+          fiscalProfile: {
+            country: 'EC',
+            taxpayerId: null,
+            taxpayerName: 'Globex LLC',
+            identificationType: null,
+            fiscalAddress: null,
+            email: null,
+            roles: ['customer'],
+            completenessStatus: 'needs_review',
+            missingFields: [
+              'taxpayer_id',
+              'identification_type',
+              'fiscal_address',
+              'email',
+            ],
+            reviewNotes: [],
+          },
           createdAt: '2026-04-27T15:10:00.000Z',
           updatedAt: '2026-04-27T15:10:00.000Z',
         },
@@ -12677,6 +12855,18 @@ describe('API', () => {
         roles: ['customer'],
         kind: 'organization',
         sourceContext: 'invoicing_customer',
+        fiscalProfile: {
+          country: 'EC',
+          taxpayerId: '1790012345001',
+          taxpayerName: 'Acme Corp',
+          identificationType: '04',
+          fiscalAddress: 'Av. Amazonas N34-451 y Av. Atahualpa',
+          email: 'billing@acme.dev',
+          roles: ['customer'],
+          completenessStatus: 'complete',
+          missingFields: [],
+          reviewNotes: [],
+        },
         createdAt: '2026-04-27T15:00:00.000Z',
         updatedAt: '2026-04-27T15:00:00.000Z',
       });
@@ -12708,6 +12898,226 @@ describe('API', () => {
           'Permission "invoicing.customers.read" is required for this tenant resource.',
         error: 'Forbidden',
       });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/taxpayer-profile should return the Ecuador taxpayer profile', async () => {
+    await request(httpServer)
+      .get('/api/tax-compliance/tenants/saas-platform/ec/taxpayer-profile')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        tenantSlug: 'saas-platform',
+        tenantId: 'tenant_123',
+        generatedAt: '2026-06-04T12:00:00.000Z',
+        country: 'EC',
+        legalName: 'SaaS Platform S.A.',
+        commercialName: 'SaaS Platform',
+        taxpayerId: '1790012345001',
+        regime: 'general',
+        accountingObligated: true,
+        specialTaxpayerCode: null,
+        matrixAddress: 'Av. Principal y Calle Secundaria',
+        establishmentAddress: 'Sucursal Matriz',
+        source: 'invoicing_issuer_profile',
+        readinessStatus: 'needs_review',
+        missingFields: [],
+        reviewNotes: [
+          'accounting_obligated_taxpayer_should_have_accountant_review',
+        ],
+        thirdPartyFiscalSummary: {
+          totalParties: 2,
+          completeParties: 1,
+          needsReviewParties: 1,
+          missingFieldCounts: {
+            taxpayer_id: 1,
+            identification_type: 1,
+            fiscal_address: 1,
+            email: 1,
+          },
+        },
+      });
+
+    expect(getTenantEnabledProductByKeyUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'invoicing',
+    );
+    expect(getTenantEcuadorTaxpayerProfileUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+    );
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/obligation-matrix should return the Ecuador obligation matrix', async () => {
+    await request(httpServer)
+      .get('/api/tax-compliance/tenants/saas-platform/ec/obligation-matrix')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        tenantSlug: 'saas-platform',
+        generatedAt: '2026-06-04T12:00:00.000Z',
+        taxpayerProfile: {
+          tenantSlug: 'saas-platform',
+          tenantId: 'tenant_123',
+          generatedAt: '2026-06-04T12:00:00.000Z',
+          country: 'EC',
+          legalName: 'SaaS Platform S.A.',
+          commercialName: 'SaaS Platform',
+          taxpayerId: '1790012345001',
+          regime: 'general',
+          accountingObligated: true,
+          specialTaxpayerCode: null,
+          matrixAddress: 'Av. Principal y Calle Secundaria',
+          establishmentAddress: 'Sucursal Matriz',
+          source: 'invoicing_issuer_profile',
+          readinessStatus: 'needs_review',
+          missingFields: [],
+          reviewNotes: [
+            'accounting_obligated_taxpayer_should_have_accountant_review',
+          ],
+          thirdPartyFiscalSummary: {
+            totalParties: 2,
+            completeParties: 1,
+            needsReviewParties: 1,
+            missingFieldCounts: {
+              taxpayer_id: 1,
+              identification_type: 1,
+              fiscal_address: 1,
+              email: 1,
+            },
+          },
+        },
+        obligations: [
+          {
+            key: 'vat',
+            label: 'IVA',
+            applies: true,
+            frequency: 'monthly',
+            source: 'sri_rule_of_thumb',
+            readinessStatus: 'needs_review',
+            dependsOn: [
+              'invoicing_sales',
+              'purchase_evidence',
+              'tax_rates',
+              'party_fiscal_profiles',
+            ],
+            notes: ['Periodicidad mensual como punto de partida operativo.'],
+          },
+          {
+            key: 'income_tax',
+            label: 'Impuesto a la Renta',
+            applies: true,
+            frequency: 'annual',
+            source: 'sri_rule_of_thumb',
+            readinessStatus: 'needs_review',
+            dependsOn: ['annual_income', 'deductible_expenses', 'withholdings'],
+            notes: [
+              'La fecha de vencimiento depende del tipo de contribuyente y del noveno digito del RUC cuando aplique.',
+            ],
+          },
+        ],
+        guardrails: [
+          'Esta matriz es una base operativa; no sustituye la validacion final del SRI ni criterio contable.',
+        ],
+      });
+
+    expect(
+      getTenantEcuadorTaxObligationMatrixUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform');
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/period-preparation-packet should return a period handoff packet', async () => {
+    await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/period-preparation-packet?period=2026-06',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        tenantSlug: 'saas-platform',
+        period: '2026-06',
+        generatedAt: '2026-06-04T12:00:00.000Z',
+        taxpayerProfile: {
+          tenantSlug: 'saas-platform',
+          tenantId: 'tenant_123',
+          generatedAt: '2026-06-04T12:00:00.000Z',
+          country: 'EC',
+          legalName: 'SaaS Platform S.A.',
+          commercialName: 'SaaS Platform',
+          taxpayerId: '1790012345001',
+          regime: 'general',
+          accountingObligated: true,
+          specialTaxpayerCode: null,
+          matrixAddress: 'Av. Principal y Calle Secundaria',
+          establishmentAddress: 'Sucursal Matriz',
+          source: 'invoicing_issuer_profile',
+          readinessStatus: 'needs_review',
+          missingFields: [],
+          reviewNotes: [
+            'accounting_obligated_taxpayer_should_have_accountant_review',
+          ],
+          thirdPartyFiscalSummary: {
+            totalParties: 2,
+            completeParties: 1,
+            needsReviewParties: 1,
+            missingFieldCounts: {
+              taxpayer_id: 1,
+              identification_type: 1,
+              fiscal_address: 1,
+              email: 1,
+            },
+          },
+        },
+        obligations: [
+          {
+            key: 'vat',
+            label: 'IVA',
+            applies: true,
+            frequency: 'monthly',
+            source: 'sri_rule_of_thumb',
+            readinessStatus: 'needs_review',
+            dependsOn: [
+              'invoicing_sales',
+              'purchase_evidence',
+              'tax_rates',
+              'party_fiscal_profiles',
+            ],
+            notes: ['Periodicidad mensual como punto de partida operativo.'],
+          },
+          {
+            key: 'income_tax',
+            label: 'Impuesto a la Renta',
+            applies: true,
+            frequency: 'annual',
+            source: 'sri_rule_of_thumb',
+            readinessStatus: 'needs_review',
+            dependsOn: ['annual_income', 'deductible_expenses', 'withholdings'],
+            notes: [
+              'La fecha de vencimiento depende del tipo de contribuyente y del noveno digito del RUC cuando aplique.',
+            ],
+          },
+        ],
+        readinessStatus: 'needs_review',
+        evidenceChecklist: [
+          'Ventas facturadas y documentos electronicos emitidos en el periodo',
+          'Comprobantes de compra y gasto que sustenten credito tributario o deducibilidad',
+        ],
+        accountantHandoff: {
+          recommended: true,
+          reason:
+            'Hay condiciones tributarias que requieren revision humana antes de declarar.',
+          packetSummary:
+            'Packet de preparacion tributaria EC con perfil del contribuyente, matriz de obligaciones, evidencias requeridas y bloqueos operativos.',
+        },
+        blockedBy: [],
+        nextStep:
+          'Enviar packet al contador o responsable tributario para validar periodicidad, obligaciones y evidencias.',
+        guardrails: [
+          'Esta matriz es una base operativa; no sustituye la validacion final del SRI ni criterio contable.',
+        ],
+      });
+
+    expect(
+      requestTenantEcuadorTaxPeriodPreparationPacketUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', '2026-06');
   });
 
   it('GET /api/growth/tenants/:slug/leads should return tenant-scoped leads', async () => {

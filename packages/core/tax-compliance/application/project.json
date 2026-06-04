@@ -1,0 +1,12 @@
+{
+  "name": "tax-compliance-application",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/tax-compliance/application/src",
+  "projectType": "library",
+  "tags": [
+    "scope:core",
+    "domain:tax-compliance",
+    "type:application",
+    "layer:application"
+  ]
+}

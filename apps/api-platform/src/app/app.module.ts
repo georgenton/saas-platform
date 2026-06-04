@@ -12,6 +12,7 @@ import { GrowthModule } from './modules/growth/growth.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { InvoicingModule } from './modules/invoicing/invoicing.module';
 import { PartiesModule } from './modules/parties/parties.module';
+import { TaxComplianceModule } from './modules/tax-compliance/tax-compliance.module';
 import { TenancyModule } from './modules/tenancy/tenancy.module';
 
 @Module({
@@ -27,6 +28,7 @@ import { TenancyModule } from './modules/tenancy/tenancy.module';
     IdentityModule,
     InvoicingModule,
     PartiesModule,
+    TaxComplianceModule,
     TenancyModule,
   ],
   controllers: [AppController],

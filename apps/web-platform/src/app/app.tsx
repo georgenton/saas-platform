@@ -106,8 +106,11 @@ import {
   fetchEcuadorTaxDeclarationApprovalPacket,
   fetchEcuadorTaxEcommerceEvidence,
   fetchEcuadorTaxEvents,
+  fetchEcuadorTaxPeriodCloseoutPacket,
   fetchEcuadorTaxPeriodWorkspace,
+  fetchEcuadorTaxReconciliationWorkspace,
   fetchEcuadorTaxSalesBook,
+  fetchEcuadorTaxVatDeclarationReadinessPacket,
   fetchTenantEcommerceOrderPostSaleOpsBoard,
   fetchTenantEcommerceOrderPostSaleReportingBoard,
   fetchTenantEcommerceOrderPostSaleReportingSummary,
@@ -484,8 +487,11 @@ import {
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
+  EcuadorTaxPeriodCloseoutPacketResponse,
   EcuadorTaxPeriodWorkspaceResponse,
+  EcuadorTaxReconciliationWorkspaceResponse,
   EcuadorTaxSalesBookResponse,
+  EcuadorTaxVatDeclarationReadinessPacketResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSignatureMaterialInspectionResponse,
   ElectronicSubmissionSettingsResponse,
@@ -1891,6 +1897,18 @@ export function App() {
     taxComplianceDeclarationApprovalPacket,
     setTaxComplianceDeclarationApprovalPacket,
   ] = useState<EcuadorTaxDeclarationApprovalPacketResponse | null>(null);
+  const [
+    taxComplianceReconciliationWorkspace,
+    setTaxComplianceReconciliationWorkspace,
+  ] = useState<EcuadorTaxReconciliationWorkspaceResponse | null>(null);
+  const [
+    taxComplianceVatReadinessPacket,
+    setTaxComplianceVatReadinessPacket,
+  ] = useState<EcuadorTaxVatDeclarationReadinessPacketResponse | null>(null);
+  const [
+    taxComplianceCloseoutPacket,
+    setTaxComplianceCloseoutPacket,
+  ] = useState<EcuadorTaxPeriodCloseoutPacketResponse | null>(null);
   const [taxComplianceLoading, setTaxComplianceLoading] = useState(false);
   const [taxComplianceActionLoading, setTaxComplianceActionLoading] =
     useState<string | null>(null);
@@ -19035,6 +19053,9 @@ export function App() {
         nextEvents,
         nextReviews,
         nextApprovalPacket,
+        nextReconciliationWorkspace,
+        nextVatReadinessPacket,
+        nextCloseoutPacket,
       ] = await Promise.all([
         fetchEcuadorTaxPeriodWorkspace(token, tenantSlug, taxCompliancePeriod, year),
         fetchEcuadorTaxEcommerceEvidence(token, tenantSlug, taxCompliancePeriod),
@@ -19042,6 +19063,24 @@ export function App() {
         fetchEcuadorTaxEvents(token, tenantSlug, taxCompliancePeriod),
         fetchEcuadorTaxAccountantReviews(token, tenantSlug, taxCompliancePeriod),
         fetchEcuadorTaxDeclarationApprovalPacket(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxReconciliationWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxVatDeclarationReadinessPacket(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxPeriodCloseoutPacket(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -19056,6 +19095,9 @@ export function App() {
         setTaxComplianceEvents(nextEvents);
         setTaxComplianceAccountantReviews(nextReviews);
         setTaxComplianceDeclarationApprovalPacket(nextApprovalPacket);
+        setTaxComplianceReconciliationWorkspace(nextReconciliationWorkspace);
+        setTaxComplianceVatReadinessPacket(nextVatReadinessPacket);
+        setTaxComplianceCloseoutPacket(nextCloseoutPacket);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -33137,9 +33179,34 @@ export function App() {
                 <div className={styles.commercialCard}>
                   <span className={styles.muted}>Blockers</span>
                   <strong>
-                    {taxComplianceWorkspace?.blockers.length ??
+                    {taxComplianceCloseoutPacket?.blockers.length ??
+                      taxComplianceWorkspace?.blockers.length ??
                       taxComplianceSalesBook?.blockers.length ??
                       0}
+                  </strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Reconciliation</span>
+                  <strong>
+                    {taxComplianceReconciliationWorkspace
+                      ? humanizeKey(taxComplianceReconciliationWorkspace.status)
+                      : 'Sin cargar'}
+                  </strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>IVA readiness</span>
+                  <strong>
+                    {taxComplianceVatReadinessPacket
+                      ? humanizeKey(taxComplianceVatReadinessPacket.readinessStatus)
+                      : 'Sin cargar'}
+                  </strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Closeout</span>
+                  <strong>
+                    {taxComplianceCloseoutPacket
+                      ? humanizeKey(taxComplianceCloseoutPacket.closeoutStatus)
+                      : 'Sin cargar'}
                   </strong>
                 </div>
               </div>
@@ -33304,6 +33371,198 @@ export function App() {
                   ) : (
                     <div className={styles.emptyState}>
                       <p>Carga un periodo para preparar aprobación.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Reconciliation</span>
+                      <h3>Conciliación del período</h3>
+                    </div>
+                  </div>
+                  {taxComplianceReconciliationWorkspace ? (
+                    <div className={styles.stack}>
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>
+                            {humanizeKey(
+                              taxComplianceReconciliationWorkspace.status,
+                            )}
+                          </strong>
+                          <span className={styles.statusPill}>
+                            {taxComplianceReconciliationWorkspace.checks.length}{' '}
+                            checks
+                          </span>
+                        </div>
+                        <p className={styles.muted}>
+                          {taxComplianceReconciliationWorkspace.nextStep}
+                        </p>
+                      </div>
+                      {taxComplianceReconciliationWorkspace.checks
+                        .slice(0, 4)
+                        .map((check) => (
+                          <div className={styles.invoiceItemCard} key={check.key}>
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{humanizeKey(check.key)}</strong>
+                              <span className={styles.statusPill}>
+                                {humanizeKey(check.readinessStatus)}
+                              </span>
+                            </div>
+                            <p className={styles.muted}>{check.summary}</p>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un periodo para revisar conciliación.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>IVA</span>
+                      <h3>Readiness de declaración</h3>
+                    </div>
+                  </div>
+                  {taxComplianceVatReadinessPacket ? (
+                    <div className={styles.stack}>
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>
+                            {humanizeKey(
+                              taxComplianceVatReadinessPacket.readinessStatus,
+                            )}
+                          </strong>
+                          <span className={styles.statusPill}>
+                            {taxComplianceVatReadinessPacket.vatObligation
+                              ?.dueDate ?? 'sin fecha'}
+                          </span>
+                        </div>
+                        <p className={styles.muted}>
+                          {taxComplianceVatReadinessPacket.nextStep}
+                        </p>
+                      </div>
+                      {taxComplianceVatReadinessPacket.vatSummaryByCurrency.map(
+                        (total) => (
+                          <div
+                            className={styles.invoiceItemCard}
+                            key={total.currency}
+                          >
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>
+                                {formatMoney(total.vatInCents, total.currency)}
+                              </strong>
+                              <span className={styles.statusPill}>
+                                {total.documentCount} docs
+                              </span>
+                            </div>
+                            <p className={styles.muted}>
+                              Base{' '}
+                              {formatMoney(
+                                total.taxableBaseInCents,
+                                total.currency,
+                              )}
+                            </p>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un periodo para preparar IVA.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Closeout</span>
+                      <h3>Cierre operativo del período</h3>
+                    </div>
+                  </div>
+                  {taxComplianceCloseoutPacket ? (
+                    <div className={styles.invoiceItemCard}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>
+                          {humanizeKey(taxComplianceCloseoutPacket.closeoutStatus)}
+                        </strong>
+                        <span className={styles.statusPill}>
+                          {taxComplianceCloseoutPacket.blockers.length} blockers
+                        </span>
+                      </div>
+                      <p className={styles.muted}>
+                        {taxComplianceCloseoutPacket.nextStep}
+                      </p>
+                      <ul className={styles.compactList}>
+                        {taxComplianceCloseoutPacket.closeoutChecklist
+                          .slice(0, 4)
+                          .map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un periodo para preparar el cierre.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Closeout ledger</span>
+                      <h3>Completitud auditable</h3>
+                    </div>
+                  </div>
+                  {taxComplianceCloseoutPacket ? (
+                    <div className={styles.invoiceItemCard}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>
+                          {
+                            taxComplianceCloseoutPacket.ledgerCompleteness
+                              .presentEventTypes.length
+                          }
+                          /
+                          {
+                            taxComplianceCloseoutPacket.ledgerCompleteness
+                              .requiredEventTypes.length
+                          }{' '}
+                          eventos
+                        </strong>
+                        <span className={styles.statusPill}>
+                          {
+                            taxComplianceCloseoutPacket.ledgerCompleteness
+                              .missingEventTypes.length
+                          }{' '}
+                          faltantes
+                        </span>
+                      </div>
+                      <ul className={styles.compactList}>
+                        {taxComplianceCloseoutPacket.ledgerCompleteness
+                          .missingEventTypes.length > 0
+                          ? taxComplianceCloseoutPacket.ledgerCompleteness
+                              .missingEventTypes.map((eventType) => (
+                                <li key={eventType}>{humanizeKey(eventType)}</li>
+                              ))
+                          : taxComplianceCloseoutPacket.ledgerCompleteness
+                              .presentEventTypes.map((eventType) => (
+                                <li key={eventType}>{humanizeKey(eventType)}</li>
+                              ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un periodo para ver completitud.</p>
                     </div>
                   )}
                 </div>

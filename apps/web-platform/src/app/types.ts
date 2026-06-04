@@ -1060,6 +1060,83 @@ export interface EcuadorTaxDeclarationApprovalPacketResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxReconciliationWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  status: string;
+  salesBook: EcuadorTaxSalesBookResponse;
+  ecommerceEvidence: EcuadorTaxEcommerceEvidenceSummaryResponse;
+  accountantReviews: EcuadorTaxAccountantReviewResponse[];
+  checks: Array<{
+    key: string;
+    source: string;
+    readinessStatus: string;
+    summary: string;
+    blockers: string[];
+  }>;
+  blockers: string[];
+  reviewNotes: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxVatDeclarationReadinessPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  reconciliationStatus: string;
+  vatObligation: {
+    obligationKey: string;
+    label: string;
+    period: string;
+    frequency: string;
+    dueDate: string | null;
+    dueDay: number | null;
+    source: string;
+    readinessStatus: string;
+    notes: string[];
+  } | null;
+  salesTotalsByCurrency: EcuadorTaxSalesBookResponse['totalsByCurrency'];
+  vatSummaryByCurrency: Array<{
+    currency: string;
+    taxableBaseInCents: number;
+    vatInCents: number;
+    documentCount: number;
+  }>;
+  blockers: string[];
+  accountantQuestions: string[];
+  supportChecklist: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPeriodCloseoutPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  workspaceStatus: string;
+  salesBookStatus: string;
+  reconciliationStatus: string;
+  vatReadinessStatus: string;
+  latestAccountantReview: EcuadorTaxAccountantReviewResponse | null;
+  approvalReadiness: string;
+  ledgerCompleteness: {
+    requiredEventTypes: string[];
+    presentEventTypes: string[];
+    missingEventTypes: string[];
+  };
+  closeoutChecklist: string[];
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface WhatsappRetryRunnerExecutionResponse {
   sourceMessageId: string;
   sourceExternalMessageId: string | null;

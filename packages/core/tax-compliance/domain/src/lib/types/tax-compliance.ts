@@ -32,13 +32,29 @@ export type EcuadorTaxPeriodWorkspaceStatus =
   | 'needs_review'
   | 'ready_for_accountant'
   | 'ready_for_declaration';
+export type EcuadorTaxReconciliationStatus =
+  | 'blocked'
+  | 'needs_review'
+  | 'reconciled';
+export type EcuadorTaxVatDeclarationReadinessStatus =
+  | 'blocked'
+  | 'needs_review'
+  | 'ready_for_accountant';
+export type EcuadorTaxPeriodCloseoutStatus =
+  | 'blocked'
+  | 'needs_review'
+  | 'ready_for_accountant'
+  | 'ready_for_external_filing';
 export type EcuadorTaxComplianceEventType =
   | 'period_workspace_generated'
   | 'accountant_packet_requested'
   | 'accountant_review_transitioned'
   | 'declaration_draft_requested'
   | 'due_monitor_reviewed'
-  | 'tax_sales_book_generated';
+  | 'tax_sales_book_generated'
+  | 'tax_reconciliation_reviewed'
+  | 'vat_readiness_packet_requested'
+  | 'period_closeout_packet_requested';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -338,6 +354,30 @@ export interface EcuadorTaxPeriodWorkspaceView {
   guardrails: string[];
 }
 
+export interface EcuadorTaxReconciliationCheckView {
+  key: string;
+  source: string;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  summary: string;
+  blockers: string[];
+}
+
+export interface EcuadorTaxReconciliationWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  status: EcuadorTaxReconciliationStatus;
+  salesBook: EcuadorTaxSalesBookView;
+  ecommerceEvidence: EcuadorTaxEcommerceEvidenceSummaryView;
+  accountantReviews: EcuadorTaxAccountantReviewView[];
+  checks: EcuadorTaxReconciliationCheckView[];
+  blockers: string[];
+  reviewNotes: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxAccountantReviewPacketView {
   tenantSlug: string;
   period: string;
@@ -373,6 +413,51 @@ export interface EcuadorTaxAuditReadinessView {
     reason: string;
     minimumPayload: string[];
   }>;
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxVatDeclarationReadinessPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxVatDeclarationReadinessStatus;
+  reconciliationStatus: EcuadorTaxReconciliationStatus;
+  vatObligation: EcuadorTaxCalendarEntryView | null;
+  salesTotalsByCurrency: EcuadorTaxSalesBookView['totalsByCurrency'];
+  vatSummaryByCurrency: Array<{
+    currency: string;
+    taxableBaseInCents: number;
+    vatInCents: number;
+    documentCount: number;
+  }>;
+  blockers: string[];
+  accountantQuestions: string[];
+  supportChecklist: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPeriodCloseoutPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: EcuadorTaxPeriodCloseoutStatus;
+  workspaceStatus: EcuadorTaxPeriodWorkspaceStatus;
+  salesBookStatus: EcuadorTaxReadinessStatus;
+  reconciliationStatus: EcuadorTaxReconciliationStatus;
+  vatReadinessStatus: EcuadorTaxVatDeclarationReadinessStatus;
+  latestAccountantReview: EcuadorTaxAccountantReviewView | null;
+  approvalReadiness: EcuadorTaxDeclarationApprovalPacketView['approvalReadiness'];
+  ledgerCompleteness: {
+    requiredEventTypes: EcuadorTaxComplianceEventType[];
+    presentEventTypes: EcuadorTaxComplianceEventType[];
+    missingEventTypes: EcuadorTaxComplianceEventType[];
+  };
+  closeoutChecklist: string[];
+  blockers: string[];
   nextStep: string;
   guardrails: string[];
 }

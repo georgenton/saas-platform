@@ -12,10 +12,13 @@ import {
   EcuadorTaxObligationMatrixView,
   EcuadorTaxObligationCalendarView,
   EcuadorTaxObligationView,
+  EcuadorTaxPeriodCloseoutPacketView,
   EcuadorTaxPeriodWorkspaceView,
   EcuadorTaxPeriodPreparationPacketView,
+  EcuadorTaxReconciliationWorkspaceView,
   EcuadorTaxSalesBookView,
   EcuadorTaxpayerProfileView,
+  EcuadorTaxVatDeclarationReadinessPacketView,
 } from '@saas-platform/tax-compliance-domain';
 
 export interface EcuadorTaxpayerProfileResponseDto {
@@ -372,6 +375,73 @@ export interface EcuadorTaxDeclarationApprovalPacketResponseDto {
   declarationSections: EcuadorTaxDeclarationDraftPacketResponseDto['declarationSections'];
   availableAuditEvents: EcuadorTaxComplianceEventResponseDto[];
   approvalChecklist: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxReconciliationWorkspaceResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  status: string;
+  salesBook: EcuadorTaxSalesBookResponseDto;
+  ecommerceEvidence: EcuadorTaxEcommerceEvidenceSummaryResponseDto;
+  accountantReviews: EcuadorTaxAccountantReviewResponseDto[];
+  checks: Array<{
+    key: string;
+    source: string;
+    readinessStatus: string;
+    summary: string;
+    blockers: string[];
+  }>;
+  blockers: string[];
+  reviewNotes: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxVatDeclarationReadinessPacketResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  reconciliationStatus: string;
+  vatObligation: EcuadorTaxCalendarEntryResponseDto | null;
+  salesTotalsByCurrency: EcuadorTaxSalesBookResponseDto['totalsByCurrency'];
+  vatSummaryByCurrency: Array<{
+    currency: string;
+    taxableBaseInCents: number;
+    vatInCents: number;
+    documentCount: number;
+  }>;
+  blockers: string[];
+  accountantQuestions: string[];
+  supportChecklist: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPeriodCloseoutPacketResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  workspaceStatus: string;
+  salesBookStatus: string;
+  reconciliationStatus: string;
+  vatReadinessStatus: string;
+  latestAccountantReview: EcuadorTaxAccountantReviewResponseDto | null;
+  approvalReadiness: string;
+  ledgerCompleteness: {
+    requiredEventTypes: string[];
+    presentEventTypes: string[];
+    missingEventTypes: string[];
+  };
+  closeoutChecklist: string[];
+  blockers: string[];
   nextStep: string;
   guardrails: string[];
 }
@@ -893,6 +963,101 @@ export function toEcuadorTaxDeclarationApprovalPacketResponseDto(
       toEcuadorTaxComplianceEventResponseDto(event),
     ),
     approvalChecklist: [...packet.approvalChecklist],
+    nextStep: packet.nextStep,
+    guardrails: [...packet.guardrails],
+  };
+}
+
+export function toEcuadorTaxReconciliationWorkspaceResponseDto(
+  workspace: EcuadorTaxReconciliationWorkspaceView,
+): EcuadorTaxReconciliationWorkspaceResponseDto {
+  return {
+    tenantSlug: workspace.tenantSlug,
+    period: workspace.period,
+    year: workspace.year,
+    generatedAt: workspace.generatedAt.toISOString(),
+    status: workspace.status,
+    salesBook: toEcuadorTaxSalesBookResponseDto(workspace.salesBook),
+    ecommerceEvidence: toEcuadorTaxEcommerceEvidenceSummaryResponseDto(
+      workspace.ecommerceEvidence,
+    ),
+    accountantReviews: workspace.accountantReviews.map((review) =>
+      toEcuadorTaxAccountantReviewResponseDto(review),
+    ),
+    checks: workspace.checks.map((check) => ({
+      key: check.key,
+      source: check.source,
+      readinessStatus: check.readinessStatus,
+      summary: check.summary,
+      blockers: [...check.blockers],
+    })),
+    blockers: [...workspace.blockers],
+    reviewNotes: [...workspace.reviewNotes],
+    nextStep: workspace.nextStep,
+    guardrails: [...workspace.guardrails],
+  };
+}
+
+export function toEcuadorTaxVatDeclarationReadinessPacketResponseDto(
+  packet: EcuadorTaxVatDeclarationReadinessPacketView,
+): EcuadorTaxVatDeclarationReadinessPacketResponseDto {
+  return {
+    tenantSlug: packet.tenantSlug,
+    period: packet.period,
+    year: packet.year,
+    generatedAt: packet.generatedAt.toISOString(),
+    readinessStatus: packet.readinessStatus,
+    reconciliationStatus: packet.reconciliationStatus,
+    vatObligation: packet.vatObligation
+      ? toEcuadorTaxCalendarEntryResponseDto(packet.vatObligation)
+      : null,
+    salesTotalsByCurrency: packet.salesTotalsByCurrency.map((total) => ({
+      currency: total.currency,
+      documentCount: total.documentCount,
+      subtotalInCents: total.subtotalInCents,
+      taxInCents: total.taxInCents,
+      totalInCents: total.totalInCents,
+      paidInCents: total.paidInCents,
+      outstandingTotalInCents: total.outstandingTotalInCents,
+    })),
+    vatSummaryByCurrency: packet.vatSummaryByCurrency.map((total) => ({
+      currency: total.currency,
+      taxableBaseInCents: total.taxableBaseInCents,
+      vatInCents: total.vatInCents,
+      documentCount: total.documentCount,
+    })),
+    blockers: [...packet.blockers],
+    accountantQuestions: [...packet.accountantQuestions],
+    supportChecklist: [...packet.supportChecklist],
+    nextStep: packet.nextStep,
+    guardrails: [...packet.guardrails],
+  };
+}
+
+export function toEcuadorTaxPeriodCloseoutPacketResponseDto(
+  packet: EcuadorTaxPeriodCloseoutPacketView,
+): EcuadorTaxPeriodCloseoutPacketResponseDto {
+  return {
+    tenantSlug: packet.tenantSlug,
+    period: packet.period,
+    year: packet.year,
+    generatedAt: packet.generatedAt.toISOString(),
+    closeoutStatus: packet.closeoutStatus,
+    workspaceStatus: packet.workspaceStatus,
+    salesBookStatus: packet.salesBookStatus,
+    reconciliationStatus: packet.reconciliationStatus,
+    vatReadinessStatus: packet.vatReadinessStatus,
+    latestAccountantReview: packet.latestAccountantReview
+      ? toEcuadorTaxAccountantReviewResponseDto(packet.latestAccountantReview)
+      : null,
+    approvalReadiness: packet.approvalReadiness,
+    ledgerCompleteness: {
+      requiredEventTypes: [...packet.ledgerCompleteness.requiredEventTypes],
+      presentEventTypes: [...packet.ledgerCompleteness.presentEventTypes],
+      missingEventTypes: [...packet.ledgerCompleteness.missingEventTypes],
+    },
+    closeoutChecklist: [...packet.closeoutChecklist],
+    blockers: [...packet.blockers],
     nextStep: packet.nextStep,
     guardrails: [...packet.guardrails],
   };

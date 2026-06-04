@@ -8,9 +8,12 @@ import {
 } from '@nestjs/common';
 import { INVOICING_PERMISSIONS } from '@saas-platform/invoicing-application';
 import {
+  GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
+  GetTenantEcuadorTaxDueMonitorUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
+  RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
 } from '@saas-platform/tax-compliance-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
@@ -24,8 +27,14 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
 import {
   EcuadorTaxObligationMatrixResponseDto,
   EcuadorTaxObligationCalendarResponseDto,
+  EcuadorTaxCalendarReviewWorkspaceResponseDto,
+  EcuadorTaxDeclarationDraftPacketResponseDto,
+  EcuadorTaxDueMonitorResponseDto,
   EcuadorTaxPeriodPreparationPacketResponseDto,
   EcuadorTaxpayerProfileResponseDto,
+  toEcuadorTaxCalendarReviewWorkspaceResponseDto,
+  toEcuadorTaxDeclarationDraftPacketResponseDto,
+  toEcuadorTaxDueMonitorResponseDto,
   toEcuadorTaxObligationCalendarResponseDto,
   toEcuadorTaxObligationMatrixResponseDto,
   toEcuadorTaxPeriodPreparationPacketResponseDto,
@@ -49,7 +58,10 @@ export class TaxComplianceController {
     private readonly getTenantEcuadorTaxpayerProfileUseCase: GetTenantEcuadorTaxpayerProfileUseCase,
     private readonly getTenantEcuadorTaxObligationMatrixUseCase: GetTenantEcuadorTaxObligationMatrixUseCase,
     private readonly getTenantEcuadorTaxObligationCalendarUseCase: GetTenantEcuadorTaxObligationCalendarUseCase,
+    private readonly getTenantEcuadorTaxCalendarReviewWorkspaceUseCase: GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
+    private readonly getTenantEcuadorTaxDueMonitorUseCase: GetTenantEcuadorTaxDueMonitorUseCase,
     private readonly requestTenantEcuadorTaxPeriodPreparationPacketUseCase: RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+    private readonly requestTenantEcuadorTaxDeclarationDraftPacketUseCase: RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   ) {}
 
   @Get(':slug/ec/taxpayer-profile')
@@ -65,6 +77,59 @@ export class TaxComplianceController {
         );
 
       return toEcuadorTaxpayerProfileResponseDto(profile);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/calendar-review-workspace')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async getCalendarReviewWorkspace(
+    @Param('slug') slug: string,
+    @Query('year') year?: string,
+    @Query('asOfDate') asOfDate?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxCalendarReviewWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantEcuadorTaxCalendarReviewWorkspaceUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+          resolveCalendarYear(year),
+          asOfDate,
+        );
+
+      return toEcuadorTaxCalendarReviewWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/due-monitor')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async getDueMonitor(
+    @Param('slug') slug: string,
+    @Query('year') year?: string,
+    @Query('asOfDate') asOfDate?: string,
+    @Query('windowDays') windowDays?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxDueMonitorResponseDto> {
+    try {
+      const monitor = await this.getTenantEcuadorTaxDueMonitorUseCase.execute({
+        tenantSlug: tenantAccess?.tenantSlug ?? slug,
+        year: resolveCalendarYear(year),
+        asOfDate,
+        windowDays: resolveWindowDays(windowDays),
+      });
+
+      return toEcuadorTaxDueMonitorResponseDto(monitor);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
@@ -144,10 +209,46 @@ export class TaxComplianceController {
       throw error;
     }
   }
+
+  @Get(':slug/ec/declaration-draft-packet')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async getDeclarationDraftPacket(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxDeclarationDraftPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantEcuadorTaxDeclarationDraftPacketUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxDeclarationDraftPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
 }
 
 function resolveCalendarYear(year?: string): number {
   const parsed = year ? Number.parseInt(year, 10) : new Date().getUTCFullYear();
 
   return Number.isFinite(parsed) ? parsed : new Date().getUTCFullYear();
+}
+
+function resolveWindowDays(windowDays?: string): number | undefined {
+  if (!windowDays) {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(windowDays, 10);
+
+  return Number.isFinite(parsed) ? parsed : undefined;
 }

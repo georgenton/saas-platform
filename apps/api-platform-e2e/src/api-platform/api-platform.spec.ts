@@ -196,9 +196,12 @@ import {
   GetTenantEcommerceWhatsappSalesFlowUseCase,
 } from '@saas-platform/ecommerce-application';
 import {
+  GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
+  GetTenantEcuadorTaxDueMonitorUseCase,
   GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
+  RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
@@ -806,8 +809,15 @@ describe('API', () => {
   let getTenantPartyFiscalReadinessSummaryUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxpayerProfileUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxObligationCalendarUseCase: { execute: jest.Mock };
+  let getTenantEcuadorTaxCalendarReviewWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcuadorTaxDueMonitorUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxObligationMatrixUseCase: { execute: jest.Mock };
   let requestTenantEcuadorTaxPeriodPreparationPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantEcuadorTaxDeclarationDraftPacketUseCase: {
     execute: jest.Mock;
   };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
@@ -2501,6 +2511,112 @@ describe('API', () => {
       'Enviar packet al contador o responsable tributario para validar periodicidad, obligaciones y evidencias.',
     guardrails: [
       'Esta matriz es una base operativa; no sustituye la validacion final del SRI ni criterio contable.',
+    ],
+  };
+  const ecuadorTaxCalendarReviewWorkspace = {
+    tenantSlug: 'saas-platform',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    asOfDate: '2026-02-10',
+    taxpayerProfile: ecuadorTaxpayerProfile,
+    summary: {
+      totalEntries: 2,
+      overdueCount: 0,
+      dueSoonCount: 1,
+      blockedCount: 0,
+      needsReviewCount: 2,
+    },
+    priorityEntries: [
+      {
+        ...ecuadorTaxObligationCalendar.entries[0],
+        dueStatus: 'due_soon' as const,
+        daysUntilDue: 6,
+        reviewPriority: 'high' as const,
+        reviewReasons: [
+          'obligation_due_within_review_window',
+          'readiness_needs_review',
+        ],
+      },
+    ],
+    nextActions: [
+      'Preparar packets de obligaciones próximas a vencer dentro de la ventana operativa.',
+      'Enviar obligaciones en revision al contador o responsable tributario antes de declarar.',
+    ],
+    guardrails: [
+      'Esta matriz es una base operativa; no sustituye la validacion final del SRI ni criterio contable.',
+      'Este workspace prioriza revision operativa; no confirma presentacion ni pago de obligaciones ante SRI.',
+    ],
+  };
+  const ecuadorTaxDueMonitor = {
+    tenantSlug: 'saas-platform',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    asOfDate: '2026-02-10',
+    windowDays: 15,
+    alerts: [
+      {
+        obligationKey: 'vat' as const,
+        label: 'IVA',
+        period: '2026-01',
+        dueDate: '2026-02-16',
+        dueStatus: 'due_soon' as const,
+        daysUntilDue: 6,
+        severity: 'high' as const,
+        message: 'IVA 2026-01 debe revisarse dentro de la ventana operativa.',
+      },
+    ],
+    summary: {
+      overdueCount: 0,
+      dueSoonCount: 1,
+      unscheduledCount: 0,
+    },
+    guardrails: [
+      'Este workspace prioriza revision operativa; no confirma presentacion ni pago de obligaciones ante SRI.',
+      'El monitor solo alerta obligaciones derivadas del calendario operacional actual.',
+    ],
+  };
+  const ecuadorTaxDeclarationDraftPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    generatedAt: taxComplianceGeneratedAt,
+    taxpayerProfile: ecuadorTaxpayerProfile,
+    readinessStatus: 'blocked' as const,
+    declarationSections: [
+      {
+        section: 'taxpayer_profile',
+        readinessStatus: 'needs_review' as const,
+        source: 'invoicing_issuer_profile',
+        summary: 'Contribuyente SaaS Platform S.A. con regimen general.',
+        blockers: [],
+      },
+      {
+        section: 'party_fiscal_evidence',
+        readinessStatus: 'needs_review' as const,
+        source: 'party_fiscal_readiness_summary',
+        summary: '1 terceros fiscales pendientes de revision.',
+        blockers: ['party_fiscal_profile.customer_globex'],
+      },
+    ],
+    accountantReview: {
+      required: true,
+      reasons: [
+        'Hay condiciones tributarias que requieren revision humana antes de declarar.',
+        'Hay terceros fiscales incompletos que pueden afectar declaracion o sustento.',
+      ],
+      suggestedQuestions: [
+        'Confirmar periodicidad aplicable para IVA, retenciones y anexos del periodo.',
+        'Validar si existen comprobantes de compra o retenciones no cargadas en la plataforma.',
+      ],
+    },
+    sourcePackets: {
+      preparationPacketGeneratedAt: taxComplianceGeneratedAt,
+      calendarEntryCount: 2,
+      evidenceSummary: ecuadorTaxPeriodPreparationPacket.evidenceSummary,
+    },
+    nextStep: 'Resolver blockers antes de preparar borrador de declaracion.',
+    guardrails: [
+      'Esta matriz es una base operativa; no sustituye la validacion final del SRI ni criterio contable.',
+      'Este packet organiza un borrador de declaracion; no presenta formularios ni calcula impuesto final exigible.',
     ],
   };
   const electronicSignatureSettings = ElectronicSignatureSettings.create({
@@ -10945,11 +11061,20 @@ describe('API', () => {
     getTenantEcuadorTaxObligationCalendarUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxObligationCalendar),
     };
+    getTenantEcuadorTaxCalendarReviewWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxCalendarReviewWorkspace),
+    };
+    getTenantEcuadorTaxDueMonitorUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxDueMonitor),
+    };
     getTenantEcuadorTaxObligationMatrixUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxObligationMatrix),
     };
     requestTenantEcuadorTaxPeriodPreparationPacketUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxPeriodPreparationPacket),
+    };
+    requestTenantEcuadorTaxDeclarationDraftPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxDeclarationDraftPacket),
     };
     listTenantConversationThreadsUseCase = {
       execute: jest.fn().mockResolvedValue([conversationThread]),
@@ -11430,10 +11555,16 @@ describe('API', () => {
       .useValue(getTenantEcuadorTaxpayerProfileUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationCalendarUseCase)
       .useValue(getTenantEcuadorTaxObligationCalendarUseCase)
+      .overrideProvider(GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase)
+      .useValue(getTenantEcuadorTaxCalendarReviewWorkspaceUseCase)
+      .overrideProvider(GetTenantEcuadorTaxDueMonitorUseCase)
+      .useValue(getTenantEcuadorTaxDueMonitorUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
       .useValue(getTenantEcuadorTaxObligationMatrixUseCase)
       .overrideProvider(RequestTenantEcuadorTaxPeriodPreparationPacketUseCase)
       .useValue(requestTenantEcuadorTaxPeriodPreparationPacketUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxDeclarationDraftPacketUseCase)
+      .useValue(requestTenantEcuadorTaxDeclarationDraftPacketUseCase)
       .overrideProvider(GetTenantConversationThreadByIdUseCase)
       .useValue(getTenantConversationThreadByIdUseCase)
       .overrideProvider(GetTenantGrowthConversationWorkbenchUseCase)
@@ -13218,6 +13349,92 @@ describe('API', () => {
     ).toHaveBeenCalledWith('saas-platform', 2026);
   });
 
+  it('GET /api/tax-compliance/tenants/:slug/ec/calendar-review-workspace should return prioritized calendar review', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/calendar-review-workspace?year=2026&asOfDate=2026-02-10',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      year: 2026,
+      generatedAt: '2026-06-04T12:00:00.000Z',
+      asOfDate: '2026-02-10',
+      summary: {
+        totalEntries: 2,
+        overdueCount: 0,
+        dueSoonCount: 1,
+        blockedCount: 0,
+        needsReviewCount: 2,
+      },
+      priorityEntries: [
+        {
+          obligationKey: 'vat',
+          label: 'IVA',
+          period: '2026-01',
+          dueStatus: 'due_soon',
+          daysUntilDue: 6,
+          reviewPriority: 'high',
+          reviewReasons: [
+            'obligation_due_within_review_window',
+            'readiness_needs_review',
+          ],
+        },
+      ],
+      nextActions: [
+        'Preparar packets de obligaciones próximas a vencer dentro de la ventana operativa.',
+        'Enviar obligaciones en revision al contador o responsable tributario antes de declarar.',
+      ],
+    });
+
+    expect(
+      getTenantEcuadorTaxCalendarReviewWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 2026, '2026-02-10');
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/due-monitor should return obligation alerts', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/due-monitor?year=2026&asOfDate=2026-02-10&windowDays=15',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      year: 2026,
+      generatedAt: '2026-06-04T12:00:00.000Z',
+      asOfDate: '2026-02-10',
+      windowDays: 15,
+      alerts: [
+        {
+          obligationKey: 'vat',
+          label: 'IVA',
+          period: '2026-01',
+          dueDate: '2026-02-16',
+          dueStatus: 'due_soon',
+          daysUntilDue: 6,
+          severity: 'high',
+          message: 'IVA 2026-01 debe revisarse dentro de la ventana operativa.',
+        },
+      ],
+      summary: {
+        overdueCount: 0,
+        dueSoonCount: 1,
+        unscheduledCount: 0,
+      },
+    });
+
+    expect(getTenantEcuadorTaxDueMonitorUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      year: 2026,
+      asOfDate: '2026-02-10',
+      windowDays: 15,
+    });
+  });
+
   it('GET /api/tax-compliance/tenants/:slug/ec/obligation-matrix should return the Ecuador obligation matrix', async () => {
     await request(httpServer)
       .get('/api/tax-compliance/tenants/saas-platform/ec/obligation-matrix')
@@ -13437,6 +13654,63 @@ describe('API', () => {
     expect(
       requestTenantEcuadorTaxPeriodPreparationPacketUseCase.execute,
     ).toHaveBeenCalledWith('saas-platform', '2026-06');
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/declaration-draft-packet should return a declaration draft packet', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/declaration-draft-packet?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      generatedAt: '2026-06-04T12:00:00.000Z',
+      readinessStatus: 'blocked',
+      declarationSections: [
+        {
+          section: 'taxpayer_profile',
+          readinessStatus: 'needs_review',
+          source: 'invoicing_issuer_profile',
+        },
+        {
+          section: 'party_fiscal_evidence',
+          readinessStatus: 'needs_review',
+          source: 'party_fiscal_readiness_summary',
+          blockers: ['party_fiscal_profile.customer_globex'],
+        },
+      ],
+      accountantReview: {
+        required: true,
+        reasons: [
+          'Hay condiciones tributarias que requieren revision humana antes de declarar.',
+          'Hay terceros fiscales incompletos que pueden afectar declaracion o sustento.',
+        ],
+      },
+      sourcePackets: {
+        preparationPacketGeneratedAt: '2026-06-04T12:00:00.000Z',
+        calendarEntryCount: 2,
+        evidenceSummary: {
+          parties: {
+            incompletePartyIds: ['customer_globex'],
+          },
+          ecommerce: {
+            status: 'not_connected_yet',
+          },
+        },
+      },
+      nextStep: 'Resolver blockers antes de preparar borrador de declaracion.',
+    });
+
+    expect(
+      requestTenantEcuadorTaxDeclarationDraftPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
   });
 
   it('GET /api/growth/tenants/:slug/leads should return tenant-scoped leads', async () => {

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.80.0
+
+### Minor Changes
+
+- e25a231: Add Ecuador tax compliance operational smoke, withholding draft execution, and accountant workbench APIs.
+
 ## 0.79.0
 
 ### Minor Changes

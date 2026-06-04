@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.70.0
+
+### Minor Changes
+
+- 9e7ce55: Add the Ecuador tax compliance foundation with taxpayer profile, obligation matrix, period preparation packet endpoints, and fiscal profile readiness on shared parties.
+
 ## 0.69.0
 
 ### Minor Changes

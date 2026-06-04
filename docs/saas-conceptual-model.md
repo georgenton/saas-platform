@@ -30,7 +30,7 @@ flowchart TD
     B --> E["Product Domains"]
 
     E --> F["Electronic Invoicing EC"]
-    E --> G["Accounting & Tax Compliance"]
+    E --> G["Tax Compliance EC"]
     E --> H["Medical Clinics"]
     E --> I["Psychology Clinics"]
     E --> J["Ecommerce"]
@@ -42,7 +42,7 @@ flowchart TD
 The target portfolio we want to build is:
 
 - `Electronic Invoicing EC`
-- `Accounting & Tax Compliance`
+- `Tax Compliance EC`
 - `Medical Clinics`
 - `Psychology Clinics`
 - `Ecommerce`
@@ -69,7 +69,7 @@ the current seeded product keys are:
 - `psychology` is already directionally aligned with `Psychology Clinics`
 - `ecommerce` is already directionally aligned with the target portfolio
 - `learning` is currently outside the product list we are prioritizing in this strategy
-- `Accounting & Tax Compliance`, `Medical Clinics`, and `Billing & Revenue Ops` are target products, but are not yet formalized in the seeded catalog
+- `Tax Compliance EC`, `Medical Clinics`, and `Billing & Revenue Ops` are target products, but are not yet formalized in the seeded catalog
 
 ### Recommendation
 
@@ -216,7 +216,7 @@ All target products need some variant of:
 Examples:
 
 - `Electronic Invoicing EC`: onboarding and renewal conversations
-- `Accounting & Tax Compliance`: lead nurture and declaration reminders
+- `Tax Compliance EC`: lead nurture and declaration reminders
 - `Medical Clinics`: appointment acquisition and confirmations
 - `Psychology Clinics`: intake and follow-up flows
 - `Ecommerce`: campaigns, abandoned cart, post-sale journeys
@@ -383,23 +383,30 @@ than to:
 
 Treat the current implementation as a strong `Electronic Invoicing EC` foundation, but not yet as the finished country product.
 
-## Product: Accounting & Tax Compliance
+## Product: Tax Compliance EC
 
 This is different from invoicing and should not be collapsed into it.
 
+It should start as an Ecuador tax compliance product for operational tax
+obligations, not as a full accounting suite. The first useful product is the
+control room that turns invoices, retentions, ecommerce activity, parties and
+periods into "what must be reviewed, prepared, explained, and handed to a human
+accountant when needed".
+
 ### Responsibilities
 
-- accounting periods
-- chart of accounts
-- journal entries
-- trial balance
-- tax books
 - VAT support
 - income tax support
+- tax periods
+- tax obligation calendar
+- taxpayer profile
+- obligation readiness checks
+- tax books
 - tax reconciliations
 - declaration workflows
 - attachments and evidence
 - filing assistance
+- accountant review packets
 
 ### AI opportunities
 
@@ -422,6 +429,28 @@ Consumes data from:
 - customer and supplier tax identities
 
 But remains its own product context.
+
+### Boundary with accounting
+
+`Tax Compliance EC` should not pretend to be full accounting at the beginning.
+
+Full accounting is a later and heavier product context, responsible for:
+
+- chart of accounts
+- journal entries
+- ledgers
+- trial balance
+- bank reconciliation
+- financial statements
+- deeper accountant workflows
+
+The recommended sequence is:
+
+1. build `Tax Compliance EC` first around tax obligations, periods, readiness,
+   evidence and accountant handoff
+2. use that product to learn which customers need formal accounting depth
+3. only then graduate the heavier `Accounting` product when the platform has
+   enough demand and shared foundations to justify it
 
 ## Product: Medical Clinics
 
@@ -522,6 +551,87 @@ Ecommerce is still an operator-assisted commerce domain, not a full
 transactional commerce engine. Payments, shipping, refunds, inventory stock and
 carrier/provider integrations are represented as readiness/workspace/packet
 surfaces before live external execution is introduced.
+
+### Closeout backlog
+
+Ecommerce is now mature enough to close as an MVP orchestration product before
+opening the next major domain.
+
+The remaining closeout work should stay small and documentary:
+
+- publish a clear Ecommerce closeout report
+- document the implemented operator-assisted commerce model
+- capture the end-to-end flow from launch to post-sale live execution
+- preserve the known boundary between readiness/workspace/packet surfaces and
+  future live external execution
+- keep a short backlog of future transactional integrations:
+  - live storefront publish
+  - provider-backed checkout and payment capture
+  - carrier-backed shipping/tracking
+  - live inventory reservations
+  - refunds, returns and cancellations
+
+This closeout should not become another expansion slice unless it reveals a
+blocking gap in the current implemented flow.
+
+## Strategic Product Backlog
+
+The current platform history suggests this product order:
+
+1. `Ecommerce Closeout`
+   - status: next small closeout slice
+   - purpose: lock the Ecommerce MVP as an operator-assisted commerce control
+     layer
+   - output: documentation, diagrams, acceptance checklist and smoke narrative
+   - reason: closes the long Ecommerce build without opening a new product
+2. `Parties 2.0`
+   - status: enabling foundation
+   - purpose: turn the first party directory into a stronger fiscal/customer/
+     supplier foundation
+   - output: fiscal third-party profiles, customer/supplier roles, addresses,
+     contacts, duplicate handling and links back to invoicing/ecommerce
+   - reason: `Tax Compliance EC` depends heavily on reliable third-party fiscal
+     data
+3. `Tax Compliance EC`
+   - status: recommended next major product candidate
+   - purpose: cover Ecuador tax obligations like VAT, income tax, retentions,
+     period readiness, evidence and accountant review
+   - output: taxpayer profile, obligation matrix, tax period workspaces,
+     declaration preparation packets and accountant handoff
+   - reason: connects the already-built platform strengths:
+     `Invoicing`, `Ecommerce`, `Parties`, `Growth` and `AI`
+
+```mermaid
+flowchart LR
+    Core["Core Platform"] --> Invoicing["Electronic Invoicing EC"]
+    Core --> Ecommerce["Ecommerce"]
+    Core --> Parties["Parties 2.0"]
+    Core --> AI["AI Platform"]
+    Invoicing --> Taxes["Tax Compliance EC"]
+    Ecommerce --> Taxes
+    Parties --> Taxes
+    AI --> Taxes
+    Taxes --> Accounting["Accounting (future)"]
+```
+
+### Product decision
+
+`Tax Compliance EC` is the recommended next major product, but `Parties 2.0`
+should be treated as the enabling foundation either immediately before it or as
+the first phase inside it.
+
+The product should support businesses that can self-serve tax readiness, while
+also recognizing that larger or more complex taxpayers will need a human
+accountant. The right product shape is not "replace the accountant"; it is:
+
+- prepare clean evidence
+- explain the obligation status
+- surface missing data
+- package declaration inputs
+- let the accountant review, correct and approve
+
+That gives small businesses value early and gives larger businesses a safer
+bridge into a future accounting product.
 
 ## Product: Billing & Revenue Ops
 
@@ -844,18 +954,25 @@ Launch the next major product on top of the existing platform and shared foundat
 
 That makes it the best second major product for validating the multi-product architecture.
 
-## Stage 7: Accounting & Tax Compliance
+## Stage 7: Tax Compliance EC
 
 ### Goal
 
-Turn invoices, retentions, and payments into formal accounting and declaration workflows.
+Turn invoices, retentions, ecommerce activity, parties and payments into Ecuador
+tax obligation readiness and declaration preparation workflows.
 
 ### Recommended slices
 
-1. tax books
-2. declaration preparation
-3. supporting evidence and workflow
-4. AI tax accountant assistant
+1. taxpayer profile and obligation matrix
+2. tax period workspace
+3. VAT, income tax and withholding readiness summaries
+4. supporting evidence and accountant handoff packets
+5. AI tax review assistant over deterministic compliance contracts
+
+### Future accounting graduation
+
+Only introduce full `Accounting` after this product proves the need for formal
+ledgers, journal entries, bank reconciliation and financial statements.
 
 ## Stage 8: Clinics products
 
@@ -874,7 +991,8 @@ Use the common platform, growth, conversations, and AI capabilities for vertical
 2. Country-specific tax document behavior should stay inside `Electronic Invoicing EC`, not in shared billing foundations.
 3. Product-specific AI should be implemented as agents over a common AI platform, not as isolated one-off integrations.
 4. `Ecommerce` should be the next large product domain after the Ecuador invoicing MVP is shaped enough to teach the platform how to handle shared foundations.
-5. `Accounting & Tax Compliance` should consume invoicing outputs but remain an independent product.
+5. `Tax Compliance EC` should consume invoicing outputs but remain an independent product.
+6. Full `Accounting` should remain a future product unless customer demand clearly requires ledger-grade workflows.
 
 ## Immediate next recommendation
 

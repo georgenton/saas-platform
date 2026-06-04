@@ -1,6 +1,21 @@
 export type PartyKind = 'organization' | 'person' | 'unknown';
 export type PartyRole = 'customer' | 'supplier' | 'patient' | 'lead';
 export type PartySourceContext = 'invoicing_customer';
+export type PartyFiscalCountry = 'EC';
+export type PartyFiscalCompletenessStatus = 'complete' | 'needs_review';
+
+export interface PartyFiscalProfile {
+  country: PartyFiscalCountry;
+  taxpayerId: string | null;
+  taxpayerName: string;
+  identificationType: string | null;
+  fiscalAddress: string | null;
+  email: string | null;
+  roles: PartyRole[];
+  completenessStatus: PartyFiscalCompletenessStatus;
+  missingFields: string[];
+  reviewNotes: string[];
+}
 
 export interface PartyProps {
   id: string;
@@ -14,6 +29,7 @@ export interface PartyProps {
   roles: PartyRole[];
   kind: PartyKind;
   sourceContext: PartySourceContext;
+  fiscalProfile?: PartyFiscalProfile | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -69,6 +85,10 @@ export class Party {
     return this.props.sourceContext;
   }
 
+  get fiscalProfile(): PartyFiscalProfile | null {
+    return this.props.fiscalProfile ?? null;
+  }
+
   get createdAt(): Date {
     return this.props.createdAt;
   }
@@ -81,6 +101,14 @@ export class Party {
     return {
       ...this.props,
       roles: [...this.props.roles],
+      fiscalProfile: this.props.fiscalProfile
+        ? {
+            ...this.props.fiscalProfile,
+            roles: [...this.props.fiscalProfile.roles],
+            missingFields: [...this.props.fiscalProfile.missingFields],
+            reviewNotes: [...this.props.fiscalProfile.reviewNotes],
+          }
+        : null,
     };
   }
 }

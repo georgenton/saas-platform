@@ -1,6 +1,11 @@
 import { CustomerRepository } from '@saas-platform/invoicing-application';
 import { Customer } from '@saas-platform/invoicing-domain';
-import { Party, PartyKind } from '@saas-platform/parties-domain';
+import {
+  Party,
+  PartyFiscalProfile,
+  PartyKind,
+  PartyRole,
+} from '@saas-platform/parties-domain';
 
 export class InvoicingCustomerPartyDirectoryRepository {
   constructor(private readonly customerRepository: CustomerRepository) {}
@@ -38,6 +43,15 @@ export class InvoicingCustomerPartyDirectoryRepository {
       roles: ['customer'],
       kind: inferPartyKind(data.identificationType ?? null),
       sourceContext: 'invoicing_customer',
+      fiscalProfile: buildEcuadorFiscalProfile({
+        displayName: data.name,
+        email: data.email ?? null,
+        taxId: data.taxId ?? null,
+        identificationType: data.identificationType ?? null,
+        identification: data.identification ?? null,
+        billingAddress: data.billingAddress ?? null,
+        roles: ['customer'],
+      }),
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     });
@@ -50,4 +64,50 @@ function inferPartyKind(identificationType: string | null): PartyKind {
   }
 
   return identificationType === '04' ? 'organization' : 'person';
+}
+
+function buildEcuadorFiscalProfile(input: {
+  displayName: string;
+  email: string | null;
+  taxId: string | null;
+  identificationType: string | null;
+  identification: string | null;
+  billingAddress: string | null;
+  roles: PartyRole[];
+}): PartyFiscalProfile {
+  const taxpayerId = input.taxId ?? input.identification;
+  const missingFields = [
+    taxpayerId ? null : 'taxpayer_id',
+    input.identificationType ? null : 'identification_type',
+    input.billingAddress ? null : 'fiscal_address',
+    input.email ? null : 'email',
+  ].filter((field): field is string => field !== null);
+
+  const reviewNotes = [
+    input.taxId && input.identification && input.taxId !== input.identification
+      ? 'tax_id_and_identification_do_not_match'
+      : null,
+    input.identificationType === '04' && taxpayerId && taxpayerId.length !== 13
+      ? 'ruc_should_have_13_digits'
+      : null,
+    input.identificationType === '05' && taxpayerId && taxpayerId.length !== 10
+      ? 'cedula_should_have_10_digits'
+      : null,
+  ].filter((note): note is string => note !== null);
+
+  return {
+    country: 'EC',
+    taxpayerId,
+    taxpayerName: input.displayName,
+    identificationType: input.identificationType,
+    fiscalAddress: input.billingAddress,
+    email: input.email,
+    roles: [...input.roles],
+    completenessStatus:
+      missingFields.length === 0 && reviewNotes.length === 0
+        ? 'complete'
+        : 'needs_review',
+    missingFields,
+    reviewNotes,
+  };
 }

@@ -1159,8 +1159,10 @@ export interface EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse {
     totalInCents: number;
     deductible: boolean | null;
     supportReference: string | null;
+    status: string;
     readinessStatus: string;
     blockers: string[];
+    reviewNotes: string[];
   }>;
   totalsByCurrency: Array<{
     currency: string;
@@ -1178,6 +1180,60 @@ export interface EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse {
   };
   blockers: string[];
   reviewNotes: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPurchaseExpenseEvidenceRecordResponse {
+  evidenceId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  supplierPartyId: string | null;
+  supplierName: string;
+  supplierTaxpayerId: string | null;
+  documentNumber: string | null;
+  documentCode: string | null;
+  issuedAt: string | null;
+  category: string;
+  currency: string;
+  subtotalInCents: number;
+  vatInCents: number;
+  totalInCents: number;
+  deductible: boolean | null;
+  supportReference: string | null;
+  status: string;
+  readinessStatus: string;
+  blockers: string[];
+  reviewNotes: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EcuadorTaxSupplierFiscalReadinessWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  summary: {
+    supplierCount: number;
+    completeSupplierCount: number;
+    needsReviewSupplierCount: number;
+    purchaseEvidenceSupplierCount: number;
+  };
+  supplierRows: Array<{
+    supplierKey: string;
+    supplierPartyId: string | null;
+    supplierName: string;
+    supplierTaxpayerId: string | null;
+    source: string;
+    purchaseEvidenceCount: number;
+    missingFields: string[];
+    readinessStatus: string;
+    blockers: string[];
+  }>;
+  blockers: string[];
   nextStep: string;
   guardrails: string[];
 }
@@ -1246,6 +1302,74 @@ export interface EcuadorTaxIncomeTaxEvidencePacketResponse {
   supportChecklist: string[];
   nextStep: string;
   guardrails: string[];
+}
+
+export interface EcuadorTaxWithholdingEvidencePacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  withholdingObligation: {
+    obligationKey: string;
+    label: string;
+    period: string;
+    frequency: string;
+    dueDate: string | null;
+    dueDay: number | null;
+    source: string;
+    readinessStatus: string;
+    notes: string[];
+  } | null;
+  salesCandidates: Array<{
+    invoiceId: string;
+    number: string;
+    buyerName: string | null;
+    buyerIdentification: string | null;
+    currency: string;
+    taxableBaseInCents: number;
+    vatInCents: number;
+    candidateReason: string;
+  }>;
+  purchaseCandidates: Array<{
+    evidenceId: string;
+    supplierName: string;
+    supplierTaxpayerId: string | null;
+    currency: string;
+    taxableBaseInCents: number;
+    vatInCents: number;
+    category: string;
+    candidateReason: string;
+  }>;
+  blockers: string[];
+  accountantQuestions: string[];
+  supportChecklist: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface RecordEcuadorTaxPurchaseExpenseEvidenceRequest {
+  period: string;
+  year: number;
+  supplierPartyId?: string | null;
+  supplierName: string;
+  supplierTaxpayerId?: string | null;
+  documentNumber?: string | null;
+  documentCode?: string | null;
+  issuedAt?: string | null;
+  category?:
+    | 'inventory'
+    | 'services'
+    | 'operating_expense'
+    | 'asset'
+    | 'non_deductible'
+    | 'uncategorized';
+  currency?: string;
+  subtotalInCents: number;
+  vatInCents?: number;
+  totalInCents?: number;
+  deductible?: boolean | null;
+  supportReference?: string | null;
 }
 
 export interface WhatsappRetryRunnerExecutionResponse {
@@ -4753,10 +4877,7 @@ export interface EcommerceOrderOperationalReviewWorkspaceResponse {
   productEntityId: string;
   orderDraftId: string;
   generatedAt: string;
-  reviewStatus:
-    | 'ready_for_closeout'
-    | 'needs_operator_review'
-    | 'blocked';
+  reviewStatus: 'ready_for_closeout' | 'needs_operator_review' | 'blocked';
   stalenessStatus: 'fresh' | 'needs_follow_up' | 'stale';
   summary: string;
   latestEvent: EcommerceOrderOperationalEventResponse | null;
@@ -4810,10 +4931,7 @@ export interface EcommerceOrderOperationalHealthBoardResponse {
   entries: Array<{
     orderDraftId: string;
     orderLabel: string;
-    reviewStatus:
-      | 'ready_for_closeout'
-      | 'needs_operator_review'
-      | 'blocked';
+    reviewStatus: 'ready_for_closeout' | 'needs_operator_review' | 'blocked';
     stalenessStatus: 'fresh' | 'needs_follow_up' | 'stale';
     latestEventType: EcommerceOrderOperationalEventResponse['eventType'] | null;
     blockerCount: number;
@@ -4953,10 +5071,7 @@ export interface EcommerceLiveRunReadinessPacketResponse {
   productEntityId: string;
   generatedAt: string;
   productEntity: EcommerceProductEntityResponse;
-  readinessStatus:
-    | 'ready_for_live_run'
-    | 'needs_operator_closeout'
-    | 'blocked';
+  readinessStatus: 'ready_for_live_run' | 'needs_operator_closeout' | 'blocked';
   summary: string;
   readinessSignals: Array<{
     laneKey: EcommerceCompletionDashboardResponse['lanes'][number]['laneKey'];
@@ -5146,11 +5261,7 @@ export interface EcommerceOrderReturnsRefundsCancellationDecisionResponse {
   productEntityId: string;
   orderDraftId: string;
   generatedAt: string;
-  decision:
-    | 'cancel_order'
-    | 'refund_review'
-    | 'return_review'
-    | 'escalate';
+  decision: 'cancel_order' | 'refund_review' | 'return_review' | 'escalate';
   decisionStatus: 'accepted' | 'needs_review' | 'blocked';
   summary: string;
   lifecycleSignals: EcommerceOrderReturnsRefundsCancellationWorkspaceResponse['lifecycleSignals'];

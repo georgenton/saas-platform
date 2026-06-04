@@ -16,12 +16,15 @@ import {
   EcuadorTaxPeriodCloseoutPacketView,
   EcuadorTaxPeriodWorkspaceView,
   EcuadorTaxPeriodPreparationPacketView,
+  EcuadorTaxPurchaseExpenseEvidenceRecordView,
   EcuadorTaxPurchaseExpenseEvidenceWorkspaceView,
   EcuadorTaxReconciliationWorkspaceView,
   EcuadorTaxSalesBookView,
+  EcuadorTaxSupplierFiscalReadinessWorkspaceView,
   EcuadorTaxpayerProfileView,
   EcuadorTaxVatDeclarationReadinessPacketView,
   EcuadorTaxVatInputOutputReconciliationPacketView,
+  EcuadorTaxWithholdingEvidencePacketView,
 } from '@saas-platform/tax-compliance-domain';
 
 export interface EcuadorTaxpayerProfileResponseDto {
@@ -449,6 +452,32 @@ export interface EcuadorTaxPeriodCloseoutPacketResponseDto {
   guardrails: string[];
 }
 
+export interface EcuadorTaxPurchaseExpenseEvidenceRecordResponseDto {
+  evidenceId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  supplierPartyId: string | null;
+  supplierName: string;
+  supplierTaxpayerId: string | null;
+  documentNumber: string | null;
+  documentCode: string | null;
+  issuedAt: string | null;
+  category: string;
+  currency: string;
+  subtotalInCents: number;
+  vatInCents: number;
+  totalInCents: number;
+  deductible: boolean | null;
+  supportReference: string | null;
+  status: string;
+  readinessStatus: string;
+  blockers: string[];
+  reviewNotes: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponseDto {
   tenantSlug: string;
   period: string;
@@ -471,8 +500,10 @@ export interface EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponseDto {
     totalInCents: number;
     deductible: boolean | null;
     supportReference: string | null;
+    status: string;
     readinessStatus: string;
     blockers: string[];
+    reviewNotes: string[];
   }>;
   totalsByCurrency: Array<{
     currency: string;
@@ -490,6 +521,34 @@ export interface EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponseDto {
   };
   blockers: string[];
   reviewNotes: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxSupplierFiscalReadinessWorkspaceResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  summary: {
+    supplierCount: number;
+    completeSupplierCount: number;
+    needsReviewSupplierCount: number;
+    purchaseEvidenceSupplierCount: number;
+  };
+  supplierRows: Array<{
+    supplierKey: string;
+    supplierPartyId: string | null;
+    supplierName: string;
+    supplierTaxpayerId: string | null;
+    source: string;
+    purchaseEvidenceCount: number;
+    missingFields: string[];
+    readinessStatus: string;
+    blockers: string[];
+  }>;
+  blockers: string[];
   nextStep: string;
   guardrails: string[];
 }
@@ -542,6 +601,40 @@ export interface EcuadorTaxIncomeTaxEvidencePacketResponseDto {
     revenueInCents: number;
     deductibleExpenseInCents: number;
     estimatedTaxableBaseInCents: number;
+  }>;
+  blockers: string[];
+  accountantQuestions: string[];
+  supportChecklist: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxWithholdingEvidencePacketResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  withholdingObligation: EcuadorTaxCalendarEntryResponseDto | null;
+  salesCandidates: Array<{
+    invoiceId: string;
+    number: string;
+    buyerName: string | null;
+    buyerIdentification: string | null;
+    currency: string;
+    taxableBaseInCents: number;
+    vatInCents: number;
+    candidateReason: string;
+  }>;
+  purchaseCandidates: Array<{
+    evidenceId: string;
+    supplierName: string;
+    supplierTaxpayerId: string | null;
+    currency: string;
+    taxableBaseInCents: number;
+    vatInCents: number;
+    category: string;
+    candidateReason: string;
   }>;
   blockers: string[];
   accountantQuestions: string[];
@@ -763,34 +856,36 @@ export function toEcuadorTaxPeriodPreparationPacketResponseDto(
     evidenceSummary: {
       invoicing: {
         invoiceCount: packet.evidenceSummary.invoicing.invoiceCount,
-        statusBreakdown:
-          packet.evidenceSummary.invoicing.statusBreakdown.map((status) => ({
+        statusBreakdown: packet.evidenceSummary.invoicing.statusBreakdown.map(
+          (status) => ({
             status: status.status,
             count: status.count,
-          })),
-        totalsByCurrency:
-          packet.evidenceSummary.invoicing.totalsByCurrency.map((total) => ({
+          }),
+        ),
+        totalsByCurrency: packet.evidenceSummary.invoicing.totalsByCurrency.map(
+          (total) => ({
             currency: total.currency,
             subtotalInCents: total.subtotalInCents,
             taxInCents: total.taxInCents,
             totalInCents: total.totalInCents,
             paidInCents: total.paidInCents,
             outstandingTotalInCents: total.outstandingTotalInCents,
-          })),
-        monthlyTotals:
-          packet.evidenceSummary.invoicing.monthlyTotals.map((month) => ({
+          }),
+        ),
+        monthlyTotals: packet.evidenceSummary.invoicing.monthlyTotals.map(
+          (month) => ({
             month: month.month,
             currency: month.currency,
             invoiceCount: month.invoiceCount,
             totalInCents: month.totalInCents,
             taxInCents: month.taxInCents,
-          })),
+          }),
+        ),
       },
       parties: {
         totalParties: packet.evidenceSummary.parties.totalParties,
         completeParties: packet.evidenceSummary.parties.completeParties,
-        needsReviewParties:
-          packet.evidenceSummary.parties.needsReviewParties,
+        needsReviewParties: packet.evidenceSummary.parties.needsReviewParties,
         issueSummaries: packet.evidenceSummary.parties.issueSummaries.map(
           (issue) => ({
             issue: issue.issue,
@@ -1192,8 +1287,10 @@ export function toEcuadorTaxPurchaseExpenseEvidenceWorkspaceResponseDto(
       totalInCents: row.totalInCents,
       deductible: row.deductible,
       supportReference: row.supportReference,
+      status: row.status,
       readinessStatus: row.readinessStatus,
       blockers: [...row.blockers],
+      reviewNotes: [...row.reviewNotes],
     })),
     totalsByCurrency: workspace.totalsByCurrency.map((total) => ({
       currency: total.currency,
@@ -1213,6 +1310,63 @@ export function toEcuadorTaxPurchaseExpenseEvidenceWorkspaceResponseDto(
     },
     blockers: [...workspace.blockers],
     reviewNotes: [...workspace.reviewNotes],
+    nextStep: workspace.nextStep,
+    guardrails: [...workspace.guardrails],
+  };
+}
+
+export function toEcuadorTaxPurchaseExpenseEvidenceRecordResponseDto(
+  record: EcuadorTaxPurchaseExpenseEvidenceRecordView,
+): EcuadorTaxPurchaseExpenseEvidenceRecordResponseDto {
+  return {
+    evidenceId: record.evidenceId,
+    tenantSlug: record.tenantSlug,
+    period: record.period,
+    year: record.year,
+    supplierPartyId: record.supplierPartyId,
+    supplierName: record.supplierName,
+    supplierTaxpayerId: record.supplierTaxpayerId,
+    documentNumber: record.documentNumber,
+    documentCode: record.documentCode,
+    issuedAt: record.issuedAt ? record.issuedAt.toISOString() : null,
+    category: record.category,
+    currency: record.currency,
+    subtotalInCents: record.subtotalInCents,
+    vatInCents: record.vatInCents,
+    totalInCents: record.totalInCents,
+    deductible: record.deductible,
+    supportReference: record.supportReference,
+    status: record.status,
+    readinessStatus: record.readinessStatus,
+    blockers: [...record.blockers],
+    reviewNotes: [...record.reviewNotes],
+    createdAt: record.createdAt.toISOString(),
+    updatedAt: record.updatedAt.toISOString(),
+  };
+}
+
+export function toEcuadorTaxSupplierFiscalReadinessWorkspaceResponseDto(
+  workspace: EcuadorTaxSupplierFiscalReadinessWorkspaceView,
+): EcuadorTaxSupplierFiscalReadinessWorkspaceResponseDto {
+  return {
+    tenantSlug: workspace.tenantSlug,
+    period: workspace.period,
+    year: workspace.year,
+    generatedAt: workspace.generatedAt.toISOString(),
+    readinessStatus: workspace.readinessStatus,
+    summary: { ...workspace.summary },
+    supplierRows: workspace.supplierRows.map((row) => ({
+      supplierKey: row.supplierKey,
+      supplierPartyId: row.supplierPartyId,
+      supplierName: row.supplierName,
+      supplierTaxpayerId: row.supplierTaxpayerId,
+      source: row.source,
+      purchaseEvidenceCount: row.purchaseEvidenceCount,
+      missingFields: [...row.missingFields],
+      readinessStatus: row.readinessStatus,
+      blockers: [...row.blockers],
+    })),
+    blockers: [...workspace.blockers],
     nextStep: workspace.nextStep,
     guardrails: [...workspace.guardrails],
   };
@@ -1275,13 +1429,54 @@ export function toEcuadorTaxIncomeTaxEvidencePacketResponseDto(
       deductibleExpenseInCents: total.deductibleExpenseInCents,
       expenseDocumentCount: total.expenseDocumentCount,
     })),
-    estimatedTaxableBaseByCurrency:
-      packet.estimatedTaxableBaseByCurrency.map((total) => ({
+    estimatedTaxableBaseByCurrency: packet.estimatedTaxableBaseByCurrency.map(
+      (total) => ({
         currency: total.currency,
         revenueInCents: total.revenueInCents,
         deductibleExpenseInCents: total.deductibleExpenseInCents,
         estimatedTaxableBaseInCents: total.estimatedTaxableBaseInCents,
-      })),
+      }),
+    ),
+    blockers: [...packet.blockers],
+    accountantQuestions: [...packet.accountantQuestions],
+    supportChecklist: [...packet.supportChecklist],
+    nextStep: packet.nextStep,
+    guardrails: [...packet.guardrails],
+  };
+}
+
+export function toEcuadorTaxWithholdingEvidencePacketResponseDto(
+  packet: EcuadorTaxWithholdingEvidencePacketView,
+): EcuadorTaxWithholdingEvidencePacketResponseDto {
+  return {
+    tenantSlug: packet.tenantSlug,
+    period: packet.period,
+    year: packet.year,
+    generatedAt: packet.generatedAt.toISOString(),
+    readinessStatus: packet.readinessStatus,
+    withholdingObligation: packet.withholdingObligation
+      ? toEcuadorTaxCalendarEntryResponseDto(packet.withholdingObligation)
+      : null,
+    salesCandidates: packet.salesCandidates.map((candidate) => ({
+      invoiceId: candidate.invoiceId,
+      number: candidate.number,
+      buyerName: candidate.buyerName,
+      buyerIdentification: candidate.buyerIdentification,
+      currency: candidate.currency,
+      taxableBaseInCents: candidate.taxableBaseInCents,
+      vatInCents: candidate.vatInCents,
+      candidateReason: candidate.candidateReason,
+    })),
+    purchaseCandidates: packet.purchaseCandidates.map((candidate) => ({
+      evidenceId: candidate.evidenceId,
+      supplierName: candidate.supplierName,
+      supplierTaxpayerId: candidate.supplierTaxpayerId,
+      currency: candidate.currency,
+      taxableBaseInCents: candidate.taxableBaseInCents,
+      vatInCents: candidate.vatInCents,
+      category: candidate.category,
+      candidateReason: candidate.candidateReason,
+    })),
     blockers: [...packet.blockers],
     accountantQuestions: [...packet.accountantQuestions],
     supportChecklist: [...packet.supportChecklist],
@@ -1355,19 +1550,19 @@ function toEvidenceSummaryResponseDto(
       })),
       incompletePartyIds: [...evidenceSummary.parties.incompletePartyIds],
     },
-      ecommerce: {
-        status: evidenceSummary.ecommerce.status,
-        orderCount: evidenceSummary.ecommerce.orderCount,
-        readyToInvoiceCount: evidenceSummary.ecommerce.readyToInvoiceCount,
-        blockedCount: evidenceSummary.ecommerce.blockedCount,
-        needsFiscalDataCount: evidenceSummary.ecommerce.needsFiscalDataCount,
-        confirmedPaymentEventCount:
-          evidenceSummary.ecommerce.confirmedPaymentEventCount,
-        disputedPaymentEventCount:
-          evidenceSummary.ecommerce.disputedPaymentEventCount,
-        deliveredEventCount: evidenceSummary.ecommerce.deliveredEventCount,
-        period: evidenceSummary.ecommerce.period,
-        notes: [...evidenceSummary.ecommerce.notes],
-      },
+    ecommerce: {
+      status: evidenceSummary.ecommerce.status,
+      orderCount: evidenceSummary.ecommerce.orderCount,
+      readyToInvoiceCount: evidenceSummary.ecommerce.readyToInvoiceCount,
+      blockedCount: evidenceSummary.ecommerce.blockedCount,
+      needsFiscalDataCount: evidenceSummary.ecommerce.needsFiscalDataCount,
+      confirmedPaymentEventCount:
+        evidenceSummary.ecommerce.confirmedPaymentEventCount,
+      disputedPaymentEventCount:
+        evidenceSummary.ecommerce.disputedPaymentEventCount,
+      deliveredEventCount: evidenceSummary.ecommerce.deliveredEventCount,
+      period: evidenceSummary.ecommerce.period,
+      notes: [...evidenceSummary.ecommerce.notes],
+    },
   };
 }

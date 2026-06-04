@@ -112,8 +112,11 @@ import {
   fetchEcuadorTaxPurchaseExpenseEvidenceWorkspace,
   fetchEcuadorTaxReconciliationWorkspace,
   fetchEcuadorTaxSalesBook,
+  fetchEcuadorTaxSupplierFiscalReadinessWorkspace,
   fetchEcuadorTaxVatDeclarationReadinessPacket,
   fetchEcuadorTaxVatInputOutputReconciliationPacket,
+  fetchEcuadorTaxWithholdingEvidencePacket,
+  recordEcuadorTaxPurchaseExpenseEvidence,
   fetchTenantEcommerceOrderPostSaleOpsBoard,
   fetchTenantEcommerceOrderPostSaleReportingBoard,
   fetchTenantEcommerceOrderPostSaleReportingSummary,
@@ -496,8 +499,10 @@ import {
   EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse,
   EcuadorTaxReconciliationWorkspaceResponse,
   EcuadorTaxSalesBookResponse,
+  EcuadorTaxSupplierFiscalReadinessWorkspaceResponse,
   EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcuadorTaxVatInputOutputReconciliationPacketResponse,
+  EcuadorTaxWithholdingEvidencePacketResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSignatureMaterialInspectionResponse,
   ElectronicSubmissionSettingsResponse,
@@ -1927,6 +1932,14 @@ export function App() {
     taxComplianceIncomeTaxEvidencePacket,
     setTaxComplianceIncomeTaxEvidencePacket,
   ] = useState<EcuadorTaxIncomeTaxEvidencePacketResponse | null>(null);
+  const [
+    taxComplianceSupplierReadinessWorkspace,
+    setTaxComplianceSupplierReadinessWorkspace,
+  ] = useState<EcuadorTaxSupplierFiscalReadinessWorkspaceResponse | null>(null);
+  const [
+    taxComplianceWithholdingEvidencePacket,
+    setTaxComplianceWithholdingEvidencePacket,
+  ] = useState<EcuadorTaxWithholdingEvidencePacketResponse | null>(null);
   const [taxComplianceLoading, setTaxComplianceLoading] = useState(false);
   const [taxComplianceActionLoading, setTaxComplianceActionLoading] =
     useState<string | null>(null);
@@ -19077,6 +19090,8 @@ export function App() {
         nextPurchaseExpenseEvidence,
         nextVatInputOutputPacket,
         nextIncomeTaxEvidencePacket,
+        nextSupplierReadinessWorkspace,
+        nextWithholdingEvidencePacket,
       ] = await Promise.all([
         fetchEcuadorTaxPeriodWorkspace(token, tenantSlug, taxCompliancePeriod, year),
         fetchEcuadorTaxEcommerceEvidence(token, tenantSlug, taxCompliancePeriod),
@@ -19125,6 +19140,18 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchEcuadorTaxSupplierFiscalReadinessWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxWithholdingEvidencePacket(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
       ]);
 
       startTransition(() => {
@@ -19140,6 +19167,10 @@ export function App() {
         setTaxCompliancePurchaseExpenseEvidence(nextPurchaseExpenseEvidence);
         setTaxComplianceVatInputOutputPacket(nextVatInputOutputPacket);
         setTaxComplianceIncomeTaxEvidencePacket(nextIncomeTaxEvidencePacket);
+        setTaxComplianceSupplierReadinessWorkspace(
+          nextSupplierReadinessWorkspace,
+        );
+        setTaxComplianceWithholdingEvidencePacket(nextWithholdingEvidencePacket);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -19222,6 +19253,54 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo aprobar la revision contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRecordTaxPurchaseExpenseEvidence() {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      return;
+    }
+
+    const year = resolveNumericYear(taxComplianceYear);
+    setTaxComplianceActionLoading('record-purchase-evidence');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const evidence = await recordEcuadorTaxPurchaseExpenseEvidence(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          period: taxCompliancePeriod,
+          year,
+          supplierName: 'Proveedor operativo demo',
+          supplierTaxpayerId: '1790012345001',
+          documentNumber: `DEMO-${taxCompliancePeriod}`,
+          documentCode: '01',
+          issuedAt: `${taxCompliancePeriod}-15T00:00:00.000Z`,
+          category: 'services',
+          currency: 'USD',
+          subtotalInCents: 10000,
+          vatInCents: 1200,
+          totalInCents: 11200,
+          deductible: true,
+          supportReference: `tax-intake://${taxCompliancePeriod}/demo-purchase`,
+        },
+      );
+      setTaxComplianceActionMessage(
+        `Evidencia ${evidence.evidenceId} registrada como ${humanizeKey(
+          evidence.status,
+        )}.`,
+      );
+      await refreshTaxComplianceWorkspace();
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo registrar evidencia de compra/gasto.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -33475,6 +33554,26 @@ export function App() {
                       : 'Sin cargar'}
                   </strong>
                 </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Proveedores</span>
+                  <strong>
+                    {taxComplianceSupplierReadinessWorkspace
+                      ? humanizeKey(
+                          taxComplianceSupplierReadinessWorkspace.readinessStatus,
+                        )
+                      : 'Sin cargar'}
+                  </strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Retenciones</span>
+                  <strong>
+                    {taxComplianceWithholdingEvidencePacket
+                      ? humanizeKey(
+                          taxComplianceWithholdingEvidencePacket.readinessStatus,
+                        )
+                      : 'Sin cargar'}
+                  </strong>
+                </div>
               </div>
 
               <div className={styles.twoColumn}>
@@ -33565,6 +33664,115 @@ export function App() {
                 <div className={styles.stack}>
                   <div className={styles.sectionHeading}>
                     <div>
+                      <span className={styles.label}>Purchases</span>
+                      <h3>Compras y gastos operativos</h3>
+                    </div>
+                    <button
+                      className={styles.ghostButton}
+                      disabled={
+                        taxComplianceActionLoading === 'record-purchase-evidence'
+                      }
+                      onClick={() => void handleRecordTaxPurchaseExpenseEvidence()}
+                      type="button"
+                    >
+                      Registrar
+                    </button>
+                  </div>
+                  {taxCompliancePurchaseExpenseEvidence ? (
+                    <div className={styles.stack}>
+                      {taxCompliancePurchaseExpenseEvidence.documentRows
+                        .slice(0, 3)
+                        .map((document) => (
+                          <div
+                            className={styles.invoiceItemCard}
+                            key={document.evidenceId}
+                          >
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{document.supplierName}</strong>
+                              <span className={styles.statusPill}>
+                                {humanizeKey(document.status)}
+                              </span>
+                            </div>
+                            <p className={styles.muted}>
+                              {document.documentNumber} ·{' '}
+                              {formatMoney(
+                                document.totalInCents,
+                                document.currency,
+                              )}{' '}
+                              · {humanizeKey(document.category)}
+                            </p>
+                          </div>
+                        ))}
+                      <p className={styles.muted}>
+                        Estado{' '}
+                        {humanizeKey(
+                          taxCompliancePurchaseExpenseEvidence.readinessStatus,
+                        )}{' '}
+                        · {taxCompliancePurchaseExpenseEvidence.blockers.length}{' '}
+                        blockers
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Registra compras y gastos para preparar IVA y renta.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Suppliers</span>
+                      <h3>Readiness fiscal de proveedores</h3>
+                    </div>
+                  </div>
+                  {taxComplianceSupplierReadinessWorkspace ? (
+                    <div className={styles.stack}>
+                      {taxComplianceSupplierReadinessWorkspace.supplierRows
+                        .slice(0, 3)
+                        .map((supplier) => (
+                          <div
+                            className={styles.invoiceItemCard}
+                            key={supplier.supplierKey}
+                          >
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{supplier.supplierName}</strong>
+                              <span className={styles.statusPill}>
+                                {humanizeKey(supplier.readinessStatus)}
+                              </span>
+                            </div>
+                            <p className={styles.muted}>
+                              {supplier.supplierTaxpayerId ?? 'sin RUC'} ·{' '}
+                              {supplier.purchaseEvidenceCount} docs ·{' '}
+                              {humanizeKey(supplier.source)}
+                            </p>
+                          </div>
+                        ))}
+                      <p className={styles.muted}>
+                        {
+                          taxComplianceSupplierReadinessWorkspace.summary
+                            .completeSupplierCount
+                        }
+                        /
+                        {
+                          taxComplianceSupplierReadinessWorkspace.summary
+                            .supplierCount
+                        }{' '}
+                        proveedores listos
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un periodo para revisar proveedores.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
                       <span className={styles.label}>Accountant lifecycle</span>
                       <h3>Revisión contable</h3>
                     </div>
@@ -33637,6 +33845,95 @@ export function App() {
                   ) : (
                     <div className={styles.emptyState}>
                       <p>Carga un periodo para preparar aprobación.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Withholding</span>
+                      <h3>Evidencia de retenciones</h3>
+                    </div>
+                  </div>
+                  {taxComplianceWithholdingEvidencePacket ? (
+                    <div className={styles.stack}>
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>
+                            {humanizeKey(
+                              taxComplianceWithholdingEvidencePacket.readinessStatus,
+                            )}
+                          </strong>
+                          <span className={styles.statusPill}>
+                            {
+                              taxComplianceWithholdingEvidencePacket.blockers
+                                .length
+                            }{' '}
+                            blockers
+                          </span>
+                        </div>
+                        <p className={styles.muted}>
+                          {taxComplianceWithholdingEvidencePacket.nextStep}
+                        </p>
+                      </div>
+                      <div className={styles.commercialGrid}>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Ventas candidatas</span>
+                          <strong>
+                            {
+                              taxComplianceWithholdingEvidencePacket
+                                .salesCandidates.length
+                            }
+                          </strong>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Compras candidatas</span>
+                          <strong>
+                            {
+                              taxComplianceWithholdingEvidencePacket
+                                .purchaseCandidates.length
+                            }
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un periodo para preparar retenciones.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Income tax</span>
+                      <h3>Evidencia de renta</h3>
+                    </div>
+                  </div>
+                  {taxComplianceIncomeTaxEvidencePacket ? (
+                    <div className={styles.invoiceItemCard}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>
+                          {humanizeKey(
+                            taxComplianceIncomeTaxEvidencePacket.readinessStatus,
+                          )}
+                        </strong>
+                        <span className={styles.statusPill}>
+                          {taxComplianceIncomeTaxEvidencePacket.blockers.length}{' '}
+                          blockers
+                        </span>
+                      </div>
+                      <p className={styles.muted}>
+                        {taxComplianceIncomeTaxEvidencePacket.nextStep}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un periodo para preparar evidencia de renta.</p>
                     </div>
                   )}
                 </div>

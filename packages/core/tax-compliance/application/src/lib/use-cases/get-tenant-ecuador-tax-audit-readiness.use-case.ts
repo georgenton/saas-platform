@@ -14,9 +14,8 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
     period: string;
     year: number;
   }): Promise<EcuadorTaxAuditReadinessView> {
-    const workspace = await this.getTenantEcuadorTaxPeriodWorkspaceUseCase.execute(
-      input,
-    );
+    const workspace =
+      await this.getTenantEcuadorTaxPeriodWorkspaceUseCase.execute(input);
     const persistedEvents = this.listTenantEcuadorTaxComplianceEventsUseCase
       ? await this.listTenantEcuadorTaxComplianceEventsUseCase.execute({
           tenantSlug: input.tenantSlug,
@@ -127,6 +126,36 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
           : 'persist_when_requested',
       },
       {
+        eventType: 'purchase_expense_evidence_recorded',
+        generated: false,
+        source: 'purchase_expense_evidence_intake',
+        recommendedPersistence: persistedEventTypes.has(
+          'purchase_expense_evidence_recorded',
+        )
+          ? 'persisted'
+          : 'persist_when_recorded',
+      },
+      {
+        eventType: 'supplier_fiscal_readiness_reviewed',
+        generated: false,
+        source: 'supplier_fiscal_readiness_workspace',
+        recommendedPersistence: persistedEventTypes.has(
+          'supplier_fiscal_readiness_reviewed',
+        )
+          ? 'persisted'
+          : 'persist_when_requested',
+      },
+      {
+        eventType: 'withholding_evidence_packet_requested',
+        generated: false,
+        source: 'withholding_evidence_packet',
+        recommendedPersistence: persistedEventTypes.has(
+          'withholding_evidence_packet_requested',
+        )
+          ? 'persisted'
+          : 'persist_when_requested',
+      },
+      {
         eventType: 'vat_input_output_reconciliation_requested',
         generated: false,
         source: 'vat_input_output_reconciliation_packet',
@@ -161,13 +190,25 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
       recommendedAuditEvents: [
         {
           eventType: 'period_workspace_generated',
-          reason: 'Permite reconstruir que informacion vio el operador por periodo.',
-          minimumPayload: ['tenantSlug', 'period', 'year', 'status', 'blockers'],
+          reason:
+            'Permite reconstruir que informacion vio el operador por periodo.',
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'year',
+            'status',
+            'blockers',
+          ],
         },
         {
           eventType: 'accountant_packet_requested',
           reason: 'Marca handoff humano y preguntas enviadas al contador.',
-          minimumPayload: ['tenantSlug', 'period', 'questions', 'evidenceSummary'],
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'questions',
+            'evidenceSummary',
+          ],
         },
         {
           eventType: 'accountant_review_transitioned',
@@ -177,16 +218,23 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
         {
           eventType: 'declaration_draft_requested',
           reason: 'Audita generacion de borrador antes de declaracion final.',
-          minimumPayload: ['tenantSlug', 'period', 'readinessStatus', 'sections'],
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'readinessStatus',
+            'sections',
+          ],
         },
         {
           eventType: 'due_monitor_reviewed',
-          reason: 'Audita alertas revisadas y obligaciones proximas o vencidas.',
+          reason:
+            'Audita alertas revisadas y obligaciones proximas o vencidas.',
           minimumPayload: ['tenantSlug', 'period', 'alerts', 'asOfDate'],
         },
         {
           eventType: 'tax_sales_book_generated',
-          reason: 'Audita libro de ventas derivado y evidencia ecommerce conectada.',
+          reason:
+            'Audita libro de ventas derivado y evidencia ecommerce conectada.',
           minimumPayload: [
             'tenantSlug',
             'period',
@@ -196,7 +244,8 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
         },
         {
           eventType: 'tax_reconciliation_reviewed',
-          reason: 'Audita conciliacion entre libro de ventas, ecommerce, terceros y revision humana.',
+          reason:
+            'Audita conciliacion entre libro de ventas, ecommerce, terceros y revision humana.',
           minimumPayload: [
             'tenantSlug',
             'period',
@@ -217,7 +266,8 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
         },
         {
           eventType: 'period_closeout_packet_requested',
-          reason: 'Audita cierre operativo del periodo y completitud del ledger.',
+          reason:
+            'Audita cierre operativo del periodo y completitud del ledger.',
           minimumPayload: [
             'tenantSlug',
             'period',
@@ -227,7 +277,8 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
         },
         {
           eventType: 'purchase_expense_evidence_reviewed',
-          reason: 'Audita revision de compras/gastos y proveedores fiscales para credito tributario o deducibilidad.',
+          reason:
+            'Audita revision de compras/gastos y proveedores fiscales para credito tributario o deducibilidad.',
           minimumPayload: [
             'tenantSlug',
             'period',
@@ -237,8 +288,46 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
           ],
         },
         {
+          eventType: 'purchase_expense_evidence_recorded',
+          reason:
+            'Audita intake de compras/gastos con soporte, proveedor y deducibilidad operacional.',
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'evidenceId',
+            'supplierTaxpayerId',
+            'totalInCents',
+            'status',
+          ],
+        },
+        {
+          eventType: 'supplier_fiscal_readiness_reviewed',
+          reason:
+            'Audita preparacion fiscal de proveedores antes de usar compras en IVA, renta o retenciones.',
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'readinessStatus',
+            'supplierCount',
+            'blockers',
+          ],
+        },
+        {
+          eventType: 'withholding_evidence_packet_requested',
+          reason:
+            'Audita candidatos y blockers de retenciones derivados de ventas, compras y calendario tributario.',
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'readinessStatus',
+            'salesCandidateCount',
+            'purchaseCandidateCount',
+          ],
+        },
+        {
           eventType: 'vat_input_output_reconciliation_requested',
-          reason: 'Audita conciliacion de IVA ventas contra credito tributario operacional.',
+          reason:
+            'Audita conciliacion de IVA ventas contra credito tributario operacional.',
           minimumPayload: [
             'tenantSlug',
             'period',
@@ -248,7 +337,8 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
         },
         {
           eventType: 'income_tax_evidence_packet_requested',
-          reason: 'Audita evidencia base para impuesto a la renta antes de clasificacion contable.',
+          reason:
+            'Audita evidencia base para impuesto a la renta antes de clasificacion contable.',
           minimumPayload: [
             'tenantSlug',
             'period',

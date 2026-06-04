@@ -28,6 +28,7 @@ import {
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
   GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
+  GetTenantEcuadorTaxRuleCatalogUseCase,
   GetTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
   ListTenantEcuadorTaxAccountantReviewsUseCase,
@@ -44,6 +45,7 @@ import {
   RequestTenantEcuadorTaxSalesBookUseCase,
   RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase,
   RequestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase,
+  RequestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase,
   RequestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
   TAX_COMPLIANCE_ACCOUNTANT_REVIEW_ID_GENERATOR,
   TAX_COMPLIANCE_ACCOUNTANT_REVIEW_REPOSITORY,
@@ -71,7 +73,6 @@ import { InvoicingCustomerPartyDirectoryRepository } from '../parties/invoicing-
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
-import { InMemoryTaxCompliancePurchaseExpenseEvidenceRepository } from './in-memory-tax-compliance-purchase-expense-evidence.repository';
 import { TaxComplianceController } from './tax-compliance.controller';
 
 @Module({
@@ -86,11 +87,6 @@ import { TaxComplianceController } from './tax-compliance.controller';
   ],
   controllers: [TaxComplianceController],
   providers: [
-    {
-      provide: TAX_COMPLIANCE_PURCHASE_EXPENSE_EVIDENCE_REPOSITORY,
-      useFactory: () =>
-        new InMemoryTaxCompliancePurchaseExpenseEvidenceRepository(),
-    },
     {
       provide: PARTY_DIRECTORY_REPOSITORY,
       inject: [CUSTOMER_REPOSITORY],
@@ -372,6 +368,14 @@ import { TaxComplianceController } from './tax-compliance.controller';
         ),
     },
     {
+      provide: GetTenantEcuadorTaxRuleCatalogUseCase,
+      inject: [RecordTenantEcuadorTaxComplianceEventUseCase],
+      useFactory: (recordTenantEcuadorTaxComplianceEventUseCase) =>
+        new GetTenantEcuadorTaxRuleCatalogUseCase(
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
       provide: RequestTenantEcuadorTaxAccountantReviewUseCase,
       inject: [
         TENANT_REPOSITORY,
@@ -578,6 +582,21 @@ import { TaxComplianceController } from './tax-compliance.controller';
           getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
           getTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
           getTenantEcuadorTaxObligationCalendarUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase,
+      inject: [
+        RequestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase(
+          requestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
           recordTenantEcuadorTaxComplianceEventUseCase,
         ),
     },

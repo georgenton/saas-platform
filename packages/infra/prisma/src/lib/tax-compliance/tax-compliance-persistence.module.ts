@@ -5,11 +5,13 @@ import {
   TAX_COMPLIANCE_ECOMMERCE_EVIDENCE_REPOSITORY,
   TAX_COMPLIANCE_EVENT_ID_GENERATOR,
   TAX_COMPLIANCE_EVENT_REPOSITORY,
+  TAX_COMPLIANCE_PURCHASE_EXPENSE_EVIDENCE_REPOSITORY,
 } from '@saas-platform/tax-compliance-application';
 import { PrismaModule } from '../prisma.module';
 import { PrismaTaxComplianceAccountantReviewRepository } from './prisma-tax-compliance-accountant-review.repository';
 import { PrismaTaxComplianceEcommerceEvidenceRepository } from './prisma-tax-compliance-ecommerce-evidence.repository';
 import { PrismaTaxComplianceEventRepository } from './prisma-tax-compliance-event.repository';
+import { PrismaTaxCompliancePurchaseExpenseEvidenceRepository } from './prisma-tax-compliance-purchase-expense-evidence.repository';
 import { UuidTaxComplianceAccountantReviewIdGenerator } from './uuid-tax-compliance-accountant-review-id.generator';
 import { UuidTaxComplianceEventIdGenerator } from './uuid-tax-compliance-event-id.generator';
 
@@ -19,6 +21,7 @@ import { UuidTaxComplianceEventIdGenerator } from './uuid-tax-compliance-event-i
     PrismaTaxComplianceAccountantReviewRepository,
     PrismaTaxComplianceEcommerceEvidenceRepository,
     PrismaTaxComplianceEventRepository,
+    PrismaTaxCompliancePurchaseExpenseEvidenceRepository,
     UuidTaxComplianceAccountantReviewIdGenerator,
     UuidTaxComplianceEventIdGenerator,
     {
@@ -34,6 +37,10 @@ import { UuidTaxComplianceEventIdGenerator } from './uuid-tax-compliance-event-i
       useExisting: PrismaTaxComplianceEventRepository,
     },
     {
+      provide: TAX_COMPLIANCE_PURCHASE_EXPENSE_EVIDENCE_REPOSITORY,
+      useExisting: PrismaTaxCompliancePurchaseExpenseEvidenceRepository,
+    },
+    {
       provide: TAX_COMPLIANCE_ACCOUNTANT_REVIEW_ID_GENERATOR,
       useExisting: UuidTaxComplianceAccountantReviewIdGenerator,
     },
@@ -46,6 +53,7 @@ import { UuidTaxComplianceEventIdGenerator } from './uuid-tax-compliance-event-i
     TAX_COMPLIANCE_ACCOUNTANT_REVIEW_REPOSITORY,
     TAX_COMPLIANCE_ECOMMERCE_EVIDENCE_REPOSITORY,
     TAX_COMPLIANCE_EVENT_REPOSITORY,
+    TAX_COMPLIANCE_PURCHASE_EXPENSE_EVIDENCE_REPOSITORY,
     TAX_COMPLIANCE_ACCOUNTANT_REVIEW_ID_GENERATOR,
     TAX_COMPLIANCE_EVENT_ID_GENERATOR,
   ],

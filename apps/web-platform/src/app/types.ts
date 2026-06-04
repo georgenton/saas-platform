@@ -1348,6 +1348,66 @@ export interface EcuadorTaxWithholdingEvidencePacketResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxWithholdingDraftBridgePacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  source: string;
+  selectedCandidate: {
+    candidateType: string;
+    candidateId: string;
+    label: string;
+    currency: string;
+    taxableBaseInCents: number;
+    vatInCents: number;
+    candidateReason: string;
+  } | null;
+  createWithholdingDraftInput: {
+    sourceInvoiceId: string;
+    reason: string;
+    amountInCents: number;
+    taxRateId: string | null;
+    number: string | null;
+    issuedAt: string | null;
+    notes: string | null;
+  } | null;
+  bridgeChecklist: string[];
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxRuleCatalogResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  country: string;
+  readinessStatus: string;
+  rules: Array<{
+    ruleKey: string;
+    obligationKey: string;
+    title: string;
+    appliesToCategory: string | null;
+    appliesWhen: string[];
+    operationalEffect: string;
+    accountantReviewRecommended: boolean;
+    evidenceInputs: string[];
+    guardrails: string[];
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface RequestEcuadorTaxWithholdingDraftBridgePacketRequest {
+  period: string;
+  year: number;
+  candidateType?: 'sale' | 'purchase';
+  candidateId?: string | null;
+  taxRateId?: string | null;
+}
+
 export interface RecordEcuadorTaxPurchaseExpenseEvidenceRequest {
   period: string;
   year: number;

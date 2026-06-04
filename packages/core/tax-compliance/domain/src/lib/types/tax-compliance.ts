@@ -69,7 +69,9 @@ export type EcuadorTaxComplianceEventType =
   | 'income_tax_evidence_packet_requested'
   | 'purchase_expense_evidence_recorded'
   | 'supplier_fiscal_readiness_reviewed'
-  | 'withholding_evidence_packet_requested';
+  | 'withholding_evidence_packet_requested'
+  | 'withholding_draft_bridge_requested'
+  | 'tax_rule_catalog_reviewed';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -664,6 +666,58 @@ export interface EcuadorTaxWithholdingEvidencePacketView {
   blockers: string[];
   accountantQuestions: string[];
   supportChecklist: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxWithholdingDraftBridgePacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  source: 'withholding_evidence_packet';
+  selectedCandidate: {
+    candidateType: 'sale' | 'purchase';
+    candidateId: string;
+    label: string;
+    currency: string;
+    taxableBaseInCents: number;
+    vatInCents: number;
+    candidateReason: string;
+  } | null;
+  createWithholdingDraftInput: {
+    sourceInvoiceId: string;
+    reason: string;
+    amountInCents: number;
+    taxRateId: string | null;
+    number: string | null;
+    issuedAt: Date | null;
+    notes: string | null;
+  } | null;
+  bridgeChecklist: string[];
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxRuleCatalogView {
+  tenantSlug: string;
+  generatedAt: Date;
+  country: 'EC';
+  readinessStatus: EcuadorTaxReadinessStatus;
+  rules: Array<{
+    ruleKey: string;
+    obligationKey: EcuadorTaxObligationKey;
+    title: string;
+    appliesToCategory: EcuadorTaxPurchaseExpenseCategory | null;
+    appliesWhen: string[];
+    operationalEffect: string;
+    accountantReviewRecommended: boolean;
+    evidenceInputs: string[];
+    guardrails: string[];
+  }>;
+  blockers: string[];
   nextStep: string;
   guardrails: string[];
 }

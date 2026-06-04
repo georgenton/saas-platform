@@ -63,6 +63,7 @@ export * from './lib/prisma.service';
 export * from './lib/tax-compliance/prisma-tax-compliance-accountant-review.repository';
 export * from './lib/tax-compliance/prisma-tax-compliance-ecommerce-evidence.repository';
 export * from './lib/tax-compliance/prisma-tax-compliance-event.repository';
+export * from './lib/tax-compliance/prisma-tax-compliance-purchase-expense-evidence.repository';
 export * from './lib/tax-compliance/tax-compliance-persistence.module';
 export * from './lib/tax-compliance/uuid-tax-compliance-accountant-review-id.generator';
 export * from './lib/tax-compliance/uuid-tax-compliance-event-id.generator';

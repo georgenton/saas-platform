@@ -111,12 +111,14 @@ import {
   fetchEcuadorTaxPeriodWorkspace,
   fetchEcuadorTaxPurchaseExpenseEvidenceWorkspace,
   fetchEcuadorTaxReconciliationWorkspace,
+  fetchEcuadorTaxRuleCatalog,
   fetchEcuadorTaxSalesBook,
   fetchEcuadorTaxSupplierFiscalReadinessWorkspace,
   fetchEcuadorTaxVatDeclarationReadinessPacket,
   fetchEcuadorTaxVatInputOutputReconciliationPacket,
   fetchEcuadorTaxWithholdingEvidencePacket,
   recordEcuadorTaxPurchaseExpenseEvidence,
+  requestEcuadorTaxWithholdingDraftBridgePacket,
   fetchTenantEcommerceOrderPostSaleOpsBoard,
   fetchTenantEcommerceOrderPostSaleReportingBoard,
   fetchTenantEcommerceOrderPostSaleReportingSummary,
@@ -498,10 +500,12 @@ import {
   EcuadorTaxPeriodWorkspaceResponse,
   EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse,
   EcuadorTaxReconciliationWorkspaceResponse,
+  EcuadorTaxRuleCatalogResponse,
   EcuadorTaxSalesBookResponse,
   EcuadorTaxSupplierFiscalReadinessWorkspaceResponse,
   EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcuadorTaxVatInputOutputReconciliationPacketResponse,
+  EcuadorTaxWithholdingDraftBridgePacketResponse,
   EcuadorTaxWithholdingEvidencePacketResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSignatureMaterialInspectionResponse,
@@ -1940,6 +1944,12 @@ export function App() {
     taxComplianceWithholdingEvidencePacket,
     setTaxComplianceWithholdingEvidencePacket,
   ] = useState<EcuadorTaxWithholdingEvidencePacketResponse | null>(null);
+  const [
+    taxComplianceWithholdingDraftBridgePacket,
+    setTaxComplianceWithholdingDraftBridgePacket,
+  ] = useState<EcuadorTaxWithholdingDraftBridgePacketResponse | null>(null);
+  const [taxComplianceRuleCatalog, setTaxComplianceRuleCatalog] =
+    useState<EcuadorTaxRuleCatalogResponse | null>(null);
   const [taxComplianceLoading, setTaxComplianceLoading] = useState(false);
   const [taxComplianceActionLoading, setTaxComplianceActionLoading] =
     useState<string | null>(null);
@@ -19092,6 +19102,7 @@ export function App() {
         nextIncomeTaxEvidencePacket,
         nextSupplierReadinessWorkspace,
         nextWithholdingEvidencePacket,
+        nextRuleCatalog,
       ] = await Promise.all([
         fetchEcuadorTaxPeriodWorkspace(token, tenantSlug, taxCompliancePeriod, year),
         fetchEcuadorTaxEcommerceEvidence(token, tenantSlug, taxCompliancePeriod),
@@ -19152,6 +19163,7 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchEcuadorTaxRuleCatalog(token, tenantSlug, taxCompliancePeriod, year),
       ]);
 
       startTransition(() => {
@@ -19171,6 +19183,7 @@ export function App() {
           nextSupplierReadinessWorkspace,
         );
         setTaxComplianceWithholdingEvidencePacket(nextWithholdingEvidencePacket);
+        setTaxComplianceRuleCatalog(nextRuleCatalog);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -19301,6 +19314,46 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo registrar evidencia de compra/gasto.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestTaxWithholdingDraftBridge() {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      return;
+    }
+
+    const firstSalesCandidate =
+      taxComplianceWithholdingEvidencePacket?.salesCandidates[0] ?? null;
+    setTaxComplianceActionLoading('withholding-draft-bridge');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const packet = await requestEcuadorTaxWithholdingDraftBridgePacket(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          period: taxCompliancePeriod,
+          year: resolveNumericYear(taxComplianceYear),
+          candidateType: 'sale',
+          candidateId: firstSalesCandidate?.invoiceId ?? null,
+        },
+      );
+      setTaxComplianceWithholdingDraftBridgePacket(packet);
+      setTaxComplianceActionMessage(
+        packet.createWithholdingDraftInput
+          ? `Bridge de retencion listo para factura ${packet.createWithholdingDraftInput.sourceInvoiceId}.`
+          : `Bridge de retencion ${humanizeKey(packet.readinessStatus)}.`,
+      );
+      await refreshTaxComplianceWorkspace();
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo preparar bridge de retencion.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -33857,6 +33910,20 @@ export function App() {
                       <span className={styles.label}>Withholding</span>
                       <h3>Evidencia de retenciones</h3>
                     </div>
+                    <button
+                      className={styles.ghostButton}
+                      disabled={
+                        taxComplianceActionLoading ===
+                          'withholding-draft-bridge' ||
+                        !taxComplianceWithholdingEvidencePacket
+                      }
+                      onClick={() =>
+                        void handleRequestTaxWithholdingDraftBridge()
+                      }
+                      type="button"
+                    >
+                      Preparar
+                    </button>
                   </div>
                   {taxComplianceWithholdingEvidencePacket ? (
                     <div className={styles.stack}>
@@ -33899,6 +33966,23 @@ export function App() {
                           </strong>
                         </div>
                       </div>
+                      {taxComplianceWithholdingDraftBridgePacket ? (
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>
+                              {humanizeKey(
+                                taxComplianceWithholdingDraftBridgePacket.readinessStatus,
+                              )}
+                            </strong>
+                            <span className={styles.statusPill}>
+                              bridge
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {taxComplianceWithholdingDraftBridgePacket.nextStep}
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
                   ) : (
                     <div className={styles.emptyState}>
@@ -33915,21 +33999,40 @@ export function App() {
                     </div>
                   </div>
                   {taxComplianceIncomeTaxEvidencePacket ? (
-                    <div className={styles.invoiceItemCard}>
-                      <div className={styles.invoiceCardHeader}>
-                        <strong>
-                          {humanizeKey(
-                            taxComplianceIncomeTaxEvidencePacket.readinessStatus,
-                          )}
-                        </strong>
-                        <span className={styles.statusPill}>
-                          {taxComplianceIncomeTaxEvidencePacket.blockers.length}{' '}
-                          blockers
-                        </span>
+                    <div className={styles.stack}>
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>
+                            {humanizeKey(
+                              taxComplianceIncomeTaxEvidencePacket.readinessStatus,
+                            )}
+                          </strong>
+                          <span className={styles.statusPill}>
+                            {taxComplianceIncomeTaxEvidencePacket.blockers.length}{' '}
+                            blockers
+                          </span>
+                        </div>
+                        <p className={styles.muted}>
+                          {taxComplianceIncomeTaxEvidencePacket.nextStep}
+                        </p>
                       </div>
-                      <p className={styles.muted}>
-                        {taxComplianceIncomeTaxEvidencePacket.nextStep}
-                      </p>
+                      {taxComplianceRuleCatalog ? (
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>
+                              {taxComplianceRuleCatalog.rules.length} reglas
+                            </strong>
+                            <span className={styles.statusPill}>
+                              {humanizeKey(
+                                taxComplianceRuleCatalog.readinessStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {taxComplianceRuleCatalog.nextStep}
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
                   ) : (
                     <div className={styles.emptyState}>

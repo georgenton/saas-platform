@@ -197,7 +197,9 @@ import {
 } from '@saas-platform/ecommerce-application';
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
+  GetTenantEcuadorTaxAnnexesReadinessUseCase,
   GetTenantEcuadorTaxAccountantWorkbenchUseCase,
+  GetTenantEcuadorTaxFilingHandoffUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
@@ -217,9 +219,11 @@ import {
   GetTenantEcuadorTaxWithholdingRegistryUseCase,
   ListTenantEcuadorTaxAccountantReviewsUseCase,
   ListTenantEcuadorTaxComplianceEventsUseCase,
+  RecordTenantEcuadorTaxFilingHandoffUseCase,
   RecordTenantEcuadorTaxPurchaseExpenseEvidenceUseCase,
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
+  RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
@@ -887,6 +891,12 @@ describe('API', () => {
   let getTenantEcuadorTaxPeriodEvidenceVaultUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxOperationalCloseoutUseCase: { execute: jest.Mock };
   let transitionTenantEcuadorTaxOperationalCloseoutUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantEcuadorTaxFilingHandoffUseCase: { execute: jest.Mock };
+  let recordTenantEcuadorTaxFilingHandoffUseCase: { execute: jest.Mock };
+  let getTenantEcuadorTaxAnnexesReadinessUseCase: { execute: jest.Mock };
+  let requestTenantEcuadorTaxAccountingBridgePreviewUseCase: {
     execute: jest.Mock;
   };
   let getTenantEcuadorTaxAuditReadinessUseCase: { execute: jest.Mock };
@@ -3538,6 +3548,87 @@ describe('API', () => {
     blockers: ['withholding.registry_not_ready'],
     nextStep: 'Completar IVA, retenciones y carpeta fiscal antes de cerrar.',
     guardrails: ['No equivale a declaracion presentada.'],
+  };
+  const ecuadorTaxFilingHandoff = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    status: 'paid_externally' as const,
+    externalReference: 'SRI-2026-06-001',
+    filedAt: taxComplianceGeneratedAt,
+    paidAt: taxComplianceGeneratedAt,
+    amountPaidInCents: 1800,
+    currency: 'USD',
+    responsibleUserId: 'user_owner',
+    responsibleEmail: 'owner@saas-platform.test',
+    note: 'Declaracion presentada y pagada externamente.',
+    operationalCloseoutStatus: 'ready_for_external_filing' as const,
+    transitionHistory: [
+      {
+        status: 'paid_externally' as const,
+        recordedAt: taxComplianceGeneratedAt,
+        externalReference: 'SRI-2026-06-001',
+        responsibleUserId: 'user_owner',
+        responsibleEmail: 'owner@saas-platform.test',
+        note: 'Declaracion presentada y pagada externamente.',
+      },
+    ],
+    blockers: [],
+    nextStep: 'Conservar comprobante externo.',
+    guardrails: ['No presenta formularios SRI desde la plataforma.'],
+  };
+  const ecuadorTaxAnnexesReadiness = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    annexes: [
+      {
+        key: 'ats',
+        label: 'Anexo Transaccional Simplificado',
+        applies: true,
+        readinessStatus: 'needs_review' as const,
+        evidenceSources: ['purchase_expense_evidence'],
+        blockerCount: 0,
+        blockers: [],
+        nextStep: 'Enviar insumos ATS al contador.',
+      },
+    ],
+    blockers: [],
+    nextStep: 'Enviar readiness de anexos a contador para validacion.',
+    guardrails: ['No genera XML oficial.'],
+  };
+  const ecuadorTaxAccountingBridgePreview = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    entries: [
+      {
+        key: 'sales_revenue_USD',
+        label: 'Ingresos por ventas USD',
+        source: 'tax_sales_book',
+        debitInCents: 0,
+        creditInCents: 25000,
+        currency: 'USD',
+        accountHint: 'Ingresos por ventas',
+        requiresChartOfAccounts: true,
+        notes: ['Derivado del libro tributario de ventas autorizado.'],
+      },
+    ],
+    summary: {
+      entryCount: 1,
+      requiresChartOfAccountsCount: 1,
+      salesDocuments: 2,
+      purchaseDocuments: 1,
+      withholdingCandidates: 1,
+    },
+    blockers: [],
+    nextStep: 'Mapear hints contra plan de cuentas.',
+    guardrails: ['Preview contable no registra asientos.'],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
@@ -12141,6 +12232,18 @@ describe('API', () => {
     transitionTenantEcuadorTaxOperationalCloseoutUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxOperationalCloseout),
     };
+    getTenantEcuadorTaxFilingHandoffUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxFilingHandoff),
+    };
+    recordTenantEcuadorTaxFilingHandoffUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxFilingHandoff),
+    };
+    getTenantEcuadorTaxAnnexesReadinessUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxAnnexesReadiness),
+    };
+    requestTenantEcuadorTaxAccountingBridgePreviewUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxAccountingBridgePreview),
+    };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
     };
@@ -12711,6 +12814,14 @@ describe('API', () => {
       .useValue(getTenantEcuadorTaxOperationalCloseoutUseCase)
       .overrideProvider(TransitionTenantEcuadorTaxOperationalCloseoutUseCase)
       .useValue(transitionTenantEcuadorTaxOperationalCloseoutUseCase)
+      .overrideProvider(GetTenantEcuadorTaxFilingHandoffUseCase)
+      .useValue(getTenantEcuadorTaxFilingHandoffUseCase)
+      .overrideProvider(RecordTenantEcuadorTaxFilingHandoffUseCase)
+      .useValue(recordTenantEcuadorTaxFilingHandoffUseCase)
+      .overrideProvider(GetTenantEcuadorTaxAnnexesReadinessUseCase)
+      .useValue(getTenantEcuadorTaxAnnexesReadinessUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxAccountingBridgePreviewUseCase)
+      .useValue(requestTenantEcuadorTaxAccountingBridgePreviewUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -15867,6 +15978,126 @@ describe('API', () => {
       transitionedByUserId: 'user_owner',
       transitionedByEmail: undefined,
       note: undefined,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/filing-handoff should return filing handoff state', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/filing-handoff?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      status: 'paid_externally',
+      externalReference: 'SRI-2026-06-001',
+      operationalCloseoutStatus: 'ready_for_external_filing',
+      amountPaidInCents: 1800,
+    });
+
+    expect(getTenantEcuadorTaxFilingHandoffUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/tax-compliance/tenants/:slug/ec/filing-handoff should record filing handoff state', async () => {
+    const response = await request(httpServer)
+      .post('/api/tax-compliance/tenants/saas-platform/ec/filing-handoff')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        status: 'paid_externally',
+        externalReference: 'SRI-2026-06-001',
+        filedAt: '2026-06-04T12:00:00.000Z',
+        paidAt: '2026-06-04T12:00:00.000Z',
+        amountPaidInCents: 1800,
+        currency: 'USD',
+        responsibleUserId: 'user_owner',
+      })
+      .expect(201);
+
+    expect(response.body.status).toBe('paid_externally');
+    expect(recordTenantEcuadorTaxFilingHandoffUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      status: 'paid_externally',
+      externalReference: 'SRI-2026-06-001',
+      filedAt: new Date('2026-06-04T12:00:00.000Z'),
+      paidAt: new Date('2026-06-04T12:00:00.000Z'),
+      amountPaidInCents: 1800,
+      currency: 'USD',
+      responsibleUserId: 'user_owner',
+      responsibleEmail: undefined,
+      note: undefined,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/annexes-readiness should return annexes readiness', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/annexes-readiness?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      readinessStatus: 'needs_review',
+      annexes: [
+        {
+          key: 'ats',
+          applies: true,
+          readinessStatus: 'needs_review',
+        },
+      ],
+    });
+
+    expect(getTenantEcuadorTaxAnnexesReadinessUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/accounting-bridge-preview should return accounting preview', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/accounting-bridge-preview?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      readinessStatus: 'needs_review',
+      summary: {
+        entryCount: 1,
+        requiresChartOfAccountsCount: 1,
+      },
+      entries: [
+        {
+          key: 'sales_revenue_USD',
+          creditInCents: 25000,
+          accountHint: 'Ingresos por ventas',
+        },
+      ],
+    });
+
+    expect(
+      requestTenantEcuadorTaxAccountingBridgePreviewUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
     });
   });
 

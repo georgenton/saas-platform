@@ -2,6 +2,8 @@ import {
   EcuadorTaxAccountantReviewPacketView,
   EcuadorTaxAccountantReviewView,
   EcuadorTaxAccountantWorkbenchView,
+  EcuadorTaxAccountingBridgePreviewView,
+  EcuadorTaxAnnexesReadinessView,
   EcuadorTaxAuditReadinessView,
   EcuadorTaxCalendarReviewWorkspaceView,
   EcuadorTaxComplianceEventView,
@@ -10,6 +12,7 @@ import {
   EcuadorTaxDueMonitorView,
   EcuadorTaxEcommerceEvidenceSummaryView,
   EcuadorTaxEvidenceSummaryView,
+  EcuadorTaxFilingHandoffView,
   EcuadorTaxIncomeTaxEvidencePacketView,
   EcuadorTaxObligationMatrixView,
   EcuadorTaxObligationCalendarView,
@@ -915,6 +918,84 @@ export interface EcuadorTaxOperationalCloseoutResponseDto {
     transitionedByEmail: string | null;
     note: string | null;
   }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxFilingHandoffResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  status: string | null;
+  externalReference: string | null;
+  filedAt: string | null;
+  paidAt: string | null;
+  amountPaidInCents: number | null;
+  currency: string | null;
+  responsibleUserId: string | null;
+  responsibleEmail: string | null;
+  note: string | null;
+  operationalCloseoutStatus: string;
+  transitionHistory: Array<{
+    status: string;
+    recordedAt: string;
+    externalReference: string | null;
+    responsibleUserId: string | null;
+    responsibleEmail: string | null;
+    note: string | null;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAnnexesReadinessResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  annexes: Array<{
+    key: string;
+    label: string;
+    applies: boolean;
+    readinessStatus: string;
+    evidenceSources: string[];
+    blockerCount: number;
+    blockers: string[];
+    nextStep: string;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingBridgePreviewResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  entries: Array<{
+    key: string;
+    label: string;
+    source: string;
+    debitInCents: number;
+    creditInCents: number;
+    currency: string;
+    accountHint: string | null;
+    requiresChartOfAccounts: boolean;
+    notes: string[];
+  }>;
+  summary: {
+    entryCount: number;
+    requiresChartOfAccountsCount: number;
+    salesDocuments: number;
+    purchaseDocuments: number;
+    withholdingCandidates: number;
+  };
   blockers: string[];
   nextStep: string;
   guardrails: string[];
@@ -2003,6 +2084,78 @@ export function toEcuadorTaxOperationalCloseoutResponseDto(
     blockers: [...closeout.blockers],
     nextStep: closeout.nextStep,
     guardrails: [...closeout.guardrails],
+  };
+}
+
+export function toEcuadorTaxFilingHandoffResponseDto(
+  handoff: EcuadorTaxFilingHandoffView,
+): EcuadorTaxFilingHandoffResponseDto {
+  return {
+    tenantSlug: handoff.tenantSlug,
+    period: handoff.period,
+    year: handoff.year,
+    generatedAt: handoff.generatedAt.toISOString(),
+    status: handoff.status,
+    externalReference: handoff.externalReference,
+    filedAt: handoff.filedAt ? handoff.filedAt.toISOString() : null,
+    paidAt: handoff.paidAt ? handoff.paidAt.toISOString() : null,
+    amountPaidInCents: handoff.amountPaidInCents,
+    currency: handoff.currency,
+    responsibleUserId: handoff.responsibleUserId,
+    responsibleEmail: handoff.responsibleEmail,
+    note: handoff.note,
+    operationalCloseoutStatus: handoff.operationalCloseoutStatus,
+    transitionHistory: handoff.transitionHistory.map((transition) => ({
+      status: transition.status,
+      recordedAt: transition.recordedAt.toISOString(),
+      externalReference: transition.externalReference,
+      responsibleUserId: transition.responsibleUserId,
+      responsibleEmail: transition.responsibleEmail,
+      note: transition.note,
+    })),
+    blockers: [...handoff.blockers],
+    nextStep: handoff.nextStep,
+    guardrails: [...handoff.guardrails],
+  };
+}
+
+export function toEcuadorTaxAnnexesReadinessResponseDto(
+  readiness: EcuadorTaxAnnexesReadinessView,
+): EcuadorTaxAnnexesReadinessResponseDto {
+  return {
+    tenantSlug: readiness.tenantSlug,
+    period: readiness.period,
+    year: readiness.year,
+    generatedAt: readiness.generatedAt.toISOString(),
+    readinessStatus: readiness.readinessStatus,
+    annexes: readiness.annexes.map((annex) => ({
+      ...annex,
+      evidenceSources: [...annex.evidenceSources],
+      blockers: [...annex.blockers],
+    })),
+    blockers: [...readiness.blockers],
+    nextStep: readiness.nextStep,
+    guardrails: [...readiness.guardrails],
+  };
+}
+
+export function toEcuadorTaxAccountingBridgePreviewResponseDto(
+  preview: EcuadorTaxAccountingBridgePreviewView,
+): EcuadorTaxAccountingBridgePreviewResponseDto {
+  return {
+    tenantSlug: preview.tenantSlug,
+    period: preview.period,
+    year: preview.year,
+    generatedAt: preview.generatedAt.toISOString(),
+    readinessStatus: preview.readinessStatus,
+    entries: preview.entries.map((entry) => ({
+      ...entry,
+      notes: [...entry.notes],
+    })),
+    summary: { ...preview.summary },
+    blockers: [...preview.blockers],
+    nextStep: preview.nextStep,
+    guardrails: [...preview.guardrails],
   };
 }
 

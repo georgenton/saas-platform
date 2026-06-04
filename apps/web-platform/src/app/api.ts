@@ -80,9 +80,12 @@ import {
   EcommerceOrderPaymentReconciliationWorkspaceResponse,
   EcuadorTaxAccountantWorkbenchResponse,
   EcuadorTaxAccountantReviewResponse,
+  EcuadorTaxAccountingBridgePreviewResponse,
+  EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
+  EcuadorTaxFilingHandoffResponse,
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
   EcuadorTaxPeriodCloseoutPacketResponse,
@@ -104,6 +107,7 @@ import {
   EcuadorTaxWithholdingRegistryResponse,
   EcuadorTaxRuleCatalogResponse,
   ExecuteEcuadorTaxWithholdingDraftBridgeRequest,
+  RecordEcuadorTaxFilingHandoffRequest,
   RecordEcuadorTaxPurchaseExpenseEvidenceRequest,
   RequestEcuadorTaxWithholdingDraftBridgePacketRequest,
   TransitionEcuadorTaxWorkflowRequest,
@@ -1461,6 +1465,80 @@ export async function transitionEcuadorTaxOperationalCloseout(
       method: 'POST',
       token,
       body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchEcuadorTaxFilingHandoff(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxFilingHandoffResponse> {
+  return request<EcuadorTaxFilingHandoffResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/filing-handoff?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function recordEcuadorTaxFilingHandoff(
+  token: string,
+  tenantSlug: string,
+  body: RecordEcuadorTaxFilingHandoffRequest,
+): Promise<EcuadorTaxFilingHandoffResponse> {
+  return request<EcuadorTaxFilingHandoffResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/filing-handoff`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchEcuadorTaxAnnexesReadiness(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAnnexesReadinessResponse> {
+  return request<EcuadorTaxAnnexesReadinessResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/annexes-readiness?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxAccountingBridgePreview(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountingBridgePreviewResponse> {
+  return request<EcuadorTaxAccountingBridgePreviewResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accounting-bridge-preview?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
     },
   );
 }

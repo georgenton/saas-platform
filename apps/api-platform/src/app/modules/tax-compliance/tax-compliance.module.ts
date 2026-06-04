@@ -25,11 +25,13 @@ import {
 } from '@saas-platform/parties-application';
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
+  GetTenantEcuadorTaxAnnexesReadinessUseCase,
   GetTenantEcuadorTaxAccountantWorkbenchUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
   GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
+  GetTenantEcuadorTaxFilingHandoffUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxObligationSettingsUseCase,
@@ -46,9 +48,11 @@ import {
   ListTenantEcuadorTaxAccountantReviewsUseCase,
   ListTenantEcuadorTaxComplianceEventsUseCase,
   RecordTenantEcuadorTaxComplianceEventUseCase,
+  RecordTenantEcuadorTaxFilingHandoffUseCase,
   RecordTenantEcuadorTaxPurchaseExpenseEvidenceUseCase,
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
+  RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
@@ -889,6 +893,87 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
       ) =>
         new TransitionTenantEcuadorTaxOperationalCloseoutUseCase(
           getTenantEcuadorTaxOperationalCloseoutUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxFilingHandoffUseCase,
+      inject: [
+        GetTenantEcuadorTaxOperationalCloseoutUseCase,
+        ListTenantEcuadorTaxComplianceEventsUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxOperationalCloseoutUseCase,
+        listTenantEcuadorTaxComplianceEventsUseCase,
+      ) =>
+        new GetTenantEcuadorTaxFilingHandoffUseCase(
+          getTenantEcuadorTaxOperationalCloseoutUseCase,
+          listTenantEcuadorTaxComplianceEventsUseCase,
+        ),
+    },
+    {
+      provide: RecordTenantEcuadorTaxFilingHandoffUseCase,
+      inject: [
+        GetTenantEcuadorTaxFilingHandoffUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxFilingHandoffUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RecordTenantEcuadorTaxFilingHandoffUseCase(
+          getTenantEcuadorTaxFilingHandoffUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAnnexesReadinessUseCase,
+      inject: [
+        GetTenantEcuadorTaxObligationSettingsUseCase,
+        GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
+        GetTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
+        GetTenantEcuadorTaxWithholdingRegistryUseCase,
+        GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxObligationSettingsUseCase,
+        getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
+        getTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
+        getTenantEcuadorTaxWithholdingRegistryUseCase,
+        getTenantEcuadorTaxPeriodEvidenceVaultUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxAnnexesReadinessUseCase(
+          getTenantEcuadorTaxObligationSettingsUseCase,
+          getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
+          getTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
+          getTenantEcuadorTaxWithholdingRegistryUseCase,
+          getTenantEcuadorTaxPeriodEvidenceVaultUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+      inject: [
+        RequestTenantEcuadorTaxSalesBookUseCase,
+        GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
+        GetTenantEcuadorTaxWithholdingRegistryUseCase,
+        RequestTenantEcuadorTaxVatDeclarationDraftUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxSalesBookUseCase,
+        getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
+        getTenantEcuadorTaxWithholdingRegistryUseCase,
+        requestTenantEcuadorTaxVatDeclarationDraftUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxAccountingBridgePreviewUseCase(
+          requestTenantEcuadorTaxSalesBookUseCase,
+          getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
+          getTenantEcuadorTaxWithholdingRegistryUseCase,
+          requestTenantEcuadorTaxVatDeclarationDraftUseCase,
           recordTenantEcuadorTaxComplianceEventUseCase,
         ),
     },

@@ -203,6 +203,7 @@ import {
   GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
+  GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
   GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
   ListTenantEcuadorTaxAccountantReviewsUseCase,
@@ -211,10 +212,12 @@ import {
   RequestTenantEcuadorTaxAccountantReviewUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+  RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
   RequestTenantEcuadorTaxSalesBookUseCase,
   RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase,
+  RequestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase,
   TransitionTenantEcuadorTaxAccountantReviewUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
@@ -833,6 +836,9 @@ describe('API', () => {
   let getTenantEcuadorTaxReconciliationWorkspaceUseCase: {
     execute: jest.Mock;
   };
+  let getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
   let getTenantEcuadorTaxAuditReadinessUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxObligationMatrixUseCase: { execute: jest.Mock };
   let requestTenantEcuadorTaxPeriodPreparationPacketUseCase: {
@@ -858,6 +864,12 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let requestTenantEcuadorTaxPeriodCloseoutPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase: {
     execute: jest.Mock;
   };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
@@ -2933,6 +2945,141 @@ describe('API', () => {
     nextStep: 'Resolver blockers antes de preparar declaracion IVA.',
     guardrails: [
       'Este packet prepara soporte IVA; no calcula formulario oficial ni presenta al SRI.',
+    ],
+  };
+  const ecuadorTaxPurchaseExpenseEvidenceWorkspace = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    source: 'operational_intake' as const,
+    documentRows: [
+      {
+        evidenceId: 'purchase_evidence_001',
+        supplierPartyId: 'supplier_001',
+        supplierName: 'Proveedor Uno',
+        supplierTaxpayerId: '1790012345001',
+        documentNumber: '001-001-000000123',
+        documentCode: '01',
+        issuedAt: taxComplianceGeneratedAt,
+        category: 'services' as const,
+        currency: 'USD',
+        subtotalInCents: 10000,
+        vatInCents: 1200,
+        totalInCents: 11200,
+        deductible: true,
+        supportReference: 's3://tax/purchases/001.xml',
+        readinessStatus: 'needs_review' as const,
+        blockers: ['purchase_evidence_001.category_review_required'],
+      },
+    ],
+    totalsByCurrency: [
+      {
+        currency: 'USD',
+        documentCount: 1,
+        subtotalInCents: 10000,
+        vatInCents: 1200,
+        totalInCents: 11200,
+        deductibleSubtotalInCents: 10000,
+      },
+    ],
+    supplierReadiness: {
+      totalSuppliers: 1,
+      completeSuppliers: 1,
+      needsReviewSuppliers: 0,
+      incompleteSupplierIds: [],
+    },
+    blockers: ['purchase_evidence_001.category_review_required'],
+    reviewNotes: ['1 comprobante de compra/gasto requiere revision fiscal.'],
+    nextStep:
+      'Revisar categoria fiscal y deducibilidad antes de usar credito tributario.',
+    guardrails: [
+      'Compras y gastos se modelan como evidencia operacional, no como contabilidad oficial.',
+    ],
+  };
+  const ecuadorTaxVatInputOutputReconciliationPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'blocked' as const,
+    outputVatByCurrency:
+      ecuadorTaxVatDeclarationReadinessPacket.vatSummaryByCurrency,
+    inputVatByCurrency: [
+      {
+        currency: 'USD',
+        creditableVatInCents: 1200,
+        purchaseDocumentCount: 1,
+      },
+    ],
+    netVatByCurrency: [
+      {
+        currency: 'USD',
+        outputVatInCents: 3000,
+        inputVatInCents: 1200,
+        estimatedVatPayableInCents: 1800,
+      },
+    ],
+    purchaseExpenseEvidenceStatus:
+      ecuadorTaxPurchaseExpenseEvidenceWorkspace.readinessStatus,
+    vatReadinessStatus: ecuadorTaxVatDeclarationReadinessPacket.readinessStatus,
+    blockers: [
+      'party.customer_globex.fiscal_data_incomplete',
+      'purchase_evidence_001.category_review_required',
+    ],
+    accountantQuestions: [
+      'Que comprobantes de compra sustentan credito tributario IVA del periodo?',
+    ],
+    nextStep:
+      'Completar evidencia de compras/gastos antes de estimar IVA neto.',
+    guardrails: [
+      'IVA neto es una estimacion operacional; no reemplaza formulario SRI ni criterio contable.',
+    ],
+  };
+  const ecuadorTaxIncomeTaxEvidencePacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'blocked' as const,
+    incomeObligation: ecuadorTaxObligationCalendar.entries.find(
+      (entry) => entry.obligationKey === 'income_tax',
+    ) ?? null,
+    revenueByCurrency: [
+      {
+        currency: 'USD',
+        grossRevenueInCents: 25000,
+        documentCount: 2,
+      },
+    ],
+    expenseByCurrency: [
+      {
+        currency: 'USD',
+        deductibleExpenseInCents: 10000,
+        expenseDocumentCount: 1,
+      },
+    ],
+    estimatedTaxableBaseByCurrency: [
+      {
+        currency: 'USD',
+        revenueInCents: 25000,
+        deductibleExpenseInCents: 10000,
+        estimatedTaxableBaseInCents: 15000,
+      },
+    ],
+    blockers: ['party.customer_globex.fiscal_data_incomplete'],
+    accountantQuestions: [
+      'Que gastos del periodo son deducibles para impuesto a la renta?',
+    ],
+    supportChecklist: [
+      'Libro de ventas del periodo o acumulado.',
+      'Compras y gastos categorizados con soporte.',
+    ],
+    nextStep:
+      'Completar ventas autorizadas y compras/gastos antes de preparar evidencia de renta.',
+    guardrails: [
+      'Este packet no calcula impuesto a la renta final ni contabilidad oficial.',
     ],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
@@ -11478,6 +11625,11 @@ describe('API', () => {
     getTenantEcuadorTaxReconciliationWorkspaceUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxReconciliationWorkspace),
     };
+    getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(ecuadorTaxPurchaseExpenseEvidenceWorkspace),
+    };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
     };
@@ -11516,6 +11668,14 @@ describe('API', () => {
     };
     requestTenantEcuadorTaxPeriodCloseoutPacketUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxPeriodCloseoutPacket),
+    };
+    requestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(ecuadorTaxVatInputOutputReconciliationPacket),
+    };
+    requestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxIncomeTaxEvidencePacket),
     };
     listTenantConversationThreadsUseCase = {
       execute: jest.fn().mockResolvedValue([conversationThread]),
@@ -12006,6 +12166,8 @@ describe('API', () => {
       .useValue(getTenantEcuadorTaxPeriodWorkspaceUseCase)
       .overrideProvider(GetTenantEcuadorTaxReconciliationWorkspaceUseCase)
       .useValue(getTenantEcuadorTaxReconciliationWorkspaceUseCase)
+      .overrideProvider(GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase)
+      .useValue(getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -12032,6 +12194,10 @@ describe('API', () => {
       .useValue(requestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase)
       .overrideProvider(RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase)
       .useValue(requestTenantEcuadorTaxPeriodCloseoutPacketUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase)
+      .useValue(requestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase)
+      .useValue(requestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase)
       .overrideProvider(GetTenantConversationThreadByIdUseCase)
       .useValue(getTenantConversationThreadByIdUseCase)
       .overrideProvider(GetTenantGrowthConversationWorkbenchUseCase)
@@ -14403,6 +14569,131 @@ describe('API', () => {
 
     expect(
       requestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/purchase-expense-evidence-workspace should return purchase evidence', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/purchase-expense-evidence-workspace?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      readinessStatus: 'needs_review',
+      source: 'operational_intake',
+      documentRows: [
+        {
+          evidenceId: 'purchase_evidence_001',
+          supplierName: 'Proveedor Uno',
+          category: 'services',
+          vatInCents: 1200,
+          readinessStatus: 'needs_review',
+        },
+      ],
+      supplierReadiness: {
+        totalSuppliers: 1,
+        completeSuppliers: 1,
+      },
+      blockers: ['purchase_evidence_001.category_review_required'],
+    });
+
+    expect(
+      getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/vat-input-output-reconciliation-packet should return VAT net reconciliation', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/vat-input-output-reconciliation-packet?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      readinessStatus: 'blocked',
+      outputVatByCurrency: [
+        {
+          currency: 'USD',
+          vatInCents: 3000,
+        },
+      ],
+      inputVatByCurrency: [
+        {
+          currency: 'USD',
+          creditableVatInCents: 1200,
+          purchaseDocumentCount: 1,
+        },
+      ],
+      netVatByCurrency: [
+        {
+          currency: 'USD',
+          estimatedVatPayableInCents: 1800,
+        },
+      ],
+    });
+
+    expect(
+      requestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/income-tax-evidence-packet should return income tax evidence', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/income-tax-evidence-packet?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      readinessStatus: 'blocked',
+      revenueByCurrency: [
+        {
+          currency: 'USD',
+          grossRevenueInCents: 25000,
+        },
+      ],
+      expenseByCurrency: [
+        {
+          currency: 'USD',
+          deductibleExpenseInCents: 10000,
+        },
+      ],
+      estimatedTaxableBaseByCurrency: [
+        {
+          currency: 'USD',
+          estimatedTaxableBaseInCents: 15000,
+        },
+      ],
+      blockers: ['party.customer_globex.fiscal_data_incomplete'],
+    });
+
+    expect(
+      requestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',
@@ -19226,7 +19517,7 @@ describe('API', () => {
       .expect(200)
       .expect((response) => {
         expect(response.body.reviewStatus).toBe('needs_operator_review');
-        expect(response.body.stalenessStatus).toBe('fresh');
+        expect(response.body.stalenessStatus).toBe('needs_follow_up');
         expect(response.body.phaseCounts).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
@@ -19287,7 +19578,7 @@ describe('API', () => {
             expect.objectContaining({
               orderDraftId: 'order_draft_001',
               reviewStatus: 'needs_operator_review',
-              stalenessStatus: 'fresh',
+              stalenessStatus: 'needs_follow_up',
               latestEventType: 'post_sale_closeout',
             }),
           ]),

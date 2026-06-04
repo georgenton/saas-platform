@@ -1137,6 +1137,117 @@ export interface EcuadorTaxPeriodCloseoutPacketResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  source: string;
+  documentRows: Array<{
+    evidenceId: string;
+    supplierPartyId: string | null;
+    supplierName: string;
+    supplierTaxpayerId: string | null;
+    documentNumber: string | null;
+    documentCode: string | null;
+    issuedAt: string | null;
+    category: string;
+    currency: string;
+    subtotalInCents: number;
+    vatInCents: number;
+    totalInCents: number;
+    deductible: boolean | null;
+    supportReference: string | null;
+    readinessStatus: string;
+    blockers: string[];
+  }>;
+  totalsByCurrency: Array<{
+    currency: string;
+    documentCount: number;
+    subtotalInCents: number;
+    vatInCents: number;
+    totalInCents: number;
+    deductibleSubtotalInCents: number;
+  }>;
+  supplierReadiness: {
+    totalSuppliers: number;
+    completeSuppliers: number;
+    needsReviewSuppliers: number;
+    incompleteSupplierIds: string[];
+  };
+  blockers: string[];
+  reviewNotes: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxVatInputOutputReconciliationPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  outputVatByCurrency: EcuadorTaxVatDeclarationReadinessPacketResponse['vatSummaryByCurrency'];
+  inputVatByCurrency: Array<{
+    currency: string;
+    creditableVatInCents: number;
+    purchaseDocumentCount: number;
+  }>;
+  netVatByCurrency: Array<{
+    currency: string;
+    outputVatInCents: number;
+    inputVatInCents: number;
+    estimatedVatPayableInCents: number;
+  }>;
+  purchaseExpenseEvidenceStatus: string;
+  vatReadinessStatus: string;
+  blockers: string[];
+  accountantQuestions: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxIncomeTaxEvidencePacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  incomeObligation: {
+    obligationKey: string;
+    label: string;
+    period: string;
+    frequency: string;
+    dueDate: string | null;
+    dueDay: number | null;
+    source: string;
+    readinessStatus: string;
+    notes: string[];
+  } | null;
+  revenueByCurrency: Array<{
+    currency: string;
+    grossRevenueInCents: number;
+    documentCount: number;
+  }>;
+  expenseByCurrency: Array<{
+    currency: string;
+    deductibleExpenseInCents: number;
+    expenseDocumentCount: number;
+  }>;
+  estimatedTaxableBaseByCurrency: Array<{
+    currency: string;
+    revenueInCents: number;
+    deductibleExpenseInCents: number;
+    estimatedTaxableBaseInCents: number;
+  }>;
+  blockers: string[];
+  accountantQuestions: string[];
+  supportChecklist: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface WhatsappRetryRunnerExecutionResponse {
   sourceMessageId: string;
   sourceExternalMessageId: string | null;

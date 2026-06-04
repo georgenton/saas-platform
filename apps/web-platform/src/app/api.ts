@@ -82,11 +82,14 @@ import {
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
+  EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxPeriodCloseoutPacketResponse,
   EcuadorTaxPeriodWorkspaceResponse,
+  EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse,
   EcuadorTaxReconciliationWorkspaceResponse,
   EcuadorTaxSalesBookResponse,
   EcuadorTaxVatDeclarationReadinessPacketResponse,
+  EcuadorTaxVatInputOutputReconciliationPacketResponse,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationWorkspaceResponse,
@@ -1071,6 +1074,63 @@ export async function fetchEcuadorTaxVatDeclarationReadinessPacket(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/vat-declaration-readiness-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxPurchaseExpenseEvidenceWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse> {
+  return request<EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/purchase-expense-evidence-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxVatInputOutputReconciliationPacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxVatInputOutputReconciliationPacketResponse> {
+  return request<EcuadorTaxVatInputOutputReconciliationPacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/vat-input-output-reconciliation-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxIncomeTaxEvidencePacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxIncomeTaxEvidencePacketResponse> {
+  return request<EcuadorTaxIncomeTaxEvidencePacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/income-tax-evidence-packet?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

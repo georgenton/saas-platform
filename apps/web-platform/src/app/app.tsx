@@ -106,11 +106,14 @@ import {
   fetchEcuadorTaxDeclarationApprovalPacket,
   fetchEcuadorTaxEcommerceEvidence,
   fetchEcuadorTaxEvents,
+  fetchEcuadorTaxIncomeTaxEvidencePacket,
   fetchEcuadorTaxPeriodCloseoutPacket,
   fetchEcuadorTaxPeriodWorkspace,
+  fetchEcuadorTaxPurchaseExpenseEvidenceWorkspace,
   fetchEcuadorTaxReconciliationWorkspace,
   fetchEcuadorTaxSalesBook,
   fetchEcuadorTaxVatDeclarationReadinessPacket,
+  fetchEcuadorTaxVatInputOutputReconciliationPacket,
   fetchTenantEcommerceOrderPostSaleOpsBoard,
   fetchTenantEcommerceOrderPostSaleReportingBoard,
   fetchTenantEcommerceOrderPostSaleReportingSummary,
@@ -487,11 +490,14 @@ import {
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
+  EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxPeriodCloseoutPacketResponse,
   EcuadorTaxPeriodWorkspaceResponse,
+  EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse,
   EcuadorTaxReconciliationWorkspaceResponse,
   EcuadorTaxSalesBookResponse,
   EcuadorTaxVatDeclarationReadinessPacketResponse,
+  EcuadorTaxVatInputOutputReconciliationPacketResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSignatureMaterialInspectionResponse,
   ElectronicSubmissionSettingsResponse,
@@ -1909,6 +1915,18 @@ export function App() {
     taxComplianceCloseoutPacket,
     setTaxComplianceCloseoutPacket,
   ] = useState<EcuadorTaxPeriodCloseoutPacketResponse | null>(null);
+  const [
+    taxCompliancePurchaseExpenseEvidence,
+    setTaxCompliancePurchaseExpenseEvidence,
+  ] = useState<EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse | null>(null);
+  const [
+    taxComplianceVatInputOutputPacket,
+    setTaxComplianceVatInputOutputPacket,
+  ] = useState<EcuadorTaxVatInputOutputReconciliationPacketResponse | null>(null);
+  const [
+    taxComplianceIncomeTaxEvidencePacket,
+    setTaxComplianceIncomeTaxEvidencePacket,
+  ] = useState<EcuadorTaxIncomeTaxEvidencePacketResponse | null>(null);
   const [taxComplianceLoading, setTaxComplianceLoading] = useState(false);
   const [taxComplianceActionLoading, setTaxComplianceActionLoading] =
     useState<string | null>(null);
@@ -19056,6 +19074,9 @@ export function App() {
         nextReconciliationWorkspace,
         nextVatReadinessPacket,
         nextCloseoutPacket,
+        nextPurchaseExpenseEvidence,
+        nextVatInputOutputPacket,
+        nextIncomeTaxEvidencePacket,
       ] = await Promise.all([
         fetchEcuadorTaxPeriodWorkspace(token, tenantSlug, taxCompliancePeriod, year),
         fetchEcuadorTaxEcommerceEvidence(token, tenantSlug, taxCompliancePeriod),
@@ -19086,6 +19107,24 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchEcuadorTaxPurchaseExpenseEvidenceWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxVatInputOutputReconciliationPacket(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxIncomeTaxEvidencePacket(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
       ]);
 
       startTransition(() => {
@@ -19098,6 +19137,9 @@ export function App() {
         setTaxComplianceReconciliationWorkspace(nextReconciliationWorkspace);
         setTaxComplianceVatReadinessPacket(nextVatReadinessPacket);
         setTaxComplianceCloseoutPacket(nextCloseoutPacket);
+        setTaxCompliancePurchaseExpenseEvidence(nextPurchaseExpenseEvidence);
+        setTaxComplianceVatInputOutputPacket(nextVatInputOutputPacket);
+        setTaxComplianceIncomeTaxEvidencePacket(nextIncomeTaxEvidencePacket);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -27440,6 +27482,202 @@ export function App() {
                 <div className={styles.stack}>
                   <div className={styles.sectionHeading}>
                     <div>
+                      <span className={styles.label}>Purchases</span>
+                      <h3>Compras y gastos</h3>
+                    </div>
+                  </div>
+                  {taxCompliancePurchaseExpenseEvidence ? (
+                    <div className={styles.invoiceItemCard}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>
+                          {humanizeKey(
+                            taxCompliancePurchaseExpenseEvidence.readinessStatus,
+                          )}
+                        </strong>
+                        <span className={styles.statusPill}>
+                          {taxCompliancePurchaseExpenseEvidence.documentRows.length}{' '}
+                          docs
+                        </span>
+                      </div>
+                      <p className={styles.muted}>
+                        {taxCompliancePurchaseExpenseEvidence.nextStep}
+                      </p>
+                      <p className={styles.muted}>
+                        Proveedores{' '}
+                        {
+                          taxCompliancePurchaseExpenseEvidence.supplierReadiness
+                            .completeSuppliers
+                        }
+                        /
+                        {
+                          taxCompliancePurchaseExpenseEvidence.supplierReadiness
+                            .totalSuppliers
+                        }{' '}
+                        completos
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un periodo para revisar compras y gastos.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>IVA output/input</span>
+                      <h3>Conciliación de IVA neto</h3>
+                    </div>
+                  </div>
+                  {taxComplianceVatInputOutputPacket ? (
+                    <div className={styles.stack}>
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>
+                            {humanizeKey(
+                              taxComplianceVatInputOutputPacket.readinessStatus,
+                            )}
+                          </strong>
+                          <span className={styles.statusPill}>
+                            {taxComplianceVatInputOutputPacket.blockers.length}{' '}
+                            blockers
+                          </span>
+                        </div>
+                        <p className={styles.muted}>
+                          {taxComplianceVatInputOutputPacket.nextStep}
+                        </p>
+                      </div>
+                      {taxComplianceVatInputOutputPacket.netVatByCurrency.map(
+                        (total) => (
+                          <div
+                            className={styles.invoiceItemCard}
+                            key={total.currency}
+                          >
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>
+                                {formatMoney(
+                                  total.estimatedVatPayableInCents,
+                                  total.currency,
+                                )}
+                              </strong>
+                              <span className={styles.statusPill}>
+                                {total.currency}
+                              </span>
+                            </div>
+                            <p className={styles.muted}>
+                              Output{' '}
+                              {formatMoney(
+                                total.outputVatInCents,
+                                total.currency,
+                              )}{' '}
+                              · input{' '}
+                              {formatMoney(total.inputVatInCents, total.currency)}
+                            </p>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un periodo para conciliar IVA neto.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Income tax</span>
+                      <h3>Evidencia para renta</h3>
+                    </div>
+                  </div>
+                  {taxComplianceIncomeTaxEvidencePacket ? (
+                    <div className={styles.stack}>
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>
+                            {humanizeKey(
+                              taxComplianceIncomeTaxEvidencePacket.readinessStatus,
+                            )}
+                          </strong>
+                          <span className={styles.statusPill}>
+                            {taxComplianceIncomeTaxEvidencePacket.incomeObligation
+                              ?.period ?? 'sin agenda'}
+                          </span>
+                        </div>
+                        <p className={styles.muted}>
+                          {taxComplianceIncomeTaxEvidencePacket.nextStep}
+                        </p>
+                      </div>
+                      {taxComplianceIncomeTaxEvidencePacket.estimatedTaxableBaseByCurrency.map(
+                        (total) => (
+                          <div
+                            className={styles.invoiceItemCard}
+                            key={total.currency}
+                          >
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>
+                                {formatMoney(
+                                  total.estimatedTaxableBaseInCents,
+                                  total.currency,
+                                )}
+                              </strong>
+                              <span className={styles.statusPill}>
+                                base estimada
+                              </span>
+                            </div>
+                            <p className={styles.muted}>
+                              Ingresos{' '}
+                              {formatMoney(total.revenueInCents, total.currency)} ·
+                              gastos{' '}
+                              {formatMoney(
+                                total.deductibleExpenseInCents,
+                                total.currency,
+                              )}
+                            </p>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un periodo para preparar evidencia de renta.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Income support</span>
+                      <h3>Checklist de renta</h3>
+                    </div>
+                  </div>
+                  {taxComplianceIncomeTaxEvidencePacket ? (
+                    <div className={styles.invoiceItemCard}>
+                      <ul className={styles.compactList}>
+                        {taxComplianceIncomeTaxEvidencePacket.supportChecklist
+                          .slice(0, 5)
+                          .map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un periodo para ver soporte de renta.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
                       <span className={styles.label}>Operational alerts</span>
                       <h3>Lo que hoy pide atencion</h3>
                     </div>
@@ -33206,6 +33444,34 @@ export function App() {
                   <strong>
                     {taxComplianceCloseoutPacket
                       ? humanizeKey(taxComplianceCloseoutPacket.closeoutStatus)
+                      : 'Sin cargar'}
+                  </strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Purchases</span>
+                  <strong>
+                    {taxCompliancePurchaseExpenseEvidence
+                      ? humanizeKey(
+                          taxCompliancePurchaseExpenseEvidence.readinessStatus,
+                        )
+                      : 'Sin cargar'}
+                  </strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>IVA neto</span>
+                  <strong>
+                    {taxComplianceVatInputOutputPacket
+                      ? humanizeKey(taxComplianceVatInputOutputPacket.readinessStatus)
+                      : 'Sin cargar'}
+                  </strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Renta</span>
+                  <strong>
+                    {taxComplianceIncomeTaxEvidencePacket
+                      ? humanizeKey(
+                          taxComplianceIncomeTaxEvidencePacket.readinessStatus,
+                        )
                       : 'Sin cargar'}
                   </strong>
                 </div>

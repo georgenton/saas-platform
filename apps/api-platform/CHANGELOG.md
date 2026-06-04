@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.78.0
+
+### Minor Changes
+
+- 451f07c: Add Ecuador tax purchase expense intake, supplier fiscal readiness, and withholding evidence workflows.
+
 ## 0.77.0
 
 ### Minor Changes

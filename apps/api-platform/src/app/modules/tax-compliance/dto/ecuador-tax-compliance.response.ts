@@ -1,7 +1,10 @@
 import {
   EcuadorTaxAccountantReviewPacketView,
+  EcuadorTaxAccountantReviewView,
   EcuadorTaxAuditReadinessView,
   EcuadorTaxCalendarReviewWorkspaceView,
+  EcuadorTaxComplianceEventView,
+  EcuadorTaxDeclarationApprovalPacketView,
   EcuadorTaxDeclarationDraftPacketView,
   EcuadorTaxDueMonitorView,
   EcuadorTaxEvidenceSummaryView,
@@ -238,6 +241,57 @@ export interface EcuadorTaxAccountantReviewPacketResponseDto {
   handoffChecklist: string[];
   responsibilityGuardrails: string[];
   nextStep: string;
+}
+
+export interface EcuadorTaxComplianceEventResponseDto {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  eventType: string;
+  source: string;
+  payload: Record<string, unknown>;
+  occurredAt: string;
+  createdAt: string;
+}
+
+export interface EcuadorTaxAccountantReviewResponseDto {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  status: string;
+  requestedByUserId: string | null;
+  requestedByEmail: string | null;
+  summary: string;
+  questions: string[];
+  evidenceSummary: EcuadorTaxEvidenceSummaryResponseDto;
+  transitionHistory: Array<{
+    status: string;
+    transitionedAt: string;
+    transitionedByUserId: string | null;
+    note: string | null;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EcuadorTaxDeclarationApprovalPacketResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  latestAccountantReview: EcuadorTaxAccountantReviewResponseDto | null;
+  approvalReadiness: string;
+  remainingBlockers: string[];
+  evidenceSummary: EcuadorTaxEvidenceSummaryResponseDto;
+  declarationSections: EcuadorTaxDeclarationDraftPacketResponseDto['declarationSections'];
+  availableAuditEvents: EcuadorTaxComplianceEventResponseDto[];
+  approvalChecklist: string[];
+  nextStep: string;
+  guardrails: string[];
 }
 
 export interface EcuadorTaxAuditReadinessResponseDto {
@@ -596,6 +650,79 @@ export function toEcuadorTaxAccountantReviewPacketResponseDto(
     handoffChecklist: [...packet.handoffChecklist],
     responsibilityGuardrails: [...packet.responsibilityGuardrails],
     nextStep: packet.nextStep,
+  };
+}
+
+export function toEcuadorTaxComplianceEventResponseDto(
+  event: EcuadorTaxComplianceEventView,
+): EcuadorTaxComplianceEventResponseDto {
+  return {
+    id: event.id,
+    tenantId: event.tenantId,
+    tenantSlug: event.tenantSlug,
+    period: event.period,
+    year: event.year,
+    eventType: event.eventType,
+    source: event.source,
+    payload: { ...event.payload },
+    occurredAt: event.occurredAt.toISOString(),
+    createdAt: event.createdAt.toISOString(),
+  };
+}
+
+export function toEcuadorTaxAccountantReviewResponseDto(
+  review: EcuadorTaxAccountantReviewView,
+): EcuadorTaxAccountantReviewResponseDto {
+  return {
+    id: review.id,
+    tenantId: review.tenantId,
+    tenantSlug: review.tenantSlug,
+    period: review.period,
+    year: review.year,
+    status: review.status,
+    requestedByUserId: review.requestedByUserId,
+    requestedByEmail: review.requestedByEmail,
+    summary: review.summary,
+    questions: [...review.questions],
+    evidenceSummary: toEvidenceSummaryResponseDto(review.evidenceSummary),
+    transitionHistory: review.transitionHistory.map((transition) => ({
+      status: transition.status,
+      transitionedAt: transition.transitionedAt.toISOString(),
+      transitionedByUserId: transition.transitionedByUserId,
+      note: transition.note,
+    })),
+    createdAt: review.createdAt.toISOString(),
+    updatedAt: review.updatedAt.toISOString(),
+  };
+}
+
+export function toEcuadorTaxDeclarationApprovalPacketResponseDto(
+  packet: EcuadorTaxDeclarationApprovalPacketView,
+): EcuadorTaxDeclarationApprovalPacketResponseDto {
+  return {
+    tenantSlug: packet.tenantSlug,
+    period: packet.period,
+    year: packet.year,
+    generatedAt: packet.generatedAt.toISOString(),
+    latestAccountantReview: packet.latestAccountantReview
+      ? toEcuadorTaxAccountantReviewResponseDto(packet.latestAccountantReview)
+      : null,
+    approvalReadiness: packet.approvalReadiness,
+    remainingBlockers: [...packet.remainingBlockers],
+    evidenceSummary: toEvidenceSummaryResponseDto(packet.evidenceSummary),
+    declarationSections: packet.declarationSections.map((section) => ({
+      section: section.section,
+      readinessStatus: section.readinessStatus,
+      source: section.source,
+      summary: section.summary,
+      blockers: [...section.blockers],
+    })),
+    availableAuditEvents: packet.availableAuditEvents.map((event) =>
+      toEcuadorTaxComplianceEventResponseDto(event),
+    ),
+    approvalChecklist: [...packet.approvalChecklist],
+    nextStep: packet.nextStep,
+    guardrails: [...packet.guardrails],
   };
 }
 

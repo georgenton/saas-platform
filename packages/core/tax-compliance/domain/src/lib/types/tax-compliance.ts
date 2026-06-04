@@ -32,6 +32,17 @@ export type EcuadorTaxPeriodWorkspaceStatus =
   | 'needs_review'
   | 'ready_for_accountant'
   | 'ready_for_declaration';
+export type EcuadorTaxComplianceEventType =
+  | 'period_workspace_generated'
+  | 'accountant_packet_requested'
+  | 'accountant_review_transitioned'
+  | 'declaration_draft_requested'
+  | 'due_monitor_reviewed';
+export type EcuadorTaxAccountantReviewStatus =
+  | 'pending_accountant'
+  | 'in_review'
+  | 'changes_requested'
+  | 'approved';
 
 export interface EcuadorTaxpayerProfileView {
   tenantSlug: string;
@@ -258,6 +269,7 @@ export interface EcuadorTaxAccountantReviewPacketView {
   missingEvidence: string[];
   calendarAlerts: EcuadorTaxDueMonitorAlertView[];
   incompleteThirdPartyIds: string[];
+  sourceEvidenceSummary: EcuadorTaxEvidenceSummaryView;
   handoffChecklist: string[];
   responsibilityGuardrails: string[];
   nextStep: string;
@@ -280,6 +292,57 @@ export interface EcuadorTaxAuditReadinessView {
     reason: string;
     minimumPayload: string[];
   }>;
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxComplianceEventView {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  eventType: EcuadorTaxComplianceEventType;
+  source: string;
+  payload: Record<string, unknown>;
+  occurredAt: Date;
+  createdAt: Date;
+}
+
+export interface EcuadorTaxAccountantReviewView {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  status: EcuadorTaxAccountantReviewStatus;
+  requestedByUserId: string | null;
+  requestedByEmail: string | null;
+  summary: string;
+  questions: string[];
+  evidenceSummary: EcuadorTaxEvidenceSummaryView;
+  transitionHistory: Array<{
+    status: EcuadorTaxAccountantReviewStatus;
+    transitionedAt: Date;
+    transitionedByUserId: string | null;
+    note: string | null;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface EcuadorTaxDeclarationApprovalPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  latestAccountantReview: EcuadorTaxAccountantReviewView | null;
+  approvalReadiness: 'blocked' | 'needs_accountant_review' | 'ready_for_human_approval';
+  remainingBlockers: string[];
+  evidenceSummary: EcuadorTaxEvidenceSummaryView;
+  declarationSections: EcuadorTaxDeclarationDraftPacketView['declarationSections'];
+  availableAuditEvents: EcuadorTaxComplianceEventView[];
+  approvalChecklist: string[];
   nextStep: string;
   guardrails: string[];
 }

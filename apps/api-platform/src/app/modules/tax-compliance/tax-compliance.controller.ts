@@ -9,6 +9,7 @@ import {
 import { INVOICING_PERMISSIONS } from '@saas-platform/invoicing-application';
 import {
   GetTenantEcuadorTaxObligationMatrixUseCase,
+  GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
 } from '@saas-platform/tax-compliance-application';
@@ -22,8 +23,10 @@ import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import {
   EcuadorTaxObligationMatrixResponseDto,
+  EcuadorTaxObligationCalendarResponseDto,
   EcuadorTaxPeriodPreparationPacketResponseDto,
   EcuadorTaxpayerProfileResponseDto,
+  toEcuadorTaxObligationCalendarResponseDto,
   toEcuadorTaxObligationMatrixResponseDto,
   toEcuadorTaxPeriodPreparationPacketResponseDto,
   toEcuadorTaxpayerProfileResponseDto,
@@ -45,6 +48,7 @@ export class TaxComplianceController {
   constructor(
     private readonly getTenantEcuadorTaxpayerProfileUseCase: GetTenantEcuadorTaxpayerProfileUseCase,
     private readonly getTenantEcuadorTaxObligationMatrixUseCase: GetTenantEcuadorTaxObligationMatrixUseCase,
+    private readonly getTenantEcuadorTaxObligationCalendarUseCase: GetTenantEcuadorTaxObligationCalendarUseCase,
     private readonly requestTenantEcuadorTaxPeriodPreparationPacketUseCase: RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
   ) {}
 
@@ -61,6 +65,31 @@ export class TaxComplianceController {
         );
 
       return toEcuadorTaxpayerProfileResponseDto(profile);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/obligation-calendar')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async getObligationCalendar(
+    @Param('slug') slug: string,
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxObligationCalendarResponseDto> {
+    try {
+      const resolvedYear = resolveCalendarYear(year);
+      const calendar =
+        await this.getTenantEcuadorTaxObligationCalendarUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+          resolvedYear,
+        );
+
+      return toEcuadorTaxObligationCalendarResponseDto(calendar);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
@@ -115,4 +144,10 @@ export class TaxComplianceController {
       throw error;
     }
   }
+}
+
+function resolveCalendarYear(year?: string): number {
+  const parsed = year ? Number.parseInt(year, 10) : new Date().getUTCFullYear();
+
+  return Number.isFinite(parsed) ? parsed : new Date().getUTCFullYear();
 }

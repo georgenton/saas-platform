@@ -196,6 +196,7 @@ import {
   GetTenantEcommerceWhatsappSalesFlowUseCase,
 } from '@saas-platform/ecommerce-application';
 import {
+  GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
@@ -324,6 +325,7 @@ import {
 } from '@saas-platform/invoicing-domain';
 import {
   GetTenantPartyByIdUseCase,
+  GetTenantPartyFiscalReadinessSummaryUseCase,
   ListTenantPartiesUseCase,
 } from '@saas-platform/parties-application';
 import { Party } from '@saas-platform/parties-domain';
@@ -801,7 +803,9 @@ describe('API', () => {
   let metaWhatsappWebhookTenantResolver: { resolve: jest.Mock };
   let listTenantCustomersUseCase: { execute: jest.Mock };
   let listTenantPartiesUseCase: { execute: jest.Mock };
+  let getTenantPartyFiscalReadinessSummaryUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxpayerProfileUseCase: { execute: jest.Mock };
+  let getTenantEcuadorTaxObligationCalendarUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxObligationMatrixUseCase: { execute: jest.Mock };
   let requestTenantEcuadorTaxPeriodPreparationPacketUseCase: {
     execute: jest.Mock;
@@ -2313,6 +2317,50 @@ describe('API', () => {
       },
     },
   };
+  const partyFiscalReadinessSummary = {
+    tenantSlug: 'saas-platform',
+    generatedAt: taxComplianceGeneratedAt,
+    totalParties: 2,
+    completeParties: 1,
+    needsReviewParties: 1,
+    roleSummaries: [
+      {
+        role: 'customer',
+        totalParties: 2,
+        completeParties: 1,
+        needsReviewParties: 1,
+      },
+    ],
+    issueSummaries: [
+      { issue: 'email', count: 1 },
+      { issue: 'fiscal_address', count: 1 },
+      { issue: 'identification_type', count: 1 },
+      { issue: 'taxpayer_id', count: 1 },
+    ],
+    incompleteParties: [
+      {
+        id: 'customer_globex',
+        displayName: 'Globex LLC',
+        roles: ['customer'],
+        taxpayerId: null,
+        identificationType: null,
+        fiscalAddress: null,
+        email: null,
+        completenessStatus: 'needs_review',
+        missingFields: [
+          'taxpayer_id',
+          'identification_type',
+          'fiscal_address',
+          'email',
+        ],
+        reviewNotes: [],
+      },
+    ],
+    guardrails: [
+      'Este resumen fiscal se deriva del directorio compartido de terceros; no reemplaza validacion oficial del SRI.',
+      'Los proveedores aun no tienen persistencia propia y deben incorporarse sin duplicar clientes existentes.',
+    ],
+  };
   const ecuadorTaxObligations = [
     {
       key: 'vat' as const,
@@ -2351,6 +2399,43 @@ describe('API', () => {
       'Esta matriz es una base operativa; no sustituye la validacion final del SRI ni criterio contable.',
     ],
   };
+  const ecuadorTaxObligationCalendar = {
+    tenantSlug: 'saas-platform',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    taxpayerProfile: ecuadorTaxpayerProfile,
+    ninthDigit: '4',
+    entries: [
+      {
+        obligationKey: 'vat' as const,
+        label: 'IVA',
+        period: '2026-01',
+        frequency: 'monthly' as const,
+        dueDate: '2026-02-16',
+        dueDay: 16,
+        source: 'sri_rule_of_thumb' as const,
+        readinessStatus: 'needs_review' as const,
+        notes: ['Periodicidad mensual como punto de partida operativo.'],
+      },
+      {
+        obligationKey: 'income_tax' as const,
+        label: 'Impuesto a la Renta',
+        period: '2026',
+        frequency: 'annual' as const,
+        dueDate: '2027-03-16',
+        dueDay: 16,
+        source: 'sri_rule_of_thumb' as const,
+        readinessStatus: 'needs_review' as const,
+        notes: [
+          'La fecha de vencimiento depende del tipo de contribuyente y del noveno digito del RUC cuando aplique.',
+        ],
+      },
+    ],
+    guardrails: [
+      'Esta matriz es una base operativa; no sustituye la validacion final del SRI ni criterio contable.',
+      'Las fechas se calculan como calendario operacional estimado; fines de semana, feriados, Galapagos, sector publico y resoluciones especiales requieren verificacion adicional.',
+    ],
+  };
   const ecuadorTaxPeriodPreparationPacket = {
     tenantSlug: 'saas-platform',
     period: '2026-06',
@@ -2358,6 +2443,48 @@ describe('API', () => {
     taxpayerProfile: ecuadorTaxpayerProfile,
     obligations: ecuadorTaxObligations,
     readinessStatus: 'needs_review' as const,
+    evidenceSummary: {
+      invoicing: {
+        invoiceCount: 2,
+        statusBreakdown: [
+          { status: 'draft', count: 1 },
+          { status: 'sent', count: 1 },
+        ],
+        totalsByCurrency: [
+          {
+            currency: 'USD',
+            subtotalInCents: 12500,
+            taxInCents: 1200,
+            totalInCents: 13700,
+            paidInCents: 2500,
+            outstandingTotalInCents: 11200,
+          },
+        ],
+        monthlyTotals: [
+          {
+            month: '2026-04',
+            currency: 'USD',
+            invoiceCount: 2,
+            totalInCents: 13700,
+            taxInCents: 1200,
+          },
+        ],
+      },
+      parties: {
+        totalParties: 2,
+        completeParties: 1,
+        needsReviewParties: 1,
+        issueSummaries: partyFiscalReadinessSummary.issueSummaries,
+        incompletePartyIds: ['customer_globex'],
+      },
+      ecommerce: {
+        status: 'not_connected_yet' as const,
+        notes: [
+          'Ecommerce ya expone reporting post-sale por orden, pero este packet aun no consume un agregado tributario tenant-wide.',
+          'El siguiente bridge debe consolidar ventas Ecommerce por periodo antes de sugerir declaracion.',
+        ],
+      },
+    },
     evidenceChecklist: [
       'Ventas facturadas y documentos electronicos emitidos en el periodo',
       'Comprobantes de compra y gasto que sustenten credito tributario o deducibilidad',
@@ -10809,8 +10936,14 @@ describe('API', () => {
     listTenantPartiesUseCase = {
       execute: jest.fn().mockResolvedValue([acmeParty, globexParty]),
     };
+    getTenantPartyFiscalReadinessSummaryUseCase = {
+      execute: jest.fn().mockResolvedValue(partyFiscalReadinessSummary),
+    };
     getTenantEcuadorTaxpayerProfileUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxpayerProfile),
+    };
+    getTenantEcuadorTaxObligationCalendarUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxObligationCalendar),
     };
     getTenantEcuadorTaxObligationMatrixUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxObligationMatrix),
@@ -11291,8 +11424,12 @@ describe('API', () => {
       .useValue(getTenantInvoiceItemByIdUseCase)
       .overrideProvider(GetTenantPartyByIdUseCase)
       .useValue(getTenantPartyByIdUseCase)
+      .overrideProvider(GetTenantPartyFiscalReadinessSummaryUseCase)
+      .useValue(getTenantPartyFiscalReadinessSummaryUseCase)
       .overrideProvider(GetTenantEcuadorTaxpayerProfileUseCase)
       .useValue(getTenantEcuadorTaxpayerProfileUseCase)
+      .overrideProvider(GetTenantEcuadorTaxObligationCalendarUseCase)
+      .useValue(getTenantEcuadorTaxObligationCalendarUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
       .useValue(getTenantEcuadorTaxObligationMatrixUseCase)
       .overrideProvider(RequestTenantEcuadorTaxPeriodPreparationPacketUseCase)
@@ -12877,6 +13014,61 @@ describe('API', () => {
     );
   });
 
+  it('GET /api/parties/tenants/:slug/fiscal-readiness-summary should return shared party fiscal readiness', async () => {
+    await request(httpServer)
+      .get('/api/parties/tenants/saas-platform/fiscal-readiness-summary')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        tenantSlug: 'saas-platform',
+        generatedAt: '2026-06-04T12:00:00.000Z',
+        totalParties: 2,
+        completeParties: 1,
+        needsReviewParties: 1,
+        roleSummaries: [
+          {
+            role: 'customer',
+            totalParties: 2,
+            completeParties: 1,
+            needsReviewParties: 1,
+          },
+        ],
+        issueSummaries: [
+          { issue: 'email', count: 1 },
+          { issue: 'fiscal_address', count: 1 },
+          { issue: 'identification_type', count: 1 },
+          { issue: 'taxpayer_id', count: 1 },
+        ],
+        incompleteParties: [
+          {
+            id: 'customer_globex',
+            displayName: 'Globex LLC',
+            roles: ['customer'],
+            taxpayerId: null,
+            identificationType: null,
+            fiscalAddress: null,
+            email: null,
+            completenessStatus: 'needs_review',
+            missingFields: [
+              'taxpayer_id',
+              'identification_type',
+              'fiscal_address',
+              'email',
+            ],
+            reviewNotes: [],
+          },
+        ],
+        guardrails: [
+          'Este resumen fiscal se deriva del directorio compartido de terceros; no reemplaza validacion oficial del SRI.',
+          'Los proveedores aun no tienen persistencia propia y deben incorporarse sin duplicar clientes existentes.',
+        ],
+      });
+
+    expect(
+      getTenantPartyFiscalReadinessSummaryUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform');
+  });
+
   it('GET /api/parties/tenants/:slug/parties should require customer visibility permission', async () => {
     resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
       tenantId: 'tenant_123',
@@ -12944,6 +13136,86 @@ describe('API', () => {
     expect(getTenantEcuadorTaxpayerProfileUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
     );
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/obligation-calendar should return the Ecuador obligation calendar', async () => {
+    await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/obligation-calendar?year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200)
+      .expect({
+        tenantSlug: 'saas-platform',
+        year: 2026,
+        generatedAt: '2026-06-04T12:00:00.000Z',
+        taxpayerProfile: {
+          tenantSlug: 'saas-platform',
+          tenantId: 'tenant_123',
+          generatedAt: '2026-06-04T12:00:00.000Z',
+          country: 'EC',
+          legalName: 'SaaS Platform S.A.',
+          commercialName: 'SaaS Platform',
+          taxpayerId: '1790012345001',
+          regime: 'general',
+          accountingObligated: true,
+          specialTaxpayerCode: null,
+          matrixAddress: 'Av. Principal y Calle Secundaria',
+          establishmentAddress: 'Sucursal Matriz',
+          source: 'invoicing_issuer_profile',
+          readinessStatus: 'needs_review',
+          missingFields: [],
+          reviewNotes: [
+            'accounting_obligated_taxpayer_should_have_accountant_review',
+          ],
+          thirdPartyFiscalSummary: {
+            totalParties: 2,
+            completeParties: 1,
+            needsReviewParties: 1,
+            missingFieldCounts: {
+              taxpayer_id: 1,
+              identification_type: 1,
+              fiscal_address: 1,
+              email: 1,
+            },
+          },
+        },
+        ninthDigit: '4',
+        entries: [
+          {
+            obligationKey: 'vat',
+            label: 'IVA',
+            period: '2026-01',
+            frequency: 'monthly',
+            dueDate: '2026-02-16',
+            dueDay: 16,
+            source: 'sri_rule_of_thumb',
+            readinessStatus: 'needs_review',
+            notes: ['Periodicidad mensual como punto de partida operativo.'],
+          },
+          {
+            obligationKey: 'income_tax',
+            label: 'Impuesto a la Renta',
+            period: '2026',
+            frequency: 'annual',
+            dueDate: '2027-03-16',
+            dueDay: 16,
+            source: 'sri_rule_of_thumb',
+            readinessStatus: 'needs_review',
+            notes: [
+              'La fecha de vencimiento depende del tipo de contribuyente y del noveno digito del RUC cuando aplique.',
+            ],
+          },
+        ],
+        guardrails: [
+          'Esta matriz es una base operativa; no sustituye la validacion final del SRI ni criterio contable.',
+          'Las fechas se calculan como calendario operacional estimado; fines de semana, feriados, Galapagos, sector publico y resoluciones especiales requieren verificacion adicional.',
+        ],
+      });
+
+    expect(
+      getTenantEcuadorTaxObligationCalendarUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform', 2026);
   });
 
   it('GET /api/tax-compliance/tenants/:slug/ec/obligation-matrix should return the Ecuador obligation matrix', async () => {
@@ -13096,6 +13368,53 @@ describe('API', () => {
           },
         ],
         readinessStatus: 'needs_review',
+        evidenceSummary: {
+          invoicing: {
+            invoiceCount: 2,
+            statusBreakdown: [
+              { status: 'draft', count: 1 },
+              { status: 'sent', count: 1 },
+            ],
+            totalsByCurrency: [
+              {
+                currency: 'USD',
+                subtotalInCents: 12500,
+                taxInCents: 1200,
+                totalInCents: 13700,
+                paidInCents: 2500,
+                outstandingTotalInCents: 11200,
+              },
+            ],
+            monthlyTotals: [
+              {
+                month: '2026-04',
+                currency: 'USD',
+                invoiceCount: 2,
+                totalInCents: 13700,
+                taxInCents: 1200,
+              },
+            ],
+          },
+          parties: {
+            totalParties: 2,
+            completeParties: 1,
+            needsReviewParties: 1,
+            issueSummaries: [
+              { issue: 'email', count: 1 },
+              { issue: 'fiscal_address', count: 1 },
+              { issue: 'identification_type', count: 1 },
+              { issue: 'taxpayer_id', count: 1 },
+            ],
+            incompletePartyIds: ['customer_globex'],
+          },
+          ecommerce: {
+            status: 'not_connected_yet',
+            notes: [
+              'Ecommerce ya expone reporting post-sale por orden, pero este packet aun no consume un agregado tributario tenant-wide.',
+              'El siguiente bridge debe consolidar ventas Ecommerce por periodo antes de sugerir declaracion.',
+            ],
+          },
+        },
         evidenceChecklist: [
           'Ventas facturadas y documentos electronicos emitidos en el periodo',
           'Comprobantes de compra y gasto que sustenten credito tributario o deducibilidad',

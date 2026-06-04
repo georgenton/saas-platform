@@ -8,13 +8,19 @@ import {
 import { FEATURE_FLAG_REPOSITORY } from '@saas-platform/feature-flags-application';
 import {
   CUSTOMER_REPOSITORY,
+  GetTenantInvoicingReportSummaryUseCase,
+  INVOICE_ITEM_REPOSITORY,
+  INVOICE_REPOSITORY,
   ISSUER_PROFILE_REPOSITORY,
+  PAYMENT_REPOSITORY,
 } from '@saas-platform/invoicing-application';
 import {
+  GetTenantPartyFiscalReadinessSummaryUseCase,
   PARTY_DIRECTORY_REPOSITORY,
 } from '@saas-platform/parties-application';
 import {
   GetTenantEcuadorTaxObligationMatrixUseCase,
+  GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
 } from '@saas-platform/tax-compliance-application';
@@ -81,11 +87,62 @@ import { TaxComplianceController } from './tax-compliance.controller';
         ),
     },
     {
-      provide: RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+      provide: GetTenantEcuadorTaxObligationCalendarUseCase,
       inject: [GetTenantEcuadorTaxObligationMatrixUseCase],
       useFactory: (getTenantEcuadorTaxObligationMatrixUseCase) =>
+        new GetTenantEcuadorTaxObligationCalendarUseCase(
+          getTenantEcuadorTaxObligationMatrixUseCase,
+        ),
+    },
+    {
+      provide: GetTenantPartyFiscalReadinessSummaryUseCase,
+      inject: [TENANT_REPOSITORY, PARTY_DIRECTORY_REPOSITORY],
+      useFactory: (tenantRepository, partyDirectoryRepository) =>
+        new GetTenantPartyFiscalReadinessSummaryUseCase(
+          tenantRepository,
+          partyDirectoryRepository,
+        ),
+    },
+    {
+      provide: GetTenantInvoicingReportSummaryUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        CUSTOMER_REPOSITORY,
+        INVOICE_REPOSITORY,
+        INVOICE_ITEM_REPOSITORY,
+        PAYMENT_REPOSITORY,
+      ],
+      useFactory: (
+        tenantRepository,
+        customerRepository,
+        invoiceRepository,
+        invoiceItemRepository,
+        paymentRepository,
+      ) =>
+        new GetTenantInvoicingReportSummaryUseCase(
+          tenantRepository,
+          customerRepository,
+          invoiceRepository,
+          invoiceItemRepository,
+          paymentRepository,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+      inject: [
+        GetTenantEcuadorTaxObligationMatrixUseCase,
+        GetTenantInvoicingReportSummaryUseCase,
+        GetTenantPartyFiscalReadinessSummaryUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxObligationMatrixUseCase,
+        getTenantInvoicingReportSummaryUseCase,
+        getTenantPartyFiscalReadinessSummaryUseCase,
+      ) =>
         new RequestTenantEcuadorTaxPeriodPreparationPacketUseCase(
           getTenantEcuadorTaxObligationMatrixUseCase,
+          getTenantInvoicingReportSummaryUseCase,
+          getTenantPartyFiscalReadinessSummaryUseCase,
         ),
     },
     {

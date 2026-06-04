@@ -1,5 +1,6 @@
 import {
   EcuadorTaxObligationMatrixView,
+  EcuadorTaxObligationCalendarView,
   EcuadorTaxObligationView,
   EcuadorTaxPeriodPreparationPacketView,
   EcuadorTaxpayerProfileView,
@@ -49,6 +50,61 @@ export interface EcuadorTaxObligationMatrixResponseDto {
   guardrails: string[];
 }
 
+export interface EcuadorTaxCalendarEntryResponseDto {
+  obligationKey: string;
+  label: string;
+  period: string;
+  frequency: string;
+  dueDate: string | null;
+  dueDay: number | null;
+  source: string;
+  readinessStatus: string;
+  notes: string[];
+}
+
+export interface EcuadorTaxObligationCalendarResponseDto {
+  tenantSlug: string;
+  year: number;
+  generatedAt: string;
+  taxpayerProfile: EcuadorTaxpayerProfileResponseDto;
+  ninthDigit: string | null;
+  entries: EcuadorTaxCalendarEntryResponseDto[];
+  guardrails: string[];
+}
+
+export interface EcuadorTaxEvidenceSummaryResponseDto {
+  invoicing: {
+    invoiceCount: number;
+    statusBreakdown: Array<{ status: string; count: number }>;
+    totalsByCurrency: Array<{
+      currency: string;
+      subtotalInCents: number;
+      taxInCents: number;
+      totalInCents: number;
+      paidInCents: number;
+      outstandingTotalInCents: number;
+    }>;
+    monthlyTotals: Array<{
+      month: string;
+      currency: string;
+      invoiceCount: number;
+      totalInCents: number;
+      taxInCents: number;
+    }>;
+  };
+  parties: {
+    totalParties: number;
+    completeParties: number;
+    needsReviewParties: number;
+    issueSummaries: Array<{ issue: string; count: number }>;
+    incompletePartyIds: string[];
+  };
+  ecommerce: {
+    status: string;
+    notes: string[];
+  };
+}
+
 export interface EcuadorTaxPeriodPreparationPacketResponseDto {
   tenantSlug: string;
   period: string;
@@ -56,6 +112,7 @@ export interface EcuadorTaxPeriodPreparationPacketResponseDto {
   taxpayerProfile: EcuadorTaxpayerProfileResponseDto;
   obligations: EcuadorTaxObligationResponseDto[];
   readinessStatus: string;
+  evidenceSummary: EcuadorTaxEvidenceSummaryResponseDto;
   evidenceChecklist: string[];
   accountantHandoff: {
     recommended: boolean;
@@ -129,6 +186,32 @@ export function toEcuadorTaxObligationMatrixResponseDto(
   };
 }
 
+export function toEcuadorTaxObligationCalendarResponseDto(
+  calendar: EcuadorTaxObligationCalendarView,
+): EcuadorTaxObligationCalendarResponseDto {
+  return {
+    tenantSlug: calendar.tenantSlug,
+    year: calendar.year,
+    generatedAt: calendar.generatedAt.toISOString(),
+    taxpayerProfile: toEcuadorTaxpayerProfileResponseDto(
+      calendar.taxpayerProfile,
+    ),
+    ninthDigit: calendar.ninthDigit,
+    entries: calendar.entries.map((entry) => ({
+      obligationKey: entry.obligationKey,
+      label: entry.label,
+      period: entry.period,
+      frequency: entry.frequency,
+      dueDate: entry.dueDate,
+      dueDay: entry.dueDay,
+      source: entry.source,
+      readinessStatus: entry.readinessStatus,
+      notes: [...entry.notes],
+    })),
+    guardrails: [...calendar.guardrails],
+  };
+}
+
 export function toEcuadorTaxPeriodPreparationPacketResponseDto(
   packet: EcuadorTaxPeriodPreparationPacketView,
 ): EcuadorTaxPeriodPreparationPacketResponseDto {
@@ -143,6 +226,52 @@ export function toEcuadorTaxPeriodPreparationPacketResponseDto(
       toEcuadorTaxObligationResponseDto(obligation),
     ),
     readinessStatus: packet.readinessStatus,
+    evidenceSummary: {
+      invoicing: {
+        invoiceCount: packet.evidenceSummary.invoicing.invoiceCount,
+        statusBreakdown:
+          packet.evidenceSummary.invoicing.statusBreakdown.map((status) => ({
+            status: status.status,
+            count: status.count,
+          })),
+        totalsByCurrency:
+          packet.evidenceSummary.invoicing.totalsByCurrency.map((total) => ({
+            currency: total.currency,
+            subtotalInCents: total.subtotalInCents,
+            taxInCents: total.taxInCents,
+            totalInCents: total.totalInCents,
+            paidInCents: total.paidInCents,
+            outstandingTotalInCents: total.outstandingTotalInCents,
+          })),
+        monthlyTotals:
+          packet.evidenceSummary.invoicing.monthlyTotals.map((month) => ({
+            month: month.month,
+            currency: month.currency,
+            invoiceCount: month.invoiceCount,
+            totalInCents: month.totalInCents,
+            taxInCents: month.taxInCents,
+          })),
+      },
+      parties: {
+        totalParties: packet.evidenceSummary.parties.totalParties,
+        completeParties: packet.evidenceSummary.parties.completeParties,
+        needsReviewParties:
+          packet.evidenceSummary.parties.needsReviewParties,
+        issueSummaries: packet.evidenceSummary.parties.issueSummaries.map(
+          (issue) => ({
+            issue: issue.issue,
+            count: issue.count,
+          }),
+        ),
+        incompletePartyIds: [
+          ...packet.evidenceSummary.parties.incompletePartyIds,
+        ],
+      },
+      ecommerce: {
+        status: packet.evidenceSummary.ecommerce.status,
+        notes: [...packet.evidenceSummary.ecommerce.notes],
+      },
+    },
     evidenceChecklist: [...packet.evidenceChecklist],
     accountantHandoff: { ...packet.accountantHandoff },
     blockedBy: [...packet.blockedBy],

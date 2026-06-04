@@ -1,4 +1,7 @@
-import { Party } from '@saas-platform/parties-domain';
+import {
+  Party,
+  PartyFiscalReadinessSummary,
+} from '@saas-platform/parties-domain';
 
 export interface PartyResponseDto {
   id: string;
@@ -28,6 +31,37 @@ export interface PartyFiscalProfileResponseDto {
   completenessStatus: string;
   missingFields: string[];
   reviewNotes: string[];
+}
+
+export interface PartyFiscalReadinessSummaryResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  totalParties: number;
+  completeParties: number;
+  needsReviewParties: number;
+  roleSummaries: Array<{
+    role: string;
+    totalParties: number;
+    completeParties: number;
+    needsReviewParties: number;
+  }>;
+  issueSummaries: Array<{
+    issue: string;
+    count: number;
+  }>;
+  incompleteParties: Array<{
+    id: string;
+    displayName: string;
+    roles: string[];
+    taxpayerId: string | null;
+    identificationType: string | null;
+    fiscalAddress: string | null;
+    email: string | null;
+    completenessStatus: string;
+    missingFields: string[];
+    reviewNotes: string[];
+  }>;
+  guardrails: string[];
 }
 
 export const toPartyResponseDto = (party: Party): PartyResponseDto => {
@@ -63,3 +97,36 @@ export const toPartyResponseDto = (party: Party): PartyResponseDto => {
     updatedAt: data.updatedAt.toISOString(),
   };
 };
+
+export const toPartyFiscalReadinessSummaryResponseDto = (
+  summary: PartyFiscalReadinessSummary,
+): PartyFiscalReadinessSummaryResponseDto => ({
+  tenantSlug: summary.tenantSlug,
+  generatedAt: summary.generatedAt.toISOString(),
+  totalParties: summary.totalParties,
+  completeParties: summary.completeParties,
+  needsReviewParties: summary.needsReviewParties,
+  roleSummaries: summary.roleSummaries.map((roleSummary) => ({
+    role: roleSummary.role,
+    totalParties: roleSummary.totalParties,
+    completeParties: roleSummary.completeParties,
+    needsReviewParties: roleSummary.needsReviewParties,
+  })),
+  issueSummaries: summary.issueSummaries.map((issueSummary) => ({
+    issue: issueSummary.issue,
+    count: issueSummary.count,
+  })),
+  incompleteParties: summary.incompleteParties.map((party) => ({
+    id: party.id,
+    displayName: party.displayName,
+    roles: [...party.roles],
+    taxpayerId: party.taxpayerId,
+    identificationType: party.identificationType,
+    fiscalAddress: party.fiscalAddress,
+    email: party.email,
+    completenessStatus: party.completenessStatus,
+    missingFields: [...party.missingFields],
+    reviewNotes: [...party.reviewNotes],
+  })),
+  guardrails: [...summary.guardrails],
+});

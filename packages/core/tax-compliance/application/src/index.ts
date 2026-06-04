@@ -1,4 +1,7 @@
 export * from './lib/use-cases/get-tenant-ecuador-tax-obligation-matrix.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-obligation-calendar.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-calendar-review-workspace.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-due-monitor.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-taxpayer-profile.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-draft-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-period-preparation-packet.use-case';

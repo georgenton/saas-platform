@@ -21,6 +21,12 @@ export type EcuadorTaxReadinessStatus =
   | 'ready'
   | 'needs_review'
   | 'blocked';
+export type EcuadorTaxDueStatus =
+  | 'overdue'
+  | 'due_soon'
+  | 'upcoming'
+  | 'unscheduled';
+export type EcuadorTaxReviewPriority = 'critical' | 'high' | 'normal';
 
 export interface EcuadorTaxpayerProfileView {
   tenantSlug: string;
@@ -88,6 +94,58 @@ export interface EcuadorTaxObligationCalendarView {
   guardrails: string[];
 }
 
+export interface EcuadorTaxCalendarReviewEntryView
+  extends EcuadorTaxCalendarEntryView {
+  dueStatus: EcuadorTaxDueStatus;
+  daysUntilDue: number | null;
+  reviewPriority: EcuadorTaxReviewPriority;
+  reviewReasons: string[];
+}
+
+export interface EcuadorTaxCalendarReviewWorkspaceView {
+  tenantSlug: string;
+  year: number;
+  generatedAt: Date;
+  asOfDate: string;
+  taxpayerProfile: EcuadorTaxpayerProfileView;
+  summary: {
+    totalEntries: number;
+    overdueCount: number;
+    dueSoonCount: number;
+    blockedCount: number;
+    needsReviewCount: number;
+  };
+  priorityEntries: EcuadorTaxCalendarReviewEntryView[];
+  nextActions: string[];
+  guardrails: string[];
+}
+
+export interface EcuadorTaxDueMonitorAlertView {
+  obligationKey: EcuadorTaxObligationKey;
+  label: string;
+  period: string;
+  dueDate: string | null;
+  dueStatus: EcuadorTaxDueStatus;
+  daysUntilDue: number | null;
+  severity: EcuadorTaxReviewPriority;
+  message: string;
+}
+
+export interface EcuadorTaxDueMonitorView {
+  tenantSlug: string;
+  year: number;
+  generatedAt: Date;
+  asOfDate: string;
+  windowDays: number;
+  alerts: EcuadorTaxDueMonitorAlertView[];
+  summary: {
+    overdueCount: number;
+    dueSoonCount: number;
+    unscheduledCount: number;
+  };
+  guardrails: string[];
+}
+
 export interface EcuadorTaxEvidenceSummaryView {
   invoicing: {
     invoiceCount: number;
@@ -136,6 +194,33 @@ export interface EcuadorTaxPeriodPreparationPacketView {
     packetSummary: string;
   };
   blockedBy: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxDeclarationDraftPacketView {
+  tenantSlug: string;
+  period: string;
+  generatedAt: Date;
+  taxpayerProfile: EcuadorTaxpayerProfileView;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  declarationSections: Array<{
+    section: string;
+    readinessStatus: EcuadorTaxReadinessStatus;
+    source: string;
+    summary: string;
+    blockers: string[];
+  }>;
+  accountantReview: {
+    required: boolean;
+    reasons: string[];
+    suggestedQuestions: string[];
+  };
+  sourcePackets: {
+    preparationPacketGeneratedAt: Date;
+    calendarEntryCount: number;
+    evidenceSummary: EcuadorTaxEvidenceSummaryView;
+  };
   nextStep: string;
   guardrails: string[];
 }

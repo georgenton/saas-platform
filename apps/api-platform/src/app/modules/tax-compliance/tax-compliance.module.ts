@@ -19,9 +19,12 @@ import {
   PARTY_DIRECTORY_REPOSITORY,
 } from '@saas-platform/parties-application';
 import {
+  GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
+  GetTenantEcuadorTaxDueMonitorUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
+  RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
@@ -95,6 +98,22 @@ import { TaxComplianceController } from './tax-compliance.controller';
         ),
     },
     {
+      provide: GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
+      inject: [GetTenantEcuadorTaxObligationCalendarUseCase],
+      useFactory: (getTenantEcuadorTaxObligationCalendarUseCase) =>
+        new GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase(
+          getTenantEcuadorTaxObligationCalendarUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxDueMonitorUseCase,
+      inject: [GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase],
+      useFactory: (getTenantEcuadorTaxCalendarReviewWorkspaceUseCase) =>
+        new GetTenantEcuadorTaxDueMonitorUseCase(
+          getTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
+        ),
+    },
+    {
       provide: GetTenantPartyFiscalReadinessSummaryUseCase,
       inject: [TENANT_REPOSITORY, PARTY_DIRECTORY_REPOSITORY],
       useFactory: (tenantRepository, partyDirectoryRepository) =>
@@ -143,6 +162,21 @@ import { TaxComplianceController } from './tax-compliance.controller';
           getTenantEcuadorTaxObligationMatrixUseCase,
           getTenantInvoicingReportSummaryUseCase,
           getTenantPartyFiscalReadinessSummaryUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+      inject: [
+        RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+        GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+        getTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxDeclarationDraftPacketUseCase(
+          requestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+          getTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
         ),
     },
     {

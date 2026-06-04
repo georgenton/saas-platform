@@ -85,11 +85,15 @@ import {
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxPeriodCloseoutPacketResponse,
   EcuadorTaxPeriodWorkspaceResponse,
+  EcuadorTaxPurchaseExpenseEvidenceRecordResponse,
   EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse,
   EcuadorTaxReconciliationWorkspaceResponse,
   EcuadorTaxSalesBookResponse,
+  EcuadorTaxSupplierFiscalReadinessWorkspaceResponse,
   EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcuadorTaxVatInputOutputReconciliationPacketResponse,
+  EcuadorTaxWithholdingEvidencePacketResponse,
+  RecordEcuadorTaxPurchaseExpenseEvidenceRequest,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationWorkspaceResponse,
@@ -1102,6 +1106,42 @@ export async function fetchEcuadorTaxPurchaseExpenseEvidenceWorkspace(
   );
 }
 
+export async function recordEcuadorTaxPurchaseExpenseEvidence(
+  token: string,
+  tenantSlug: string,
+  body: RecordEcuadorTaxPurchaseExpenseEvidenceRequest,
+): Promise<EcuadorTaxPurchaseExpenseEvidenceRecordResponse> {
+  return request<EcuadorTaxPurchaseExpenseEvidenceRecordResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/purchase-expense-evidence`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchEcuadorTaxSupplierFiscalReadinessWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxSupplierFiscalReadinessWorkspaceResponse> {
+  return request<EcuadorTaxSupplierFiscalReadinessWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/supplier-fiscal-readiness-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function fetchEcuadorTaxVatInputOutputReconciliationPacket(
   token: string,
   tenantSlug: string,
@@ -1112,6 +1152,25 @@ export async function fetchEcuadorTaxVatInputOutputReconciliationPacket(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/vat-input-output-reconciliation-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxWithholdingEvidencePacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxWithholdingEvidencePacketResponse> {
+  return request<EcuadorTaxWithholdingEvidencePacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/withholding-evidence-packet?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {
@@ -1218,7 +1277,11 @@ export async function transitionEcuadorTaxAccountantReview(
   tenantSlug: string,
   reviewId: string,
   body: {
-    status: 'pending_accountant' | 'in_review' | 'changes_requested' | 'approved';
+    status:
+      | 'pending_accountant'
+      | 'in_review'
+      | 'changes_requested'
+      | 'approved';
     transitionedByUserId?: string | null;
     note?: string | null;
   },

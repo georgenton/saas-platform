@@ -15,6 +15,7 @@ export * from './lib/use-cases/get-tenant-ecuador-tax-ecommerce-evidence-summary
 export * from './lib/use-cases/get-tenant-ecuador-tax-audit-readiness.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-due-monitor.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-obligation-settings.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-operational-closeout.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-taxpayer-profile.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-period-evidence-vault.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-period-workspace.use-case';
@@ -22,6 +23,8 @@ export * from './lib/use-cases/get-tenant-ecuador-tax-purchase-expense-evidence-
 export * from './lib/use-cases/get-tenant-ecuador-tax-reconciliation-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-rule-catalog.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-supplier-fiscal-readiness-workspace.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-vat-declaration-approval.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-withholding-registry.use-case';
 export * from './lib/use-cases/list-tenant-ecuador-tax-accountant-reviews.use-case';
 export * from './lib/use-cases/list-tenant-ecuador-tax-compliance-events.use-case';
 export * from './lib/use-cases/record-tenant-ecuador-tax-compliance-event.use-case';
@@ -40,4 +43,6 @@ export * from './lib/use-cases/request-tenant-ecuador-tax-vat-input-output-recon
 export * from './lib/use-cases/request-tenant-ecuador-tax-withholding-draft-bridge-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-withholding-evidence-packet.use-case';
 export * from './lib/use-cases/transition-tenant-ecuador-tax-accountant-review.use-case';
+export * from './lib/use-cases/transition-tenant-ecuador-tax-operational-closeout.use-case';
+export * from './lib/use-cases/transition-tenant-ecuador-tax-vat-declaration-approval.use-case';
 export * from './lib/use-cases/upsert-tenant-ecuador-tax-obligation-settings.use-case';

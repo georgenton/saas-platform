@@ -88,6 +88,7 @@ import {
   EcuadorTaxPeriodCloseoutPacketResponse,
   EcuadorTaxPeriodEvidenceVaultResponse,
   EcuadorTaxPeriodWorkspaceResponse,
+  EcuadorTaxOperationalCloseoutResponse,
   EcuadorTaxPurchaseExpenseEvidenceRecordResponse,
   EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse,
   EcuadorTaxReconciliationWorkspaceResponse,
@@ -95,14 +96,17 @@ import {
   EcuadorTaxSupplierFiscalReadinessWorkspaceResponse,
   EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcuadorTaxVatDeclarationDraftResponse,
+  EcuadorTaxVatDeclarationApprovalResponse,
   EcuadorTaxVatInputOutputReconciliationPacketResponse,
   EcuadorTaxWithholdingDraftBridgePacketResponse,
   EcuadorTaxWithholdingDraftExecutionPacketResponse,
   EcuadorTaxWithholdingEvidencePacketResponse,
+  EcuadorTaxWithholdingRegistryResponse,
   EcuadorTaxRuleCatalogResponse,
   ExecuteEcuadorTaxWithholdingDraftBridgeRequest,
   RecordEcuadorTaxPurchaseExpenseEvidenceRequest,
   RequestEcuadorTaxWithholdingDraftBridgePacketRequest,
+  TransitionEcuadorTaxWorkflowRequest,
   UpsertEcuadorTaxObligationSettingsRequest,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
@@ -1222,6 +1226,42 @@ export async function fetchEcuadorTaxVatDeclarationDraft(
   );
 }
 
+export async function fetchEcuadorTaxVatDeclarationApproval(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxVatDeclarationApprovalResponse> {
+  return request<EcuadorTaxVatDeclarationApprovalResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/vat-declaration-approval?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function transitionEcuadorTaxVatDeclarationApproval(
+  token: string,
+  tenantSlug: string,
+  body: TransitionEcuadorTaxWorkflowRequest,
+): Promise<EcuadorTaxVatDeclarationApprovalResponse> {
+  return request<EcuadorTaxVatDeclarationApprovalResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/vat-declaration-approval/transitions`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
 export async function fetchEcuadorTaxWithholdingEvidencePacket(
   token: string,
   tenantSlug: string,
@@ -1232,6 +1272,25 @@ export async function fetchEcuadorTaxWithholdingEvidencePacket(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/withholding-evidence-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxWithholdingRegistry(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxWithholdingRegistryResponse> {
+  return request<EcuadorTaxWithholdingRegistryResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/withholding-registry?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {
@@ -1366,6 +1425,42 @@ export async function fetchEcuadorTaxPeriodEvidenceVault(
     {
       method: 'GET',
       token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxOperationalCloseout(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxOperationalCloseoutResponse> {
+  return request<EcuadorTaxOperationalCloseoutResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/operational-closeout?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function transitionEcuadorTaxOperationalCloseout(
+  token: string,
+  tenantSlug: string,
+  body: TransitionEcuadorTaxWorkflowRequest,
+): Promise<EcuadorTaxOperationalCloseoutResponse> {
+  return request<EcuadorTaxOperationalCloseoutResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/operational-closeout/transitions`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
     },
   );
 }

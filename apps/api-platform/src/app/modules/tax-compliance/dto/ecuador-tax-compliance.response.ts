@@ -14,6 +14,7 @@ import {
   EcuadorTaxObligationMatrixView,
   EcuadorTaxObligationCalendarView,
   EcuadorTaxObligationSettingsView,
+  EcuadorTaxOperationalCloseoutView,
   EcuadorTaxObligationView,
   EcuadorTaxPeriodEvidenceVaultView,
   EcuadorTaxPeriodCloseoutPacketView,
@@ -27,11 +28,13 @@ import {
   EcuadorTaxSupplierFiscalReadinessWorkspaceView,
   EcuadorTaxpayerProfileView,
   EcuadorTaxVatDeclarationReadinessPacketView,
+  EcuadorTaxVatDeclarationApprovalView,
   EcuadorTaxVatDeclarationDraftView,
   EcuadorTaxVatInputOutputReconciliationPacketView,
   EcuadorTaxWithholdingDraftBridgePacketView,
   EcuadorTaxWithholdingDraftExecutionPacketView,
   EcuadorTaxWithholdingEvidencePacketView,
+  EcuadorTaxWithholdingRegistryView,
 } from '@saas-platform/tax-compliance-domain';
 
 export interface EcuadorTaxpayerProfileResponseDto {
@@ -631,6 +634,25 @@ export interface EcuadorTaxVatDeclarationDraftResponseDto {
   guardrails: string[];
 }
 
+export interface EcuadorTaxVatDeclarationApprovalResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  status: string;
+  draft: EcuadorTaxVatDeclarationDraftResponseDto;
+  transitionHistory: Array<{
+    status: string;
+    transitionedAt: string;
+    transitionedByUserId: string | null;
+    transitionedByEmail: string | null;
+    note: string | null;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxIncomeTaxEvidencePacketResponseDto {
   tenantSlug: string;
   period: string;
@@ -748,6 +770,33 @@ export interface EcuadorTaxWithholdingDraftExecutionPacketResponseDto {
   guardrails: string[];
 }
 
+export interface EcuadorTaxWithholdingRegistryResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  summary: {
+    salesCandidateCount: number;
+    purchaseCandidateCount: number;
+    executedDraftCount: number;
+    pendingSupportCount: number;
+  };
+  rows: Array<{
+    key: string;
+    source: string;
+    label: string;
+    readinessStatus: string;
+    amountInCents: number;
+    currency: string;
+    supportReference: string | null;
+    nextStep: string;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxRuleCatalogResponseDto {
   tenantSlug: string;
   generatedAt: string;
@@ -840,6 +889,33 @@ export interface EcuadorTaxPeriodEvidenceVaultResponseDto {
     auditEventCount: number;
   };
   missingItems: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxOperationalCloseoutResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  status: string;
+  checklist: Array<{
+    key: string;
+    label: string;
+    completed: boolean;
+    blocker: string | null;
+  }>;
+  vatApprovalStatus: string;
+  withholdingReadinessStatus: string;
+  evidenceVaultStatus: string;
+  transitionHistory: Array<{
+    status: string;
+    transitionedAt: string;
+    transitionedByUserId: string | null;
+    transitionedByEmail: string | null;
+    note: string | null;
+  }>;
+  blockers: string[];
   nextStep: string;
   guardrails: string[];
 }
@@ -1644,6 +1720,29 @@ export function toEcuadorTaxVatDeclarationDraftResponseDto(
   };
 }
 
+export function toEcuadorTaxVatDeclarationApprovalResponseDto(
+  approval: EcuadorTaxVatDeclarationApprovalView,
+): EcuadorTaxVatDeclarationApprovalResponseDto {
+  return {
+    tenantSlug: approval.tenantSlug,
+    period: approval.period,
+    year: approval.year,
+    generatedAt: approval.generatedAt.toISOString(),
+    status: approval.status,
+    draft: toEcuadorTaxVatDeclarationDraftResponseDto(approval.draft),
+    transitionHistory: approval.transitionHistory.map((transition) => ({
+      status: transition.status,
+      transitionedAt: transition.transitionedAt.toISOString(),
+      transitionedByUserId: transition.transitionedByUserId,
+      transitionedByEmail: transition.transitionedByEmail,
+      note: transition.note,
+    })),
+    blockers: [...approval.blockers],
+    nextStep: approval.nextStep,
+    guardrails: [...approval.guardrails],
+  };
+}
+
 export function toEcuadorTaxIncomeTaxEvidencePacketResponseDto(
   packet: EcuadorTaxIncomeTaxEvidencePacketView,
 ): EcuadorTaxIncomeTaxEvidencePacketResponseDto {
@@ -1771,6 +1870,23 @@ export function toEcuadorTaxWithholdingDraftExecutionPacketResponseDto(
   };
 }
 
+export function toEcuadorTaxWithholdingRegistryResponseDto(
+  registry: EcuadorTaxWithholdingRegistryView,
+): EcuadorTaxWithholdingRegistryResponseDto {
+  return {
+    tenantSlug: registry.tenantSlug,
+    period: registry.period,
+    year: registry.year,
+    generatedAt: registry.generatedAt.toISOString(),
+    readinessStatus: registry.readinessStatus,
+    summary: { ...registry.summary },
+    rows: registry.rows.map((row) => ({ ...row })),
+    blockers: [...registry.blockers],
+    nextStep: registry.nextStep,
+    guardrails: [...registry.guardrails],
+  };
+}
+
 export function toEcuadorTaxRuleCatalogResponseDto(
   catalog: EcuadorTaxRuleCatalogView,
 ): EcuadorTaxRuleCatalogResponseDto {
@@ -1861,6 +1977,32 @@ export function toEcuadorTaxPeriodEvidenceVaultResponseDto(
     missingItems: [...vault.missingItems],
     nextStep: vault.nextStep,
     guardrails: [...vault.guardrails],
+  };
+}
+
+export function toEcuadorTaxOperationalCloseoutResponseDto(
+  closeout: EcuadorTaxOperationalCloseoutView,
+): EcuadorTaxOperationalCloseoutResponseDto {
+  return {
+    tenantSlug: closeout.tenantSlug,
+    period: closeout.period,
+    year: closeout.year,
+    generatedAt: closeout.generatedAt.toISOString(),
+    status: closeout.status,
+    checklist: closeout.checklist.map((item) => ({ ...item })),
+    vatApprovalStatus: closeout.vatApprovalStatus,
+    withholdingReadinessStatus: closeout.withholdingReadinessStatus,
+    evidenceVaultStatus: closeout.evidenceVaultStatus,
+    transitionHistory: closeout.transitionHistory.map((transition) => ({
+      status: transition.status,
+      transitionedAt: transition.transitionedAt.toISOString(),
+      transitionedByUserId: transition.transitionedByUserId,
+      transitionedByEmail: transition.transitionedByEmail,
+      note: transition.note,
+    })),
+    blockers: [...closeout.blockers],
+    nextStep: closeout.nextStep,
+    guardrails: [...closeout.guardrails],
   };
 }
 

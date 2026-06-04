@@ -1323,6 +1323,52 @@ export interface EcuadorTaxVatDeclarationDraftResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxVatDeclarationApprovalResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  status: string;
+  draft: EcuadorTaxVatDeclarationDraftResponse;
+  transitionHistory: Array<{
+    status: string;
+    transitionedAt: string;
+    transitionedByUserId: string | null;
+    transitionedByEmail: string | null;
+    note: string | null;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxWithholdingRegistryResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  summary: {
+    salesCandidateCount: number;
+    purchaseCandidateCount: number;
+    executedDraftCount: number;
+    pendingSupportCount: number;
+  };
+  rows: Array<{
+    key: string;
+    source: string;
+    label: string;
+    readinessStatus: string;
+    amountInCents: number;
+    currency: string;
+    supportReference: string | null;
+    nextStep: string;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxPeriodEvidenceVaultResponse {
   tenantSlug: string;
   period: string;
@@ -1347,6 +1393,42 @@ export interface EcuadorTaxPeriodEvidenceVaultResponse {
   missingItems: string[];
   nextStep: string;
   guardrails: string[];
+}
+
+export interface EcuadorTaxOperationalCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  status: string;
+  checklist: Array<{
+    key: string;
+    label: string;
+    completed: boolean;
+    blocker: string | null;
+  }>;
+  vatApprovalStatus: string;
+  withholdingReadinessStatus: string;
+  evidenceVaultStatus: string;
+  transitionHistory: Array<{
+    status: string;
+    transitionedAt: string;
+    transitionedByUserId: string | null;
+    transitionedByEmail: string | null;
+    note: string | null;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TransitionEcuadorTaxWorkflowRequest {
+  period: string;
+  year: number;
+  status: string;
+  transitionedByUserId?: string | null;
+  transitionedByEmail?: string | null;
+  note?: string | null;
 }
 
 export interface EcuadorTaxIncomeTaxEvidencePacketResponse {

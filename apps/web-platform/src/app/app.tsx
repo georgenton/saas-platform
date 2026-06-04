@@ -112,6 +112,7 @@ import {
   fetchEcuadorTaxObligationSettings,
   fetchEcuadorTaxPeriodCloseoutPacket,
   fetchEcuadorTaxPeriodEvidenceVault,
+  fetchEcuadorTaxOperationalCloseout,
   fetchEcuadorTaxPeriodWorkspace,
   fetchEcuadorTaxPurchaseExpenseEvidenceWorkspace,
   fetchEcuadorTaxReconciliationWorkspace,
@@ -120,10 +121,14 @@ import {
   fetchEcuadorTaxSupplierFiscalReadinessWorkspace,
   fetchEcuadorTaxVatDeclarationReadinessPacket,
   fetchEcuadorTaxVatDeclarationDraft,
+  fetchEcuadorTaxVatDeclarationApproval,
   fetchEcuadorTaxVatInputOutputReconciliationPacket,
   fetchEcuadorTaxWithholdingEvidencePacket,
+  fetchEcuadorTaxWithholdingRegistry,
   recordEcuadorTaxPurchaseExpenseEvidence,
   requestEcuadorTaxWithholdingDraftBridgePacket,
+  transitionEcuadorTaxOperationalCloseout,
+  transitionEcuadorTaxVatDeclarationApproval,
   upsertEcuadorTaxObligationSettings,
   fetchTenantEcommerceOrderPostSaleOpsBoard,
   fetchTenantEcommerceOrderPostSaleReportingBoard,
@@ -504,6 +509,7 @@ import {
   EcuadorTaxEcommerceEvidenceSummaryResponse,
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
+  EcuadorTaxOperationalCloseoutResponse,
   EcuadorTaxPeriodCloseoutPacketResponse,
   EcuadorTaxPeriodEvidenceVaultResponse,
   EcuadorTaxPeriodWorkspaceResponse,
@@ -514,10 +520,12 @@ import {
   EcuadorTaxSupplierFiscalReadinessWorkspaceResponse,
   EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcuadorTaxVatDeclarationDraftResponse,
+  EcuadorTaxVatDeclarationApprovalResponse,
   EcuadorTaxVatInputOutputReconciliationPacketResponse,
   EcuadorTaxWithholdingDraftBridgePacketResponse,
   EcuadorTaxWithholdingDraftExecutionPacketResponse,
   EcuadorTaxWithholdingEvidencePacketResponse,
+  EcuadorTaxWithholdingRegistryResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSignatureMaterialInspectionResponse,
   ElectronicSubmissionSettingsResponse,
@@ -1952,6 +1960,10 @@ export function App() {
     setTaxComplianceVatDeclarationDraft,
   ] = useState<EcuadorTaxVatDeclarationDraftResponse | null>(null);
   const [
+    taxComplianceVatDeclarationApproval,
+    setTaxComplianceVatDeclarationApproval,
+  ] = useState<EcuadorTaxVatDeclarationApprovalResponse | null>(null);
+  const [
     taxComplianceIncomeTaxEvidencePacket,
     setTaxComplianceIncomeTaxEvidencePacket,
   ] = useState<EcuadorTaxIncomeTaxEvidencePacketResponse | null>(null);
@@ -1963,6 +1975,10 @@ export function App() {
     taxComplianceWithholdingEvidencePacket,
     setTaxComplianceWithholdingEvidencePacket,
   ] = useState<EcuadorTaxWithholdingEvidencePacketResponse | null>(null);
+  const [
+    taxComplianceWithholdingRegistry,
+    setTaxComplianceWithholdingRegistry,
+  ] = useState<EcuadorTaxWithholdingRegistryResponse | null>(null);
   const [
     taxComplianceWithholdingDraftBridgePacket,
     setTaxComplianceWithholdingDraftBridgePacket,
@@ -1981,6 +1997,10 @@ export function App() {
     taxCompliancePeriodEvidenceVault,
     setTaxCompliancePeriodEvidenceVault,
   ] = useState<EcuadorTaxPeriodEvidenceVaultResponse | null>(null);
+  const [
+    taxComplianceOperationalCloseout,
+    setTaxComplianceOperationalCloseout,
+  ] = useState<EcuadorTaxOperationalCloseoutResponse | null>(null);
   const [taxComplianceLoading, setTaxComplianceLoading] = useState(false);
   const [taxComplianceActionLoading, setTaxComplianceActionLoading] =
     useState<string | null>(null);
@@ -19132,12 +19152,15 @@ export function App() {
         nextVatInputOutputPacket,
         nextObligationSettings,
         nextVatDeclarationDraft,
+        nextVatDeclarationApproval,
         nextIncomeTaxEvidencePacket,
         nextSupplierReadinessWorkspace,
         nextWithholdingEvidencePacket,
+        nextWithholdingRegistry,
         nextRuleCatalog,
         nextAccountantWorkbench,
         nextPeriodEvidenceVault,
+        nextOperationalCloseout,
       ] = await Promise.all([
         fetchEcuadorTaxPeriodWorkspace(token, tenantSlug, taxCompliancePeriod, year),
         fetchEcuadorTaxEcommerceEvidence(token, tenantSlug, taxCompliancePeriod),
@@ -19187,6 +19210,12 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchEcuadorTaxVatDeclarationApproval(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
         fetchEcuadorTaxIncomeTaxEvidencePacket(
           token,
           tenantSlug,
@@ -19205,6 +19234,12 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchEcuadorTaxWithholdingRegistry(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
         fetchEcuadorTaxRuleCatalog(token, tenantSlug, taxCompliancePeriod, year),
         fetchEcuadorTaxAccountantWorkbench(
           token,
@@ -19213,6 +19248,12 @@ export function App() {
           year,
         ),
         fetchEcuadorTaxPeriodEvidenceVault(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxOperationalCloseout(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -19234,14 +19275,17 @@ export function App() {
         setTaxComplianceVatInputOutputPacket(nextVatInputOutputPacket);
         setTaxComplianceObligationSettings(nextObligationSettings);
         setTaxComplianceVatDeclarationDraft(nextVatDeclarationDraft);
+        setTaxComplianceVatDeclarationApproval(nextVatDeclarationApproval);
         setTaxComplianceIncomeTaxEvidencePacket(nextIncomeTaxEvidencePacket);
         setTaxComplianceSupplierReadinessWorkspace(
           nextSupplierReadinessWorkspace,
         );
         setTaxComplianceWithholdingEvidencePacket(nextWithholdingEvidencePacket);
+        setTaxComplianceWithholdingRegistry(nextWithholdingRegistry);
         setTaxComplianceRuleCatalog(nextRuleCatalog);
         setTaxComplianceAccountantWorkbench(nextAccountantWorkbench);
         setTaxCompliancePeriodEvidenceVault(nextPeriodEvidenceVault);
+        setTaxComplianceOperationalCloseout(nextOperationalCloseout);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -19433,6 +19477,82 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo guardar configuracion tributaria.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleApproveTaxVatDeclaration() {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('approve-vat-declaration');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const approval = await transitionEcuadorTaxVatDeclarationApproval(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          period: taxCompliancePeriod,
+          year: resolveNumericYear(taxComplianceYear),
+          status: 'approved_for_external_filing',
+          transitionedByUserId: session?.user.id ?? null,
+          transitionedByEmail: session?.user.email ?? null,
+          note: 'Approved from tax compliance console.',
+        },
+      );
+      setTaxComplianceVatDeclarationApproval(approval);
+      setTaxComplianceActionMessage(
+        `IVA marcado como ${humanizeKey(approval.status)}.`,
+      );
+      await refreshTaxComplianceWorkspace();
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo aprobar el borrador IVA.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleCloseTaxPeriodOperationally() {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('close-tax-period-operationally');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const closeout = await transitionEcuadorTaxOperationalCloseout(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          period: taxCompliancePeriod,
+          year: resolveNumericYear(taxComplianceYear),
+          status: 'closed_operationally',
+          transitionedByUserId: session?.user.id ?? null,
+          transitionedByEmail: session?.user.email ?? null,
+          note: 'Operational closeout recorded from tax compliance console.',
+        },
+      );
+      setTaxComplianceOperationalCloseout(closeout);
+      setTaxComplianceActionMessage(
+        `Periodo marcado como ${humanizeKey(closeout.status)}.`,
+      );
+      await refreshTaxComplianceWorkspace();
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cerrar operacionalmente el periodo.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -27846,10 +27966,10 @@ export function App() {
                       <span className={styles.label}>IVA</span>
                       <h3>Borrador declaración 1.0</h3>
                     </div>
-                    {taxComplianceVatDeclarationDraft ? (
+                    {taxComplianceVatDeclarationApproval ? (
                       <span className={styles.statusPill}>
                         {humanizeKey(
-                          taxComplianceVatDeclarationDraft.readinessStatus,
+                          taxComplianceVatDeclarationApproval.status,
                         )}
                       </span>
                     ) : null}
@@ -27886,6 +28006,33 @@ export function App() {
                       <p className={styles.muted}>
                         {taxComplianceVatDeclarationDraft.nextStep}
                       </p>
+                      {taxComplianceVatDeclarationApproval ? (
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>
+                              {humanizeKey(
+                                taxComplianceVatDeclarationApproval.status,
+                              )}
+                            </strong>
+                            <button
+                              className={styles.ghostButton}
+                              disabled={
+                                taxComplianceActionLoading ===
+                                'approve-vat-declaration'
+                              }
+                              onClick={() =>
+                                void handleApproveTaxVatDeclaration()
+                              }
+                              type="button"
+                            >
+                              Aprobar IVA
+                            </button>
+                          </div>
+                          <p className={styles.muted}>
+                            {taxComplianceVatDeclarationApproval.nextStep}
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
                   ) : (
                     <div className={styles.emptyState}>
@@ -27942,6 +28089,63 @@ export function App() {
                 ) : (
                   <div className={styles.emptyState}>
                     <p>Carga un período para ver la carpeta fiscal.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.stack}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>Closeout 2.0</span>
+                    <h3>Cierre operacional tributario</h3>
+                  </div>
+                  {taxComplianceOperationalCloseout ? (
+                    <span className={styles.statusPill}>
+                      {humanizeKey(taxComplianceOperationalCloseout.status)}
+                    </span>
+                  ) : null}
+                </div>
+                {taxComplianceOperationalCloseout ? (
+                  <div className={styles.stack}>
+                    <div className={styles.commercialGrid}>
+                      {taxComplianceOperationalCloseout.checklist.map((item) => (
+                        <div className={styles.commercialCard} key={item.key}>
+                          <span className={styles.muted}>{item.label}</span>
+                          <strong>{item.completed ? 'Listo' : 'Pendiente'}</strong>
+                          <span className={styles.muted}>
+                            {item.blocker ?? 'sin blockers'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className={styles.invoiceItemCard}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>
+                          {taxComplianceOperationalCloseout.blockers.length}{' '}
+                          blockers
+                        </strong>
+                        <button
+                          className={styles.ghostButton}
+                          disabled={
+                            taxComplianceActionLoading ===
+                            'close-tax-period-operationally'
+                          }
+                          onClick={() =>
+                            void handleCloseTaxPeriodOperationally()
+                          }
+                          type="button"
+                        >
+                          Cerrar
+                        </button>
+                      </div>
+                      <p className={styles.muted}>
+                        {taxComplianceOperationalCloseout.nextStep}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.emptyState}>
+                    <p>Carga un período para revisar cierre operacional.</p>
                   </div>
                 )}
               </div>
@@ -34316,7 +34520,46 @@ export function App() {
                             }
                           </strong>
                         </div>
+                        {taxComplianceWithholdingRegistry ? (
+                          <>
+                            <div className={styles.commercialCard}>
+                              <span className={styles.muted}>Drafts</span>
+                              <strong>
+                                {
+                                  taxComplianceWithholdingRegistry.summary
+                                    .executedDraftCount
+                                }
+                              </strong>
+                            </div>
+                            <div className={styles.commercialCard}>
+                              <span className={styles.muted}>Pendientes</span>
+                              <strong>
+                                {
+                                  taxComplianceWithholdingRegistry.summary
+                                    .pendingSupportCount
+                                }
+                              </strong>
+                            </div>
+                          </>
+                        ) : null}
                       </div>
+                      {taxComplianceWithholdingRegistry ? (
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>
+                              {humanizeKey(
+                                taxComplianceWithholdingRegistry.readinessStatus,
+                              )}
+                            </strong>
+                            <span className={styles.statusPill}>
+                              registry
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {taxComplianceWithholdingRegistry.nextStep}
+                          </p>
+                        </div>
+                      ) : null}
                       {taxComplianceWithholdingDraftBridgePacket ? (
                         <div className={styles.invoiceItemCard}>
                           <div className={styles.invoiceCardHeader}>

@@ -71,7 +71,9 @@ export type EcuadorTaxComplianceEventType =
   | 'supplier_fiscal_readiness_reviewed'
   | 'withholding_evidence_packet_requested'
   | 'withholding_draft_bridge_requested'
-  | 'tax_rule_catalog_reviewed';
+  | 'withholding_draft_executed'
+  | 'tax_rule_catalog_reviewed'
+  | 'accountant_workbench_reviewed';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -701,6 +703,28 @@ export interface EcuadorTaxWithholdingDraftBridgePacketView {
   guardrails: string[];
 }
 
+export interface EcuadorTaxWithholdingDraftExecutionPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  bridgePacket: EcuadorTaxWithholdingDraftBridgePacketView;
+  withholdingDraft: {
+    id: string;
+    number: string;
+    status: string;
+    documentCode: string | null;
+    sourceInvoiceId: string | null;
+    sourceInvoiceNumber: string | null;
+    amountInCents: number;
+    currency: string;
+  } | null;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxRuleCatalogView {
   tenantSlug: string;
   generatedAt: Date;
@@ -718,6 +742,34 @@ export interface EcuadorTaxRuleCatalogView {
     guardrails: string[];
   }>;
   blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantWorkbenchView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  summary: {
+    blockingSectionCount: number;
+    needsReviewSectionCount: number;
+    readySectionCount: number;
+    accountantReviewCount: number;
+    ruleCount: number;
+  };
+  sections: Array<{
+    key: string;
+    label: string;
+    readinessStatus: EcuadorTaxReadinessStatus;
+    blockerCount: number;
+    questionCount: number;
+    nextStep: string;
+  }>;
+  blockers: string[];
+  accountantQuestions: string[];
+  latestAccountantReview: EcuadorTaxAccountantReviewView | null;
   nextStep: string;
   guardrails: string[];
 }

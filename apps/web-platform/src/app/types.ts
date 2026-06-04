@@ -1379,6 +1379,28 @@ export interface EcuadorTaxWithholdingDraftBridgePacketResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxWithholdingDraftExecutionPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  bridgePacket: EcuadorTaxWithholdingDraftBridgePacketResponse;
+  withholdingDraft: {
+    id: string;
+    number: string;
+    status: string;
+    documentCode: string | null;
+    sourceInvoiceId: string | null;
+    sourceInvoiceNumber: string | null;
+    amountInCents: number;
+    currency: string;
+  } | null;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxRuleCatalogResponse {
   tenantSlug: string;
   generatedAt: string;
@@ -1400,12 +1422,46 @@ export interface EcuadorTaxRuleCatalogResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxAccountantWorkbenchResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  summary: {
+    blockingSectionCount: number;
+    needsReviewSectionCount: number;
+    readySectionCount: number;
+    accountantReviewCount: number;
+    ruleCount: number;
+  };
+  sections: Array<{
+    key: string;
+    label: string;
+    readinessStatus: string;
+    blockerCount: number;
+    questionCount: number;
+    nextStep: string;
+  }>;
+  blockers: string[];
+  accountantQuestions: string[];
+  latestAccountantReview: EcuadorTaxAccountantReviewResponse | null;
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface RequestEcuadorTaxWithholdingDraftBridgePacketRequest {
   period: string;
   year: number;
   candidateType?: 'sale' | 'purchase';
   candidateId?: string | null;
   taxRateId?: string | null;
+}
+
+export interface ExecuteEcuadorTaxWithholdingDraftBridgeRequest
+  extends RequestEcuadorTaxWithholdingDraftBridgePacketRequest {
+  number?: string | null;
+  issuedAt?: string | null;
 }
 
 export interface RecordEcuadorTaxPurchaseExpenseEvidenceRequest {

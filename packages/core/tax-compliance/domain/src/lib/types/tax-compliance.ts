@@ -66,6 +66,61 @@ export interface EcuadorTaxObligationMatrixView {
   guardrails: string[];
 }
 
+export interface EcuadorTaxCalendarEntryView {
+  obligationKey: EcuadorTaxObligationKey;
+  label: string;
+  period: string;
+  frequency: EcuadorTaxObligationFrequency;
+  dueDate: string | null;
+  dueDay: number | null;
+  source: 'sri_rule_of_thumb';
+  readinessStatus: EcuadorTaxReadinessStatus;
+  notes: string[];
+}
+
+export interface EcuadorTaxObligationCalendarView {
+  tenantSlug: string;
+  year: number;
+  generatedAt: Date;
+  taxpayerProfile: EcuadorTaxpayerProfileView;
+  ninthDigit: string | null;
+  entries: EcuadorTaxCalendarEntryView[];
+  guardrails: string[];
+}
+
+export interface EcuadorTaxEvidenceSummaryView {
+  invoicing: {
+    invoiceCount: number;
+    statusBreakdown: Array<{ status: string; count: number }>;
+    totalsByCurrency: Array<{
+      currency: string;
+      subtotalInCents: number;
+      taxInCents: number;
+      totalInCents: number;
+      paidInCents: number;
+      outstandingTotalInCents: number;
+    }>;
+    monthlyTotals: Array<{
+      month: string;
+      currency: string;
+      invoiceCount: number;
+      totalInCents: number;
+      taxInCents: number;
+    }>;
+  };
+  parties: {
+    totalParties: number;
+    completeParties: number;
+    needsReviewParties: number;
+    issueSummaries: Array<{ issue: string; count: number }>;
+    incompletePartyIds: string[];
+  };
+  ecommerce: {
+    status: 'not_connected_yet';
+    notes: string[];
+  };
+}
+
 export interface EcuadorTaxPeriodPreparationPacketView {
   tenantSlug: string;
   period: string;
@@ -73,6 +128,7 @@ export interface EcuadorTaxPeriodPreparationPacketView {
   taxpayerProfile: EcuadorTaxpayerProfileView;
   obligations: EcuadorTaxObligationView[];
   readinessStatus: EcuadorTaxReadinessStatus;
+  evidenceSummary: EcuadorTaxEvidenceSummaryView;
   evidenceChecklist: string[];
   accountantHandoff: {
     recommended: boolean;

@@ -8,6 +8,7 @@ import {
 import { INVOICING_PERMISSIONS } from '@saas-platform/invoicing-application';
 import {
   GetTenantPartyByIdUseCase,
+  GetTenantPartyFiscalReadinessSummaryUseCase,
   ListTenantPartiesUseCase,
   PartyNotFoundError,
 } from '@saas-platform/parties-application';
@@ -19,7 +20,12 @@ import { TenantAccess } from '../tenancy/tenant-access.decorator';
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
-import { PartyResponseDto, toPartyResponseDto } from './dto/party.response';
+import {
+  PartyFiscalReadinessSummaryResponseDto,
+  PartyResponseDto,
+  toPartyFiscalReadinessSummaryResponseDto,
+  toPartyResponseDto,
+} from './dto/party.response';
 
 type TenantAccessContext = {
   tenantSlug?: string;
@@ -37,6 +43,7 @@ export class PartiesController {
   constructor(
     private readonly listTenantPartiesUseCase: ListTenantPartiesUseCase,
     private readonly getTenantPartyByIdUseCase: GetTenantPartyByIdUseCase,
+    private readonly getTenantPartyFiscalReadinessSummaryUseCase: GetTenantPartyFiscalReadinessSummaryUseCase,
   ) {}
 
   @Get(':slug/parties')
@@ -51,6 +58,28 @@ export class PartiesController {
       );
 
       return parties.map((party) => toPartyResponseDto(party));
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/fiscal-readiness-summary')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.CUSTOMERS_READ)
+  async getTenantPartyFiscalReadinessSummary(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PartyFiscalReadinessSummaryResponseDto> {
+    try {
+      const summary =
+        await this.getTenantPartyFiscalReadinessSummaryUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toPartyFiscalReadinessSummaryResponseDto(summary);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

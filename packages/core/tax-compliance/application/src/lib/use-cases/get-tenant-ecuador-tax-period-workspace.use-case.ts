@@ -6,6 +6,7 @@ import { GetTenantEcuadorTaxDueMonitorUseCase } from './get-tenant-ecuador-tax-d
 import { GetTenantEcuadorTaxObligationCalendarUseCase } from './get-tenant-ecuador-tax-obligation-calendar.use-case';
 import { RequestTenantEcuadorTaxDeclarationDraftPacketUseCase } from './request-tenant-ecuador-tax-declaration-draft-packet.use-case';
 import { RequestTenantEcuadorTaxPeriodPreparationPacketUseCase } from './request-tenant-ecuador-tax-period-preparation-packet.use-case';
+import { RequestTenantEcuadorTaxSalesBookUseCase } from './request-tenant-ecuador-tax-sales-book.use-case';
 
 export class GetTenantEcuadorTaxPeriodWorkspaceUseCase {
   constructor(
@@ -13,6 +14,7 @@ export class GetTenantEcuadorTaxPeriodWorkspaceUseCase {
     private readonly getTenantEcuadorTaxDueMonitorUseCase: GetTenantEcuadorTaxDueMonitorUseCase,
     private readonly requestTenantEcuadorTaxPeriodPreparationPacketUseCase: RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
     private readonly requestTenantEcuadorTaxDeclarationDraftPacketUseCase: RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+    private readonly requestTenantEcuadorTaxSalesBookUseCase: RequestTenantEcuadorTaxSalesBookUseCase,
     private readonly nowProvider: () => Date = () => new Date(),
   ) {}
 
@@ -22,7 +24,7 @@ export class GetTenantEcuadorTaxPeriodWorkspaceUseCase {
     year: number;
     asOfDate?: string;
   }): Promise<EcuadorTaxPeriodWorkspaceView> {
-    const [calendar, dueMonitor, preparationPacket, declarationDraftPacket] =
+    const [calendar, dueMonitor, preparationPacket, declarationDraftPacket, salesBook] =
       await Promise.all([
         this.getTenantEcuadorTaxObligationCalendarUseCase.execute(
           input.tenantSlug,
@@ -42,6 +44,12 @@ export class GetTenantEcuadorTaxPeriodWorkspaceUseCase {
           period: input.period,
           year: input.year,
         }),
+        this.requestTenantEcuadorTaxSalesBookUseCase.execute({
+          tenantSlug: input.tenantSlug,
+          period: input.period,
+          year: input.year,
+          recordEvent: false,
+        }),
       ]);
     const calendarEntries = calendar.entries.filter(
       (entry) =>
@@ -54,6 +62,7 @@ export class GetTenantEcuadorTaxPeriodWorkspaceUseCase {
       ...declarationDraftPacket.declarationSections.flatMap(
         (section) => section.blockers,
       ),
+      ...salesBook.blockers,
     ];
     const status = resolveWorkspaceStatus({
       blockers,
@@ -77,6 +86,7 @@ export class GetTenantEcuadorTaxPeriodWorkspaceUseCase {
       ),
       preparationPacket,
       declarationDraftPacket,
+      salesBook,
       blockers: [...new Set(blockers)],
       nextActions: buildNextActions(status, declarationDraftPacket.nextStep),
       guardrails: [

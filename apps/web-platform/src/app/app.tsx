@@ -102,6 +102,12 @@ import {
   requestTenantEcommerceOrderPaymentDisputeResolutionPacket,
   fetchTenantEcommerceOrderPaymentConfirmationWorkspace,
   fetchTenantEcommerceOrderPaymentReadinessWorkspace,
+  fetchEcuadorTaxAccountantReviews,
+  fetchEcuadorTaxDeclarationApprovalPacket,
+  fetchEcuadorTaxEcommerceEvidence,
+  fetchEcuadorTaxEvents,
+  fetchEcuadorTaxPeriodWorkspace,
+  fetchEcuadorTaxSalesBook,
   fetchTenantEcommerceOrderPostSaleOpsBoard,
   fetchTenantEcommerceOrderPostSaleReportingBoard,
   fetchTenantEcommerceOrderPostSaleReportingSummary,
@@ -255,6 +261,7 @@ import {
   fetchInvoiceNumberingSettings,
   fetchInvoicingReportSummary,
   fetchIssuerProfile,
+  requestEcuadorTaxAccountantReview,
   fetchSession,
   fetchWhatsappOutboundReportingSummary,
   getTenantInvitation,
@@ -281,6 +288,7 @@ import {
   submitPresignedInvoiceElectronicDocument,
   syncIssuerProfileTaxIdFromSignature,
   takeGrowthOperationalCase,
+  transitionEcuadorTaxAccountantReview,
   updateTenantAiMemoryRecord,
   updateGrowthOperationalCaseFollowUpState,
   upsertElectronicSubmissionSettings,
@@ -472,6 +480,12 @@ import {
   EcommerceStoreProfileWorkspaceResponse,
   EcommerceStoreSetupWorkspaceResponse,
   EcommerceLaunchWorkspaceResponse,
+  EcuadorTaxAccountantReviewResponse,
+  EcuadorTaxComplianceEventResponse,
+  EcuadorTaxDeclarationApprovalPacketResponse,
+  EcuadorTaxEcommerceEvidenceSummaryResponse,
+  EcuadorTaxPeriodWorkspaceResponse,
+  EcuadorTaxSalesBookResponse,
   ElectronicSandboxReadinessResponse,
   ElectronicSignatureMaterialInspectionResponse,
   ElectronicSubmissionSettingsResponse,
@@ -887,6 +901,12 @@ function humanizeKey(value: string | null): string {
   }
 
   return value.split('_').join(' ');
+}
+
+function resolveNumericYear(value: string): number {
+  const parsed = Number.parseInt(value, 10);
+
+  return Number.isFinite(parsed) ? parsed : new Date().getUTCFullYear();
 }
 
 type AiAgentWorkspaceSupportBundle = {
@@ -1854,6 +1874,31 @@ export function App() {
   >(null);
   const [invoicingReport, setInvoicingReport] =
     useState<InvoicingReportSummaryResponse | null>(null);
+  const [taxCompliancePeriod, setTaxCompliancePeriod] = useState('2026-06');
+  const [taxComplianceYear, setTaxComplianceYear] = useState('2026');
+  const [taxComplianceWorkspace, setTaxComplianceWorkspace] =
+    useState<EcuadorTaxPeriodWorkspaceResponse | null>(null);
+  const [taxComplianceEcommerceEvidence, setTaxComplianceEcommerceEvidence] =
+    useState<EcuadorTaxEcommerceEvidenceSummaryResponse | null>(null);
+  const [taxComplianceSalesBook, setTaxComplianceSalesBook] =
+    useState<EcuadorTaxSalesBookResponse | null>(null);
+  const [taxComplianceEvents, setTaxComplianceEvents] = useState<
+    EcuadorTaxComplianceEventResponse[]
+  >([]);
+  const [taxComplianceAccountantReviews, setTaxComplianceAccountantReviews] =
+    useState<EcuadorTaxAccountantReviewResponse[]>([]);
+  const [
+    taxComplianceDeclarationApprovalPacket,
+    setTaxComplianceDeclarationApprovalPacket,
+  ] = useState<EcuadorTaxDeclarationApprovalPacketResponse | null>(null);
+  const [taxComplianceLoading, setTaxComplianceLoading] = useState(false);
+  const [taxComplianceActionLoading, setTaxComplianceActionLoading] =
+    useState<string | null>(null);
+  const [taxComplianceError, setTaxComplianceError] = useState<string | null>(
+    null,
+  );
+  const [taxComplianceActionMessage, setTaxComplianceActionMessage] =
+    useState<string | null>(null);
   const [invoiceDocumentDraftingAssist, setInvoiceDocumentDraftingAssist] =
     useState<InvoiceDocumentDraftingAssistResponse | null>(null);
   const [invoiceAssistantAiEnvelope, setInvoiceAssistantAiEnvelope] =
@@ -18972,6 +19017,133 @@ export function App() {
     }
   }
 
+  async function refreshTaxComplianceWorkspace() {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      return;
+    }
+
+    const tenantSlug = currentTenancy.tenant.slug;
+    const year = resolveNumericYear(taxComplianceYear);
+    setTaxComplianceLoading(true);
+    setTaxComplianceError(null);
+
+    try {
+      const [
+        nextWorkspace,
+        nextEcommerceEvidence,
+        nextSalesBook,
+        nextEvents,
+        nextReviews,
+        nextApprovalPacket,
+      ] = await Promise.all([
+        fetchEcuadorTaxPeriodWorkspace(token, tenantSlug, taxCompliancePeriod, year),
+        fetchEcuadorTaxEcommerceEvidence(token, tenantSlug, taxCompliancePeriod),
+        fetchEcuadorTaxSalesBook(token, tenantSlug, taxCompliancePeriod, year),
+        fetchEcuadorTaxEvents(token, tenantSlug, taxCompliancePeriod),
+        fetchEcuadorTaxAccountantReviews(token, tenantSlug, taxCompliancePeriod),
+        fetchEcuadorTaxDeclarationApprovalPacket(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+      ]);
+
+      startTransition(() => {
+        setTaxComplianceWorkspace(nextWorkspace);
+        setTaxComplianceEcommerceEvidence(nextEcommerceEvidence);
+        setTaxComplianceSalesBook(nextSalesBook);
+        setTaxComplianceEvents(nextEvents);
+        setTaxComplianceAccountantReviews(nextReviews);
+        setTaxComplianceDeclarationApprovalPacket(nextApprovalPacket);
+      });
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo cargar la consola tributaria EC.',
+      );
+    } finally {
+      setTaxComplianceLoading(false);
+    }
+  }
+
+  async function handleRequestTaxAccountantReview() {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('request-review');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const review = await requestEcuadorTaxAccountantReview(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          period: taxCompliancePeriod,
+          year: resolveNumericYear(taxComplianceYear),
+          requestedByUserId: session?.user.id ?? null,
+          requestedByEmail: session?.user.email ?? null,
+        },
+      );
+      setTaxComplianceActionMessage(
+        `Revision contable ${humanizeKey(review.status)} creada para ${review.period}.`,
+      );
+      await refreshTaxComplianceWorkspace();
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar revision contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleApproveLatestTaxReview() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !invoicingEnabled ||
+      taxComplianceAccountantReviews.length === 0
+    ) {
+      return;
+    }
+
+    const latestReview = taxComplianceAccountantReviews[0];
+    setTaxComplianceActionLoading('approve-review');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const review = await transitionEcuadorTaxAccountantReview(
+        token,
+        currentTenancy.tenant.slug,
+        latestReview.id,
+        {
+          status: 'approved',
+          transitionedByUserId: session?.user.id ?? null,
+          note: 'Approved from operator console.',
+        },
+      );
+      setTaxComplianceActionMessage(
+        `Revision ${review.id} marcada como ${humanizeKey(review.status)}.`,
+      );
+      await refreshTaxComplianceWorkspace();
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo aprobar la revision contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
   async function refreshGrowthWorkspace() {
     if (
       !token ||
@@ -32862,6 +33034,311 @@ export function App() {
                     )}
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className={styles.adminPanel}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.label}>Tax Compliance EC</span>
+              <h2>Consola operativa de impuestos</h2>
+            </div>
+            {session && currentTenancy && invoicingEnabled ? (
+              <button
+                className={styles.ghostButton}
+                disabled={taxComplianceLoading}
+                onClick={() => void refreshTaxComplianceWorkspace()}
+                type="button"
+              >
+                {taxComplianceLoading ? 'Refrescando...' : 'Refrescar impuestos'}
+              </button>
+            ) : null}
+          </div>
+
+          {!session ? (
+            <div className={styles.emptyState}>
+              <p>Primero carguemos la sesion para abrir la consola tributaria.</p>
+            </div>
+          ) : !currentTenancy ? (
+            <div className={styles.emptyState}>
+              <p>Selecciona un tenant actual para revisar impuestos Ecuador.</p>
+            </div>
+          ) : !invoicingEnabled ? (
+            <div className={styles.emptyState}>
+              <p>
+                El producto <strong>invoicing</strong> debe estar habilitado para
+                alimentar Tax Compliance EC.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.stack}>
+              {taxComplianceError ? (
+                <p className={styles.errorBanner}>{taxComplianceError}</p>
+              ) : null}
+              {taxComplianceActionMessage ? (
+                <p className={styles.successBanner}>
+                  {taxComplianceActionMessage}
+                </p>
+              ) : null}
+
+              <div className={styles.formGrid}>
+                <label className={styles.field}>
+                  <span>Periodo</span>
+                  <input
+                    onChange={(event) => setTaxCompliancePeriod(event.target.value)}
+                    value={taxCompliancePeriod}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Año</span>
+                  <input
+                    onChange={(event) => setTaxComplianceYear(event.target.value)}
+                    value={taxComplianceYear}
+                  />
+                </label>
+                <button
+                  className={styles.primaryButton}
+                  disabled={taxComplianceLoading}
+                  onClick={() => void refreshTaxComplianceWorkspace()}
+                  type="button"
+                >
+                  Cargar periodo
+                </button>
+              </div>
+
+              <div className={styles.invoiceKpiGrid}>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Workspace</span>
+                  <strong>
+                    {taxComplianceWorkspace
+                      ? humanizeKey(taxComplianceWorkspace.status)
+                      : 'Sin cargar'}
+                  </strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Ecommerce orders</span>
+                  <strong>
+                    {taxComplianceEcommerceEvidence?.orderCount ??
+                      taxComplianceWorkspace?.salesBook.ecommerceEvidence
+                        .orderCount ??
+                      0}
+                  </strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Sales book docs</span>
+                  <strong>
+                    {taxComplianceSalesBook?.documentRows.length ??
+                      taxComplianceWorkspace?.salesBook.documentRows.length ??
+                      0}
+                  </strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Blockers</span>
+                  <strong>
+                    {taxComplianceWorkspace?.blockers.length ??
+                      taxComplianceSalesBook?.blockers.length ??
+                      0}
+                  </strong>
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Evidence bridge</span>
+                      <h3>Ecommerce hacia impuestos</h3>
+                    </div>
+                  </div>
+                  {taxComplianceEcommerceEvidence ? (
+                    <div className={styles.invoiceItemCard}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>
+                          {humanizeKey(taxComplianceEcommerceEvidence.status)}
+                        </strong>
+                        <span className={styles.statusPill}>
+                          {taxComplianceEcommerceEvidence.period}
+                        </span>
+                      </div>
+                      <p className={styles.muted}>
+                        Ready {taxComplianceEcommerceEvidence.readyToInvoiceCount} ·
+                        blocked {taxComplianceEcommerceEvidence.blockedCount} ·
+                        disputes{' '}
+                        {taxComplianceEcommerceEvidence.disputedPaymentEventCount}
+                      </p>
+                      <ul className={styles.compactList}>
+                        {taxComplianceEcommerceEvidence.notes.map((note) => (
+                          <li key={note}>{note}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un periodo para ver evidencia ecommerce.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Sales book</span>
+                      <h3>Libro de ventas derivado</h3>
+                    </div>
+                    <button
+                      className={styles.ghostButton}
+                      disabled={taxComplianceActionLoading === 'sales-book'}
+                      onClick={() => void refreshTaxComplianceWorkspace()}
+                      type="button"
+                    >
+                      Generar
+                    </button>
+                  </div>
+                  {taxComplianceSalesBook ? (
+                    <div className={styles.stack}>
+                      {taxComplianceSalesBook.totalsByCurrency.map((total) => (
+                        <div className={styles.invoiceItemCard} key={total.currency}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>{formatMoney(total.totalInCents, total.currency)}</strong>
+                            <span className={styles.statusPill}>
+                              {total.documentCount} docs
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            Tax {formatMoney(total.taxInCents, total.currency)} ·
+                            pendiente{' '}
+                            {formatMoney(
+                              total.outstandingTotalInCents,
+                              total.currency,
+                            )}
+                          </p>
+                        </div>
+                      ))}
+                      <p className={styles.muted}>
+                        Estado {humanizeKey(taxComplianceSalesBook.readinessStatus)}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Genera el libro tributario del periodo.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Accountant lifecycle</span>
+                      <h3>Revisión contable</h3>
+                    </div>
+                    <div className={styles.buttonRow}>
+                      <button
+                        className={styles.ghostButton}
+                        disabled={taxComplianceActionLoading === 'request-review'}
+                        onClick={() => void handleRequestTaxAccountantReview()}
+                        type="button"
+                      >
+                        Solicitar
+                      </button>
+                      <button
+                        className={styles.primaryButton}
+                        disabled={
+                          taxComplianceActionLoading === 'approve-review' ||
+                          taxComplianceAccountantReviews.length === 0
+                        }
+                        onClick={() => void handleApproveLatestTaxReview()}
+                        type="button"
+                      >
+                        Aprobar última
+                      </button>
+                    </div>
+                  </div>
+                  {taxComplianceAccountantReviews.length > 0 ? (
+                    taxComplianceAccountantReviews.slice(0, 3).map((review) => (
+                      <div className={styles.invoiceItemCard} key={review.id}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>{humanizeKey(review.status)}</strong>
+                          <span className={styles.statusPill}>
+                            {formatDate(review.updatedAt)}
+                          </span>
+                        </div>
+                        <p className={styles.muted}>{review.summary}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>No hay revisiones contables para este periodo.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Approval packet</span>
+                      <h3>Aprobación de declaración</h3>
+                    </div>
+                  </div>
+                  {taxComplianceDeclarationApprovalPacket ? (
+                    <div className={styles.invoiceItemCard}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>
+                          {humanizeKey(
+                            taxComplianceDeclarationApprovalPacket.approvalReadiness,
+                          )}
+                        </strong>
+                        <span className={styles.statusPill}>
+                          {taxComplianceDeclarationApprovalPacket.remainingBlockers
+                            .length}{' '}
+                          blockers
+                        </span>
+                      </div>
+                      <p className={styles.muted}>
+                        {taxComplianceDeclarationApprovalPacket.nextStep}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un periodo para preparar aprobación.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.stack}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>Ledger</span>
+                    <h3>Eventos tributarios recientes</h3>
+                  </div>
+                </div>
+                {taxComplianceEvents.length > 0 ? (
+                  <div className={styles.invoiceList}>
+                    {taxComplianceEvents.slice(0, 6).map((event) => (
+                      <button
+                        className={styles.invoiceListItem}
+                        key={event.id}
+                        type="button"
+                      >
+                        <span>
+                          <strong>{humanizeKey(event.eventType)}</strong>
+                          <small>
+                            {event.source} · {formatDate(event.occurredAt)}
+                          </small>
+                        </span>
+                        <span className={styles.statusPill}>{event.period}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={styles.emptyState}>
+                    <p>El ledger tributario aún no tiene eventos para este periodo.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

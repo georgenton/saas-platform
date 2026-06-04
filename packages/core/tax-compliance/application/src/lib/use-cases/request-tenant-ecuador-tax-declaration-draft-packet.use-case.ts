@@ -40,6 +40,16 @@ export class RequestTenantEcuadorTaxDeclarationDraftPacketUseCase {
         ),
       },
       {
+        section: 'sales_book',
+        readinessStatus: preparationPacket.salesBookPreview.readinessStatus,
+        source: 'tax_sales_book',
+        summary: `${preparationPacket.salesBookPreview.documentCount} documentos de venta y ${preparationPacket.salesBookPreview.ecommerceOrderCount} ordenes ecommerce conectadas al periodo.`,
+        blockers:
+          preparationPacket.salesBookPreview.blockerCount > 0
+            ? ['tax_sales_book.blockers_present']
+            : [],
+      },
+      {
         section: 'invoicing_evidence',
         readinessStatus: getSectionReadiness(
           preparationPacket.evidenceSummary.invoicing.invoiceCount > 0,
@@ -118,6 +128,8 @@ export class RequestTenantEcuadorTaxDeclarationDraftPacketUseCase {
         preparationPacketGeneratedAt: preparationPacket.generatedAt,
         calendarEntryCount: reviewWorkspace.summary.totalEntries,
         evidenceSummary: preparationPacket.evidenceSummary,
+        salesBookReadinessStatus:
+          preparationPacket.salesBookPreview.readinessStatus,
       },
       nextStep:
         readinessStatus === 'blocked'

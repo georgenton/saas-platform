@@ -37,7 +37,8 @@ export type EcuadorTaxComplianceEventType =
   | 'accountant_packet_requested'
   | 'accountant_review_transitioned'
   | 'declaration_draft_requested'
-  | 'due_monitor_reviewed';
+  | 'due_monitor_reviewed'
+  | 'tax_sales_book_generated';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -190,9 +191,81 @@ export interface EcuadorTaxEvidenceSummaryView {
     incompletePartyIds: string[];
   };
   ecommerce: {
-    status: 'not_connected_yet';
+    status: 'connected' | 'no_activity' | 'requires_review';
+    orderCount: number;
+    readyToInvoiceCount: number;
+    blockedCount: number;
+    needsFiscalDataCount: number;
+    confirmedPaymentEventCount: number;
+    disputedPaymentEventCount: number;
+    deliveredEventCount: number;
+    period: string;
     notes: string[];
   };
+}
+
+export interface EcuadorTaxEcommerceEvidenceSummaryView {
+  tenantSlug: string;
+  period: string;
+  generatedAt: Date;
+  status: EcuadorTaxEvidenceSummaryView['ecommerce']['status'];
+  orderCount: number;
+  readyToInvoiceCount: number;
+  blockedCount: number;
+  needsFiscalDataCount: number;
+  confirmedPaymentEventCount: number;
+  disputedPaymentEventCount: number;
+  deliveredEventCount: number;
+  orderHighlights: Array<{
+    orderDraftId: string;
+    productEntityId: string;
+    orderLabel: string;
+    invoicingReadinessStatus: string;
+    status: string;
+    updatedAt: Date;
+  }>;
+  notes: string[];
+}
+
+export interface EcuadorTaxSalesBookView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  source: 'invoicing_and_ecommerce_operational_evidence';
+  readinessStatus: EcuadorTaxReadinessStatus;
+  totalsByCurrency: Array<{
+    currency: string;
+    documentCount: number;
+    subtotalInCents: number;
+    taxInCents: number;
+    totalInCents: number;
+    paidInCents: number;
+    outstandingTotalInCents: number;
+  }>;
+  documentRows: Array<{
+    invoiceId: string;
+    number: string;
+    documentCode: string | null;
+    status: string;
+    electronicStatus: string | null;
+    issuedAt: Date;
+    currency: string;
+    subtotalInCents: number;
+    taxInCents: number;
+    totalInCents: number;
+    paidInCents: number;
+    outstandingTotalInCents: number;
+    customerId: string;
+    buyerIdentification: string | null;
+    buyerName: string | null;
+    blockers: string[];
+  }>;
+  ecommerceEvidence: EcuadorTaxEcommerceEvidenceSummaryView;
+  blockers: string[];
+  reviewNotes: string[];
+  nextStep: string;
+  guardrails: string[];
 }
 
 export interface EcuadorTaxPeriodPreparationPacketView {
@@ -203,6 +276,12 @@ export interface EcuadorTaxPeriodPreparationPacketView {
   obligations: EcuadorTaxObligationView[];
   readinessStatus: EcuadorTaxReadinessStatus;
   evidenceSummary: EcuadorTaxEvidenceSummaryView;
+  salesBookPreview: {
+    readinessStatus: EcuadorTaxReadinessStatus;
+    documentCount: number;
+    blockerCount: number;
+    ecommerceOrderCount: number;
+  };
   evidenceChecklist: string[];
   accountantHandoff: {
     recommended: boolean;
@@ -236,6 +315,7 @@ export interface EcuadorTaxDeclarationDraftPacketView {
     preparationPacketGeneratedAt: Date;
     calendarEntryCount: number;
     evidenceSummary: EcuadorTaxEvidenceSummaryView;
+    salesBookReadinessStatus: EcuadorTaxReadinessStatus;
   };
   nextStep: string;
   guardrails: string[];
@@ -252,6 +332,7 @@ export interface EcuadorTaxPeriodWorkspaceView {
   dueAlerts: EcuadorTaxDueMonitorAlertView[];
   preparationPacket: EcuadorTaxPeriodPreparationPacketView;
   declarationDraftPacket: EcuadorTaxDeclarationDraftPacketView;
+  salesBook: EcuadorTaxSalesBookView;
   blockers: string[];
   nextActions: string[];
   guardrails: string[];

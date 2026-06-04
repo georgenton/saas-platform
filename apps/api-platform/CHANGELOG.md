@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.83.0
+
+### Minor Changes
+
+- 06f08a5: Add Ecuador tax filing handoff, annexes readiness, and accounting bridge preview flows.
+
 ## 0.82.0
 
 ### Minor Changes

@@ -2,7 +2,9 @@ import {
   Controller,
   Get,
   NotFoundException,
+  Body,
   Param,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -15,9 +17,15 @@ import {
   GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
+  ListTenantEcuadorTaxAccountantReviewsUseCase,
+  ListTenantEcuadorTaxComplianceEventsUseCase,
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
+  RequestTenantEcuadorTaxAccountantReviewUseCase,
+  RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+  TaxComplianceAccountantReviewNotFoundError,
+  TransitionTenantEcuadorTaxAccountantReviewUseCase,
 } from '@saas-platform/tax-compliance-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
@@ -30,6 +38,9 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
 import {
   EcuadorTaxObligationMatrixResponseDto,
   EcuadorTaxObligationCalendarResponseDto,
+  EcuadorTaxAccountantReviewResponseDto,
+  EcuadorTaxComplianceEventResponseDto,
+  EcuadorTaxDeclarationApprovalPacketResponseDto,
   EcuadorTaxAccountantReviewPacketResponseDto,
   EcuadorTaxAuditReadinessResponseDto,
   EcuadorTaxCalendarReviewWorkspaceResponseDto,
@@ -38,9 +49,12 @@ import {
   EcuadorTaxPeriodWorkspaceResponseDto,
   EcuadorTaxPeriodPreparationPacketResponseDto,
   EcuadorTaxpayerProfileResponseDto,
+  toEcuadorTaxAccountantReviewResponseDto,
   toEcuadorTaxAccountantReviewPacketResponseDto,
   toEcuadorTaxAuditReadinessResponseDto,
   toEcuadorTaxCalendarReviewWorkspaceResponseDto,
+  toEcuadorTaxComplianceEventResponseDto,
+  toEcuadorTaxDeclarationApprovalPacketResponseDto,
   toEcuadorTaxDeclarationDraftPacketResponseDto,
   toEcuadorTaxDueMonitorResponseDto,
   toEcuadorTaxObligationCalendarResponseDto,
@@ -53,6 +67,19 @@ import {
 type TenantAccessContext = {
   tenantSlug?: string;
 };
+
+interface RequestAccountantReviewBodyDto {
+  period?: string;
+  year?: number;
+  requestedByUserId?: string | null;
+  requestedByEmail?: string | null;
+}
+
+interface TransitionAccountantReviewBodyDto {
+  status: 'pending_accountant' | 'in_review' | 'changes_requested' | 'approved';
+  transitionedByUserId?: string | null;
+  note?: string | null;
+}
 
 @Controller('tax-compliance/tenants')
 @UseGuards(
@@ -74,6 +101,11 @@ export class TaxComplianceController {
     private readonly requestTenantEcuadorTaxPeriodPreparationPacketUseCase: RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
     private readonly requestTenantEcuadorTaxDeclarationDraftPacketUseCase: RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
     private readonly requestTenantEcuadorTaxAccountantReviewPacketUseCase: RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
+    private readonly listTenantEcuadorTaxComplianceEventsUseCase: ListTenantEcuadorTaxComplianceEventsUseCase,
+    private readonly requestTenantEcuadorTaxAccountantReviewUseCase: RequestTenantEcuadorTaxAccountantReviewUseCase,
+    private readonly listTenantEcuadorTaxAccountantReviewsUseCase: ListTenantEcuadorTaxAccountantReviewsUseCase,
+    private readonly transitionTenantEcuadorTaxAccountantReviewUseCase: TransitionTenantEcuadorTaxAccountantReviewUseCase,
+    private readonly requestTenantEcuadorTaxDeclarationApprovalPacketUseCase: RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   ) {}
 
   @Get(':slug/ec/taxpayer-profile')
@@ -302,6 +334,144 @@ export class TaxComplianceController {
     }
   }
 
+  @Get(':slug/ec/events')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async listComplianceEvents(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('limit') limit?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxComplianceEventResponseDto[]> {
+    try {
+      const events =
+        await this.listTenantEcuadorTaxComplianceEventsUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          limit: resolveLimit(limit),
+        });
+
+      return events.map((event) => toEcuadorTaxComplianceEventResponseDto(event));
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/ec/accountant-review/request')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async requestAccountantReview(
+    @Param('slug') slug: string,
+    @Body() body: RequestAccountantReviewBodyDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountantReviewResponseDto> {
+    try {
+      const review =
+        await this.requestTenantEcuadorTaxAccountantReviewUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period: body.period ?? 'current',
+          year: body.year ?? resolveCalendarYear(),
+          requestedByUserId: body.requestedByUserId,
+          requestedByEmail: body.requestedByEmail,
+        });
+
+      return toEcuadorTaxAccountantReviewResponseDto(review);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/accountant-reviews')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async listAccountantReviews(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountantReviewResponseDto[]> {
+    try {
+      const reviews =
+        await this.listTenantEcuadorTaxAccountantReviewsUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+        });
+
+      return reviews.map((review) =>
+        toEcuadorTaxAccountantReviewResponseDto(review),
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/ec/accountant-review/:reviewId/transition')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async transitionAccountantReview(
+    @Param('slug') slug: string,
+    @Param('reviewId') reviewId: string,
+    @Body() body: TransitionAccountantReviewBodyDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountantReviewResponseDto> {
+    try {
+      const review =
+        await this.transitionTenantEcuadorTaxAccountantReviewUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          reviewId,
+          status: body.status,
+          transitionedByUserId: body.transitionedByUserId,
+          note: body.note,
+        });
+
+      return toEcuadorTaxAccountantReviewResponseDto(review);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof TaxComplianceAccountantReviewNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/declaration-approval-packet')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async getDeclarationApprovalPacket(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxDeclarationApprovalPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantEcuadorTaxDeclarationApprovalPacketUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period,
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxDeclarationApprovalPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Get(':slug/ec/audit-readiness')
   @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
   async getAuditReadiness(
@@ -341,6 +511,16 @@ function resolveWindowDays(windowDays?: string): number | undefined {
   }
 
   const parsed = Number.parseInt(windowDays, 10);
+
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function resolveLimit(limit?: string): number | undefined {
+  if (!limit) {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(limit, 10);
 
   return Number.isFinite(parsed) ? parsed : undefined;
 }

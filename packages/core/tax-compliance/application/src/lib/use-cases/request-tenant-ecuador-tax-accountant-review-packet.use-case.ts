@@ -36,6 +36,7 @@ export class RequestTenantEcuadorTaxAccountantReviewPacketUseCase {
       missingEvidence,
       calendarAlerts: workspace.dueAlerts,
       incompleteThirdPartyIds: evidence.parties.incompletePartyIds,
+      sourceEvidenceSummary: evidence,
       handoffChecklist: [
         'Revisar perfil tributario y regimen aplicable.',
         'Validar ventas, retenciones, compras y sustento del periodo.',

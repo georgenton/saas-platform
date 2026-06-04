@@ -203,9 +203,14 @@ import {
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
+  ListTenantEcuadorTaxAccountantReviewsUseCase,
+  ListTenantEcuadorTaxComplianceEventsUseCase,
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
+  RequestTenantEcuadorTaxAccountantReviewUseCase,
+  RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+  TransitionTenantEcuadorTaxAccountantReviewUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
   AutoAssignTenantGrowthOperationalCasesUseCase,
@@ -826,6 +831,15 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let requestTenantEcuadorTaxAccountantReviewPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let listTenantEcuadorTaxComplianceEventsUseCase: { execute: jest.Mock };
+  let requestTenantEcuadorTaxAccountantReviewUseCase: { execute: jest.Mock };
+  let listTenantEcuadorTaxAccountantReviewsUseCase: { execute: jest.Mock };
+  let transitionTenantEcuadorTaxAccountantReviewUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantEcuadorTaxDeclarationApprovalPacketUseCase: {
     execute: jest.Mock;
   };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
@@ -2661,6 +2675,7 @@ describe('API', () => {
     missingEvidence: ['party_fiscal_profile.customer_globex'],
     calendarAlerts: ecuadorTaxDueMonitor.alerts,
     incompleteThirdPartyIds: ['customer_globex'],
+    sourceEvidenceSummary: ecuadorTaxPeriodPreparationPacket.evidenceSummary,
     handoffChecklist: [
       'Revisar perfil tributario y regimen aplicable.',
       'Validar ventas, retenciones, compras y sustento del periodo.',
@@ -2671,6 +2686,75 @@ describe('API', () => {
     ],
     nextStep:
       'Completar evidencia y terceros fiscales antes de solicitar aprobacion.',
+  };
+  const ecuadorTaxComplianceEvent = {
+    id: 'tax_event_001',
+    tenantId: 'tenant_123',
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    eventType: 'accountant_packet_requested' as const,
+    source: 'accountant_review_lifecycle',
+    payload: {
+      reviewId: 'tax_review_001',
+      status: 'pending_accountant',
+    },
+    occurredAt: taxComplianceGeneratedAt,
+    createdAt: taxComplianceGeneratedAt,
+  };
+  const ecuadorTaxAccountantReview = {
+    id: 'tax_review_001',
+    tenantId: 'tenant_123',
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    status: 'pending_accountant' as const,
+    requestedByUserId: 'user_456',
+    requestedByEmail: 'owner@example.com',
+    summary: ecuadorTaxAccountantReviewPacket.executiveSummary,
+    questions: ecuadorTaxAccountantReviewPacket.suggestedQuestions,
+    evidenceSummary: ecuadorTaxPeriodPreparationPacket.evidenceSummary,
+    transitionHistory: [
+      {
+        status: 'pending_accountant' as const,
+        transitionedAt: taxComplianceGeneratedAt,
+        transitionedByUserId: 'user_456',
+        note: 'Accountant review requested.',
+      },
+    ],
+    createdAt: taxComplianceGeneratedAt,
+    updatedAt: taxComplianceGeneratedAt,
+  };
+  const approvedEcuadorTaxAccountantReview = {
+    ...ecuadorTaxAccountantReview,
+    status: 'approved' as const,
+    transitionHistory: [
+      ...ecuadorTaxAccountantReview.transitionHistory,
+      {
+        status: 'approved' as const,
+        transitionedAt: taxComplianceGeneratedAt,
+        transitionedByUserId: 'user_456',
+        note: 'Approved by accountant.',
+      },
+    ],
+  };
+  const ecuadorTaxDeclarationApprovalPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    latestAccountantReview: approvedEcuadorTaxAccountantReview,
+    approvalReadiness: 'blocked' as const,
+    remainingBlockers: ['party_fiscal_profile.customer_globex'],
+    evidenceSummary: ecuadorTaxPeriodPreparationPacket.evidenceSummary,
+    declarationSections: ecuadorTaxDeclarationDraftPacket.declarationSections,
+    availableAuditEvents: [ecuadorTaxComplianceEvent],
+    approvalChecklist: [
+      'Confirmar revision aprobada por contador o responsable tributario.',
+      'Verificar que no existan blockers fiscales o terceros incompletos.',
+    ],
+    nextStep: 'Resolver blockers antes de declarar.',
+    guardrails: ['Este packet no presenta formularios al SRI.'],
   };
   const ecuadorTaxAuditReadiness = {
     tenantSlug: 'saas-platform',
@@ -2688,12 +2772,20 @@ describe('API', () => {
         eventType: 'accountant_packet_requested',
         generated: false,
         source: 'accountant_review_packet',
-        recommendedPersistence: 'persist_when_requested',
+        recommendedPersistence: 'persisted',
+      },
+      {
+        eventType: 'accountant_review_transitioned',
+        generated: false,
+        source: 'accountant_review_lifecycle',
+        recommendedPersistence: 'persist_when_transitioned',
       },
     ],
     missingPersistence: [
       'period_workspace_generated',
-      'accountant_packet_requested',
+      'declaration_draft_requested',
+      'due_monitor_reviewed',
+      'accountant_review_transitioned',
     ],
     recommendedAuditEvents: [
       {
@@ -2701,11 +2793,16 @@ describe('API', () => {
         reason: 'Permite reconstruir que informacion vio el operador por periodo.',
         minimumPayload: ['tenantSlug', 'period', 'year', 'status', 'blockers'],
       },
+      {
+        eventType: 'accountant_review_transitioned',
+        reason: 'Audita cambios de estado y aprobaciones humanas.',
+        minimumPayload: ['tenantSlug', 'period', 'reviewId', 'status'],
+      },
     ],
     nextStep:
-      'Agregar persistencia de eventos tributarios antes de introducir aprobaciones o workflow mutable.',
+      'Persistir los eventos tributarios faltantes cuando el operador ejecute cada accion.',
     guardrails: [
-      'Este endpoint describe preparacion de auditoria; aun no persiste eventos.',
+      'Este endpoint describe preparacion de auditoria y compara eventos recomendados con el ledger persistido.',
       'No debe usarse como prueba de presentacion o pago ante SRI.',
     ],
   };
@@ -11175,6 +11272,21 @@ describe('API', () => {
     requestTenantEcuadorTaxAccountantReviewPacketUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAccountantReviewPacket),
     };
+    listTenantEcuadorTaxComplianceEventsUseCase = {
+      execute: jest.fn().mockResolvedValue([ecuadorTaxComplianceEvent]),
+    };
+    requestTenantEcuadorTaxAccountantReviewUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxAccountantReview),
+    };
+    listTenantEcuadorTaxAccountantReviewsUseCase = {
+      execute: jest.fn().mockResolvedValue([ecuadorTaxAccountantReview]),
+    };
+    transitionTenantEcuadorTaxAccountantReviewUseCase = {
+      execute: jest.fn().mockResolvedValue(approvedEcuadorTaxAccountantReview),
+    };
+    requestTenantEcuadorTaxDeclarationApprovalPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxDeclarationApprovalPacket),
+    };
     listTenantConversationThreadsUseCase = {
       execute: jest.fn().mockResolvedValue([conversationThread]),
     };
@@ -11670,6 +11782,16 @@ describe('API', () => {
       .useValue(requestTenantEcuadorTaxDeclarationDraftPacketUseCase)
       .overrideProvider(RequestTenantEcuadorTaxAccountantReviewPacketUseCase)
       .useValue(requestTenantEcuadorTaxAccountantReviewPacketUseCase)
+      .overrideProvider(ListTenantEcuadorTaxComplianceEventsUseCase)
+      .useValue(listTenantEcuadorTaxComplianceEventsUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxAccountantReviewUseCase)
+      .useValue(requestTenantEcuadorTaxAccountantReviewUseCase)
+      .overrideProvider(ListTenantEcuadorTaxAccountantReviewsUseCase)
+      .useValue(listTenantEcuadorTaxAccountantReviewsUseCase)
+      .overrideProvider(TransitionTenantEcuadorTaxAccountantReviewUseCase)
+      .useValue(transitionTenantEcuadorTaxAccountantReviewUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase)
+      .useValue(requestTenantEcuadorTaxDeclarationApprovalPacketUseCase)
       .overrideProvider(GetTenantConversationThreadByIdUseCase)
       .useValue(getTenantConversationThreadByIdUseCase)
       .overrideProvider(GetTenantGrowthConversationWorkbenchUseCase)
@@ -13906,6 +14028,197 @@ describe('API', () => {
     });
   });
 
+  it('GET /api/tax-compliance/tenants/:slug/ec/events should return persisted audit events', async () => {
+    const response = await request(httpServer)
+      .get('/api/tax-compliance/tenants/saas-platform/ec/events?period=2026-06&limit=10')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject([
+      {
+        id: 'tax_event_001',
+        tenantId: 'tenant_123',
+        tenantSlug: 'saas-platform',
+        period: '2026-06',
+        year: 2026,
+        eventType: 'accountant_packet_requested',
+        source: 'accountant_review_lifecycle',
+        payload: {
+          reviewId: 'tax_review_001',
+          status: 'pending_accountant',
+        },
+        occurredAt: '2026-06-04T12:00:00.000Z',
+        createdAt: '2026-06-04T12:00:00.000Z',
+      },
+    ]);
+
+    expect(listTenantEcuadorTaxComplianceEventsUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      limit: 10,
+    });
+  });
+
+  it('POST /api/tax-compliance/tenants/:slug/ec/accountant-review/request should create an accountant review', async () => {
+    const response = await request(httpServer)
+      .post('/api/tax-compliance/tenants/saas-platform/ec/accountant-review/request')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        requestedByUserId: 'user_456',
+        requestedByEmail: 'owner@example.com',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      id: 'tax_review_001',
+      tenantId: 'tenant_123',
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      status: 'pending_accountant',
+      requestedByUserId: 'user_456',
+      requestedByEmail: 'owner@example.com',
+      questions: [
+        'Confirmar periodicidad aplicable para IVA, retenciones y anexos del periodo.',
+        'Validar si existen comprobantes de compra o retenciones no cargadas en la plataforma.',
+      ],
+      evidenceSummary: {
+        parties: {
+          incompletePartyIds: ['customer_globex'],
+        },
+      },
+      transitionHistory: [
+        {
+          status: 'pending_accountant',
+          transitionedAt: '2026-06-04T12:00:00.000Z',
+          transitionedByUserId: 'user_456',
+          note: 'Accountant review requested.',
+        },
+      ],
+      createdAt: '2026-06-04T12:00:00.000Z',
+      updatedAt: '2026-06-04T12:00:00.000Z',
+    });
+
+    expect(
+      requestTenantEcuadorTaxAccountantReviewUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      requestedByUserId: 'user_456',
+      requestedByEmail: 'owner@example.com',
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/accountant-reviews should list accountant reviews', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/accountant-reviews?period=2026-06',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject([
+      {
+        id: 'tax_review_001',
+        period: '2026-06',
+        status: 'pending_accountant',
+        evidenceSummary: {
+          parties: {
+            incompletePartyIds: ['customer_globex'],
+          },
+        },
+      },
+    ]);
+
+    expect(
+      listTenantEcuadorTaxAccountantReviewsUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+    });
+  });
+
+  it('POST /api/tax-compliance/tenants/:slug/ec/accountant-review/:reviewId/transition should transition accountant reviews', async () => {
+    const response = await request(httpServer)
+      .post(
+        '/api/tax-compliance/tenants/saas-platform/ec/accountant-review/tax_review_001/transition',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        status: 'approved',
+        transitionedByUserId: 'user_456',
+        note: 'Approved by accountant.',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      id: 'tax_review_001',
+      period: '2026-06',
+      status: 'approved',
+      transitionHistory: [
+        {
+          status: 'pending_accountant',
+        },
+        {
+          status: 'approved',
+          transitionedAt: '2026-06-04T12:00:00.000Z',
+          transitionedByUserId: 'user_456',
+          note: 'Approved by accountant.',
+        },
+      ],
+    });
+
+    expect(
+      transitionTenantEcuadorTaxAccountantReviewUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      reviewId: 'tax_review_001',
+      status: 'approved',
+      transitionedByUserId: 'user_456',
+      note: 'Approved by accountant.',
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/declaration-approval-packet should return approval readiness', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/declaration-approval-packet?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      generatedAt: '2026-06-04T12:00:00.000Z',
+      latestAccountantReview: {
+        id: 'tax_review_001',
+        status: 'approved',
+      },
+      approvalReadiness: 'blocked',
+      remainingBlockers: ['party_fiscal_profile.customer_globex'],
+      availableAuditEvents: [
+        {
+          id: 'tax_event_001',
+          eventType: 'accountant_packet_requested',
+        },
+      ],
+      nextStep: 'Resolver blockers antes de declarar.',
+    });
+
+    expect(
+      requestTenantEcuadorTaxDeclarationApprovalPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
   it('GET /api/tax-compliance/tenants/:slug/ec/audit-readiness should return audit readiness contracts', async () => {
     const response = await request(httpServer)
       .get(
@@ -13930,21 +14243,33 @@ describe('API', () => {
           eventType: 'accountant_packet_requested',
           generated: false,
           source: 'accountant_review_packet',
-          recommendedPersistence: 'persist_when_requested',
+          recommendedPersistence: 'persisted',
+        },
+        {
+          eventType: 'accountant_review_transitioned',
+          generated: false,
+          source: 'accountant_review_lifecycle',
+          recommendedPersistence: 'persist_when_transitioned',
         },
       ],
       missingPersistence: [
         'period_workspace_generated',
-        'accountant_packet_requested',
+        'declaration_draft_requested',
+        'due_monitor_reviewed',
+        'accountant_review_transitioned',
       ],
       recommendedAuditEvents: [
         {
           eventType: 'period_workspace_generated',
           minimumPayload: ['tenantSlug', 'period', 'year', 'status', 'blockers'],
         },
+        {
+          eventType: 'accountant_review_transitioned',
+          minimumPayload: ['tenantSlug', 'period', 'reviewId', 'status'],
+        },
       ],
       nextStep:
-        'Agregar persistencia de eventos tributarios antes de introducir aprobaciones o workflow mutable.',
+        'Persistir los eventos tributarios faltantes cuando el operador ejecute cada accion.',
     });
 
     expect(getTenantEcuadorTaxAuditReadinessUseCase.execute).toHaveBeenCalledWith({

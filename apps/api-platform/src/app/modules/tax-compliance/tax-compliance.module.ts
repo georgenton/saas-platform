@@ -26,15 +26,26 @@ import {
   GetTenantEcuadorTaxObligationCalendarUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
+  ListTenantEcuadorTaxAccountantReviewsUseCase,
+  ListTenantEcuadorTaxComplianceEventsUseCase,
+  RecordTenantEcuadorTaxComplianceEventUseCase,
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
+  RequestTenantEcuadorTaxAccountantReviewUseCase,
+  RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+  TAX_COMPLIANCE_ACCOUNTANT_REVIEW_ID_GENERATOR,
+  TAX_COMPLIANCE_ACCOUNTANT_REVIEW_REPOSITORY,
+  TAX_COMPLIANCE_EVENT_ID_GENERATOR,
+  TAX_COMPLIANCE_EVENT_REPOSITORY,
+  TransitionTenantEcuadorTaxAccountantReviewUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
   CatalogPersistenceModule,
   CommercialPersistenceModule,
   FeatureFlagsPersistenceModule,
   InvoicingPersistenceModule,
+  TaxCompliancePersistenceModule,
   TenancyPersistenceModule,
 } from '@saas-platform/infra-prisma';
 import {
@@ -56,6 +67,7 @@ import { TaxComplianceController } from './tax-compliance.controller';
     CommercialPersistenceModule,
     FeatureFlagsPersistenceModule,
     InvoicingPersistenceModule,
+    TaxCompliancePersistenceModule,
     TenancyPersistenceModule,
   ],
   controllers: [TaxComplianceController],
@@ -212,11 +224,117 @@ import { TaxComplianceController } from './tax-compliance.controller';
         ),
     },
     {
+      provide: RecordTenantEcuadorTaxComplianceEventUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        TAX_COMPLIANCE_EVENT_REPOSITORY,
+        TAX_COMPLIANCE_EVENT_ID_GENERATOR,
+      ],
+      useFactory: (
+        tenantRepository,
+        taxComplianceEventRepository,
+        eventIdGenerator,
+      ) =>
+        new RecordTenantEcuadorTaxComplianceEventUseCase(
+          tenantRepository,
+          taxComplianceEventRepository,
+          eventIdGenerator,
+        ),
+    },
+    {
+      provide: ListTenantEcuadorTaxComplianceEventsUseCase,
+      inject: [TENANT_REPOSITORY, TAX_COMPLIANCE_EVENT_REPOSITORY],
+      useFactory: (tenantRepository, taxComplianceEventRepository) =>
+        new ListTenantEcuadorTaxComplianceEventsUseCase(
+          tenantRepository,
+          taxComplianceEventRepository,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxAccountantReviewUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        TAX_COMPLIANCE_ACCOUNTANT_REVIEW_REPOSITORY,
+        TAX_COMPLIANCE_ACCOUNTANT_REVIEW_ID_GENERATOR,
+        RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        tenantRepository,
+        taxComplianceAccountantReviewRepository,
+        reviewIdGenerator,
+        requestTenantEcuadorTaxAccountantReviewPacketUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxAccountantReviewUseCase(
+          tenantRepository,
+          taxComplianceAccountantReviewRepository,
+          reviewIdGenerator,
+          requestTenantEcuadorTaxAccountantReviewPacketUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: ListTenantEcuadorTaxAccountantReviewsUseCase,
+      inject: [TENANT_REPOSITORY, TAX_COMPLIANCE_ACCOUNTANT_REVIEW_REPOSITORY],
+      useFactory: (tenantRepository, taxComplianceAccountantReviewRepository) =>
+        new ListTenantEcuadorTaxAccountantReviewsUseCase(
+          tenantRepository,
+          taxComplianceAccountantReviewRepository,
+        ),
+    },
+    {
+      provide: TransitionTenantEcuadorTaxAccountantReviewUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        TAX_COMPLIANCE_ACCOUNTANT_REVIEW_REPOSITORY,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        tenantRepository,
+        taxComplianceAccountantReviewRepository,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new TransitionTenantEcuadorTaxAccountantReviewUseCase(
+          tenantRepository,
+          taxComplianceAccountantReviewRepository,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        TAX_COMPLIANCE_ACCOUNTANT_REVIEW_REPOSITORY,
+        TAX_COMPLIANCE_EVENT_REPOSITORY,
+        RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+      ],
+      useFactory: (
+        tenantRepository,
+        taxComplianceAccountantReviewRepository,
+        taxComplianceEventRepository,
+        requestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase(
+          tenantRepository,
+          taxComplianceAccountantReviewRepository,
+          taxComplianceEventRepository,
+          requestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcuadorTaxAuditReadinessUseCase,
-      inject: [GetTenantEcuadorTaxPeriodWorkspaceUseCase],
-      useFactory: (getTenantEcuadorTaxPeriodWorkspaceUseCase) =>
+      inject: [
+        GetTenantEcuadorTaxPeriodWorkspaceUseCase,
+        ListTenantEcuadorTaxComplianceEventsUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxPeriodWorkspaceUseCase,
+        listTenantEcuadorTaxComplianceEventsUseCase,
+      ) =>
         new GetTenantEcuadorTaxAuditReadinessUseCase(
           getTenantEcuadorTaxPeriodWorkspaceUseCase,
+          listTenantEcuadorTaxComplianceEventsUseCase,
         ),
     },
     {

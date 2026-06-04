@@ -58,6 +58,8 @@ model Tenant {
   ecommerceProductSetups EcommerceProductSetup[]
   ecommerceProductEntityChannelDrafts EcommerceProductEntityChannelDraft[]
   ecommerceProductEntities EcommerceProductEntity[]
+  taxComplianceEvents TaxComplianceEvent[]
+  taxComplianceAccountantReviews TaxComplianceAccountantReview[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
@@ -789,6 +791,46 @@ model EcommerceOrderOperationalEvent {
   @@index([tenantSlug, productEntityId, orderDraftId, eventType], map: "EcommerceOrderOperationalEvent_order_event_type_idx")
   @@index([tenantId, eventType, occurredAt], map: "EcommerceOrderOperationalEvent_event_type_idx")
   @@index([tenantId, orderDraftId, occurredAt], map: "EcommerceOrderOperationalEvent_order_draft_idx")
+}
+
+model TaxComplianceEvent {
+  id          String   @id
+  tenantId    String
+  tenantSlug  String
+  period      String
+  year        Int
+  eventType   String
+  source      String
+  payloadJson String   @db.Text
+  occurredAt  DateTime
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, period, occurredAt], map: "TaxComplianceEvent_period_idx")
+  @@index([tenantSlug, period, occurredAt], map: "TaxComplianceEvent_slug_period_idx")
+  @@index([tenantId, eventType, occurredAt], map: "TaxComplianceEvent_event_type_idx")
+}
+
+model TaxComplianceAccountantReview {
+  id                    String   @id
+  tenantId              String
+  tenantSlug            String
+  period                String
+  year                  Int
+  status                String
+  requestedByUserId     String?
+  requestedByEmail      String?
+  summary               String
+  questionsJson         String   @db.Text
+  evidenceSummaryJson   String   @db.Text
+  transitionHistoryJson String   @db.Text
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([tenantId, period, updatedAt], map: "TaxComplianceAccountantReview_period_idx")
+  @@index([tenantSlug, period, updatedAt], map: "TaxComplianceAccountantReview_slug_period_idx")
+  @@index([tenantId, status, updatedAt], map: "TaxComplianceAccountantReview_status_idx")
 }
 
 model EcommerceProductSetup {

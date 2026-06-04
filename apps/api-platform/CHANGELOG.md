@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.81.0
+
+### Minor Changes
+
+- f3cd75c: Add Ecuador tax obligation settings, VAT declaration draft, and period evidence vault APIs.
+
 ## 0.80.0
 
 ### Minor Changes

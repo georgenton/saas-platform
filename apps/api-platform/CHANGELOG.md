@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.71.0
+
+### Minor Changes
+
+- 8774d0e: Add Ecuador tax obligation calendar, shared party fiscal readiness summary, and evidence-backed tax period preparation packets.
+
 ## 0.70.0
 
 ### Minor Changes

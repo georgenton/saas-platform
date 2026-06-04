@@ -116,6 +116,36 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
           ? 'persisted'
           : 'persist_when_requested',
       },
+      {
+        eventType: 'purchase_expense_evidence_reviewed',
+        generated: false,
+        source: 'purchase_expense_evidence_workspace',
+        recommendedPersistence: persistedEventTypes.has(
+          'purchase_expense_evidence_reviewed',
+        )
+          ? 'persisted'
+          : 'persist_when_requested',
+      },
+      {
+        eventType: 'vat_input_output_reconciliation_requested',
+        generated: false,
+        source: 'vat_input_output_reconciliation_packet',
+        recommendedPersistence: persistedEventTypes.has(
+          'vat_input_output_reconciliation_requested',
+        )
+          ? 'persisted'
+          : 'persist_when_requested',
+      },
+      {
+        eventType: 'income_tax_evidence_packet_requested',
+        generated: false,
+        source: 'income_tax_evidence_packet',
+        recommendedPersistence: persistedEventTypes.has(
+          'income_tax_evidence_packet_requested',
+        )
+          ? 'persisted'
+          : 'persist_when_requested',
+      },
     ];
     const missingPersistence = generatedOutputs
       .filter((output) => output.recommendedPersistence.startsWith('persist_'))
@@ -193,6 +223,37 @@ export class GetTenantEcuadorTaxAuditReadinessUseCase {
             'period',
             'closeoutStatus',
             'missingEventTypes',
+          ],
+        },
+        {
+          eventType: 'purchase_expense_evidence_reviewed',
+          reason: 'Audita revision de compras/gastos y proveedores fiscales para credito tributario o deducibilidad.',
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'readinessStatus',
+            'documentCount',
+            'supplierCount',
+          ],
+        },
+        {
+          eventType: 'vat_input_output_reconciliation_requested',
+          reason: 'Audita conciliacion de IVA ventas contra credito tributario operacional.',
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'readinessStatus',
+            'netVatByCurrency',
+          ],
+        },
+        {
+          eventType: 'income_tax_evidence_packet_requested',
+          reason: 'Audita evidencia base para impuesto a la renta antes de clasificacion contable.',
+          minimumPayload: [
+            'tenantSlug',
+            'period',
+            'readinessStatus',
+            'estimatedTaxableBaseByCurrency',
           ],
         },
       ],

@@ -45,6 +45,12 @@ export type EcuadorTaxPeriodCloseoutStatus =
   | 'needs_review'
   | 'ready_for_accountant'
   | 'ready_for_external_filing';
+export type EcuadorTaxPurchaseExpenseCategory =
+  | 'inventory'
+  | 'services'
+  | 'operating_expense'
+  | 'asset'
+  | 'uncategorized';
 export type EcuadorTaxComplianceEventType =
   | 'period_workspace_generated'
   | 'accountant_packet_requested'
@@ -54,7 +60,10 @@ export type EcuadorTaxComplianceEventType =
   | 'tax_sales_book_generated'
   | 'tax_reconciliation_reviewed'
   | 'vat_readiness_packet_requested'
-  | 'period_closeout_packet_requested';
+  | 'period_closeout_packet_requested'
+  | 'purchase_expense_evidence_reviewed'
+  | 'vat_input_output_reconciliation_requested'
+  | 'income_tax_evidence_packet_requested';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -458,6 +467,107 @@ export interface EcuadorTaxPeriodCloseoutPacketView {
   };
   closeoutChecklist: string[];
   blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPurchaseExpenseEvidenceWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  source: 'operational_intake';
+  documentRows: Array<{
+    evidenceId: string;
+    supplierPartyId: string | null;
+    supplierName: string;
+    supplierTaxpayerId: string | null;
+    documentNumber: string | null;
+    documentCode: string | null;
+    issuedAt: Date | null;
+    category: EcuadorTaxPurchaseExpenseCategory;
+    currency: string;
+    subtotalInCents: number;
+    vatInCents: number;
+    totalInCents: number;
+    deductible: boolean | null;
+    supportReference: string | null;
+    readinessStatus: EcuadorTaxReadinessStatus;
+    blockers: string[];
+  }>;
+  totalsByCurrency: Array<{
+    currency: string;
+    documentCount: number;
+    subtotalInCents: number;
+    vatInCents: number;
+    totalInCents: number;
+    deductibleSubtotalInCents: number;
+  }>;
+  supplierReadiness: {
+    totalSuppliers: number;
+    completeSuppliers: number;
+    needsReviewSuppliers: number;
+    incompleteSupplierIds: string[];
+  };
+  blockers: string[];
+  reviewNotes: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxVatInputOutputReconciliationPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  outputVatByCurrency: EcuadorTaxVatDeclarationReadinessPacketView['vatSummaryByCurrency'];
+  inputVatByCurrency: Array<{
+    currency: string;
+    creditableVatInCents: number;
+    purchaseDocumentCount: number;
+  }>;
+  netVatByCurrency: Array<{
+    currency: string;
+    outputVatInCents: number;
+    inputVatInCents: number;
+    estimatedVatPayableInCents: number;
+  }>;
+  purchaseExpenseEvidenceStatus: EcuadorTaxReadinessStatus;
+  vatReadinessStatus: EcuadorTaxVatDeclarationReadinessStatus;
+  blockers: string[];
+  accountantQuestions: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxIncomeTaxEvidencePacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  incomeObligation: EcuadorTaxCalendarEntryView | null;
+  revenueByCurrency: Array<{
+    currency: string;
+    grossRevenueInCents: number;
+    documentCount: number;
+  }>;
+  expenseByCurrency: Array<{
+    currency: string;
+    deductibleExpenseInCents: number;
+    expenseDocumentCount: number;
+  }>;
+  estimatedTaxableBaseByCurrency: Array<{
+    currency: string;
+    revenueInCents: number;
+    deductibleExpenseInCents: number;
+    estimatedTaxableBaseInCents: number;
+  }>;
+  blockers: string[];
+  accountantQuestions: string[];
+  supportChecklist: string[];
   nextStep: string;
   guardrails: string[];
 }

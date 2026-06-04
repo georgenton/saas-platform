@@ -228,7 +228,9 @@ import {
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
+  RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+  RequestTenantEcuadorTaxReviewAssistantPacketUseCase,
   RequestTenantEcuadorTaxSalesBookUseCase,
   RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase,
   RequestTenantEcuadorTaxVatDeclarationDraftUseCase,
@@ -897,6 +899,12 @@ describe('API', () => {
   let recordTenantEcuadorTaxFilingHandoffUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxAnnexesReadinessUseCase: { execute: jest.Mock };
   let requestTenantEcuadorTaxAccountingBridgePreviewUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantEcuadorTaxReviewAssistantPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantEcuadorTaxPeriodCloseoutReportUseCase: {
     execute: jest.Mock;
   };
   let getTenantEcuadorTaxAuditReadinessUseCase: { execute: jest.Mock };
@@ -3629,6 +3637,85 @@ describe('API', () => {
     blockers: [],
     nextStep: 'Mapear hints contra plan de cuentas.',
     guardrails: ['Preview contable no registra asientos.'],
+  };
+  const ecuadorTaxReviewAssistantPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    executiveSummary:
+      'Periodo 2026-06 esta listo para revision profesional con 2 senales.',
+    riskSignals: [
+      {
+        key: 'annexes_needs_review',
+        severity: 'normal' as const,
+        label: 'annexes requiere revision',
+        detail: 'annexes no esta en estado listo.',
+        source: 'annexes',
+      },
+    ],
+    accountantQuestions: ['Los anexos aplicables tienen soporte suficiente?'],
+    suggestedActions: [
+      {
+        key: 'resolve_annexes_needs_review',
+        label: 'annexes no esta en estado listo.',
+        owner: 'operator' as const,
+        priority: 'normal' as const,
+        source: 'annexes',
+      },
+    ],
+    contextSnapshot: {
+      vatApprovalStatus: 'approved_for_external_filing' as const,
+      operationalCloseoutStatus: 'ready_for_external_filing' as const,
+      filingHandoffStatus: 'paid_externally' as const,
+      annexesReadinessStatus: 'needs_review' as const,
+      accountingBridgeReadinessStatus: 'needs_review' as const,
+      evidenceVaultStatus: 'needs_review' as const,
+      eventCount: 6,
+    },
+    blockers: [],
+    nextStep: 'Usar preguntas y acciones sugeridas para revision humana.',
+    guardrails: ['El asistente no presenta declaraciones.'],
+  };
+  const ecuadorTaxPeriodCloseoutReport = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    sections: [
+      {
+        key: 'sales_book',
+        label: 'Libro de ventas',
+        readinessStatus: 'ready' as const,
+        summary: '2 documentos de venta.',
+        blockerCount: 0,
+        artifactCount: 2,
+      },
+      {
+        key: 'annexes',
+        label: 'Anexos',
+        readinessStatus: 'needs_review' as const,
+        summary: '1 anexos aplicables.',
+        blockerCount: 0,
+        artifactCount: 1,
+      },
+    ],
+    totals: {
+      salesDocuments: 2,
+      purchaseDocuments: 1,
+      withholdingCandidates: 1,
+      annexesApplicable: 1,
+      accountingPreviewEntries: 1,
+      auditEventCount: 6,
+    },
+    filingHandoffStatus: 'paid_externally' as const,
+    closeoutStatus: 'ready_for_external_filing' as const,
+    blockers: [],
+    accountantQuestions: ['El reporte contiene toda la evidencia?'],
+    nextStep: 'Guardar reporte de periodo como salida operacional.',
+    guardrails: ['Reporte operacional, no formulario SRI.'],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
@@ -12244,6 +12331,12 @@ describe('API', () => {
     requestTenantEcuadorTaxAccountingBridgePreviewUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAccountingBridgePreview),
     };
+    requestTenantEcuadorTaxReviewAssistantPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxReviewAssistantPacket),
+    };
+    requestTenantEcuadorTaxPeriodCloseoutReportUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxPeriodCloseoutReport),
+    };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
     };
@@ -12822,6 +12915,10 @@ describe('API', () => {
       .useValue(getTenantEcuadorTaxAnnexesReadinessUseCase)
       .overrideProvider(RequestTenantEcuadorTaxAccountingBridgePreviewUseCase)
       .useValue(requestTenantEcuadorTaxAccountingBridgePreviewUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxReviewAssistantPacketUseCase)
+      .useValue(requestTenantEcuadorTaxReviewAssistantPacketUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxPeriodCloseoutReportUseCase)
+      .useValue(requestTenantEcuadorTaxPeriodCloseoutReportUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -16094,6 +16191,68 @@ describe('API', () => {
 
     expect(
       requestTenantEcuadorTaxAccountingBridgePreviewUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/tax-review-assistant-packet should return review assistant packet', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/tax-review-assistant-packet?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      readinessStatus: 'needs_review',
+      contextSnapshot: {
+        filingHandoffStatus: 'paid_externally',
+        eventCount: 6,
+      },
+      riskSignals: [
+        {
+          key: 'annexes_needs_review',
+        },
+      ],
+    });
+
+    expect(
+      requestTenantEcuadorTaxReviewAssistantPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/period-closeout-report should return period closeout report', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/period-closeout-report?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      readinessStatus: 'needs_review',
+      totals: {
+        salesDocuments: 2,
+        annexesApplicable: 1,
+        accountingPreviewEntries: 1,
+      },
+      filingHandoffStatus: 'paid_externally',
+      closeoutStatus: 'ready_for_external_filing',
+    });
+
+    expect(
+      requestTenantEcuadorTaxPeriodCloseoutReportUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',

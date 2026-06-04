@@ -114,12 +114,14 @@ import {
   fetchEcuadorTaxIncomeTaxEvidencePacket,
   fetchEcuadorTaxObligationSettings,
   fetchEcuadorTaxPeriodCloseoutPacket,
+  fetchEcuadorTaxPeriodCloseoutReport,
   fetchEcuadorTaxPeriodEvidenceVault,
   fetchEcuadorTaxOperationalCloseout,
   fetchEcuadorTaxPeriodWorkspace,
   fetchEcuadorTaxPurchaseExpenseEvidenceWorkspace,
   fetchEcuadorTaxReconciliationWorkspace,
   fetchEcuadorTaxRuleCatalog,
+  fetchEcuadorTaxReviewAssistantPacket,
   fetchEcuadorTaxSalesBook,
   fetchEcuadorTaxSupplierFiscalReadinessWorkspace,
   fetchEcuadorTaxVatDeclarationReadinessPacket,
@@ -518,11 +520,13 @@ import {
   EcuadorTaxObligationSettingsResponse,
   EcuadorTaxOperationalCloseoutResponse,
   EcuadorTaxPeriodCloseoutPacketResponse,
+  EcuadorTaxPeriodCloseoutReportResponse,
   EcuadorTaxPeriodEvidenceVaultResponse,
   EcuadorTaxPeriodWorkspaceResponse,
   EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse,
   EcuadorTaxReconciliationWorkspaceResponse,
   EcuadorTaxRuleCatalogResponse,
+  EcuadorTaxReviewAssistantPacketResponse,
   EcuadorTaxSalesBookResponse,
   EcuadorTaxSupplierFiscalReadinessWorkspaceResponse,
   EcuadorTaxVatDeclarationReadinessPacketResponse,
@@ -2016,6 +2020,14 @@ export function App() {
     taxComplianceAccountingBridgePreview,
     setTaxComplianceAccountingBridgePreview,
   ] = useState<EcuadorTaxAccountingBridgePreviewResponse | null>(null);
+  const [
+    taxComplianceReviewAssistantPacket,
+    setTaxComplianceReviewAssistantPacket,
+  ] = useState<EcuadorTaxReviewAssistantPacketResponse | null>(null);
+  const [
+    taxCompliancePeriodCloseoutReport,
+    setTaxCompliancePeriodCloseoutReport,
+  ] = useState<EcuadorTaxPeriodCloseoutReportResponse | null>(null);
   const [taxComplianceLoading, setTaxComplianceLoading] = useState(false);
   const [taxComplianceActionLoading, setTaxComplianceActionLoading] =
     useState<string | null>(null);
@@ -19179,6 +19191,8 @@ export function App() {
         nextFilingHandoff,
         nextAnnexesReadiness,
         nextAccountingBridgePreview,
+        nextReviewAssistantPacket,
+        nextPeriodCloseoutReport,
       ] = await Promise.all([
         fetchEcuadorTaxPeriodWorkspace(token, tenantSlug, taxCompliancePeriod, year),
         fetchEcuadorTaxEcommerceEvidence(token, tenantSlug, taxCompliancePeriod),
@@ -19295,6 +19309,18 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchEcuadorTaxReviewAssistantPacket(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxPeriodCloseoutReport(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
       ]);
 
       startTransition(() => {
@@ -19325,6 +19351,8 @@ export function App() {
         setTaxComplianceFilingHandoff(nextFilingHandoff);
         setTaxComplianceAnnexesReadiness(nextAnnexesReadiness);
         setTaxComplianceAccountingBridgePreview(nextAccountingBridgePreview);
+        setTaxComplianceReviewAssistantPacket(nextReviewAssistantPacket);
+        setTaxCompliancePeriodCloseoutReport(nextPeriodCloseoutReport);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -28232,6 +28260,100 @@ export function App() {
                     <p>Carga un período para revisar cierre operacional.</p>
                   </div>
                 )}
+              </div>
+
+              <div className={styles.twoColumn}>
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>AI review</span>
+                      <h3>Asistente tributario</h3>
+                    </div>
+                    {taxComplianceReviewAssistantPacket ? (
+                      <span className={styles.statusPill}>
+                        {humanizeKey(
+                          taxComplianceReviewAssistantPacket.readinessStatus,
+                        )}
+                      </span>
+                    ) : null}
+                  </div>
+                  {taxComplianceReviewAssistantPacket ? (
+                    <div className={styles.invoiceItemCard}>
+                      <div className={styles.invoiceCardHeader}>
+                        <strong>
+                          {taxComplianceReviewAssistantPacket.riskSignals.length}{' '}
+                          señales
+                        </strong>
+                        <span className={styles.statusPill}>
+                          {
+                            taxComplianceReviewAssistantPacket
+                              .accountantQuestions.length
+                          }{' '}
+                          preguntas
+                        </span>
+                      </div>
+                      <p className={styles.muted}>
+                        {taxComplianceReviewAssistantPacket.executiveSummary}
+                      </p>
+                      <p className={styles.muted}>
+                        {taxComplianceReviewAssistantPacket.nextStep}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un período para ver revisión asistida.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.stack}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <span className={styles.label}>Closeout report</span>
+                      <h3>Reporte final del periodo</h3>
+                    </div>
+                    {taxCompliancePeriodCloseoutReport ? (
+                      <span className={styles.statusPill}>
+                        {humanizeKey(
+                          taxCompliancePeriodCloseoutReport.readinessStatus,
+                        )}
+                      </span>
+                    ) : null}
+                  </div>
+                  {taxCompliancePeriodCloseoutReport ? (
+                    <div className={styles.stack}>
+                      <div className={styles.commercialGrid}>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Secciones</span>
+                          <strong>
+                            {taxCompliancePeriodCloseoutReport.sections.length}
+                          </strong>
+                          <span className={styles.muted}>
+                            {taxCompliancePeriodCloseoutReport.blockers.length}{' '}
+                            blockers
+                          </span>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Eventos</span>
+                          <strong>
+                            {
+                              taxCompliancePeriodCloseoutReport.totals
+                                .auditEventCount
+                            }
+                          </strong>
+                          <span className={styles.muted}>auditoría</span>
+                        </div>
+                      </div>
+                      <p className={styles.muted}>
+                        {taxCompliancePeriodCloseoutReport.nextStep}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={styles.emptyState}>
+                      <p>Carga un período para ver reporte final.</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className={styles.twoColumn}>

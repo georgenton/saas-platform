@@ -42,7 +42,9 @@ import {
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
+  RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+  RequestTenantEcuadorTaxReviewAssistantPacketUseCase,
   RequestTenantEcuadorTaxSalesBookUseCase,
   RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase,
   RequestTenantEcuadorTaxVatDeclarationDraftUseCase,
@@ -83,6 +85,7 @@ import {
   EcuadorTaxFilingHandoffResponseDto,
   EcuadorTaxIncomeTaxEvidencePacketResponseDto,
   EcuadorTaxPeriodCloseoutPacketResponseDto,
+  EcuadorTaxPeriodCloseoutReportResponseDto,
   EcuadorTaxPeriodEvidenceVaultResponseDto,
   EcuadorTaxPeriodWorkspaceResponseDto,
   EcuadorTaxPeriodPreparationPacketResponseDto,
@@ -90,6 +93,7 @@ import {
   EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponseDto,
   EcuadorTaxReconciliationWorkspaceResponseDto,
   EcuadorTaxRuleCatalogResponseDto,
+  EcuadorTaxReviewAssistantPacketResponseDto,
   EcuadorTaxSalesBookResponseDto,
   EcuadorTaxSupplierFiscalReadinessWorkspaceResponseDto,
   EcuadorTaxpayerProfileResponseDto,
@@ -120,6 +124,7 @@ import {
   toEcuadorTaxObligationSettingsResponseDto,
   toEcuadorTaxOperationalCloseoutResponseDto,
   toEcuadorTaxPeriodCloseoutPacketResponseDto,
+  toEcuadorTaxPeriodCloseoutReportResponseDto,
   toEcuadorTaxPeriodEvidenceVaultResponseDto,
   toEcuadorTaxPeriodWorkspaceResponseDto,
   toEcuadorTaxPeriodPreparationPacketResponseDto,
@@ -127,6 +132,7 @@ import {
   toEcuadorTaxPurchaseExpenseEvidenceWorkspaceResponseDto,
   toEcuadorTaxReconciliationWorkspaceResponseDto,
   toEcuadorTaxRuleCatalogResponseDto,
+  toEcuadorTaxReviewAssistantPacketResponseDto,
   toEcuadorTaxSalesBookResponseDto,
   toEcuadorTaxSupplierFiscalReadinessWorkspaceResponseDto,
   toEcuadorTaxpayerProfileResponseDto,
@@ -286,6 +292,8 @@ export class TaxComplianceController {
     private readonly recordTenantEcuadorTaxFilingHandoffUseCase: RecordTenantEcuadorTaxFilingHandoffUseCase,
     private readonly getTenantEcuadorTaxAnnexesReadinessUseCase: GetTenantEcuadorTaxAnnexesReadinessUseCase,
     private readonly requestTenantEcuadorTaxAccountingBridgePreviewUseCase: RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+    private readonly requestTenantEcuadorTaxReviewAssistantPacketUseCase: RequestTenantEcuadorTaxReviewAssistantPacketUseCase,
+    private readonly requestTenantEcuadorTaxPeriodCloseoutReportUseCase: RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
   ) {}
 
   @Get(':slug/ec/taxpayer-profile')
@@ -1284,6 +1292,58 @@ export class TaxComplianceController {
         });
 
       return toEcuadorTaxAccountingBridgePreviewResponseDto(preview);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/tax-review-assistant-packet')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async getTaxReviewAssistantPacket(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxReviewAssistantPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantEcuadorTaxReviewAssistantPacketUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxReviewAssistantPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/period-closeout-report')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  async getPeriodCloseoutReport(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxPeriodCloseoutReportResponseDto> {
+    try {
+      const report =
+        await this.requestTenantEcuadorTaxPeriodCloseoutReportUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxPeriodCloseoutReportResponseDto(report);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.82.0
+
+### Minor Changes
+
+- 559f39d: Add Ecuador VAT approval workflow, withholding registry, and operational tax period closeout APIs.
+
 ## 0.81.0
 
 ### Minor Changes

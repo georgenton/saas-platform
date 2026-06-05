@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.94.0
+
+### Minor Changes
+
+- d8b780e: Add Accounting journal registry persistence, ledger registry workspaces, and period closeout readiness.
+
 ## 0.93.0
 
 ### Minor Changes

@@ -99,3 +99,15 @@ export interface PartyFiscalCleanupPacket {
   nextStep: string;
   guardrails: string[];
 }
+
+export interface PartyFiscalCorrectionResult {
+  tenantSlug: string;
+  partyId: string;
+  appliedAt: Date;
+  status: 'applied' | 'needs_review';
+  correctedParty: PartyFiscalReadinessPartySnapshot;
+  remainingMissingFields: string[];
+  reviewNotes: string[];
+  nextStep: string;
+  guardrails: string[];
+}

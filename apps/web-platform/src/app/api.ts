@@ -82,11 +82,13 @@ import {
   EcuadorTaxAccountantReviewResponse,
   EcuadorTaxAccountingBridgeMappingResponse,
   EcuadorTaxAccountingBridgePreviewResponse,
+  EcuadorTaxAccountingBridgeSuggestedAccountsResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
   EcuadorTaxFilingHandoffResponse,
+  EcuadorTaxGrowthReminderPacketResponse,
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
   EcuadorTaxPeriodCloseoutPacketResponse,
@@ -1559,6 +1561,54 @@ export async function fetchEcuadorTaxAccountingBridgeMapping(
     )}/ec/accounting-bridge-mapping?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxAccountingBridgeSuggestedAccounts(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountingBridgeSuggestedAccountsResponse> {
+  return request<EcuadorTaxAccountingBridgeSuggestedAccountsResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accounting-bridge-suggested-accounts?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxGrowthReminderPacket(
+  token: string,
+  tenantSlug: string,
+  year: number,
+  options: { asOfDate?: string; windowDays?: number } = {},
+): Promise<EcuadorTaxGrowthReminderPacketResponse> {
+  const params = new URLSearchParams({
+    year: String(year),
+  });
+
+  if (options.asOfDate) {
+    params.set('asOfDate', options.asOfDate);
+  }
+
+  if (options.windowDays !== undefined) {
+    params.set('windowDays', String(options.windowDays));
+  }
+
+  return request<EcuadorTaxGrowthReminderPacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/growth-reminder-packet?${params.toString()}`,
     {
       method: 'GET',
       token,

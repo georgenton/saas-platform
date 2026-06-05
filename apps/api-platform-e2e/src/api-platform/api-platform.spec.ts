@@ -200,6 +200,7 @@ import {
   GetTenantEcuadorTaxAnnexesReadinessUseCase,
   GetTenantEcuadorTaxAccountantWorkbenchUseCase,
   GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
+  GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
   GetTenantEcuadorTaxFilingHandoffUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
@@ -225,6 +226,7 @@ import {
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+  RequestTenantEcuadorTaxGrowthReminderPacketUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
@@ -368,6 +370,7 @@ import {
   TaxRate,
 } from '@saas-platform/invoicing-domain';
 import {
+  ApplyTenantPartyFiscalCorrectionUseCase,
   GetTenantPartyByIdUseCase,
   GetTenantPartyFiscalCleanupPacketUseCase,
   GetTenantPartyFiscalCleanupWorkspaceUseCase,
@@ -851,6 +854,7 @@ describe('API', () => {
   let metaWhatsappWebhookTenantResolver: { resolve: jest.Mock };
   let listTenantCustomersUseCase: { execute: jest.Mock };
   let listTenantPartiesUseCase: { execute: jest.Mock };
+  let applyTenantPartyFiscalCorrectionUseCase: { execute: jest.Mock };
   let getTenantPartyFiscalReadinessSummaryUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxpayerProfileUseCase: { execute: jest.Mock };
   let getTenantEcuadorTaxObligationCalendarUseCase: { execute: jest.Mock };
@@ -911,7 +915,13 @@ describe('API', () => {
   let getTenantEcuadorTaxAccountingBridgeMappingUseCase: {
     execute: jest.Mock;
   };
+  let getTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase: {
+    execute: jest.Mock;
+  };
   let upsertTenantEcuadorTaxAccountingBridgeMappingUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantEcuadorTaxGrowthReminderPacketUseCase: {
     execute: jest.Mock;
   };
   let requestTenantEcuadorTaxReviewAssistantPacketUseCase: {
@@ -2591,6 +2601,30 @@ describe('API', () => {
       'Packet de correccion: no edita ni fusiona terceros automaticamente.',
     ],
   };
+  const partyFiscalCorrectionResult = {
+    tenantSlug: 'saas-platform',
+    partyId: 'customer_globex',
+    appliedAt: taxComplianceGeneratedAt,
+    status: 'applied' as const,
+    correctedParty: {
+      id: 'customer_globex',
+      displayName: 'Globex LLC',
+      roles: ['customer'],
+      taxpayerId: '1790099999001',
+      identificationType: '04',
+      fiscalAddress: 'Av. Fiscal 123',
+      email: 'billing@globex.dev',
+      completenessStatus: 'complete',
+      missingFields: [],
+      reviewNotes: [],
+    },
+    remainingMissingFields: [],
+    reviewNotes: [],
+    nextStep: 'Tercero fiscal corregido y listo para evidencias tributarias.',
+    guardrails: [
+      'La correccion actualiza el backing store disponible; no valida RUC/cedula contra fuente oficial.',
+    ],
+  };
   const ecuadorTaxObligations = [
     {
       key: 'vat' as const,
@@ -2828,6 +2862,41 @@ describe('API', () => {
     guardrails: [
       'Este workspace prioriza revision operativa; no confirma presentacion ni pago de obligaciones ante SRI.',
       'El monitor solo alerta obligaciones derivadas del calendario operacional actual.',
+    ],
+  };
+  const ecuadorTaxGrowthReminderPacket = {
+    tenantSlug: 'saas-platform',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    asOfDate: '2026-02-10',
+    readinessStatus: 'needs_review' as const,
+    reminders: [
+      {
+        key: 'tax_due_vat_2026-01',
+        obligationKey: 'vat',
+        period: '2026-01',
+        dueDate: '2026-02-16',
+        severity: 'normal' as const,
+        channel: 'whatsapp' as const,
+        suggestedMessage:
+          'Recordatorio tributario: IVA del periodo 2026-01 con vencimiento 2026-02-16. Revisemos evidencia y responsable antes de presentar.',
+        owner: 'operator' as const,
+        source: 'tax_due_monitor',
+      },
+    ],
+    summary: {
+      reminderCount: 1,
+      overdueCount: 0,
+      dueSoonCount: 1,
+    },
+    targetWorkspace: {
+      productKey: 'growth' as const,
+      handoffMode: 'operator_assist' as const,
+    },
+    nextStep:
+      'Enviar recordatorios tributarios asistidos desde Growth o seguimiento manual.',
+    guardrails: [
+      'Packet de recordatorio: no envia mensajes automaticamente.',
     ],
   };
   const ecuadorTaxEcommerceEvidenceSummary = {
@@ -3768,6 +3837,32 @@ describe('API', () => {
     guardrails: [
       'Mapping no crea asientos contables ni modifica libros.',
       'Plan de cuentas formal, diarios y balances pertenecen al producto Accounting futuro.',
+    ],
+  };
+  const ecuadorTaxAccountingBridgeSuggestedAccounts = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    rows: [
+      {
+        accountHint: 'Ingresos por ventas',
+        suggestedAccountCode: '401.01',
+        suggestedAccountName: 'Ingresos por ventas locales',
+        category: 'sales' as const,
+        source: 'ecuador_tax_compliance_seed',
+        appliesToEntryKeys: ['sales_revenue_USD'],
+        notes: ['Cuenta sugerida para ingresos gravados derivados del libro de ventas.'],
+      },
+    ],
+    summary: {
+      suggestionCount: 1,
+      previewHintCount: 1,
+      unmatchedHintCount: 0,
+    },
+    nextStep: 'Usar sugerencias como punto de partida del mapping contable tributario.',
+    guardrails: [
+      'Catalogo sugerido: no crea plan de cuentas formal ni asientos contables.',
     ],
   };
   const ecuadorTaxReviewAssistantPacket = {
@@ -12389,6 +12484,9 @@ describe('API', () => {
     listTenantPartiesUseCase = {
       execute: jest.fn().mockResolvedValue([acmeParty, globexParty]),
     };
+    applyTenantPartyFiscalCorrectionUseCase = {
+      execute: jest.fn().mockResolvedValue(partyFiscalCorrectionResult),
+    };
     getTenantPartyFiscalReadinessSummaryUseCase = {
       execute: jest.fn().mockResolvedValue(partyFiscalReadinessSummary),
     };
@@ -12409,6 +12507,9 @@ describe('API', () => {
     };
     getTenantEcuadorTaxDueMonitorUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxDueMonitor),
+    };
+    requestTenantEcuadorTaxGrowthReminderPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxGrowthReminderPacket),
     };
     getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxEcommerceEvidenceSummary),
@@ -12492,6 +12593,11 @@ describe('API', () => {
     };
     getTenantEcuadorTaxAccountingBridgeMappingUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAccountingBridgeMapping),
+    };
+    getTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(ecuadorTaxAccountingBridgeSuggestedAccounts),
     };
     upsertTenantEcuadorTaxAccountingBridgeMappingUseCase = {
       execute: jest.fn().mockResolvedValue({
@@ -13047,6 +13153,8 @@ describe('API', () => {
       .useValue(getTenantPartyFiscalCleanupWorkspaceUseCase)
       .overrideProvider(GetTenantPartyFiscalCleanupPacketUseCase)
       .useValue(getTenantPartyFiscalCleanupPacketUseCase)
+      .overrideProvider(ApplyTenantPartyFiscalCorrectionUseCase)
+      .useValue(applyTenantPartyFiscalCorrectionUseCase)
       .overrideProvider(GetTenantEcuadorTaxpayerProfileUseCase)
       .useValue(getTenantEcuadorTaxpayerProfileUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationCalendarUseCase)
@@ -13055,6 +13163,8 @@ describe('API', () => {
       .useValue(getTenantEcuadorTaxCalendarReviewWorkspaceUseCase)
       .overrideProvider(GetTenantEcuadorTaxDueMonitorUseCase)
       .useValue(getTenantEcuadorTaxDueMonitorUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxGrowthReminderPacketUseCase)
+      .useValue(requestTenantEcuadorTaxGrowthReminderPacketUseCase)
       .overrideProvider(GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase)
       .useValue(getTenantEcuadorTaxEcommerceEvidenceSummaryUseCase)
       .overrideProvider(GetTenantEcuadorTaxPeriodWorkspaceUseCase)
@@ -13105,6 +13215,8 @@ describe('API', () => {
       .useValue(requestTenantEcuadorTaxAccountingBridgePreviewUseCase)
       .overrideProvider(GetTenantEcuadorTaxAccountingBridgeMappingUseCase)
       .useValue(getTenantEcuadorTaxAccountingBridgeMappingUseCase)
+      .overrideProvider(GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase)
+      .useValue(getTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase)
       .overrideProvider(UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase)
       .useValue(upsertTenantEcuadorTaxAccountingBridgeMappingUseCase)
       .overrideProvider(RequestTenantEcuadorTaxReviewAssistantPacketUseCase)
@@ -14856,6 +14968,45 @@ describe('API', () => {
     });
   });
 
+  it('POST /api/parties/tenants/:slug/fiscal-cleanup-workspace/:partyId/corrections should apply fiscal correction', async () => {
+    const response = await request(httpServer)
+      .post(
+        '/api/parties/tenants/saas-platform/fiscal-cleanup-workspace/customer_globex/corrections',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        taxpayerId: '1790099999001',
+        identificationType: '04',
+        fiscalAddress: 'Av. Fiscal 123',
+        email: 'billing@globex.dev',
+        taxpayerName: 'Globex LLC',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      partyId: 'customer_globex',
+      status: 'applied',
+      correctedParty: {
+        taxpayerId: '1790099999001',
+        completenessStatus: 'complete',
+      },
+      remainingMissingFields: [],
+    });
+
+    expect(
+      applyTenantPartyFiscalCorrectionUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      partyId: 'customer_globex',
+      taxpayerId: '1790099999001',
+      identificationType: '04',
+      fiscalAddress: 'Av. Fiscal 123',
+      email: 'billing@globex.dev',
+      taxpayerName: 'Globex LLC',
+    });
+  });
+
   it('GET /api/parties/tenants/:slug/parties should require customer visibility permission', async () => {
     resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
       tenantId: 'tenant_123',
@@ -15097,6 +15248,43 @@ describe('API', () => {
     });
 
     expect(getTenantEcuadorTaxDueMonitorUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      year: 2026,
+      asOfDate: '2026-02-10',
+      windowDays: 15,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/growth-reminder-packet should return Growth handoff reminders', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/growth-reminder-packet?year=2026&asOfDate=2026-02-10&windowDays=15',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      readinessStatus: 'needs_review',
+      summary: {
+        reminderCount: 1,
+        dueSoonCount: 1,
+      },
+      targetWorkspace: {
+        productKey: 'growth',
+        handoffMode: 'operator_assist',
+      },
+      reminders: [
+        {
+          key: 'tax_due_vat_2026-01',
+          channel: 'whatsapp',
+        },
+      ],
+    });
+
+    expect(
+      requestTenantEcuadorTaxGrowthReminderPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       year: 2026,
       asOfDate: '2026-02-10',
@@ -16497,6 +16685,39 @@ describe('API', () => {
 
     expect(
       getTenantEcuadorTaxAccountingBridgeMappingUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/accounting-bridge-suggested-accounts should return suggested account catalog', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/accounting-bridge-suggested-accounts?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      summary: {
+        suggestionCount: 1,
+        unmatchedHintCount: 0,
+      },
+      rows: [
+        {
+          accountHint: 'Ingresos por ventas',
+          suggestedAccountCode: '401.01',
+          category: 'sales',
+        },
+      ],
+    });
+
+    expect(
+      getTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',

@@ -28,6 +28,47 @@ export class InvoicingCustomerPartyDirectoryRepository {
     return customer ? this.mapCustomerToParty(customer) : null;
   }
 
+  async applyFiscalCorrection(
+    tenantId: string,
+    partyId: string,
+    correction: {
+      taxpayerId?: string | null;
+      identificationType?: string | null;
+      fiscalAddress?: string | null;
+      email?: string | null;
+      taxpayerName?: string | null;
+      appliedAt: Date;
+    },
+  ): Promise<Party | null> {
+    const customer = await this.customerRepository.findByTenantIdAndId(
+      tenantId,
+      partyId,
+    );
+
+    if (!customer) {
+      return null;
+    }
+
+    const data = customer.toPrimitives();
+    const corrected = Customer.create({
+      ...data,
+      name: correction.taxpayerName ?? data.name,
+      email: correction.email ?? data.email,
+      taxId: correction.taxpayerId ?? data.taxId,
+      identificationType:
+        (correction.identificationType as typeof data.identificationType) ??
+        data.identificationType ??
+        null,
+      identification: correction.taxpayerId ?? data.identification ?? null,
+      billingAddress: correction.fiscalAddress ?? data.billingAddress ?? null,
+      updatedAt: correction.appliedAt,
+    });
+
+    await this.customerRepository.save(corrected);
+
+    return this.mapCustomerToParty(corrected);
+  }
+
   private mapCustomerToParty(customer: Customer): Party {
     const data = customer.toPrimitives();
 

@@ -17,8 +17,12 @@
       "@saas-platform/ai-application": [
         "packages/core/ai/application/src/index.ts"
       ],
-      "@saas-platform/ai-domain": [
-        "packages/core/ai/domain/src/index.ts"
+      "@saas-platform/ai-domain": ["packages/core/ai/domain/src/index.ts"],
+      "@saas-platform/accounting-application": [
+        "packages/core/accounting/application/src/index.ts"
+      ],
+      "@saas-platform/accounting-domain": [
+        "packages/core/accounting/domain/src/index.ts"
       ],
       "@saas-platform/catalog-application": [
         "packages/core/catalog/application/src/index.ts"
@@ -74,9 +78,7 @@
       "@saas-platform/tax-compliance-domain": [
         "packages/core/tax-compliance/domain/src/index.ts"
       ],
-      "@saas-platform/infra-prisma": [
-        "packages/infra/prisma/src/index.ts"
-      ],
+      "@saas-platform/infra-prisma": ["packages/infra/prisma/src/index.ts"],
       "@saas-platform/tenancy-application": [
         "packages/core/tenancy/application/src/index.ts"
       ],

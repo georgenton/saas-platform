@@ -28623,6 +28623,38 @@ export function App() {
                           </strong>
                           <span className={styles.muted}>auditoría</span>
                         </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>SRI</span>
+                          <strong>
+                            {
+                              taxCompliancePeriodCloseoutReport.totals
+                                .sriImportedVouchers
+                            }
+                          </strong>
+                          <span className={styles.muted}>
+                            {
+                              taxCompliancePeriodCloseoutReport.totals
+                                .sriReconciliationIssues
+                            }{' '}
+                            diferencias
+                          </span>
+                        </div>
+                        <div className={styles.commercialCard}>
+                          <span className={styles.muted}>Formularios</span>
+                          <strong>
+                            {
+                              taxCompliancePeriodCloseoutReport.totals
+                                .declarationForms
+                            }
+                          </strong>
+                          <span className={styles.muted}>
+                            {
+                              taxCompliancePeriodCloseoutReport.totals
+                                .declarationDraftBoxes
+                            }{' '}
+                            casilleros
+                          </span>
+                        </div>
                       </div>
                       <p className={styles.muted}>
                         {taxCompliancePeriodCloseoutReport.nextStep}

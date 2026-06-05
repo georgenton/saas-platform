@@ -19,7 +19,10 @@ const tenantSlug = getArg(
   process.env.SMOKE_TENANT_SLUG || 'saas-platform-local',
 );
 const period = getArg('period', process.env.SMOKE_TAX_PERIOD || '2026-06');
-const year = Number.parseInt(getArg('year', process.env.SMOKE_TAX_YEAR || '2026'), 10);
+const year = Number.parseInt(
+  getArg('year', process.env.SMOKE_TAX_YEAR || '2026'),
+  10,
+);
 const executeWithholdingDraft = hasFlag('execute-withholding-draft');
 const token = resolveToken();
 
@@ -66,6 +69,9 @@ if (!taxComplianceEnabled) {
 
 printLine('product access', 'tax-compliance-ec');
 
+const smokeIssuedAccessKey = `SMOKE-SRI-ISSUED-${period}`;
+const smokeReceivedAccessKey = `SMOKE-SRI-RECEIVED-${period}`;
+
 const purchaseEvidence = await apiRequest({
   baseUrl,
   path: taxPath('/purchase-expense-evidence'),
@@ -77,7 +83,7 @@ const purchaseEvidence = await apiRequest({
     supplierName: 'Proveedor smoke tributario',
     supplierTaxpayerId: '1790012345001',
     documentNumber: `SMOKE-${period}`,
-    documentCode: '01',
+    documentCode: smokeReceivedAccessKey,
     issuedAt: `${period}-15T00:00:00.000Z`,
     category: 'services',
     currency: 'USD',
@@ -89,6 +95,60 @@ const purchaseEvidence = await apiRequest({
   },
 });
 printLine('purchase evidence', purchaseEvidence.status);
+
+const sriImport = await apiRequest({
+  baseUrl,
+  path: taxPath('/sri-fiscal-evidence-import'),
+  token,
+  method: 'POST',
+  body: {
+    period,
+    year,
+    source: 'sri_report',
+    importedByEmail: 'smoke@saas-platform.dev',
+    vouchers: [
+      {
+        direction: 'issued',
+        voucherType: 'invoice',
+        accessKey: smokeIssuedAccessKey,
+        authorizationNumber: smokeIssuedAccessKey,
+        authorizationDate: `${period}-16T00:00:00.000Z`,
+        issuedAt: `${period}-16T00:00:00.000Z`,
+        emitterTaxpayerId: '1799999999001',
+        emitterName: 'Tenant smoke tributario',
+        receiverTaxpayerId: '1790012345001',
+        receiverName: 'Cliente smoke SRI',
+        documentNumber: `001-001-${String(year).slice(-2)}${period.slice(-2)}001`,
+        currency: 'USD',
+        subtotalInCents: 24000,
+        vatInCents: 2880,
+        totalInCents: 26880,
+        xmlReference: `smoke://tax-compliance/${period}/sri-issued.xml`,
+        rideReference: `smoke://tax-compliance/${period}/sri-issued.pdf`,
+      },
+      {
+        direction: 'received',
+        voucherType: 'invoice',
+        accessKey: smokeReceivedAccessKey,
+        authorizationNumber: smokeReceivedAccessKey,
+        authorizationDate: `${period}-15T00:00:00.000Z`,
+        issuedAt: `${period}-15T00:00:00.000Z`,
+        emitterTaxpayerId: '1790012345001',
+        emitterName: 'Proveedor smoke tributario',
+        receiverTaxpayerId: '1799999999001',
+        receiverName: 'Tenant smoke tributario',
+        documentNumber: `001-002-${String(year).slice(-2)}${period.slice(-2)}002`,
+        currency: 'USD',
+        subtotalInCents: 10000,
+        vatInCents: 1200,
+        totalInCents: 11200,
+        xmlReference: `smoke://tax-compliance/${period}/sri-received.xml`,
+        rideReference: `smoke://tax-compliance/${period}/sri-received.pdf`,
+      },
+    ],
+  },
+});
+printLine('sri import', `${sriImport.summary.totalVouchers} vouchers`);
 
 const [
   purchaseWorkspace,
@@ -112,6 +172,15 @@ const [
   accountingBridgeMapping,
   reviewAssistantPacket,
   closeoutReport,
+  sriEvidenceWorkspace,
+  sriPlatformReconciliation,
+  declarationFormCatalog,
+  declarationFormDraftPacket,
+  filingGuidePacket,
+  declarationArtifactExport,
+  accountingBridgeSuggestedAccounts,
+  growthReminderPacket,
+  accountingReadinessPacket,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -220,6 +289,55 @@ const [
     path: taxPath(`/period-closeout-report?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/sri-fiscal-evidence-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/sri-platform-reconciliation-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/declaration-form-catalog?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(
+      `/declaration-form-draft-packet?${periodQuery()}&formKey=iva`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/filing-guide-packet?${periodQuery()}&formKey=iva`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/declaration-artifact-export?${periodQuery()}&formKey=iva`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accounting-bridge-suggested-accounts?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(
+      `/growth-reminder-packet?year=${encodeURIComponent(String(year))}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accounting-readiness-packet?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus('purchase workspace', purchaseWorkspace.readinessStatus);
@@ -242,10 +360,43 @@ assertStatus(
   filingHandoff.status ?? filingHandoff.operationalCloseoutStatus,
 );
 assertStatus('annexes readiness', annexesReadiness.readinessStatus);
-assertStatus('accounting bridge preview', accountingBridgePreview.readinessStatus);
-assertStatus('accounting bridge mapping', accountingBridgeMapping.readinessStatus);
+assertStatus(
+  'accounting bridge preview',
+  accountingBridgePreview.readinessStatus,
+);
+assertStatus(
+  'accounting bridge mapping',
+  accountingBridgeMapping.readinessStatus,
+);
 assertStatus('review assistant packet', reviewAssistantPacket.readinessStatus);
 assertStatus('closeout report', closeoutReport.readinessStatus);
+assertStatus('sri evidence workspace', sriEvidenceWorkspace.readinessStatus);
+assertStatus(
+  'sri platform reconciliation',
+  sriPlatformReconciliation.readinessStatus,
+);
+assertStatus(
+  'declaration form catalog',
+  declarationFormCatalog.readinessStatus,
+);
+assertStatus(
+  'declaration form draft packet',
+  declarationFormDraftPacket.readinessStatus,
+);
+assertStatus('filing guide packet', filingGuidePacket.readinessStatus);
+assertStatus(
+  'declaration artifact export',
+  declarationArtifactExport.readinessStatus,
+);
+assertStatus(
+  'accounting bridge suggested accounts',
+  accountingBridgeSuggestedAccounts.summary,
+);
+assertStatus('growth reminder packet', growthReminderPacket.readinessStatus);
+assertStatus(
+  'accounting readiness packet',
+  accountingReadinessPacket.readinessStatus,
+);
 
 let mappedAccountingBridge = accountingBridgeMapping;
 
@@ -322,6 +473,21 @@ printLine(
   reviewAssistantPacket.contextSnapshot.accountingBridgeUnmappedHintCount ?? 0,
 );
 printLine('closeout report', closeoutReport.readinessStatus);
+printLine('sri evidence', sriEvidenceWorkspace.readinessStatus);
+printLine(
+  'sri reconciliation issues',
+  sriPlatformReconciliation.issueSummary.totalIssues,
+);
+printLine('declaration forms', declarationFormCatalog.forms.length);
+printLine('declaration draft', declarationFormDraftPacket.readinessStatus);
+printLine('filing guide steps', filingGuidePacket.steps.length);
+printLine('artifact export', declarationArtifactExport.readinessStatus);
+printLine(
+  'suggested accounts',
+  accountingBridgeSuggestedAccounts.summary.suggestionCount,
+);
+printLine('growth reminders', growthReminderPacket.summary.reminderCount);
+printLine('accounting readiness', accountingReadinessPacket.recommendation);
 printLine(
   'withholding execution',
   executionPacket?.withholdingDraft?.number ?? 'skipped',

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.91.0
+
+### Minor Changes
+
+- 82940b1: Extend Ecuador tax closeout with SRI declaration artifacts and add the Accounting intake product shell.
+
 ## 0.90.0
 
 ### Minor Changes

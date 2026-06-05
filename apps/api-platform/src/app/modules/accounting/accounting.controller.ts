@@ -16,10 +16,13 @@ import {
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
+  GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
+  RequestTenantAccountingPeriodCloseoutPacketUseCase,
 } from '@saas-platform/accounting-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
@@ -66,9 +69,22 @@ import {
   toAccountingLedgerPreviewWorkspaceResponseDto,
 } from './dto/accounting-ledger-preview-workspace.response';
 import {
+  AccountingPeriodCloseoutPacketResponseDto,
+  RequestAccountingPeriodCloseoutPacketRequestDto,
+  toAccountingPeriodCloseoutPacketResponseDto,
+} from './dto/accounting-period-closeout-packet.response';
+import {
+  AccountingPeriodCloseoutReportResponseDto,
+  toAccountingPeriodCloseoutReportResponseDto,
+} from './dto/accounting-period-closeout-report.response';
+import {
   AccountingPeriodCloseoutReadinessResponseDto,
   toAccountingPeriodCloseoutReadinessResponseDto,
 } from './dto/accounting-period-closeout-readiness.response';
+import {
+  AccountingTrialBalanceWorkspaceResponseDto,
+  toAccountingTrialBalanceWorkspaceResponseDto,
+} from './dto/accounting-trial-balance-workspace.response';
 
 @Controller('accounting/tenants')
 @UseGuards(
@@ -90,6 +106,9 @@ export class AccountingController {
     private readonly listTenantAccountingJournalRegistryUseCase: ListTenantAccountingJournalRegistryUseCase,
     private readonly getTenantAccountingLedgerRegistryWorkspaceUseCase: GetTenantAccountingLedgerRegistryWorkspaceUseCase,
     private readonly getTenantAccountingPeriodCloseoutReadinessUseCase: GetTenantAccountingPeriodCloseoutReadinessUseCase,
+    private readonly getTenantAccountingTrialBalanceWorkspaceUseCase: GetTenantAccountingTrialBalanceWorkspaceUseCase,
+    private readonly requestTenantAccountingPeriodCloseoutPacketUseCase: RequestTenantAccountingPeriodCloseoutPacketUseCase,
+    private readonly getTenantAccountingPeriodCloseoutReportUseCase: GetTenantAccountingPeriodCloseoutReportUseCase,
   ) {}
 
   @Get(':slug/intake-workspace')
@@ -346,6 +365,84 @@ export class AccountingController {
         });
 
       return toAccountingPeriodCloseoutReadinessResponseDto(readiness);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/trial-balance-workspace')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getTrialBalanceWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingTrialBalanceWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantAccountingTrialBalanceWorkspaceUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingTrialBalanceWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/period-closeout-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async requestPeriodCloseoutPacket(
+    @Param('slug') tenantSlug: string,
+    @Body() body: RequestAccountingPeriodCloseoutPacketRequestDto,
+  ): Promise<AccountingPeriodCloseoutPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantAccountingPeriodCloseoutPacketUseCase.execute({
+          tenantSlug,
+          period: body.period,
+          year: body.year,
+          decision: body.decision,
+          reviewerUserId: body.reviewerUserId ?? null,
+          reviewerEmail: body.reviewerEmail ?? null,
+          note: body.note ?? null,
+        });
+
+      return toAccountingPeriodCloseoutPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/period-closeout-report')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getPeriodCloseoutReport(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingPeriodCloseoutReportResponseDto> {
+    try {
+      const report =
+        await this.getTenantAccountingPeriodCloseoutReportUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingPeriodCloseoutReportResponseDto(report);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

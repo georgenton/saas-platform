@@ -8,7 +8,10 @@ import {
   AccountingJournalDraftPreviewResponse,
   AccountingLedgerRegistryWorkspaceResponse,
   AccountingLedgerPreviewWorkspaceResponse,
+  AccountingPeriodCloseoutPacketResponse,
+  AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
+  AccountingTrialBalanceWorkspaceResponse,
   AiActivityFeedResponse,
   AiActionCenterResponse,
   AiApprovalCapacityWorkspaceResponse,
@@ -139,6 +142,7 @@ import {
   TransitionEcuadorTaxWorkflowRequest,
   UpsertEcuadorTaxObligationSettingsRequest,
   RequestAccountingJournalDraftApprovalPacketRequest,
+  RequestAccountingPeriodCloseoutPacketRequest,
   CreateAccountingJournalEntriesRequest,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
@@ -1883,6 +1887,61 @@ export async function fetchAccountingPeriodCloseoutReadiness(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/period-closeout-readiness?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingTrialBalanceWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingTrialBalanceWorkspaceResponse> {
+  return request<AccountingTrialBalanceWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/trial-balance-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestAccountingPeriodCloseoutPacket(
+  token: string,
+  tenantSlug: string,
+  input: RequestAccountingPeriodCloseoutPacketRequest,
+): Promise<AccountingPeriodCloseoutPacketResponse> {
+  return request<AccountingPeriodCloseoutPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/period-closeout-packet`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingPeriodCloseoutReport(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingPeriodCloseoutReportResponse> {
+  return request<AccountingPeriodCloseoutReportResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/period-closeout-report?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

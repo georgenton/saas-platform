@@ -2060,6 +2060,109 @@ export interface AccountingPeriodCloseoutReadinessResponse {
   guardrails: string[];
 }
 
+export interface AccountingTrialBalanceWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  trialBalanceStatus: string;
+  accounts: Array<{
+    accountCode: string;
+    accountName: string;
+    category: string;
+    debitBalanceInCents: number;
+    creditBalanceInCents: number;
+    sourceJournalEntryIds: string[];
+  }>;
+  sections: Array<{
+    category: string;
+    accountCount: number;
+    debitBalanceInCents: number;
+    creditBalanceInCents: number;
+  }>;
+  summary: {
+    accountCount: number;
+    journalEntryCount: number;
+    totalDebitBalanceInCents: number;
+    totalCreditBalanceInCents: number;
+    balanced: boolean;
+    netIncomeInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface RequestAccountingPeriodCloseoutPacketRequest {
+  period: string;
+  year: number;
+  decision: 'approve' | 'request_changes';
+  reviewerUserId?: string | null;
+  reviewerEmail?: string | null;
+  note?: string | null;
+}
+
+export interface AccountingPeriodCloseoutPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  reviewerUserId: string | null;
+  reviewerEmail: string | null;
+  note: string | null;
+  readiness: AccountingPeriodCloseoutReadinessResponse;
+  trialBalance: AccountingTrialBalanceWorkspaceResponse;
+  approvals: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+  }>;
+  summary: {
+    readyApprovalCount: number;
+    needsReviewApprovalCount: number;
+    blockedApprovalCount: number;
+    journalEntryCount: number;
+    trialBalanceBalanced: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingPeriodCloseoutReportResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  reportStatus: string;
+  sections: Array<{
+    key: string;
+    title: string;
+    status: string;
+    metrics: Array<{
+      key: string;
+      label: string;
+      value: string | number | boolean | null;
+    }>;
+    notes: string[];
+  }>;
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    needsReviewSectionCount: number;
+    blockedSectionCount: number;
+    journalEntryCount: number;
+    trialBalanceAccountCount: number;
+    netIncomeInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxSriVoucherEvidenceResponse {
   evidenceId: string;
   direction: string;

@@ -1056,6 +1056,25 @@ readiness rather than ledgers or financial statements.
 Only introduce full `Accounting` after this product proves the need for formal
 ledgers, journal entries, bank reconciliation and financial statements.
 
+### Accounting foundation status
+
+`Accounting` has now graduated from future candidate into a first foundation
+product. Its current scope is intentionally operational and review-oriented:
+
+1. intake from `Tax Compliance EC` accounting readiness and bridge packets
+2. chart-of-accounts workspace over mapped tax bridge hints and suggested
+   accounts
+3. journal draft preview, human approval packet, and internal journal registry
+4. ledger registry derived from approved internal journal entries
+5. period closeout readiness across chart mapping, journals, ledger and tax
+   operational closeout
+6. trial balance workspace, accounting closeout packet, and closeout report
+   as internal period-close evidence
+
+Boundary: this foundation still does not perform bank reconciliation, lock
+periods, issue official financial statements, or replace professional
+accounting review.
+
 ## Stage 8: Clinics products
 
 ### Goal

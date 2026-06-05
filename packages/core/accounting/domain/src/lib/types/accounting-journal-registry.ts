@@ -143,3 +143,101 @@ export interface TenantAccountingPeriodCloseoutReadinessView {
   nextStep: string;
   guardrails: string[];
 }
+
+export interface TenantAccountingTrialBalanceWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: AccountingReadinessStatus;
+  trialBalanceStatus: 'ready_for_review' | 'needs_ledger_review' | 'blocked';
+  accounts: Array<{
+    accountCode: string;
+    accountName: string;
+    category: AccountingAccountCategory;
+    debitBalanceInCents: number;
+    creditBalanceInCents: number;
+    sourceJournalEntryIds: string[];
+  }>;
+  sections: Array<{
+    category: AccountingAccountCategory;
+    accountCount: number;
+    debitBalanceInCents: number;
+    creditBalanceInCents: number;
+  }>;
+  summary: {
+    accountCount: number;
+    journalEntryCount: number;
+    totalDebitBalanceInCents: number;
+    totalCreditBalanceInCents: number;
+    balanced: boolean;
+    netIncomeInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingPeriodCloseoutPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus:
+    | 'approved_for_closeout'
+    | 'needs_review'
+    | 'blocked'
+    | 'changes_requested';
+  reviewerUserId: string | null;
+  reviewerEmail: string | null;
+  note: string | null;
+  readiness: TenantAccountingPeriodCloseoutReadinessView;
+  trialBalance: TenantAccountingTrialBalanceWorkspaceView;
+  approvals: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+  }>;
+  summary: {
+    readyApprovalCount: number;
+    needsReviewApprovalCount: number;
+    blockedApprovalCount: number;
+    journalEntryCount: number;
+    trialBalanceBalanced: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingPeriodCloseoutReportView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  reportStatus: 'ready' | 'needs_review' | 'blocked';
+  sections: Array<{
+    key: string;
+    title: string;
+    status: AccountingReadinessStatus;
+    metrics: Array<{
+      key: string;
+      label: string;
+      value: string | number | boolean | null;
+    }>;
+    notes: string[];
+  }>;
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    needsReviewSectionCount: number;
+    blockedSectionCount: number;
+    journalEntryCount: number;
+    trialBalanceAccountCount: number;
+    netIncomeInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}

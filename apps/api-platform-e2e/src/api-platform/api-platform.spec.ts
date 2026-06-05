@@ -199,6 +199,7 @@ import {
   ACCOUNTING_PERMISSIONS,
   CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
+  GetTenantAccountingAuditTrailWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
@@ -210,9 +211,12 @@ import {
   GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingJournalRegistryUseCase,
+  ListTenantAccountingPeriodLockRegistryUseCase,
+  LockTenantAccountingPeriodUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
+  RequestTenantAccountingPeriodReopenPacketUseCase,
 } from '@saas-platform/accounting-application';
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
@@ -1026,6 +1030,14 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let getTenantAccountingFinancialStatementPreviewUseCase: {
+    execute: jest.Mock;
+  };
+  let listTenantAccountingPeriodLockRegistryUseCase: { execute: jest.Mock };
+  let lockTenantAccountingPeriodUseCase: { execute: jest.Mock };
+  let requestTenantAccountingPeriodReopenPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingAuditTrailWorkspaceUseCase: {
     execute: jest.Mock;
   };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
@@ -4672,6 +4684,142 @@ describe('API', () => {
     blockers: [],
     nextStep: 'Revisar previews financieros con contador.',
     guardrails: ['Preview financiero interno.'],
+  };
+  const accountingPeriodControl = {
+    id: 'period_control_001',
+    tenantId: 'tenant_123',
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    status: 'locked' as const,
+    action: 'locked' as const,
+    actionByUserId: 'user_123',
+    actionByEmail: 'hello@saas-platform.dev',
+    actionAt: taxComplianceGeneratedAt,
+    reason: 'Lock interno desde e2e.',
+    evidenceReference: 'accounting-closeout://2026-06',
+    blockers: [],
+    snapshot: {
+      lockReadinessStatus: 'ready_to_lock',
+      closeoutReportStatus: 'ready',
+      journalEntryCount: 1,
+      trialBalanceBalanced: true,
+      financialPreviewStatus: 'ready_for_review',
+    },
+    impactChecklist: ['Reopen requerido para nuevos ajustes.'],
+    createdAt: taxComplianceGeneratedAt,
+    updatedAt: taxComplianceGeneratedAt,
+  };
+  const accountingPeriodLockRegistry = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    registryStatus: 'locked' as const,
+    latestControl: accountingPeriodControl,
+    controls: [accountingPeriodControl],
+    lockReadiness: accountingPeriodLockReadiness,
+    summary: {
+      controlCount: 1,
+      lockCount: 1,
+      reopenCount: 0,
+      journalEntryCount: 1,
+      readyLockCheckCount: 2,
+      blockedLockCheckCount: 0,
+    },
+    blockers: ['accounting.period_control.period_locked'],
+    nextStep: 'Periodo bloqueado internamente; solicitar reopen para nuevos ajustes.',
+    guardrails: ['Lock registry es control interno.'],
+  };
+  const accountingPeriodLockResult = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    lockStatus: 'locked' as const,
+    control: accountingPeriodControl,
+    registry: accountingPeriodLockRegistry,
+    blockers: [],
+    nextStep: 'Mantener audit trail y usar reopen packet si aparece una correccion.',
+    guardrails: ['Lock interno no es cierre legal de libros.'],
+  };
+  const accountingPeriodReopenPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    reopenStatus: 'reopened' as const,
+    control: {
+      ...accountingPeriodControl,
+      id: 'period_control_002',
+      status: 'reopened' as const,
+      action: 'reopened' as const,
+      reason: 'Correccion posterior al cierre.',
+      evidenceReference: 'accounting-reopen://2026-06',
+    },
+    latestLock: accountingPeriodControl,
+    impactChecklist: [
+      {
+        key: 'journal_registry',
+        label: 'Journal registry',
+        status: 'ready' as const,
+        detail: '1 journal entries podrian cambiar tras reopen.',
+      },
+    ],
+    summary: {
+      impactCount: 1,
+      blockedImpactCount: 0,
+      journalEntryCount: 1,
+      latestStatus: 'locked' as const,
+    },
+    blockers: [],
+    nextStep: 'Periodo reabierto; registrar ajustes y volver a evaluar lock.',
+    guardrails: ['Reopen no elimina locks anteriores.'],
+  };
+  const accountingAuditTrailWorkspace = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    auditStatus: 'ready' as const,
+    timeline: [
+      {
+        eventKey: 'journal:journal_entry_001',
+        eventType: 'journal_entry_created',
+        source: 'journal_registry' as const,
+        status: 'approved',
+        actorEmail: 'hello@saas-platform.dev',
+        occurredAt: taxComplianceGeneratedAt,
+        summary: 'Ventas locales: 25000/25000',
+        metadata: {
+          journalEntryId: 'journal_entry_001',
+          balanced: true,
+        },
+      },
+      {
+        eventKey: 'control:period_control_001',
+        eventType: 'period_locked',
+        source: 'period_control' as const,
+        status: 'locked',
+        actorEmail: 'hello@saas-platform.dev',
+        occurredAt: taxComplianceGeneratedAt,
+        summary: 'Lock interno desde e2e.',
+        metadata: {
+          controlId: 'period_control_001',
+          action: 'locked',
+        },
+      },
+    ],
+    summary: {
+      eventCount: 2,
+      journalEventCount: 1,
+      controlEventCount: 1,
+      lockedCount: 1,
+      reopenedCount: 0,
+    },
+    blockers: [],
+    nextStep: 'Usar audit trail como bitacora del cierre interno.',
+    guardrails: ['Audit trail interno.'],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
@@ -13414,6 +13562,18 @@ describe('API', () => {
     getTenantAccountingFinancialStatementPreviewUseCase = {
       execute: jest.fn().mockResolvedValue(accountingFinancialStatementPreview),
     };
+    listTenantAccountingPeriodLockRegistryUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingPeriodLockRegistry),
+    };
+    lockTenantAccountingPeriodUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingPeriodLockResult),
+    };
+    requestTenantAccountingPeriodReopenPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingPeriodReopenPacket),
+    };
+    getTenantAccountingAuditTrailWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingAuditTrailWorkspace),
+    };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
     };
@@ -14044,6 +14204,14 @@ describe('API', () => {
       .useValue(createTenantAccountingAdjustingJournalEntryUseCase)
       .overrideProvider(GetTenantAccountingFinancialStatementPreviewUseCase)
       .useValue(getTenantAccountingFinancialStatementPreviewUseCase)
+      .overrideProvider(ListTenantAccountingPeriodLockRegistryUseCase)
+      .useValue(listTenantAccountingPeriodLockRegistryUseCase)
+      .overrideProvider(LockTenantAccountingPeriodUseCase)
+      .useValue(lockTenantAccountingPeriodUseCase)
+      .overrideProvider(RequestTenantAccountingPeriodReopenPacketUseCase)
+      .useValue(requestTenantAccountingPeriodReopenPacketUseCase)
+      .overrideProvider(GetTenantAccountingAuditTrailWorkspaceUseCase)
+      .useValue(getTenantAccountingAuditTrailWorkspaceUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -18311,6 +18479,147 @@ describe('API', () => {
 
     expect(
       getTenantAccountingFinancialStatementPreviewUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/period-lock-registry should return period controls', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/period-lock-registry?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      registryStatus: 'locked',
+      latestControl: {
+        id: 'period_control_001',
+        status: 'locked',
+      },
+      summary: {
+        controlCount: 1,
+      },
+    });
+
+    expect(
+      listTenantAccountingPeriodLockRegistryUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/period-lock should persist period locks', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/period-lock')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        lockedByUserId: 'user_123',
+        lockedByEmail: 'hello@saas-platform.dev',
+        reason: 'Cierre interno aprobado desde e2e.',
+        evidenceReference: 'closeout_packet_001',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      lockStatus: 'locked',
+      control: {
+        id: 'period_control_001',
+        status: 'locked',
+      },
+      registry: {
+        registryStatus: 'locked',
+      },
+    });
+
+    expect(lockTenantAccountingPeriodUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      lockedByUserId: 'user_123',
+      lockedByEmail: 'hello@saas-platform.dev',
+      reason: 'Cierre interno aprobado desde e2e.',
+      evidenceReference: 'closeout_packet_001',
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/period-reopen-packet should return reopen packets', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/period-reopen-packet')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        decision: 'reopen',
+        reason: 'Correccion posterior al cierre.',
+        evidenceReference: 'reopen_ticket_001',
+        reopenedByUserId: 'user_123',
+        reopenedByEmail: 'hello@saas-platform.dev',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      reopenStatus: 'reopened',
+      control: {
+        id: 'period_control_002',
+        status: 'reopened',
+      },
+      latestLock: {
+        id: 'period_control_001',
+      },
+    });
+
+    expect(
+      requestTenantAccountingPeriodReopenPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      decision: 'reopen',
+      reason: 'Correccion posterior al cierre.',
+      evidenceReference: 'reopen_ticket_001',
+      reopenedByUserId: 'user_123',
+      reopenedByEmail: 'hello@saas-platform.dev',
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/audit-trail-workspace should return accounting audit timelines', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/audit-trail-workspace?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      auditStatus: 'ready',
+      summary: {
+        eventCount: 2,
+        lockedCount: 1,
+      },
+      timeline: [
+        {
+          eventType: 'journal_entry_created',
+        },
+        {
+          eventType: 'period_locked',
+        },
+      ],
+    });
+
+    expect(
+      getTenantAccountingAuditTrailWorkspaceUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',

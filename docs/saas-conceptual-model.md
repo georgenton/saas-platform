@@ -1072,10 +1072,13 @@ product. Its current scope is intentionally operational and review-oriented:
    as internal period-close evidence
 7. period lock readiness, adjusting journal entries, and financial statement
    previews as the next pre-close operating layer
+8. period lock registry, reopen packets, and audit trail workspace as the first
+   persisted period-control layer
 
 Boundary: this foundation still does not perform bank reconciliation, lock
-periods in a persisted legal state, issue official financial statements, or
-replace professional accounting review.
+official legal books, issue official financial statements, or replace
+professional accounting review. Period locks are internal operational controls
+with auditable reopen packets, not formal statutory closure.
 
 ## Stage 8: Clinics products
 

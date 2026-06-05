@@ -333,3 +333,129 @@ export interface TenantAccountingFinancialStatementPreviewView {
   nextStep: string;
   guardrails: string[];
 }
+
+export type AccountingPeriodControlStatus =
+  | 'open'
+  | 'ready_to_lock'
+  | 'locked'
+  | 'reopened';
+
+export type AccountingPeriodControlAction =
+  | 'lock_requested'
+  | 'locked'
+  | 'reopen_requested'
+  | 'reopened';
+
+export interface TenantAccountingPeriodControlView {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  status: AccountingPeriodControlStatus;
+  action: AccountingPeriodControlAction;
+  actionByUserId: string | null;
+  actionByEmail: string | null;
+  actionAt: Date;
+  reason: string | null;
+  evidenceReference: string | null;
+  blockers: string[];
+  snapshot: {
+    lockReadinessStatus?: string;
+    closeoutReportStatus?: string;
+    journalEntryCount?: number;
+    trialBalanceBalanced?: boolean;
+    financialPreviewStatus?: string;
+  };
+  impactChecklist: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TenantAccountingPeriodLockRegistryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  registryStatus: AccountingPeriodControlStatus;
+  latestControl: TenantAccountingPeriodControlView | null;
+  controls: TenantAccountingPeriodControlView[];
+  lockReadiness: TenantAccountingPeriodLockReadinessView;
+  summary: {
+    controlCount: number;
+    lockCount: number;
+    reopenCount: number;
+    journalEntryCount: number;
+    readyLockCheckCount: number;
+    blockedLockCheckCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingPeriodLockResultView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  lockStatus: 'locked' | 'blocked';
+  control: TenantAccountingPeriodControlView | null;
+  registry: TenantAccountingPeriodLockRegistryView;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingPeriodReopenPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  reopenStatus: 'ready_to_reopen' | 'reopened' | 'blocked';
+  control: TenantAccountingPeriodControlView | null;
+  latestLock: TenantAccountingPeriodControlView | null;
+  impactChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+  }>;
+  summary: {
+    impactCount: number;
+    blockedImpactCount: number;
+    journalEntryCount: number;
+    latestStatus: AccountingPeriodControlStatus;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAuditTrailWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  auditStatus: 'ready' | 'empty' | 'needs_review';
+  timeline: Array<{
+    eventKey: string;
+    eventType: string;
+    source: 'journal_registry' | 'period_control';
+    status: string;
+    actorEmail: string | null;
+    occurredAt: Date;
+    summary: string;
+    metadata: Record<string, string | number | boolean | null>;
+  }>;
+  summary: {
+    eventCount: number;
+    journalEventCount: number;
+    controlEventCount: number;
+    lockedCount: number;
+    reopenedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}

@@ -13,7 +13,11 @@ import {
   AccountingPeriodCloseoutPacketResponse,
   AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
+  AccountingPeriodLockRegistryResponse,
   AccountingPeriodLockReadinessResponse,
+  AccountingPeriodLockResultResponse,
+  AccountingPeriodReopenPacketResponse,
+  AccountingAuditTrailWorkspaceResponse,
   AccountingTrialBalanceWorkspaceResponse,
   AiActivityFeedResponse,
   AiActionCenterResponse,
@@ -146,6 +150,8 @@ import {
   UpsertEcuadorTaxObligationSettingsRequest,
   RequestAccountingJournalDraftApprovalPacketRequest,
   RequestAccountingPeriodCloseoutPacketRequest,
+  RequestAccountingPeriodReopenPacketRequest,
+  LockAccountingPeriodRequest,
   CreateAccountingAdjustingJournalEntryRequest,
   CreateAccountingJournalEntriesRequest,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
@@ -1974,6 +1980,57 @@ export async function fetchAccountingPeriodLockReadiness(
   );
 }
 
+export async function fetchAccountingPeriodLockRegistry(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingPeriodLockRegistryResponse> {
+  return request<AccountingPeriodLockRegistryResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/period-lock-registry?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function lockAccountingPeriod(
+  token: string,
+  tenantSlug: string,
+  input: LockAccountingPeriodRequest,
+): Promise<AccountingPeriodLockResultResponse> {
+  return request<AccountingPeriodLockResultResponse>(
+    `/accounting/tenants/${encodeURIComponent(tenantSlug)}/period-lock`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestAccountingPeriodReopenPacket(
+  token: string,
+  tenantSlug: string,
+  input: RequestAccountingPeriodReopenPacketRequest,
+): Promise<AccountingPeriodReopenPacketResponse> {
+  return request<AccountingPeriodReopenPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/period-reopen-packet`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
 export async function createAccountingAdjustingJournalEntry(
   token: string,
   tenantSlug: string,
@@ -1986,6 +2043,25 @@ export async function createAccountingAdjustingJournalEntry(
     {
       body: input,
       method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingAuditTrailWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingAuditTrailWorkspaceResponse> {
+  return request<AccountingAuditTrailWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/audit-trail-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
       token,
     },
   );

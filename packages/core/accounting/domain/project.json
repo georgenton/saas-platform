@@ -1,0 +1,7 @@
+{
+  "name": "accounting-domain",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/accounting/domain/src",
+  "projectType": "library",
+  "tags": ["scope:core", "domain:accounting", "type:domain", "layer:domain"]
+}

@@ -3,6 +3,7 @@ import { PrismaModule } from '@saas-platform/infra-prisma';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AiModule } from './modules/ai/ai.module';
+import { AccountingModule } from './modules/accounting/accounting.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { CommercialModule } from './modules/commercial/commercial.module';
@@ -19,6 +20,7 @@ import { TenancyModule } from './modules/tenancy/tenancy.module';
   imports: [
     PrismaModule,
     AiModule,
+    AccountingModule,
     AuthModule,
     CatalogModule,
     CommercialModule,

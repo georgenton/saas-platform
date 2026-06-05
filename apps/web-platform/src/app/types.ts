@@ -1666,6 +1666,12 @@ export interface EcuadorTaxPeriodCloseoutReportResponse {
     accountingPreviewEntries: number;
     accountingMappedHints: number;
     accountingUnmappedHints: number;
+    sriImportedVouchers: number;
+    sriReconciliationIssues: number;
+    declarationForms: number;
+    declarationDraftBoxes: number;
+    filingGuideSteps: number;
+    declarationArtifacts: number;
     auditEventCount: number;
   };
   filingHandoffStatus: string | null;

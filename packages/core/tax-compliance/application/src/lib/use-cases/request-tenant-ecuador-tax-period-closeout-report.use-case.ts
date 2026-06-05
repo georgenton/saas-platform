@@ -4,13 +4,19 @@ import {
 } from '@saas-platform/tax-compliance-domain';
 import { GetTenantEcuadorTaxAnnexesReadinessUseCase } from './get-tenant-ecuador-tax-annexes-readiness.use-case';
 import { GetTenantEcuadorTaxAccountingBridgeMappingUseCase } from './get-tenant-ecuador-tax-accounting-bridge-mapping.use-case';
+import { GetTenantEcuadorTaxDeclarationFormCatalogUseCase } from './get-tenant-ecuador-tax-declaration-form-catalog.use-case';
 import { GetTenantEcuadorTaxFilingHandoffUseCase } from './get-tenant-ecuador-tax-filing-handoff.use-case';
 import { GetTenantEcuadorTaxOperationalCloseoutUseCase } from './get-tenant-ecuador-tax-operational-closeout.use-case';
 import { GetTenantEcuadorTaxPeriodEvidenceVaultUseCase } from './get-tenant-ecuador-tax-period-evidence-vault.use-case';
+import { GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase } from './get-tenant-ecuador-tax-sri-fiscal-evidence-workspace.use-case';
+import { GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase } from './get-tenant-ecuador-tax-sri-platform-reconciliation-workspace.use-case';
 import { GetTenantEcuadorTaxVatDeclarationApprovalUseCase } from './get-tenant-ecuador-tax-vat-declaration-approval.use-case';
 import { GetTenantEcuadorTaxWithholdingRegistryUseCase } from './get-tenant-ecuador-tax-withholding-registry.use-case';
 import { ListTenantEcuadorTaxComplianceEventsUseCase } from './list-tenant-ecuador-tax-compliance-events.use-case';
 import { RecordTenantEcuadorTaxComplianceEventUseCase } from './record-tenant-ecuador-tax-compliance-event.use-case';
+import { RequestTenantEcuadorTaxDeclarationArtifactExportUseCase } from './request-tenant-ecuador-tax-declaration-artifact-export.use-case';
+import { RequestTenantEcuadorTaxDeclarationFormDraftPacketUseCase } from './request-tenant-ecuador-tax-declaration-form-draft-packet.use-case';
+import { RequestTenantEcuadorTaxFilingGuidePacketUseCase } from './request-tenant-ecuador-tax-filing-guide-packet.use-case';
 import { RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase } from './request-tenant-ecuador-tax-income-tax-evidence-packet.use-case';
 import { RequestTenantEcuadorTaxSalesBookUseCase } from './request-tenant-ecuador-tax-sales-book.use-case';
 
@@ -25,6 +31,12 @@ export class RequestTenantEcuadorTaxPeriodCloseoutReportUseCase {
     private readonly getTenantEcuadorTaxFilingHandoffUseCase: GetTenantEcuadorTaxFilingHandoffUseCase,
     private readonly getTenantEcuadorTaxAnnexesReadinessUseCase: GetTenantEcuadorTaxAnnexesReadinessUseCase,
     private readonly getTenantEcuadorTaxAccountingBridgeMappingUseCase: GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
+    private readonly getTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase: GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+    private readonly getTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase: GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
+    private readonly getTenantEcuadorTaxDeclarationFormCatalogUseCase: GetTenantEcuadorTaxDeclarationFormCatalogUseCase,
+    private readonly requestTenantEcuadorTaxDeclarationFormDraftPacketUseCase: RequestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+    private readonly requestTenantEcuadorTaxFilingGuidePacketUseCase: RequestTenantEcuadorTaxFilingGuidePacketUseCase,
+    private readonly requestTenantEcuadorTaxDeclarationArtifactExportUseCase: RequestTenantEcuadorTaxDeclarationArtifactExportUseCase,
     private readonly listTenantEcuadorTaxComplianceEventsUseCase: ListTenantEcuadorTaxComplianceEventsUseCase,
     private readonly recordTenantEcuadorTaxComplianceEventUseCase: RecordTenantEcuadorTaxComplianceEventUseCase,
     private readonly nowProvider: () => Date = () => new Date(),
@@ -46,6 +58,12 @@ export class RequestTenantEcuadorTaxPeriodCloseoutReportUseCase {
       filingHandoff,
       annexesReadiness,
       accountingBridgeMapping,
+      sriEvidenceWorkspace,
+      sriPlatformReconciliation,
+      declarationFormCatalog,
+      declarationFormDraftPacket,
+      filingGuidePacket,
+      declarationArtifactExport,
       events,
     ] = await Promise.all([
       this.requestTenantEcuadorTaxSalesBookUseCase.execute({
@@ -72,6 +90,35 @@ export class RequestTenantEcuadorTaxPeriodCloseoutReportUseCase {
         recordEvent: false,
       }),
       this.getTenantEcuadorTaxAccountingBridgeMappingUseCase.execute(input),
+      this.getTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase.execute({
+        ...input,
+        recordEvent: false,
+      }),
+      this.getTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase.execute(
+        {
+          ...input,
+          recordEvent: false,
+        },
+      ),
+      this.getTenantEcuadorTaxDeclarationFormCatalogUseCase.execute({
+        ...input,
+        recordEvent: false,
+      }),
+      this.requestTenantEcuadorTaxDeclarationFormDraftPacketUseCase.execute({
+        ...input,
+        formKey: 'iva',
+        recordEvent: false,
+      }),
+      this.requestTenantEcuadorTaxFilingGuidePacketUseCase.execute({
+        ...input,
+        formKey: 'iva',
+        recordEvent: false,
+      }),
+      this.requestTenantEcuadorTaxDeclarationArtifactExportUseCase.execute({
+        ...input,
+        formKey: 'iva',
+        recordEvent: false,
+      }),
       this.listTenantEcuadorTaxComplianceEventsUseCase.execute({
         tenantSlug: input.tenantSlug,
         period: input.period,
@@ -143,6 +190,57 @@ export class RequestTenantEcuadorTaxPeriodCloseoutReportUseCase {
           accountingBridgeMapping.summary.unmappedHintCount,
         artifactCount: accountingBridgeMapping.rows.length,
       },
+      {
+        key: 'sri_evidence',
+        label: 'Evidencia SRI',
+        readinessStatus: sriEvidenceWorkspace.readinessStatus,
+        summary: `${sriEvidenceWorkspace.summary.totalVouchers} comprobantes SRI importados.`,
+        blockerCount: sriEvidenceWorkspace.blockers.length,
+        artifactCount: sriEvidenceWorkspace.voucherRows.length,
+      },
+      {
+        key: 'sri_platform_reconciliation',
+        label: 'Reconciliacion SRI vs plataforma',
+        readinessStatus: sriPlatformReconciliation.readinessStatus,
+        summary: `${sriPlatformReconciliation.issueSummary.totalIssues} diferencias detectadas.`,
+        blockerCount: sriPlatformReconciliation.issueSummary.blockingIssues,
+        artifactCount: sriPlatformReconciliation.issues.length,
+      },
+      {
+        key: 'declaration_forms',
+        label: 'Formularios',
+        readinessStatus: declarationFormCatalog.readinessStatus,
+        summary: `${declarationFormCatalog.forms.length} formularios catalogados para el contribuyente.`,
+        blockerCount: declarationFormCatalog.forms.reduce(
+          (total, form) => total + form.blockers.length,
+          0,
+        ),
+        artifactCount: declarationFormCatalog.forms.length,
+      },
+      {
+        key: 'declaration_draft',
+        label: 'Borrador IVA',
+        readinessStatus: declarationFormDraftPacket.readinessStatus,
+        summary: `${declarationFormDraftPacket.suggestedBoxes.length} casilleros sugeridos.`,
+        blockerCount: declarationFormDraftPacket.blockers.length,
+        artifactCount: declarationFormDraftPacket.suggestedBoxes.length,
+      },
+      {
+        key: 'filing_guide',
+        label: 'Guia de presentacion',
+        readinessStatus: filingGuidePacket.readinessStatus,
+        summary: `${filingGuidePacket.steps.length} pasos guiados manuales.`,
+        blockerCount: filingGuidePacket.blockedCapabilities.length,
+        artifactCount: filingGuidePacket.steps.length,
+      },
+      {
+        key: 'artifact_export',
+        label: 'Export asistido',
+        readinessStatus: declarationArtifactExport.readinessStatus,
+        summary: `${declarationArtifactExport.artifacts.length} artefactos de soporte.`,
+        blockerCount: declarationArtifactExport.blockedCapabilities.length,
+        artifactCount: declarationArtifactExport.artifacts.length,
+      },
     ];
     const blockers = [
       ...salesBook.blockers,
@@ -154,6 +252,14 @@ export class RequestTenantEcuadorTaxPeriodCloseoutReportUseCase {
       ...operationalCloseout.blockers,
       ...filingHandoff.blockers,
       ...accountingBridgeMapping.blockers,
+      ...sriEvidenceWorkspace.blockers,
+      ...sriPlatformReconciliation.issues
+        .filter((issue) => issue.severity === 'blocking')
+        .map((issue) => issue.key),
+      ...declarationFormCatalog.forms.flatMap((form) => form.blockers),
+      ...declarationFormDraftPacket.blockers,
+      ...filingGuidePacket.blockedCapabilities,
+      ...declarationArtifactExport.blockedCapabilities,
       ...Array.from(
         { length: accountingBridgeMapping.summary.unmappedHintCount },
         (_, index) => `accounting_bridge.unmapped_hint_${index + 1}`,
@@ -177,10 +283,18 @@ export class RequestTenantEcuadorTaxPeriodCloseoutReportUseCase {
         annexesApplicable: annexesReadiness.annexes.filter(
           (annex) => annex.applies,
         ).length,
-        accountingPreviewEntries: accountingBridgeMapping.summary.previewEntryCount,
+        accountingPreviewEntries:
+          accountingBridgeMapping.summary.previewEntryCount,
         accountingMappedHints: accountingBridgeMapping.summary.mappedHintCount,
         accountingUnmappedHints:
           accountingBridgeMapping.summary.unmappedHintCount,
+        sriImportedVouchers: sriEvidenceWorkspace.summary.totalVouchers,
+        sriReconciliationIssues:
+          sriPlatformReconciliation.issueSummary.totalIssues,
+        declarationForms: declarationFormCatalog.forms.length,
+        declarationDraftBoxes: declarationFormDraftPacket.suggestedBoxes.length,
+        filingGuideSteps: filingGuidePacket.steps.length,
+        declarationArtifacts: declarationArtifactExport.artifacts.length,
         auditEventCount: events.length,
       },
       filingHandoffStatus: filingHandoff.status,
@@ -189,6 +303,8 @@ export class RequestTenantEcuadorTaxPeriodCloseoutReportUseCase {
       accountantQuestions: [
         ...vatApproval.draft.accountantQuestions,
         ...incomeTaxEvidence.accountantQuestions,
+        ...declarationFormDraftPacket.accountantReview.suggestedQuestions,
+        ...filingGuidePacket.accountantQuestions,
         accountingBridgeMapping.summary.unmappedHintCount > 0
           ? 'Que cuentas contables deben asignarse a los hints tributarios pendientes?'
           : 'El mapping contable tributario es suficiente para el cierre del periodo?',

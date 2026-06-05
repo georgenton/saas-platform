@@ -1,4 +1,8 @@
-export type AiDomainKey = 'growth' | 'invoicing' | 'ecommerce';
+export type AiDomainKey =
+  | 'growth'
+  | 'invoicing'
+  | 'ecommerce'
+  | 'tax-compliance';
 
 export type AiAgentAvailability = 'ready' | 'planned';
 

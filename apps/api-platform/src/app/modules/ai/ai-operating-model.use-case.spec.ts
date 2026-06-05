@@ -198,15 +198,44 @@ describe('AI operating model use case', () => {
             rollbackActionLabel: 'Rollback launch publish',
           },
         }),
+        expect.objectContaining({
+          agent: expect.objectContaining({
+            key: 'tax-compliance-ec-review-assistant',
+            domainKey: 'tax-compliance',
+          }),
+          requiredPermissionKey: 'tax-compliance.ec.read',
+          primarySurface: {
+            key: 'tax_compliance_ec_review_packet',
+            title: 'Tax Compliance EC review packet',
+            sourceContractKey: 'tax_compliance.ec.review_assistant_packet',
+          },
+          promptPack: expect.objectContaining({
+            key: 'tax-compliance-ec-review-assistant-core',
+            version: 'v1',
+          }),
+          primaryApprovalPolicyKey:
+            'tax-compliance-ec-review-assistant-suggestion-review',
+          toolAccess: expect.arrayContaining([
+            expect.objectContaining({
+              accessLevel: 'approval_required',
+              tool: expect.objectContaining({
+                key: 'tax_compliance_ec_review_briefing',
+                actionKind: 'propose',
+              }),
+            }),
+          ]),
+          guardedExecutionCandidateToolKey: null,
+          guardedExecutionCandidate: null,
+        }),
       ]),
       counts: {
-        totalAgents: 3,
-        readyAgents: 3,
+        totalAgents: 4,
+        readyAgents: 4,
         plannedAgents: 0,
-        agentsWithApprovalPolicies: 3,
+        agentsWithApprovalPolicies: 4,
         agentsWithGuardedExecutionCandidate: 3,
-        totalToolAccessEntries: 7,
-        approvalRequiredToolAccessEntries: 2,
+        totalToolAccessEntries: 8,
+        approvalRequiredToolAccessEntries: 3,
         blockedToolAccessEntries: 3,
       },
     });

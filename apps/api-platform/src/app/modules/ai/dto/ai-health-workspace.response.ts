@@ -10,7 +10,7 @@ import {
 export interface AiHealthWorkspaceAgentResponseDto {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: string;
   status: 'healthy' | 'warning' | 'critical';
   pendingApprovalRequestsCount: number;
   reviewableSuggestionRunsCount: number;
@@ -51,7 +51,7 @@ export function toAiHealthWorkspaceResponseDto(input: {
   agents: Array<{
     agentKey: string;
     title: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     status: 'healthy' | 'warning' | 'critical';
     pendingApprovalRequestsCount: number;
     reviewableSuggestionRunsCount: number;

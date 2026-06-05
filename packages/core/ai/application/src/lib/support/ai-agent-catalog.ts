@@ -48,6 +48,17 @@ export const AI_AGENT_CATALOG: AiAgentCatalogEntry[] = [
     defaultMode: 'suggestion',
     supportedSurfaceKeys: ['ecommerce_launch_workspace'],
   },
+  {
+    key: 'tax-compliance-ec-review-assistant',
+    title: 'Tax Compliance EC Review Assistant',
+    summary:
+      'Turns deterministic Ecuador tax compliance packets into review guidance without replacing accountant validation or SRI filing.',
+    domainKey: 'tax-compliance',
+    productKey: 'tax-compliance-ec',
+    availability: 'ready',
+    defaultMode: 'suggestion',
+    supportedSurfaceKeys: ['tax_compliance_ec_review_packet'],
+  },
 ];
 
 const AI_AGENT_OPERATING_MODEL_METADATA: Record<
@@ -108,6 +119,24 @@ const AI_AGENT_OPERATING_MODEL_METADATA: Record<
       key: 'ecommerce_launch_workspace',
       title: 'Ecommerce launch workspace',
       sourceContractKey: 'ecommerce.launch.workspace',
+    },
+  },
+  'tax-compliance-ec-review-assistant': {
+    requiredPermissionKey: 'tax-compliance.ec.read',
+    handoffContract: {
+      requestApprovalRationale:
+        'Solicitar revision humana antes de usar la sugerencia del asistente tributario.',
+      reviewNotes: {
+        approved:
+          'Aprobado desde la consola transversal de AI para Tax Compliance EC Review Assistant.',
+        rejected:
+          'Rechazado desde la consola transversal de AI para Tax Compliance EC Review Assistant.',
+      },
+    },
+    primarySurface: {
+      key: 'tax_compliance_ec_review_packet',
+      title: 'Tax Compliance EC review packet',
+      sourceContractKey: 'tax_compliance.ec.review_assistant_packet',
     },
   },
 };
@@ -509,6 +538,57 @@ export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
       ],
     },
   },
+  {
+    key: 'tax_compliance_ec_review_briefing',
+    title: 'Tax Compliance EC review briefing',
+    summary:
+      'Prepares advisory risk summaries, accountant questions, and evidence checklists from deterministic Ecuador tax compliance packets.',
+    domainKey: 'tax-compliance',
+    availability: 'ready',
+    riskLevel: 'medium',
+    actionKind: 'propose',
+    requiresApproval: true,
+    inputContract: {
+      sourceSurfaceKeys: ['tax_compliance_ec_review_packet'],
+      primaryPayload:
+        'Tenant-scoped Ecuador tax review assistant packet with deterministic readiness, evidence, closeout, and accounting-bridge signals.',
+      requiredContext: [
+        'readiness status',
+        'risk signals',
+        'accountant questions',
+        'evidence checklist',
+        'accounting bridge mapping',
+      ],
+    },
+    outputContract: {
+      primaryArtifact:
+        'Tax review brief with risk summary, accountant questions, evidence gaps, and next steps.',
+      suggestedOutputKeys: [
+        'tax_risk_summary',
+        'accountant_question_pack',
+        'evidence_gap_checklist',
+        'owner_explanation',
+        'pre_filing_next_steps',
+      ],
+      humanReviewFocus: [
+        'Confirm the suggestion is grounded only in deterministic tax packets.',
+        'Verify it does not present declarations, calculate official forms, or replace accountant validation.',
+      ],
+    },
+    executionBoundary: {
+      executionMode: 'suggestion_only',
+      stateMutation: 'none',
+      externalSideEffects: 'none',
+      reviewRequirement:
+        'A tax operator or accountant must review the brief before using it for filing, payment, or external advice.',
+      blockedCapabilities: [
+        'file_sri_declaration',
+        'generate_official_annex_xml',
+        'approve_tax_filing',
+        'post_accounting_journal',
+      ],
+    },
+  },
 ];
 
 function cloneAiToolDefinition(entry: AiToolDefinition): AiToolDefinition {
@@ -657,6 +737,62 @@ export const AI_PROMPT_REGISTRY: AiPromptRegistryEntry[] = [
       },
     ],
   },
+  {
+    key: 'tax-compliance-ec-review-assistant-core',
+    version: 'v1',
+    agentKey: 'tax-compliance-ec-review-assistant',
+    mode: 'suggestion',
+    title: 'Tax Compliance EC Review Assistant Core',
+    summary:
+      'Prompt pack for Ecuador tax risk summaries, accountant questions, evidence gaps, and pre-filing next steps.',
+    objective:
+      'Help an operator and accountant review deterministic Tax Compliance EC packets without replacing professional validation, official SRI filing, or accounting books.',
+    styleGuidance: [
+      'Use Spanish-first, plain business language suitable for an owner and accountant.',
+      'Lead with the concrete risk or missing evidence before suggesting next steps.',
+      'Separate operator tasks from accountant questions.',
+      'Explain uncertainty explicitly when the deterministic packet only supports a handoff.',
+    ],
+    constraints: [
+      'Do not present declarations, generate official annex XML, or claim SRI submission is complete.',
+      'Do not replace accountant judgment or legal/tax advice.',
+      'Use only deterministic Tax Compliance EC packets and embedded readiness signals.',
+      'Keep all recommendations advisory and require human review before external filing or payment.',
+      'Do not create journal entries, ledgers, balances, or financial statements.',
+    ],
+    suggestedOutputs: [
+      {
+        key: 'tax_risk_summary',
+        label: 'Tax risk summary',
+        description:
+          'Summarize blockers and risk signals for the selected Ecuador tax period.',
+      },
+      {
+        key: 'accountant_question_pack',
+        label: 'Accountant questions',
+        description:
+          'Prepare focused questions that should be answered by the accountant before filing.',
+      },
+      {
+        key: 'evidence_gap_checklist',
+        label: 'Evidence gap checklist',
+        description:
+          'List missing or weak evidence needed for VAT, income tax, retentions, annexes, and closeout.',
+      },
+      {
+        key: 'owner_explanation',
+        label: 'Owner explanation',
+        description:
+          'Explain the tax period status in plain language for the business owner.',
+      },
+      {
+        key: 'pre_filing_next_steps',
+        label: 'Pre-filing next steps',
+        description:
+          'Suggest the safest next operator/accountant actions before external declaration or payment.',
+      },
+    ],
+  },
 ];
 
 export function findAiPromptRegistryEntryByAgentKey(
@@ -714,6 +850,13 @@ export const AI_AGENT_TOOL_ACCESS: AiAgentToolAccessEntry[] = [
     accessLevel: 'blocked',
     rationale:
       'Direct storefront or campaign launch remains blocked until approval flows and guarded execution are in place for ecommerce.',
+  },
+  {
+    agentKey: 'tax-compliance-ec-review-assistant',
+    toolKey: 'tax_compliance_ec_review_briefing',
+    accessLevel: 'approval_required',
+    rationale:
+      'Tax review suggestions can help operators and accountants, but they must stay behind explicit human review before influencing external filing decisions.',
   },
 ];
 
@@ -781,6 +924,17 @@ export const AI_APPROVAL_POLICY_REGISTRY: AiApprovalPolicyEntry[] = [
       'Keeps launch and campaign suggestions behind operator review before they influence storefront work.',
     reviewGuidance:
       'Check that the suggestion stays grounded in product context, does not invent catalog facts, and is safe to translate into real launch work.',
+    approvalRequired: true,
+  },
+  {
+    policyKey: 'tax-compliance-ec-review-assistant-suggestion-review',
+    agentKey: 'tax-compliance-ec-review-assistant',
+    scope: 'suggestion_review',
+    title: 'Tax Compliance EC suggestion review',
+    summary:
+      'Keeps Ecuador tax review suggestions behind explicit human review before they influence filing or accountant handoff work.',
+    reviewGuidance:
+      'Confirm the suggestion is grounded in deterministic tax packets, does not replace accountant validation, and does not claim official SRI filing or accounting close.',
     approvalRequired: true,
   },
 ];

@@ -422,7 +422,12 @@ accountant when needed".
 
 ### Current repository status
 
-Not implemented yet as its own domain.
+Implemented as the `tax-compliance-ec` product anchor with its own access
+permissions, Ecuador tax period workspaces, obligation settings, due monitors,
+VAT/income tax/withholding readiness, purchase evidence, evidence vault,
+annexes readiness, accountant review packets, operational closeout, external
+filing/payment handoff, accounting bridge mapping, Growth reminder packets, and
+a transversal AI review assistant template.
 
 ### Relationship to invoicing
 
@@ -456,6 +461,12 @@ The recommended sequence is:
 2. use that product to learn which customers need formal accounting depth
 3. only then graduate the heavier `Accounting` product when the platform has
    enough demand and shared foundations to justify it
+
+The current bridge to that future product is an accounting readiness packet:
+Tax Compliance EC can recommend whether a tenant should stay inside the tax
+control room or graduate into `Accounting`, but it still does not own chart of
+accounts, journals, ledgers, trial balance, bank reconciliation, or financial
+statements.
 
 ## Product: Medical Clinics
 
@@ -973,6 +984,9 @@ tax obligation readiness and declaration preparation workflows.
 3. VAT, income tax and withholding readiness summaries
 4. supporting evidence and accountant handoff packets
 5. AI tax review assistant over deterministic compliance contracts
+6. accounting bridge mapping and suggested accounts
+7. Growth reminder packets for due obligations
+8. accounting readiness packet for the future Accounting product decision
 
 ### Future accounting graduation
 

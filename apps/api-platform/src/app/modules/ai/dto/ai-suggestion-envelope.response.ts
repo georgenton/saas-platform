@@ -12,7 +12,7 @@ export interface AiSuggestionEnvelopeResponseDto {
     key: string;
     title: string;
     summary: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     productKey: string;
     availability: 'ready' | 'planned';
     defaultMode: 'suggestion' | 'guarded_execution';
@@ -45,7 +45,7 @@ export interface AiSuggestionEnvelopeResponseDto {
       key: string;
       title: string;
       summary: string;
-      domainKey: 'growth' | 'invoicing' | 'ecommerce';
+      domainKey: string;
       availability: 'ready' | 'planned';
       riskLevel: 'low' | 'medium' | 'high';
       actionKind: 'read' | 'draft' | 'propose' | 'execute';
@@ -75,7 +75,7 @@ export interface AiSuggestionEnvelopeResponseDto {
     records: {
       id: string;
       scope: 'tenant' | 'domain' | 'agent';
-      domainKey: 'growth' | 'invoicing' | 'ecommerce' | null;
+      domainKey: string | null;
       agentKey: string | null;
       sourceKind: 'operator_note' | 'approval_memory' | 'guarded_execution_memory';
       freshness: 'working_memory' | 'durable_memory';

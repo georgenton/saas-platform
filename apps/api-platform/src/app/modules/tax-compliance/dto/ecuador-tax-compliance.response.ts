@@ -5,6 +5,7 @@ import {
   EcuadorTaxAccountingBridgeMappingView,
   EcuadorTaxAccountingBridgePreviewView,
   EcuadorTaxAccountingBridgeSuggestedAccountsView,
+  EcuadorTaxAccountingReadinessPacketView,
   EcuadorTaxAnnexesReadinessView,
   EcuadorTaxAuditReadinessView,
   EcuadorTaxCalendarReviewWorkspaceView,
@@ -1152,6 +1153,42 @@ export interface EcuadorTaxPeriodCloseoutReportResponseDto {
   closeoutStatus: string;
   blockers: string[];
   accountantQuestions: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingReadinessPacketResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  recommendation: string;
+  summary: {
+    accountingMappedHints: number;
+    accountingUnmappedHints: number;
+    closeoutBlockerCount: number;
+    assistantRiskSignalCount: number;
+    evidenceArtifactCount: number;
+    auditEventCount: number;
+  };
+  decisionSignals: Array<{
+    key: string;
+    label: string;
+    severity: string;
+    rationale: string;
+  }>;
+  suggestedAccountingScope: Array<{
+    key: string;
+    label: string;
+    reason: string;
+    source: string;
+  }>;
+  nextProductRecommendation: {
+    productKey: string;
+    rationale: string;
+  };
+  blockers: string[];
   nextStep: string;
   guardrails: string[];
 }
@@ -2413,6 +2450,28 @@ export function toEcuadorTaxPeriodCloseoutReportResponseDto(
     accountantQuestions: [...report.accountantQuestions],
     nextStep: report.nextStep,
     guardrails: [...report.guardrails],
+  };
+}
+
+export function toEcuadorTaxAccountingReadinessPacketResponseDto(
+  packet: EcuadorTaxAccountingReadinessPacketView,
+): EcuadorTaxAccountingReadinessPacketResponseDto {
+  return {
+    tenantSlug: packet.tenantSlug,
+    period: packet.period,
+    year: packet.year,
+    generatedAt: packet.generatedAt.toISOString(),
+    readinessStatus: packet.readinessStatus,
+    recommendation: packet.recommendation,
+    summary: { ...packet.summary },
+    decisionSignals: packet.decisionSignals.map((signal) => ({ ...signal })),
+    suggestedAccountingScope: packet.suggestedAccountingScope.map((scope) => ({
+      ...scope,
+    })),
+    nextProductRecommendation: { ...packet.nextProductRecommendation },
+    blockers: [...packet.blockers],
+    nextStep: packet.nextStep,
+    guardrails: [...packet.guardrails],
   };
 }
 

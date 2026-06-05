@@ -1,7 +1,7 @@
 export interface AiApprovalDesignWorkspaceAgentResponseDto {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: string;
   productKey: string;
   approvalPolicyKeys: string[];
   currentExpectedReviewLoad: {
@@ -47,7 +47,7 @@ export function toAiApprovalDesignWorkspaceResponseDto(input: {
   agents: Array<{
     agentKey: string;
     title: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     productKey: string;
     approvalPolicyKeys: string[];
     currentExpectedReviewLoad: {

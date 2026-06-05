@@ -1,7 +1,7 @@
 export interface AiApprovalRolloutWorkspaceAgentResponseDto {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: string;
   productKey: string;
   approvalPolicyKeys: string[];
   currentRequiredReviewerEquivalents: number;
@@ -42,7 +42,7 @@ export function toAiApprovalRolloutWorkspaceResponseDto(input: {
   agents: Array<{
     agentKey: string;
     title: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     productKey: string;
     approvalPolicyKeys: string[];
     currentRequiredReviewerEquivalents: number;

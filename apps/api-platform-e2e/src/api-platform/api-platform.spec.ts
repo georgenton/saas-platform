@@ -225,6 +225,7 @@ import {
   RecordTenantEcuadorTaxPurchaseExpenseEvidenceUseCase,
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
+  RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
   RequestTenantEcuadorTaxGrowthReminderPacketUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
@@ -928,6 +929,9 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let requestTenantEcuadorTaxPeriodCloseoutReportUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantEcuadorTaxAccountingReadinessPacketUseCase: {
     execute: jest.Mock;
   };
   let getTenantEcuadorTaxAuditReadinessUseCase: { execute: jest.Mock };
@@ -3947,6 +3951,48 @@ describe('API', () => {
     accountantQuestions: ['El reporte contiene toda la evidencia?'],
     nextStep: 'Guardar reporte de periodo como salida operacional.',
     guardrails: ['Reporte operacional, no formulario SRI.'],
+  };
+  const ecuadorTaxAccountingReadinessPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    recommendation: 'graduate_to_accounting' as const,
+    summary: {
+      accountingMappedHints: 0,
+      accountingUnmappedHints: 1,
+      closeoutBlockerCount: 0,
+      assistantRiskSignalCount: 1,
+      evidenceArtifactCount: 3,
+      auditEventCount: 6,
+    },
+    decisionSignals: [
+      {
+        key: 'accounting_bridge_depth',
+        label: 'Bridge contable tributario',
+        severity: 'high' as const,
+        rationale: '1 entradas y 1 hints contables.',
+      },
+    ],
+    suggestedAccountingScope: [
+      {
+        key: 'chart_of_accounts',
+        label: 'Plan de cuentas',
+        reason: '0/1 hints tributarios ya tienen mapping inicial.',
+        source: 'tax_accounting_bridge_mapping',
+      },
+    ],
+    nextProductRecommendation: {
+      productKey: 'accounting' as const,
+      rationale:
+        'El periodo ya muestra suficiente presion de cuentas, evidencia y revision profesional.',
+    },
+    blockers: [],
+    nextStep: 'Preparar un primer slice de Accounting Foundation.',
+    guardrails: [
+      'Este packet decide readiness de producto; no crea asientos.',
+    ],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
@@ -12627,6 +12673,9 @@ describe('API', () => {
     requestTenantEcuadorTaxPeriodCloseoutReportUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxPeriodCloseoutReport),
     };
+    requestTenantEcuadorTaxAccountingReadinessPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxAccountingReadinessPacket),
+    };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
     };
@@ -13223,6 +13272,8 @@ describe('API', () => {
       .useValue(requestTenantEcuadorTaxReviewAssistantPacketUseCase)
       .overrideProvider(RequestTenantEcuadorTaxPeriodCloseoutReportUseCase)
       .useValue(requestTenantEcuadorTaxPeriodCloseoutReportUseCase)
+      .overrideProvider(RequestTenantEcuadorTaxAccountingReadinessPacketUseCase)
+      .useValue(requestTenantEcuadorTaxAccountingReadinessPacketUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -16844,6 +16895,43 @@ describe('API', () => {
     });
   });
 
+  it('GET /api/tax-compliance/tenants/:slug/ec/accounting-readiness-packet should return product graduation guidance', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/accounting-readiness-packet?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      readinessStatus: 'needs_review',
+      recommendation: 'graduate_to_accounting',
+      summary: {
+        accountingUnmappedHints: 1,
+        assistantRiskSignalCount: 1,
+      },
+      nextProductRecommendation: {
+        productKey: 'accounting',
+      },
+      suggestedAccountingScope: [
+        {
+          key: 'chart_of_accounts',
+          source: 'tax_accounting_bridge_mapping',
+        },
+      ],
+    });
+
+    expect(
+      requestTenantEcuadorTaxAccountingReadinessPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
   it('GET /api/tax-compliance/tenants/:slug/ec/accountant-review-packet should return an accountant handoff packet', async () => {
     const response = await request(httpServer)
       .get(
@@ -17655,6 +17743,17 @@ describe('API', () => {
           defaultMode: 'suggestion',
           supportedSurfaceKeys: ['ecommerce_launch_workspace'],
         },
+        {
+          key: 'tax-compliance-ec-review-assistant',
+          title: 'Tax Compliance EC Review Assistant',
+          summary:
+            'Turns deterministic Ecuador tax compliance packets into review guidance without replacing accountant validation or SRI filing.',
+          domainKey: 'tax-compliance',
+          productKey: 'tax-compliance-ec',
+          availability: 'ready',
+          defaultMode: 'suggestion',
+          supportedSurfaceKeys: ['tax_compliance_ec_review_packet'],
+        },
       ]);
   });
 
@@ -17888,15 +17987,45 @@ describe('API', () => {
                 rollbackActionLabel: 'Rollback launch publish',
               },
             }),
+            expect.objectContaining({
+              agent: expect.objectContaining({
+                key: 'tax-compliance-ec-review-assistant',
+                domainKey: 'tax-compliance',
+              }),
+              requiredPermissionKey: TAX_COMPLIANCE_PERMISSIONS.EC_READ,
+              primarySurface: {
+                key: 'tax_compliance_ec_review_packet',
+                title: 'Tax Compliance EC review packet',
+                sourceContractKey: 'tax_compliance.ec.review_assistant_packet',
+              },
+              promptPack: expect.objectContaining({
+                key: 'tax-compliance-ec-review-assistant-core',
+                version: 'v1',
+              }),
+              primaryApprovalPolicyKey:
+                'tax-compliance-ec-review-assistant-suggestion-review',
+              toolAccess: expect.arrayContaining([
+                expect.objectContaining({
+                  accessLevel: 'approval_required',
+                  tool: expect.objectContaining({
+                    key: 'tax_compliance_ec_review_briefing',
+                    availability: 'ready',
+                    actionKind: 'propose',
+                  }),
+                }),
+              ]),
+              guardedExecutionCandidateToolKey: null,
+              guardedExecutionCandidate: null,
+            }),
           ]),
           counts: {
-            totalAgents: 3,
-            readyAgents: 3,
+            totalAgents: 4,
+            readyAgents: 4,
             plannedAgents: 0,
-            agentsWithApprovalPolicies: 3,
+            agentsWithApprovalPolicies: 4,
             agentsWithGuardedExecutionCandidate: 3,
-            totalToolAccessEntries: 7,
-            approvalRequiredToolAccessEntries: 2,
+            totalToolAccessEntries: 8,
+            approvalRequiredToolAccessEntries: 3,
             blockedToolAccessEntries: 3,
           },
         });
@@ -18034,6 +18163,62 @@ describe('API', () => {
             },
           ],
         },
+        {
+          key: 'tax-compliance-ec-review-assistant-core',
+          version: 'v1',
+          agentKey: 'tax-compliance-ec-review-assistant',
+          mode: 'suggestion',
+          title: 'Tax Compliance EC Review Assistant Core',
+          summary:
+            'Prompt pack for Ecuador tax risk summaries, accountant questions, evidence gaps, and pre-filing next steps.',
+          objective:
+            'Help an operator and accountant review deterministic Tax Compliance EC packets without replacing professional validation, official SRI filing, or accounting books.',
+          styleGuidance: [
+            'Use Spanish-first, plain business language suitable for an owner and accountant.',
+            'Lead with the concrete risk or missing evidence before suggesting next steps.',
+            'Separate operator tasks from accountant questions.',
+            'Explain uncertainty explicitly when the deterministic packet only supports a handoff.',
+          ],
+          constraints: [
+            'Do not present declarations, generate official annex XML, or claim SRI submission is complete.',
+            'Do not replace accountant judgment or legal/tax advice.',
+            'Use only deterministic Tax Compliance EC packets and embedded readiness signals.',
+            'Keep all recommendations advisory and require human review before external filing or payment.',
+            'Do not create journal entries, ledgers, balances, or financial statements.',
+          ],
+          suggestedOutputs: [
+            {
+              key: 'tax_risk_summary',
+              label: 'Tax risk summary',
+              description:
+                'Summarize blockers and risk signals for the selected Ecuador tax period.',
+            },
+            {
+              key: 'accountant_question_pack',
+              label: 'Accountant questions',
+              description:
+                'Prepare focused questions that should be answered by the accountant before filing.',
+            },
+            {
+              key: 'evidence_gap_checklist',
+              label: 'Evidence gap checklist',
+              description:
+                'List missing or weak evidence needed for VAT, income tax, retentions, annexes, and closeout.',
+            },
+            {
+              key: 'owner_explanation',
+              label: 'Owner explanation',
+              description:
+                'Explain the tax period status in plain language for the business owner.',
+            },
+            {
+              key: 'pre_filing_next_steps',
+              label: 'Pre-filing next steps',
+              description:
+                'Suggest the safest next operator/accountant actions before external declaration or payment.',
+            },
+          ],
+        },
       ]);
   });
 
@@ -18043,7 +18228,7 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toHaveLength(7);
+        expect(response.body).toHaveLength(8);
         expect(response.body).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
@@ -18080,6 +18265,13 @@ describe('API', () => {
               actionKind: 'execute',
               requiresApproval: true,
               domainKey: 'ecommerce',
+            }),
+            expect.objectContaining({
+              key: 'tax_compliance_ec_review_briefing',
+              availability: 'ready',
+              actionKind: 'propose',
+              requiresApproval: true,
+              domainKey: 'tax-compliance',
             }),
           ]),
         );
@@ -18175,6 +18367,17 @@ describe('API', () => {
             'Keeps launch and campaign suggestions behind operator review before they influence storefront work.',
           reviewGuidance:
             'Check that the suggestion stays grounded in product context, does not invent catalog facts, and is safe to translate into real launch work.',
+          approvalRequired: true,
+        },
+        {
+          policyKey: 'tax-compliance-ec-review-assistant-suggestion-review',
+          agentKey: 'tax-compliance-ec-review-assistant',
+          scope: 'suggestion_review',
+          title: 'Tax Compliance EC suggestion review',
+          summary:
+            'Keeps Ecuador tax review suggestions behind explicit human review before they influence filing or accountant handoff work.',
+          reviewGuidance:
+            'Confirm the suggestion is grounded in deterministic tax packets, does not replace accountant validation, and does not claim official SRI filing or accounting close.',
           approvalRequired: true,
         },
       ]);
@@ -24034,7 +24237,7 @@ describe('API', () => {
           tenantSlug: 'saas-platform',
           generatedAt: expect.any(String),
           counts: {
-            totalAgents: 3,
+            totalAgents: 4,
             agentsWithSuggestionRuns: 2,
             agentsWithPendingApprovals: 1,
             totalPendingApprovalRequests: 1,
@@ -24142,6 +24345,35 @@ describe('API', () => {
                 'Tool posture: 0 allowed, 1 approval-required, 1 blocked.',
               ]),
             }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              title: 'Tax Compliance EC Review Assistant',
+              domainKey: 'tax-compliance',
+              productKey: 'tax-compliance-ec',
+              promptPack: {
+                key: 'tax-compliance-ec-review-assistant-core',
+                version: 'v1',
+                mode: 'suggestion',
+                title: 'Tax Compliance EC Review Assistant Core',
+                summary:
+                  'Prompt pack for Ecuador tax risk summaries, accountant questions, evidence gaps, and pre-filing next steps.',
+              },
+              toolAccessSummary: {
+                allowedCount: 0,
+                approvalRequiredCount: 1,
+                blockedCount: 0,
+              },
+              pendingApprovalRequestsCount: 0,
+              oldestPendingApprovalRequest: null,
+              latestReviewedApprovalRequest: null,
+              latestSuggestionRun: null,
+              recentActivityAt: null,
+              memoryNotes: expect.arrayContaining([
+                'Prompt pack tax-compliance-ec-review-assistant-core@v1 in suggestion mode.',
+                'No handoff prepared yet for this tenant.',
+                'Tool posture: 0 allowed, 1 approval-required, 0 blocked.',
+              ]),
+            }),
           ],
         });
       });
@@ -24170,6 +24402,11 @@ describe('API', () => {
     expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'invoice-document-assistant',
+      null,
+    );
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'tax-compliance-ec-review-assistant',
       null,
     );
   });
@@ -24278,9 +24515,9 @@ describe('API', () => {
             generatedAt: expect.any(String),
             overallStatus: 'critical',
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               healthyAgents: 0,
-              warningAgents: 2,
+              warningAgents: 3,
               criticalAgents: 1,
             },
           }),
@@ -24359,6 +24596,27 @@ describe('API', () => {
                 'Tool posture: 0 allowed, 1 approval-required, 1 blocked.',
               ],
             }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              title: 'Tax Compliance EC Review Assistant',
+              domainKey: 'tax-compliance',
+              status: 'warning',
+              pendingApprovalRequestsCount: 0,
+              reviewableSuggestionRunsCount: 0,
+              toolAccessSummary: {
+                allowedCount: 0,
+                approvalRequiredCount: 1,
+                blockedCount: 0,
+              },
+              recentActivityAt: null,
+              oldestPendingApprovalRequest: null,
+              latestSuggestionRun: null,
+              notes: [
+                'No pending approvals right now.',
+                'No reviewable handoffs waiting for escalation.',
+                'Tool posture: 0 allowed, 1 approval-required, 0 blocked.',
+              ],
+            }),
           ]),
         );
       });
@@ -24387,6 +24645,11 @@ describe('API', () => {
     expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'invoice-document-assistant',
+      null,
+    );
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'tax-compliance-ec-review-assistant',
       null,
     );
   });
@@ -24439,7 +24702,7 @@ describe('API', () => {
             generatedAt: expect.any(String),
             overallStatus: 'warning',
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               agentsWithReviewedOutcomes: 1,
               reviewedApprovalRequests: 1,
               approvedReviewedApprovalRequests: 1,
@@ -24503,6 +24766,23 @@ describe('API', () => {
                 'No latest reviewed decision is available yet.',
               ],
             }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              title: 'Tax Compliance EC Review Assistant',
+              domainKey: 'tax-compliance',
+              status: 'warning',
+              reviewedApprovalRequestsCount: 0,
+              approvedReviewedApprovalRequestsCount: 0,
+              rejectedReviewedApprovalRequestsCount: 0,
+              approvalRatePercentage: null,
+              latestReviewedAt: null,
+              latestReviewedApprovalRequest: null,
+              notes: [
+                'No reviewed outcomes recorded yet for this agent.',
+                'Approval-rate signal is still unavailable.',
+                'No latest reviewed decision is available yet.',
+              ],
+            }),
           ]),
         );
       });
@@ -24536,10 +24816,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
-              suggestionModeAgents: 3,
+              totalAgents: 4,
+              suggestionModeAgents: 4,
               guardedExecutionPlannedAgents: 3,
-              approvalRequiredTools: 2,
+              approvalRequiredTools: 3,
               blockedTools: 3,
             },
           }),
@@ -24585,6 +24865,19 @@ describe('API', () => {
                 'guarded_execution_planned',
                 'suggestion_only',
               ],
+            }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              toolAccessSummary: {
+                allowedCount: 0,
+                approvalRequiredCount: 1,
+                blockedCount: 0,
+              },
+              executionModes: ['suggestion_only'],
+              blockedCapabilities: expect.arrayContaining([
+                'file_sri_declaration',
+                'post_accounting_journal',
+              ]),
             }),
           ]),
         );
@@ -24760,6 +25053,7 @@ describe('API', () => {
           'growth-assist-coach',
           'invoice-document-assistant',
           'ecommerce-launch-assistant',
+          'tax-compliance-ec-review-assistant',
         ],
       },
     );
@@ -24825,7 +25119,7 @@ describe('API', () => {
           tenantSlug: 'saas-platform',
           generatedAt: expect.any(String),
           counts: {
-            totalAgents: 3,
+            totalAgents: 4,
             agentsWithMemory: 1,
             totalRetrievedRecords: 1,
             uniqueRetrievedRecords: 1,
@@ -24924,6 +25218,31 @@ describe('API', () => {
                 ]),
               },
             },
+            {
+              agentKey: 'tax-compliance-ec-review-assistant',
+              title: 'Tax Compliance EC Review Assistant',
+              domainKey: 'tax-compliance',
+              productKey: 'tax-compliance-ec',
+              retrieval: {
+                retrievedAt: '2026-05-20T10:35:00.000Z',
+                recordCount: 0,
+                policy: {
+                  version: 'v1',
+                  limit: 5,
+                  suppressedDuplicateCount: 0,
+                  archivedRecordCount: 0,
+                  prioritizedRecordIds: [],
+                  archivalSummary:
+                    'Operator notes are never auto-archived; working guarded-execution memory archives after 7 days; working approval memory archives after 14 days; durable automated memory archives after 45 days.',
+                  rankingSummary:
+                    'operator_note > guarded_execution_memory > approval_memory; agent > domain > tenant; working_memory > durable_memory; recency breaks ties.',
+                },
+                records: [],
+                notes: expect.arrayContaining([
+                  'No persisted memory record matched this agent context yet.',
+                ]),
+              },
+            },
           ],
         });
       });
@@ -24985,7 +25304,7 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               agentsWithSimulationDelta: 3,
               toolsPromotedToApprovalRequired: 3,
               toolsStillBlocked: 0,
@@ -25114,7 +25433,7 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               agentsWithHeavierReview: 3,
               currentExpectedHumanReviews: 2,
               simulatedExpectedHumanReviews: 5,
@@ -25232,7 +25551,7 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               agentsAtCapacityRisk: 3,
               currentMinimumReviewsPerDay: 2,
               simulatedMinimumReviewsPerDay: 5,
@@ -25346,7 +25665,7 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               agentsAtRisk: 2,
               agentsBreached: 0,
               currentBacklogTouches: 2,
@@ -25459,10 +25778,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               agentsNeedingMoreCoverage: 2,
-              currentRequiredReviewerEquivalents: 3,
-              simulatedRequiredReviewerEquivalents: 5,
+              currentRequiredReviewerEquivalents: 4,
+              simulatedRequiredReviewerEquivalents: 6,
               addedReviewerEquivalents: 2,
             },
           }),
@@ -25486,6 +25805,13 @@ describe('API', () => {
               staffingStatus: 'sufficient',
               addedReviewerEquivalents: 0,
               promotedToolKeys: ['ecommerce_launch_publish_execution'],
+              simulatedRequiredReviewerEquivalents: 1,
+            }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              staffingStatus: 'sufficient',
+              addedReviewerEquivalents: 0,
+              promotedToolKeys: [],
               simulatedRequiredReviewerEquivalents: 1,
             }),
           ]),
@@ -25573,9 +25899,9 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               agentsRequiringIncrease: 2,
-              totalRecommendedReviewerEquivalents: 5,
+              totalRecommendedReviewerEquivalents: 6,
               totalAdditionalReviewerEquivalents: 2,
               highestPriorityAgents: 2,
             },
@@ -25600,6 +25926,13 @@ describe('API', () => {
               planStatus: 'maintain',
               additionalReviewerEquivalentsToAssign: 0,
               promotedToolKeys: ['ecommerce_launch_publish_execution'],
+              recommendedReviewerEquivalents: 1,
+            }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              planStatus: 'maintain',
+              additionalReviewerEquivalentsToAssign: 0,
+              promotedToolKeys: [],
               recommendedReviewerEquivalents: 1,
             }),
           ]),
@@ -25687,9 +26020,9 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               phase1Agents: 2,
-              phase2Agents: 1,
+              phase2Agents: 2,
               holdAgents: 0,
               totalAdditionalReviewerEquivalents: 2,
             },
@@ -25801,8 +26134,8 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
-              readyNowAgents: 1,
+              totalAgents: 4,
+              readyNowAgents: 2,
               needsCoverageAgents: 2,
               blockedAgents: 0,
             },
@@ -25914,8 +26247,8 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
-              launchNowAgents: 1,
+              totalAgents: 4,
+              launchNowAgents: 2,
               pilotAfterCoverageAgents: 2,
               holdAgents: 0,
               totalCoverageGap: 2,
@@ -25938,6 +26271,13 @@ describe('API', () => {
             }),
             expect.objectContaining({
               agentKey: 'ecommerce-launch-assistant',
+              launchStatus: 'launch_now',
+              launchWindow: 'current_window',
+              additionalReviewerEquivalentsToAssign: 0,
+              recommendedReviewerEquivalents: 1,
+            }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
               launchStatus: 'launch_now',
               launchWindow: 'current_window',
               additionalReviewerEquivalentsToAssign: 0,
@@ -26028,10 +26368,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               pilotCandidateAgents: 1,
               needsLaunchReadinessAgents: 2,
-              suggestionOnlyAgents: 0,
+              suggestionOnlyAgents: 1,
               executionCandidateTools: 3,
             },
           }),
@@ -26054,6 +26394,13 @@ describe('API', () => {
               agentKey: 'ecommerce-launch-assistant',
               guardedExecutionStatus: 'pilot_candidate',
               executionCandidateToolKeys: ['ecommerce_launch_publish_execution'],
+              rolloutPhase: 'phase_2',
+            }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              guardedExecutionStatus: 'suggestion_only',
+              executionCandidateToolKeys: [],
+              approvalRequiredToolKeys: ['tax_compliance_ec_review_briefing'],
               rolloutPhase: 'phase_2',
             }),
           ]),
@@ -26141,10 +26488,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               readyForPilotAgents: 1,
               needsOperationalBackingAgents: 2,
-              noCandidateAgents: 0,
+              noCandidateAgents: 1,
               candidateToolPilots: 3,
             },
           }),
@@ -26169,6 +26516,13 @@ describe('API', () => {
               candidateToolKey: 'ecommerce_launch_publish_execution',
               pilotStatus: 'ready_for_pilot',
               pilotType: 'shadow_review',
+              rolloutPhase: 'phase_2',
+            }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              candidateToolKey: null,
+              pilotStatus: 'no_candidate',
+              pilotType: 'not_available',
               rolloutPhase: 'phase_2',
             }),
           ]),
@@ -26256,10 +26610,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               readyToDocumentAgents: 0,
               needsDesignAgents: 3,
-              notAvailableAgents: 0,
+              notAvailableAgents: 1,
               candidateRunbooks: 3,
             },
           }),
@@ -26283,6 +26637,13 @@ describe('API', () => {
               runbookStatus: 'needs_design',
               candidateToolKey: 'ecommerce_launch_publish_execution',
               operatingLane: 'single_record_execution_lane',
+            }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              runbookStatus: 'not_available',
+              candidateToolKey: null,
+              operatingLane: 'suggestion_only_lane',
+              blastRadius: 'no_execution_scope',
             }),
           ]),
         );
@@ -26369,10 +26730,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               readyWithRollbackAgents: 0,
               needsRollbackDesignAgents: 3,
-              notApplicableAgents: 0,
+              notApplicableAgents: 1,
               rollbackCandidateTools: 3,
             },
           }),
@@ -26396,6 +26757,12 @@ describe('API', () => {
               rollbackStatus: 'needs_rollback_design',
               candidateToolKey: 'ecommerce_launch_publish_execution',
               pilotType: 'shadow_review',
+            }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              rollbackStatus: 'not_applicable',
+              candidateToolKey: null,
+              pilotType: 'not_available',
             }),
           ]),
         );
@@ -26482,10 +26849,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               readyForAuditAgents: 0,
               needsEvidenceDesignAgents: 3,
-              notApplicableAgents: 0,
+              notApplicableAgents: 1,
               auditCandidateTools: 3,
             },
           }),
@@ -26509,6 +26876,13 @@ describe('API', () => {
               candidateToolKey: 'ecommerce_launch_publish_execution',
               runbookStatus: 'needs_design',
               rollbackStatus: 'needs_rollback_design',
+            }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              auditStatus: 'not_applicable',
+              candidateToolKey: null,
+              runbookStatus: 'not_available',
+              rollbackStatus: 'not_applicable',
             }),
           ]),
         );
@@ -26595,10 +26969,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               readyToLaunchAgents: 0,
               pilotOnlyAgents: 3,
-              holdAgents: 0,
+              holdAgents: 1,
               launchCandidateTools: 3,
             },
           }),
@@ -26623,6 +26997,13 @@ describe('API', () => {
               candidateToolKey: 'ecommerce_launch_publish_execution',
               auditStatus: 'needs_evidence_design',
               rollbackStatus: 'needs_rollback_design',
+            }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              launchStatus: 'hold',
+              candidateToolKey: null,
+              auditStatus: 'not_applicable',
+              rollbackStatus: 'not_applicable',
             }),
           ]),
         );
@@ -26709,10 +27090,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               readyToMonitorAgents: 1,
               monitorAfterLaunchAgents: 2,
-              notApplicableAgents: 0,
+              notApplicableAgents: 1,
               monitorCandidateTools: 3,
             },
           }),
@@ -26736,6 +27117,12 @@ describe('API', () => {
               monitorStatus: 'ready_to_monitor',
               candidateToolKey: 'ecommerce_launch_publish_execution',
               watchWindow: 'day_0',
+            }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              monitorStatus: 'not_applicable',
+              candidateToolKey: null,
+              launchStatus: 'hold',
             }),
           ]),
         );
@@ -26822,10 +27209,10 @@ describe('API', () => {
             tenantSlug: 'saas-platform',
             generatedAt: expect.any(String),
             counts: {
-              totalAgents: 3,
+              totalAgents: 4,
               openLaneAgents: 1,
               pilotThenOpenAgents: 2,
-              holdAgents: 0,
+              holdAgents: 1,
               controlCandidateTools: 3,
             },
           }),
@@ -26849,6 +27236,13 @@ describe('API', () => {
               candidateToolKey: 'ecommerce_launch_publish_execution',
               monitorStatus: 'ready_to_monitor',
               launchStatus: 'ready_to_launch',
+            }),
+            expect.objectContaining({
+              agentKey: 'tax-compliance-ec-review-assistant',
+              controlStatus: 'hold',
+              candidateToolKey: null,
+              monitorStatus: 'not_applicable',
+              launchStatus: 'hold',
             }),
           ]),
         );
@@ -27134,6 +27528,15 @@ describe('API', () => {
               approvedSuggestionRuns: 0,
               latestGeneratedAt: null,
             },
+            {
+              agentKey: 'tax-compliance-ec-review-assistant',
+              title: 'Tax Compliance EC Review Assistant',
+              totalSuggestionRuns: 0,
+              reviewableSuggestionRuns: 0,
+              pendingApprovalSuggestionRuns: 0,
+              approvedSuggestionRuns: 0,
+              latestGeneratedAt: null,
+            },
           ],
           recentSuggestionRuns: [
             expect.objectContaining({
@@ -27179,6 +27582,11 @@ describe('API', () => {
     expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'ecommerce-launch-assistant',
+      null,
+    );
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'tax-compliance-ec-review-assistant',
       null,
     );
   });
@@ -27518,6 +27926,16 @@ describe('API', () => {
               latestRequestedAt: null,
               latestReviewedAt: null,
             },
+            {
+              agentKey: 'tax-compliance-ec-review-assistant',
+              title: 'Tax Compliance EC Review Assistant',
+              totalApprovalRequests: 0,
+              pendingApprovalRequests: 0,
+              approvedApprovalRequests: 0,
+              rejectedApprovalRequests: 0,
+              latestRequestedAt: null,
+              latestReviewedAt: null,
+            },
           ],
           oldestPendingApprovalRequest: {
             id: 'ai-approval-001',
@@ -27623,6 +28041,14 @@ describe('API', () => {
     expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'ecommerce-launch-assistant',
+      {
+        limit: null,
+        status: null,
+      },
+    );
+    expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'tax-compliance-ec-review-assistant',
       {
         limit: null,
         status: null,
@@ -27764,6 +28190,15 @@ describe('API', () => {
                 approvedSuggestionRuns: 0,
                 latestGeneratedAt: null,
               },
+              {
+                agentKey: 'tax-compliance-ec-review-assistant',
+                title: 'Tax Compliance EC Review Assistant',
+                totalSuggestionRuns: 0,
+                reviewableSuggestionRuns: 0,
+                pendingApprovalSuggestionRuns: 0,
+                approvedSuggestionRuns: 0,
+                latestGeneratedAt: null,
+              },
             ],
             latestSuggestionRun: expect.objectContaining({
               id: 'ai-run-002',
@@ -27808,6 +28243,16 @@ describe('API', () => {
                 latestRequestedAt: null,
                 latestReviewedAt: null,
               },
+              {
+                agentKey: 'tax-compliance-ec-review-assistant',
+                title: 'Tax Compliance EC Review Assistant',
+                totalApprovalRequests: 0,
+                pendingApprovalRequests: 0,
+                approvedApprovalRequests: 0,
+                rejectedApprovalRequests: 0,
+                latestRequestedAt: null,
+                latestReviewedAt: null,
+              },
             ],
             oldestPendingApprovalRequest: expect.objectContaining({
               id: 'ai-approval-001',
@@ -27845,6 +28290,14 @@ describe('API', () => {
         status: null,
       },
     );
+    expect(listTenantAiApprovalRequestsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'tax-compliance-ec-review-assistant',
+      {
+        limit: null,
+        status: null,
+      },
+    );
     expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'growth-assist-coach',
@@ -27858,6 +28311,11 @@ describe('API', () => {
     expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
       'saas-platform',
       'ecommerce-launch-assistant',
+      null,
+    );
+    expect(listTenantAiSuggestionRunsUseCase.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'tax-compliance-ec-review-assistant',
       null,
     );
   });
@@ -28847,6 +29305,7 @@ describe('API', () => {
             'growth-assist-coach',
             'invoice-document-assistant',
             'ecommerce-launch-assistant',
+            'tax-compliance-ec-review-assistant',
           ],
           limit: null,
           eventTypes: null,

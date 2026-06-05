@@ -100,7 +100,8 @@ export type EcuadorTaxComplianceEventType =
   | 'tax_accounting_bridge_preview_requested'
   | 'tax_accounting_bridge_mapping_upserted'
   | 'tax_review_assistant_packet_requested'
-  | 'tax_period_closeout_report_requested';
+  | 'tax_period_closeout_report_requested'
+  | 'tax_accounting_readiness_packet_requested';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -1175,6 +1176,42 @@ export interface EcuadorTaxPeriodCloseoutReportView {
   closeoutStatus: EcuadorTaxOperationalCloseoutStatus;
   blockers: string[];
   accountantQuestions: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingReadinessPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  recommendation: 'stay_in_tax_compliance' | 'graduate_to_accounting';
+  summary: {
+    accountingMappedHints: number;
+    accountingUnmappedHints: number;
+    closeoutBlockerCount: number;
+    assistantRiskSignalCount: number;
+    evidenceArtifactCount: number;
+    auditEventCount: number;
+  };
+  decisionSignals: Array<{
+    key: string;
+    label: string;
+    severity: EcuadorTaxReviewPriority;
+    rationale: string;
+  }>;
+  suggestedAccountingScope: Array<{
+    key: string;
+    label: string;
+    reason: string;
+    source: string;
+  }>;
+  nextProductRecommendation: {
+    productKey: 'tax-compliance-ec' | 'accounting';
+    rationale: string;
+  };
+  blockers: string[];
   nextStep: string;
   guardrails: string[];
 }

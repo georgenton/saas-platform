@@ -83,6 +83,7 @@ import {
   EcuadorTaxAccountingBridgeMappingResponse,
   EcuadorTaxAccountingBridgePreviewResponse,
   EcuadorTaxAccountingBridgeSuggestedAccountsResponse,
+  EcuadorTaxAccountingReadinessPacketResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
@@ -1662,6 +1663,25 @@ export async function fetchEcuadorTaxPeriodCloseoutReport(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/period-closeout-report?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxAccountingReadinessPacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountingReadinessPacketResponse> {
+  return request<EcuadorTaxAccountingReadinessPacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accounting-readiness-packet?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

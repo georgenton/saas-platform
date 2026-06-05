@@ -10,7 +10,7 @@ import {
 export interface AiMemoryWorkspaceAgentResponseDto {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: string;
   productKey: string;
   availability: 'ready' | 'planned';
   defaultMode: 'suggestion' | 'guarded_execution';
@@ -59,7 +59,7 @@ export function toAiMemoryWorkspaceResponseDto(input: {
   agents: Array<{
     agentKey: string;
     title: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     productKey: string;
     availability: 'ready' | 'planned';
     defaultMode: 'suggestion' | 'guarded_execution';

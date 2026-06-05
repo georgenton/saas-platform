@@ -1,7 +1,7 @@
 export interface AiGuardedExecutionAuditWorkspaceAgentResponseDto {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: string;
   productKey: string;
   currentMode: 'suggestion' | 'guarded_execution';
   approvalPolicyKeys: string[];
@@ -48,7 +48,7 @@ export function toAiGuardedExecutionAuditWorkspaceResponseDto(input: {
   agents: Array<{
     agentKey: string;
     title: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     productKey: string;
     currentMode: 'suggestion' | 'guarded_execution';
     approvalPolicyKeys: string[];

@@ -38,6 +38,7 @@ import {
   RecordTenantEcuadorTaxFilingHandoffUseCase,
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
+  RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
   RequestTenantEcuadorTaxGrowthReminderPacketUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
@@ -76,6 +77,7 @@ import {
   EcuadorTaxAccountingBridgeMappingResponseDto,
   EcuadorTaxAccountingBridgePreviewResponseDto,
   EcuadorTaxAccountingBridgeSuggestedAccountsResponseDto,
+  EcuadorTaxAccountingReadinessPacketResponseDto,
   EcuadorTaxAnnexesReadinessResponseDto,
   EcuadorTaxOperationalCloseoutResponseDto,
   EcuadorTaxAccountantReviewResponseDto,
@@ -116,6 +118,7 @@ import {
   toEcuadorTaxAccountingBridgeMappingResponseDto,
   toEcuadorTaxAccountingBridgePreviewResponseDto,
   toEcuadorTaxAccountingBridgeSuggestedAccountsResponseDto,
+  toEcuadorTaxAccountingReadinessPacketResponseDto,
   toEcuadorTaxAccountantReviewResponseDto,
   toEcuadorTaxAccountantReviewPacketResponseDto,
   toEcuadorTaxAnnexesReadinessResponseDto,
@@ -320,6 +323,7 @@ export class TaxComplianceController {
     private readonly requestTenantEcuadorTaxGrowthReminderPacketUseCase: RequestTenantEcuadorTaxGrowthReminderPacketUseCase,
     private readonly requestTenantEcuadorTaxReviewAssistantPacketUseCase: RequestTenantEcuadorTaxReviewAssistantPacketUseCase,
     private readonly requestTenantEcuadorTaxPeriodCloseoutReportUseCase: RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
+    private readonly requestTenantEcuadorTaxAccountingReadinessPacketUseCase: RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
   ) {}
 
   @Get(':slug/ec/taxpayer-profile')
@@ -1480,6 +1484,34 @@ export class TaxComplianceController {
         });
 
       return toEcuadorTaxPeriodCloseoutReportResponseDto(report);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/accounting-readiness-packet')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getAccountingReadinessPacket(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountingReadinessPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantEcuadorTaxAccountingReadinessPacketUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period,
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxAccountingReadinessPacketResponseDto(packet);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

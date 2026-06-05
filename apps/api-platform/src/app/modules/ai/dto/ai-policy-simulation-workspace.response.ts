@@ -1,7 +1,7 @@
 export interface AiPolicySimulationWorkspaceAgentResponseDto {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: string;
   productKey: string;
   defaultMode: 'suggestion' | 'guarded_execution';
   approvalPolicyKeys: string[];
@@ -45,7 +45,7 @@ export function toAiPolicySimulationWorkspaceResponseDto(input: {
   agents: Array<{
     agentKey: string;
     title: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     productKey: string;
     defaultMode: 'suggestion' | 'guarded_execution';
     approvalPolicyKeys: string[];

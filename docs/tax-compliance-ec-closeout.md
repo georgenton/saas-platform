@@ -40,11 +40,13 @@ read/manage permissions. It may prepare accounting bridge mappings so the tax
 operator and accountant can align evidence with a future chart of accounts.
 It still does not own journals, ledgers, balances, or formal accounting close.
 
-Parties cleanup now exposes correction packets per priority party. These packets
-guide missing fiscal fields and duplicate review, but they do not mutate or merge
-third parties automatically.
+Parties cleanup now exposes correction packets per priority party and can apply
+fiscal corrections back into the current Parties backing store. Duplicate merge
+decisions remain outside this closeout flow.
 
-The next operational step applies fiscal corrections back into the current
-Parties backing store, adds a read-only suggested account catalog for the
-accounting bridge, and exposes due-date reminder packets that Growth can use as
-operator-assisted follow-up.
+The operational closeout now includes a read-only suggested account catalog,
+Growth reminder packets for due obligations, and an accounting readiness packet
+that recommends whether the tenant should stay in Tax Compliance EC or graduate
+to a future Accounting product. The transversal AI layer also registers a Tax
+Compliance EC Review Assistant prompt pack, but its output remains advisory and
+requires human review before external filing, payment, or accountant handoff.

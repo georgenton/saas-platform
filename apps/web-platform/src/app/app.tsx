@@ -105,6 +105,8 @@ import {
   executeEcuadorTaxWithholdingDraftBridge,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
+  fetchEcuadorTaxAccountingBridgeSuggestedAccounts,
+  fetchEcuadorTaxAccountingReadinessPacket,
   fetchEcuadorTaxAccountantWorkbench,
   fetchEcuadorTaxAccountantReviews,
   fetchEcuadorTaxAnnexesReadiness,
@@ -112,6 +114,7 @@ import {
   fetchEcuadorTaxEcommerceEvidence,
   fetchEcuadorTaxEvents,
   fetchEcuadorTaxFilingHandoff,
+  fetchEcuadorTaxGrowthReminderPacket,
   fetchEcuadorTaxIncomeTaxEvidencePacket,
   fetchEcuadorTaxObligationSettings,
   fetchEcuadorTaxPeriodCloseoutPacket,
@@ -514,11 +517,14 @@ import {
   EcuadorTaxAccountantWorkbenchResponse,
   EcuadorTaxAccountingBridgeMappingResponse,
   EcuadorTaxAccountingBridgePreviewResponse,
+  EcuadorTaxAccountingBridgeSuggestedAccountsResponse,
+  EcuadorTaxAccountingReadinessPacketResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
   EcuadorTaxFilingHandoffResponse,
+  EcuadorTaxGrowthReminderPacketResponse,
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
   EcuadorTaxOperationalCloseoutResponse,
@@ -2028,6 +2034,14 @@ export function App() {
     setTaxComplianceAccountingBridgeMapping,
   ] = useState<EcuadorTaxAccountingBridgeMappingResponse | null>(null);
   const [
+    taxComplianceAccountingBridgeSuggestedAccounts,
+    setTaxComplianceAccountingBridgeSuggestedAccounts,
+  ] = useState<EcuadorTaxAccountingBridgeSuggestedAccountsResponse | null>(null);
+  const [
+    taxComplianceGrowthReminderPacket,
+    setTaxComplianceGrowthReminderPacket,
+  ] = useState<EcuadorTaxGrowthReminderPacketResponse | null>(null);
+  const [
     taxComplianceReviewAssistantPacket,
     setTaxComplianceReviewAssistantPacket,
   ] = useState<EcuadorTaxReviewAssistantPacketResponse | null>(null);
@@ -2035,6 +2049,10 @@ export function App() {
     taxCompliancePeriodCloseoutReport,
     setTaxCompliancePeriodCloseoutReport,
   ] = useState<EcuadorTaxPeriodCloseoutReportResponse | null>(null);
+  const [
+    taxComplianceAccountingReadinessPacket,
+    setTaxComplianceAccountingReadinessPacket,
+  ] = useState<EcuadorTaxAccountingReadinessPacketResponse | null>(null);
   const [taxComplianceLoading, setTaxComplianceLoading] = useState(false);
   const [taxComplianceActionLoading, setTaxComplianceActionLoading] =
     useState<string | null>(null);
@@ -19199,8 +19217,11 @@ export function App() {
         nextAnnexesReadiness,
         nextAccountingBridgePreview,
         nextAccountingBridgeMapping,
+        nextAccountingBridgeSuggestedAccounts,
+        nextGrowthReminderPacket,
         nextReviewAssistantPacket,
         nextPeriodCloseoutReport,
+        nextAccountingReadinessPacket,
       ] = await Promise.all([
         fetchEcuadorTaxPeriodWorkspace(token, tenantSlug, taxCompliancePeriod, year),
         fetchEcuadorTaxEcommerceEvidence(token, tenantSlug, taxCompliancePeriod),
@@ -19323,6 +19344,13 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchEcuadorTaxAccountingBridgeSuggestedAccounts(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxGrowthReminderPacket(token, tenantSlug, year),
         fetchEcuadorTaxReviewAssistantPacket(
           token,
           tenantSlug,
@@ -19330,6 +19358,12 @@ export function App() {
           year,
         ),
         fetchEcuadorTaxPeriodCloseoutReport(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAccountingReadinessPacket(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -19366,8 +19400,13 @@ export function App() {
         setTaxComplianceAnnexesReadiness(nextAnnexesReadiness);
         setTaxComplianceAccountingBridgePreview(nextAccountingBridgePreview);
         setTaxComplianceAccountingBridgeMapping(nextAccountingBridgeMapping);
+        setTaxComplianceAccountingBridgeSuggestedAccounts(
+          nextAccountingBridgeSuggestedAccounts,
+        );
+        setTaxComplianceGrowthReminderPacket(nextGrowthReminderPacket);
         setTaxComplianceReviewAssistantPacket(nextReviewAssistantPacket);
         setTaxCompliancePeriodCloseoutReport(nextPeriodCloseoutReport);
+        setTaxComplianceAccountingReadinessPacket(nextAccountingReadinessPacket);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -28075,6 +28114,86 @@ export function App() {
                 </div>
               </div>
 
+              <div className={styles.stack}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>Growth reminders</span>
+                    <h3>Recordatorios tributarios para operador</h3>
+                  </div>
+                  {taxComplianceGrowthReminderPacket ? (
+                    <span
+                      className={`${styles.statusPill} ${operationalStatusTone(
+                        taxComplianceGrowthReminderPacket.readinessStatus,
+                      )}`}
+                    >
+                      {
+                        taxComplianceGrowthReminderPacket.summary.reminderCount
+                      }{' '}
+                      reminders
+                    </span>
+                  ) : null}
+                </div>
+                {taxComplianceGrowthReminderPacket ? (
+                  <div className={styles.stack}>
+                    <div className={styles.commercialGrid}>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Vencidos</span>
+                        <strong>
+                          {
+                            taxComplianceGrowthReminderPacket.summary
+                              .overdueCount
+                          }
+                        </strong>
+                        <span className={styles.muted}>
+                          {taxComplianceGrowthReminderPacket.asOfDate}
+                        </span>
+                      </div>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Por vencer</span>
+                        <strong>
+                          {
+                            taxComplianceGrowthReminderPacket.summary
+                              .dueSoonCount
+                          }
+                        </strong>
+                        <span className={styles.muted}>
+                          {taxComplianceGrowthReminderPacket.targetWorkspace.productKey}
+                        </span>
+                      </div>
+                    </div>
+                    {taxComplianceGrowthReminderPacket.reminders
+                      .slice(0, 3)
+                      .map((reminder) => (
+                        <div className={styles.invoiceItemCard} key={reminder.key}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>
+                              {humanizeKey(reminder.obligationKey)} ·{' '}
+                              {reminder.period}
+                            </strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                reminder.severity,
+                              )}`}
+                            >
+                              {reminder.dueDate ?? 'sin fecha'}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {reminder.suggestedMessage}
+                          </p>
+                        </div>
+                      ))}
+                    <p className={styles.muted}>
+                      {taxComplianceGrowthReminderPacket.nextStep}
+                    </p>
+                  </div>
+                ) : (
+                  <div className={styles.emptyState}>
+                    <p>Carga el año fiscal para ver recordatorios tributarios.</p>
+                  </div>
+                )}
+              </div>
+
               <div className={styles.twoColumn}>
                 <div className={styles.stack}>
                   <div className={styles.sectionHeading}>
@@ -28639,6 +28758,113 @@ export function App() {
                             taxComplianceAccountingBridgeMapping.rows[0]
                               ?.accountHint ??
                             taxComplianceAccountingBridgeMapping.nextStep}
+                        </p>
+                      </div>
+                    ) : null}
+                    {taxComplianceAccountingBridgeSuggestedAccounts ? (
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>Plan sugerido</strong>
+                          <span className={styles.statusPill}>
+                            {
+                              taxComplianceAccountingBridgeSuggestedAccounts
+                                .summary.suggestionCount
+                            }{' '}
+                            cuentas
+                          </span>
+                        </div>
+                        <div className={styles.invoiceInlineGrid}>
+                          {taxComplianceAccountingBridgeSuggestedAccounts.rows
+                            .slice(0, 4)
+                            .map((row) => (
+                              <div
+                                className={styles.commercialCard}
+                                key={`${row.accountHint}:${row.suggestedAccountCode}`}
+                              >
+                                <span className={styles.muted}>
+                                  {humanizeKey(row.category)}
+                                </span>
+                                <strong>{row.suggestedAccountCode}</strong>
+                                <span className={styles.muted}>
+                                  {row.suggestedAccountName}
+                                </span>
+                              </div>
+                            ))}
+                        </div>
+                        <p className={styles.muted}>
+                          {taxComplianceAccountingBridgeSuggestedAccounts.nextStep}
+                        </p>
+                      </div>
+                    ) : null}
+                    {taxComplianceAccountingReadinessPacket ? (
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>Decision Accounting</strong>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              taxComplianceAccountingReadinessPacket.readinessStatus,
+                            )}`}
+                          >
+                            {humanizeKey(
+                              taxComplianceAccountingReadinessPacket.recommendation,
+                            )}
+                          </span>
+                        </div>
+                        <div className={styles.commercialGrid}>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Hints mapeados</span>
+                            <strong>
+                              {
+                                taxComplianceAccountingReadinessPacket.summary
+                                  .accountingMappedHints
+                              }
+                            </strong>
+                            <span className={styles.muted}>
+                              {
+                                taxComplianceAccountingReadinessPacket.summary
+                                  .accountingUnmappedHints
+                              }{' '}
+                              pendientes
+                            </span>
+                          </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Riesgos AI</span>
+                            <strong>
+                              {
+                                taxComplianceAccountingReadinessPacket.summary
+                                  .assistantRiskSignalCount
+                              }
+                            </strong>
+                            <span className={styles.muted}>
+                              {
+                                taxComplianceAccountingReadinessPacket.summary
+                                  .closeoutBlockerCount
+                              }{' '}
+                              blockers
+                            </span>
+                          </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Siguiente producto</span>
+                            <strong>
+                              {
+                                taxComplianceAccountingReadinessPacket
+                                  .nextProductRecommendation.productKey
+                              }
+                            </strong>
+                            <span className={styles.muted}>
+                              {
+                                taxComplianceAccountingReadinessPacket.summary
+                                  .auditEventCount
+                              }{' '}
+                              eventos
+                            </span>
+                          </div>
+                        </div>
+                        <p className={styles.muted}>
+                          {
+                            taxComplianceAccountingReadinessPacket
+                              .nextProductRecommendation.rationale
+                          }
                         </p>
                       </div>
                     ) : null}

@@ -21,7 +21,7 @@ export interface AiMemoryRecordDetailResponseDto {
     agents: Array<{
       agentKey: string;
       title: string;
-      domainKey: 'growth' | 'invoicing' | 'ecommerce';
+      domainKey: string;
       inclusionReason: string;
     }>;
     notes: string[];
@@ -56,7 +56,7 @@ export const toAiMemoryRecordDetailResponseDto = (
     agents: Array<{
       agentKey: string;
       title: string;
-      domainKey: 'growth' | 'invoicing' | 'ecommerce';
+      domainKey: string;
       inclusionReason: string;
     }>;
     notes: string[];

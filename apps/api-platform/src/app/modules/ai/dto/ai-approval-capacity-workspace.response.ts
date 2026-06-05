@@ -1,7 +1,7 @@
 export interface AiApprovalCapacityWorkspaceAgentResponseDto {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: string;
   productKey: string;
   approvalPolicyKeys: string[];
   currentMinimumReviewsPerDay: number;
@@ -40,7 +40,7 @@ export function toAiApprovalCapacityWorkspaceResponseDto(input: {
   agents: Array<{
     agentKey: string;
     title: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     productKey: string;
     approvalPolicyKeys: string[];
     currentMinimumReviewsPerDay: number;

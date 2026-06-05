@@ -53,7 +53,7 @@ import {
   AiSuggestionRunNotFoundError,
   buildInitialAiSuggestionRunApprovalSummary,
 } from '@saas-platform/ai-application';
-import { AiApprovalRequestStatus } from '@saas-platform/ai-domain';
+import { AiApprovalRequestStatus, AiDomainKey } from '@saas-platform/ai-domain';
 import { GetTenantEcommerceLaunchWorkspaceUseCase } from '@saas-platform/ecommerce-application';
 import { TenantEcommerceLaunchPlanView } from '@saas-platform/ecommerce-domain';
 import {
@@ -470,7 +470,7 @@ export class AiController {
       'At least one AI agent permission is required to create tenant memory records.',
     );
 
-    let domainKey = body.domainKey ?? null;
+    let domainKey: AiDomainKey | null = null;
     let agentKey = body.agentKey ?? null;
 
     if (body.scope === 'tenant' && (body.domainKey || body.agentKey)) {
@@ -494,13 +494,15 @@ export class AiController {
 
       if (
         !this.getAccessibleDomainKeys(tenantAccess?.permissionKeys).includes(
-          body.domainKey,
+          body.domainKey as AiDomainKey,
         )
       ) {
         throw new ForbiddenException(
           `Visible AI access for domain "${body.domainKey}" is required to create this memory record.`,
         );
       }
+
+      domainKey = body.domainKey as AiDomainKey;
     }
 
     if (body.scope === 'agent') {
@@ -570,7 +572,7 @@ export class AiController {
     if (
       domainKey &&
       !accessibleDomainKeys.includes(
-        domainKey as 'growth' | 'invoicing' | 'ecommerce',
+        domainKey as AiDomainKey,
       )
     ) {
       throw new ForbiddenException(
@@ -705,7 +707,7 @@ export class AiController {
         ): entry is {
           agentKey: string;
           title: string;
-          domainKey: 'growth' | 'invoicing' | 'ecommerce';
+          domainKey: AiDomainKey;
           inclusionReason: string;
         } => entry !== null,
       );
@@ -7495,7 +7497,7 @@ export class AiController {
 
   private getAccessibleDomainKeys(
     permissionKeys: string[] | undefined,
-  ): Array<'growth' | 'invoicing' | 'ecommerce'> {
+  ): AiDomainKey[] {
     return Array.from(
       new Set(
         this.getAccessibleReadyAiWorkspaceAgentKeys(permissionKeys).map((entry) =>
@@ -7507,17 +7509,17 @@ export class AiController {
 
   private getAgentDomainKey(
     agentKey: string,
-  ): 'growth' | 'invoicing' | 'ecommerce' {
+  ): AiDomainKey {
     return this.getOperatingModelAgentEntry(agentKey).agent.domainKey;
   }
 
   private isVisibleAiMemoryRecord(
     record: {
       scope: 'tenant' | 'domain' | 'agent';
-      domainKey: 'growth' | 'invoicing' | 'ecommerce' | null;
+      domainKey: AiDomainKey | null;
       agentKey: string | null;
     },
-    accessibleDomainKeys: Array<'growth' | 'invoicing' | 'ecommerce'>,
+    accessibleDomainKeys: AiDomainKey[],
     accessibleAgentKeys: string[],
   ): boolean {
     if (record.scope === 'tenant') {

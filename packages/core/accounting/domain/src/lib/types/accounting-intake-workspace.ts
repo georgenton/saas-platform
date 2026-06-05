@@ -1,4 +1,6 @@
-export type AccountingReadinessStatus = 'ready' | 'needs_review' | 'blocked';
+import { AccountingReadinessStatus } from './accounting-foundation';
+
+export type { AccountingReadinessStatus };
 
 export interface TenantAccountingIntakeWorkspaceView {
   tenantSlug: string;

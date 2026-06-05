@@ -1313,6 +1313,11 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
     TenantPermissionGuard,
     TenantProductAccessGuard,
   ],
-  exports: [RequestTenantEcuadorTaxAccountingReadinessPacketUseCase],
+  exports: [
+    GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
+    GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
+    RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+    RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
+  ],
 })
 export class TaxComplianceModule {}

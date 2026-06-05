@@ -30,8 +30,8 @@ pnpm smoke:ec:tax-compliance-operational
 
 The smoke covers purchase evidence, supplier readiness, VAT, income tax,
 withholdings, rules, accountant workbench, audit readiness, filing handoff,
-annexes readiness, accounting bridge preview, assistant packet, and closeout
-report.
+annexes readiness, accounting bridge preview, accounting bridge mapping,
+assistant packet, and closeout report.
 
 ## Product Boundary
 
@@ -39,3 +39,7 @@ Tax Compliance EC is now cataloged as `tax-compliance-ec` with its own
 read/manage permissions. It may prepare accounting bridge mappings so the tax
 operator and accountant can align evidence with a future chart of accounts.
 It still does not own journals, ledgers, balances, or formal accounting close.
+
+Parties cleanup now exposes correction packets per priority party. These packets
+guide missing fiscal fields and duplicate review, but they do not mutate or merge
+third parties automatically.

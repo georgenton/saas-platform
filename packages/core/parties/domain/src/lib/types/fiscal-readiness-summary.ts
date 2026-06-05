@@ -67,3 +67,35 @@ export interface PartyFiscalCleanupWorkspace {
   nextStep: string;
   guardrails: string[];
 }
+
+export interface PartyFiscalCleanupPacket {
+  tenantSlug: string;
+  partyId: string;
+  generatedAt: Date;
+  readinessStatus: 'ready' | 'needs_review' | 'blocked';
+  partySnapshot: {
+    id: string;
+    displayName: string;
+    roles: string[];
+    taxpayerId: string | null;
+    priority: 'critical' | 'high' | 'normal';
+    missingFields: string[];
+    reviewNotes: string[];
+  };
+  suggestedPayload: {
+    taxpayerId: string | null;
+    identificationType: string | null;
+    fiscalAddress: string | null;
+    email: string | null;
+    taxpayerName: string;
+  };
+  duplicateWarnings: Array<{
+    key: string;
+    reason: 'taxpayer_id' | 'email' | 'display_name';
+    partyIds: string[];
+    displayNames: string[];
+  }>;
+  checklist: string[];
+  nextStep: string;
+  guardrails: string[];
+}

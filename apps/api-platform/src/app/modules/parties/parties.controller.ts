@@ -8,6 +8,7 @@ import {
 import { INVOICING_PERMISSIONS } from '@saas-platform/invoicing-application';
 import {
   GetTenantPartyByIdUseCase,
+  GetTenantPartyFiscalCleanupPacketUseCase,
   GetTenantPartyFiscalCleanupWorkspaceUseCase,
   GetTenantPartyFiscalReadinessSummaryUseCase,
   ListTenantPartiesUseCase,
@@ -23,8 +24,10 @@ import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import {
   PartyFiscalReadinessSummaryResponseDto,
+  PartyFiscalCleanupPacketResponseDto,
   PartyFiscalCleanupWorkspaceResponseDto,
   PartyResponseDto,
+  toPartyFiscalCleanupPacketResponseDto,
   toPartyFiscalCleanupWorkspaceResponseDto,
   toPartyFiscalReadinessSummaryResponseDto,
   toPartyResponseDto,
@@ -48,6 +51,7 @@ export class PartiesController {
     private readonly getTenantPartyByIdUseCase: GetTenantPartyByIdUseCase,
     private readonly getTenantPartyFiscalReadinessSummaryUseCase: GetTenantPartyFiscalReadinessSummaryUseCase,
     private readonly getTenantPartyFiscalCleanupWorkspaceUseCase: GetTenantPartyFiscalCleanupWorkspaceUseCase,
+    private readonly getTenantPartyFiscalCleanupPacketUseCase: GetTenantPartyFiscalCleanupPacketUseCase,
   ) {}
 
   @Get(':slug/parties')
@@ -108,6 +112,33 @@ export class PartiesController {
       return toPartyFiscalCleanupWorkspaceResponseDto(workspace);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/fiscal-cleanup-workspace/:partyId/packet')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.CUSTOMERS_READ)
+  async getTenantPartyFiscalCleanupPacket(
+    @Param('slug') slug: string,
+    @Param('partyId') partyId: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PartyFiscalCleanupPacketResponseDto> {
+    try {
+      const packet =
+        await this.getTenantPartyFiscalCleanupPacketUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          partyId,
+        });
+
+      return toPartyFiscalCleanupPacketResponseDto(packet);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof PartyNotFoundError
+      ) {
         throw new NotFoundException(error.message);
       }
 

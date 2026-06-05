@@ -1059,6 +1059,8 @@ export interface EcuadorTaxReviewAssistantPacketResponseDto {
     filingHandoffStatus: string | null;
     annexesReadinessStatus: string;
     accountingBridgeReadinessStatus: string;
+    accountingBridgeMappingStatus: string;
+    accountingBridgeUnmappedHintCount: number;
     evidenceVaultStatus: string;
     eventCount: number;
   };
@@ -1087,6 +1089,8 @@ export interface EcuadorTaxPeriodCloseoutReportResponseDto {
     withholdingCandidates: number;
     annexesApplicable: number;
     accountingPreviewEntries: number;
+    accountingMappedHints: number;
+    accountingUnmappedHints: number;
     auditEventCount: number;
   };
   filingHandoffStatus: string | null;

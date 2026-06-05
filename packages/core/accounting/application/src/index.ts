@@ -2,3 +2,6 @@ export * from './lib/permissions/accounting-permissions';
 export * from './lib/use-cases/get-tenant-accounting-chart-of-accounts-workspace.use-case';
 export * from './lib/use-cases/get-tenant-accounting-intake-workspace.use-case';
 export * from './lib/use-cases/get-tenant-accounting-journal-draft-preview.use-case';
+export * from './lib/use-cases/get-tenant-accounting-ledger-preview-workspace.use-case';
+export * from './lib/use-cases/manage-tenant-accounting-chart-mapping.use-case';
+export * from './lib/use-cases/request-tenant-accounting-journal-draft-approval-packet.use-case';

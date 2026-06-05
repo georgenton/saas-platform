@@ -200,6 +200,9 @@ import {
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
   GetTenantAccountingJournalDraftPreviewUseCase,
+  GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  ManageTenantAccountingChartMappingUseCase,
+  RequestTenantAccountingJournalDraftApprovalPacketUseCase,
 } from '@saas-platform/accounting-application';
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
@@ -980,6 +983,13 @@ describe('API', () => {
   let getTenantAccountingJournalDraftPreviewUseCase: {
     execute: jest.Mock;
   };
+  let manageTenantAccountingChartMappingUseCase: { execute: jest.Mock };
+  let requestTenantAccountingJournalDraftApprovalPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingLedgerPreviewWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
   let listTenantInvoicePaymentsUseCase: { execute: jest.Mock };
   let listTenantInvoiceSummariesUseCase: { execute: jest.Mock };
@@ -1095,6 +1105,7 @@ describe('API', () => {
     TAX_COMPLIANCE_PERMISSIONS.EC_READ,
     TAX_COMPLIANCE_PERMISSIONS.EC_MANAGE,
     ACCOUNTING_PERMISSIONS.READ,
+    ACCOUNTING_PERMISSIONS.MANAGE,
     GROWTH_PERMISSIONS.CONVERSATIONS_READ,
     GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE,
     GROWTH_PERMISSIONS.LEADS_READ,
@@ -4158,6 +4169,105 @@ describe('API', () => {
     blockers: ['accounting.account_hint.Ingresos por ventas.needs_mapping'],
     nextStep: 'Completar mappings antes de postear asientos.',
     guardrails: ['Preview deterministico; no postea asientos.'],
+  };
+  const accountingChartMappingManagement = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'ready' as const,
+    mappingStatus: 'ready' as const,
+    updatedMappingCount: 1,
+    chartWorkspace: {
+      ...accountingChartOfAccountsWorkspace,
+      readinessStatus: 'ready' as const,
+      accounts: accountingChartOfAccountsWorkspace.accounts.map((account) =>
+        account.mappedAccountHint === 'Ingresos por ventas'
+          ? { ...account, status: 'mapped' as const }
+          : account,
+      ),
+      summary: {
+        ...accountingChartOfAccountsWorkspace.summary,
+        mappedAccountCount: 1,
+        needsMappingCount: 0,
+      },
+      blockers: [],
+    },
+    blockers: [],
+    nextStep: 'Revisar y aprobar borradores contables del periodo.',
+    guardrails: ['Gestiona mappings foundation; no crea catalogo oficial.'],
+  };
+  const accountingJournalDraftApprovalPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    approvalStatus: 'approved_for_posting' as const,
+    reviewerUserId: 'user_123',
+    reviewerEmail: 'hello@saas-platform.dev',
+    note: 'Approval operativo desde e2e.',
+    approvedDraftEntryKeys: ['draft_sales_revenue_USD'],
+    rejectedDraftEntryKeys: [],
+    draftEntries: [
+      {
+        ...accountingJournalDraftPreview.draftEntries[0],
+        blockers: [],
+      },
+    ],
+    summary: {
+      requestedDraftEntryCount: 1,
+      approvedDraftEntryCount: 1,
+      rejectedDraftEntryCount: 0,
+      blockedDraftEntryCount: 0,
+      balancedDraftCount: 1,
+      totalDebitInCents: 25000,
+      totalCreditInCents: 25000,
+    },
+    blockers: [],
+    nextStep: 'Usar estos borradores aprobados como insumo de ledger preview.',
+    guardrails: ['Approval operativo; no postea asientos.'],
+  };
+  const accountingLedgerPreviewWorkspace = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'ready' as const,
+    ledgerStatus: 'ready_for_review' as const,
+    accountBalances: [
+      {
+        accountCode: '101.01',
+        accountName: 'Caja y bancos',
+        category: 'asset' as const,
+        debitInCents: 25000,
+        creditInCents: 0,
+        netDebitInCents: 25000,
+        netCreditInCents: 0,
+        sourceDraftEntryKeys: ['draft_sales_revenue_USD'],
+      },
+      {
+        accountCode: '401.01',
+        accountName: 'Ingresos por ventas locales',
+        category: 'income' as const,
+        debitInCents: 0,
+        creditInCents: 25000,
+        netDebitInCents: 0,
+        netCreditInCents: 25000,
+        sourceDraftEntryKeys: ['draft_sales_revenue_USD'],
+      },
+    ],
+    summary: {
+      accountCount: 2,
+      draftEntryCount: 1,
+      approvedPreviewEntryCount: 1,
+      unreviewedDraftEntryCount: 0,
+      totalDebitInCents: 25000,
+      totalCreditInCents: 25000,
+      balanced: true,
+    },
+    blockers: [],
+    nextStep: 'Revisar saldos preview con contador antes de definir posteo formal.',
+    guardrails: ['Ledger preview no es mayor oficial.'],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
@@ -12859,6 +12969,15 @@ describe('API', () => {
     getTenantAccountingJournalDraftPreviewUseCase = {
       execute: jest.fn().mockResolvedValue(accountingJournalDraftPreview),
     };
+    manageTenantAccountingChartMappingUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingChartMappingManagement),
+    };
+    requestTenantAccountingJournalDraftApprovalPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingJournalDraftApprovalPacket),
+    };
+    getTenantAccountingLedgerPreviewWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingLedgerPreviewWorkspace),
+    };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
     };
@@ -13463,6 +13582,12 @@ describe('API', () => {
       .useValue(getTenantAccountingChartOfAccountsWorkspaceUseCase)
       .overrideProvider(GetTenantAccountingJournalDraftPreviewUseCase)
       .useValue(getTenantAccountingJournalDraftPreviewUseCase)
+      .overrideProvider(ManageTenantAccountingChartMappingUseCase)
+      .useValue(manageTenantAccountingChartMappingUseCase)
+      .overrideProvider(RequestTenantAccountingJournalDraftApprovalPacketUseCase)
+      .useValue(requestTenantAccountingJournalDraftApprovalPacketUseCase)
+      .overrideProvider(GetTenantAccountingLedgerPreviewWorkspaceUseCase)
+      .useValue(getTenantAccountingLedgerPreviewWorkspaceUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -17239,6 +17364,129 @@ describe('API', () => {
 
     expect(
       getTenantAccountingJournalDraftPreviewUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/chart-mapping should manage accounting chart mappings', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/chart-mapping')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        mappings: [
+          {
+            accountHint: 'Ingresos por ventas',
+            suggestedAccountCode: '401.01',
+            suggestedAccountName: 'Ingresos por ventas locales',
+          },
+        ],
+        updatedByUserId: 'user_123',
+        updatedByEmail: 'hello@saas-platform.dev',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      mappingStatus: 'ready',
+      updatedMappingCount: 1,
+      chartWorkspace: {
+        summary: {
+          mappedAccountCount: 1,
+          needsMappingCount: 0,
+        },
+      },
+    });
+
+    expect(manageTenantAccountingChartMappingUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      mappings: [
+        {
+          accountHint: 'Ingresos por ventas',
+          suggestedAccountCode: '401.01',
+          suggestedAccountName: 'Ingresos por ventas locales',
+        },
+      ],
+      updatedByUserId: 'user_123',
+      updatedByEmail: 'hello@saas-platform.dev',
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/journal-draft-approval-packet should approve journal draft previews', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/journal-draft-approval-packet')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        draftEntryKeys: ['draft_sales_revenue_USD'],
+        decision: 'approve',
+        reviewerUserId: 'user_123',
+        reviewerEmail: 'hello@saas-platform.dev',
+        note: 'Approval operativo desde e2e.',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      approvalStatus: 'approved_for_posting',
+      approvedDraftEntryKeys: ['draft_sales_revenue_USD'],
+      summary: {
+        approvedDraftEntryCount: 1,
+        balancedDraftCount: 1,
+      },
+    });
+
+    expect(
+      requestTenantAccountingJournalDraftApprovalPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      draftEntryKeys: ['draft_sales_revenue_USD'],
+      decision: 'approve',
+      reviewerUserId: 'user_123',
+      reviewerEmail: 'hello@saas-platform.dev',
+      note: 'Approval operativo desde e2e.',
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/ledger-preview-workspace should return accounting ledger preview', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/ledger-preview-workspace?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      ledgerStatus: 'ready_for_review',
+      summary: {
+        accountCount: 2,
+        approvedPreviewEntryCount: 1,
+        balanced: true,
+      },
+      accountBalances: [
+        {
+          accountCode: '101.01',
+          debitInCents: 25000,
+        },
+        {
+          accountCode: '401.01',
+          creditInCents: 25000,
+        },
+      ],
+    });
+
+    expect(
+      getTenantAccountingLedgerPreviewWorkspaceUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',

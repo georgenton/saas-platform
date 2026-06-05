@@ -15,6 +15,11 @@ export type AccountingJournalDraftStatus =
   | 'ready_for_review'
   | 'needs_mapping'
   | 'blocked';
+export type AccountingJournalApprovalStatus =
+  | 'approved_for_posting'
+  | 'rejected'
+  | 'needs_mapping'
+  | 'blocked';
 
 export interface TenantAccountingChartOfAccountsWorkspaceView {
   tenantSlug: string;
@@ -81,6 +86,77 @@ export interface TenantAccountingJournalDraftPreviewView {
     needsMappingDraftCount: number;
     totalDebitInCents: number;
     totalCreditInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingChartMappingManagementView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: AccountingReadinessStatus;
+  mappingStatus: 'ready' | 'needs_mapping' | 'blocked';
+  updatedMappingCount: number;
+  chartWorkspace: TenantAccountingChartOfAccountsWorkspaceView;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingJournalDraftApprovalPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  approvalStatus: AccountingJournalApprovalStatus;
+  reviewerUserId: string | null;
+  reviewerEmail: string | null;
+  note: string | null;
+  approvedDraftEntryKeys: string[];
+  rejectedDraftEntryKeys: string[];
+  draftEntries: TenantAccountingJournalDraftPreviewView['draftEntries'];
+  summary: {
+    requestedDraftEntryCount: number;
+    approvedDraftEntryCount: number;
+    rejectedDraftEntryCount: number;
+    blockedDraftEntryCount: number;
+    balancedDraftCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingLedgerPreviewWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: AccountingReadinessStatus;
+  ledgerStatus: 'ready_for_review' | 'needs_journal_review' | 'blocked';
+  accountBalances: Array<{
+    accountCode: string;
+    accountName: string;
+    category: AccountingAccountCategory;
+    debitInCents: number;
+    creditInCents: number;
+    netDebitInCents: number;
+    netCreditInCents: number;
+    sourceDraftEntryKeys: string[];
+  }>;
+  summary: {
+    accountCount: number;
+    draftEntryCount: number;
+    approvedPreviewEntryCount: number;
+    unreviewedDraftEntryCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+    balanced: boolean;
   };
   blockers: string[];
   nextStep: string;

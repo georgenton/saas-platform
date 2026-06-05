@@ -1,7 +1,10 @@
 import {
   AccountingChartOfAccountsWorkspaceResponse,
+  AccountingChartMappingManagementResponse,
   AccountingIntakeWorkspaceResponse,
+  AccountingJournalDraftApprovalPacketResponse,
   AccountingJournalDraftPreviewResponse,
+  AccountingLedgerPreviewWorkspaceResponse,
   AiActivityFeedResponse,
   AiActionCenterResponse,
   AiApprovalCapacityWorkspaceResponse,
@@ -124,12 +127,14 @@ import {
   EcuadorTaxSriPlatformReconciliationWorkspaceResponse,
   RecordEcuadorTaxSriFiscalEvidenceImportRequest,
   UpsertEcuadorTaxAccountingBridgeMappingRequest,
+  ManageAccountingChartMappingRequest,
   ExecuteEcuadorTaxWithholdingDraftBridgeRequest,
   RecordEcuadorTaxFilingHandoffRequest,
   RecordEcuadorTaxPurchaseExpenseEvidenceRequest,
   RequestEcuadorTaxWithholdingDraftBridgePacketRequest,
   TransitionEcuadorTaxWorkflowRequest,
   UpsertEcuadorTaxObligationSettingsRequest,
+  RequestAccountingJournalDraftApprovalPacketRequest,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationWorkspaceResponse,
@@ -1750,6 +1755,57 @@ export async function fetchAccountingJournalDraftPreview(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/journal-draft-preview?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function manageAccountingChartMapping(
+  token: string,
+  tenantSlug: string,
+  input: ManageAccountingChartMappingRequest,
+): Promise<AccountingChartMappingManagementResponse> {
+  return request<AccountingChartMappingManagementResponse>(
+    `/accounting/tenants/${encodeURIComponent(tenantSlug)}/chart-mapping`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestAccountingJournalDraftApprovalPacket(
+  token: string,
+  tenantSlug: string,
+  input: RequestAccountingJournalDraftApprovalPacketRequest,
+): Promise<AccountingJournalDraftApprovalPacketResponse> {
+  return request<AccountingJournalDraftApprovalPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/journal-draft-approval-packet`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingLedgerPreviewWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingLedgerPreviewWorkspaceResponse> {
+  return request<AccountingLedgerPreviewWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ledger-preview-workspace?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

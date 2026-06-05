@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.86.0
+
+### Minor Changes
+
+- e566bc1: Add Parties fiscal cleanup packets, extend Tax Compliance smoke coverage, and feed accounting bridge mappings into review assistant and closeout reporting.
+
 ## 0.85.0
 
 ### Minor Changes

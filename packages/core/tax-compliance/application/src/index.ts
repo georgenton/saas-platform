@@ -42,8 +42,11 @@ export * from './lib/use-cases/record-tenant-ecuador-tax-sri-fiscal-evidence-imp
 export * from './lib/use-cases/request-tenant-ecuador-tax-accountant-review-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-accountant-review.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-accounting-bridge-preview.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-artifact-export.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-form-draft-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-approval-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-draft-packet.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-filing-guide-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-income-tax-evidence-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-period-preparation-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-period-closeout-packet.use-case';

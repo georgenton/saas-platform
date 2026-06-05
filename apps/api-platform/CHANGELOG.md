@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.84.0
+
+### Minor Changes
+
+- bf4ccd5: Add Ecuador tax review assistant packets, period closeout reports, and closeout smoke coverage.
+
 ## 0.83.0
 
 ### Minor Changes

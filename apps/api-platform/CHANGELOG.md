@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.95.0
+
+### Minor Changes
+
+- 9010571: Add Accounting trial balance, period closeout packet, and closeout report workspaces.
+
 ## 0.94.0
 
 ### Minor Changes

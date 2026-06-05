@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.90.0
+
+### Minor Changes
+
+- 39730cf: Add Tax Compliance EC declaration form draft packets, guided filing packets, and artifact export manifests.
+
 ## 0.89.0
 
 ### Minor Changes

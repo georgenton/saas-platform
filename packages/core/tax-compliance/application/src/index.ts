@@ -45,6 +45,7 @@ export * from './lib/use-cases/request-tenant-ecuador-tax-period-preparation-pac
 export * from './lib/use-cases/request-tenant-ecuador-tax-period-closeout-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-period-closeout-report.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-review-assistant-packet.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-accounting-readiness-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-growth-reminder-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-sales-book.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-vat-declaration-readiness-packet.use-case';

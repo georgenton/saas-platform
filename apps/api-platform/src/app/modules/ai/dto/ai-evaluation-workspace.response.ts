@@ -6,7 +6,7 @@ import {
 export interface AiEvaluationWorkspaceAgentResponseDto {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: string;
   status: 'healthy' | 'warning' | 'critical';
   reviewedApprovalRequestsCount: number;
   approvedReviewedApprovalRequestsCount: number;
@@ -45,7 +45,7 @@ export function toAiEvaluationWorkspaceResponseDto(input: {
   agents: Array<{
     agentKey: string;
     title: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     status: 'healthy' | 'warning' | 'critical';
     reviewedApprovalRequestsCount: number;
     approvedReviewedApprovalRequestsCount: number;

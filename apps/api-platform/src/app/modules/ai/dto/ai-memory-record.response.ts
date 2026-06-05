@@ -8,7 +8,7 @@ export interface AiMemoryRecordResponseDto {
   id: string;
   tenantSlug: string;
   scope: 'tenant' | 'domain' | 'agent';
-  domainKey: 'growth' | 'invoicing' | 'ecommerce' | null;
+  domainKey: string | null;
   agentKey: string | null;
   sourceKind: 'operator_note' | 'approval_memory' | 'guarded_execution_memory';
   freshness: 'working_memory' | 'durable_memory';
@@ -38,7 +38,7 @@ export interface AiMemoryRetrievalResponseDto {
   records: Array<{
     id: string;
     scope: 'tenant' | 'domain' | 'agent';
-    domainKey: 'growth' | 'invoicing' | 'ecommerce' | null;
+    domainKey: string | null;
     agentKey: string | null;
     sourceKind: 'operator_note' | 'approval_memory' | 'guarded_execution_memory';
     freshness: 'working_memory' | 'durable_memory';

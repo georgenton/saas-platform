@@ -1,7 +1,7 @@
 export interface AiGovernanceWorkspaceAgentResponseDto {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: string;
   productKey: string;
   defaultMode: 'suggestion' | 'guarded_execution';
   promptPack: {
@@ -48,7 +48,7 @@ export function toAiGovernanceWorkspaceResponseDto(input: {
   agents: Array<{
     agentKey: string;
     title: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     productKey: string;
     defaultMode: 'suggestion' | 'guarded_execution';
     promptPack: {

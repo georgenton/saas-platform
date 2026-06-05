@@ -4,7 +4,7 @@ export interface AiAgentCatalogResponseDto {
   key: string;
   title: string;
   summary: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: string;
   productKey: string;
   availability: 'ready' | 'planned';
   defaultMode: 'suggestion' | 'guarded_execution';

@@ -5,7 +5,7 @@ export interface AiOperatingModelAgentResponseDto {
     key: string;
     title: string;
     summary: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     productKey: string;
     availability: 'ready' | 'planned';
     defaultMode: 'suggestion' | 'guarded_execution';
@@ -41,7 +41,7 @@ export interface AiOperatingModelAgentResponseDto {
       key: string;
       title: string;
       summary: string;
-      domainKey: 'growth' | 'invoicing' | 'ecommerce';
+      domainKey: string;
       availability: 'ready' | 'planned';
       riskLevel: 'low' | 'medium' | 'high';
       actionKind: 'read' | 'draft' | 'propose' | 'execute';

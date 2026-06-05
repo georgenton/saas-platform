@@ -12,7 +12,7 @@ export class CreateAiMemoryRecordRequestDto {
 
   @IsOptional()
   @IsIn(['growth', 'invoicing', 'ecommerce'])
-  domainKey?: 'growth' | 'invoicing' | 'ecommerce' | null;
+  domainKey?: string | null;
 
   @IsOptional()
   @IsString()

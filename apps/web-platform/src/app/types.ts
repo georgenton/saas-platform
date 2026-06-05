@@ -1676,6 +1676,42 @@ export interface EcuadorTaxPeriodCloseoutReportResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxAccountingReadinessPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  recommendation: string;
+  summary: {
+    accountingMappedHints: number;
+    accountingUnmappedHints: number;
+    closeoutBlockerCount: number;
+    assistantRiskSignalCount: number;
+    evidenceArtifactCount: number;
+    auditEventCount: number;
+  };
+  decisionSignals: Array<{
+    key: string;
+    label: string;
+    severity: string;
+    rationale: string;
+  }>;
+  suggestedAccountingScope: Array<{
+    key: string;
+    label: string;
+    reason: string;
+    source: string;
+  }>;
+  nextProductRecommendation: {
+    productKey: string;
+    rationale: string;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface TransitionEcuadorTaxWorkflowRequest {
   period: string;
   year: number;

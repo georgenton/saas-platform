@@ -54,6 +54,7 @@ import {
   RecordTenantEcuadorTaxPurchaseExpenseEvidenceUseCase,
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
+  RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
   RequestTenantEcuadorTaxGrowthReminderPacketUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
@@ -1107,6 +1108,27 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
           getTenantEcuadorTaxAnnexesReadinessUseCase,
           getTenantEcuadorTaxAccountingBridgeMappingUseCase,
           listTenantEcuadorTaxComplianceEventsUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
+      inject: [
+        GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
+        RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
+        RequestTenantEcuadorTaxReviewAssistantPacketUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxAccountingBridgeMappingUseCase,
+        requestTenantEcuadorTaxPeriodCloseoutReportUseCase,
+        requestTenantEcuadorTaxReviewAssistantPacketUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxAccountingReadinessPacketUseCase(
+          getTenantEcuadorTaxAccountingBridgeMappingUseCase,
+          requestTenantEcuadorTaxPeriodCloseoutReportUseCase,
+          requestTenantEcuadorTaxReviewAssistantPacketUseCase,
           recordTenantEcuadorTaxComplianceEventUseCase,
         ),
     },

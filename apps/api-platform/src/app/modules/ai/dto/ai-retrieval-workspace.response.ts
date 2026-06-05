@@ -16,7 +16,7 @@ export interface AiRetrievalWorkspaceResponseDto {
   agents: Array<{
     agentKey: string;
     title: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     productKey: string;
     retrieval: AiMemoryRetrievalResponseDto;
   }>;
@@ -29,7 +29,7 @@ export const toAiRetrievalWorkspaceResponseDto = (input: {
   agents: Array<{
     agentKey: string;
     title: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     productKey: string;
     retrieval: AiMemoryRetrieval;
   }>;

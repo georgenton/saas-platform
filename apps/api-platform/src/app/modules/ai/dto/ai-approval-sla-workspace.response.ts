@@ -1,7 +1,7 @@
 export interface AiApprovalSlaWorkspaceAgentResponseDto {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: string;
   productKey: string;
   approvalPolicyKeys: string[];
   pendingApprovalRequests: number;
@@ -43,7 +43,7 @@ export function toAiApprovalSlaWorkspaceResponseDto(input: {
   agents: Array<{
     agentKey: string;
     title: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: string;
     productKey: string;
     approvalPolicyKeys: string[];
     pendingApprovalRequests: number;

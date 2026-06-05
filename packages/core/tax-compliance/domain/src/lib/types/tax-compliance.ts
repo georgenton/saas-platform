@@ -97,7 +97,9 @@ export type EcuadorTaxComplianceEventType =
   | 'period_operational_closeout_transitioned'
   | 'tax_filing_handoff_recorded'
   | 'tax_annexes_readiness_reviewed'
-  | 'tax_accounting_bridge_preview_requested';
+  | 'tax_accounting_bridge_preview_requested'
+  | 'tax_review_assistant_packet_requested'
+  | 'tax_period_closeout_report_requested';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -1016,6 +1018,72 @@ export interface EcuadorTaxAccountingBridgePreviewView {
     withholdingCandidates: number;
   };
   blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxReviewAssistantPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  executiveSummary: string;
+  riskSignals: Array<{
+    key: string;
+    severity: EcuadorTaxReviewPriority;
+    label: string;
+    detail: string;
+    source: string;
+  }>;
+  accountantQuestions: string[];
+  suggestedActions: Array<{
+    key: string;
+    label: string;
+    owner: 'operator' | 'accountant' | 'system';
+    priority: EcuadorTaxReviewPriority;
+    source: string;
+  }>;
+  contextSnapshot: {
+    vatApprovalStatus: EcuadorTaxVatApprovalStatus;
+    operationalCloseoutStatus: EcuadorTaxOperationalCloseoutStatus;
+    filingHandoffStatus: EcuadorTaxFilingHandoffStatus | null;
+    annexesReadinessStatus: EcuadorTaxReadinessStatus;
+    accountingBridgeReadinessStatus: EcuadorTaxReadinessStatus;
+    evidenceVaultStatus: EcuadorTaxReadinessStatus;
+    eventCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPeriodCloseoutReportView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  sections: Array<{
+    key: string;
+    label: string;
+    readinessStatus: EcuadorTaxReadinessStatus;
+    summary: string;
+    blockerCount: number;
+    artifactCount: number;
+  }>;
+  totals: {
+    salesDocuments: number;
+    purchaseDocuments: number;
+    withholdingCandidates: number;
+    annexesApplicable: number;
+    accountingPreviewEntries: number;
+    auditEventCount: number;
+  };
+  filingHandoffStatus: EcuadorTaxFilingHandoffStatus | null;
+  closeoutStatus: EcuadorTaxOperationalCloseoutStatus;
+  blockers: string[];
+  accountantQuestions: string[];
   nextStep: string;
   guardrails: string[];
 }

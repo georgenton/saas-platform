@@ -89,6 +89,7 @@ import {
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
   EcuadorTaxPeriodCloseoutPacketResponse,
+  EcuadorTaxPeriodCloseoutReportResponse,
   EcuadorTaxPeriodEvidenceVaultResponse,
   EcuadorTaxPeriodWorkspaceResponse,
   EcuadorTaxOperationalCloseoutResponse,
@@ -106,6 +107,7 @@ import {
   EcuadorTaxWithholdingEvidencePacketResponse,
   EcuadorTaxWithholdingRegistryResponse,
   EcuadorTaxRuleCatalogResponse,
+  EcuadorTaxReviewAssistantPacketResponse,
   ExecuteEcuadorTaxWithholdingDraftBridgeRequest,
   RecordEcuadorTaxFilingHandoffRequest,
   RecordEcuadorTaxPurchaseExpenseEvidenceRequest,
@@ -1534,6 +1536,44 @@ export async function fetchEcuadorTaxAccountingBridgePreview(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/accounting-bridge-preview?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxReviewAssistantPacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxReviewAssistantPacketResponse> {
+  return request<EcuadorTaxReviewAssistantPacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/tax-review-assistant-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxPeriodCloseoutReport(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPeriodCloseoutReportResponse> {
+  return request<EcuadorTaxPeriodCloseoutReportResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/period-closeout-report?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

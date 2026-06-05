@@ -1514,6 +1514,72 @@ export interface EcuadorTaxAccountingBridgePreviewResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxReviewAssistantPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  executiveSummary: string;
+  riskSignals: Array<{
+    key: string;
+    severity: string;
+    label: string;
+    detail: string;
+    source: string;
+  }>;
+  accountantQuestions: string[];
+  suggestedActions: Array<{
+    key: string;
+    label: string;
+    owner: string;
+    priority: string;
+    source: string;
+  }>;
+  contextSnapshot: {
+    vatApprovalStatus: string;
+    operationalCloseoutStatus: string;
+    filingHandoffStatus: string | null;
+    annexesReadinessStatus: string;
+    accountingBridgeReadinessStatus: string;
+    evidenceVaultStatus: string;
+    eventCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPeriodCloseoutReportResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  sections: Array<{
+    key: string;
+    label: string;
+    readinessStatus: string;
+    summary: string;
+    blockerCount: number;
+    artifactCount: number;
+  }>;
+  totals: {
+    salesDocuments: number;
+    purchaseDocuments: number;
+    withholdingCandidates: number;
+    annexesApplicable: number;
+    accountingPreviewEntries: number;
+    auditEventCount: number;
+  };
+  filingHandoffStatus: string | null;
+  closeoutStatus: string;
+  blockers: string[];
+  accountantQuestions: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface TransitionEcuadorTaxWorkflowRequest {
   period: string;
   year: number;

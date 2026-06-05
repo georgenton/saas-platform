@@ -21,12 +21,14 @@ import {
   EcuadorTaxObligationView,
   EcuadorTaxPeriodEvidenceVaultView,
   EcuadorTaxPeriodCloseoutPacketView,
+  EcuadorTaxPeriodCloseoutReportView,
   EcuadorTaxPeriodWorkspaceView,
   EcuadorTaxPeriodPreparationPacketView,
   EcuadorTaxPurchaseExpenseEvidenceRecordView,
   EcuadorTaxPurchaseExpenseEvidenceWorkspaceView,
   EcuadorTaxReconciliationWorkspaceView,
   EcuadorTaxRuleCatalogView,
+  EcuadorTaxReviewAssistantPacketView,
   EcuadorTaxSalesBookView,
   EcuadorTaxSupplierFiscalReadinessWorkspaceView,
   EcuadorTaxpayerProfileView,
@@ -997,6 +999,72 @@ export interface EcuadorTaxAccountingBridgePreviewResponseDto {
     withholdingCandidates: number;
   };
   blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxReviewAssistantPacketResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  executiveSummary: string;
+  riskSignals: Array<{
+    key: string;
+    severity: string;
+    label: string;
+    detail: string;
+    source: string;
+  }>;
+  accountantQuestions: string[];
+  suggestedActions: Array<{
+    key: string;
+    label: string;
+    owner: string;
+    priority: string;
+    source: string;
+  }>;
+  contextSnapshot: {
+    vatApprovalStatus: string;
+    operationalCloseoutStatus: string;
+    filingHandoffStatus: string | null;
+    annexesReadinessStatus: string;
+    accountingBridgeReadinessStatus: string;
+    evidenceVaultStatus: string;
+    eventCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPeriodCloseoutReportResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  sections: Array<{
+    key: string;
+    label: string;
+    readinessStatus: string;
+    summary: string;
+    blockerCount: number;
+    artifactCount: number;
+  }>;
+  totals: {
+    salesDocuments: number;
+    purchaseDocuments: number;
+    withholdingCandidates: number;
+    annexesApplicable: number;
+    accountingPreviewEntries: number;
+    auditEventCount: number;
+  };
+  filingHandoffStatus: string | null;
+  closeoutStatus: string;
+  blockers: string[];
+  accountantQuestions: string[];
   nextStep: string;
   guardrails: string[];
 }
@@ -2156,6 +2224,46 @@ export function toEcuadorTaxAccountingBridgePreviewResponseDto(
     blockers: [...preview.blockers],
     nextStep: preview.nextStep,
     guardrails: [...preview.guardrails],
+  };
+}
+
+export function toEcuadorTaxReviewAssistantPacketResponseDto(
+  packet: EcuadorTaxReviewAssistantPacketView,
+): EcuadorTaxReviewAssistantPacketResponseDto {
+  return {
+    tenantSlug: packet.tenantSlug,
+    period: packet.period,
+    year: packet.year,
+    generatedAt: packet.generatedAt.toISOString(),
+    readinessStatus: packet.readinessStatus,
+    executiveSummary: packet.executiveSummary,
+    riskSignals: packet.riskSignals.map((signal) => ({ ...signal })),
+    accountantQuestions: [...packet.accountantQuestions],
+    suggestedActions: packet.suggestedActions.map((action) => ({ ...action })),
+    contextSnapshot: { ...packet.contextSnapshot },
+    blockers: [...packet.blockers],
+    nextStep: packet.nextStep,
+    guardrails: [...packet.guardrails],
+  };
+}
+
+export function toEcuadorTaxPeriodCloseoutReportResponseDto(
+  report: EcuadorTaxPeriodCloseoutReportView,
+): EcuadorTaxPeriodCloseoutReportResponseDto {
+  return {
+    tenantSlug: report.tenantSlug,
+    period: report.period,
+    year: report.year,
+    generatedAt: report.generatedAt.toISOString(),
+    readinessStatus: report.readinessStatus,
+    sections: report.sections.map((section) => ({ ...section })),
+    totals: { ...report.totals },
+    filingHandoffStatus: report.filingHandoffStatus,
+    closeoutStatus: report.closeoutStatus,
+    blockers: [...report.blockers],
+    accountantQuestions: [...report.accountantQuestions],
+    nextStep: report.nextStep,
+    guardrails: [...report.guardrails],
   };
 }
 

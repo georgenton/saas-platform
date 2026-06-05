@@ -84,6 +84,16 @@ const [
   accountantWorkbench,
   closeoutPacket,
   auditReadiness,
+  vatDraft,
+  vatApproval,
+  withholdingRegistry,
+  evidenceVault,
+  operationalCloseout,
+  filingHandoff,
+  annexesReadiness,
+  accountingBridgePreview,
+  reviewAssistantPacket,
+  closeoutReport,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -137,6 +147,56 @@ const [
     path: taxPath(`/audit-readiness?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/vat-declaration-draft?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/vat-declaration-approval?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/withholding-registry?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/period-evidence-vault?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/operational-closeout?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/filing-handoff?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/annexes-readiness?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accounting-bridge-preview?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/tax-review-assistant-packet?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/period-closeout-report?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus('purchase workspace', purchaseWorkspace.readinessStatus);
@@ -149,6 +209,19 @@ assertStatus('rule catalog', ruleCatalog.readinessStatus);
 assertStatus('accountant workbench', accountantWorkbench.readinessStatus);
 assertStatus('closeout packet', closeoutPacket.closeoutStatus);
 assertStatus('audit readiness', auditReadiness.readinessStatus);
+assertStatus('vat draft', vatDraft.readinessStatus);
+assertStatus('vat approval', vatApproval.status);
+assertStatus('withholding registry', withholdingRegistry.readinessStatus);
+assertStatus('evidence vault', evidenceVault.readinessStatus);
+assertStatus('operational closeout', operationalCloseout.status);
+assertStatus(
+  'filing handoff',
+  filingHandoff.status ?? filingHandoff.operationalCloseoutStatus,
+);
+assertStatus('annexes readiness', annexesReadiness.readinessStatus);
+assertStatus('accounting bridge preview', accountingBridgePreview.readinessStatus);
+assertStatus('review assistant packet', reviewAssistantPacket.readinessStatus);
+assertStatus('closeout report', closeoutReport.readinessStatus);
 
 let executionPacket = null;
 
@@ -179,6 +252,16 @@ printLine('rules', ruleCatalog.rules.length);
 printLine('accountant workbench', accountantWorkbench.readinessStatus);
 printLine('closeout', closeoutPacket.closeoutStatus);
 printLine('audit readiness', auditReadiness.readinessStatus);
+printLine('vat draft', vatDraft.readinessStatus);
+printLine('vat approval', vatApproval.status);
+printLine('withholding registry', withholdingRegistry.readinessStatus);
+printLine('evidence vault', evidenceVault.readinessStatus);
+printLine('operational closeout', operationalCloseout.status);
+printLine('filing handoff', filingHandoff.status ?? 'pending');
+printLine('annexes', annexesReadiness.readinessStatus);
+printLine('accounting bridge', accountingBridgePreview.readinessStatus);
+printLine('assistant', reviewAssistantPacket.readinessStatus);
+printLine('closeout report', closeoutReport.readinessStatus);
 printLine(
   'withholding execution',
   executionPacket?.withholdingDraft?.number ?? 'skipped',

@@ -3,6 +3,9 @@ import {
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
   GetTenantAccountingJournalDraftPreviewUseCase,
+  GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  ManageTenantAccountingChartMappingUseCase,
+  RequestTenantAccountingJournalDraftApprovalPacketUseCase,
 } from '@saas-platform/accounting-application';
 import { PRODUCT_REPOSITORY } from '@saas-platform/catalog-application';
 import {
@@ -22,6 +25,7 @@ import {
   GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
   RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
+  UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
   ResolveTenantAccessUseCase,
@@ -81,6 +85,44 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new GetTenantAccountingJournalDraftPreviewUseCase(
           requestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+          getTenantAccountingChartOfAccountsWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: ManageTenantAccountingChartMappingUseCase,
+      inject: [
+        UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
+        GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+      ],
+      useFactory: (
+        upsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
+        getTenantAccountingChartOfAccountsWorkspaceUseCase,
+      ) =>
+        new ManageTenantAccountingChartMappingUseCase(
+          upsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
+          getTenantAccountingChartOfAccountsWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingJournalDraftApprovalPacketUseCase,
+      inject: [GetTenantAccountingJournalDraftPreviewUseCase],
+      useFactory: (getTenantAccountingJournalDraftPreviewUseCase) =>
+        new RequestTenantAccountingJournalDraftApprovalPacketUseCase(
+          getTenantAccountingJournalDraftPreviewUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+      inject: [
+        GetTenantAccountingJournalDraftPreviewUseCase,
+        GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingJournalDraftPreviewUseCase,
+        getTenantAccountingChartOfAccountsWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingLedgerPreviewWorkspaceUseCase(
+          getTenantAccountingJournalDraftPreviewUseCase,
           getTenantAccountingChartOfAccountsWorkspaceUseCase,
         ),
     },

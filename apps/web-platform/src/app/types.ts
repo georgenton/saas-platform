@@ -1823,6 +1823,99 @@ export interface AccountingJournalDraftPreviewResponse {
   guardrails: string[];
 }
 
+export interface ManageAccountingChartMappingRequest {
+  period: string;
+  year: number;
+  mappings: Array<{
+    accountHint: string;
+    suggestedAccountCode?: string | null;
+    suggestedAccountName?: string | null;
+  }>;
+  updatedByUserId?: string | null;
+  updatedByEmail?: string | null;
+}
+
+export interface AccountingChartMappingManagementResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  mappingStatus: string;
+  updatedMappingCount: number;
+  chartWorkspace: AccountingChartOfAccountsWorkspaceResponse;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface RequestAccountingJournalDraftApprovalPacketRequest {
+  period: string;
+  year: number;
+  draftEntryKeys?: string[];
+  decision: 'approve' | 'reject';
+  reviewerUserId?: string | null;
+  reviewerEmail?: string | null;
+  note?: string | null;
+}
+
+export interface AccountingJournalDraftApprovalPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  approvalStatus: string;
+  reviewerUserId: string | null;
+  reviewerEmail: string | null;
+  note: string | null;
+  approvedDraftEntryKeys: string[];
+  rejectedDraftEntryKeys: string[];
+  draftEntries: AccountingJournalDraftPreviewResponse['draftEntries'];
+  summary: {
+    requestedDraftEntryCount: number;
+    approvedDraftEntryCount: number;
+    rejectedDraftEntryCount: number;
+    blockedDraftEntryCount: number;
+    balancedDraftCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingLedgerPreviewWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  ledgerStatus: string;
+  accountBalances: Array<{
+    accountCode: string;
+    accountName: string;
+    category: string;
+    debitInCents: number;
+    creditInCents: number;
+    netDebitInCents: number;
+    netCreditInCents: number;
+    sourceDraftEntryKeys: string[];
+  }>;
+  summary: {
+    accountCount: number;
+    draftEntryCount: number;
+    approvedPreviewEntryCount: number;
+    unreviewedDraftEntryCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+    balanced: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxSriVoucherEvidenceResponse {
   evidenceId: string;
   direction: string;

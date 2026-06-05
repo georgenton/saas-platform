@@ -106,6 +106,7 @@ import {
   fetchAccountingChartOfAccountsWorkspace,
   fetchAccountingIntakeWorkspace,
   fetchAccountingJournalDraftPreview,
+  fetchAccountingLedgerPreviewWorkspace,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
   fetchEcuadorTaxAccountingBridgeSuggestedAccounts,
@@ -313,8 +314,10 @@ import {
   listProducts,
   listTaxRates,
   listTenantEnabledProducts,
+  manageAccountingChartMapping,
   prepareTenantAiSuggestionRun,
   requestTenantAiSuggestionRunApproval,
+  requestAccountingJournalDraftApprovalPacket,
   listTenantInvitations,
   reverseInvoicePayment,
   reviewTenantAiApprovalRequest,
@@ -343,8 +346,11 @@ import {
 } from './api';
 import {
   AccountingChartOfAccountsWorkspaceResponse,
+  AccountingChartMappingManagementResponse,
   AccountingIntakeWorkspaceResponse,
+  AccountingJournalDraftApprovalPacketResponse,
   AccountingJournalDraftPreviewResponse,
+  AccountingLedgerPreviewWorkspaceResponse,
   AiActivityFeedEventType,
   AiActivityFeedResponse,
   AiApprovalCapacityWorkspaceResponse,
@@ -2083,6 +2089,18 @@ export function App() {
     accountingJournalDraftPreview,
     setAccountingJournalDraftPreview,
   ] = useState<AccountingJournalDraftPreviewResponse | null>(null);
+  const [
+    lastAccountingChartMappingManagement,
+    setLastAccountingChartMappingManagement,
+  ] = useState<AccountingChartMappingManagementResponse | null>(null);
+  const [
+    lastAccountingJournalDraftApprovalPacket,
+    setLastAccountingJournalDraftApprovalPacket,
+  ] = useState<AccountingJournalDraftApprovalPacketResponse | null>(null);
+  const [
+    accountingLedgerPreviewWorkspace,
+    setAccountingLedgerPreviewWorkspace,
+  ] = useState<AccountingLedgerPreviewWorkspaceResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -19476,6 +19494,7 @@ export function App() {
         nextAccountingIntakeWorkspace,
         nextAccountingChartOfAccountsWorkspace,
         nextAccountingJournalDraftPreview,
+        nextAccountingLedgerPreviewWorkspace,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -19496,8 +19515,14 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingLedgerPreviewWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
-        : [null, null, null];
+        : [null, null, null, null];
 
       startTransition(() => {
         setTaxComplianceWorkspace(nextWorkspace);
@@ -19552,6 +19577,9 @@ export function App() {
           nextAccountingChartOfAccountsWorkspace,
         );
         setAccountingJournalDraftPreview(nextAccountingJournalDraftPreview);
+        setAccountingLedgerPreviewWorkspace(
+          nextAccountingLedgerPreviewWorkspace,
+        );
       });
     } catch (error) {
       setTaxComplianceError(
@@ -20003,6 +20031,119 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo mapear hints contables.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleManageAccountingChartMapping() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    const sourceAccounts =
+      accountingChartOfAccountsWorkspace?.accounts.filter(
+        (account) => account.mappedAccountHint && account.status !== 'mapped',
+      ) ?? [];
+
+    if (sourceAccounts.length === 0) {
+      setTaxComplianceActionMessage('Plan de cuentas foundation ya mapeado.');
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-chart-mapping');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const result = await manageAccountingChartMapping(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          period: taxCompliancePeriod,
+          year: resolveNumericYear(taxComplianceYear),
+          mappings: sourceAccounts.slice(0, 6).map((account) => ({
+            accountHint: account.mappedAccountHint ?? account.name,
+            suggestedAccountCode: account.code,
+            suggestedAccountName: account.name,
+          })),
+          updatedByUserId: session?.user.id ?? null,
+          updatedByEmail: session?.user.email ?? null,
+        },
+      );
+
+      setLastAccountingChartMappingManagement(result);
+      setAccountingChartOfAccountsWorkspace(result.chartWorkspace);
+      setTaxComplianceActionMessage(
+        `Accounting mapping ${humanizeKey(result.mappingStatus)} con ${result.updatedMappingCount} cuentas revisadas.`,
+      );
+      await refreshTaxComplianceWorkspace();
+    } catch (error) {
+      setLastAccountingChartMappingManagement(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo gestionar el mapping contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestAccountingJournalDraftApprovalPacket() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    const reviewableDraftKeys =
+      accountingJournalDraftPreview?.draftEntries
+        .filter((entry) => entry.blockers.length === 0 && entry.totals.balanced)
+        .map((entry) => entry.draftEntryKey) ?? [];
+
+    if (reviewableDraftKeys.length === 0) {
+      setTaxComplianceActionMessage(
+        'No hay borradores contables listos para aprobacion.',
+      );
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-journal-approval');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const packet = await requestAccountingJournalDraftApprovalPacket(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          period: taxCompliancePeriod,
+          year: resolveNumericYear(taxComplianceYear),
+          draftEntryKeys: reviewableDraftKeys,
+          decision: 'approve',
+          reviewerUserId: session?.user.id ?? null,
+          reviewerEmail: session?.user.email ?? null,
+          note: 'Approval operativo desde Accounting foundation.',
+        },
+      );
+      const ledger = await fetchAccountingLedgerPreviewWorkspace(
+        token,
+        currentTenancy.tenant.slug,
+        taxCompliancePeriod,
+        resolveNumericYear(taxComplianceYear),
+      );
+
+      setLastAccountingJournalDraftApprovalPacket(packet);
+      setAccountingLedgerPreviewWorkspace(ledger);
+      setTaxComplianceActionMessage(
+        `${packet.summary.approvedDraftEntryCount} borradores contables aprobados para ledger preview.`,
+      );
+    } catch (error) {
+      setLastAccountingJournalDraftApprovalPacket(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar approval packet contable.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -29294,6 +29435,40 @@ export function App() {
                                 </span>
                               </div>
                             </div>
+                            <div className={styles.actionRow}>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-chart-mapping' ||
+                                  accountingChartOfAccountsWorkspace.summary
+                                    .needsMappingCount === 0
+                                }
+                                onClick={() =>
+                                  void handleManageAccountingChartMapping()
+                                }
+                                type="button"
+                              >
+                                Guardar mapping
+                              </button>
+                              <button
+                                className={styles.primaryButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-journal-approval' ||
+                                  accountingJournalDraftPreview.summary
+                                    .needsMappingDraftCount > 0 ||
+                                  accountingJournalDraftPreview.summary
+                                    .draftEntryCount === 0
+                                }
+                                onClick={() =>
+                                  void handleRequestAccountingJournalDraftApprovalPacket()
+                                }
+                                type="button"
+                              >
+                                Aprobar drafts
+                              </button>
+                            </div>
                             <div className={styles.invoiceInlineGrid}>
                               {accountingChartOfAccountsWorkspace.accounts
                                 .slice(0, 4)
@@ -29315,6 +29490,104 @@ export function App() {
                             <p className={styles.muted}>
                               {accountingJournalDraftPreview.nextStep}
                             </p>
+                            {lastAccountingChartMappingManagement ? (
+                              <p className={styles.muted}>
+                                Mapping{' '}
+                                {humanizeKey(
+                                  lastAccountingChartMappingManagement.mappingStatus,
+                                )}{' '}
+                                con{' '}
+                                {
+                                  lastAccountingChartMappingManagement.updatedMappingCount
+                                }{' '}
+                                cuentas revisadas.
+                              </p>
+                            ) : null}
+                            {lastAccountingJournalDraftApprovalPacket ? (
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>
+                                  Approval packet
+                                </span>
+                                <strong>
+                                  {humanizeKey(
+                                    lastAccountingJournalDraftApprovalPacket.approvalStatus,
+                                  )}
+                                </strong>
+                                <span className={styles.muted}>
+                                  {
+                                    lastAccountingJournalDraftApprovalPacket
+                                      .summary.approvedDraftEntryCount
+                                  }{' '}
+                                  aprobados
+                                </span>
+                              </div>
+                            ) : null}
+                            {accountingLedgerPreviewWorkspace ? (
+                              <div className={styles.invoiceItemCard}>
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>Ledger preview</strong>
+                                  <span
+                                    className={`${styles.statusPill} ${operationalStatusTone(
+                                      accountingLedgerPreviewWorkspace.ledgerStatus,
+                                    )}`}
+                                  >
+                                    {humanizeKey(
+                                      accountingLedgerPreviewWorkspace.ledgerStatus,
+                                    )}
+                                  </span>
+                                </div>
+                                <div className={styles.commercialGrid}>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>Cuentas</span>
+                                    <strong>
+                                      {
+                                        accountingLedgerPreviewWorkspace.summary
+                                          .accountCount
+                                      }
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {
+                                        accountingLedgerPreviewWorkspace.summary
+                                          .approvedPreviewEntryCount
+                                      }{' '}
+                                      entries
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>Débito</span>
+                                    <strong>
+                                      {formatMoney(
+                                        accountingLedgerPreviewWorkspace.summary
+                                          .totalDebitInCents,
+                                        'USD',
+                                      )}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      preview
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>Crédito</span>
+                                    <strong>
+                                      {formatMoney(
+                                        accountingLedgerPreviewWorkspace.summary
+                                          .totalCreditInCents,
+                                        'USD',
+                                      )}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingLedgerPreviewWorkspace.summary
+                                        .balanced
+                                        ? 'balanceado'
+                                        : 'descuadrado'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <p className={styles.muted}>
+                                  {accountingLedgerPreviewWorkspace.nextStep}
+                                </p>
+                              </div>
+                            ) : null}
                           </div>
                         ) : (
                           <div className={styles.emptyState}>

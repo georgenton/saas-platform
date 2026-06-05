@@ -110,4 +110,77 @@ printLine(
 );
 printLine('next step', journalDraftPreview.nextStep);
 
+const pendingAccounts = chartOfAccountsWorkspace.accounts.filter(
+  (account) => account.mappedAccountHint && account.status !== 'mapped',
+);
+
+if (pendingAccounts.length > 0) {
+  const mapping = await apiRequest({
+    baseUrl,
+    path: accountingPath('/chart-mapping'),
+    token,
+    method: 'POST',
+    body: {
+      period,
+      year,
+      mappings: pendingAccounts.slice(0, 6).map((account) => ({
+        accountHint: account.mappedAccountHint,
+        suggestedAccountCode: account.code,
+        suggestedAccountName: account.name,
+      })),
+      updatedByEmail: 'smoke@saas-platform.dev',
+    },
+  });
+
+  assertStatus('chart mapping management', mapping.mappingStatus);
+  printLine(
+    'chart mapping',
+    `${mapping.updatedMappingCount} revisados, ${mapping.mappingStatus}`,
+  );
+}
+
+const refreshedJournalDraftPreview = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/journal-draft-preview?${periodQuery()}`),
+  token,
+});
+const reviewableDraftKeys = refreshedJournalDraftPreview.draftEntries
+  .filter((entry) => entry.blockers.length === 0 && entry.totals.balanced)
+  .map((entry) => entry.draftEntryKey);
+
+if (reviewableDraftKeys.length > 0) {
+  const approvalPacket = await apiRequest({
+    baseUrl,
+    path: accountingPath('/journal-draft-approval-packet'),
+    token,
+    method: 'POST',
+    body: {
+      period,
+      year,
+      draftEntryKeys: reviewableDraftKeys,
+      decision: 'approve',
+      reviewerEmail: 'smoke@saas-platform.dev',
+      note: 'Smoke approval for accounting foundation preview.',
+    },
+  });
+
+  assertStatus('journal approval packet', approvalPacket.approvalStatus);
+  printLine(
+    'journal approval',
+    `${approvalPacket.summary.approvedDraftEntryCount} aprobados, ${approvalPacket.approvalStatus}`,
+  );
+}
+
+const ledgerPreview = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/ledger-preview-workspace?${periodQuery()}`),
+  token,
+});
+
+assertStatus('ledger preview workspace', ledgerPreview.ledgerStatus);
+printLine(
+  'ledger preview',
+  `${ledgerPreview.summary.accountCount} cuentas, ${ledgerPreview.summary.approvedPreviewEntryCount} entries`,
+);
+
 printSection('Accounting foundation smoke OK');

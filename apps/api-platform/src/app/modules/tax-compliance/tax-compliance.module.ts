@@ -1318,6 +1318,7 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
     GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
     RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
     RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
+    UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
   ],
 })
 export class TaxComplianceModule {}

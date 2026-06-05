@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.92.0
+
+### Minor Changes
+
+- a5b520f: Add Accounting foundation workspaces for intake, chart of accounts, and journal draft previews.
+
 ## 0.91.0
 
 ### Minor Changes

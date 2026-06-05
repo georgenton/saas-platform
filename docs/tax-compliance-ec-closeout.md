@@ -16,8 +16,9 @@ post journal entries.
 4. Build the evidence vault and operational closeout state.
 5. Record external filing/payment handoff after human completion.
 6. Review the accounting bridge preview as a signal for future Accounting.
-7. Request the tax review assistant packet.
-8. Generate the period closeout report.
+7. Map accounting bridge hints against suggested chart-of-accounts codes.
+8. Request the tax review assistant packet.
+9. Generate the period closeout report.
 
 ## Smoke
 
@@ -31,3 +32,10 @@ The smoke covers purchase evidence, supplier readiness, VAT, income tax,
 withholdings, rules, accountant workbench, audit readiness, filing handoff,
 annexes readiness, accounting bridge preview, assistant packet, and closeout
 report.
+
+## Product Boundary
+
+Tax Compliance EC is now cataloged as `tax-compliance-ec` with its own
+read/manage permissions. It may prepare accounting bridge mappings so the tax
+operator and accountant can align evidence with a future chart of accounts.
+It still does not own journals, ledgers, balances, or formal accounting close.

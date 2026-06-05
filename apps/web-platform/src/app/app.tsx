@@ -103,6 +103,7 @@ import {
   fetchTenantEcommerceOrderPaymentConfirmationWorkspace,
   fetchTenantEcommerceOrderPaymentReadinessWorkspace,
   executeEcuadorTaxWithholdingDraftBridge,
+  fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
   fetchEcuadorTaxAccountantWorkbench,
   fetchEcuadorTaxAccountantReviews,
@@ -135,6 +136,7 @@ import {
   requestEcuadorTaxWithholdingDraftBridgePacket,
   transitionEcuadorTaxOperationalCloseout,
   transitionEcuadorTaxVatDeclarationApproval,
+  upsertEcuadorTaxAccountingBridgeMapping,
   upsertEcuadorTaxObligationSettings,
   fetchTenantEcommerceOrderPostSaleOpsBoard,
   fetchTenantEcommerceOrderPostSaleReportingBoard,
@@ -510,6 +512,7 @@ import {
   EcommerceLaunchWorkspaceResponse,
   EcuadorTaxAccountantReviewResponse,
   EcuadorTaxAccountantWorkbenchResponse,
+  EcuadorTaxAccountingBridgeMappingResponse,
   EcuadorTaxAccountingBridgePreviewResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxComplianceEventResponse,
@@ -2020,6 +2023,10 @@ export function App() {
     taxComplianceAccountingBridgePreview,
     setTaxComplianceAccountingBridgePreview,
   ] = useState<EcuadorTaxAccountingBridgePreviewResponse | null>(null);
+  const [
+    taxComplianceAccountingBridgeMapping,
+    setTaxComplianceAccountingBridgeMapping,
+  ] = useState<EcuadorTaxAccountingBridgeMappingResponse | null>(null);
   const [
     taxComplianceReviewAssistantPacket,
     setTaxComplianceReviewAssistantPacket,
@@ -19191,6 +19198,7 @@ export function App() {
         nextFilingHandoff,
         nextAnnexesReadiness,
         nextAccountingBridgePreview,
+        nextAccountingBridgeMapping,
         nextReviewAssistantPacket,
         nextPeriodCloseoutReport,
       ] = await Promise.all([
@@ -19309,6 +19317,12 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchEcuadorTaxAccountingBridgeMapping(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
         fetchEcuadorTaxReviewAssistantPacket(
           token,
           tenantSlug,
@@ -19351,6 +19365,7 @@ export function App() {
         setTaxComplianceFilingHandoff(nextFilingHandoff);
         setTaxComplianceAnnexesReadiness(nextAnnexesReadiness);
         setTaxComplianceAccountingBridgePreview(nextAccountingBridgePreview);
+        setTaxComplianceAccountingBridgeMapping(nextAccountingBridgeMapping);
         setTaxComplianceReviewAssistantPacket(nextReviewAssistantPacket);
         setTaxCompliancePeriodCloseoutReport(nextPeriodCloseoutReport);
       });
@@ -19753,6 +19768,57 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo crear el draft de retencion.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleMapTaxAccountingBridgeHints() {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      return;
+    }
+
+    const unmappedRows =
+      taxComplianceAccountingBridgeMapping?.rows.filter((row) => !row.mapped) ??
+      [];
+
+    if (unmappedRows.length === 0) {
+      setTaxComplianceActionMessage('Hints contables ya mapeados.');
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-bridge-mapping');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const mapping = await upsertEcuadorTaxAccountingBridgeMapping(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          period: taxCompliancePeriod,
+          year: resolveNumericYear(taxComplianceYear),
+          mappings: unmappedRows.slice(0, 4).map((row, index) => ({
+            accountHint: row.accountHint,
+            suggestedAccountCode: `TAX-${String(index + 1).padStart(3, '0')}`,
+            suggestedAccountName: row.accountHint,
+          })),
+          updatedByUserId: session?.user.id ?? null,
+          updatedByEmail: session?.user.email ?? null,
+        },
+      );
+
+      setTaxComplianceAccountingBridgeMapping(mapping);
+      setTaxComplianceActionMessage(
+        `${mapping.summary.mappedHintCount}/${mapping.summary.hintCount} hints contables mapeados.`,
+      );
+      await refreshTaxComplianceWorkspace();
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo mapear hints contables.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -28518,6 +28584,64 @@ export function App() {
                         {taxComplianceAccountingBridgePreview.nextStep}
                       </p>
                     </div>
+                    {taxComplianceAccountingBridgeMapping ? (
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>Mapping de plan de cuentas</strong>
+                          <button
+                            className={styles.ghostButton}
+                            disabled={
+                              taxComplianceActionLoading ===
+                                'accounting-bridge-mapping' ||
+                              taxComplianceAccountingBridgeMapping.summary
+                                .unmappedHintCount === 0
+                            }
+                            onClick={() =>
+                              void handleMapTaxAccountingBridgeHints()
+                            }
+                            type="button"
+                          >
+                            Mapear hints
+                          </button>
+                        </div>
+                        <div className={styles.commercialGrid}>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Mapeados</span>
+                            <strong>
+                              {
+                                taxComplianceAccountingBridgeMapping.summary
+                                  .mappedHintCount
+                              }
+                              /
+                              {
+                                taxComplianceAccountingBridgeMapping.summary
+                                  .hintCount
+                              }
+                            </strong>
+                            <span className={styles.muted}>hints</span>
+                          </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Pendientes</span>
+                            <strong>
+                              {
+                                taxComplianceAccountingBridgeMapping.summary
+                                  .unmappedHintCount
+                              }
+                            </strong>
+                            <span className={styles.muted}>
+                              plan de cuentas
+                            </span>
+                          </div>
+                        </div>
+                        <p className={styles.muted}>
+                          {taxComplianceAccountingBridgeMapping.rows[0]
+                            ?.suggestedAccountCode ??
+                            taxComplianceAccountingBridgeMapping.rows[0]
+                              ?.accountHint ??
+                            taxComplianceAccountingBridgeMapping.nextStep}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className={styles.emptyState}>

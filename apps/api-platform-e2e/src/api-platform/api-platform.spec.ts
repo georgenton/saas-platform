@@ -199,6 +199,7 @@ import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
   GetTenantEcuadorTaxAnnexesReadinessUseCase,
   GetTenantEcuadorTaxAccountantWorkbenchUseCase,
+  GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
   GetTenantEcuadorTaxFilingHandoffUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
@@ -237,9 +238,11 @@ import {
   RequestTenantEcuadorTaxVatInputOutputReconciliationPacketUseCase,
   RequestTenantEcuadorTaxWithholdingDraftBridgePacketUseCase,
   RequestTenantEcuadorTaxWithholdingEvidencePacketUseCase,
+  TAX_COMPLIANCE_PERMISSIONS,
   TransitionTenantEcuadorTaxAccountantReviewUseCase,
   TransitionTenantEcuadorTaxOperationalCloseoutUseCase,
   TransitionTenantEcuadorTaxVatDeclarationApprovalUseCase,
+  UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
   UpsertTenantEcuadorTaxObligationSettingsUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
@@ -366,6 +369,7 @@ import {
 } from '@saas-platform/invoicing-domain';
 import {
   GetTenantPartyByIdUseCase,
+  GetTenantPartyFiscalCleanupWorkspaceUseCase,
   GetTenantPartyFiscalReadinessSummaryUseCase,
   ListTenantPartiesUseCase,
 } from '@saas-platform/parties-application';
@@ -431,6 +435,7 @@ describe('API', () => {
   let getTenantInvoiceItemByIdUseCase: { execute: jest.Mock };
   let getTenantIssuerProfileUseCase: { execute: jest.Mock };
   let getTenantPartyByIdUseCase: { execute: jest.Mock };
+  let getTenantPartyFiscalCleanupWorkspaceUseCase: { execute: jest.Mock };
   let getTenantConversationThreadByIdUseCase: { execute: jest.Mock };
   let getTenantGrowthAssistDailyAgendaUseCase: { execute: jest.Mock };
   let listTenantAiApprovalRequestsUseCase: { execute: jest.Mock };
@@ -901,6 +906,12 @@ describe('API', () => {
   let requestTenantEcuadorTaxAccountingBridgePreviewUseCase: {
     execute: jest.Mock;
   };
+  let getTenantEcuadorTaxAccountingBridgeMappingUseCase: {
+    execute: jest.Mock;
+  };
+  let upsertTenantEcuadorTaxAccountingBridgeMappingUseCase: {
+    execute: jest.Mock;
+  };
   let requestTenantEcuadorTaxReviewAssistantPacketUseCase: {
     execute: jest.Mock;
   };
@@ -1052,6 +1063,8 @@ describe('API', () => {
     INVOICING_PERMISSIONS.TAXES_MANAGE,
     INVOICING_PERMISSIONS.NOTIFICATIONS_SEND,
     INVOICING_PERMISSIONS.REPORTS_READ,
+    TAX_COMPLIANCE_PERMISSIONS.EC_READ,
+    TAX_COMPLIANCE_PERMISSIONS.EC_MANAGE,
     GROWTH_PERMISSIONS.CONVERSATIONS_READ,
     GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE,
     GROWTH_PERMISSIONS.LEADS_READ,
@@ -1135,6 +1148,15 @@ describe('API', () => {
     createdAt: new Date('2026-04-23T17:00:00.000Z'),
     updatedAt: new Date('2026-04-23T17:00:00.000Z'),
   });
+  const taxComplianceProduct = Product.create({
+    id: 'product_tax_compliance_ec',
+    key: 'tax-compliance-ec',
+    name: 'Tax Compliance EC',
+    description: 'Obligaciones tributarias, evidencia y closeout Ecuador.',
+    isActive: true,
+    createdAt: new Date('2026-06-05T10:00:00.000Z'),
+    updatedAt: new Date('2026-06-05T10:00:00.000Z'),
+  });
   const invoicingModules = [
     PlatformModule.create({
       id: 'module_invoicing_customers',
@@ -1188,7 +1210,7 @@ describe('API', () => {
       id: 'plan_entitlement_growth_products',
       planId: 'plan_growth_monthly',
       key: 'products',
-      value: ['invoicing', 'learning'],
+      value: ['invoicing', 'learning', 'tax-compliance-ec'],
       createdAt: commercialCreatedAt,
       updatedAt: commercialCreatedAt,
     }),
@@ -1226,7 +1248,7 @@ describe('API', () => {
       id: 'entitlement_tenant_123_products',
       tenantId: 'tenant_123',
       key: 'products',
-      value: ['invoicing', 'learning'],
+      value: ['invoicing', 'learning', 'tax-compliance-ec'],
       source: 'plan',
       createdAt: commercialCreatedAt,
       updatedAt: commercialCreatedAt,
@@ -2491,6 +2513,44 @@ describe('API', () => {
       'Los proveedores aun no tienen persistencia propia y deben incorporarse sin duplicar clientes existentes.',
     ],
   };
+  const partyFiscalCleanupWorkspace = {
+    tenantSlug: 'saas-platform',
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    summary: {
+      totalParties: 2,
+      completeParties: 1,
+      needsReviewParties: 1,
+      duplicateGroupCount: 0,
+      criticalIssueCount: 0,
+    },
+    priorityParties: [
+      {
+        id: 'customer_globex',
+        displayName: 'Globex LLC',
+        roles: ['customer'],
+        taxpayerId: null,
+        completenessStatus: 'needs_review',
+        missingFields: [
+          'taxpayer_id',
+          'identification_type',
+          'fiscal_address',
+          'email',
+        ],
+        priority: 'high' as const,
+        reviewNotes: [],
+        suggestedAction:
+          'Completar identificacion, direccion fiscal y email antes del cierre tributario.',
+      },
+    ],
+    duplicateGroups: [],
+    issueSummaries: partyFiscalReadinessSummary.issueSummaries,
+    nextStep:
+      'Completar los terceros prioritarios antes de cerrar obligaciones tributarias.',
+    guardrails: [
+      'Este workspace prepara datos fiscales compartidos; no valida identidad oficial del SRI.',
+    ],
+  };
   const ecuadorTaxObligations = [
     {
       key: 'vat' as const,
@@ -3638,6 +3698,38 @@ describe('API', () => {
     nextStep: 'Mapear hints contra plan de cuentas.',
     guardrails: ['Preview contable no registra asientos.'],
   };
+  const ecuadorTaxAccountingBridgeMapping = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    rows: [
+      {
+        accountHint: 'Ingresos por ventas',
+        suggestedAccountCode: null,
+        suggestedAccountName: null,
+        mapped: false,
+        previewEntryCount: 1,
+        updatedByUserId: null,
+        updatedByEmail: null,
+        updatedAt: null,
+      },
+    ],
+    summary: {
+      hintCount: 1,
+      mappedHintCount: 0,
+      unmappedHintCount: 1,
+      previewEntryCount: 1,
+    },
+    blockers: [],
+    nextStep:
+      'Mapear account hints contra un plan de cuentas antes de generar asientos en un producto contable.',
+    guardrails: [
+      'Mapping no crea asientos contables ni modifica libros.',
+      'Plan de cuentas formal, diarios y balances pertenecen al producto Accounting futuro.',
+    ],
+  };
   const ecuadorTaxReviewAssistantPacket = {
     tenantSlug: 'saas-platform',
     period: '2026-06',
@@ -4709,13 +4801,27 @@ describe('API', () => {
       execute: jest.fn().mockResolvedValue(growthPlan),
     };
     getTenantEnabledProductByKeyUseCase = {
-      execute: jest.fn().mockResolvedValue(invoicingProduct),
+      execute: jest
+        .fn()
+        .mockImplementation((_tenantSlug: string, productKey: string) =>
+          Promise.resolve(
+            productKey === 'tax-compliance-ec'
+              ? taxComplianceProduct
+              : invoicingProduct,
+          ),
+        ),
     };
     getUserByIdUseCase = {
       execute: jest.fn().mockResolvedValue(user),
     };
     getProductByKeyUseCase = {
-      execute: jest.fn().mockResolvedValue(invoicingProduct),
+      execute: jest.fn().mockImplementation((productKey: string) =>
+        Promise.resolve(
+          productKey === 'tax-compliance-ec'
+            ? taxComplianceProduct
+            : invoicingProduct,
+        ),
+      ),
     };
     getTenantCustomerByIdUseCase = {
       execute: jest.fn().mockResolvedValue(acmeCustomer),
@@ -12216,6 +12322,7 @@ describe('API', () => {
       execute: jest.fn().mockResolvedValue([
         invoicingProduct,
         psychologyProduct,
+        taxComplianceProduct,
       ]),
     };
     listProductModulesUseCase = {
@@ -12228,7 +12335,9 @@ describe('API', () => {
       execute: jest.fn().mockResolvedValue(tenantEntitlements),
     };
     listTenantEnabledProductsUseCase = {
-      execute: jest.fn().mockResolvedValue([invoicingProduct]),
+      execute: jest
+        .fn()
+        .mockResolvedValue([invoicingProduct, taxComplianceProduct]),
     };
     listTenantCustomersUseCase = {
       execute: jest.fn().mockResolvedValue([acmeCustomer, globexCustomer]),
@@ -12238,6 +12347,9 @@ describe('API', () => {
     };
     getTenantPartyFiscalReadinessSummaryUseCase = {
       execute: jest.fn().mockResolvedValue(partyFiscalReadinessSummary),
+    };
+    getTenantPartyFiscalCleanupWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue(partyFiscalCleanupWorkspace),
     };
     getTenantEcuadorTaxpayerProfileUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxpayerProfile),
@@ -12330,6 +12442,31 @@ describe('API', () => {
     };
     requestTenantEcuadorTaxAccountingBridgePreviewUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAccountingBridgePreview),
+    };
+    getTenantEcuadorTaxAccountingBridgeMappingUseCase = {
+      execute: jest.fn().mockResolvedValue(ecuadorTaxAccountingBridgeMapping),
+    };
+    upsertTenantEcuadorTaxAccountingBridgeMappingUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        ...ecuadorTaxAccountingBridgeMapping,
+        readinessStatus: 'ready',
+        rows: [
+          {
+            ...ecuadorTaxAccountingBridgeMapping.rows[0],
+            suggestedAccountCode: '401.01',
+            suggestedAccountName: 'Ingresos por ventas locales',
+            mapped: true,
+            updatedByUserId: 'user_123',
+            updatedByEmail: 'hello@saas-platform.dev',
+            updatedAt: taxComplianceGeneratedAt,
+          },
+        ],
+        summary: {
+          ...ecuadorTaxAccountingBridgeMapping.summary,
+          mappedHintCount: 1,
+          unmappedHintCount: 0,
+        },
+      }),
     };
     requestTenantEcuadorTaxReviewAssistantPacketUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxReviewAssistantPacket),
@@ -12859,6 +12996,8 @@ describe('API', () => {
       .useValue(getTenantPartyByIdUseCase)
       .overrideProvider(GetTenantPartyFiscalReadinessSummaryUseCase)
       .useValue(getTenantPartyFiscalReadinessSummaryUseCase)
+      .overrideProvider(GetTenantPartyFiscalCleanupWorkspaceUseCase)
+      .useValue(getTenantPartyFiscalCleanupWorkspaceUseCase)
       .overrideProvider(GetTenantEcuadorTaxpayerProfileUseCase)
       .useValue(getTenantEcuadorTaxpayerProfileUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationCalendarUseCase)
@@ -12915,6 +13054,10 @@ describe('API', () => {
       .useValue(getTenantEcuadorTaxAnnexesReadinessUseCase)
       .overrideProvider(RequestTenantEcuadorTaxAccountingBridgePreviewUseCase)
       .useValue(requestTenantEcuadorTaxAccountingBridgePreviewUseCase)
+      .overrideProvider(GetTenantEcuadorTaxAccountingBridgeMappingUseCase)
+      .useValue(getTenantEcuadorTaxAccountingBridgeMappingUseCase)
+      .overrideProvider(UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase)
+      .useValue(upsertTenantEcuadorTaxAccountingBridgeMappingUseCase)
       .overrideProvider(RequestTenantEcuadorTaxReviewAssistantPacketUseCase)
       .useValue(requestTenantEcuadorTaxReviewAssistantPacketUseCase)
       .overrideProvider(RequestTenantEcuadorTaxPeriodCloseoutReportUseCase)
@@ -14078,6 +14221,15 @@ describe('API', () => {
           createdAt: '2026-04-23T17:00:00.000Z',
           updatedAt: '2026-04-23T17:00:00.000Z',
         },
+        {
+          id: 'product_tax_compliance_ec',
+          key: 'tax-compliance-ec',
+          name: 'Tax Compliance EC',
+          description: 'Obligaciones tributarias, evidencia y closeout Ecuador.',
+          isActive: true,
+          createdAt: '2026-06-05T10:00:00.000Z',
+          updatedAt: '2026-06-05T10:00:00.000Z',
+        },
       ]);
   });
 
@@ -14207,7 +14359,7 @@ describe('API', () => {
           id: 'plan_entitlement_growth_products',
           planId: 'plan_growth_monthly',
           key: 'products',
-          value: ['invoicing', 'learning'],
+          value: ['invoicing', 'learning', 'tax-compliance-ec'],
           createdAt: '2026-04-23T18:00:00.000Z',
           updatedAt: '2026-04-23T18:00:00.000Z',
         },
@@ -14273,6 +14425,15 @@ describe('API', () => {
           isActive: true,
           createdAt: '2026-04-23T17:00:00.000Z',
           updatedAt: '2026-04-23T17:00:00.000Z',
+        },
+        {
+          id: 'product_tax_compliance_ec',
+          key: 'tax-compliance-ec',
+          name: 'Tax Compliance EC',
+          description: 'Obligaciones tributarias, evidencia y closeout Ecuador.',
+          isActive: true,
+          createdAt: '2026-06-05T10:00:00.000Z',
+          updatedAt: '2026-06-05T10:00:00.000Z',
         },
       ]);
 
@@ -14581,6 +14742,33 @@ describe('API', () => {
 
     expect(
       getTenantPartyFiscalReadinessSummaryUseCase.execute,
+    ).toHaveBeenCalledWith('saas-platform');
+  });
+
+  it('GET /api/parties/tenants/:slug/fiscal-cleanup-workspace should return party cleanup priorities', async () => {
+    const response = await request(httpServer)
+      .get('/api/parties/tenants/saas-platform/fiscal-cleanup-workspace')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      readinessStatus: 'needs_review',
+      summary: {
+        totalParties: 2,
+        needsReviewParties: 1,
+        duplicateGroupCount: 0,
+      },
+      priorityParties: [
+        {
+          id: 'customer_globex',
+          priority: 'high',
+        },
+      ],
+    });
+
+    expect(
+      getTenantPartyFiscalCleanupWorkspaceUseCase.execute,
     ).toHaveBeenCalledWith('saas-platform');
   });
 
@@ -16195,6 +16383,93 @@ describe('API', () => {
       tenantSlug: 'saas-platform',
       period: '2026-06',
       year: 2026,
+    });
+  });
+
+  it('GET /api/tax-compliance/tenants/:slug/ec/accounting-bridge-mapping should return hint mappings', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/tax-compliance/tenants/saas-platform/ec/accounting-bridge-mapping?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      readinessStatus: 'needs_review',
+      summary: {
+        hintCount: 1,
+        mappedHintCount: 0,
+        unmappedHintCount: 1,
+      },
+      rows: [
+        {
+          accountHint: 'Ingresos por ventas',
+          mapped: false,
+        },
+      ],
+    });
+
+    expect(
+      getTenantEcuadorTaxAccountingBridgeMappingUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/tax-compliance/tenants/:slug/ec/accounting-bridge-mapping should persist hint mappings', async () => {
+    const response = await request(httpServer)
+      .post('/api/tax-compliance/tenants/saas-platform/ec/accounting-bridge-mapping')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        mappings: [
+          {
+            accountHint: 'Ingresos por ventas',
+            suggestedAccountCode: '401.01',
+            suggestedAccountName: 'Ingresos por ventas locales',
+          },
+        ],
+        updatedByUserId: 'user_123',
+        updatedByEmail: 'hello@saas-platform.dev',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      readinessStatus: 'ready',
+      summary: {
+        mappedHintCount: 1,
+        unmappedHintCount: 0,
+      },
+      rows: [
+        {
+          accountHint: 'Ingresos por ventas',
+          suggestedAccountCode: '401.01',
+          mapped: true,
+        },
+      ],
+    });
+
+    expect(
+      upsertTenantEcuadorTaxAccountingBridgeMappingUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      mappings: [
+        {
+          accountHint: 'Ingresos por ventas',
+          suggestedAccountCode: '401.01',
+          suggestedAccountName: 'Ingresos por ventas locales',
+        },
+      ],
+      updatedByUserId: 'user_123',
+      updatedByEmail: 'hello@saas-platform.dev',
     });
   });
 
@@ -33917,7 +34192,7 @@ describe('API', () => {
             id: 'entitlement_tenant_123_products',
             tenantId: 'tenant_123',
             key: 'products',
-            value: ['invoicing', 'learning'],
+            value: ['invoicing', 'learning', 'tax-compliance-ec'],
             source: 'plan',
             createdAt: '2026-04-23T18:00:00.000Z',
             updatedAt: '2026-04-23T18:00:00.000Z',
@@ -33954,7 +34229,7 @@ describe('API', () => {
           id: 'entitlement_tenant_123_products',
           tenantId: 'tenant_123',
           key: 'products',
-          value: ['invoicing', 'learning'],
+          value: ['invoicing', 'learning', 'tax-compliance-ec'],
           source: 'plan',
           createdAt: '2026-04-23T18:00:00.000Z',
           updatedAt: '2026-04-23T18:00:00.000Z',
@@ -34114,7 +34389,7 @@ describe('API', () => {
               id: 'entitlement_tenant_123_products',
               tenantId: 'tenant_123',
               key: 'products',
-              value: ['invoicing', 'learning'],
+              value: ['invoicing', 'learning', 'tax-compliance-ec'],
               source: 'plan',
               createdAt: '2026-04-23T18:00:00.000Z',
               updatedAt: '2026-04-23T18:00:00.000Z',
@@ -34591,7 +34866,7 @@ describe('API', () => {
               id: 'entitlement_tenant_123_products',
               tenantId: 'tenant_123',
               key: 'products',
-              value: ['invoicing', 'learning'],
+              value: ['invoicing', 'learning', 'tax-compliance-ec'],
               source: 'plan',
               createdAt: '2026-04-23T18:00:00.000Z',
               updatedAt: '2026-04-23T18:00:00.000Z',

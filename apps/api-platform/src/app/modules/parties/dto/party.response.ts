@@ -1,5 +1,6 @@
 import {
   Party,
+  PartyFiscalCleanupWorkspace,
   PartyFiscalReadinessSummary,
 } from '@saas-platform/parties-domain';
 
@@ -61,6 +62,42 @@ export interface PartyFiscalReadinessSummaryResponseDto {
     missingFields: string[];
     reviewNotes: string[];
   }>;
+  guardrails: string[];
+}
+
+export interface PartyFiscalCleanupWorkspaceResponseDto {
+  tenantSlug: string;
+  generatedAt: string;
+  readinessStatus: string;
+  summary: {
+    totalParties: number;
+    completeParties: number;
+    needsReviewParties: number;
+    duplicateGroupCount: number;
+    criticalIssueCount: number;
+  };
+  priorityParties: Array<{
+    id: string;
+    displayName: string;
+    roles: string[];
+    taxpayerId: string | null;
+    priority: string;
+    missingFields: string[];
+    reviewNotes: string[];
+    suggestedAction: string;
+  }>;
+  duplicateGroups: Array<{
+    key: string;
+    reason: string;
+    partyIds: string[];
+    displayNames: string[];
+    suggestedAction: string;
+  }>;
+  issueSummaries: Array<{
+    issue: string;
+    count: number;
+  }>;
+  nextStep: string;
   guardrails: string[];
 }
 
@@ -129,4 +166,29 @@ export const toPartyFiscalReadinessSummaryResponseDto = (
     reviewNotes: [...party.reviewNotes],
   })),
   guardrails: [...summary.guardrails],
+});
+
+export const toPartyFiscalCleanupWorkspaceResponseDto = (
+  workspace: PartyFiscalCleanupWorkspace,
+): PartyFiscalCleanupWorkspaceResponseDto => ({
+  tenantSlug: workspace.tenantSlug,
+  generatedAt: workspace.generatedAt.toISOString(),
+  readinessStatus: workspace.readinessStatus,
+  summary: { ...workspace.summary },
+  priorityParties: workspace.priorityParties.map((party) => ({
+    ...party,
+    roles: [...party.roles],
+    missingFields: [...party.missingFields],
+    reviewNotes: [...party.reviewNotes],
+  })),
+  duplicateGroups: workspace.duplicateGroups.map((group) => ({
+    ...group,
+    partyIds: [...group.partyIds],
+    displayNames: [...group.displayNames],
+  })),
+  issueSummaries: workspace.issueSummaries.map((issueSummary) => ({
+    ...issueSummary,
+  })),
+  nextStep: workspace.nextStep,
+  guardrails: [...workspace.guardrails],
 });

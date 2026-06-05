@@ -2,6 +2,7 @@ import {
   EcuadorTaxAccountantReviewPacketView,
   EcuadorTaxAccountantReviewView,
   EcuadorTaxAccountantWorkbenchView,
+  EcuadorTaxAccountingBridgeMappingView,
   EcuadorTaxAccountingBridgePreviewView,
   EcuadorTaxAnnexesReadinessView,
   EcuadorTaxAuditReadinessView,
@@ -997,6 +998,33 @@ export interface EcuadorTaxAccountingBridgePreviewResponseDto {
     salesDocuments: number;
     purchaseDocuments: number;
     withholdingCandidates: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingBridgeMappingResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  rows: Array<{
+    accountHint: string;
+    suggestedAccountCode: string | null;
+    suggestedAccountName: string | null;
+    mapped: boolean;
+    previewEntryCount: number;
+    updatedByUserId: string | null;
+    updatedByEmail: string | null;
+    updatedAt: string | null;
+  }>;
+  summary: {
+    hintCount: number;
+    mappedHintCount: number;
+    unmappedHintCount: number;
+    previewEntryCount: number;
   };
   blockers: string[];
   nextStep: string;
@@ -2224,6 +2252,32 @@ export function toEcuadorTaxAccountingBridgePreviewResponseDto(
     blockers: [...preview.blockers],
     nextStep: preview.nextStep,
     guardrails: [...preview.guardrails],
+  };
+}
+
+export function toEcuadorTaxAccountingBridgeMappingResponseDto(
+  mapping: EcuadorTaxAccountingBridgeMappingView,
+): EcuadorTaxAccountingBridgeMappingResponseDto {
+  return {
+    tenantSlug: mapping.tenantSlug,
+    period: mapping.period,
+    year: mapping.year,
+    generatedAt: mapping.generatedAt.toISOString(),
+    readinessStatus: mapping.readinessStatus,
+    rows: mapping.rows.map((row) => ({
+      accountHint: row.accountHint,
+      suggestedAccountCode: row.suggestedAccountCode,
+      suggestedAccountName: row.suggestedAccountName,
+      mapped: row.mapped,
+      previewEntryCount: row.previewEntryCount,
+      updatedByUserId: row.updatedByUserId,
+      updatedByEmail: row.updatedByEmail,
+      updatedAt: row.updatedAt ? row.updatedAt.toISOString() : null,
+    })),
+    summary: { ...mapping.summary },
+    blockers: [...mapping.blockers],
+    nextStep: mapping.nextStep,
+    guardrails: [...mapping.guardrails],
   };
 }
 

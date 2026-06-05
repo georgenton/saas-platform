@@ -8,10 +8,12 @@ export * from './lib/ports/tax-compliance-event.repository';
 export * from './lib/ports/tax-compliance-purchase-expense-evidence.repository';
 export * from './lib/ports/tax-compliance-withholding-draft.executor';
 export * from './lib/ports/tokens';
+export * from './lib/permissions/tax-compliance-permissions';
 export * from './lib/use-cases/execute-tenant-ecuador-tax-withholding-draft-bridge.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-calendar-review-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-workbench.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-annexes-readiness.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-accounting-bridge-mapping.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-ecommerce-evidence-summary.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-filing-handoff.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-audit-readiness.use-case';
@@ -52,3 +54,4 @@ export * from './lib/use-cases/transition-tenant-ecuador-tax-accountant-review.u
 export * from './lib/use-cases/transition-tenant-ecuador-tax-operational-closeout.use-case';
 export * from './lib/use-cases/transition-tenant-ecuador-tax-vat-declaration-approval.use-case';
 export * from './lib/use-cases/upsert-tenant-ecuador-tax-obligation-settings.use-case';
+export * from './lib/use-cases/upsert-tenant-ecuador-tax-accounting-bridge-mapping.use-case';

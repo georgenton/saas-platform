@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.97.0
+
+### Minor Changes
+
+- 373cadd: Add Accounting period lock registry, reopen packets, and audit trail workspaces.
+
 ## 0.96.0
 
 ### Minor Changes

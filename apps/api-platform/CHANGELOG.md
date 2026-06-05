@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.88.0
+
+### Minor Changes
+
+- c4d8ca8: Add Tax Compliance EC AI assistant template, accounting readiness packet, and web closeout surfaces for suggested accounts and Growth reminders.
+
 ## 0.87.0
 
 ### Minor Changes

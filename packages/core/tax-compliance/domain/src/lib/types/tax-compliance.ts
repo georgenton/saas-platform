@@ -98,6 +98,7 @@ export type EcuadorTaxComplianceEventType =
   | 'tax_filing_handoff_recorded'
   | 'tax_annexes_readiness_reviewed'
   | 'tax_accounting_bridge_preview_requested'
+  | 'tax_accounting_bridge_mapping_upserted'
   | 'tax_review_assistant_packet_requested'
   | 'tax_period_closeout_report_requested';
 export type EcuadorTaxAccountantReviewStatus =
@@ -1016,6 +1017,33 @@ export interface EcuadorTaxAccountingBridgePreviewView {
     salesDocuments: number;
     purchaseDocuments: number;
     withholdingCandidates: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingBridgeMappingView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  rows: Array<{
+    accountHint: string;
+    suggestedAccountCode: string | null;
+    suggestedAccountName: string | null;
+    mapped: boolean;
+    previewEntryCount: number;
+    updatedByUserId: string | null;
+    updatedByEmail: string | null;
+    updatedAt: Date | null;
+  }>;
+  summary: {
+    hintCount: number;
+    mappedHintCount: number;
+    unmappedHintCount: number;
+    previewEntryCount: number;
   };
   blockers: string[];
   nextStep: string;

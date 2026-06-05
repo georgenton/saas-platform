@@ -8,6 +8,7 @@ import {
 import { INVOICING_PERMISSIONS } from '@saas-platform/invoicing-application';
 import {
   GetTenantPartyByIdUseCase,
+  GetTenantPartyFiscalCleanupWorkspaceUseCase,
   GetTenantPartyFiscalReadinessSummaryUseCase,
   ListTenantPartiesUseCase,
   PartyNotFoundError,
@@ -22,7 +23,9 @@ import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import {
   PartyFiscalReadinessSummaryResponseDto,
+  PartyFiscalCleanupWorkspaceResponseDto,
   PartyResponseDto,
+  toPartyFiscalCleanupWorkspaceResponseDto,
   toPartyFiscalReadinessSummaryResponseDto,
   toPartyResponseDto,
 } from './dto/party.response';
@@ -44,6 +47,7 @@ export class PartiesController {
     private readonly listTenantPartiesUseCase: ListTenantPartiesUseCase,
     private readonly getTenantPartyByIdUseCase: GetTenantPartyByIdUseCase,
     private readonly getTenantPartyFiscalReadinessSummaryUseCase: GetTenantPartyFiscalReadinessSummaryUseCase,
+    private readonly getTenantPartyFiscalCleanupWorkspaceUseCase: GetTenantPartyFiscalCleanupWorkspaceUseCase,
   ) {}
 
   @Get(':slug/parties')
@@ -80,6 +84,28 @@ export class PartiesController {
         );
 
       return toPartyFiscalReadinessSummaryResponseDto(summary);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/fiscal-cleanup-workspace')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.CUSTOMERS_READ)
+  async getTenantPartyFiscalCleanupWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PartyFiscalCleanupWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantPartyFiscalCleanupWorkspaceUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toPartyFiscalCleanupWorkspaceResponseDto(workspace);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

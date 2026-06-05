@@ -9,6 +9,7 @@ import { FEATURE_FLAG_REPOSITORY } from '@saas-platform/feature-flags-applicatio
 import { CUSTOMER_REPOSITORY } from '@saas-platform/invoicing-application';
 import {
   GetTenantPartyByIdUseCase,
+  GetTenantPartyFiscalCleanupWorkspaceUseCase,
   GetTenantPartyFiscalReadinessSummaryUseCase,
   ListTenantPartiesUseCase,
   PARTY_DIRECTORY_REPOSITORY,
@@ -74,6 +75,21 @@ import { PartiesController } from './parties.controller';
         new GetTenantPartyFiscalReadinessSummaryUseCase(
           tenantRepository,
           partyDirectoryRepository,
+        ),
+    },
+    {
+      provide: GetTenantPartyFiscalCleanupWorkspaceUseCase,
+      inject: [
+        GetTenantPartyFiscalReadinessSummaryUseCase,
+        ListTenantPartiesUseCase,
+      ],
+      useFactory: (
+        getTenantPartyFiscalReadinessSummaryUseCase,
+        listTenantPartiesUseCase,
+      ) =>
+        new GetTenantPartyFiscalCleanupWorkspaceUseCase(
+          getTenantPartyFiscalReadinessSummaryUseCase,
+          listTenantPartiesUseCase,
         ),
     },
     {

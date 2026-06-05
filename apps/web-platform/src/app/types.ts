@@ -1514,6 +1514,45 @@ export interface EcuadorTaxAccountingBridgePreviewResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxAccountingBridgeMappingResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  rows: Array<{
+    accountHint: string;
+    suggestedAccountCode: string | null;
+    suggestedAccountName: string | null;
+    mapped: boolean;
+    previewEntryCount: number;
+    updatedByUserId: string | null;
+    updatedByEmail: string | null;
+    updatedAt: string | null;
+  }>;
+  summary: {
+    hintCount: number;
+    mappedHintCount: number;
+    unmappedHintCount: number;
+    previewEntryCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface UpsertEcuadorTaxAccountingBridgeMappingRequest {
+  period: string;
+  year: number;
+  mappings: Array<{
+    accountHint: string;
+    suggestedAccountCode?: string | null;
+    suggestedAccountName?: string | null;
+  }>;
+  updatedByUserId?: string | null;
+  updatedByEmail?: string | null;
+}
+
 export interface EcuadorTaxReviewAssistantPacketResponse {
   tenantSlug: string;
   period: string;

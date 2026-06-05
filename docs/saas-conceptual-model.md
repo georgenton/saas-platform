@@ -55,10 +55,12 @@ The repository catalog seed does not fully match that target yet.
 Based on:
 
 - `packages/infra/prisma/prisma/migrations/20260423190000_platform_catalog/migration.sql`
+- `packages/infra/prisma/prisma/migrations/20260605100000_tax_compliance_product_catalog/migration.sql`
 
 the current seeded product keys are:
 
 - `invoicing`
+- `tax-compliance-ec`
 - `psychology`
 - `learning`
 - `ecommerce`
@@ -66,10 +68,12 @@ the current seeded product keys are:
 ### Practical interpretation
 
 - `invoicing` should evolve into `Electronic Invoicing EC`
+- `tax-compliance-ec` is now the formal product anchor for Ecuador tax obligations, evidence, review packets, closeout, and external filing/payment handoff
 - `psychology` is already directionally aligned with `Psychology Clinics`
 - `ecommerce` is already directionally aligned with the target portfolio
 - `learning` is currently outside the product list we are prioritizing in this strategy
-- `Tax Compliance EC`, `Medical Clinics`, and `Billing & Revenue Ops` are target products, but are not yet formalized in the seeded catalog
+- `Medical Clinics` and `Billing & Revenue Ops` are target products, but are not yet formalized in the seeded catalog
+- `Accounting` remains a future product candidate. Tax Compliance EC now exposes an accounting bridge mapping, but it intentionally stops before chart-of-accounts ownership, journals, ledgers, balances, or formal accounting close
 
 ### Recommendation
 
@@ -81,6 +85,7 @@ Instead:
 2. keep `psychology` and `ecommerce` as valid current portfolio anchors
 3. decide later whether `learning` remains part of the broader company portfolio or becomes out of scope for this roadmap
 4. add `accounting`, `medical`, and `billing` to the catalog only when we are ready to start their first real slices
+5. keep Parties 2.0 as the shared fiscal directory foundation for Tax Compliance EC, Ecommerce, Invoicing, and the future Accounting product
 
 ## Layer 1: Core Platform
 

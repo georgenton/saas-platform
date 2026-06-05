@@ -27,6 +27,7 @@ import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
   GetTenantEcuadorTaxAnnexesReadinessUseCase,
   GetTenantEcuadorTaxAccountantWorkbenchUseCase,
+  GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
@@ -76,6 +77,7 @@ import {
   TransitionTenantEcuadorTaxAccountantReviewUseCase,
   TransitionTenantEcuadorTaxOperationalCloseoutUseCase,
   TransitionTenantEcuadorTaxVatDeclarationApprovalUseCase,
+  UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
   UpsertTenantEcuadorTaxObligationSettingsUseCase,
 } from '@saas-platform/tax-compliance-application';
 import {
@@ -976,6 +978,36 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
           getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
           getTenantEcuadorTaxWithholdingRegistryUseCase,
           requestTenantEcuadorTaxVatDeclarationDraftUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
+      inject: [
+        RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+        ListTenantEcuadorTaxComplianceEventsUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+        listTenantEcuadorTaxComplianceEventsUseCase,
+      ) =>
+        new GetTenantEcuadorTaxAccountingBridgeMappingUseCase(
+          requestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+          listTenantEcuadorTaxComplianceEventsUseCase,
+        ),
+    },
+    {
+      provide: UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
+      inject: [
+        GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxAccountingBridgeMappingUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase(
+          getTenantEcuadorTaxAccountingBridgeMappingUseCase,
           recordTenantEcuadorTaxComplianceEventUseCase,
         ),
     },

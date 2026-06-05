@@ -80,6 +80,7 @@ import {
   EcommerceOrderPaymentReconciliationWorkspaceResponse,
   EcuadorTaxAccountantWorkbenchResponse,
   EcuadorTaxAccountantReviewResponse,
+  EcuadorTaxAccountingBridgeMappingResponse,
   EcuadorTaxAccountingBridgePreviewResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxComplianceEventResponse,
@@ -108,6 +109,7 @@ import {
   EcuadorTaxWithholdingRegistryResponse,
   EcuadorTaxRuleCatalogResponse,
   EcuadorTaxReviewAssistantPacketResponse,
+  UpsertEcuadorTaxAccountingBridgeMappingRequest,
   ExecuteEcuadorTaxWithholdingDraftBridgeRequest,
   RecordEcuadorTaxFilingHandoffRequest,
   RecordEcuadorTaxPurchaseExpenseEvidenceRequest,
@@ -1540,6 +1542,42 @@ export async function fetchEcuadorTaxAccountingBridgePreview(
     )}&year=${encodeURIComponent(String(year))}`,
     {
       method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxAccountingBridgeMapping(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountingBridgeMappingResponse> {
+  return request<EcuadorTaxAccountingBridgeMappingResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accounting-bridge-mapping?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function upsertEcuadorTaxAccountingBridgeMapping(
+  token: string,
+  tenantSlug: string,
+  input: UpsertEcuadorTaxAccountingBridgeMappingRequest,
+): Promise<EcuadorTaxAccountingBridgeMappingResponse> {
+  return request<EcuadorTaxAccountingBridgeMappingResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accounting-bridge-mapping`,
+    {
+      body: input,
+      method: 'POST',
       token,
     },
   );

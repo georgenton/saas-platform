@@ -8,11 +8,11 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { INVOICING_PERMISSIONS } from '@saas-platform/invoicing-application';
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
   GetTenantEcuadorTaxAnnexesReadinessUseCase,
   GetTenantEcuadorTaxAccountantWorkbenchUseCase,
+  GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
   GetTenantEcuadorTaxFilingHandoffUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
@@ -55,7 +55,9 @@ import {
   TransitionTenantEcuadorTaxAccountantReviewUseCase,
   TransitionTenantEcuadorTaxOperationalCloseoutUseCase,
   TransitionTenantEcuadorTaxVatDeclarationApprovalUseCase,
+  UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
   UpsertTenantEcuadorTaxObligationSettingsUseCase,
+  TAX_COMPLIANCE_PERMISSIONS,
 } from '@saas-platform/tax-compliance-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
@@ -69,6 +71,7 @@ import {
   EcuadorTaxObligationMatrixResponseDto,
   EcuadorTaxObligationCalendarResponseDto,
   EcuadorTaxObligationSettingsResponseDto,
+  EcuadorTaxAccountingBridgeMappingResponseDto,
   EcuadorTaxAccountingBridgePreviewResponseDto,
   EcuadorTaxAnnexesReadinessResponseDto,
   EcuadorTaxOperationalCloseoutResponseDto,
@@ -106,6 +109,7 @@ import {
   EcuadorTaxWithholdingEvidencePacketResponseDto,
   EcuadorTaxWithholdingRegistryResponseDto,
   toEcuadorTaxAccountantWorkbenchResponseDto,
+  toEcuadorTaxAccountingBridgeMappingResponseDto,
   toEcuadorTaxAccountingBridgePreviewResponseDto,
   toEcuadorTaxAccountantReviewResponseDto,
   toEcuadorTaxAccountantReviewPacketResponseDto,
@@ -239,6 +243,18 @@ interface RecordFilingHandoffBodyDto {
   note?: string | null;
 }
 
+interface UpsertAccountingBridgeMappingBodyDto {
+  period?: string;
+  year?: number;
+  mappings?: Array<{
+    accountHint: string;
+    suggestedAccountCode?: string | null;
+    suggestedAccountName?: string | null;
+  }>;
+  updatedByUserId?: string | null;
+  updatedByEmail?: string | null;
+}
+
 @Controller('tax-compliance/tenants')
 @UseGuards(
   JwtAuthenticationGuard,
@@ -246,7 +262,7 @@ interface RecordFilingHandoffBodyDto {
   TenantPermissionGuard,
   TenantProductAccessGuard,
 )
-@RequireTenantProductAccess({ productKey: 'invoicing' })
+@RequireTenantProductAccess({ productKey: 'tax-compliance-ec' })
 export class TaxComplianceController {
   constructor(
     private readonly getTenantEcuadorTaxpayerProfileUseCase: GetTenantEcuadorTaxpayerProfileUseCase,
@@ -292,12 +308,14 @@ export class TaxComplianceController {
     private readonly recordTenantEcuadorTaxFilingHandoffUseCase: RecordTenantEcuadorTaxFilingHandoffUseCase,
     private readonly getTenantEcuadorTaxAnnexesReadinessUseCase: GetTenantEcuadorTaxAnnexesReadinessUseCase,
     private readonly requestTenantEcuadorTaxAccountingBridgePreviewUseCase: RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+    private readonly getTenantEcuadorTaxAccountingBridgeMappingUseCase: GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
+    private readonly upsertTenantEcuadorTaxAccountingBridgeMappingUseCase: UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
     private readonly requestTenantEcuadorTaxReviewAssistantPacketUseCase: RequestTenantEcuadorTaxReviewAssistantPacketUseCase,
     private readonly requestTenantEcuadorTaxPeriodCloseoutReportUseCase: RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
   ) {}
 
   @Get(':slug/ec/taxpayer-profile')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getTaxpayerProfile(
     @Param('slug') slug: string,
     @TenantAccess() tenantAccess?: TenantAccessContext,
@@ -318,7 +336,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/calendar-review-workspace')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getCalendarReviewWorkspace(
     @Param('slug') slug: string,
     @Query('year') year?: string,
@@ -344,7 +362,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/due-monitor')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getDueMonitor(
     @Param('slug') slug: string,
     @Query('year') year?: string,
@@ -371,7 +389,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/obligation-calendar')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getObligationCalendar(
     @Param('slug') slug: string,
     @Query('year') year?: string,
@@ -396,7 +414,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/obligation-matrix')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getObligationMatrix(
     @Param('slug') slug: string,
     @TenantAccess() tenantAccess?: TenantAccessContext,
@@ -418,7 +436,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/obligation-settings')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getObligationSettings(
     @Param('slug') slug: string,
     @TenantAccess() tenantAccess?: TenantAccessContext,
@@ -440,7 +458,7 @@ export class TaxComplianceController {
   }
 
   @Post(':slug/ec/obligation-settings')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_MANAGE)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_MANAGE)
   async upsertObligationSettings(
     @Param('slug') slug: string,
     @Body() body: UpsertObligationSettingsBodyDto,
@@ -470,7 +488,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/period-preparation-packet')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getPeriodPreparationPacket(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -494,7 +512,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/period-workspace')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getPeriodWorkspace(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -522,7 +540,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/ecommerce-evidence')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getEcommerceEvidence(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -546,7 +564,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/sales-book')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getSalesBook(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -571,7 +589,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/reconciliation-workspace')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getReconciliationWorkspace(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -597,7 +615,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/vat-declaration-readiness-packet')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getVatDeclarationReadinessPacket(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -625,7 +643,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/purchase-expense-evidence-workspace')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getPurchaseExpenseEvidenceWorkspace(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -653,7 +671,7 @@ export class TaxComplianceController {
   }
 
   @Post(':slug/ec/purchase-expense-evidence')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async recordPurchaseExpenseEvidence(
     @Param('slug') slug: string,
     @Body() body: RecordPurchaseExpenseEvidenceBodyDto,
@@ -693,7 +711,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/supplier-fiscal-readiness-workspace')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getSupplierFiscalReadinessWorkspace(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -721,7 +739,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/vat-input-output-reconciliation-packet')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getVatInputOutputReconciliationPacket(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -749,7 +767,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/vat-declaration-draft')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getVatDeclarationDraft(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -775,7 +793,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/vat-declaration-approval')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getVatDeclarationApproval(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -801,7 +819,7 @@ export class TaxComplianceController {
   }
 
   @Post(':slug/ec/vat-declaration-approval/transitions')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_MANAGE)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_MANAGE)
   async transitionVatDeclarationApproval(
     @Param('slug') slug: string,
     @Body() body: TransitionTaxWorkflowBodyDto,
@@ -832,7 +850,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/withholding-evidence-packet')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getWithholdingEvidencePacket(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -860,7 +878,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/withholding-registry')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getWithholdingRegistry(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -886,7 +904,7 @@ export class TaxComplianceController {
   }
 
   @Post(':slug/ec/withholding-draft-bridge-packet')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async requestWithholdingDraftBridgePacket(
     @Param('slug') slug: string,
     @Body() body: RequestWithholdingDraftBridgeBodyDto,
@@ -916,7 +934,7 @@ export class TaxComplianceController {
   }
 
   @Post(':slug/ec/withholding-draft-bridge/execute')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_MANAGE)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_MANAGE)
   async executeWithholdingDraftBridge(
     @Param('slug') slug: string,
     @Body() body: ExecuteWithholdingDraftBridgeBodyDto,
@@ -948,7 +966,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/tax-rule-catalog')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getTaxRuleCatalog(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -973,7 +991,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/accountant-workbench')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getAccountantWorkbench(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -999,7 +1017,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/income-tax-evidence-packet')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getIncomeTaxEvidencePacket(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1027,7 +1045,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/period-closeout-packet')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getPeriodCloseoutPacket(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1053,7 +1071,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/declaration-draft-packet')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getDeclarationDraftPacket(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1081,7 +1099,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/accountant-review-packet')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getAccountantReviewPacket(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1109,7 +1127,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/period-evidence-vault')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getPeriodEvidenceVault(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1135,7 +1153,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/operational-closeout')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getOperationalCloseout(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1161,7 +1179,7 @@ export class TaxComplianceController {
   }
 
   @Post(':slug/ec/operational-closeout/transitions')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_MANAGE)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_MANAGE)
   async transitionOperationalCloseout(
     @Param('slug') slug: string,
     @Body() body: TransitionTaxWorkflowBodyDto,
@@ -1190,7 +1208,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/filing-handoff')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getFilingHandoff(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1216,7 +1234,7 @@ export class TaxComplianceController {
   }
 
   @Post(':slug/ec/filing-handoff')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_MANAGE)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_MANAGE)
   async recordFilingHandoff(
     @Param('slug') slug: string,
     @Body() body: RecordFilingHandoffBodyDto,
@@ -1250,7 +1268,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/annexes-readiness')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getAnnexesReadiness(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1276,7 +1294,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/accounting-bridge-preview')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getAccountingBridgePreview(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1301,8 +1319,64 @@ export class TaxComplianceController {
     }
   }
 
+  @Get(':slug/ec/accounting-bridge-mapping')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getAccountingBridgeMapping(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountingBridgeMappingResponseDto> {
+    try {
+      const mapping =
+        await this.getTenantEcuadorTaxAccountingBridgeMappingUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxAccountingBridgeMappingResponseDto(mapping);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/ec/accounting-bridge-mapping')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_MANAGE)
+  async upsertAccountingBridgeMapping(
+    @Param('slug') slug: string,
+    @Body() body: UpsertAccountingBridgeMappingBodyDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountingBridgeMappingResponseDto> {
+    try {
+      const mapping =
+        await this.upsertTenantEcuadorTaxAccountingBridgeMappingUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period: body.period ?? 'current',
+          year: resolveCalendarYear(
+            body.year === undefined ? undefined : String(body.year),
+          ),
+          mappings: body.mappings ?? [],
+          updatedByUserId: body.updatedByUserId ?? null,
+          updatedByEmail: body.updatedByEmail ?? null,
+        });
+
+      return toEcuadorTaxAccountingBridgeMappingResponseDto(mapping);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Get(':slug/ec/tax-review-assistant-packet')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getTaxReviewAssistantPacket(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1328,7 +1402,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/period-closeout-report')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getPeriodCloseoutReport(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1354,7 +1428,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/events')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async listComplianceEvents(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1382,7 +1456,7 @@ export class TaxComplianceController {
   }
 
   @Post(':slug/ec/accountant-review/request')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async requestAccountantReview(
     @Param('slug') slug: string,
     @Body() body: RequestAccountantReviewBodyDto,
@@ -1409,7 +1483,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/accountant-reviews')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async listAccountantReviews(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1435,7 +1509,7 @@ export class TaxComplianceController {
   }
 
   @Post(':slug/ec/accountant-review/:reviewId/transition')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async transitionAccountantReview(
     @Param('slug') slug: string,
     @Param('reviewId') reviewId: string,
@@ -1466,7 +1540,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/declaration-approval-packet')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getDeclarationApprovalPacket(
     @Param('slug') slug: string,
     @Query('period') period = 'current',
@@ -1494,7 +1568,7 @@ export class TaxComplianceController {
   }
 
   @Get(':slug/ec/audit-readiness')
-  @RequireTenantPermission(INVOICING_PERMISSIONS.TAXES_READ)
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
   async getAuditReadiness(
     @Param('slug') slug: string,
     @Query('period') period = 'current',

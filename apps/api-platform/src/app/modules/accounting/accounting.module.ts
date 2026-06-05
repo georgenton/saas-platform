@@ -8,10 +8,13 @@ import {
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
+  GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
+  RequestTenantAccountingPeriodCloseoutPacketUseCase,
 } from '@saas-platform/accounting-application';
 import { PRODUCT_REPOSITORY } from '@saas-platform/catalog-application';
 import {
@@ -198,6 +201,50 @@ import { AccountingController } from './accounting.controller';
           listTenantAccountingJournalRegistryUseCase,
           getTenantAccountingLedgerRegistryWorkspaceUseCase,
           getTenantEcuadorTaxOperationalCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingTrialBalanceWorkspaceUseCase,
+      inject: [GetTenantAccountingLedgerRegistryWorkspaceUseCase],
+      useFactory: (getTenantAccountingLedgerRegistryWorkspaceUseCase) =>
+        new GetTenantAccountingTrialBalanceWorkspaceUseCase(
+          getTenantAccountingLedgerRegistryWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingPeriodCloseoutPacketUseCase,
+      inject: [
+        GetTenantAccountingPeriodCloseoutReadinessUseCase,
+        GetTenantAccountingTrialBalanceWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingPeriodCloseoutReadinessUseCase,
+        getTenantAccountingTrialBalanceWorkspaceUseCase,
+      ) =>
+        new RequestTenantAccountingPeriodCloseoutPacketUseCase(
+          getTenantAccountingPeriodCloseoutReadinessUseCase,
+          getTenantAccountingTrialBalanceWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingPeriodCloseoutReportUseCase,
+      inject: [
+        ListTenantAccountingJournalRegistryUseCase,
+        GetTenantAccountingLedgerRegistryWorkspaceUseCase,
+        GetTenantAccountingTrialBalanceWorkspaceUseCase,
+        GetTenantAccountingPeriodCloseoutReadinessUseCase,
+      ],
+      useFactory: (
+        listTenantAccountingJournalRegistryUseCase,
+        getTenantAccountingLedgerRegistryWorkspaceUseCase,
+        getTenantAccountingTrialBalanceWorkspaceUseCase,
+        getTenantAccountingPeriodCloseoutReadinessUseCase,
+      ) =>
+        new GetTenantAccountingPeriodCloseoutReportUseCase(
+          listTenantAccountingJournalRegistryUseCase,
+          getTenantAccountingLedgerRegistryWorkspaceUseCase,
+          getTenantAccountingTrialBalanceWorkspaceUseCase,
+          getTenantAccountingPeriodCloseoutReadinessUseCase,
         ),
     },
     {

@@ -109,7 +109,9 @@ import {
   fetchAccountingJournalRegistry,
   fetchAccountingLedgerRegistryWorkspace,
   fetchAccountingLedgerPreviewWorkspace,
+  fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
+  fetchAccountingTrialBalanceWorkspace,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
   fetchEcuadorTaxAccountingBridgeSuggestedAccounts,
@@ -270,6 +272,7 @@ import {
   cancelInvitation,
   checkInvoiceElectronicAuthorization,
   createAccountingJournalEntries,
+  requestAccountingPeriodCloseoutPacket,
   createCustomer,
   createCreditNote,
   createDebitNote,
@@ -358,7 +361,10 @@ import {
   AccountingJournalDraftPreviewResponse,
   AccountingLedgerRegistryWorkspaceResponse,
   AccountingLedgerPreviewWorkspaceResponse,
+  AccountingPeriodCloseoutPacketResponse,
+  AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
+  AccountingTrialBalanceWorkspaceResponse,
   AiActivityFeedEventType,
   AiActivityFeedResponse,
   AiApprovalCapacityWorkspaceResponse,
@@ -2125,6 +2131,18 @@ export function App() {
     accountingPeriodCloseoutReadiness,
     setAccountingPeriodCloseoutReadiness,
   ] = useState<AccountingPeriodCloseoutReadinessResponse | null>(null);
+  const [
+    accountingTrialBalanceWorkspace,
+    setAccountingTrialBalanceWorkspace,
+  ] = useState<AccountingTrialBalanceWorkspaceResponse | null>(null);
+  const [
+    lastAccountingPeriodCloseoutPacket,
+    setLastAccountingPeriodCloseoutPacket,
+  ] = useState<AccountingPeriodCloseoutPacketResponse | null>(null);
+  const [
+    accountingPeriodCloseoutReport,
+    setAccountingPeriodCloseoutReport,
+  ] = useState<AccountingPeriodCloseoutReportResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -19522,6 +19540,8 @@ export function App() {
         nextAccountingJournalRegistry,
         nextAccountingLedgerRegistryWorkspace,
         nextAccountingPeriodCloseoutReadiness,
+        nextAccountingTrialBalanceWorkspace,
+        nextAccountingPeriodCloseoutReport,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -19566,8 +19586,20 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingTrialBalanceWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingPeriodCloseoutReport(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
-        : [null, null, null, null, null, null, null];
+        : [null, null, null, null, null, null, null, null, null];
 
       startTransition(() => {
         setTaxComplianceWorkspace(nextWorkspace);
@@ -19632,6 +19664,8 @@ export function App() {
         setAccountingPeriodCloseoutReadiness(
           nextAccountingPeriodCloseoutReadiness,
         );
+        setAccountingTrialBalanceWorkspace(nextAccountingTrialBalanceWorkspace);
+        setAccountingPeriodCloseoutReport(nextAccountingPeriodCloseoutReport);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -20236,7 +20270,8 @@ export function App() {
         reviewerEmail: session?.user.email ?? null,
         note: 'Journal registry interno desde Accounting foundation.',
       });
-      const [registry, ledgerRegistry, closeoutReadiness] = await Promise.all([
+      const [registry, ledgerRegistry, closeoutReadiness, trialBalance, report] =
+        await Promise.all([
         fetchAccountingJournalRegistry(token, tenantSlug, taxCompliancePeriod, year),
         fetchAccountingLedgerRegistryWorkspace(
           token,
@@ -20250,12 +20285,26 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchAccountingTrialBalanceWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingPeriodCloseoutReport(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
       ]);
 
       setLastAccountingJournalEntryCreationResult(result);
       setAccountingJournalRegistry(registry);
       setAccountingLedgerRegistryWorkspace(ledgerRegistry);
       setAccountingPeriodCloseoutReadiness(closeoutReadiness);
+      setAccountingTrialBalanceWorkspace(trialBalance);
+      setAccountingPeriodCloseoutReport(report);
       setTaxComplianceActionMessage(
         `${result.summary.createdEntryCount} journal entries guardados en registry.`,
       );
@@ -20265,6 +20314,64 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo crear journal registry interno.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestAccountingPeriodCloseoutPacket() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-period-closeout-packet');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const packet = await requestAccountingPeriodCloseoutPacket(
+        token,
+        tenantSlug,
+        {
+          period: taxCompliancePeriod,
+          year,
+          decision: 'approve',
+          reviewerUserId: session?.user.id ?? null,
+          reviewerEmail: session?.user.email ?? null,
+          note: 'Closeout packet interno desde Accounting foundation.',
+        },
+      );
+      const [trialBalance, report] = await Promise.all([
+        fetchAccountingTrialBalanceWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingPeriodCloseoutReport(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+      ]);
+
+      setLastAccountingPeriodCloseoutPacket(packet);
+      setAccountingTrialBalanceWorkspace(trialBalance);
+      setAccountingPeriodCloseoutReport(report);
+      setAccountingPeriodCloseoutReadiness(packet.readiness);
+      setTaxComplianceActionMessage(
+        `Closeout packet contable ${humanizeKey(packet.closeoutStatus)}.`,
+      );
+    } catch (error) {
+      setLastAccountingPeriodCloseoutPacket(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar closeout packet contable.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -29605,6 +29712,21 @@ export function App() {
                               >
                                 Crear journals
                               </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-period-closeout-packet' ||
+                                  !accountingPeriodCloseoutReadiness ||
+                                  !accountingTrialBalanceWorkspace
+                                }
+                                onClick={() =>
+                                  void handleRequestAccountingPeriodCloseoutPacket()
+                                }
+                                type="button"
+                              >
+                                Cerrar periodo
+                              </button>
                             </div>
                             <div className={styles.invoiceInlineGrid}>
                               {accountingChartOfAccountsWorkspace.accounts
@@ -29810,6 +29932,80 @@ export function App() {
                                   {accountingPeriodCloseoutReadiness?.nextStep ??
                                     accountingLedgerRegistryWorkspace?.nextStep ??
                                     accountingJournalRegistry?.nextStep}
+                                </p>
+                              </div>
+                            ) : null}
+                            {accountingTrialBalanceWorkspace ||
+                            lastAccountingPeriodCloseoutPacket ||
+                            accountingPeriodCloseoutReport ? (
+                              <div className={styles.invoiceItemCard}>
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>Cierre contable</strong>
+                                  {accountingPeriodCloseoutReport ? (
+                                    <span
+                                      className={`${styles.statusPill} ${operationalStatusTone(
+                                        accountingPeriodCloseoutReport.reportStatus,
+                                      )}`}
+                                    >
+                                      {humanizeKey(
+                                        accountingPeriodCloseoutReport.reportStatus,
+                                      )}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <div className={styles.commercialGrid}>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Trial balance
+                                    </span>
+                                    <strong>
+                                      {accountingTrialBalanceWorkspace?.summary
+                                        .accountCount ?? 0}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingTrialBalanceWorkspace?.summary
+                                        .balanced
+                                        ? 'balanceado'
+                                        : 'pendiente'}
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Resultado
+                                    </span>
+                                    <strong>
+                                      {formatMoney(
+                                        accountingTrialBalanceWorkspace?.summary
+                                          .netIncomeInCents ?? 0,
+                                        'USD',
+                                      )}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      interno
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Closeout packet
+                                    </span>
+                                    <strong>
+                                      {lastAccountingPeriodCloseoutPacket
+                                        ? humanizeKey(
+                                            lastAccountingPeriodCloseoutPacket.closeoutStatus,
+                                          )
+                                        : 'sin packet'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingPeriodCloseoutPacket?.summary
+                                        .readyApprovalCount ?? 0}{' '}
+                                      aprobaciones
+                                    </span>
+                                  </div>
+                                </div>
+                                <p className={styles.muted}>
+                                  {accountingPeriodCloseoutReport?.nextStep ??
+                                    lastAccountingPeriodCloseoutPacket?.nextStep ??
+                                    accountingTrialBalanceWorkspace?.nextStep}
                                 </p>
                               </div>
                             ) : null}

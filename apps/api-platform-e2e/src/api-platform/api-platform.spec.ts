@@ -203,10 +203,13 @@ import {
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
+  GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
+  RequestTenantAccountingPeriodCloseoutPacketUseCase,
 } from '@saas-platform/accounting-application';
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
@@ -1002,6 +1005,15 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let getTenantAccountingPeriodCloseoutReadinessUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingTrialBalanceWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantAccountingPeriodCloseoutPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingPeriodCloseoutReportUseCase: {
     execute: jest.Mock;
   };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
@@ -4414,6 +4426,134 @@ describe('API', () => {
     blockers: [],
     nextStep: 'Preparar closeout contable operacional con revision profesional.',
     guardrails: ['Readiness de cierre contable operacional.'],
+  };
+  const accountingTrialBalanceWorkspace = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'ready' as const,
+    trialBalanceStatus: 'ready_for_review' as const,
+    accounts: [
+      {
+        accountCode: '101.01',
+        accountName: 'Caja y bancos',
+        category: 'asset' as const,
+        debitBalanceInCents: 25000,
+        creditBalanceInCents: 0,
+        sourceJournalEntryIds: ['journal_entry_001'],
+      },
+      {
+        accountCode: '401.01',
+        accountName: 'Ingresos por ventas locales',
+        category: 'income' as const,
+        debitBalanceInCents: 0,
+        creditBalanceInCents: 25000,
+        sourceJournalEntryIds: ['journal_entry_001'],
+      },
+    ],
+    sections: [
+      {
+        category: 'asset' as const,
+        accountCount: 1,
+        debitBalanceInCents: 25000,
+        creditBalanceInCents: 0,
+      },
+      {
+        category: 'income' as const,
+        accountCount: 1,
+        debitBalanceInCents: 0,
+        creditBalanceInCents: 25000,
+      },
+    ],
+    summary: {
+      accountCount: 2,
+      journalEntryCount: 1,
+      totalDebitBalanceInCents: 25000,
+      totalCreditBalanceInCents: 25000,
+      balanced: true,
+      netIncomeInCents: 25000,
+    },
+    blockers: [],
+    nextStep: 'Usar balance de comprobacion para cierre contable.',
+    guardrails: ['Balance de comprobacion interno.'],
+  };
+  const accountingPeriodCloseoutPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    closeoutStatus: 'approved_for_closeout' as const,
+    reviewerUserId: 'user_123',
+    reviewerEmail: 'hello@saas-platform.dev',
+    note: 'Closeout packet desde e2e.',
+    readiness: accountingPeriodCloseoutReadiness,
+    trialBalance: accountingTrialBalanceWorkspace,
+    approvals: [
+      {
+        key: 'period_closeout_readiness',
+        label: 'Readiness de cierre',
+        status: 'ready' as const,
+        detail: 'Readiness aprobado.',
+      },
+      {
+        key: 'trial_balance',
+        label: 'Balance de comprobacion',
+        status: 'ready' as const,
+        detail: 'Trial balance balanceado.',
+      },
+    ],
+    summary: {
+      readyApprovalCount: 2,
+      needsReviewApprovalCount: 0,
+      blockedApprovalCount: 0,
+      journalEntryCount: 1,
+      trialBalanceBalanced: true,
+    },
+    blockers: [],
+    nextStep: 'Registrar cierre externo/manual del periodo.',
+    guardrails: ['Paquete interno; no bloquea libros.'],
+  };
+  const accountingPeriodCloseoutReport = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    reportStatus: 'ready' as const,
+    sections: [
+      {
+        key: 'journal_registry',
+        title: 'Journal registry',
+        status: 'ready' as const,
+        metrics: [
+          { key: 'entry_count', label: 'Asientos', value: 1 },
+          { key: 'balanced_entry_count', label: 'Balanceados', value: 1 },
+        ],
+        notes: ['Journal registry listo.'],
+      },
+      {
+        key: 'trial_balance',
+        title: 'Balance de comprobacion',
+        status: 'ready' as const,
+        metrics: [
+          { key: 'account_count', label: 'Cuentas', value: 2 },
+          { key: 'net_income', label: 'Resultado neto', value: 25000 },
+        ],
+        notes: ['Trial balance listo.'],
+      },
+    ],
+    summary: {
+      sectionCount: 2,
+      readySectionCount: 2,
+      needsReviewSectionCount: 0,
+      blockedSectionCount: 0,
+      journalEntryCount: 1,
+      trialBalanceAccountCount: 2,
+      netIncomeInCents: 25000,
+    },
+    blockers: [],
+    nextStep: 'Usar este reporte como evidencia operativa.',
+    guardrails: ['Reporte operativo interno.'],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
@@ -13136,6 +13276,15 @@ describe('API', () => {
     getTenantAccountingPeriodCloseoutReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(accountingPeriodCloseoutReadiness),
     };
+    getTenantAccountingTrialBalanceWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingTrialBalanceWorkspace),
+    };
+    requestTenantAccountingPeriodCloseoutPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingPeriodCloseoutPacket),
+    };
+    getTenantAccountingPeriodCloseoutReportUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingPeriodCloseoutReport),
+    };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
     };
@@ -13754,6 +13903,12 @@ describe('API', () => {
       .useValue(getTenantAccountingLedgerRegistryWorkspaceUseCase)
       .overrideProvider(GetTenantAccountingPeriodCloseoutReadinessUseCase)
       .useValue(getTenantAccountingPeriodCloseoutReadinessUseCase)
+      .overrideProvider(GetTenantAccountingTrialBalanceWorkspaceUseCase)
+      .useValue(getTenantAccountingTrialBalanceWorkspaceUseCase)
+      .overrideProvider(RequestTenantAccountingPeriodCloseoutPacketUseCase)
+      .useValue(requestTenantAccountingPeriodCloseoutPacketUseCase)
+      .overrideProvider(GetTenantAccountingPeriodCloseoutReportUseCase)
+      .useValue(getTenantAccountingPeriodCloseoutReportUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -17794,6 +17949,111 @@ describe('API', () => {
 
     expect(
       getTenantAccountingPeriodCloseoutReadinessUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/trial-balance-workspace should return trial balance from ledger registry', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/trial-balance-workspace?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      trialBalanceStatus: 'ready_for_review',
+      summary: {
+        accountCount: 2,
+        balanced: true,
+        netIncomeInCents: 25000,
+      },
+      accounts: expect.arrayContaining([
+        expect.objectContaining({
+          accountCode: '101.01',
+          debitBalanceInCents: 25000,
+        }),
+      ]),
+    });
+
+    expect(
+      getTenantAccountingTrialBalanceWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/period-closeout-packet should return accounting closeout packet', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/period-closeout-packet')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        decision: 'approve',
+        reviewerUserId: 'user_123',
+        reviewerEmail: 'hello@saas-platform.dev',
+        note: 'Closeout packet desde e2e.',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      closeoutStatus: 'approved_for_closeout',
+      summary: {
+        readyApprovalCount: 2,
+        trialBalanceBalanced: true,
+      },
+      trialBalance: {
+        trialBalanceStatus: 'ready_for_review',
+      },
+    });
+
+    expect(
+      requestTenantAccountingPeriodCloseoutPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      decision: 'approve',
+      reviewerUserId: 'user_123',
+      reviewerEmail: 'hello@saas-platform.dev',
+      note: 'Closeout packet desde e2e.',
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/period-closeout-report should return accounting closeout report', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/period-closeout-report?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      reportStatus: 'ready',
+      summary: {
+        sectionCount: 2,
+        journalEntryCount: 1,
+        trialBalanceAccountCount: 2,
+      },
+      sections: expect.arrayContaining([
+        expect.objectContaining({
+          key: 'trial_balance',
+          status: 'ready',
+        }),
+      ]),
+    });
+
+    expect(
+      getTenantAccountingPeriodCloseoutReportUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',

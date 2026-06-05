@@ -203,7 +203,13 @@ printLine(
   `${ledgerPreview.summary.accountCount} cuentas, ${ledgerPreview.summary.approvedPreviewEntryCount} entries`,
 );
 
-const [journalRegistry, ledgerRegistry, closeoutReadiness] = await Promise.all([
+const [
+  journalRegistry,
+  ledgerRegistry,
+  closeoutReadiness,
+  trialBalance,
+  closeoutReport,
+] = await Promise.all([
   apiRequest({
     baseUrl,
     path: accountingPath(`/journal-registry?${periodQuery()}`),
@@ -219,11 +225,23 @@ const [journalRegistry, ledgerRegistry, closeoutReadiness] = await Promise.all([
     path: accountingPath(`/period-closeout-readiness?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/trial-balance-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/period-closeout-report?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus('journal registry', journalRegistry.registryStatus);
 assertStatus('ledger registry workspace', ledgerRegistry.ledgerStatus);
 assertStatus('period closeout readiness', closeoutReadiness.readinessStatus);
+assertStatus('trial balance workspace', trialBalance.trialBalanceStatus);
+assertStatus('period closeout report', closeoutReport.reportStatus);
 printLine(
   'journal registry',
   `${journalRegistry.summary.entryCount} entries, ${journalRegistry.registryStatus}`,
@@ -235,6 +253,35 @@ printLine(
 printLine(
   'closeout readiness',
   `${closeoutReadiness.summary.readyCheckCount}/${closeoutReadiness.summary.checkCount} checks, ${closeoutReadiness.readinessStatus}`,
+);
+printLine(
+  'trial balance',
+  `${trialBalance.summary.accountCount} cuentas, ${trialBalance.trialBalanceStatus}`,
+);
+
+const closeoutPacket = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/period-closeout-packet'),
+  token,
+  body: {
+    period,
+    year,
+    decision: 'approve',
+    reviewerUserId: 'smoke-accounting-reviewer',
+    reviewerEmail: 'accounting-reviewer@saas-platform.dev',
+    note: 'Smoke closeout packet for accounting foundation.',
+  },
+});
+
+assertStatus('period closeout packet', closeoutPacket.closeoutStatus);
+printLine(
+  'closeout packet',
+  `${closeoutPacket.summary.readyApprovalCount} approvals, ${closeoutPacket.closeoutStatus}`,
+);
+printLine(
+  'closeout report',
+  `${closeoutReport.summary.sectionCount} secciones, ${closeoutReport.reportStatus}`,
 );
 
 printSection('Accounting foundation smoke OK');

@@ -1,9 +1,15 @@
 import { Module } from '@nestjs/common';
 import {
+  ACCOUNTING_JOURNAL_ENTRY_ID_GENERATOR,
+  ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
+  CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
   GetTenantAccountingJournalDraftPreviewUseCase,
+  GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingPeriodCloseoutReadinessUseCase,
+  ListTenantAccountingJournalRegistryUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
 } from '@saas-platform/accounting-application';
@@ -15,6 +21,7 @@ import {
 } from '@saas-platform/commercial-application';
 import { FEATURE_FLAG_REPOSITORY } from '@saas-platform/feature-flags-application';
 import {
+  AccountingPersistenceModule,
   CatalogPersistenceModule,
   CommercialPersistenceModule,
   FeatureFlagsPersistenceModule,
@@ -23,6 +30,7 @@ import {
 import {
   GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
   GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
+  GetTenantEcuadorTaxOperationalCloseoutUseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
   RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
   UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
@@ -42,6 +50,7 @@ import { AccountingController } from './accounting.controller';
 @Module({
   imports: [
     AuthModule,
+    AccountingPersistenceModule,
     CatalogPersistenceModule,
     CommercialPersistenceModule,
     FeatureFlagsPersistenceModule,
@@ -124,6 +133,71 @@ import { AccountingController } from './accounting.controller';
         new GetTenantAccountingLedgerPreviewWorkspaceUseCase(
           getTenantAccountingJournalDraftPreviewUseCase,
           getTenantAccountingChartOfAccountsWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: CreateTenantAccountingJournalEntriesFromApprovalUseCase,
+      inject: [
+        RequestTenantAccountingJournalDraftApprovalPacketUseCase,
+        ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
+        ACCOUNTING_JOURNAL_ENTRY_ID_GENERATOR,
+        TENANT_REPOSITORY,
+      ],
+      useFactory: (
+        requestTenantAccountingJournalDraftApprovalPacketUseCase,
+        accountingJournalEntryRepository,
+        accountingJournalEntryIdGenerator,
+        tenantRepository,
+      ) =>
+        new CreateTenantAccountingJournalEntriesFromApprovalUseCase(
+          requestTenantAccountingJournalDraftApprovalPacketUseCase,
+          accountingJournalEntryRepository,
+          accountingJournalEntryIdGenerator,
+          tenantRepository,
+        ),
+    },
+    {
+      provide: ListTenantAccountingJournalRegistryUseCase,
+      inject: [ACCOUNTING_JOURNAL_ENTRY_REPOSITORY],
+      useFactory: (accountingJournalEntryRepository) =>
+        new ListTenantAccountingJournalRegistryUseCase(
+          accountingJournalEntryRepository,
+        ),
+    },
+    {
+      provide: GetTenantAccountingLedgerRegistryWorkspaceUseCase,
+      inject: [
+        ListTenantAccountingJournalRegistryUseCase,
+        GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+      ],
+      useFactory: (
+        listTenantAccountingJournalRegistryUseCase,
+        getTenantAccountingChartOfAccountsWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingLedgerRegistryWorkspaceUseCase(
+          listTenantAccountingJournalRegistryUseCase,
+          getTenantAccountingChartOfAccountsWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingPeriodCloseoutReadinessUseCase,
+      inject: [
+        GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+        ListTenantAccountingJournalRegistryUseCase,
+        GetTenantAccountingLedgerRegistryWorkspaceUseCase,
+        GetTenantEcuadorTaxOperationalCloseoutUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingChartOfAccountsWorkspaceUseCase,
+        listTenantAccountingJournalRegistryUseCase,
+        getTenantAccountingLedgerRegistryWorkspaceUseCase,
+        getTenantEcuadorTaxOperationalCloseoutUseCase,
+      ) =>
+        new GetTenantAccountingPeriodCloseoutReadinessUseCase(
+          getTenantAccountingChartOfAccountsWorkspaceUseCase,
+          listTenantAccountingJournalRegistryUseCase,
+          getTenantAccountingLedgerRegistryWorkspaceUseCase,
+          getTenantEcuadorTaxOperationalCloseoutUseCase,
         ),
     },
     {

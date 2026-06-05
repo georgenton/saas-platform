@@ -106,7 +106,10 @@ import {
   fetchAccountingChartOfAccountsWorkspace,
   fetchAccountingIntakeWorkspace,
   fetchAccountingJournalDraftPreview,
+  fetchAccountingJournalRegistry,
+  fetchAccountingLedgerRegistryWorkspace,
   fetchAccountingLedgerPreviewWorkspace,
+  fetchAccountingPeriodCloseoutReadiness,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
   fetchEcuadorTaxAccountingBridgeSuggestedAccounts,
@@ -266,6 +269,7 @@ import {
   acceptInvitation,
   cancelInvitation,
   checkInvoiceElectronicAuthorization,
+  createAccountingJournalEntries,
   createCustomer,
   createCreditNote,
   createDebitNote,
@@ -348,9 +352,13 @@ import {
   AccountingChartOfAccountsWorkspaceResponse,
   AccountingChartMappingManagementResponse,
   AccountingIntakeWorkspaceResponse,
+  AccountingJournalEntryCreationResultResponse,
+  AccountingJournalRegistryResponse,
   AccountingJournalDraftApprovalPacketResponse,
   AccountingJournalDraftPreviewResponse,
+  AccountingLedgerRegistryWorkspaceResponse,
   AccountingLedgerPreviewWorkspaceResponse,
+  AccountingPeriodCloseoutReadinessResponse,
   AiActivityFeedEventType,
   AiActivityFeedResponse,
   AiApprovalCapacityWorkspaceResponse,
@@ -2098,9 +2106,25 @@ export function App() {
     setLastAccountingJournalDraftApprovalPacket,
   ] = useState<AccountingJournalDraftApprovalPacketResponse | null>(null);
   const [
+    lastAccountingJournalEntryCreationResult,
+    setLastAccountingJournalEntryCreationResult,
+  ] = useState<AccountingJournalEntryCreationResultResponse | null>(null);
+  const [
+    accountingJournalRegistry,
+    setAccountingJournalRegistry,
+  ] = useState<AccountingJournalRegistryResponse | null>(null);
+  const [
+    accountingLedgerRegistryWorkspace,
+    setAccountingLedgerRegistryWorkspace,
+  ] = useState<AccountingLedgerRegistryWorkspaceResponse | null>(null);
+  const [
     accountingLedgerPreviewWorkspace,
     setAccountingLedgerPreviewWorkspace,
   ] = useState<AccountingLedgerPreviewWorkspaceResponse | null>(null);
+  const [
+    accountingPeriodCloseoutReadiness,
+    setAccountingPeriodCloseoutReadiness,
+  ] = useState<AccountingPeriodCloseoutReadinessResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -19495,6 +19519,9 @@ export function App() {
         nextAccountingChartOfAccountsWorkspace,
         nextAccountingJournalDraftPreview,
         nextAccountingLedgerPreviewWorkspace,
+        nextAccountingJournalRegistry,
+        nextAccountingLedgerRegistryWorkspace,
+        nextAccountingPeriodCloseoutReadiness,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -19521,8 +19548,26 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingJournalRegistry(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingLedgerRegistryWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingPeriodCloseoutReadiness(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
-        : [null, null, null, null];
+        : [null, null, null, null, null, null, null];
 
       startTransition(() => {
         setTaxComplianceWorkspace(nextWorkspace);
@@ -19579,6 +19624,13 @@ export function App() {
         setAccountingJournalDraftPreview(nextAccountingJournalDraftPreview);
         setAccountingLedgerPreviewWorkspace(
           nextAccountingLedgerPreviewWorkspace,
+        );
+        setAccountingJournalRegistry(nextAccountingJournalRegistry);
+        setAccountingLedgerRegistryWorkspace(
+          nextAccountingLedgerRegistryWorkspace,
+        );
+        setAccountingPeriodCloseoutReadiness(
+          nextAccountingPeriodCloseoutReadiness,
         );
       });
     } catch (error) {
@@ -20144,6 +20196,75 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo solicitar approval packet contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleCreateAccountingJournalEntries() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    const draftEntryKeys =
+      lastAccountingJournalDraftApprovalPacket?.approvedDraftEntryKeys ??
+      accountingJournalDraftPreview?.draftEntries
+        .filter((entry) => entry.blockers.length === 0 && entry.totals.balanced)
+        .map((entry) => entry.draftEntryKey) ??
+      [];
+
+    if (draftEntryKeys.length === 0) {
+      setTaxComplianceActionMessage(
+        'No hay approval packet contable listo para crear journal entries.',
+      );
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-journal-entry-create');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const result = await createAccountingJournalEntries(token, tenantSlug, {
+        period: taxCompliancePeriod,
+        year,
+        draftEntryKeys,
+        reviewerUserId: session?.user.id ?? null,
+        reviewerEmail: session?.user.email ?? null,
+        note: 'Journal registry interno desde Accounting foundation.',
+      });
+      const [registry, ledgerRegistry, closeoutReadiness] = await Promise.all([
+        fetchAccountingJournalRegistry(token, tenantSlug, taxCompliancePeriod, year),
+        fetchAccountingLedgerRegistryWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingPeriodCloseoutReadiness(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+      ]);
+
+      setLastAccountingJournalEntryCreationResult(result);
+      setAccountingJournalRegistry(registry);
+      setAccountingLedgerRegistryWorkspace(ledgerRegistry);
+      setAccountingPeriodCloseoutReadiness(closeoutReadiness);
+      setTaxComplianceActionMessage(
+        `${result.summary.createdEntryCount} journal entries guardados en registry.`,
+      );
+    } catch (error) {
+      setLastAccountingJournalEntryCreationResult(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo crear journal registry interno.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -29468,6 +29589,22 @@ export function App() {
                               >
                                 Aprobar drafts
                               </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-journal-entry-create' ||
+                                  !lastAccountingJournalDraftApprovalPacket ||
+                                  lastAccountingJournalDraftApprovalPacket
+                                    .summary.approvedDraftEntryCount === 0
+                                }
+                                onClick={() =>
+                                  void handleCreateAccountingJournalEntries()
+                                }
+                                type="button"
+                              >
+                                Crear journals
+                              </button>
                             </div>
                             <div className={styles.invoiceInlineGrid}>
                               {accountingChartOfAccountsWorkspace.accounts
@@ -29519,6 +29656,25 @@ export function App() {
                                       .summary.approvedDraftEntryCount
                                   }{' '}
                                   aprobados
+                                </span>
+                              </div>
+                            ) : null}
+                            {lastAccountingJournalEntryCreationResult ? (
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>
+                                  Journal registry
+                                </span>
+                                <strong>
+                                  {humanizeKey(
+                                    lastAccountingJournalEntryCreationResult.creationStatus,
+                                  )}
+                                </strong>
+                                <span className={styles.muted}>
+                                  {
+                                    lastAccountingJournalEntryCreationResult
+                                      .summary.createdEntryCount
+                                  }{' '}
+                                  guardados
                                 </span>
                               </div>
                             ) : null}
@@ -29585,6 +29741,75 @@ export function App() {
                                 </div>
                                 <p className={styles.muted}>
                                   {accountingLedgerPreviewWorkspace.nextStep}
+                                </p>
+                              </div>
+                            ) : null}
+                            {accountingJournalRegistry ||
+                            accountingLedgerRegistryWorkspace ||
+                            accountingPeriodCloseoutReadiness ? (
+                              <div className={styles.invoiceItemCard}>
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>Accounting registry</strong>
+                                  {accountingPeriodCloseoutReadiness ? (
+                                    <span
+                                      className={`${styles.statusPill} ${operationalStatusTone(
+                                        accountingPeriodCloseoutReadiness.readinessStatus,
+                                      )}`}
+                                    >
+                                      {humanizeKey(
+                                        accountingPeriodCloseoutReadiness.readinessStatus,
+                                      )}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <div className={styles.commercialGrid}>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>Journals</span>
+                                    <strong>
+                                      {accountingJournalRegistry?.summary
+                                        .entryCount ?? 0}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingJournalRegistry
+                                        ? humanizeKey(
+                                            accountingJournalRegistry.registryStatus,
+                                          )
+                                        : 'sin registry'}
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Ledger registry
+                                    </span>
+                                    <strong>
+                                      {accountingLedgerRegistryWorkspace?.summary
+                                        .accountCount ?? 0}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingLedgerRegistryWorkspace?.summary
+                                        .balanced
+                                        ? 'balanceado'
+                                        : 'pendiente'}
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>Closeout</span>
+                                    <strong>
+                                      {accountingPeriodCloseoutReadiness?.summary
+                                        .readyCheckCount ?? 0}
+                                      /
+                                      {accountingPeriodCloseoutReadiness?.summary
+                                        .checkCount ?? 0}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      checks listos
+                                    </span>
+                                  </div>
+                                </div>
+                                <p className={styles.muted}>
+                                  {accountingPeriodCloseoutReadiness?.nextStep ??
+                                    accountingLedgerRegistryWorkspace?.nextStep ??
+                                    accountingJournalRegistry?.nextStep}
                                 </p>
                               </div>
                             ) : null}

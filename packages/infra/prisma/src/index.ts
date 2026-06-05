@@ -1,3 +1,6 @@
+export * from './lib/accounting/accounting-persistence.module';
+export * from './lib/accounting/prisma-accounting-journal-entry.repository';
+export * from './lib/accounting/uuid-accounting-journal-entry-id.generator';
 export * from './lib/ai/ai-persistence.module';
 export * from './lib/ai/prisma-ai-approval-request.repository';
 export * from './lib/ai/prisma-ai-suggestion-run.repository';

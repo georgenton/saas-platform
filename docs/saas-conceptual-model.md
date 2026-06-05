@@ -1031,20 +1031,23 @@ readiness rather than ledgers or financial statements.
    - track taxpayer profile compatibility, periodicity, required evidence,
      form boxes, calculation rules, manual-only boxes, and review requirements
 4. `Declaration Draft Packet`
-   - prepare suggested form values per period and form
-   - attach evidence and calculation explanation to every suggested box
-   - classify each box as ready, needs review, blocked, or manual-only
+   - implemented as a deterministic packet with suggested form values per
+     period and form
+   - attaches evidence and calculation explanation to every suggested box
+   - classifies each box as ready, needs review, blocked, or manual-only
    - produce accountant-facing differences between SRI evidence, platform data,
      and the suggested declaration draft
 5. `AI Filing Guide Assistant`
-   - explain the SRI online filing path step by step
-   - answer questions over deterministic draft packets and source evidence
-   - generate copy/paste guidance and review checklists
-   - never submit, sign, pay, bypass recaptcha, or replace accountant review
+   - implemented as a guided manual-entry packet that explains the SRI online
+     filing path step by step
+   - generates copy/paste guidance and review checklists over deterministic
+     draft packets and source evidence
+   - never submits, signs, pays, bypasses recaptcha, or replaces accountant
+     review
 6. `Declaration Artifact Export`
-   - generate XML/JSON/Excel artifacts only for forms or annexes where SRI
-     publishes supported technical guides, templates, or schemas
-   - mark unsupported forms as guided-manual entry rather than automated upload
+   - implemented as JSON/checklist export support for operational evidence
+   - marks official XML/Excel as manual-only unless SRI publishes supported
+     technical guides, templates, or schemas that are explicitly modelled
    - keep upload/submission as an external human action recorded through filing
      handoff
 

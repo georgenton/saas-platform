@@ -60,9 +60,12 @@ import {
   RequestTenantEcuadorTaxAccountantReviewUseCase,
   RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+  RequestTenantEcuadorTaxDeclarationArtifactExportUseCase,
   RequestTenantEcuadorTaxGrowthReminderPacketUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
+  RequestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+  RequestTenantEcuadorTaxFilingGuidePacketUseCase,
   RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
@@ -443,6 +446,57 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
         new GetTenantEcuadorTaxDeclarationFormCatalogUseCase(
           getTenantEcuadorTaxObligationMatrixUseCase,
           getTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+      inject: [
+        GetTenantEcuadorTaxDeclarationFormCatalogUseCase,
+        GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+        GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxDeclarationFormCatalogUseCase,
+        getTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+        getTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxDeclarationFormDraftPacketUseCase(
+          getTenantEcuadorTaxDeclarationFormCatalogUseCase,
+          getTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+          getTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxFilingGuidePacketUseCase,
+      inject: [
+        RequestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxFilingGuidePacketUseCase(
+          requestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxDeclarationArtifactExportUseCase,
+      inject: [
+        RequestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxDeclarationArtifactExportUseCase(
+          requestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
           recordTenantEcuadorTaxComplianceEventUseCase,
         ),
     },

@@ -87,9 +87,12 @@ import {
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationFormCatalogResponse,
+  EcuadorTaxDeclarationArtifactExportResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
+  EcuadorTaxDeclarationFormDraftPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
   EcuadorTaxFilingHandoffResponse,
+  EcuadorTaxFilingGuidePacketResponse,
   EcuadorTaxGrowthReminderPacketResponse,
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
@@ -1763,6 +1766,72 @@ export async function fetchEcuadorTaxDeclarationFormCatalog(
     )}/ec/declaration-form-catalog?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxDeclarationFormDraftPacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+  formKey = 'iva',
+): Promise<EcuadorTaxDeclarationFormDraftPacketResponse> {
+  return request<EcuadorTaxDeclarationFormDraftPacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/declaration-form-draft-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}&formKey=${encodeURIComponent(
+      formKey,
+    )}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxFilingGuidePacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+  formKey = 'iva',
+): Promise<EcuadorTaxFilingGuidePacketResponse> {
+  return request<EcuadorTaxFilingGuidePacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/filing-guide-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}&formKey=${encodeURIComponent(
+      formKey,
+    )}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxDeclarationArtifactExport(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+  formKey = 'iva',
+): Promise<EcuadorTaxDeclarationArtifactExportResponse> {
+  return request<EcuadorTaxDeclarationArtifactExportResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/declaration-artifact-export?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}&formKey=${encodeURIComponent(
+      formKey,
+    )}`,
     {
       method: 'GET',
       token,

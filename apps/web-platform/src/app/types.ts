@@ -1877,6 +1877,99 @@ export interface EcuadorTaxDeclarationFormCatalogResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxDeclarationFormDraftPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  formKey: string;
+  formLabel: string;
+  readinessStatus: string;
+  supportStatus: string;
+  suggestedBoxes: Array<{
+    boxKey: string;
+    label: string;
+    suggestedValueInCents: number | null;
+    currency: string | null;
+    readinessStatus: string;
+    source: string;
+    calculation: string;
+    evidenceIds: string[];
+    platformReferences: string[];
+    explanation: string;
+    blockers: string[];
+  }>;
+  manualOnlyBoxes: Array<{
+    boxKey: string;
+    reason: string;
+    requiredOwner: string;
+  }>;
+  evidenceSummary: {
+    sriVouchers: number;
+    reconciliationIssues: number;
+    blockingIssues: number;
+    reviewIssues: number;
+  };
+  accountantReview: {
+    required: boolean;
+    reasons: string[];
+    suggestedQuestions: string[];
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxFilingGuidePacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  formKey: string;
+  readinessStatus: string;
+  assistantMode: string;
+  steps: Array<{
+    key: string;
+    order: number;
+    title: string;
+    instruction: string;
+    source: string;
+    humanGate: boolean;
+  }>;
+  copyChecklist: Array<{
+    boxKey: string;
+    label: string;
+    valueLabel: string;
+    evidenceCount: number;
+    reviewRequired: boolean;
+  }>;
+  accountantQuestions: string[];
+  blockedCapabilities: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxDeclarationArtifactExportResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  formKey: string;
+  readinessStatus: string;
+  exportMode: string;
+  artifacts: Array<{
+    key: string;
+    label: string;
+    format: string;
+    supportStatus: string;
+    payload: Record<string, unknown>;
+    blockers: string[];
+  }>;
+  blockedCapabilities: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface TransitionEcuadorTaxWorkflowRequest {
   period: string;
   year: number;

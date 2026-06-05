@@ -11,12 +11,15 @@ import {
   EcuadorTaxCalendarReviewWorkspaceView,
   EcuadorTaxComplianceEventView,
   EcuadorTaxDeclarationFormCatalogView,
+  EcuadorTaxDeclarationArtifactExportView,
   EcuadorTaxDeclarationApprovalPacketView,
+  EcuadorTaxDeclarationFormDraftPacketView,
   EcuadorTaxDeclarationDraftPacketView,
   EcuadorTaxDueMonitorView,
   EcuadorTaxEcommerceEvidenceSummaryView,
   EcuadorTaxEvidenceSummaryView,
   EcuadorTaxFilingHandoffView,
+  EcuadorTaxFilingGuidePacketView,
   EcuadorTaxGrowthReminderPacketView,
   EcuadorTaxIncomeTaxEvidencePacketView,
   EcuadorTaxObligationMatrixView,
@@ -2522,6 +2525,21 @@ export interface EcuadorTaxDeclarationFormCatalogResponseDto
   taxpayerProfile: EcuadorTaxpayerProfileResponseDto;
 }
 
+export interface EcuadorTaxDeclarationFormDraftPacketResponseDto
+  extends Omit<EcuadorTaxDeclarationFormDraftPacketView, 'generatedAt'> {
+  generatedAt: string;
+}
+
+export interface EcuadorTaxFilingGuidePacketResponseDto
+  extends Omit<EcuadorTaxFilingGuidePacketView, 'generatedAt'> {
+  generatedAt: string;
+}
+
+export interface EcuadorTaxDeclarationArtifactExportResponseDto
+  extends Omit<EcuadorTaxDeclarationArtifactExportView, 'generatedAt'> {
+  generatedAt: string;
+}
+
 export function toEcuadorTaxSriFiscalEvidenceWorkspaceResponseDto(
   workspace: EcuadorTaxSriFiscalEvidenceWorkspaceView,
 ): EcuadorTaxSriFiscalEvidenceWorkspaceResponseDto {
@@ -2560,6 +2578,33 @@ export function toEcuadorTaxDeclarationFormCatalogResponseDto(
     taxpayerProfile: toEcuadorTaxpayerProfileResponseDto(
       catalog.taxpayerProfile,
     ),
+  };
+}
+
+export function toEcuadorTaxDeclarationFormDraftPacketResponseDto(
+  packet: EcuadorTaxDeclarationFormDraftPacketView,
+): EcuadorTaxDeclarationFormDraftPacketResponseDto {
+  return {
+    ...packet,
+    generatedAt: packet.generatedAt.toISOString(),
+  };
+}
+
+export function toEcuadorTaxFilingGuidePacketResponseDto(
+  packet: EcuadorTaxFilingGuidePacketView,
+): EcuadorTaxFilingGuidePacketResponseDto {
+  return {
+    ...packet,
+    generatedAt: packet.generatedAt.toISOString(),
+  };
+}
+
+export function toEcuadorTaxDeclarationArtifactExportResponseDto(
+  artifactExport: EcuadorTaxDeclarationArtifactExportView,
+): EcuadorTaxDeclarationArtifactExportResponseDto {
+  return {
+    ...artifactExport,
+    generatedAt: artifactExport.generatedAt.toISOString(),
   };
 }
 

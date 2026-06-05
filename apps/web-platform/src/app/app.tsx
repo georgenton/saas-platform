@@ -110,11 +110,14 @@ import {
   fetchEcuadorTaxAccountantWorkbench,
   fetchEcuadorTaxAccountantReviews,
   fetchEcuadorTaxAnnexesReadiness,
+  fetchEcuadorTaxDeclarationArtifactExport,
+  fetchEcuadorTaxDeclarationFormDraftPacket,
   fetchEcuadorTaxDeclarationFormCatalog,
   fetchEcuadorTaxDeclarationApprovalPacket,
   fetchEcuadorTaxEcommerceEvidence,
   fetchEcuadorTaxEvents,
   fetchEcuadorTaxFilingHandoff,
+  fetchEcuadorTaxFilingGuidePacket,
   fetchEcuadorTaxGrowthReminderPacket,
   fetchEcuadorTaxIncomeTaxEvidencePacket,
   fetchEcuadorTaxObligationSettings,
@@ -524,10 +527,13 @@ import {
   EcuadorTaxAccountingReadinessPacketResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxComplianceEventResponse,
+  EcuadorTaxDeclarationArtifactExportResponse,
+  EcuadorTaxDeclarationFormDraftPacketResponse,
   EcuadorTaxDeclarationFormCatalogResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
   EcuadorTaxFilingHandoffResponse,
+  EcuadorTaxFilingGuidePacketResponse,
   EcuadorTaxGrowthReminderPacketResponse,
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
@@ -2073,6 +2079,18 @@ export function App() {
     taxComplianceDeclarationFormCatalog,
     setTaxComplianceDeclarationFormCatalog,
   ] = useState<EcuadorTaxDeclarationFormCatalogResponse | null>(null);
+  const [
+    taxComplianceDeclarationFormDraftPacket,
+    setTaxComplianceDeclarationFormDraftPacket,
+  ] = useState<EcuadorTaxDeclarationFormDraftPacketResponse | null>(null);
+  const [
+    taxComplianceFilingGuidePacket,
+    setTaxComplianceFilingGuidePacket,
+  ] = useState<EcuadorTaxFilingGuidePacketResponse | null>(null);
+  const [
+    taxComplianceDeclarationArtifactExport,
+    setTaxComplianceDeclarationArtifactExport,
+  ] = useState<EcuadorTaxDeclarationArtifactExportResponse | null>(null);
   const [taxComplianceLoading, setTaxComplianceLoading] = useState(false);
   const [taxComplianceActionLoading, setTaxComplianceActionLoading] =
     useState<string | null>(null);
@@ -19245,6 +19263,9 @@ export function App() {
         nextSriFiscalEvidenceWorkspace,
         nextSriPlatformReconciliationWorkspace,
         nextDeclarationFormCatalog,
+        nextDeclarationFormDraftPacket,
+        nextFilingGuidePacket,
+        nextDeclarationArtifactExport,
       ] = await Promise.all([
         fetchEcuadorTaxPeriodWorkspace(token, tenantSlug, taxCompliancePeriod, year),
         fetchEcuadorTaxEcommerceEvidence(token, tenantSlug, taxCompliancePeriod),
@@ -19410,6 +19431,27 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchEcuadorTaxDeclarationFormDraftPacket(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+          'iva',
+        ),
+        fetchEcuadorTaxFilingGuidePacket(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+          'iva',
+        ),
+        fetchEcuadorTaxDeclarationArtifactExport(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+          'iva',
+        ),
       ]);
 
       startTransition(() => {
@@ -19455,6 +19497,11 @@ export function App() {
           nextSriPlatformReconciliationWorkspace,
         );
         setTaxComplianceDeclarationFormCatalog(nextDeclarationFormCatalog);
+        setTaxComplianceDeclarationFormDraftPacket(
+          nextDeclarationFormDraftPacket,
+        );
+        setTaxComplianceFilingGuidePacket(nextFilingGuidePacket);
+        setTaxComplianceDeclarationArtifactExport(nextDeclarationArtifactExport);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -28775,6 +28822,76 @@ export function App() {
                           </div>
                         ))}
                     </div>
+                    {taxComplianceDeclarationFormDraftPacket &&
+                    taxComplianceFilingGuidePacket &&
+                    taxComplianceDeclarationArtifactExport ? (
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>
+                            {
+                              taxComplianceDeclarationFormDraftPacket.formLabel
+                            }{' '}
+                            guiado
+                          </strong>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              taxComplianceDeclarationFormDraftPacket.readinessStatus,
+                            )}`}
+                          >
+                            {humanizeKey(
+                              taxComplianceDeclarationFormDraftPacket.readinessStatus,
+                            )}
+                          </span>
+                        </div>
+                        <div className={styles.commercialGrid}>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Casilleros</span>
+                            <strong>
+                              {
+                                taxComplianceDeclarationFormDraftPacket
+                                  .suggestedBoxes.length
+                              }
+                            </strong>
+                            <span className={styles.muted}>
+                              {
+                                taxComplianceDeclarationFormDraftPacket
+                                  .manualOnlyBoxes.length
+                              }{' '}
+                              manuales
+                            </span>
+                          </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Guía SRI</span>
+                            <strong>
+                              {taxComplianceFilingGuidePacket.steps.length}
+                            </strong>
+                            <span className={styles.muted}>
+                              pasos con revisión humana
+                            </span>
+                          </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Artefactos</span>
+                            <strong>
+                              {
+                                taxComplianceDeclarationArtifactExport.artifacts.filter(
+                                  (artifact) =>
+                                    artifact.supportStatus === 'available',
+                                ).length
+                              }
+                            </strong>
+                            <span className={styles.muted}>
+                              disponibles para soporte
+                            </span>
+                          </div>
+                        </div>
+                        <p className={styles.muted}>
+                          {
+                            taxComplianceDeclarationFormDraftPacket
+                              .suggestedBoxes[0]?.explanation
+                          }
+                        </p>
+                      </div>
+                    ) : null}
                     <p className={styles.muted}>
                       {taxComplianceSriPlatformReconciliationWorkspace.nextStep}
                     </p>

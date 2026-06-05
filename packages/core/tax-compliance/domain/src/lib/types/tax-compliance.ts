@@ -133,7 +133,10 @@ export type EcuadorTaxComplianceEventType =
   | 'sri_fiscal_evidence_import_recorded'
   | 'sri_fiscal_evidence_workspace_reviewed'
   | 'sri_platform_reconciliation_reviewed'
-  | 'tax_declaration_form_catalog_reviewed';
+  | 'tax_declaration_form_catalog_reviewed'
+  | 'tax_declaration_form_draft_packet_requested'
+  | 'tax_filing_guide_packet_requested'
+  | 'tax_declaration_artifact_export_requested';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -615,6 +618,99 @@ export interface EcuadorTaxDeclarationFormCatalogView {
     blockers: string[];
     reviewNotes: string[];
   }>;
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxDeclarationFormDraftPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  formKey: EcuadorTaxDeclarationFormKey;
+  formLabel: string;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  supportStatus: EcuadorTaxDeclarationFormSupportStatus;
+  suggestedBoxes: Array<{
+    boxKey: string;
+    label: string;
+    suggestedValueInCents: number | null;
+    currency: string | null;
+    readinessStatus: EcuadorTaxReadinessStatus;
+    source: string;
+    calculation: string;
+    evidenceIds: string[];
+    platformReferences: string[];
+    explanation: string;
+    blockers: string[];
+  }>;
+  manualOnlyBoxes: Array<{
+    boxKey: string;
+    reason: string;
+    requiredOwner: 'operator' | 'accountant';
+  }>;
+  evidenceSummary: {
+    sriVouchers: number;
+    reconciliationIssues: number;
+    blockingIssues: number;
+    reviewIssues: number;
+  };
+  accountantReview: {
+    required: boolean;
+    reasons: string[];
+    suggestedQuestions: string[];
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxFilingGuidePacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  formKey: EcuadorTaxDeclarationFormKey;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  assistantMode: 'guided_manual_entry';
+  steps: Array<{
+    key: string;
+    order: number;
+    title: string;
+    instruction: string;
+    source: string;
+    humanGate: boolean;
+  }>;
+  copyChecklist: Array<{
+    boxKey: string;
+    label: string;
+    valueLabel: string;
+    evidenceCount: number;
+    reviewRequired: boolean;
+  }>;
+  accountantQuestions: string[];
+  blockedCapabilities: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxDeclarationArtifactExportView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  formKey: EcuadorTaxDeclarationFormKey;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  exportMode: 'guided_manual' | 'technical_artifact_available';
+  artifacts: Array<{
+    key: string;
+    label: string;
+    format: 'json' | 'csv' | 'xlsx' | 'xml' | 'manual_checklist';
+    supportStatus: 'available' | 'manual_only' | 'blocked';
+    payload: Record<string, unknown>;
+    blockers: string[];
+  }>;
+  blockedCapabilities: string[];
   nextStep: string;
   guardrails: string[];
 }

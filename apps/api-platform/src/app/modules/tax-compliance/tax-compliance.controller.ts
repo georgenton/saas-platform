@@ -44,9 +44,12 @@ import {
   RequestTenantEcuadorTaxAccountantReviewUseCase,
   RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+  RequestTenantEcuadorTaxDeclarationArtifactExportUseCase,
   RequestTenantEcuadorTaxGrowthReminderPacketUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
+  RequestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
+  RequestTenantEcuadorTaxFilingGuidePacketUseCase,
   RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
@@ -110,9 +113,12 @@ import {
   EcuadorTaxSalesBookResponseDto,
   EcuadorTaxSupplierFiscalReadinessWorkspaceResponseDto,
   EcuadorTaxDeclarationFormCatalogResponseDto,
+  EcuadorTaxDeclarationArtifactExportResponseDto,
+  EcuadorTaxDeclarationFormDraftPacketResponseDto,
   EcuadorTaxSriFiscalEvidenceImportBatchResponseDto,
   EcuadorTaxSriFiscalEvidenceWorkspaceResponseDto,
   EcuadorTaxSriPlatformReconciliationWorkspaceResponseDto,
+  EcuadorTaxFilingGuidePacketResponseDto,
   EcuadorTaxpayerProfileResponseDto,
   EcuadorTaxVatDeclarationReadinessPacketResponseDto,
   EcuadorTaxVatDeclarationDraftResponseDto,
@@ -157,9 +163,12 @@ import {
   toEcuadorTaxSalesBookResponseDto,
   toEcuadorTaxSupplierFiscalReadinessWorkspaceResponseDto,
   toEcuadorTaxDeclarationFormCatalogResponseDto,
+  toEcuadorTaxDeclarationArtifactExportResponseDto,
+  toEcuadorTaxDeclarationFormDraftPacketResponseDto,
   toEcuadorTaxSriFiscalEvidenceImportBatchResponseDto,
   toEcuadorTaxSriFiscalEvidenceWorkspaceResponseDto,
   toEcuadorTaxSriPlatformReconciliationWorkspaceResponseDto,
+  toEcuadorTaxFilingGuidePacketResponseDto,
   toEcuadorTaxpayerProfileResponseDto,
   toEcuadorTaxVatDeclarationReadinessPacketResponseDto,
   toEcuadorTaxVatDeclarationDraftResponseDto,
@@ -350,6 +359,9 @@ export class TaxComplianceController {
     private readonly getTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase: GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
     private readonly getTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase: GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
     private readonly getTenantEcuadorTaxDeclarationFormCatalogUseCase: GetTenantEcuadorTaxDeclarationFormCatalogUseCase,
+    private readonly requestTenantEcuadorTaxDeclarationFormDraftPacketUseCase: RequestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+    private readonly requestTenantEcuadorTaxFilingGuidePacketUseCase: RequestTenantEcuadorTaxFilingGuidePacketUseCase,
+    private readonly requestTenantEcuadorTaxDeclarationArtifactExportUseCase: RequestTenantEcuadorTaxDeclarationArtifactExportUseCase,
     private readonly requestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase: RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase,
     private readonly requestTenantEcuadorTaxVatDeclarationDraftUseCase: RequestTenantEcuadorTaxVatDeclarationDraftUseCase,
     private readonly requestTenantEcuadorTaxPeriodCloseoutPacketUseCase: RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
@@ -814,6 +826,94 @@ export class TaxComplianceController {
         });
 
       return toEcuadorTaxDeclarationFormCatalogResponseDto(catalog);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/declaration-form-draft-packet')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getDeclarationFormDraftPacket(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @Query('formKey') formKey?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxDeclarationFormDraftPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantEcuadorTaxDeclarationFormDraftPacketUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period,
+            year: resolveCalendarYear(year),
+            formKey: normalizeDeclarationFormKey(formKey),
+          },
+        );
+
+      return toEcuadorTaxDeclarationFormDraftPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/filing-guide-packet')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getFilingGuidePacket(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @Query('formKey') formKey?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxFilingGuidePacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantEcuadorTaxFilingGuidePacketUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+          formKey: normalizeDeclarationFormKey(formKey),
+        });
+
+      return toEcuadorTaxFilingGuidePacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/declaration-artifact-export')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getDeclarationArtifactExport(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @Query('formKey') formKey?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxDeclarationArtifactExportResponseDto> {
+    try {
+      const artifactExport =
+        await this.requestTenantEcuadorTaxDeclarationArtifactExportUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period,
+            year: resolveCalendarYear(year),
+            formKey: normalizeDeclarationFormKey(formKey),
+          },
+        );
+
+      return toEcuadorTaxDeclarationArtifactExportResponseDto(artifactExport);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
@@ -1871,6 +1971,26 @@ function resolveWindowDays(windowDays?: string): number | undefined {
   const parsed = Number.parseInt(windowDays, 10);
 
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function normalizeDeclarationFormKey(
+  formKey?: string,
+):
+  | 'iva'
+  | 'income_tax_natural_person'
+  | 'income_tax_company'
+  | 'withholding_income_tax'
+  | 'multiple_payments'
+  | 'multiple_declarations'
+  | undefined {
+  return formKey === 'iva' ||
+    formKey === 'income_tax_natural_person' ||
+    formKey === 'income_tax_company' ||
+    formKey === 'withholding_income_tax' ||
+    formKey === 'multiple_payments' ||
+    formKey === 'multiple_declarations'
+    ? formKey
+    : undefined;
 }
 
 function resolveLimit(limit?: string): number | undefined {

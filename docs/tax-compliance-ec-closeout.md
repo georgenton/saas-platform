@@ -74,15 +74,16 @@ Planned slices:
 3. `Tax Declaration Form Catalog`: model supported SRI declaration forms as
    deterministic contracts, starting with IVA, income tax where practical, and
    withholding declarations.
-4. `Declaration Draft Packet`: suggest form box values by period, attach source
-   evidence and calculation explanations to each box, and classify boxes as
-   ready, needs review, blocked, or manual-only.
-5. `AI Filing Guide Assistant`: explain the SRI online filing path over the
-   deterministic draft packet, produce review checklists, and help the operator
-   or accountant copy/upload values without submitting automatically.
-6. `Declaration Artifact Export`: generate XML/JSON/Excel artifacts only when
-   SRI publishes a compatible technical guide, template, or schema; otherwise
-   keep the form in guided-manual entry mode.
+4. `Declaration Draft Packet`: now prepares suggested form box values by period
+   and form, attaches source evidence and calculation explanations to each box,
+   and classifies boxes as ready, needs review, blocked, or manual-only.
+5. `AI Filing Guide Assistant`: now exposes a deterministic guided-manual-entry
+   packet that explains the SRI online filing path, produces review checklists,
+   and helps the operator or accountant copy values without submitting
+   automatically.
+6. `Declaration Artifact Export`: now exposes a JSON/checklist export manifest
+   for operational support. Official XML/Excel remains manual-only until an SRI
+   technical guide, template, or schema is explicitly modelled.
 
 Guardrails:
 

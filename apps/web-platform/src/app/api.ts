@@ -86,6 +86,7 @@ import {
   EcuadorTaxAccountingReadinessPacketResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxComplianceEventResponse,
+  EcuadorTaxDeclarationFormCatalogResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
   EcuadorTaxFilingHandoffResponse,
@@ -112,6 +113,10 @@ import {
   EcuadorTaxWithholdingRegistryResponse,
   EcuadorTaxRuleCatalogResponse,
   EcuadorTaxReviewAssistantPacketResponse,
+  EcuadorTaxSriFiscalEvidenceImportBatchResponse,
+  EcuadorTaxSriFiscalEvidenceWorkspaceResponse,
+  EcuadorTaxSriPlatformReconciliationWorkspaceResponse,
+  RecordEcuadorTaxSriFiscalEvidenceImportRequest,
   UpsertEcuadorTaxAccountingBridgeMappingRequest,
   ExecuteEcuadorTaxWithholdingDraftBridgeRequest,
   RecordEcuadorTaxFilingHandoffRequest,
@@ -1682,6 +1687,80 @@ export async function fetchEcuadorTaxAccountingReadinessPacket(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/accounting-readiness-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function recordEcuadorTaxSriFiscalEvidenceImport(
+  token: string,
+  tenantSlug: string,
+  input: RecordEcuadorTaxSriFiscalEvidenceImportRequest,
+): Promise<EcuadorTaxSriFiscalEvidenceImportBatchResponse> {
+  return request<EcuadorTaxSriFiscalEvidenceImportBatchResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/sri-fiscal-evidence-import`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxSriFiscalEvidenceWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxSriFiscalEvidenceWorkspaceResponse> {
+  return request<EcuadorTaxSriFiscalEvidenceWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/sri-fiscal-evidence-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxSriPlatformReconciliationWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxSriPlatformReconciliationWorkspaceResponse> {
+  return request<EcuadorTaxSriPlatformReconciliationWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/sri-platform-reconciliation-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchEcuadorTaxDeclarationFormCatalog(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxDeclarationFormCatalogResponse> {
+  return request<EcuadorTaxDeclarationFormCatalogResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/declaration-form-catalog?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

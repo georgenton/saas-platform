@@ -10,6 +10,7 @@ import {
   EcuadorTaxAuditReadinessView,
   EcuadorTaxCalendarReviewWorkspaceView,
   EcuadorTaxComplianceEventView,
+  EcuadorTaxDeclarationFormCatalogView,
   EcuadorTaxDeclarationApprovalPacketView,
   EcuadorTaxDeclarationDraftPacketView,
   EcuadorTaxDueMonitorView,
@@ -35,6 +36,9 @@ import {
   EcuadorTaxReviewAssistantPacketView,
   EcuadorTaxSalesBookView,
   EcuadorTaxSupplierFiscalReadinessWorkspaceView,
+  EcuadorTaxSriFiscalEvidenceImportBatchView,
+  EcuadorTaxSriFiscalEvidenceWorkspaceView,
+  EcuadorTaxSriPlatformReconciliationWorkspaceView,
   EcuadorTaxpayerProfileView,
   EcuadorTaxVatDeclarationReadinessPacketView,
   EcuadorTaxVatDeclarationApprovalView,
@@ -2472,6 +2476,100 @@ export function toEcuadorTaxAccountingReadinessPacketResponseDto(
     blockers: [...packet.blockers],
     nextStep: packet.nextStep,
     guardrails: [...packet.guardrails],
+  };
+}
+
+export type EcuadorTaxSriVoucherEvidenceResponseDto = Omit<
+  EcuadorTaxSriFiscalEvidenceWorkspaceView['voucherRows'][number],
+  'authorizationDate' | 'issuedAt'
+> & {
+  authorizationDate: string | null;
+  issuedAt: string | null;
+};
+
+export interface EcuadorTaxSriFiscalEvidenceWorkspaceResponseDto
+  extends Omit<
+    EcuadorTaxSriFiscalEvidenceWorkspaceView,
+    'generatedAt' | 'voucherRows'
+  > {
+  generatedAt: string;
+  voucherRows: EcuadorTaxSriVoucherEvidenceResponseDto[];
+}
+
+export interface EcuadorTaxSriFiscalEvidenceImportBatchResponseDto
+  extends Omit<
+    EcuadorTaxSriFiscalEvidenceImportBatchView,
+    'generatedAt' | 'voucherRows'
+  > {
+  generatedAt: string;
+  voucherRows: EcuadorTaxSriVoucherEvidenceResponseDto[];
+}
+
+export interface EcuadorTaxSriPlatformReconciliationWorkspaceResponseDto
+  extends Omit<
+    EcuadorTaxSriPlatformReconciliationWorkspaceView,
+    'generatedAt'
+  > {
+  generatedAt: string;
+}
+
+export interface EcuadorTaxDeclarationFormCatalogResponseDto
+  extends Omit<
+    EcuadorTaxDeclarationFormCatalogView,
+    'generatedAt' | 'taxpayerProfile'
+  > {
+  generatedAt: string;
+  taxpayerProfile: EcuadorTaxpayerProfileResponseDto;
+}
+
+export function toEcuadorTaxSriFiscalEvidenceWorkspaceResponseDto(
+  workspace: EcuadorTaxSriFiscalEvidenceWorkspaceView,
+): EcuadorTaxSriFiscalEvidenceWorkspaceResponseDto {
+  return {
+    ...workspace,
+    generatedAt: workspace.generatedAt.toISOString(),
+    voucherRows: workspace.voucherRows.map(toSriVoucherEvidenceResponseDto),
+  };
+}
+
+export function toEcuadorTaxSriFiscalEvidenceImportBatchResponseDto(
+  batch: EcuadorTaxSriFiscalEvidenceImportBatchView,
+): EcuadorTaxSriFiscalEvidenceImportBatchResponseDto {
+  return {
+    ...batch,
+    generatedAt: batch.generatedAt.toISOString(),
+    voucherRows: batch.voucherRows.map(toSriVoucherEvidenceResponseDto),
+  };
+}
+
+export function toEcuadorTaxSriPlatformReconciliationWorkspaceResponseDto(
+  workspace: EcuadorTaxSriPlatformReconciliationWorkspaceView,
+): EcuadorTaxSriPlatformReconciliationWorkspaceResponseDto {
+  return {
+    ...workspace,
+    generatedAt: workspace.generatedAt.toISOString(),
+  };
+}
+
+export function toEcuadorTaxDeclarationFormCatalogResponseDto(
+  catalog: EcuadorTaxDeclarationFormCatalogView,
+): EcuadorTaxDeclarationFormCatalogResponseDto {
+  return {
+    ...catalog,
+    generatedAt: catalog.generatedAt.toISOString(),
+    taxpayerProfile: toEcuadorTaxpayerProfileResponseDto(
+      catalog.taxpayerProfile,
+    ),
+  };
+}
+
+function toSriVoucherEvidenceResponseDto(
+  voucher: EcuadorTaxSriFiscalEvidenceWorkspaceView['voucherRows'][number],
+): EcuadorTaxSriVoucherEvidenceResponseDto {
+  return {
+    ...voucher,
+    authorizationDate: voucher.authorizationDate?.toISOString() ?? null,
+    issuedAt: voucher.issuedAt?.toISOString() ?? null,
   };
 }
 

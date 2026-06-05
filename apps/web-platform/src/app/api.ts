@@ -3,8 +3,12 @@ import {
   AccountingChartMappingManagementResponse,
   AccountingIntakeWorkspaceResponse,
   AccountingJournalDraftApprovalPacketResponse,
+  AccountingJournalEntryCreationResultResponse,
+  AccountingJournalRegistryResponse,
   AccountingJournalDraftPreviewResponse,
+  AccountingLedgerRegistryWorkspaceResponse,
   AccountingLedgerPreviewWorkspaceResponse,
+  AccountingPeriodCloseoutReadinessResponse,
   AiActivityFeedResponse,
   AiActionCenterResponse,
   AiApprovalCapacityWorkspaceResponse,
@@ -135,6 +139,7 @@ import {
   TransitionEcuadorTaxWorkflowRequest,
   UpsertEcuadorTaxObligationSettingsRequest,
   RequestAccountingJournalDraftApprovalPacketRequest,
+  CreateAccountingJournalEntriesRequest,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
   EcommerceOrderPaymentConfirmationWorkspaceResponse,
@@ -1806,6 +1811,78 @@ export async function fetchAccountingLedgerPreviewWorkspace(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ledger-preview-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function createAccountingJournalEntries(
+  token: string,
+  tenantSlug: string,
+  input: CreateAccountingJournalEntriesRequest,
+): Promise<AccountingJournalEntryCreationResultResponse> {
+  return request<AccountingJournalEntryCreationResultResponse>(
+    `/accounting/tenants/${encodeURIComponent(tenantSlug)}/journal-entries`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingJournalRegistry(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingJournalRegistryResponse> {
+  return request<AccountingJournalRegistryResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/journal-registry?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingLedgerRegistryWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingLedgerRegistryWorkspaceResponse> {
+  return request<AccountingLedgerRegistryWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ledger-registry-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingPeriodCloseoutReadiness(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingPeriodCloseoutReadinessResponse> {
+  return request<AccountingPeriodCloseoutReadinessResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/period-closeout-readiness?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

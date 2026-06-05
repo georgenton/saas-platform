@@ -197,10 +197,14 @@ import {
 } from '@saas-platform/ecommerce-application';
 import {
   ACCOUNTING_PERMISSIONS,
+  CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
   GetTenantAccountingJournalDraftPreviewUseCase,
+  GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingPeriodCloseoutReadinessUseCase,
+  ListTenantAccountingJournalRegistryUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
 } from '@saas-platform/accounting-application';
@@ -988,6 +992,16 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let getTenantAccountingLedgerPreviewWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let createTenantAccountingJournalEntriesFromApprovalUseCase: {
+    execute: jest.Mock;
+  };
+  let listTenantAccountingJournalRegistryUseCase: { execute: jest.Mock };
+  let getTenantAccountingLedgerRegistryWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingPeriodCloseoutReadinessUseCase: {
     execute: jest.Mock;
   };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
@@ -4268,6 +4282,138 @@ describe('API', () => {
     blockers: [],
     nextStep: 'Revisar saldos preview con contador antes de definir posteo formal.',
     guardrails: ['Ledger preview no es mayor oficial.'],
+  };
+  const accountingJournalEntry = {
+    id: 'journal_entry_001',
+    tenantId: 'tenant_123',
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    source: 'accounting_journal_draft_approval_packet',
+    status: 'approved' as const,
+    label: 'Ventas locales',
+    currency: 'USD',
+    lines: accountingJournalDraftApprovalPacket.draftEntries[0].lines.map(
+      (line) => ({
+        ...line,
+        accountCode: line.accountCode ?? 'UNMAPPED',
+        accountName: line.accountName ?? line.accountHint,
+      }),
+    ),
+    totals: {
+      debitInCents: 25000,
+      creditInCents: 25000,
+      balanced: true,
+    },
+    approvalStatus: 'approved_for_posting',
+    approvedByUserId: 'user_123',
+    approvedByEmail: 'hello@saas-platform.dev',
+    approvedAt: taxComplianceGeneratedAt,
+    sourceDraftEntryKey: 'draft_sales_revenue_USD',
+    sourceApprovalPacketKey: 'approval:saas-platform:2026-06:e2e',
+    note: 'Journal registry interno desde e2e.',
+    createdAt: taxComplianceGeneratedAt,
+    updatedAt: taxComplianceGeneratedAt,
+  };
+  const accountingJournalEntryCreationResult = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    creationStatus: 'created' as const,
+    createdEntries: [accountingJournalEntry],
+    approvalStatus: 'approved_for_posting',
+    summary: {
+      requestedDraftEntryCount: 1,
+      createdEntryCount: 1,
+      blockedDraftEntryCount: 0,
+      totalDebitInCents: 25000,
+      totalCreditInCents: 25000,
+    },
+    blockers: [],
+    nextStep: 'Usar journal registry como fuente del ledger registry.',
+    guardrails: ['Journal registry interno; no es diario oficial.'],
+  };
+  const accountingJournalRegistry = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    registryStatus: 'ready' as const,
+    entries: [accountingJournalEntry],
+    summary: {
+      entryCount: 1,
+      approvedEntryCount: 1,
+      postedPreviewEntryCount: 0,
+      voidedEntryCount: 0,
+      balancedEntryCount: 1,
+      totalDebitInCents: 25000,
+      totalCreditInCents: 25000,
+    },
+    blockers: [],
+    nextStep: 'Usar journal registry como fuente del ledger registry.',
+    guardrails: ['Registry interno de journals.'],
+  };
+  const accountingLedgerRegistryWorkspace = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'ready' as const,
+    ledgerStatus: 'ready_for_review' as const,
+    accountBalances: accountingLedgerPreviewWorkspace.accountBalances.map(
+      (account) => ({
+        ...account,
+        sourceJournalEntryIds: ['journal_entry_001'],
+      }),
+    ),
+    summary: {
+      accountCount: 2,
+      journalEntryCount: 1,
+      approvedEntryCount: 1,
+      unapprovedEntryCount: 0,
+      totalDebitInCents: 25000,
+      totalCreditInCents: 25000,
+      balanced: true,
+    },
+    blockers: [],
+    nextStep: 'Usar ledger registry para evaluar closeout readiness.',
+    guardrails: ['Ledger registry no es mayor oficial.'],
+  };
+  const accountingPeriodCloseoutReadiness = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'ready_for_closeout' as const,
+    checks: [
+      {
+        key: 'chart_mapping',
+        label: 'Plan de cuentas mapeado',
+        status: 'ready' as const,
+        detail: '1/1 hints mapeados.',
+        blockerCount: 0,
+      },
+      {
+        key: 'journal_registry',
+        label: 'Journal registry',
+        status: 'ready' as const,
+        detail: '1 entries, 1 balanceados.',
+        blockerCount: 0,
+      },
+    ],
+    summary: {
+      checkCount: 4,
+      readyCheckCount: 4,
+      needsReviewCheckCount: 0,
+      blockedCheckCount: 0,
+      journalEntryCount: 1,
+      ledgerBalanced: true,
+      taxCloseoutStatus: 'ready_for_external_filing',
+    },
+    blockers: [],
+    nextStep: 'Preparar closeout contable operacional con revision profesional.',
+    guardrails: ['Readiness de cierre contable operacional.'],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
@@ -12978,6 +13124,18 @@ describe('API', () => {
     getTenantAccountingLedgerPreviewWorkspaceUseCase = {
       execute: jest.fn().mockResolvedValue(accountingLedgerPreviewWorkspace),
     };
+    createTenantAccountingJournalEntriesFromApprovalUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingJournalEntryCreationResult),
+    };
+    listTenantAccountingJournalRegistryUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingJournalRegistry),
+    };
+    getTenantAccountingLedgerRegistryWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingLedgerRegistryWorkspace),
+    };
+    getTenantAccountingPeriodCloseoutReadinessUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingPeriodCloseoutReadiness),
+    };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
     };
@@ -13588,6 +13746,14 @@ describe('API', () => {
       .useValue(requestTenantAccountingJournalDraftApprovalPacketUseCase)
       .overrideProvider(GetTenantAccountingLedgerPreviewWorkspaceUseCase)
       .useValue(getTenantAccountingLedgerPreviewWorkspaceUseCase)
+      .overrideProvider(CreateTenantAccountingJournalEntriesFromApprovalUseCase)
+      .useValue(createTenantAccountingJournalEntriesFromApprovalUseCase)
+      .overrideProvider(ListTenantAccountingJournalRegistryUseCase)
+      .useValue(listTenantAccountingJournalRegistryUseCase)
+      .overrideProvider(GetTenantAccountingLedgerRegistryWorkspaceUseCase)
+      .useValue(getTenantAccountingLedgerRegistryWorkspaceUseCase)
+      .overrideProvider(GetTenantAccountingPeriodCloseoutReadinessUseCase)
+      .useValue(getTenantAccountingPeriodCloseoutReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -17487,6 +17653,147 @@ describe('API', () => {
 
     expect(
       getTenantAccountingLedgerPreviewWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/journal-entries should create internal journal registry entries', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/journal-entries')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        draftEntryKeys: ['draft_sales_revenue_USD'],
+        reviewerUserId: 'user_123',
+        reviewerEmail: 'hello@saas-platform.dev',
+        note: 'Journal registry interno desde e2e.',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      creationStatus: 'created',
+      summary: {
+        createdEntryCount: 1,
+        totalDebitInCents: 25000,
+        totalCreditInCents: 25000,
+      },
+      createdEntries: [
+        {
+          id: 'journal_entry_001',
+          status: 'approved',
+          sourceDraftEntryKey: 'draft_sales_revenue_USD',
+        },
+      ],
+    });
+
+    expect(
+      createTenantAccountingJournalEntriesFromApprovalUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      draftEntryKeys: ['draft_sales_revenue_USD'],
+      reviewerUserId: 'user_123',
+      reviewerEmail: 'hello@saas-platform.dev',
+      note: 'Journal registry interno desde e2e.',
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/journal-registry should return internal journal registry', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/journal-registry?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      registryStatus: 'ready',
+      summary: {
+        entryCount: 1,
+        balancedEntryCount: 1,
+      },
+      entries: [
+        {
+          id: 'journal_entry_001',
+          totals: {
+            balanced: true,
+          },
+        },
+      ],
+    });
+
+    expect(listTenantAccountingJournalRegistryUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/ledger-registry-workspace should return ledger from journal registry', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/ledger-registry-workspace?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      ledgerStatus: 'ready_for_review',
+      summary: {
+        journalEntryCount: 1,
+        balanced: true,
+      },
+      accountBalances: expect.arrayContaining([
+        expect.objectContaining({
+          accountCode: '101.01',
+          sourceJournalEntryIds: ['journal_entry_001'],
+        }),
+      ]),
+    });
+
+    expect(
+      getTenantAccountingLedgerRegistryWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/period-closeout-readiness should return accounting closeout readiness', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/period-closeout-readiness?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      readinessStatus: 'ready_for_closeout',
+      summary: {
+        journalEntryCount: 1,
+        ledgerBalanced: true,
+        taxCloseoutStatus: 'ready_for_external_filing',
+      },
+      checks: expect.arrayContaining([
+        expect.objectContaining({
+          key: 'chart_mapping',
+          status: 'ready',
+        }),
+      ]),
+    });
+
+    expect(
+      getTenantAccountingPeriodCloseoutReadinessUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',

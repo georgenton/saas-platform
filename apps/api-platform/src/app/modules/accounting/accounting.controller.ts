@@ -10,10 +10,14 @@ import {
 } from '@nestjs/common';
 import {
   ACCOUNTING_PERMISSIONS,
+  CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
   GetTenantAccountingJournalDraftPreviewUseCase,
+  GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingPeriodCloseoutReadinessUseCase,
+  ListTenantAccountingJournalRegistryUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
 } from '@saas-platform/accounting-application';
@@ -47,9 +51,24 @@ import {
   toAccountingJournalDraftPreviewResponseDto,
 } from './dto/accounting-journal-draft-preview.response';
 import {
+  AccountingJournalEntryCreationResultResponseDto,
+  AccountingJournalRegistryResponseDto,
+  CreateAccountingJournalEntriesRequestDto,
+  toAccountingJournalEntryCreationResultResponseDto,
+  toAccountingJournalRegistryResponseDto,
+} from './dto/accounting-journal-registry.response';
+import {
+  AccountingLedgerRegistryWorkspaceResponseDto,
+  toAccountingLedgerRegistryWorkspaceResponseDto,
+} from './dto/accounting-ledger-registry-workspace.response';
+import {
   AccountingLedgerPreviewWorkspaceResponseDto,
   toAccountingLedgerPreviewWorkspaceResponseDto,
 } from './dto/accounting-ledger-preview-workspace.response';
+import {
+  AccountingPeriodCloseoutReadinessResponseDto,
+  toAccountingPeriodCloseoutReadinessResponseDto,
+} from './dto/accounting-period-closeout-readiness.response';
 
 @Controller('accounting/tenants')
 @UseGuards(
@@ -67,6 +86,10 @@ export class AccountingController {
     private readonly manageTenantAccountingChartMappingUseCase: ManageTenantAccountingChartMappingUseCase,
     private readonly requestTenantAccountingJournalDraftApprovalPacketUseCase: RequestTenantAccountingJournalDraftApprovalPacketUseCase,
     private readonly getTenantAccountingLedgerPreviewWorkspaceUseCase: GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+    private readonly createTenantAccountingJournalEntriesFromApprovalUseCase: CreateTenantAccountingJournalEntriesFromApprovalUseCase,
+    private readonly listTenantAccountingJournalRegistryUseCase: ListTenantAccountingJournalRegistryUseCase,
+    private readonly getTenantAccountingLedgerRegistryWorkspaceUseCase: GetTenantAccountingLedgerRegistryWorkspaceUseCase,
+    private readonly getTenantAccountingPeriodCloseoutReadinessUseCase: GetTenantAccountingPeriodCloseoutReadinessUseCase,
   ) {}
 
   @Get(':slug/intake-workspace')
@@ -218,6 +241,111 @@ export class AccountingController {
         });
 
       return toAccountingLedgerPreviewWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/journal-entries')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async createJournalEntries(
+    @Param('slug') tenantSlug: string,
+    @Body() body: CreateAccountingJournalEntriesRequestDto,
+  ): Promise<AccountingJournalEntryCreationResultResponseDto> {
+    try {
+      const result =
+        await this.createTenantAccountingJournalEntriesFromApprovalUseCase.execute(
+          {
+            tenantSlug,
+            period: body.period,
+            year: body.year,
+            draftEntryKeys: body.draftEntryKeys,
+            reviewerUserId: body.reviewerUserId ?? null,
+            reviewerEmail: body.reviewerEmail ?? null,
+            note: body.note ?? null,
+          },
+        );
+
+      return toAccountingJournalEntryCreationResultResponseDto(result);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/journal-registry')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getJournalRegistry(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingJournalRegistryResponseDto> {
+    try {
+      const registry =
+        await this.listTenantAccountingJournalRegistryUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingJournalRegistryResponseDto(registry);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ledger-registry-workspace')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getLedgerRegistryWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingLedgerRegistryWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantAccountingLedgerRegistryWorkspaceUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingLedgerRegistryWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/period-closeout-readiness')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getPeriodCloseoutReadiness(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingPeriodCloseoutReadinessResponseDto> {
+    try {
+      const readiness =
+        await this.getTenantAccountingPeriodCloseoutReadinessUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingPeriodCloseoutReadinessResponseDto(readiness);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

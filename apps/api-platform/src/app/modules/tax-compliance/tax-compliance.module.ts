@@ -1316,6 +1316,7 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
   exports: [
     GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
     GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
+    GetTenantEcuadorTaxOperationalCloseoutUseCase,
     RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
     RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
     UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase,

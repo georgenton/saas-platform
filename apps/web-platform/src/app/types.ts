@@ -1916,6 +1916,150 @@ export interface AccountingLedgerPreviewWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface CreateAccountingJournalEntriesRequest {
+  period: string;
+  year: number;
+  draftEntryKeys?: string[];
+  reviewerUserId?: string | null;
+  reviewerEmail?: string | null;
+  note?: string | null;
+}
+
+export interface AccountingJournalEntryResponse {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  source: string;
+  status: string;
+  label: string;
+  currency: string;
+  lines: Array<{
+    lineKey: string;
+    accountCode: string;
+    accountName: string;
+    debitInCents: number;
+    creditInCents: number;
+    sourceEntryKey: string;
+    accountHint: string;
+    notes: string[];
+  }>;
+  totals: {
+    debitInCents: number;
+    creditInCents: number;
+    balanced: boolean;
+  };
+  approvalStatus: string;
+  approvedByUserId: string | null;
+  approvedByEmail: string | null;
+  approvedAt: string | null;
+  sourceDraftEntryKey: string | null;
+  sourceApprovalPacketKey: string | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountingJournalEntryCreationResultResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  creationStatus: string;
+  createdEntries: AccountingJournalEntryResponse[];
+  approvalStatus: string;
+  summary: {
+    requestedDraftEntryCount: number;
+    createdEntryCount: number;
+    blockedDraftEntryCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingJournalRegistryResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  registryStatus: string;
+  entries: AccountingJournalEntryResponse[];
+  summary: {
+    entryCount: number;
+    approvedEntryCount: number;
+    postedPreviewEntryCount: number;
+    voidedEntryCount: number;
+    balancedEntryCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingLedgerRegistryWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  ledgerStatus: string;
+  accountBalances: Array<{
+    accountCode: string;
+    accountName: string;
+    category: string;
+    debitInCents: number;
+    creditInCents: number;
+    netDebitInCents: number;
+    netCreditInCents: number;
+    sourceJournalEntryIds: string[];
+  }>;
+  summary: {
+    accountCount: number;
+    journalEntryCount: number;
+    approvedEntryCount: number;
+    unapprovedEntryCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+    balanced: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingPeriodCloseoutReadinessResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  checks: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+    blockerCount: number;
+  }>;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+    journalEntryCount: number;
+    ledgerBalanced: boolean;
+    taxCloseoutStatus: string | null;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxSriVoucherEvidenceResponse {
   evidenceId: string;
   direction: string;

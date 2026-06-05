@@ -169,6 +169,26 @@ if (reviewableDraftKeys.length > 0) {
     'journal approval',
     `${approvalPacket.summary.approvedDraftEntryCount} aprobados, ${approvalPacket.approvalStatus}`,
   );
+
+  const journalCreation = await apiRequest({
+    baseUrl,
+    path: accountingPath('/journal-entries'),
+    token,
+    method: 'POST',
+    body: {
+      period,
+      year,
+      draftEntryKeys: approvalPacket.approvedDraftEntryKeys,
+      reviewerEmail: 'smoke@saas-platform.dev',
+      note: 'Smoke journal registry creation.',
+    },
+  });
+
+  assertStatus('journal entry creation', journalCreation.creationStatus);
+  printLine(
+    'journal registry write',
+    `${journalCreation.summary.createdEntryCount} entries, ${journalCreation.creationStatus}`,
+  );
 }
 
 const ledgerPreview = await apiRequest({
@@ -181,6 +201,40 @@ assertStatus('ledger preview workspace', ledgerPreview.ledgerStatus);
 printLine(
   'ledger preview',
   `${ledgerPreview.summary.accountCount} cuentas, ${ledgerPreview.summary.approvedPreviewEntryCount} entries`,
+);
+
+const [journalRegistry, ledgerRegistry, closeoutReadiness] = await Promise.all([
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/journal-registry?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/ledger-registry-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/period-closeout-readiness?${periodQuery()}`),
+    token,
+  }),
+]);
+
+assertStatus('journal registry', journalRegistry.registryStatus);
+assertStatus('ledger registry workspace', ledgerRegistry.ledgerStatus);
+assertStatus('period closeout readiness', closeoutReadiness.readinessStatus);
+printLine(
+  'journal registry',
+  `${journalRegistry.summary.entryCount} entries, ${journalRegistry.registryStatus}`,
+);
+printLine(
+  'ledger registry',
+  `${ledgerRegistry.summary.accountCount} cuentas, ${ledgerRegistry.ledgerStatus}`,
+);
+printLine(
+  'closeout readiness',
+  `${closeoutReadiness.summary.readyCheckCount}/${closeoutReadiness.summary.checkCount} checks, ${closeoutReadiness.readinessStatus}`,
 );
 
 printSection('Accounting foundation smoke OK');

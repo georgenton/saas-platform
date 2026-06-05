@@ -61,6 +61,7 @@ model Tenant {
   taxComplianceEvents TaxComplianceEvent[]
   taxComplianceAccountantReviews TaxComplianceAccountantReview[]
   taxCompliancePurchaseExpenseEvidence TaxCompliancePurchaseExpenseEvidence[]
+  accountingJournalEntries AccountingJournalEntry[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
@@ -810,6 +811,33 @@ model TaxComplianceEvent {
   @@index([tenantId, period, occurredAt], map: "TaxComplianceEvent_period_idx")
   @@index([tenantSlug, period, occurredAt], map: "TaxComplianceEvent_slug_period_idx")
   @@index([tenantId, eventType, occurredAt], map: "TaxComplianceEvent_event_type_idx")
+}
+
+model AccountingJournalEntry {
+  id              String   @id
+  tenantId        String
+  tenantSlug      String
+  period          String
+  year            Int
+  source          String
+  status          String
+  label           String
+  currency        String
+  linesJson       String   @db.Text
+  approvalStatus  String
+  approvedByUserId String?
+  approvedByEmail String?
+  approvedAt      DateTime?
+  sourceDraftEntryKey String?
+  sourceApprovalPacketKey String?
+  note            String?
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId, period, status], map: "AccountingJournalEntry_period_status_idx")
+  @@index([tenantSlug, period, createdAt], map: "AccountingJournalEntry_slug_period_idx")
+  @@index([tenantId, year, createdAt], map: "AccountingJournalEntry_year_idx")
 }
 
 model TaxComplianceAccountantReview {

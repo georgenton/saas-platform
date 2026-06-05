@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.89.0
+
+### Minor Changes
+
+- badd065: Add Tax Compliance EC SRI fiscal evidence intake, SRI/platform reconciliation, and declaration form catalog contracts.
+
 ## 0.88.0
 
 ### Minor Changes

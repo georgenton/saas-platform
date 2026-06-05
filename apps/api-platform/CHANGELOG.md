@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.85.0
+
+### Minor Changes
+
+- 18a0e93: Productize Tax Compliance EC with dedicated access permissions, add Parties fiscal cleanup workspace, and expose Ecuador tax accounting bridge mapping endpoints.
+
 ## 0.84.0
 
 ### Minor Changes

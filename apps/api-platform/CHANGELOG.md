@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.96.0
+
+### Minor Changes
+
+- 5531886: Add Accounting period lock readiness, adjusting journal entries, and financial statement previews.
+
 ## 0.95.0
 
 ### Minor Changes

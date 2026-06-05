@@ -7,6 +7,7 @@ import {
   CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
+  GetTenantAccountingBankReconciliationWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
@@ -16,6 +17,7 @@ import {
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
   GetTenantAccountingPeriodLockReadinessUseCase,
+  GetTenantAccountingPeriodReconciliationReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
@@ -24,6 +26,7 @@ import {
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
+  RequestTenantAccountingReconciliationMatchPacketUseCase,
 } from '@saas-platform/accounting-application';
 import { PRODUCT_REPOSITORY } from '@saas-platform/catalog-application';
 import {
@@ -192,23 +195,57 @@ import { AccountingController } from './accounting.controller';
         ),
     },
     {
+      provide: GetTenantAccountingBankReconciliationWorkspaceUseCase,
+      inject: [
+        GetTenantAccountingLedgerRegistryWorkspaceUseCase,
+        ListTenantAccountingJournalRegistryUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingLedgerRegistryWorkspaceUseCase,
+        listTenantAccountingJournalRegistryUseCase,
+      ) =>
+        new GetTenantAccountingBankReconciliationWorkspaceUseCase(
+          getTenantAccountingLedgerRegistryWorkspaceUseCase,
+          listTenantAccountingJournalRegistryUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingReconciliationMatchPacketUseCase,
+      inject: [GetTenantAccountingBankReconciliationWorkspaceUseCase],
+      useFactory: (getTenantAccountingBankReconciliationWorkspaceUseCase) =>
+        new RequestTenantAccountingReconciliationMatchPacketUseCase(
+          getTenantAccountingBankReconciliationWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingPeriodReconciliationReadinessUseCase,
+      inject: [GetTenantAccountingBankReconciliationWorkspaceUseCase],
+      useFactory: (getTenantAccountingBankReconciliationWorkspaceUseCase) =>
+        new GetTenantAccountingPeriodReconciliationReadinessUseCase(
+          getTenantAccountingBankReconciliationWorkspaceUseCase,
+        ),
+    },
+    {
       provide: GetTenantAccountingPeriodCloseoutReadinessUseCase,
       inject: [
         GetTenantAccountingChartOfAccountsWorkspaceUseCase,
         ListTenantAccountingJournalRegistryUseCase,
         GetTenantAccountingLedgerRegistryWorkspaceUseCase,
+        GetTenantAccountingPeriodReconciliationReadinessUseCase,
         GetTenantEcuadorTaxOperationalCloseoutUseCase,
       ],
       useFactory: (
         getTenantAccountingChartOfAccountsWorkspaceUseCase,
         listTenantAccountingJournalRegistryUseCase,
         getTenantAccountingLedgerRegistryWorkspaceUseCase,
+        getTenantAccountingPeriodReconciliationReadinessUseCase,
         getTenantEcuadorTaxOperationalCloseoutUseCase,
       ) =>
         new GetTenantAccountingPeriodCloseoutReadinessUseCase(
           getTenantAccountingChartOfAccountsWorkspaceUseCase,
           listTenantAccountingJournalRegistryUseCase,
           getTenantAccountingLedgerRegistryWorkspaceUseCase,
+          getTenantAccountingPeriodReconciliationReadinessUseCase,
           getTenantEcuadorTaxOperationalCloseoutUseCase,
         ),
     },

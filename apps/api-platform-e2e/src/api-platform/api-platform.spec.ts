@@ -200,6 +200,7 @@ import {
   CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
+  GetTenantAccountingBankReconciliationWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
@@ -209,6 +210,7 @@ import {
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
   GetTenantAccountingPeriodLockReadinessUseCase,
+  GetTenantAccountingPeriodReconciliationReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
@@ -217,6 +219,7 @@ import {
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
+  RequestTenantAccountingReconciliationMatchPacketUseCase,
 } from '@saas-platform/accounting-application';
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
@@ -1009,6 +1012,15 @@ describe('API', () => {
   };
   let listTenantAccountingJournalRegistryUseCase: { execute: jest.Mock };
   let getTenantAccountingLedgerRegistryWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingBankReconciliationWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantAccountingReconciliationMatchPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingPeriodReconciliationReadinessUseCase: {
     execute: jest.Mock;
   };
   let getTenantAccountingPeriodCloseoutReadinessUseCase: {
@@ -4684,6 +4696,130 @@ describe('API', () => {
     blockers: [],
     nextStep: 'Revisar previews financieros con contador.',
     guardrails: ['Preview financiero interno.'],
+  };
+  const accountingBankReconciliationWorkspace = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'ready' as const,
+    reconciliationStatus: 'ready_for_review' as const,
+    bankAccounts: [
+      {
+        accountKey: 'bank:101.01',
+        accountCode: '101.01',
+        accountName: 'Caja y bancos',
+        currency: 'USD',
+        ledgerBalanceInCents: 25000,
+        statementBalanceInCents: 25000,
+        differenceInCents: 0,
+        sourceJournalEntryIds: ['journal_entry_001'],
+      },
+    ],
+    statementLines: [
+      {
+        lineKey: 'statement:journal_entry_001:cash',
+        accountKey: 'bank:101.01',
+        postedAt: taxComplianceGeneratedAt,
+        description: 'Ventas locales',
+        direction: 'inflow' as const,
+        amountInCents: 25000,
+        currency: 'USD',
+        reference: 'invoice_001',
+        sourceJournalEntryId: 'journal_entry_001',
+      },
+    ],
+    candidates: [
+      {
+        candidateKey: 'candidate:statement:journal_entry_001:cash',
+        statementLineKey: 'statement:journal_entry_001:cash',
+        journalEntryId: 'journal_entry_001',
+        accountCode: '101.01',
+        accountName: 'Caja y bancos',
+        matchStatus: 'exact_match' as const,
+        confidence: 1,
+        amountInCents: 25000,
+        differenceInCents: 0,
+        rationale: 'Linea bancaria derivada de journal entry aprobado.',
+      },
+    ],
+    summary: {
+      bankAccountCount: 1,
+      statementLineCount: 1,
+      candidateCount: 1,
+      exactMatchCount: 1,
+      needsReviewCount: 0,
+      unmatchedCount: 0,
+      totalStatementAmountInCents: 25000,
+      totalLedgerBankAmountInCents: 25000,
+      totalDifferenceInCents: 0,
+    },
+    blockers: [],
+    nextStep: 'Preparar match packet para aprobacion humana de conciliacion.',
+    guardrails: ['Workspace de conciliacion interna.'],
+  };
+  const accountingReconciliationMatchPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    packetStatus: 'approved' as const,
+    decision: 'approve' as const,
+    reviewerUserId: 'user_123',
+    reviewerEmail: 'hello@saas-platform.dev',
+    note: 'Conciliacion bancaria interna desde e2e.',
+    selectedCandidateKeys: ['candidate:statement:journal_entry_001:cash'],
+    approvedCandidateKeys: ['candidate:statement:journal_entry_001:cash'],
+    workspace: accountingBankReconciliationWorkspace,
+    approvalChecklist: [
+      {
+        key: 'workspace_ready',
+        label: 'Workspace de conciliacion listo',
+        status: 'ready' as const,
+        detail: '1/1 candidatos exactos.',
+      },
+    ],
+    summary: {
+      selectedCandidateCount: 1,
+      approvedCandidateCount: 1,
+      exactMatchCount: 1,
+      needsReviewCount: 0,
+      approvedAmountInCents: 25000,
+      remainingDifferenceInCents: 0,
+    },
+    blockers: [],
+    nextStep: 'Usar readiness de conciliacion como evidencia para cierre.',
+    guardrails: ['Aprobacion operacional.'],
+  };
+  const accountingPeriodReconciliationReadiness = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'ready_for_closeout' as const,
+    checks: [
+      {
+        key: 'bank_accounts',
+        label: 'Cuentas bancarias',
+        status: 'ready' as const,
+        detail: '1 cuentas bancarias detectadas en ledger.',
+        blockerCount: 0,
+      },
+    ],
+    workspace: accountingBankReconciliationWorkspace,
+    summary: {
+      checkCount: 4,
+      readyCheckCount: 4,
+      needsReviewCheckCount: 0,
+      blockedCheckCount: 0,
+      bankAccountCount: 1,
+      exactMatchCount: 1,
+      unmatchedCount: 0,
+      totalDifferenceInCents: 0,
+    },
+    blockers: [],
+    nextStep: 'Conciliacion bancaria lista para alimentar closeout contable.',
+    guardrails: ['Readiness de conciliacion interna.'],
   };
   const accountingPeriodControl = {
     id: 'period_control_001',
@@ -13539,6 +13675,15 @@ describe('API', () => {
     getTenantAccountingLedgerRegistryWorkspaceUseCase = {
       execute: jest.fn().mockResolvedValue(accountingLedgerRegistryWorkspace),
     };
+    getTenantAccountingBankReconciliationWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingBankReconciliationWorkspace),
+    };
+    requestTenantAccountingReconciliationMatchPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingReconciliationMatchPacket),
+    };
+    getTenantAccountingPeriodReconciliationReadinessUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingPeriodReconciliationReadiness),
+    };
     getTenantAccountingPeriodCloseoutReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(accountingPeriodCloseoutReadiness),
     };
@@ -14190,6 +14335,12 @@ describe('API', () => {
       .useValue(listTenantAccountingJournalRegistryUseCase)
       .overrideProvider(GetTenantAccountingLedgerRegistryWorkspaceUseCase)
       .useValue(getTenantAccountingLedgerRegistryWorkspaceUseCase)
+      .overrideProvider(GetTenantAccountingBankReconciliationWorkspaceUseCase)
+      .useValue(getTenantAccountingBankReconciliationWorkspaceUseCase)
+      .overrideProvider(RequestTenantAccountingReconciliationMatchPacketUseCase)
+      .useValue(requestTenantAccountingReconciliationMatchPacketUseCase)
+      .overrideProvider(GetTenantAccountingPeriodReconciliationReadinessUseCase)
+      .useValue(getTenantAccountingPeriodReconciliationReadinessUseCase)
       .overrideProvider(GetTenantAccountingPeriodCloseoutReadinessUseCase)
       .useValue(getTenantAccountingPeriodCloseoutReadinessUseCase)
       .overrideProvider(GetTenantAccountingTrialBalanceWorkspaceUseCase)
@@ -18479,6 +18630,108 @@ describe('API', () => {
 
     expect(
       getTenantAccountingFinancialStatementPreviewUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/bank-reconciliation-workspace should return bank match candidates', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/bank-reconciliation-workspace?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      reconciliationStatus: 'ready_for_review',
+      summary: {
+        bankAccountCount: 1,
+        exactMatchCount: 1,
+        totalDifferenceInCents: 0,
+      },
+      candidates: [
+        {
+          candidateKey: 'candidate:statement:journal_entry_001:cash',
+          matchStatus: 'exact_match',
+        },
+      ],
+    });
+
+    expect(
+      getTenantAccountingBankReconciliationWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/reconciliation-match-packet should approve exact matches', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/reconciliation-match-packet')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        candidateKeys: ['candidate:statement:journal_entry_001:cash'],
+        decision: 'approve',
+        reviewerUserId: 'user_123',
+        reviewerEmail: 'hello@saas-platform.dev',
+        note: 'Conciliacion bancaria interna desde e2e.',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      packetStatus: 'approved',
+      approvedCandidateKeys: ['candidate:statement:journal_entry_001:cash'],
+      summary: {
+        approvedCandidateCount: 1,
+        approvedAmountInCents: 25000,
+      },
+    });
+
+    expect(
+      requestTenantAccountingReconciliationMatchPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      candidateKeys: ['candidate:statement:journal_entry_001:cash'],
+      decision: 'approve',
+      reviewerUserId: 'user_123',
+      reviewerEmail: 'hello@saas-platform.dev',
+      note: 'Conciliacion bancaria interna desde e2e.',
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/period-reconciliation-readiness should return closeout reconciliation checks', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/period-reconciliation-readiness?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      readinessStatus: 'ready_for_closeout',
+      summary: {
+        checkCount: 4,
+        readyCheckCount: 4,
+        exactMatchCount: 1,
+      },
+      workspace: {
+        reconciliationStatus: 'ready_for_review',
+      },
+    });
+
+    expect(
+      getTenantAccountingPeriodReconciliationReadinessUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',

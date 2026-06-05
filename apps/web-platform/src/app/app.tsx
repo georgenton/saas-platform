@@ -110,6 +110,7 @@ import {
   fetchEcuadorTaxAccountantWorkbench,
   fetchEcuadorTaxAccountantReviews,
   fetchEcuadorTaxAnnexesReadiness,
+  fetchEcuadorTaxDeclarationFormCatalog,
   fetchEcuadorTaxDeclarationApprovalPacket,
   fetchEcuadorTaxEcommerceEvidence,
   fetchEcuadorTaxEvents,
@@ -127,6 +128,8 @@ import {
   fetchEcuadorTaxRuleCatalog,
   fetchEcuadorTaxReviewAssistantPacket,
   fetchEcuadorTaxSalesBook,
+  fetchEcuadorTaxSriFiscalEvidenceWorkspace,
+  fetchEcuadorTaxSriPlatformReconciliationWorkspace,
   fetchEcuadorTaxSupplierFiscalReadinessWorkspace,
   fetchEcuadorTaxVatDeclarationReadinessPacket,
   fetchEcuadorTaxVatDeclarationDraft,
@@ -521,6 +524,7 @@ import {
   EcuadorTaxAccountingReadinessPacketResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxComplianceEventResponse,
+  EcuadorTaxDeclarationFormCatalogResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
   EcuadorTaxFilingHandoffResponse,
@@ -537,6 +541,8 @@ import {
   EcuadorTaxRuleCatalogResponse,
   EcuadorTaxReviewAssistantPacketResponse,
   EcuadorTaxSalesBookResponse,
+  EcuadorTaxSriFiscalEvidenceWorkspaceResponse,
+  EcuadorTaxSriPlatformReconciliationWorkspaceResponse,
   EcuadorTaxSupplierFiscalReadinessWorkspaceResponse,
   EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcuadorTaxVatDeclarationDraftResponse,
@@ -2053,6 +2059,20 @@ export function App() {
     taxComplianceAccountingReadinessPacket,
     setTaxComplianceAccountingReadinessPacket,
   ] = useState<EcuadorTaxAccountingReadinessPacketResponse | null>(null);
+  const [
+    taxComplianceSriFiscalEvidenceWorkspace,
+    setTaxComplianceSriFiscalEvidenceWorkspace,
+  ] = useState<EcuadorTaxSriFiscalEvidenceWorkspaceResponse | null>(null);
+  const [
+    taxComplianceSriPlatformReconciliationWorkspace,
+    setTaxComplianceSriPlatformReconciliationWorkspace,
+  ] = useState<EcuadorTaxSriPlatformReconciliationWorkspaceResponse | null>(
+    null,
+  );
+  const [
+    taxComplianceDeclarationFormCatalog,
+    setTaxComplianceDeclarationFormCatalog,
+  ] = useState<EcuadorTaxDeclarationFormCatalogResponse | null>(null);
   const [taxComplianceLoading, setTaxComplianceLoading] = useState(false);
   const [taxComplianceActionLoading, setTaxComplianceActionLoading] =
     useState<string | null>(null);
@@ -19222,6 +19242,9 @@ export function App() {
         nextReviewAssistantPacket,
         nextPeriodCloseoutReport,
         nextAccountingReadinessPacket,
+        nextSriFiscalEvidenceWorkspace,
+        nextSriPlatformReconciliationWorkspace,
+        nextDeclarationFormCatalog,
       ] = await Promise.all([
         fetchEcuadorTaxPeriodWorkspace(token, tenantSlug, taxCompliancePeriod, year),
         fetchEcuadorTaxEcommerceEvidence(token, tenantSlug, taxCompliancePeriod),
@@ -19369,6 +19392,24 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchEcuadorTaxSriFiscalEvidenceWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxSriPlatformReconciliationWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxDeclarationFormCatalog(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
       ]);
 
       startTransition(() => {
@@ -19407,6 +19448,13 @@ export function App() {
         setTaxComplianceReviewAssistantPacket(nextReviewAssistantPacket);
         setTaxCompliancePeriodCloseoutReport(nextPeriodCloseoutReport);
         setTaxComplianceAccountingReadinessPacket(nextAccountingReadinessPacket);
+        setTaxComplianceSriFiscalEvidenceWorkspace(
+          nextSriFiscalEvidenceWorkspace,
+        );
+        setTaxComplianceSriPlatformReconciliationWorkspace(
+          nextSriPlatformReconciliationWorkspace,
+        );
+        setTaxComplianceDeclarationFormCatalog(nextDeclarationFormCatalog);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -28629,6 +28677,116 @@ export function App() {
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className={styles.stack}>
+                <div className={styles.sectionHeading}>
+                  <div>
+                    <span className={styles.label}>SRI evidence</span>
+                    <h3>Comprobantes y formularios</h3>
+                  </div>
+                  {taxComplianceSriFiscalEvidenceWorkspace ? (
+                    <span
+                      className={`${styles.statusPill} ${operationalStatusTone(
+                        taxComplianceSriFiscalEvidenceWorkspace.readinessStatus,
+                      )}`}
+                    >
+                      {humanizeKey(
+                        taxComplianceSriFiscalEvidenceWorkspace.readinessStatus,
+                      )}
+                    </span>
+                  ) : null}
+                </div>
+                {taxComplianceSriFiscalEvidenceWorkspace &&
+                taxComplianceSriPlatformReconciliationWorkspace &&
+                taxComplianceDeclarationFormCatalog ? (
+                  <div className={styles.stack}>
+                    <div className={styles.commercialGrid}>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Comprobantes SRI</span>
+                        <strong>
+                          {
+                            taxComplianceSriFiscalEvidenceWorkspace.summary
+                              .totalVouchers
+                          }
+                        </strong>
+                        <span className={styles.muted}>
+                          {
+                            taxComplianceSriFiscalEvidenceWorkspace.summary
+                              .issuedVouchers
+                          }{' '}
+                          emitidos ·{' '}
+                          {
+                            taxComplianceSriFiscalEvidenceWorkspace.summary
+                              .receivedVouchers
+                          }{' '}
+                          recibidos
+                        </span>
+                      </div>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Diferencias</span>
+                        <strong>
+                          {
+                            taxComplianceSriPlatformReconciliationWorkspace
+                              .issueSummary.totalIssues
+                          }
+                        </strong>
+                        <span className={styles.muted}>
+                          {
+                            taxComplianceSriPlatformReconciliationWorkspace
+                              .issueSummary.blockingIssues
+                          }{' '}
+                          bloqueantes
+                        </span>
+                      </div>
+                      <div className={styles.commercialCard}>
+                        <span className={styles.muted}>Formularios</span>
+                        <strong>
+                          {
+                            taxComplianceDeclarationFormCatalog.forms.filter(
+                              (form) => form.supportStatus === 'draftable',
+                            ).length
+                          }
+                        </strong>
+                        <span className={styles.muted}>
+                          draftables de{' '}
+                          {taxComplianceDeclarationFormCatalog.forms.length}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={styles.invoiceInlineGrid}>
+                      {taxComplianceDeclarationFormCatalog.forms
+                        .slice(0, 3)
+                        .map((form) => (
+                          <div
+                            className={styles.invoiceItemCard}
+                            key={form.formKey}
+                          >
+                            <div className={styles.invoiceCardHeader}>
+                              <strong>{form.label}</strong>
+                              <span className={styles.statusPill}>
+                                {humanizeKey(form.supportStatus)}
+                              </span>
+                            </div>
+                            <p className={styles.muted}>
+                              {form.draftableBoxes.length} casilleros sugeribles
+                              · {form.manualOnlyBoxes.length} manuales
+                            </p>
+                          </div>
+                        ))}
+                    </div>
+                    <p className={styles.muted}>
+                      {taxComplianceSriPlatformReconciliationWorkspace.nextStep}
+                    </p>
+                  </div>
+                ) : (
+                  <div className={styles.emptyState}>
+                    <p>
+                      Importa reportes/XML descargados por el contribuyente o
+                      contador para preparar formularios guiados.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className={styles.stack}>

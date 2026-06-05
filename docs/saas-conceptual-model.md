@@ -406,9 +406,11 @@ accountant when needed".
 - tax obligation calendar
 - taxpayer profile
 - obligation readiness checks
+- SRI fiscal evidence intake for received and issued vouchers
 - tax books
 - tax reconciliations
 - declaration workflows
+- declaration form draft packets
 - attachments and evidence
 - filing assistance
 - accountant review packets
@@ -417,6 +419,7 @@ accountant when needed".
 
 - declaration drafting assistant
 - tax review assistant
+- assisted SRI form walkthroughs
 - anomaly detection
 - taxpayer checklist assistant
 
@@ -428,6 +431,17 @@ VAT/income tax/withholding readiness, purchase evidence, evidence vault,
 annexes readiness, accountant review packets, operational closeout, external
 filing/payment handoff, accounting bridge mapping, Growth reminder packets, and
 a transversal AI review assistant template.
+
+Backlog: extend this product with a taxpayer-controlled SRI fiscal evidence
+intake and assisted declaration preparation lane. The first version should allow
+operators to import SRI reports/XML for issued and received electronic vouchers,
+normalize that evidence into a fiscal evidence store, reconcile it against
+Invoicing, Ecommerce, purchases, withholdings, and Parties, and then prepare
+declaration draft packets for supported SRI forms. The product may suggest form
+box values, show the evidence behind each value, explain the step-by-step SRI
+online filing path, and generate XML/JSON/Excel artifacts only where the SRI
+publishes compatible formats. It must not store SRI credentials, bypass
+recaptcha, submit declarations, sign forms, or pay taxes automatically.
 
 ### Relationship to invoicing
 
@@ -987,6 +1001,52 @@ tax obligation readiness and declaration preparation workflows.
 6. accounting bridge mapping and suggested accounts
 7. Growth reminder packets for due obligations
 8. accounting readiness packet for the future Accounting product decision
+
+### Backlog: SRI evidence and assisted declaration preparation
+
+These slices should be solved inside `Tax Compliance EC` before graduating full
+`Accounting`, because they are about fiscal evidence and tax declaration
+readiness rather than ledgers or financial statements.
+
+1. `SRI Fiscal Evidence Intake`
+   - import taxpayer-provided SRI reports/XML for issued and received
+     electronic vouchers
+   - normalize invoices, credit notes, debit notes, withholdings, purchase
+     settlements, RIDE/XML references, access keys, authorization dates, parties,
+     bases, VAT, and withholding amounts
+   - deduplicate against Invoicing, Ecommerce, purchases, and existing evidence
+   - keep credential handling out of scope; the user or accountant downloads
+     from SRI and uploads/imports into the platform
+2. `SRI vs Platform Reconciliation`
+   - compare SRI evidence against platform-native sales, ecommerce orders,
+     purchases, retentions, and party identities
+   - surface missing vouchers, duplicated access keys, mismatched VAT bases,
+     missing credit/debit notes, and unsupported manual evidence
+   - feed VAT, income tax, withholding, annex, closeout, and accountant review
+     readiness
+3. `Tax Declaration Form Catalog`
+   - model supported SRI declaration forms as deterministic contracts
+   - start with IVA, Income Tax for natural persons/societies where practical,
+     and withholding declarations
+   - track taxpayer profile compatibility, periodicity, required evidence,
+     form boxes, calculation rules, manual-only boxes, and review requirements
+4. `Declaration Draft Packet`
+   - prepare suggested form values per period and form
+   - attach evidence and calculation explanation to every suggested box
+   - classify each box as ready, needs review, blocked, or manual-only
+   - produce accountant-facing differences between SRI evidence, platform data,
+     and the suggested declaration draft
+5. `AI Filing Guide Assistant`
+   - explain the SRI online filing path step by step
+   - answer questions over deterministic draft packets and source evidence
+   - generate copy/paste guidance and review checklists
+   - never submit, sign, pay, bypass recaptcha, or replace accountant review
+6. `Declaration Artifact Export`
+   - generate XML/JSON/Excel artifacts only for forms or annexes where SRI
+     publishes supported technical guides, templates, or schemas
+   - mark unsupported forms as guided-manual entry rather than automated upload
+   - keep upload/submission as an external human action recorded through filing
+     handoff
 
 ### Future accounting graduation
 

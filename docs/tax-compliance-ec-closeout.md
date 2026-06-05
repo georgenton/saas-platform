@@ -5,8 +5,8 @@ withholdings, periods, and human handoff into an operational tax control room.
 
 The product intentionally stops before full accounting. It can explain evidence,
 prepare review packets, track readiness, and record external filing/payment
-handoff, but it does not present SRI forms, generate official annex XML, or
-post journal entries.
+handoff, but it does not submit SRI forms, store SRI credentials, bypass
+recaptcha, pay taxes, or post journal entries.
 
 ## Closeout Flow
 
@@ -50,3 +50,45 @@ that recommends whether the tenant should stay in Tax Compliance EC or graduate
 to a future Accounting product. The transversal AI layer also registers a Tax
 Compliance EC Review Assistant prompt pack, but its output remains advisory and
 requires human review before external filing, payment, or accountant handoff.
+
+## Backlog: SRI Evidence And Assisted Declarations
+
+The next Tax Compliance EC expansion should treat SRI-issued data as an
+additional fiscal evidence source, not as an Accounting responsibility. The
+operator or accountant should download SRI reports/XML for received and issued
+electronic vouchers and import them into the platform. The platform can then
+normalize those vouchers, reconcile them against Invoicing, Ecommerce,
+purchases, retentions, and Parties, and feed VAT, income tax, withholding,
+annex, closeout, and accountant review readiness.
+
+Planned slices:
+
+1. `SRI Fiscal Evidence Intake`: import taxpayer-provided SRI reports/XML for
+   issued and received vouchers, normalize access keys, parties, bases, VAT,
+   withholdings, authorization dates, RIDE/XML references, and deduplicate them
+   against platform-native evidence.
+2. `SRI vs Platform Reconciliation`: compare SRI evidence with invoices,
+   ecommerce orders, purchases, retentions, and party identities to expose
+   missing vouchers, duplicated access keys, VAT mismatches, and unsupported
+   manual evidence.
+3. `Tax Declaration Form Catalog`: model supported SRI declaration forms as
+   deterministic contracts, starting with IVA, income tax where practical, and
+   withholding declarations.
+4. `Declaration Draft Packet`: suggest form box values by period, attach source
+   evidence and calculation explanations to each box, and classify boxes as
+   ready, needs review, blocked, or manual-only.
+5. `AI Filing Guide Assistant`: explain the SRI online filing path over the
+   deterministic draft packet, produce review checklists, and help the operator
+   or accountant copy/upload values without submitting automatically.
+6. `Declaration Artifact Export`: generate XML/JSON/Excel artifacts only when
+   SRI publishes a compatible technical guide, template, or schema; otherwise
+   keep the form in guided-manual entry mode.
+
+Guardrails:
+
+- Do not store SRI credentials.
+- Do not automate recaptcha or scrape behind unattended taxpayer sessions.
+- Do not submit declarations, sign forms, or pay taxes.
+- Do not represent AI output as a filed declaration.
+- Record final submission/payment only through external filing handoff after a
+  human completes the action in SRI.

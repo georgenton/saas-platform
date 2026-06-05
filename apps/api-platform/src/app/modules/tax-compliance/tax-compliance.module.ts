@@ -31,6 +31,7 @@ import {
   GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
+  GetTenantEcuadorTaxDeclarationFormCatalogUseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
   GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
   GetTenantEcuadorTaxFilingHandoffUseCase,
@@ -44,6 +45,8 @@ import {
   GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
   GetTenantEcuadorTaxRuleCatalogUseCase,
   GetTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
+  GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+  GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
   GetTenantEcuadorTaxVatDeclarationApprovalUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
   GetTenantEcuadorTaxWithholdingRegistryUseCase,
@@ -52,6 +55,7 @@ import {
   RecordTenantEcuadorTaxComplianceEventUseCase,
   RecordTenantEcuadorTaxFilingHandoffUseCase,
   RecordTenantEcuadorTaxPurchaseExpenseEvidenceUseCase,
+  RecordTenantEcuadorTaxSriFiscalEvidenceImportUseCase,
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
   RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
@@ -360,6 +364,29 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
         ),
     },
     {
+      provide: RecordTenantEcuadorTaxSriFiscalEvidenceImportUseCase,
+      inject: [RecordTenantEcuadorTaxComplianceEventUseCase],
+      useFactory: (recordTenantEcuadorTaxComplianceEventUseCase) =>
+        new RecordTenantEcuadorTaxSriFiscalEvidenceImportUseCase(
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+      inject: [
+        ListTenantEcuadorTaxComplianceEventsUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        listTenantEcuadorTaxComplianceEventsUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase(
+          listTenantEcuadorTaxComplianceEventsUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
       provide: GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
       inject: [
         TENANT_REPOSITORY,
@@ -377,6 +404,45 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
           tenantRepository,
           purchaseExpenseEvidenceRepository,
           getTenantPartyFiscalReadinessSummaryUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
+      inject: [
+        GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+        RequestTenantEcuadorTaxSalesBookUseCase,
+        GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+        requestTenantEcuadorTaxSalesBookUseCase,
+        getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase(
+          getTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+          requestTenantEcuadorTaxSalesBookUseCase,
+          getTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxDeclarationFormCatalogUseCase,
+      inject: [
+        GetTenantEcuadorTaxObligationMatrixUseCase,
+        GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxObligationMatrixUseCase,
+        getTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxDeclarationFormCatalogUseCase(
+          getTenantEcuadorTaxObligationMatrixUseCase,
+          getTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
           recordTenantEcuadorTaxComplianceEventUseCase,
         ),
     },

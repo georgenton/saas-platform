@@ -17,6 +17,7 @@ import {
   GetTenantEcuadorTaxFilingHandoffUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
+  GetTenantEcuadorTaxDeclarationFormCatalogUseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
   GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
@@ -29,12 +30,15 @@ import {
   GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
   GetTenantEcuadorTaxRuleCatalogUseCase,
   GetTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
+  GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+  GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
   GetTenantEcuadorTaxVatDeclarationApprovalUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
   GetTenantEcuadorTaxWithholdingRegistryUseCase,
   ListTenantEcuadorTaxAccountantReviewsUseCase,
   ListTenantEcuadorTaxComplianceEventsUseCase,
   RecordTenantEcuadorTaxPurchaseExpenseEvidenceUseCase,
+  RecordTenantEcuadorTaxSriFiscalEvidenceImportUseCase,
   RecordTenantEcuadorTaxFilingHandoffUseCase,
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
@@ -105,6 +109,10 @@ import {
   EcuadorTaxReviewAssistantPacketResponseDto,
   EcuadorTaxSalesBookResponseDto,
   EcuadorTaxSupplierFiscalReadinessWorkspaceResponseDto,
+  EcuadorTaxDeclarationFormCatalogResponseDto,
+  EcuadorTaxSriFiscalEvidenceImportBatchResponseDto,
+  EcuadorTaxSriFiscalEvidenceWorkspaceResponseDto,
+  EcuadorTaxSriPlatformReconciliationWorkspaceResponseDto,
   EcuadorTaxpayerProfileResponseDto,
   EcuadorTaxVatDeclarationReadinessPacketResponseDto,
   EcuadorTaxVatDeclarationDraftResponseDto,
@@ -148,6 +156,10 @@ import {
   toEcuadorTaxReviewAssistantPacketResponseDto,
   toEcuadorTaxSalesBookResponseDto,
   toEcuadorTaxSupplierFiscalReadinessWorkspaceResponseDto,
+  toEcuadorTaxDeclarationFormCatalogResponseDto,
+  toEcuadorTaxSriFiscalEvidenceImportBatchResponseDto,
+  toEcuadorTaxSriFiscalEvidenceWorkspaceResponseDto,
+  toEcuadorTaxSriPlatformReconciliationWorkspaceResponseDto,
   toEcuadorTaxpayerProfileResponseDto,
   toEcuadorTaxVatDeclarationReadinessPacketResponseDto,
   toEcuadorTaxVatDeclarationDraftResponseDto,
@@ -264,6 +276,46 @@ interface UpsertAccountingBridgeMappingBodyDto {
   updatedByEmail?: string | null;
 }
 
+interface RecordSriFiscalEvidenceImportBodyDto {
+  period?: string;
+  year?: number;
+  source?: 'sri_report' | 'sri_xml' | 'manual_summary';
+  importedByUserId?: string | null;
+  importedByEmail?: string | null;
+  vouchers: Array<{
+    direction: 'issued' | 'received';
+    voucherType:
+      | 'invoice'
+      | 'credit_note'
+      | 'debit_note'
+      | 'withholding'
+      | 'purchase_settlement'
+      | 'remission_guide'
+      | 'other';
+    accessKey?: string | null;
+    authorizationNumber?: string | null;
+    authorizationDate?: string | null;
+    issuedAt?: string | null;
+    emitterTaxpayerId?: string | null;
+    emitterName?: string | null;
+    receiverTaxpayerId?: string | null;
+    receiverName?: string | null;
+    establishment?: string | null;
+    emissionPoint?: string | null;
+    sequential?: string | null;
+    documentNumber?: string | null;
+    currency?: string;
+    subtotalInCents?: number;
+    vatInCents?: number;
+    incomeTaxWithholdingInCents?: number;
+    vatWithholdingInCents?: number;
+    totalInCents?: number;
+    relatedAccessKey?: string | null;
+    xmlReference?: string | null;
+    rideReference?: string | null;
+  }>;
+}
+
 @Controller('tax-compliance/tenants')
 @UseGuards(
   JwtAuthenticationGuard,
@@ -294,6 +346,10 @@ export class TaxComplianceController {
     private readonly requestTenantEcuadorTaxDeclarationApprovalPacketUseCase: RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
     private readonly requestTenantEcuadorTaxSalesBookUseCase: RequestTenantEcuadorTaxSalesBookUseCase,
     private readonly getTenantEcuadorTaxReconciliationWorkspaceUseCase: GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
+    private readonly recordTenantEcuadorTaxSriFiscalEvidenceImportUseCase: RecordTenantEcuadorTaxSriFiscalEvidenceImportUseCase,
+    private readonly getTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase: GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+    private readonly getTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase: GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
+    private readonly getTenantEcuadorTaxDeclarationFormCatalogUseCase: GetTenantEcuadorTaxDeclarationFormCatalogUseCase,
     private readonly requestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase: RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase,
     private readonly requestTenantEcuadorTaxVatDeclarationDraftUseCase: RequestTenantEcuadorTaxVatDeclarationDraftUseCase,
     private readonly requestTenantEcuadorTaxPeriodCloseoutPacketUseCase: RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
@@ -645,6 +701,119 @@ export class TaxComplianceController {
         });
 
       return toEcuadorTaxReconciliationWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/ec/sri-fiscal-evidence-import')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_MANAGE)
+  async recordSriFiscalEvidenceImport(
+    @Param('slug') slug: string,
+    @Body() body: RecordSriFiscalEvidenceImportBodyDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxSriFiscalEvidenceImportBatchResponseDto> {
+    try {
+      const batch =
+        await this.recordTenantEcuadorTaxSriFiscalEvidenceImportUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period: body.period ?? 'current',
+            year: body.year ?? resolveCalendarYear(undefined),
+            source: body.source,
+            importedByUserId: body.importedByUserId ?? null,
+            importedByEmail: body.importedByEmail ?? null,
+            vouchers: body.vouchers ?? [],
+          },
+        );
+
+      return toEcuadorTaxSriFiscalEvidenceImportBatchResponseDto(batch);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/sri-fiscal-evidence-workspace')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getSriFiscalEvidenceWorkspace(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxSriFiscalEvidenceWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxSriFiscalEvidenceWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/sri-platform-reconciliation-workspace')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getSriPlatformReconciliationWorkspace(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxSriPlatformReconciliationWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period,
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxSriPlatformReconciliationWorkspaceResponseDto(
+        workspace,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/declaration-form-catalog')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getDeclarationFormCatalog(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxDeclarationFormCatalogResponseDto> {
+    try {
+      const catalog =
+        await this.getTenantEcuadorTaxDeclarationFormCatalogUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxDeclarationFormCatalogResponseDto(catalog);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

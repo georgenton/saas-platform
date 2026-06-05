@@ -69,6 +69,34 @@ export type EcuadorTaxPurchaseExpenseEvidenceStatus =
   | 'needs_supplier_data'
   | 'needs_tax_review'
   | 'ready';
+export type EcuadorTaxSriVoucherDirection = 'issued' | 'received';
+export type EcuadorTaxSriVoucherType =
+  | 'invoice'
+  | 'credit_note'
+  | 'debit_note'
+  | 'withholding'
+  | 'purchase_settlement'
+  | 'remission_guide'
+  | 'other';
+export type EcuadorTaxSriEvidenceImportSource =
+  | 'sri_report'
+  | 'sri_xml'
+  | 'manual_summary';
+export type EcuadorTaxSriReconciliationIssueSeverity =
+  | 'blocking'
+  | 'review'
+  | 'info';
+export type EcuadorTaxDeclarationFormKey =
+  | 'iva'
+  | 'income_tax_natural_person'
+  | 'income_tax_company'
+  | 'withholding_income_tax'
+  | 'multiple_payments'
+  | 'multiple_declarations';
+export type EcuadorTaxDeclarationFormSupportStatus =
+  | 'draftable'
+  | 'needs_review'
+  | 'manual_only';
 export type EcuadorTaxComplianceEventType =
   | 'period_workspace_generated'
   | 'accountant_packet_requested'
@@ -101,7 +129,11 @@ export type EcuadorTaxComplianceEventType =
   | 'tax_accounting_bridge_mapping_upserted'
   | 'tax_review_assistant_packet_requested'
   | 'tax_period_closeout_report_requested'
-  | 'tax_accounting_readiness_packet_requested';
+  | 'tax_accounting_readiness_packet_requested'
+  | 'sri_fiscal_evidence_import_recorded'
+  | 'sri_fiscal_evidence_workspace_reviewed'
+  | 'sri_platform_reconciliation_reviewed'
+  | 'tax_declaration_form_catalog_reviewed';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -442,6 +474,147 @@ export interface EcuadorTaxReconciliationWorkspaceView {
   checks: EcuadorTaxReconciliationCheckView[];
   blockers: string[];
   reviewNotes: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxSriVoucherEvidenceView {
+  evidenceId: string;
+  direction: EcuadorTaxSriVoucherDirection;
+  voucherType: EcuadorTaxSriVoucherType;
+  source: EcuadorTaxSriEvidenceImportSource;
+  accessKey: string | null;
+  authorizationNumber: string | null;
+  authorizationDate: Date | null;
+  issuedAt: Date | null;
+  emitterTaxpayerId: string | null;
+  emitterName: string | null;
+  receiverTaxpayerId: string | null;
+  receiverName: string | null;
+  establishment: string | null;
+  emissionPoint: string | null;
+  sequential: string | null;
+  documentNumber: string | null;
+  currency: string;
+  subtotalInCents: number;
+  vatInCents: number;
+  incomeTaxWithholdingInCents: number;
+  vatWithholdingInCents: number;
+  totalInCents: number;
+  relatedAccessKey: string | null;
+  xmlReference: string | null;
+  rideReference: string | null;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  blockers: string[];
+  reviewNotes: string[];
+}
+
+export interface EcuadorTaxSriFiscalEvidenceWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  source: 'tax_compliance_event_ledger';
+  summary: {
+    totalVouchers: number;
+    issuedVouchers: number;
+    receivedVouchers: number;
+    duplicateAccessKeys: number;
+    readyVouchers: number;
+    needsReviewVouchers: number;
+    blockedVouchers: number;
+    importedBatchCount: number;
+  };
+  totalsByDirectionAndCurrency: Array<{
+    direction: EcuadorTaxSriVoucherDirection;
+    currency: string;
+    voucherCount: number;
+    subtotalInCents: number;
+    vatInCents: number;
+    incomeTaxWithholdingInCents: number;
+    vatWithholdingInCents: number;
+    totalInCents: number;
+  }>;
+  voucherRows: EcuadorTaxSriVoucherEvidenceView[];
+  blockers: string[];
+  reviewNotes: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxSriFiscalEvidenceImportBatchView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  importId: string;
+  source: EcuadorTaxSriEvidenceImportSource;
+  importedByUserId: string | null;
+  importedByEmail: string | null;
+  summary: EcuadorTaxSriFiscalEvidenceWorkspaceView['summary'];
+  voucherRows: EcuadorTaxSriVoucherEvidenceView[];
+  blockers: string[];
+  reviewNotes: string[];
+  guardrails: string[];
+}
+
+export interface EcuadorTaxSriPlatformReconciliationWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  sriEvidenceSummary: EcuadorTaxSriFiscalEvidenceWorkspaceView['summary'];
+  platformSummary: {
+    salesDocuments: number;
+    purchaseDocuments: number;
+    ecommerceOrdersReadyToInvoice: number;
+  };
+  issueSummary: {
+    totalIssues: number;
+    blockingIssues: number;
+    reviewIssues: number;
+    infoIssues: number;
+  };
+  issues: Array<{
+    key: string;
+    severity: EcuadorTaxSriReconciliationIssueSeverity;
+    source: 'sri' | 'platform' | 'cross_check';
+    summary: string;
+    evidenceIds: string[];
+    platformReferences: string[];
+    suggestedAction: string;
+  }>;
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxDeclarationFormCatalogView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  taxpayerProfile: EcuadorTaxpayerProfileView;
+  forms: Array<{
+    formKey: EcuadorTaxDeclarationFormKey;
+    label: string;
+    obligationKey: EcuadorTaxObligationKey | 'payment';
+    supportStatus: EcuadorTaxDeclarationFormSupportStatus;
+    periodicity: EcuadorTaxObligationFrequency;
+    taxpayerCompatibility: EcuadorTaxReadinessStatus;
+    requiredEvidence: string[];
+    draftableBoxes: Array<{
+      boxKey: string;
+      label: string;
+      source: string;
+      calculation: string;
+    }>;
+    manualOnlyBoxes: string[];
+    blockers: string[];
+    reviewNotes: string[];
+  }>;
   nextStep: string;
   guardrails: string[];
 }

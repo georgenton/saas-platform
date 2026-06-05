@@ -15,6 +15,7 @@ export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-workbench.use-c
 export * from './lib/use-cases/get-tenant-ecuador-tax-annexes-readiness.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accounting-bridge-mapping.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accounting-bridge-suggested-accounts.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-declaration-form-catalog.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-ecommerce-evidence-summary.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-filing-handoff.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-audit-readiness.use-case';
@@ -28,6 +29,8 @@ export * from './lib/use-cases/get-tenant-ecuador-tax-purchase-expense-evidence-
 export * from './lib/use-cases/get-tenant-ecuador-tax-reconciliation-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-rule-catalog.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-supplier-fiscal-readiness-workspace.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-sri-fiscal-evidence-workspace.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-sri-platform-reconciliation-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-vat-declaration-approval.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-withholding-registry.use-case';
 export * from './lib/use-cases/list-tenant-ecuador-tax-accountant-reviews.use-case';
@@ -35,6 +38,7 @@ export * from './lib/use-cases/list-tenant-ecuador-tax-compliance-events.use-cas
 export * from './lib/use-cases/record-tenant-ecuador-tax-compliance-event.use-case';
 export * from './lib/use-cases/record-tenant-ecuador-tax-filing-handoff.use-case';
 export * from './lib/use-cases/record-tenant-ecuador-tax-purchase-expense-evidence.use-case';
+export * from './lib/use-cases/record-tenant-ecuador-tax-sri-fiscal-evidence-import.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-accountant-review-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-accountant-review.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-accounting-bridge-preview.use-case';

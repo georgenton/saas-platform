@@ -2163,6 +2163,110 @@ export interface AccountingPeriodCloseoutReportResponse {
   guardrails: string[];
 }
 
+export interface AccountingPeriodLockReadinessResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  lockReadinessStatus: string;
+  checks: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+    blockerCount: number;
+  }>;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+    journalEntryCount: number;
+    trialBalanceBalanced: boolean;
+    closeoutReportStatus: string;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface CreateAccountingAdjustingJournalEntryRequest {
+  period: string;
+  year: number;
+  adjustmentType:
+    | 'reclassification'
+    | 'rounding'
+    | 'accrual'
+    | 'manual_adjustment';
+  label: string;
+  currency?: string | null;
+  lines: AccountingJournalEntryResponse['lines'];
+  reviewerUserId?: string | null;
+  reviewerEmail?: string | null;
+  note?: string | null;
+}
+
+export interface AccountingAdjustingJournalEntryCreationResultResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  creationStatus: string;
+  createdEntry: AccountingJournalEntryResponse | null;
+  adjustmentType: string;
+  summary: {
+    lineCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+    balanced: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingFinancialStatementPreviewResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  previewStatus: string;
+  incomeStatement: {
+    revenueInCents: number;
+    expenseInCents: number;
+    taxExpenseInCents: number;
+    netIncomeInCents: number;
+    sections: Array<{
+      key: string;
+      label: string;
+      amountInCents: number;
+      accountCodes: string[];
+    }>;
+  };
+  balanceSheet: {
+    assetsInCents: number;
+    liabilitiesInCents: number;
+    equityInCents: number;
+    retainedEarningsPreviewInCents: number;
+    balanced: boolean;
+    sections: Array<{
+      key: string;
+      label: string;
+      amountInCents: number;
+      accountCodes: string[];
+    }>;
+  };
+  summary: {
+    trialBalanceAccountCount: number;
+    journalEntryCount: number;
+    netIncomeInCents: number;
+    balanceSheetBalanced: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxSriVoucherEvidenceResponse {
   evidenceId: string;
   direction: string;

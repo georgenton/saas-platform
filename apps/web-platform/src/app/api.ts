@@ -3,6 +3,8 @@ import {
   AccountingChartMappingManagementResponse,
   AccountingIntakeWorkspaceResponse,
   AccountingJournalDraftApprovalPacketResponse,
+  AccountingAdjustingJournalEntryCreationResultResponse,
+  AccountingFinancialStatementPreviewResponse,
   AccountingJournalEntryCreationResultResponse,
   AccountingJournalRegistryResponse,
   AccountingJournalDraftPreviewResponse,
@@ -11,6 +13,7 @@ import {
   AccountingPeriodCloseoutPacketResponse,
   AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
+  AccountingPeriodLockReadinessResponse,
   AccountingTrialBalanceWorkspaceResponse,
   AiActivityFeedResponse,
   AiActionCenterResponse,
@@ -143,6 +146,7 @@ import {
   UpsertEcuadorTaxObligationSettingsRequest,
   RequestAccountingJournalDraftApprovalPacketRequest,
   RequestAccountingPeriodCloseoutPacketRequest,
+  CreateAccountingAdjustingJournalEntryRequest,
   CreateAccountingJournalEntriesRequest,
   EcommerceOrderPaymentDisputeWorkspaceResponse,
   EcommerceOrderPaymentDisputeResolutionPacketResponse,
@@ -1942,6 +1946,61 @@ export async function fetchAccountingPeriodCloseoutReport(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/period-closeout-report?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingPeriodLockReadiness(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingPeriodLockReadinessResponse> {
+  return request<AccountingPeriodLockReadinessResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/period-lock-readiness?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function createAccountingAdjustingJournalEntry(
+  token: string,
+  tenantSlug: string,
+  input: CreateAccountingAdjustingJournalEntryRequest,
+): Promise<AccountingAdjustingJournalEntryCreationResultResponse> {
+  return request<AccountingAdjustingJournalEntryCreationResultResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/adjusting-journal-entries`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingFinancialStatementPreview(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingFinancialStatementPreviewResponse> {
+  return request<AccountingFinancialStatementPreviewResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/financial-statement-preview?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

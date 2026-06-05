@@ -1070,10 +1070,12 @@ product. Its current scope is intentionally operational and review-oriented:
    operational closeout
 6. trial balance workspace, accounting closeout packet, and closeout report
    as internal period-close evidence
+7. period lock readiness, adjusting journal entries, and financial statement
+   previews as the next pre-close operating layer
 
 Boundary: this foundation still does not perform bank reconciliation, lock
-periods, issue official financial statements, or replace professional
-accounting review.
+periods in a persisted legal state, issue official financial statements, or
+replace professional accounting review.
 
 ## Stage 8: Clinics products
 

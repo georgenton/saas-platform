@@ -103,7 +103,9 @@ import {
   fetchTenantEcommerceOrderPaymentConfirmationWorkspace,
   fetchTenantEcommerceOrderPaymentReadinessWorkspace,
   executeEcuadorTaxWithholdingDraftBridge,
+  createAccountingAdjustingJournalEntry,
   fetchAccountingChartOfAccountsWorkspace,
+  fetchAccountingFinancialStatementPreview,
   fetchAccountingIntakeWorkspace,
   fetchAccountingJournalDraftPreview,
   fetchAccountingJournalRegistry,
@@ -111,6 +113,7 @@ import {
   fetchAccountingLedgerPreviewWorkspace,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
+  fetchAccountingPeriodLockReadiness,
   fetchAccountingTrialBalanceWorkspace,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
@@ -354,6 +357,8 @@ import {
 import {
   AccountingChartOfAccountsWorkspaceResponse,
   AccountingChartMappingManagementResponse,
+  AccountingAdjustingJournalEntryCreationResultResponse,
+  AccountingFinancialStatementPreviewResponse,
   AccountingIntakeWorkspaceResponse,
   AccountingJournalEntryCreationResultResponse,
   AccountingJournalRegistryResponse,
@@ -364,6 +369,7 @@ import {
   AccountingPeriodCloseoutPacketResponse,
   AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
+  AccountingPeriodLockReadinessResponse,
   AccountingTrialBalanceWorkspaceResponse,
   AiActivityFeedEventType,
   AiActivityFeedResponse,
@@ -2143,6 +2149,20 @@ export function App() {
     accountingPeriodCloseoutReport,
     setAccountingPeriodCloseoutReport,
   ] = useState<AccountingPeriodCloseoutReportResponse | null>(null);
+  const [
+    accountingPeriodLockReadiness,
+    setAccountingPeriodLockReadiness,
+  ] = useState<AccountingPeriodLockReadinessResponse | null>(null);
+  const [
+    lastAccountingAdjustingJournalEntry,
+    setLastAccountingAdjustingJournalEntry,
+  ] = useState<AccountingAdjustingJournalEntryCreationResultResponse | null>(
+    null,
+  );
+  const [
+    accountingFinancialStatementPreview,
+    setAccountingFinancialStatementPreview,
+  ] = useState<AccountingFinancialStatementPreviewResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -19542,6 +19562,8 @@ export function App() {
         nextAccountingPeriodCloseoutReadiness,
         nextAccountingTrialBalanceWorkspace,
         nextAccountingPeriodCloseoutReport,
+        nextAccountingPeriodLockReadiness,
+        nextAccountingFinancialStatementPreview,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -19598,8 +19620,20 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingPeriodLockReadiness(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingFinancialStatementPreview(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
-        : [null, null, null, null, null, null, null, null, null];
+        : [null, null, null, null, null, null, null, null, null, null, null];
 
       startTransition(() => {
         setTaxComplianceWorkspace(nextWorkspace);
@@ -19666,6 +19700,10 @@ export function App() {
         );
         setAccountingTrialBalanceWorkspace(nextAccountingTrialBalanceWorkspace);
         setAccountingPeriodCloseoutReport(nextAccountingPeriodCloseoutReport);
+        setAccountingPeriodLockReadiness(nextAccountingPeriodLockReadiness);
+        setAccountingFinancialStatementPreview(
+          nextAccountingFinancialStatementPreview,
+        );
       });
     } catch (error) {
       setTaxComplianceError(
@@ -20270,8 +20308,15 @@ export function App() {
         reviewerEmail: session?.user.email ?? null,
         note: 'Journal registry interno desde Accounting foundation.',
       });
-      const [registry, ledgerRegistry, closeoutReadiness, trialBalance, report] =
-        await Promise.all([
+      const [
+        registry,
+        ledgerRegistry,
+        closeoutReadiness,
+        trialBalance,
+        report,
+        lockReadiness,
+        financialPreview,
+      ] = await Promise.all([
         fetchAccountingJournalRegistry(token, tenantSlug, taxCompliancePeriod, year),
         fetchAccountingLedgerRegistryWorkspace(
           token,
@@ -20297,6 +20342,18 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchAccountingPeriodLockReadiness(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingFinancialStatementPreview(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
       ]);
 
       setLastAccountingJournalEntryCreationResult(result);
@@ -20305,6 +20362,8 @@ export function App() {
       setAccountingPeriodCloseoutReadiness(closeoutReadiness);
       setAccountingTrialBalanceWorkspace(trialBalance);
       setAccountingPeriodCloseoutReport(report);
+      setAccountingPeriodLockReadiness(lockReadiness);
+      setAccountingFinancialStatementPreview(financialPreview);
       setTaxComplianceActionMessage(
         `${result.summary.createdEntryCount} journal entries guardados en registry.`,
       );
@@ -20344,7 +20403,8 @@ export function App() {
           note: 'Closeout packet interno desde Accounting foundation.',
         },
       );
-      const [trialBalance, report] = await Promise.all([
+      const [trialBalance, report, lockReadiness, financialPreview] =
+        await Promise.all([
         fetchAccountingTrialBalanceWorkspace(
           token,
           tenantSlug,
@@ -20357,11 +20417,25 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchAccountingPeriodLockReadiness(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingFinancialStatementPreview(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
       ]);
 
       setLastAccountingPeriodCloseoutPacket(packet);
       setAccountingTrialBalanceWorkspace(trialBalance);
       setAccountingPeriodCloseoutReport(report);
+      setAccountingPeriodLockReadiness(lockReadiness);
+      setAccountingFinancialStatementPreview(financialPreview);
       setAccountingPeriodCloseoutReadiness(packet.readiness);
       setTaxComplianceActionMessage(
         `Closeout packet contable ${humanizeKey(packet.closeoutStatus)}.`,
@@ -20372,6 +20446,109 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo solicitar closeout packet contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleCreateAccountingAdjustment() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-adjusting-entry-create');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const result = await createAccountingAdjustingJournalEntry(
+        token,
+        tenantSlug,
+        {
+          period: taxCompliancePeriod,
+          year,
+          adjustmentType: 'manual_adjustment',
+          label: 'Ajuste interno de cierre',
+          currency: 'USD',
+          lines: [
+            {
+              lineKey: 'adjustment:expense',
+              accountCode: '501.01',
+              accountName: 'Gastos operativos',
+              debitInCents: 100,
+              creditInCents: 0,
+              sourceEntryKey: 'manual_closeout_adjustment',
+              accountHint: 'Gastos operativos',
+              notes: ['Ajuste demo para cierre interno.'],
+            },
+            {
+              lineKey: 'adjustment:cash',
+              accountCode: '101.01',
+              accountName: 'Caja y bancos',
+              debitInCents: 0,
+              creditInCents: 100,
+              sourceEntryKey: 'manual_closeout_adjustment',
+              accountHint: 'Caja y bancos',
+              notes: ['Contrapartida demo para cierre interno.'],
+            },
+          ],
+          reviewerUserId: session?.user.id ?? null,
+          reviewerEmail: session?.user.email ?? null,
+          note: 'Ajuste contable interno desde Accounting foundation.',
+        },
+      );
+      const [
+        registry,
+        ledgerRegistry,
+        trialBalance,
+        lockReadiness,
+        financialPreview,
+      ] = await Promise.all([
+        fetchAccountingJournalRegistry(token, tenantSlug, taxCompliancePeriod, year),
+        fetchAccountingLedgerRegistryWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingTrialBalanceWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingPeriodLockReadiness(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingFinancialStatementPreview(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+      ]);
+
+      setLastAccountingAdjustingJournalEntry(result);
+      setAccountingJournalRegistry(registry);
+      setAccountingLedgerRegistryWorkspace(ledgerRegistry);
+      setAccountingTrialBalanceWorkspace(trialBalance);
+      setAccountingPeriodLockReadiness(lockReadiness);
+      setAccountingFinancialStatementPreview(financialPreview);
+      setTaxComplianceActionMessage(
+        `Ajuste contable ${humanizeKey(result.creationStatus)}.`,
+      );
+    } catch (error) {
+      setLastAccountingAdjustingJournalEntry(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo crear ajuste contable.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -29727,6 +29904,20 @@ export function App() {
                               >
                                 Cerrar periodo
                               </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-adjusting-entry-create' ||
+                                  !accountingJournalRegistry
+                                }
+                                onClick={() =>
+                                  void handleCreateAccountingAdjustment()
+                                }
+                                type="button"
+                              >
+                                Crear ajuste
+                              </button>
                             </div>
                             <div className={styles.invoiceInlineGrid}>
                               {accountingChartOfAccountsWorkspace.accounts
@@ -30001,9 +30192,67 @@ export function App() {
                                       aprobaciones
                                     </span>
                                   </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Period lock
+                                    </span>
+                                    <strong>
+                                      {accountingPeriodLockReadiness
+                                        ? humanizeKey(
+                                            accountingPeriodLockReadiness.lockReadinessStatus,
+                                          )
+                                        : 'sin pre-lock'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingPeriodLockReadiness?.summary
+                                        .readyCheckCount ?? 0}
+                                      /
+                                      {accountingPeriodLockReadiness?.summary
+                                        .checkCount ?? 0}{' '}
+                                      checks
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Estados preview
+                                    </span>
+                                    <strong>
+                                      {accountingFinancialStatementPreview
+                                        ? humanizeKey(
+                                            accountingFinancialStatementPreview.previewStatus,
+                                          )
+                                        : 'sin preview'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {formatMoney(
+                                        accountingFinancialStatementPreview
+                                          ?.summary.netIncomeInCents ?? 0,
+                                        'USD',
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Ultimo ajuste
+                                    </span>
+                                    <strong>
+                                      {lastAccountingAdjustingJournalEntry
+                                        ? humanizeKey(
+                                            lastAccountingAdjustingJournalEntry.creationStatus,
+                                          )
+                                        : 'sin ajuste'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingAdjustingJournalEntry?.summary
+                                        .lineCount ?? 0}{' '}
+                                      lineas
+                                    </span>
+                                  </div>
                                 </div>
                                 <p className={styles.muted}>
-                                  {accountingPeriodCloseoutReport?.nextStep ??
+                                  {accountingPeriodLockReadiness?.nextStep ??
+                                    accountingFinancialStatementPreview?.nextStep ??
+                                    accountingPeriodCloseoutReport?.nextStep ??
                                     lastAccountingPeriodCloseoutPacket?.nextStep ??
                                     accountingTrialBalanceWorkspace?.nextStep}
                                 </p>

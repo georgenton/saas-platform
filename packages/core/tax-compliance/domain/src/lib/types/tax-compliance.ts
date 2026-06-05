@@ -1078,6 +1078,8 @@ export interface EcuadorTaxReviewAssistantPacketView {
     filingHandoffStatus: EcuadorTaxFilingHandoffStatus | null;
     annexesReadinessStatus: EcuadorTaxReadinessStatus;
     accountingBridgeReadinessStatus: EcuadorTaxReadinessStatus;
+    accountingBridgeMappingStatus: EcuadorTaxReadinessStatus;
+    accountingBridgeUnmappedHintCount: number;
     evidenceVaultStatus: EcuadorTaxReadinessStatus;
     eventCount: number;
   };
@@ -1106,6 +1108,8 @@ export interface EcuadorTaxPeriodCloseoutReportView {
     withholdingCandidates: number;
     annexesApplicable: number;
     accountingPreviewEntries: number;
+    accountingMappedHints: number;
+    accountingUnmappedHints: number;
     auditEventCount: number;
   };
   filingHandoffStatus: EcuadorTaxFilingHandoffStatus | null;

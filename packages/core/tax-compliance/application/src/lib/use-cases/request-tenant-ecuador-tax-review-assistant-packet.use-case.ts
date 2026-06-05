@@ -5,12 +5,12 @@ import {
 import { GetTenantEcuadorTaxAnnexesReadinessUseCase } from './get-tenant-ecuador-tax-annexes-readiness.use-case';
 import { GetTenantEcuadorTaxFilingHandoffUseCase } from './get-tenant-ecuador-tax-filing-handoff.use-case';
 import { GetTenantEcuadorTaxOperationalCloseoutUseCase } from './get-tenant-ecuador-tax-operational-closeout.use-case';
+import { GetTenantEcuadorTaxAccountingBridgeMappingUseCase } from './get-tenant-ecuador-tax-accounting-bridge-mapping.use-case';
 import { GetTenantEcuadorTaxPeriodEvidenceVaultUseCase } from './get-tenant-ecuador-tax-period-evidence-vault.use-case';
 import { GetTenantEcuadorTaxVatDeclarationApprovalUseCase } from './get-tenant-ecuador-tax-vat-declaration-approval.use-case';
 import { GetTenantEcuadorTaxWithholdingRegistryUseCase } from './get-tenant-ecuador-tax-withholding-registry.use-case';
 import { ListTenantEcuadorTaxComplianceEventsUseCase } from './list-tenant-ecuador-tax-compliance-events.use-case';
 import { RecordTenantEcuadorTaxComplianceEventUseCase } from './record-tenant-ecuador-tax-compliance-event.use-case';
-import { RequestTenantEcuadorTaxAccountingBridgePreviewUseCase } from './request-tenant-ecuador-tax-accounting-bridge-preview.use-case';
 import { RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase } from './request-tenant-ecuador-tax-income-tax-evidence-packet.use-case';
 
 export class RequestTenantEcuadorTaxReviewAssistantPacketUseCase {
@@ -21,7 +21,7 @@ export class RequestTenantEcuadorTaxReviewAssistantPacketUseCase {
     private readonly getTenantEcuadorTaxOperationalCloseoutUseCase: GetTenantEcuadorTaxOperationalCloseoutUseCase,
     private readonly getTenantEcuadorTaxFilingHandoffUseCase: GetTenantEcuadorTaxFilingHandoffUseCase,
     private readonly getTenantEcuadorTaxAnnexesReadinessUseCase: GetTenantEcuadorTaxAnnexesReadinessUseCase,
-    private readonly requestTenantEcuadorTaxAccountingBridgePreviewUseCase: RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+    private readonly getTenantEcuadorTaxAccountingBridgeMappingUseCase: GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
     private readonly requestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase: RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
     private readonly listTenantEcuadorTaxComplianceEventsUseCase: ListTenantEcuadorTaxComplianceEventsUseCase,
     private readonly recordTenantEcuadorTaxComplianceEventUseCase: RecordTenantEcuadorTaxComplianceEventUseCase,
@@ -41,7 +41,7 @@ export class RequestTenantEcuadorTaxReviewAssistantPacketUseCase {
       operationalCloseout,
       filingHandoff,
       annexesReadiness,
-      accountingBridgePreview,
+      accountingBridgeMapping,
       incomeTaxEvidence,
       events,
     ] = await Promise.all([
@@ -60,10 +60,7 @@ export class RequestTenantEcuadorTaxReviewAssistantPacketUseCase {
         ...input,
         recordEvent: false,
       }),
-      this.requestTenantEcuadorTaxAccountingBridgePreviewUseCase.execute({
-        ...input,
-        recordEvent: false,
-      }),
+      this.getTenantEcuadorTaxAccountingBridgeMappingUseCase.execute(input),
       this.requestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase.execute({
         ...input,
         recordEvent: false,
@@ -81,7 +78,7 @@ export class RequestTenantEcuadorTaxReviewAssistantPacketUseCase {
       ...operationalCloseout.blockers.map((blocker) => `closeout.${blocker}`),
       ...filingHandoff.blockers.map((blocker) => `filing.${blocker}`),
       ...annexesReadiness.blockers.map((blocker) => `annexes.${blocker}`),
-      ...accountingBridgePreview.blockers.map((blocker) => `accounting.${blocker}`),
+      ...accountingBridgeMapping.blockers.map((blocker) => `accounting.${blocker}`),
       ...incomeTaxEvidence.blockers.map((blocker) => `income_tax.${blocker}`),
     ];
     const riskSignals = [
@@ -95,8 +92,8 @@ export class RequestTenantEcuadorTaxReviewAssistantPacketUseCase {
       ...buildRiskSignals('annexes', annexesReadiness.readinessStatus, annexesReadiness.blockers.length),
       ...buildRiskSignals(
         'accounting_bridge',
-        accountingBridgePreview.readinessStatus,
-        accountingBridgePreview.summary.requiresChartOfAccountsCount,
+        accountingBridgeMapping.readinessStatus,
+        accountingBridgeMapping.summary.unmappedHintCount,
       ),
       ...(filingHandoff.status === 'paid_externally'
         ? []
@@ -115,6 +112,9 @@ export class RequestTenantEcuadorTaxReviewAssistantPacketUseCase {
       ...vatApproval.draft.accountantQuestions,
       ...incomeTaxEvidence.accountantQuestions,
       'Los anexos aplicables tienen soporte suficiente para preparacion externa?',
+      accountingBridgeMapping.summary.unmappedHintCount > 0
+        ? `Que cuentas contables deben usarse para ${accountingBridgeMapping.summary.unmappedHintCount} hints tributarios pendientes?`
+        : 'El mapping contable tributario esta alineado con el plan de cuentas sugerido?',
       'El closeout y el handoff externo tienen evidencia conservable para auditoria?',
     ];
     const suggestedActions = [
@@ -153,7 +153,10 @@ export class RequestTenantEcuadorTaxReviewAssistantPacketUseCase {
         operationalCloseoutStatus: operationalCloseout.status,
         filingHandoffStatus: filingHandoff.status,
         annexesReadinessStatus: annexesReadiness.readinessStatus,
-        accountingBridgeReadinessStatus: accountingBridgePreview.readinessStatus,
+        accountingBridgeReadinessStatus: accountingBridgeMapping.readinessStatus,
+        accountingBridgeMappingStatus: accountingBridgeMapping.readinessStatus,
+        accountingBridgeUnmappedHintCount:
+          accountingBridgeMapping.summary.unmappedHintCount,
         evidenceVaultStatus: evidenceVault.readinessStatus,
         eventCount: events.length,
       },

@@ -49,6 +49,23 @@ printLine('tenant', tenantSlug);
 printLine('period', period);
 printLine('year', year);
 
+const enabledProducts = await apiRequest({
+  baseUrl,
+  path: `/tenancy/tenants/${encodeURIComponent(tenantSlug)}/products`,
+  token,
+});
+const taxComplianceEnabled = enabledProducts.some(
+  (product) => product.key === 'tax-compliance-ec',
+);
+
+if (!taxComplianceEnabled) {
+  throw new Error(
+    `Tenant ${tenantSlug} no tiene tax-compliance-ec habilitado.`,
+  );
+}
+
+printLine('product access', 'tax-compliance-ec');
+
 const purchaseEvidence = await apiRequest({
   baseUrl,
   path: taxPath('/purchase-expense-evidence'),
@@ -92,6 +109,7 @@ const [
   filingHandoff,
   annexesReadiness,
   accountingBridgePreview,
+  accountingBridgeMapping,
   reviewAssistantPacket,
   closeoutReport,
 ] = await Promise.all([
@@ -189,6 +207,11 @@ const [
   }),
   apiRequest({
     baseUrl,
+    path: taxPath(`/accounting-bridge-mapping?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
     path: taxPath(`/tax-review-assistant-packet?${periodQuery()}`),
     token,
   }),
@@ -220,8 +243,37 @@ assertStatus(
 );
 assertStatus('annexes readiness', annexesReadiness.readinessStatus);
 assertStatus('accounting bridge preview', accountingBridgePreview.readinessStatus);
+assertStatus('accounting bridge mapping', accountingBridgeMapping.readinessStatus);
 assertStatus('review assistant packet', reviewAssistantPacket.readinessStatus);
 assertStatus('closeout report', closeoutReport.readinessStatus);
+
+let mappedAccountingBridge = accountingBridgeMapping;
+
+if (accountingBridgeMapping.summary.unmappedHintCount > 0) {
+  mappedAccountingBridge = await apiRequest({
+    baseUrl,
+    path: taxPath('/accounting-bridge-mapping'),
+    token,
+    method: 'POST',
+    body: {
+      period,
+      year,
+      mappings: accountingBridgeMapping.rows
+        .filter((row) => !row.mapped)
+        .slice(0, 8)
+        .map((row, index) => ({
+          accountHint: row.accountHint,
+          suggestedAccountCode: `SMOKE-TAX-${String(index + 1).padStart(3, '0')}`,
+          suggestedAccountName: row.accountHint,
+        })),
+      updatedByEmail: 'smoke@saas-platform.dev',
+    },
+  });
+  assertStatus(
+    'mapped accounting bridge',
+    mappedAccountingBridge.readinessStatus,
+  );
+}
 
 let executionPacket = null;
 
@@ -260,7 +312,15 @@ printLine('operational closeout', operationalCloseout.status);
 printLine('filing handoff', filingHandoff.status ?? 'pending');
 printLine('annexes', annexesReadiness.readinessStatus);
 printLine('accounting bridge', accountingBridgePreview.readinessStatus);
+printLine(
+  'accounting mapping',
+  `${mappedAccountingBridge.summary.mappedHintCount}/${mappedAccountingBridge.summary.hintCount}`,
+);
 printLine('assistant', reviewAssistantPacket.readinessStatus);
+printLine(
+  'assistant unmapped hints',
+  reviewAssistantPacket.contextSnapshot.accountingBridgeUnmappedHintCount ?? 0,
+);
 printLine('closeout report', closeoutReport.readinessStatus);
 printLine(
   'withholding execution',

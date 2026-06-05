@@ -369,6 +369,7 @@ import {
 } from '@saas-platform/invoicing-domain';
 import {
   GetTenantPartyByIdUseCase,
+  GetTenantPartyFiscalCleanupPacketUseCase,
   GetTenantPartyFiscalCleanupWorkspaceUseCase,
   GetTenantPartyFiscalReadinessSummaryUseCase,
   ListTenantPartiesUseCase,
@@ -435,6 +436,7 @@ describe('API', () => {
   let getTenantInvoiceItemByIdUseCase: { execute: jest.Mock };
   let getTenantIssuerProfileUseCase: { execute: jest.Mock };
   let getTenantPartyByIdUseCase: { execute: jest.Mock };
+  let getTenantPartyFiscalCleanupPacketUseCase: { execute: jest.Mock };
   let getTenantPartyFiscalCleanupWorkspaceUseCase: { execute: jest.Mock };
   let getTenantConversationThreadByIdUseCase: { execute: jest.Mock };
   let getTenantGrowthAssistDailyAgendaUseCase: { execute: jest.Mock };
@@ -2551,6 +2553,44 @@ describe('API', () => {
       'Este workspace prepara datos fiscales compartidos; no valida identidad oficial del SRI.',
     ],
   };
+  const partyFiscalCleanupPacket = {
+    tenantSlug: 'saas-platform',
+    partyId: 'customer_globex',
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    partySnapshot: {
+      id: 'customer_globex',
+      displayName: 'Globex LLC',
+      roles: ['customer'],
+      taxpayerId: null,
+      priority: 'high' as const,
+      missingFields: [
+        'taxpayer_id',
+        'identification_type',
+        'fiscal_address',
+        'email',
+      ],
+      reviewNotes: [],
+    },
+    suggestedPayload: {
+      taxpayerId: null,
+      identificationType: null,
+      fiscalAddress: null,
+      email: null,
+      taxpayerName: 'Globex LLC',
+    },
+    duplicateWarnings: [],
+    checklist: [
+      'Completar taxpayer_id.',
+      'Completar identification_type.',
+      'Completar fiscal_address.',
+      'Completar email.',
+    ],
+    nextStep: 'Completar payload sugerido y validar datos con el responsable fiscal.',
+    guardrails: [
+      'Packet de correccion: no edita ni fusiona terceros automaticamente.',
+    ],
+  };
   const ecuadorTaxObligations = [
     {
       key: 'vat' as const,
@@ -3763,6 +3803,8 @@ describe('API', () => {
       filingHandoffStatus: 'paid_externally' as const,
       annexesReadinessStatus: 'needs_review' as const,
       accountingBridgeReadinessStatus: 'needs_review' as const,
+      accountingBridgeMappingStatus: 'needs_review' as const,
+      accountingBridgeUnmappedHintCount: 1,
       evidenceVaultStatus: 'needs_review' as const,
       eventCount: 6,
     },
@@ -3800,6 +3842,8 @@ describe('API', () => {
       withholdingCandidates: 1,
       annexesApplicable: 1,
       accountingPreviewEntries: 1,
+      accountingMappedHints: 0,
+      accountingUnmappedHints: 1,
       auditEventCount: 6,
     },
     filingHandoffStatus: 'paid_externally' as const,
@@ -12351,6 +12395,9 @@ describe('API', () => {
     getTenantPartyFiscalCleanupWorkspaceUseCase = {
       execute: jest.fn().mockResolvedValue(partyFiscalCleanupWorkspace),
     };
+    getTenantPartyFiscalCleanupPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(partyFiscalCleanupPacket),
+    };
     getTenantEcuadorTaxpayerProfileUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxpayerProfile),
     };
@@ -12998,6 +13045,8 @@ describe('API', () => {
       .useValue(getTenantPartyFiscalReadinessSummaryUseCase)
       .overrideProvider(GetTenantPartyFiscalCleanupWorkspaceUseCase)
       .useValue(getTenantPartyFiscalCleanupWorkspaceUseCase)
+      .overrideProvider(GetTenantPartyFiscalCleanupPacketUseCase)
+      .useValue(getTenantPartyFiscalCleanupPacketUseCase)
       .overrideProvider(GetTenantEcuadorTaxpayerProfileUseCase)
       .useValue(getTenantEcuadorTaxpayerProfileUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationCalendarUseCase)
@@ -14772,6 +14821,41 @@ describe('API', () => {
     ).toHaveBeenCalledWith('saas-platform');
   });
 
+  it('GET /api/parties/tenants/:slug/fiscal-cleanup-workspace/:partyId/packet should return cleanup packet', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/parties/tenants/saas-platform/fiscal-cleanup-workspace/customer_globex/packet',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      partyId: 'customer_globex',
+      readinessStatus: 'needs_review',
+      partySnapshot: {
+        displayName: 'Globex LLC',
+        priority: 'high',
+      },
+      suggestedPayload: {
+        taxpayerName: 'Globex LLC',
+      },
+      checklist: [
+        'Completar taxpayer_id.',
+        'Completar identification_type.',
+        'Completar fiscal_address.',
+        'Completar email.',
+      ],
+    });
+
+    expect(
+      getTenantPartyFiscalCleanupPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      partyId: 'customer_globex',
+    });
+  });
+
   it('GET /api/parties/tenants/:slug/parties should require customer visibility permission', async () => {
     resolveTenantAccessUseCase.execute.mockResolvedValueOnce({
       tenantId: 'tenant_123',
@@ -16487,6 +16571,8 @@ describe('API', () => {
       readinessStatus: 'needs_review',
       contextSnapshot: {
         filingHandoffStatus: 'paid_externally',
+        accountingBridgeMappingStatus: 'needs_review',
+        accountingBridgeUnmappedHintCount: 1,
         eventCount: 6,
       },
       riskSignals: [
@@ -16521,6 +16607,8 @@ describe('API', () => {
         salesDocuments: 2,
         annexesApplicable: 1,
         accountingPreviewEntries: 1,
+        accountingMappedHints: 0,
+        accountingUnmappedHints: 1,
       },
       filingHandoffStatus: 'paid_externally',
       closeoutStatus: 'ready_for_external_filing',

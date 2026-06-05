@@ -4,4 +4,5 @@ export * from './lib/ports/tokens';
 export * from './lib/use-cases/get-tenant-party-by-id.use-case';
 export * from './lib/use-cases/get-tenant-party-fiscal-readiness-summary.use-case';
 export * from './lib/use-cases/get-tenant-party-fiscal-cleanup-workspace.use-case';
+export * from './lib/use-cases/get-tenant-party-fiscal-cleanup-packet.use-case';
 export * from './lib/use-cases/list-tenant-parties.use-case';

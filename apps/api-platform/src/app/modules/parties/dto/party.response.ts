@@ -1,5 +1,6 @@
 import {
   Party,
+  PartyFiscalCleanupPacket,
   PartyFiscalCleanupWorkspace,
   PartyFiscalReadinessSummary,
 } from '@saas-platform/parties-domain';
@@ -101,6 +102,38 @@ export interface PartyFiscalCleanupWorkspaceResponseDto {
   guardrails: string[];
 }
 
+export interface PartyFiscalCleanupPacketResponseDto {
+  tenantSlug: string;
+  partyId: string;
+  generatedAt: string;
+  readinessStatus: string;
+  partySnapshot: {
+    id: string;
+    displayName: string;
+    roles: string[];
+    taxpayerId: string | null;
+    priority: string;
+    missingFields: string[];
+    reviewNotes: string[];
+  };
+  suggestedPayload: {
+    taxpayerId: string | null;
+    identificationType: string | null;
+    fiscalAddress: string | null;
+    email: string | null;
+    taxpayerName: string;
+  };
+  duplicateWarnings: Array<{
+    key: string;
+    reason: string;
+    partyIds: string[];
+    displayNames: string[];
+  }>;
+  checklist: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export const toPartyResponseDto = (party: Party): PartyResponseDto => {
   const data = party.toPrimitives();
 
@@ -191,4 +224,28 @@ export const toPartyFiscalCleanupWorkspaceResponseDto = (
   })),
   nextStep: workspace.nextStep,
   guardrails: [...workspace.guardrails],
+});
+
+export const toPartyFiscalCleanupPacketResponseDto = (
+  packet: PartyFiscalCleanupPacket,
+): PartyFiscalCleanupPacketResponseDto => ({
+  tenantSlug: packet.tenantSlug,
+  partyId: packet.partyId,
+  generatedAt: packet.generatedAt.toISOString(),
+  readinessStatus: packet.readinessStatus,
+  partySnapshot: {
+    ...packet.partySnapshot,
+    roles: [...packet.partySnapshot.roles],
+    missingFields: [...packet.partySnapshot.missingFields],
+    reviewNotes: [...packet.partySnapshot.reviewNotes],
+  },
+  suggestedPayload: { ...packet.suggestedPayload },
+  duplicateWarnings: packet.duplicateWarnings.map((warning) => ({
+    ...warning,
+    partyIds: [...warning.partyIds],
+    displayNames: [...warning.displayNames],
+  })),
+  checklist: [...packet.checklist],
+  nextStep: packet.nextStep,
+  guardrails: [...packet.guardrails],
 });

@@ -356,4 +356,73 @@ printLine(
   `${financialStatementPreview.summary.trialBalanceAccountCount} cuentas, ${financialStatementPreview.previewStatus}`,
 );
 
+const initialLockRegistry = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/period-lock-registry?${periodQuery()}`),
+  token,
+});
+
+assertStatus('period lock registry', initialLockRegistry.registryStatus);
+printLine(
+  'lock registry',
+  `${initialLockRegistry.summary.controlCount} controles, ${initialLockRegistry.registryStatus}`,
+);
+
+if (initialLockRegistry.registryStatus !== 'locked') {
+  const lockResult = await apiRequest({
+    baseUrl,
+    method: 'POST',
+    path: accountingPath('/period-lock'),
+    token,
+    body: {
+      period,
+      year,
+      lockedByUserId: 'smoke-accounting-reviewer',
+      lockedByEmail: 'accounting-reviewer@saas-platform.dev',
+      reason: 'Smoke internal accounting period lock.',
+      evidenceReference: `smoke:${tenantSlug}:${period}:period-lock`,
+    },
+  });
+
+  assertStatus('period lock result', lockResult.lockStatus);
+  printLine(
+    'period lock registry write',
+    `${lockResult.lockStatus}, blockers ${lockResult.blockers.length}`,
+  );
+}
+
+const reopenPacket = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/period-reopen-packet'),
+  token,
+  body: {
+    period,
+    year,
+    decision: 'prepare',
+    reason: 'Smoke impact review before reopening a locked accounting period.',
+    evidenceReference: `smoke:${tenantSlug}:${period}:period-reopen-review`,
+    reopenedByUserId: 'smoke-accounting-reviewer',
+    reopenedByEmail: 'accounting-reviewer@saas-platform.dev',
+  },
+});
+
+assertStatus('period reopen packet', reopenPacket.reopenStatus);
+printLine(
+  'reopen packet',
+  `${reopenPacket.summary.impactCount} impactos, ${reopenPacket.reopenStatus}`,
+);
+
+const auditTrailWorkspace = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/audit-trail-workspace?${periodQuery()}`),
+  token,
+});
+
+assertStatus('audit trail workspace', auditTrailWorkspace.auditStatus);
+printLine(
+  'audit trail',
+  `${auditTrailWorkspace.summary.eventCount} eventos, ${auditTrailWorkspace.auditStatus}`,
+);
+
 printSection('Accounting foundation smoke OK');

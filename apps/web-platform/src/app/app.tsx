@@ -104,6 +104,7 @@ import {
   fetchTenantEcommerceOrderPaymentReadinessWorkspace,
   executeEcuadorTaxWithholdingDraftBridge,
   createAccountingAdjustingJournalEntry,
+  fetchAccountingAuditTrailWorkspace,
   fetchAccountingChartOfAccountsWorkspace,
   fetchAccountingFinancialStatementPreview,
   fetchAccountingIntakeWorkspace,
@@ -113,8 +114,11 @@ import {
   fetchAccountingLedgerPreviewWorkspace,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
+  fetchAccountingPeriodLockRegistry,
   fetchAccountingPeriodLockReadiness,
   fetchAccountingTrialBalanceWorkspace,
+  lockAccountingPeriod,
+  requestAccountingPeriodReopenPacket,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
   fetchEcuadorTaxAccountingBridgeSuggestedAccounts,
@@ -358,6 +362,7 @@ import {
   AccountingChartOfAccountsWorkspaceResponse,
   AccountingChartMappingManagementResponse,
   AccountingAdjustingJournalEntryCreationResultResponse,
+  AccountingAuditTrailWorkspaceResponse,
   AccountingFinancialStatementPreviewResponse,
   AccountingIntakeWorkspaceResponse,
   AccountingJournalEntryCreationResultResponse,
@@ -370,6 +375,9 @@ import {
   AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
   AccountingPeriodLockReadinessResponse,
+  AccountingPeriodLockRegistryResponse,
+  AccountingPeriodLockResultResponse,
+  AccountingPeriodReopenPacketResponse,
   AccountingTrialBalanceWorkspaceResponse,
   AiActivityFeedEventType,
   AiActivityFeedResponse,
@@ -2153,6 +2161,22 @@ export function App() {
     accountingPeriodLockReadiness,
     setAccountingPeriodLockReadiness,
   ] = useState<AccountingPeriodLockReadinessResponse | null>(null);
+  const [
+    accountingPeriodLockRegistry,
+    setAccountingPeriodLockRegistry,
+  ] = useState<AccountingPeriodLockRegistryResponse | null>(null);
+  const [
+    lastAccountingPeriodLockResult,
+    setLastAccountingPeriodLockResult,
+  ] = useState<AccountingPeriodLockResultResponse | null>(null);
+  const [
+    lastAccountingPeriodReopenPacket,
+    setLastAccountingPeriodReopenPacket,
+  ] = useState<AccountingPeriodReopenPacketResponse | null>(null);
+  const [
+    accountingAuditTrailWorkspace,
+    setAccountingAuditTrailWorkspace,
+  ] = useState<AccountingAuditTrailWorkspaceResponse | null>(null);
   const [
     lastAccountingAdjustingJournalEntry,
     setLastAccountingAdjustingJournalEntry,
@@ -19563,7 +19587,9 @@ export function App() {
         nextAccountingTrialBalanceWorkspace,
         nextAccountingPeriodCloseoutReport,
         nextAccountingPeriodLockReadiness,
+        nextAccountingPeriodLockRegistry,
         nextAccountingFinancialStatementPreview,
+        nextAccountingAuditTrailWorkspace,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -19626,14 +19652,40 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingPeriodLockRegistry(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
             fetchAccountingFinancialStatementPreview(
               token,
               tenantSlug,
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAuditTrailWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
-        : [null, null, null, null, null, null, null, null, null, null, null];
+        : [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+          ];
 
       startTransition(() => {
         setTaxComplianceWorkspace(nextWorkspace);
@@ -19701,9 +19753,11 @@ export function App() {
         setAccountingTrialBalanceWorkspace(nextAccountingTrialBalanceWorkspace);
         setAccountingPeriodCloseoutReport(nextAccountingPeriodCloseoutReport);
         setAccountingPeriodLockReadiness(nextAccountingPeriodLockReadiness);
+        setAccountingPeriodLockRegistry(nextAccountingPeriodLockRegistry);
         setAccountingFinancialStatementPreview(
           nextAccountingFinancialStatementPreview,
         );
+        setAccountingAuditTrailWorkspace(nextAccountingAuditTrailWorkspace);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -20403,8 +20457,14 @@ export function App() {
           note: 'Closeout packet interno desde Accounting foundation.',
         },
       );
-      const [trialBalance, report, lockReadiness, financialPreview] =
-        await Promise.all([
+      const [
+        trialBalance,
+        report,
+        lockReadiness,
+        lockRegistry,
+        financialPreview,
+        auditTrail,
+      ] = await Promise.all([
         fetchAccountingTrialBalanceWorkspace(
           token,
           tenantSlug,
@@ -20423,7 +20483,19 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchAccountingPeriodLockRegistry(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
         fetchAccountingFinancialStatementPreview(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingAuditTrailWorkspace(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -20435,7 +20507,9 @@ export function App() {
       setAccountingTrialBalanceWorkspace(trialBalance);
       setAccountingPeriodCloseoutReport(report);
       setAccountingPeriodLockReadiness(lockReadiness);
+      setAccountingPeriodLockRegistry(lockRegistry);
       setAccountingFinancialStatementPreview(financialPreview);
+      setAccountingAuditTrailWorkspace(auditTrail);
       setAccountingPeriodCloseoutReadiness(packet.readiness);
       setTaxComplianceActionMessage(
         `Closeout packet contable ${humanizeKey(packet.closeoutStatus)}.`,
@@ -20505,7 +20579,9 @@ export function App() {
         ledgerRegistry,
         trialBalance,
         lockReadiness,
+        lockRegistry,
         financialPreview,
+        auditTrail,
       ] = await Promise.all([
         fetchAccountingJournalRegistry(token, tenantSlug, taxCompliancePeriod, year),
         fetchAccountingLedgerRegistryWorkspace(
@@ -20526,7 +20602,19 @@ export function App() {
           taxCompliancePeriod,
           year,
         ),
+        fetchAccountingPeriodLockRegistry(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
         fetchAccountingFinancialStatementPreview(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingAuditTrailWorkspace(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -20539,7 +20627,9 @@ export function App() {
       setAccountingLedgerRegistryWorkspace(ledgerRegistry);
       setAccountingTrialBalanceWorkspace(trialBalance);
       setAccountingPeriodLockReadiness(lockReadiness);
+      setAccountingPeriodLockRegistry(lockRegistry);
       setAccountingFinancialStatementPreview(financialPreview);
+      setAccountingAuditTrailWorkspace(auditTrail);
       setTaxComplianceActionMessage(
         `Ajuste contable ${humanizeKey(result.creationStatus)}.`,
       );
@@ -20549,6 +20639,117 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo crear ajuste contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleLockAccountingPeriod() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-period-lock');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const result = await lockAccountingPeriod(token, tenantSlug, {
+        period: taxCompliancePeriod,
+        year,
+        lockedByUserId: session?.user.id ?? null,
+        lockedByEmail: session?.user.email ?? null,
+        reason: 'Lock interno desde Accounting foundation.',
+        evidenceReference: `accounting-closeout://${taxCompliancePeriod}`,
+      });
+      const [lockRegistry, auditTrail] = await Promise.all([
+        fetchAccountingPeriodLockRegistry(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingAuditTrailWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+      ]);
+
+      setLastAccountingPeriodLockResult(result);
+      setAccountingPeriodLockRegistry(lockRegistry);
+      setAccountingAuditTrailWorkspace(auditTrail);
+      setTaxComplianceActionMessage(
+        `Periodo contable ${humanizeKey(result.lockStatus)}.`,
+      );
+    } catch (error) {
+      setLastAccountingPeriodLockResult(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo bloquear el periodo contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestAccountingReopenPacket() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-period-reopen');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const packet = await requestAccountingPeriodReopenPacket(
+        token,
+        tenantSlug,
+        {
+          period: taxCompliancePeriod,
+          year,
+          decision: 'reopen',
+          reason: 'Correccion posterior al cierre interno.',
+          evidenceReference: `accounting-reopen://${taxCompliancePeriod}`,
+          reopenedByUserId: session?.user.id ?? null,
+          reopenedByEmail: session?.user.email ?? null,
+        },
+      );
+      const [lockRegistry, auditTrail] = await Promise.all([
+        fetchAccountingPeriodLockRegistry(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingAuditTrailWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+      ]);
+
+      setLastAccountingPeriodReopenPacket(packet);
+      setAccountingPeriodLockRegistry(lockRegistry);
+      setAccountingAuditTrailWorkspace(auditTrail);
+      setTaxComplianceActionMessage(
+        `Reopen packet ${humanizeKey(packet.reopenStatus)}.`,
+      );
+    } catch (error) {
+      setLastAccountingPeriodReopenPacket(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar reopen contable.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -29918,6 +30119,38 @@ export function App() {
                               >
                                 Crear ajuste
                               </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-period-lock' ||
+                                  accountingPeriodLockRegistry?.registryStatus ===
+                                    'locked' ||
+                                  accountingPeriodLockReadiness
+                                    ?.lockReadinessStatus !== 'ready_to_lock'
+                                }
+                                onClick={() =>
+                                  void handleLockAccountingPeriod()
+                                }
+                                type="button"
+                              >
+                                Bloquear
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-period-reopen' ||
+                                  accountingPeriodLockRegistry?.registryStatus !==
+                                    'locked'
+                                }
+                                onClick={() =>
+                                  void handleRequestAccountingReopenPacket()
+                                }
+                                type="button"
+                              >
+                                Reabrir
+                              </button>
                             </div>
                             <div className={styles.invoiceInlineGrid}>
                               {accountingChartOfAccountsWorkspace.accounts
@@ -30214,6 +30447,23 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      Lock registry
+                                    </span>
+                                    <strong>
+                                      {accountingPeriodLockRegistry
+                                        ? humanizeKey(
+                                            accountingPeriodLockRegistry.registryStatus,
+                                          )
+                                        : 'sin registry'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingPeriodLockRegistry?.summary
+                                        .controlCount ?? 0}{' '}
+                                      controles
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Estados preview
                                     </span>
                                     <strong>
@@ -30248,9 +30498,45 @@ export function App() {
                                       lineas
                                     </span>
                                   </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Reopen
+                                    </span>
+                                    <strong>
+                                      {lastAccountingPeriodReopenPacket
+                                        ? humanizeKey(
+                                            lastAccountingPeriodReopenPacket.reopenStatus,
+                                          )
+                                        : 'sin reopen'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingPeriodReopenPacket?.summary
+                                        .impactCount ?? 0}{' '}
+                                      impactos
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Audit trail
+                                    </span>
+                                    <strong>
+                                      {accountingAuditTrailWorkspace
+                                        ? humanizeKey(
+                                            accountingAuditTrailWorkspace.auditStatus,
+                                          )
+                                        : 'sin audit'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingAuditTrailWorkspace?.summary
+                                        .eventCount ?? 0}{' '}
+                                      eventos
+                                    </span>
+                                  </div>
                                 </div>
                                 <p className={styles.muted}>
-                                  {accountingPeriodLockReadiness?.nextStep ??
+                                  {accountingPeriodLockRegistry?.nextStep ??
+                                    accountingAuditTrailWorkspace?.nextStep ??
+                                    accountingPeriodLockReadiness?.nextStep ??
                                     accountingFinancialStatementPreview?.nextStep ??
                                     accountingPeriodCloseoutReport?.nextStep ??
                                     lastAccountingPeriodCloseoutPacket?.nextStep ??

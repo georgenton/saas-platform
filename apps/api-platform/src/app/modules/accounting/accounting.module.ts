@@ -2,8 +2,11 @@ import { Module } from '@nestjs/common';
 import {
   ACCOUNTING_JOURNAL_ENTRY_ID_GENERATOR,
   ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
+  ACCOUNTING_PERIOD_CONTROL_ID_GENERATOR,
+  ACCOUNTING_PERIOD_CONTROL_REPOSITORY,
   CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
+  GetTenantAccountingAuditTrailWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
@@ -15,9 +18,12 @@ import {
   GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingJournalRegistryUseCase,
+  ListTenantAccountingPeriodLockRegistryUseCase,
+  LockTenantAccountingPeriodUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
+  RequestTenantAccountingPeriodReopenPacketUseCase,
 } from '@saas-platform/accounting-application';
 import { PRODUCT_REPOSITORY } from '@saas-platform/catalog-application';
 import {
@@ -277,6 +283,99 @@ import { AccountingController } from './accounting.controller';
       useFactory: (getTenantAccountingTrialBalanceWorkspaceUseCase) =>
         new GetTenantAccountingFinancialStatementPreviewUseCase(
           getTenantAccountingTrialBalanceWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: ListTenantAccountingPeriodLockRegistryUseCase,
+      inject: [
+        ACCOUNTING_PERIOD_CONTROL_REPOSITORY,
+        GetTenantAccountingPeriodLockReadinessUseCase,
+      ],
+      useFactory: (
+        accountingPeriodControlRepository,
+        getTenantAccountingPeriodLockReadinessUseCase,
+      ) =>
+        new ListTenantAccountingPeriodLockRegistryUseCase(
+          accountingPeriodControlRepository,
+          getTenantAccountingPeriodLockReadinessUseCase,
+        ),
+    },
+    {
+      provide: LockTenantAccountingPeriodUseCase,
+      inject: [
+        ACCOUNTING_PERIOD_CONTROL_REPOSITORY,
+        ACCOUNTING_PERIOD_CONTROL_ID_GENERATOR,
+        TENANT_REPOSITORY,
+        GetTenantAccountingPeriodLockReadinessUseCase,
+        GetTenantAccountingPeriodCloseoutReportUseCase,
+        GetTenantAccountingFinancialStatementPreviewUseCase,
+        ListTenantAccountingPeriodLockRegistryUseCase,
+      ],
+      useFactory: (
+        accountingPeriodControlRepository,
+        accountingPeriodControlIdGenerator,
+        tenantRepository,
+        getTenantAccountingPeriodLockReadinessUseCase,
+        getTenantAccountingPeriodCloseoutReportUseCase,
+        getTenantAccountingFinancialStatementPreviewUseCase,
+        listTenantAccountingPeriodLockRegistryUseCase,
+      ) =>
+        new LockTenantAccountingPeriodUseCase(
+          accountingPeriodControlRepository,
+          accountingPeriodControlIdGenerator,
+          tenantRepository,
+          getTenantAccountingPeriodLockReadinessUseCase,
+          getTenantAccountingPeriodCloseoutReportUseCase,
+          getTenantAccountingFinancialStatementPreviewUseCase,
+          listTenantAccountingPeriodLockRegistryUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingPeriodReopenPacketUseCase,
+      inject: [
+        ACCOUNTING_PERIOD_CONTROL_REPOSITORY,
+        ACCOUNTING_PERIOD_CONTROL_ID_GENERATOR,
+        TENANT_REPOSITORY,
+        ListTenantAccountingPeriodLockRegistryUseCase,
+        ListTenantAccountingJournalRegistryUseCase,
+        GetTenantAccountingTrialBalanceWorkspaceUseCase,
+        GetTenantAccountingFinancialStatementPreviewUseCase,
+        GetTenantAccountingPeriodCloseoutReadinessUseCase,
+      ],
+      useFactory: (
+        accountingPeriodControlRepository,
+        accountingPeriodControlIdGenerator,
+        tenantRepository,
+        listTenantAccountingPeriodLockRegistryUseCase,
+        listTenantAccountingJournalRegistryUseCase,
+        getTenantAccountingTrialBalanceWorkspaceUseCase,
+        getTenantAccountingFinancialStatementPreviewUseCase,
+        getTenantAccountingPeriodCloseoutReadinessUseCase,
+      ) =>
+        new RequestTenantAccountingPeriodReopenPacketUseCase(
+          accountingPeriodControlRepository,
+          accountingPeriodControlIdGenerator,
+          tenantRepository,
+          listTenantAccountingPeriodLockRegistryUseCase,
+          listTenantAccountingJournalRegistryUseCase,
+          getTenantAccountingTrialBalanceWorkspaceUseCase,
+          getTenantAccountingFinancialStatementPreviewUseCase,
+          getTenantAccountingPeriodCloseoutReadinessUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAuditTrailWorkspaceUseCase,
+      inject: [
+        ACCOUNTING_PERIOD_CONTROL_REPOSITORY,
+        ListTenantAccountingJournalRegistryUseCase,
+      ],
+      useFactory: (
+        accountingPeriodControlRepository,
+        listTenantAccountingJournalRegistryUseCase,
+      ) =>
+        new GetTenantAccountingAuditTrailWorkspaceUseCase(
+          accountingPeriodControlRepository,
+          listTenantAccountingJournalRegistryUseCase,
         ),
     },
     {

@@ -2267,6 +2267,139 @@ export interface AccountingFinancialStatementPreviewResponse {
   guardrails: string[];
 }
 
+export interface AccountingPeriodControlResponse {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  status: string;
+  action: string;
+  actionByUserId: string | null;
+  actionByEmail: string | null;
+  actionAt: string;
+  reason: string | null;
+  evidenceReference: string | null;
+  blockers: string[];
+  snapshot: {
+    lockReadinessStatus?: string;
+    closeoutReportStatus?: string;
+    journalEntryCount?: number;
+    trialBalanceBalanced?: boolean;
+    financialPreviewStatus?: string;
+  };
+  impactChecklist: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountingPeriodLockRegistryResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  registryStatus: string;
+  latestControl: AccountingPeriodControlResponse | null;
+  controls: AccountingPeriodControlResponse[];
+  lockReadiness: AccountingPeriodLockReadinessResponse;
+  summary: {
+    controlCount: number;
+    lockCount: number;
+    reopenCount: number;
+    journalEntryCount: number;
+    readyLockCheckCount: number;
+    blockedLockCheckCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface LockAccountingPeriodRequest {
+  period: string;
+  year: number;
+  lockedByUserId?: string | null;
+  lockedByEmail?: string | null;
+  reason?: string | null;
+  evidenceReference?: string | null;
+}
+
+export interface AccountingPeriodLockResultResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  lockStatus: string;
+  control: AccountingPeriodControlResponse | null;
+  registry: AccountingPeriodLockRegistryResponse;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface RequestAccountingPeriodReopenPacketRequest {
+  period: string;
+  year: number;
+  decision: 'prepare' | 'reopen';
+  reason: string;
+  evidenceReference?: string | null;
+  reopenedByUserId?: string | null;
+  reopenedByEmail?: string | null;
+}
+
+export interface AccountingPeriodReopenPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  reopenStatus: string;
+  control: AccountingPeriodControlResponse | null;
+  latestLock: AccountingPeriodControlResponse | null;
+  impactChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+  }>;
+  summary: {
+    impactCount: number;
+    blockedImpactCount: number;
+    journalEntryCount: number;
+    latestStatus: string;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingAuditTrailWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  auditStatus: string;
+  timeline: Array<{
+    eventKey: string;
+    eventType: string;
+    source: string;
+    status: string;
+    actorEmail: string | null;
+    occurredAt: string;
+    summary: string;
+    metadata: Record<string, string | number | boolean | null>;
+  }>;
+  summary: {
+    eventCount: number;
+    journalEventCount: number;
+    controlEventCount: number;
+    lockedCount: number;
+    reopenedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxSriVoucherEvidenceResponse {
   evidenceId: string;
   direction: string;

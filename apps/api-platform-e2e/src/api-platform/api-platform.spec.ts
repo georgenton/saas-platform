@@ -196,6 +196,12 @@ import {
   GetTenantEcommerceWhatsappSalesFlowUseCase,
 } from '@saas-platform/ecommerce-application';
 import {
+  ACCOUNTING_PERMISSIONS,
+  GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+  GetTenantAccountingIntakeWorkspaceUseCase,
+  GetTenantAccountingJournalDraftPreviewUseCase,
+} from '@saas-platform/accounting-application';
+import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
   GetTenantEcuadorTaxAnnexesReadinessUseCase,
   GetTenantEcuadorTaxAccountantWorkbenchUseCase,
@@ -967,6 +973,13 @@ describe('API', () => {
   let requestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase: {
     execute: jest.Mock;
   };
+  let getTenantAccountingIntakeWorkspaceUseCase: { execute: jest.Mock };
+  let getTenantAccountingChartOfAccountsWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingJournalDraftPreviewUseCase: {
+    execute: jest.Mock;
+  };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
   let listTenantInvoicePaymentsUseCase: { execute: jest.Mock };
   let listTenantInvoiceSummariesUseCase: { execute: jest.Mock };
@@ -1081,6 +1094,7 @@ describe('API', () => {
     INVOICING_PERMISSIONS.REPORTS_READ,
     TAX_COMPLIANCE_PERMISSIONS.EC_READ,
     TAX_COMPLIANCE_PERMISSIONS.EC_MANAGE,
+    ACCOUNTING_PERMISSIONS.READ,
     GROWTH_PERMISSIONS.CONVERSATIONS_READ,
     GROWTH_PERMISSIONS.CONVERSATIONS_MANAGE,
     GROWTH_PERMISSIONS.LEADS_READ,
@@ -1172,6 +1186,15 @@ describe('API', () => {
     isActive: true,
     createdAt: new Date('2026-06-05T10:00:00.000Z'),
     updatedAt: new Date('2026-06-05T10:00:00.000Z'),
+  });
+  const accountingProduct = Product.create({
+    id: 'product_accounting',
+    key: 'accounting',
+    name: 'Accounting',
+    description: 'Plan de cuentas, asientos y cierre contable.',
+    isActive: true,
+    createdAt: new Date('2026-06-05T12:00:00.000Z'),
+    updatedAt: new Date('2026-06-05T12:00:00.000Z'),
   });
   const invoicingModules = [
     PlatformModule.create({
@@ -4000,6 +4023,142 @@ describe('API', () => {
       'Este packet decide readiness de producto; no crea asientos.',
     ],
   };
+  const accountingIntakeWorkspace = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    productKey: 'accounting' as const,
+    sourceProductKey: 'tax-compliance-ec' as const,
+    readinessStatus: 'needs_review' as const,
+    recommendation: 'graduate_to_accounting' as const,
+    summary: {
+      accountingMappedHints: 0,
+      accountingUnmappedHints: 1,
+      closeoutBlockerCount: 0,
+      evidenceArtifactCount: 3,
+      auditEventCount: 6,
+      decisionSignalCount: 1,
+    },
+    intakeSignals: [
+      {
+        key: 'accounting_bridge_depth',
+        label: 'Bridge contable tributario',
+        severity: 'high' as const,
+        rationale: '1 entradas y 1 hints contables.',
+      },
+    ],
+    proposedScope: [
+      {
+        key: 'chart_of_accounts',
+        label: 'Plan de cuentas',
+        reason: '0/1 hints tributarios ya tienen mapping inicial.',
+        source: 'tax_accounting_bridge_mapping',
+      },
+    ],
+    blockedCapabilities: [
+      'official_accounting_books',
+      'posted_journal_entries',
+    ],
+    nextStep: 'Preparar un primer slice de Accounting Foundation.',
+    guardrails: ['No crea asientos oficiales ni libros contables.'],
+  };
+  const accountingChartOfAccountsWorkspace = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    accounts: [
+      {
+        accountKey: 'seed_cash_banks',
+        code: '101.01',
+        name: 'Caja y bancos',
+        category: 'asset' as const,
+        source: 'accounting_seed' as const,
+        mappedAccountHint: null,
+        status: 'suggested' as const,
+        appliesToEntryKeys: [],
+        notes: ['Cuenta semilla para balancear previews.'],
+      },
+      {
+        accountKey: 'tax_bridge_Ingresos_por_ventas',
+        code: '401.01',
+        name: 'Ingresos por ventas locales',
+        category: 'income' as const,
+        source: 'tax_bridge_suggestion' as const,
+        mappedAccountHint: 'Ingresos por ventas',
+        status: 'needs_mapping' as const,
+        appliesToEntryKeys: ['sales_revenue_USD'],
+        notes: ['Sugerida desde el bridge tributario.'],
+      },
+    ],
+    summary: {
+      accountCount: 2,
+      mappedAccountCount: 0,
+      suggestedAccountCount: 2,
+      needsMappingCount: 1,
+      sourceHintCount: 1,
+    },
+    blockers: ['accounting.account_hint.Ingresos por ventas.needs_mapping'],
+    nextStep: 'Validar mappings antes de pasar a asientos.',
+    guardrails: ['Plan preliminar, no catálogo contable oficial.'],
+  };
+  const accountingJournalDraftPreview = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'needs_review' as const,
+    journalStatus: 'needs_mapping' as const,
+    draftEntries: [
+      {
+        draftEntryKey: 'draft_sales_revenue_USD',
+        label: 'Ventas locales',
+        source: 'tax_accounting_bridge_preview' as const,
+        currency: 'USD',
+        lines: [
+          {
+            lineKey: 'draft_sales_revenue_USD:primary',
+            accountCode: '401.01',
+            accountName: 'Ingresos por ventas locales',
+            debitInCents: 0,
+            creditInCents: 25000,
+            sourceEntryKey: 'sales_revenue_USD',
+            accountHint: 'Ingresos por ventas',
+            notes: ['Linea primaria desde bridge tributario.'],
+          },
+          {
+            lineKey: 'draft_sales_revenue_USD:cash',
+            accountCode: '101.01',
+            accountName: 'Caja y bancos',
+            debitInCents: 25000,
+            creditInCents: 0,
+            sourceEntryKey: 'sales_revenue_USD',
+            accountHint: 'Caja y bancos',
+            notes: ['Contrapartida preview.'],
+          },
+        ],
+        totals: {
+          debitInCents: 25000,
+          creditInCents: 25000,
+          balanced: true,
+        },
+        blockers: ['accounting.account_hint.Ingresos por ventas.needs_mapping'],
+      },
+    ],
+    summary: {
+      draftEntryCount: 1,
+      draftLineCount: 2,
+      balancedDraftCount: 1,
+      needsMappingDraftCount: 1,
+      totalDebitInCents: 25000,
+      totalCreditInCents: 25000,
+    },
+    blockers: ['accounting.account_hint.Ingresos por ventas.needs_mapping'],
+    nextStep: 'Completar mappings antes de postear asientos.',
+    guardrails: ['Preview deterministico; no postea asientos.'],
+  };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
     period: '2026-06',
@@ -4996,9 +5155,11 @@ describe('API', () => {
         .fn()
         .mockImplementation((_tenantSlug: string, productKey: string) =>
           Promise.resolve(
-            productKey === 'tax-compliance-ec'
-              ? taxComplianceProduct
-              : invoicingProduct,
+            productKey === 'accounting'
+              ? accountingProduct
+              : productKey === 'tax-compliance-ec'
+                ? taxComplianceProduct
+                : invoicingProduct,
           ),
         ),
     };
@@ -5008,9 +5169,11 @@ describe('API', () => {
     getProductByKeyUseCase = {
       execute: jest.fn().mockImplementation((productKey: string) =>
         Promise.resolve(
-          productKey === 'tax-compliance-ec'
-            ? taxComplianceProduct
-            : invoicingProduct,
+          productKey === 'accounting'
+            ? accountingProduct
+            : productKey === 'tax-compliance-ec'
+              ? taxComplianceProduct
+              : invoicingProduct,
         ),
       ),
     };
@@ -12514,6 +12677,7 @@ describe('API', () => {
         invoicingProduct,
         psychologyProduct,
         taxComplianceProduct,
+        accountingProduct,
       ]),
     };
     listProductModulesUseCase = {
@@ -12528,7 +12692,11 @@ describe('API', () => {
     listTenantEnabledProductsUseCase = {
       execute: jest
         .fn()
-        .mockResolvedValue([invoicingProduct, taxComplianceProduct]),
+        .mockResolvedValue([
+          invoicingProduct,
+          taxComplianceProduct,
+          accountingProduct,
+        ]),
     };
     listTenantCustomersUseCase = {
       execute: jest.fn().mockResolvedValue([acmeCustomer, globexCustomer]),
@@ -12681,6 +12849,15 @@ describe('API', () => {
     };
     requestTenantEcuadorTaxAccountingReadinessPacketUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAccountingReadinessPacket),
+    };
+    getTenantAccountingIntakeWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingIntakeWorkspace),
+    };
+    getTenantAccountingChartOfAccountsWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingChartOfAccountsWorkspace),
+    };
+    getTenantAccountingJournalDraftPreviewUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingJournalDraftPreview),
     };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
@@ -13280,6 +13457,12 @@ describe('API', () => {
       .useValue(requestTenantEcuadorTaxPeriodCloseoutReportUseCase)
       .overrideProvider(RequestTenantEcuadorTaxAccountingReadinessPacketUseCase)
       .useValue(requestTenantEcuadorTaxAccountingReadinessPacketUseCase)
+      .overrideProvider(GetTenantAccountingIntakeWorkspaceUseCase)
+      .useValue(getTenantAccountingIntakeWorkspaceUseCase)
+      .overrideProvider(GetTenantAccountingChartOfAccountsWorkspaceUseCase)
+      .useValue(getTenantAccountingChartOfAccountsWorkspaceUseCase)
+      .overrideProvider(GetTenantAccountingJournalDraftPreviewUseCase)
+      .useValue(getTenantAccountingJournalDraftPreviewUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -14448,6 +14631,15 @@ describe('API', () => {
           createdAt: '2026-06-05T10:00:00.000Z',
           updatedAt: '2026-06-05T10:00:00.000Z',
         },
+        {
+          id: 'product_accounting',
+          key: 'accounting',
+          name: 'Accounting',
+          description: 'Plan de cuentas, asientos y cierre contable.',
+          isActive: true,
+          createdAt: '2026-06-05T12:00:00.000Z',
+          updatedAt: '2026-06-05T12:00:00.000Z',
+        },
       ]);
   });
 
@@ -14652,6 +14844,15 @@ describe('API', () => {
           isActive: true,
           createdAt: '2026-06-05T10:00:00.000Z',
           updatedAt: '2026-06-05T10:00:00.000Z',
+        },
+        {
+          id: 'product_accounting',
+          key: 'accounting',
+          name: 'Accounting',
+          description: 'Plan de cuentas, asientos y cierre contable.',
+          isActive: true,
+          createdAt: '2026-06-05T12:00:00.000Z',
+          updatedAt: '2026-06-05T12:00:00.000Z',
         },
       ]);
 
@@ -16931,6 +17132,113 @@ describe('API', () => {
 
     expect(
       requestTenantEcuadorTaxAccountingReadinessPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/intake-workspace should return accounting intake workspace', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/intake-workspace?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      productKey: 'accounting',
+      sourceProductKey: 'tax-compliance-ec',
+      readinessStatus: 'needs_review',
+      summary: {
+        accountingUnmappedHints: 1,
+        decisionSignalCount: 1,
+      },
+      proposedScope: [
+        {
+          key: 'chart_of_accounts',
+          source: 'tax_accounting_bridge_mapping',
+        },
+      ],
+    });
+
+    expect(getTenantAccountingIntakeWorkspaceUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/chart-of-accounts-workspace should return accounting chart foundation', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/chart-of-accounts-workspace?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      readinessStatus: 'needs_review',
+      summary: {
+        accountCount: 2,
+        needsMappingCount: 1,
+      },
+      accounts: [
+        {
+          code: '101.01',
+          name: 'Caja y bancos',
+        },
+        {
+          code: '401.01',
+          mappedAccountHint: 'Ingresos por ventas',
+        },
+      ],
+    });
+
+    expect(
+      getTenantAccountingChartOfAccountsWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/journal-draft-preview should return accounting journal draft preview', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/journal-draft-preview?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      journalStatus: 'needs_mapping',
+      summary: {
+        draftEntryCount: 1,
+        balancedDraftCount: 1,
+      },
+      draftEntries: [
+        {
+          draftEntryKey: 'draft_sales_revenue_USD',
+          totals: {
+            debitInCents: 25000,
+            creditInCents: 25000,
+            balanced: true,
+          },
+        },
+      ],
+    });
+
+    expect(
+      getTenantAccountingJournalDraftPreviewUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',
@@ -21830,7 +22138,7 @@ describe('API', () => {
       .expect(200)
       .expect((response) => {
         expect(response.body.reviewStatus).toBe('needs_operator_review');
-        expect(response.body.stalenessStatus).toBe('needs_follow_up');
+        expect(response.body.stalenessStatus).toBe('stale');
         expect(response.body.phaseCounts).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
@@ -21891,7 +22199,7 @@ describe('API', () => {
             expect.objectContaining({
               orderDraftId: 'order_draft_001',
               reviewStatus: 'needs_operator_review',
-              stalenessStatus: 'needs_follow_up',
+              stalenessStatus: 'stale',
               latestEventType: 'post_sale_closeout',
             }),
           ]),

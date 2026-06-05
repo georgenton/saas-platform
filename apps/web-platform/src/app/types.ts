@@ -1718,6 +1718,111 @@ export interface EcuadorTaxAccountingReadinessPacketResponse {
   guardrails: string[];
 }
 
+export interface AccountingIntakeWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  productKey: 'accounting';
+  sourceProductKey: 'tax-compliance-ec';
+  readinessStatus: string;
+  recommendation: string;
+  summary: {
+    accountingMappedHints: number;
+    accountingUnmappedHints: number;
+    closeoutBlockerCount: number;
+    evidenceArtifactCount: number;
+    auditEventCount: number;
+    decisionSignalCount: number;
+  };
+  intakeSignals: Array<{
+    key: string;
+    label: string;
+    severity: string;
+    rationale: string;
+  }>;
+  proposedScope: Array<{
+    key: string;
+    label: string;
+    reason: string;
+    source: string;
+  }>;
+  blockedCapabilities: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingChartOfAccountsWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  accounts: Array<{
+    accountKey: string;
+    code: string;
+    name: string;
+    category: string;
+    source: string;
+    mappedAccountHint: string | null;
+    status: string;
+    appliesToEntryKeys: string[];
+    notes: string[];
+  }>;
+  summary: {
+    accountCount: number;
+    mappedAccountCount: number;
+    suggestedAccountCount: number;
+    needsMappingCount: number;
+    sourceHintCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingJournalDraftPreviewResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  journalStatus: string;
+  draftEntries: Array<{
+    draftEntryKey: string;
+    label: string;
+    source: string;
+    currency: string;
+    lines: Array<{
+      lineKey: string;
+      accountCode: string | null;
+      accountName: string | null;
+      debitInCents: number;
+      creditInCents: number;
+      sourceEntryKey: string;
+      accountHint: string;
+      notes: string[];
+    }>;
+    totals: {
+      debitInCents: number;
+      creditInCents: number;
+      balanced: boolean;
+    };
+    blockers: string[];
+  }>;
+  summary: {
+    draftEntryCount: number;
+    draftLineCount: number;
+    balancedDraftCount: number;
+    needsMappingDraftCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxSriVoucherEvidenceResponse {
   evidenceId: string;
   direction: string;

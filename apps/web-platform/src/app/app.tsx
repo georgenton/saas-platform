@@ -103,6 +103,9 @@ import {
   fetchTenantEcommerceOrderPaymentConfirmationWorkspace,
   fetchTenantEcommerceOrderPaymentReadinessWorkspace,
   executeEcuadorTaxWithholdingDraftBridge,
+  fetchAccountingChartOfAccountsWorkspace,
+  fetchAccountingIntakeWorkspace,
+  fetchAccountingJournalDraftPreview,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
   fetchEcuadorTaxAccountingBridgeSuggestedAccounts,
@@ -339,6 +342,9 @@ import {
   updateInvoiceStatus,
 } from './api';
 import {
+  AccountingChartOfAccountsWorkspaceResponse,
+  AccountingIntakeWorkspaceResponse,
+  AccountingJournalDraftPreviewResponse,
   AiActivityFeedEventType,
   AiActivityFeedResponse,
   AiApprovalCapacityWorkspaceResponse,
@@ -2066,6 +2072,18 @@ export function App() {
     setTaxComplianceAccountingReadinessPacket,
   ] = useState<EcuadorTaxAccountingReadinessPacketResponse | null>(null);
   const [
+    accountingIntakeWorkspace,
+    setAccountingIntakeWorkspace,
+  ] = useState<AccountingIntakeWorkspaceResponse | null>(null);
+  const [
+    accountingChartOfAccountsWorkspace,
+    setAccountingChartOfAccountsWorkspace,
+  ] = useState<AccountingChartOfAccountsWorkspaceResponse | null>(null);
+  const [
+    accountingJournalDraftPreview,
+    setAccountingJournalDraftPreview,
+  ] = useState<AccountingJournalDraftPreviewResponse | null>(null);
+  const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
   ] = useState<EcuadorTaxSriFiscalEvidenceWorkspaceResponse | null>(null);
@@ -3693,6 +3711,7 @@ export function App() {
     [enabledProductKeys, productCatalog],
   );
   const invoicingEnabled = enabledProductKeys.has('invoicing');
+  const accountingEnabled = enabledProductKeys.has('accounting');
   const growthProductEnabled = enabledProductKeys.has('growth');
   const growthWorkspaceAvailable = canReadGrowthConversations;
   const currentTenantGrowthAccessible = Boolean(
@@ -19453,6 +19472,32 @@ export function App() {
           'iva',
         ),
       ]);
+      const [
+        nextAccountingIntakeWorkspace,
+        nextAccountingChartOfAccountsWorkspace,
+        nextAccountingJournalDraftPreview,
+      ] = accountingEnabled
+        ? await Promise.all([
+            fetchAccountingIntakeWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingChartOfAccountsWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingJournalDraftPreview(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+          ])
+        : [null, null, null];
 
       startTransition(() => {
         setTaxComplianceWorkspace(nextWorkspace);
@@ -19502,6 +19547,11 @@ export function App() {
         );
         setTaxComplianceFilingGuidePacket(nextFilingGuidePacket);
         setTaxComplianceDeclarationArtifactExport(nextDeclarationArtifactExport);
+        setAccountingIntakeWorkspace(nextAccountingIntakeWorkspace);
+        setAccountingChartOfAccountsWorkspace(
+          nextAccountingChartOfAccountsWorkspace,
+        );
+        setAccountingJournalDraftPreview(nextAccountingJournalDraftPreview);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -29173,6 +29223,104 @@ export function App() {
                               .nextProductRecommendation.rationale
                           }
                         </p>
+                      </div>
+                    ) : null}
+                    {accountingEnabled ? (
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>Accounting foundation</strong>
+                          {accountingJournalDraftPreview ? (
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                accountingJournalDraftPreview.journalStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                accountingJournalDraftPreview.journalStatus,
+                              )}
+                            </span>
+                          ) : null}
+                        </div>
+                        {accountingIntakeWorkspace &&
+                        accountingChartOfAccountsWorkspace &&
+                        accountingJournalDraftPreview ? (
+                          <div className={styles.stack}>
+                            <div className={styles.commercialGrid}>
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>Intake</span>
+                                <strong>
+                                  {humanizeKey(
+                                    accountingIntakeWorkspace.readinessStatus,
+                                  )}
+                                </strong>
+                                <span className={styles.muted}>
+                                  {
+                                    accountingIntakeWorkspace.blockedCapabilities
+                                      .length
+                                  }{' '}
+                                  bloqueadas
+                                </span>
+                              </div>
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>Cuentas</span>
+                                <strong>
+                                  {
+                                    accountingChartOfAccountsWorkspace.summary
+                                      .accountCount
+                                  }
+                                </strong>
+                                <span className={styles.muted}>
+                                  {
+                                    accountingChartOfAccountsWorkspace.summary
+                                      .needsMappingCount
+                                  }{' '}
+                                  por mapear
+                                </span>
+                              </div>
+                              <div className={styles.commercialCard}>
+                                <span className={styles.muted}>Borradores</span>
+                                <strong>
+                                  {
+                                    accountingJournalDraftPreview.summary
+                                      .draftEntryCount
+                                  }
+                                </strong>
+                                <span className={styles.muted}>
+                                  {
+                                    accountingJournalDraftPreview.summary
+                                      .balancedDraftCount
+                                  }{' '}
+                                  balanceados
+                                </span>
+                              </div>
+                            </div>
+                            <div className={styles.invoiceInlineGrid}>
+                              {accountingChartOfAccountsWorkspace.accounts
+                                .slice(0, 4)
+                                .map((account) => (
+                                  <div
+                                    className={styles.commercialCard}
+                                    key={account.accountKey}
+                                  >
+                                    <span className={styles.muted}>
+                                      {humanizeKey(account.category)}
+                                    </span>
+                                    <strong>{account.code}</strong>
+                                    <span className={styles.muted}>
+                                      {account.name}
+                                    </span>
+                                  </div>
+                                ))}
+                            </div>
+                            <p className={styles.muted}>
+                              {accountingJournalDraftPreview.nextStep}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className={styles.emptyState}>
+                            <p>Carga un período para ver foundation contable.</p>
+                          </div>
+                        )}
                       </div>
                     ) : null}
                   </div>

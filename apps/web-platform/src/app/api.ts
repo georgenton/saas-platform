@@ -1,4 +1,7 @@
 import {
+  AccountingChartOfAccountsWorkspaceResponse,
+  AccountingIntakeWorkspaceResponse,
+  AccountingJournalDraftPreviewResponse,
   AiActivityFeedResponse,
   AiActionCenterResponse,
   AiApprovalCapacityWorkspaceResponse,
@@ -1690,6 +1693,63 @@ export async function fetchEcuadorTaxAccountingReadinessPacket(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/accounting-readiness-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingIntakeWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingIntakeWorkspaceResponse> {
+  return request<AccountingIntakeWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/intake-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingChartOfAccountsWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingChartOfAccountsWorkspaceResponse> {
+  return request<AccountingChartOfAccountsWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/chart-of-accounts-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingJournalDraftPreview(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingJournalDraftPreviewResponse> {
+  return request<AccountingJournalDraftPreviewResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/journal-draft-preview?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

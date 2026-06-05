@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
-import { GetTenantAccountingIntakeWorkspaceUseCase } from '@saas-platform/accounting-application';
+import {
+  GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+  GetTenantAccountingIntakeWorkspaceUseCase,
+  GetTenantAccountingJournalDraftPreviewUseCase,
+} from '@saas-platform/accounting-application';
 import { PRODUCT_REPOSITORY } from '@saas-platform/catalog-application';
 import {
   ENTITLEMENT_REPOSITORY,
@@ -13,7 +17,12 @@ import {
   FeatureFlagsPersistenceModule,
   TenancyPersistenceModule,
 } from '@saas-platform/infra-prisma';
-import { RequestTenantEcuadorTaxAccountingReadinessPacketUseCase } from '@saas-platform/tax-compliance-application';
+import {
+  GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
+  GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
+  RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+  RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
+} from '@saas-platform/tax-compliance-application';
 import {
   ResolveTenantAccessUseCase,
   TENANT_ACCESS_REPOSITORY,
@@ -43,6 +52,36 @@ import { AccountingController } from './accounting.controller';
       useFactory: (requestTenantEcuadorTaxAccountingReadinessPacketUseCase) =>
         new GetTenantAccountingIntakeWorkspaceUseCase(
           requestTenantEcuadorTaxAccountingReadinessPacketUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+      inject: [
+        GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
+        GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxAccountingBridgeMappingUseCase,
+        getTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
+      ) =>
+        new GetTenantAccountingChartOfAccountsWorkspaceUseCase(
+          getTenantEcuadorTaxAccountingBridgeMappingUseCase,
+          getTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingJournalDraftPreviewUseCase,
+      inject: [
+        RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+        GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+        getTenantAccountingChartOfAccountsWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingJournalDraftPreviewUseCase(
+          requestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+          getTenantAccountingChartOfAccountsWorkspaceUseCase,
         ),
     },
     {

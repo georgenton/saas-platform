@@ -1050,6 +1050,65 @@ export interface EcuadorTaxAccountingBridgeMappingView {
   guardrails: string[];
 }
 
+export interface EcuadorTaxAccountingBridgeSuggestedAccountsView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  rows: Array<{
+    accountHint: string;
+    suggestedAccountCode: string;
+    suggestedAccountName: string;
+    category:
+      | 'sales'
+      | 'vat'
+      | 'withholding'
+      | 'purchase'
+      | 'expense'
+      | 'uncategorized';
+    source: string;
+    appliesToEntryKeys: string[];
+    notes: string[];
+  }>;
+  summary: {
+    suggestionCount: number;
+    previewHintCount: number;
+    unmatchedHintCount: number;
+  };
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxGrowthReminderPacketView {
+  tenantSlug: string;
+  year: number;
+  generatedAt: Date;
+  asOfDate: string;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  reminders: Array<{
+    key: string;
+    obligationKey: string;
+    period: string;
+    dueDate: string | null;
+    severity: 'critical' | 'high' | 'normal';
+    channel: 'whatsapp' | 'manual';
+    suggestedMessage: string;
+    owner: 'operator' | 'accountant';
+    source: string;
+  }>;
+  summary: {
+    reminderCount: number;
+    overdueCount: number;
+    dueSoonCount: number;
+  };
+  targetWorkspace: {
+    productKey: 'growth';
+    handoffMode: 'operator_assist';
+  };
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxReviewAssistantPacketView {
   tenantSlug: string;
   period: string;

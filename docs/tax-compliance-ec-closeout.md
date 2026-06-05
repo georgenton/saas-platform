@@ -43,3 +43,8 @@ It still does not own journals, ledgers, balances, or formal accounting close.
 Parties cleanup now exposes correction packets per priority party. These packets
 guide missing fiscal fields and duplicate review, but they do not mutate or merge
 third parties automatically.
+
+The next operational step applies fiscal corrections back into the current
+Parties backing store, adds a read-only suggested account catalog for the
+accounting bridge, and exposes due-date reminder packets that Growth can use as
+operator-assisted follow-up.

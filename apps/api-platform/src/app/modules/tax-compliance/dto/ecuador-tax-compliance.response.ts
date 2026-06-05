@@ -4,6 +4,7 @@ import {
   EcuadorTaxAccountantWorkbenchView,
   EcuadorTaxAccountingBridgeMappingView,
   EcuadorTaxAccountingBridgePreviewView,
+  EcuadorTaxAccountingBridgeSuggestedAccountsView,
   EcuadorTaxAnnexesReadinessView,
   EcuadorTaxAuditReadinessView,
   EcuadorTaxCalendarReviewWorkspaceView,
@@ -14,6 +15,7 @@ import {
   EcuadorTaxEcommerceEvidenceSummaryView,
   EcuadorTaxEvidenceSummaryView,
   EcuadorTaxFilingHandoffView,
+  EcuadorTaxGrowthReminderPacketView,
   EcuadorTaxIncomeTaxEvidencePacketView,
   EcuadorTaxObligationMatrixView,
   EcuadorTaxObligationCalendarView,
@@ -1027,6 +1029,59 @@ export interface EcuadorTaxAccountingBridgeMappingResponseDto {
     previewEntryCount: number;
   };
   blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingBridgeSuggestedAccountsResponseDto {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  rows: Array<{
+    accountHint: string;
+    suggestedAccountCode: string;
+    suggestedAccountName: string;
+    category: string;
+    source: string;
+    appliesToEntryKeys: string[];
+    notes: string[];
+  }>;
+  summary: {
+    suggestionCount: number;
+    previewHintCount: number;
+    unmatchedHintCount: number;
+  };
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxGrowthReminderPacketResponseDto {
+  tenantSlug: string;
+  year: number;
+  generatedAt: string;
+  asOfDate: string;
+  readinessStatus: string;
+  reminders: Array<{
+    key: string;
+    obligationKey: string;
+    period: string;
+    dueDate: string | null;
+    severity: string;
+    channel: string;
+    suggestedMessage: string;
+    owner: string;
+    source: string;
+  }>;
+  summary: {
+    reminderCount: number;
+    overdueCount: number;
+    dueSoonCount: number;
+  };
+  targetWorkspace: {
+    productKey: string;
+    handoffMode: string;
+  };
   nextStep: string;
   guardrails: string[];
 }
@@ -2282,6 +2337,42 @@ export function toEcuadorTaxAccountingBridgeMappingResponseDto(
     blockers: [...mapping.blockers],
     nextStep: mapping.nextStep,
     guardrails: [...mapping.guardrails],
+  };
+}
+
+export function toEcuadorTaxAccountingBridgeSuggestedAccountsResponseDto(
+  catalog: EcuadorTaxAccountingBridgeSuggestedAccountsView,
+): EcuadorTaxAccountingBridgeSuggestedAccountsResponseDto {
+  return {
+    tenantSlug: catalog.tenantSlug,
+    period: catalog.period,
+    year: catalog.year,
+    generatedAt: catalog.generatedAt.toISOString(),
+    rows: catalog.rows.map((row) => ({
+      ...row,
+      appliesToEntryKeys: [...row.appliesToEntryKeys],
+      notes: [...row.notes],
+    })),
+    summary: { ...catalog.summary },
+    nextStep: catalog.nextStep,
+    guardrails: [...catalog.guardrails],
+  };
+}
+
+export function toEcuadorTaxGrowthReminderPacketResponseDto(
+  packet: EcuadorTaxGrowthReminderPacketView,
+): EcuadorTaxGrowthReminderPacketResponseDto {
+  return {
+    tenantSlug: packet.tenantSlug,
+    year: packet.year,
+    generatedAt: packet.generatedAt.toISOString(),
+    asOfDate: packet.asOfDate,
+    readinessStatus: packet.readinessStatus,
+    reminders: packet.reminders.map((reminder) => ({ ...reminder })),
+    summary: { ...packet.summary },
+    targetWorkspace: { ...packet.targetWorkspace },
+    nextStep: packet.nextStep,
+    guardrails: [...packet.guardrails],
   };
 }
 

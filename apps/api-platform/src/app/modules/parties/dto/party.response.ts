@@ -1,5 +1,6 @@
 import {
   Party,
+  PartyFiscalCorrectionResult,
   PartyFiscalCleanupPacket,
   PartyFiscalCleanupWorkspace,
   PartyFiscalReadinessSummary,
@@ -134,6 +135,29 @@ export interface PartyFiscalCleanupPacketResponseDto {
   guardrails: string[];
 }
 
+export interface PartyFiscalCorrectionResultResponseDto {
+  tenantSlug: string;
+  partyId: string;
+  appliedAt: string;
+  status: string;
+  correctedParty: {
+    id: string;
+    displayName: string;
+    roles: string[];
+    taxpayerId: string | null;
+    identificationType: string | null;
+    fiscalAddress: string | null;
+    email: string | null;
+    completenessStatus: string;
+    missingFields: string[];
+    reviewNotes: string[];
+  };
+  remainingMissingFields: string[];
+  reviewNotes: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export const toPartyResponseDto = (party: Party): PartyResponseDto => {
   const data = party.toPrimitives();
 
@@ -248,4 +272,23 @@ export const toPartyFiscalCleanupPacketResponseDto = (
   checklist: [...packet.checklist],
   nextStep: packet.nextStep,
   guardrails: [...packet.guardrails],
+});
+
+export const toPartyFiscalCorrectionResultResponseDto = (
+  result: PartyFiscalCorrectionResult,
+): PartyFiscalCorrectionResultResponseDto => ({
+  tenantSlug: result.tenantSlug,
+  partyId: result.partyId,
+  appliedAt: result.appliedAt.toISOString(),
+  status: result.status,
+  correctedParty: {
+    ...result.correctedParty,
+    roles: [...result.correctedParty.roles],
+    missingFields: [...result.correctedParty.missingFields],
+    reviewNotes: [...result.correctedParty.reviewNotes],
+  },
+  remainingMissingFields: [...result.remainingMissingFields],
+  reviewNotes: [...result.reviewNotes],
+  nextStep: result.nextStep,
+  guardrails: [...result.guardrails],
 });

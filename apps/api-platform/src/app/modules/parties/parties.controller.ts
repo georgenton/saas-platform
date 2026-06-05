@@ -1,12 +1,15 @@
 import {
   Controller,
+  Body,
   Get,
   NotFoundException,
   Param,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { INVOICING_PERMISSIONS } from '@saas-platform/invoicing-application';
 import {
+  ApplyTenantPartyFiscalCorrectionUseCase,
   GetTenantPartyByIdUseCase,
   GetTenantPartyFiscalCleanupPacketUseCase,
   GetTenantPartyFiscalCleanupWorkspaceUseCase,
@@ -24,9 +27,11 @@ import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import {
   PartyFiscalReadinessSummaryResponseDto,
+  PartyFiscalCorrectionResultResponseDto,
   PartyFiscalCleanupPacketResponseDto,
   PartyFiscalCleanupWorkspaceResponseDto,
   PartyResponseDto,
+  toPartyFiscalCorrectionResultResponseDto,
   toPartyFiscalCleanupPacketResponseDto,
   toPartyFiscalCleanupWorkspaceResponseDto,
   toPartyFiscalReadinessSummaryResponseDto,
@@ -36,6 +41,14 @@ import {
 type TenantAccessContext = {
   tenantSlug?: string;
 };
+
+interface ApplyPartyFiscalCorrectionBodyDto {
+  taxpayerId?: string | null;
+  identificationType?: string | null;
+  fiscalAddress?: string | null;
+  email?: string | null;
+  taxpayerName?: string | null;
+}
 
 @Controller('parties/tenants')
 @UseGuards(
@@ -52,6 +65,7 @@ export class PartiesController {
     private readonly getTenantPartyFiscalReadinessSummaryUseCase: GetTenantPartyFiscalReadinessSummaryUseCase,
     private readonly getTenantPartyFiscalCleanupWorkspaceUseCase: GetTenantPartyFiscalCleanupWorkspaceUseCase,
     private readonly getTenantPartyFiscalCleanupPacketUseCase: GetTenantPartyFiscalCleanupPacketUseCase,
+    private readonly applyTenantPartyFiscalCorrectionUseCase: ApplyTenantPartyFiscalCorrectionUseCase,
   ) {}
 
   @Get(':slug/parties')
@@ -134,6 +148,39 @@ export class PartiesController {
         });
 
       return toPartyFiscalCleanupPacketResponseDto(packet);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof PartyNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/fiscal-cleanup-workspace/:partyId/corrections')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.CUSTOMERS_MANAGE)
+  async applyTenantPartyFiscalCorrection(
+    @Param('slug') slug: string,
+    @Param('partyId') partyId: string,
+    @Body() body: ApplyPartyFiscalCorrectionBodyDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PartyFiscalCorrectionResultResponseDto> {
+    try {
+      const result =
+        await this.applyTenantPartyFiscalCorrectionUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          partyId,
+          taxpayerId: body.taxpayerId ?? null,
+          identificationType: body.identificationType ?? null,
+          fiscalAddress: body.fiscalAddress ?? null,
+          email: body.email ?? null,
+          taxpayerName: body.taxpayerName ?? null,
+        });
+
+      return toPartyFiscalCorrectionResultResponseDto(result);
     } catch (error) {
       if (
         error instanceof TenantNotFoundError ||

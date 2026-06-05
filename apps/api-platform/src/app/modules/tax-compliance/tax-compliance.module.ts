@@ -28,6 +28,7 @@ import {
   GetTenantEcuadorTaxAnnexesReadinessUseCase,
   GetTenantEcuadorTaxAccountantWorkbenchUseCase,
   GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
+  GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
@@ -54,6 +55,7 @@ import {
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+  RequestTenantEcuadorTaxGrowthReminderPacketUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
@@ -997,6 +999,14 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
         ),
     },
     {
+      provide: GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
+      inject: [RequestTenantEcuadorTaxAccountingBridgePreviewUseCase],
+      useFactory: (requestTenantEcuadorTaxAccountingBridgePreviewUseCase) =>
+        new GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase(
+          requestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+        ),
+    },
+    {
       provide: UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
       inject: [
         GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
@@ -1009,6 +1019,14 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
         new UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase(
           getTenantEcuadorTaxAccountingBridgeMappingUseCase,
           recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxGrowthReminderPacketUseCase,
+      inject: [GetTenantEcuadorTaxDueMonitorUseCase],
+      useFactory: (getTenantEcuadorTaxDueMonitorUseCase) =>
+        new RequestTenantEcuadorTaxGrowthReminderPacketUseCase(
+          getTenantEcuadorTaxDueMonitorUseCase,
         ),
     },
     {

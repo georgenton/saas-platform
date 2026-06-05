@@ -13,6 +13,7 @@ import {
   GetTenantEcuadorTaxAnnexesReadinessUseCase,
   GetTenantEcuadorTaxAccountantWorkbenchUseCase,
   GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
+  GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
   GetTenantEcuadorTaxFilingHandoffUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
@@ -38,6 +39,7 @@ import {
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+  RequestTenantEcuadorTaxGrowthReminderPacketUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
@@ -73,6 +75,7 @@ import {
   EcuadorTaxObligationSettingsResponseDto,
   EcuadorTaxAccountingBridgeMappingResponseDto,
   EcuadorTaxAccountingBridgePreviewResponseDto,
+  EcuadorTaxAccountingBridgeSuggestedAccountsResponseDto,
   EcuadorTaxAnnexesReadinessResponseDto,
   EcuadorTaxOperationalCloseoutResponseDto,
   EcuadorTaxAccountantReviewResponseDto,
@@ -86,6 +89,7 @@ import {
   EcuadorTaxDueMonitorResponseDto,
   EcuadorTaxEcommerceEvidenceSummaryResponseDto,
   EcuadorTaxFilingHandoffResponseDto,
+  EcuadorTaxGrowthReminderPacketResponseDto,
   EcuadorTaxIncomeTaxEvidencePacketResponseDto,
   EcuadorTaxPeriodCloseoutPacketResponseDto,
   EcuadorTaxPeriodCloseoutReportResponseDto,
@@ -111,6 +115,7 @@ import {
   toEcuadorTaxAccountantWorkbenchResponseDto,
   toEcuadorTaxAccountingBridgeMappingResponseDto,
   toEcuadorTaxAccountingBridgePreviewResponseDto,
+  toEcuadorTaxAccountingBridgeSuggestedAccountsResponseDto,
   toEcuadorTaxAccountantReviewResponseDto,
   toEcuadorTaxAccountantReviewPacketResponseDto,
   toEcuadorTaxAnnexesReadinessResponseDto,
@@ -122,6 +127,7 @@ import {
   toEcuadorTaxDueMonitorResponseDto,
   toEcuadorTaxEcommerceEvidenceSummaryResponseDto,
   toEcuadorTaxFilingHandoffResponseDto,
+  toEcuadorTaxGrowthReminderPacketResponseDto,
   toEcuadorTaxIncomeTaxEvidencePacketResponseDto,
   toEcuadorTaxObligationCalendarResponseDto,
   toEcuadorTaxObligationMatrixResponseDto,
@@ -310,6 +316,8 @@ export class TaxComplianceController {
     private readonly requestTenantEcuadorTaxAccountingBridgePreviewUseCase: RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
     private readonly getTenantEcuadorTaxAccountingBridgeMappingUseCase: GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
     private readonly upsertTenantEcuadorTaxAccountingBridgeMappingUseCase: UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
+    private readonly getTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase: GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
+    private readonly requestTenantEcuadorTaxGrowthReminderPacketUseCase: RequestTenantEcuadorTaxGrowthReminderPacketUseCase,
     private readonly requestTenantEcuadorTaxReviewAssistantPacketUseCase: RequestTenantEcuadorTaxReviewAssistantPacketUseCase,
     private readonly requestTenantEcuadorTaxPeriodCloseoutReportUseCase: RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
   ) {}
@@ -379,6 +387,34 @@ export class TaxComplianceController {
       });
 
       return toEcuadorTaxDueMonitorResponseDto(monitor);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/growth-reminder-packet')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getGrowthReminderPacket(
+    @Param('slug') slug: string,
+    @Query('year') year?: string,
+    @Query('asOfDate') asOfDate?: string,
+    @Query('windowDays') windowDays?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxGrowthReminderPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantEcuadorTaxGrowthReminderPacketUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          year: resolveCalendarYear(year),
+          asOfDate,
+          windowDays: resolveWindowDays(windowDays),
+        });
+
+      return toEcuadorTaxGrowthReminderPacketResponseDto(packet);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
@@ -1336,6 +1372,32 @@ export class TaxComplianceController {
         });
 
       return toEcuadorTaxAccountingBridgeMappingResponseDto(mapping);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/accounting-bridge-suggested-accounts')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getAccountingBridgeSuggestedAccounts(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountingBridgeSuggestedAccountsResponseDto> {
+    try {
+      const catalog =
+        await this.getTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxAccountingBridgeSuggestedAccountsResponseDto(catalog);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

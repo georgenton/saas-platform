@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.93.0
+
+### Minor Changes
+
+- 47399be: Add Accounting control layer endpoints for chart mapping management, journal draft approval packets, and ledger previews.
+
 ## 0.92.0
 
 ### Minor Changes

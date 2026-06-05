@@ -2,14 +2,17 @@ import { Module } from '@nestjs/common';
 import {
   ACCOUNTING_JOURNAL_ENTRY_ID_GENERATOR,
   ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
+  CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+  GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
+  GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ManageTenantAccountingChartMappingUseCase,
@@ -212,6 +215,24 @@ import { AccountingController } from './accounting.controller';
         ),
     },
     {
+      provide: CreateTenantAccountingAdjustingJournalEntryUseCase,
+      inject: [
+        ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
+        ACCOUNTING_JOURNAL_ENTRY_ID_GENERATOR,
+        TENANT_REPOSITORY,
+      ],
+      useFactory: (
+        accountingJournalEntryRepository,
+        accountingJournalEntryIdGenerator,
+        tenantRepository,
+      ) =>
+        new CreateTenantAccountingAdjustingJournalEntryUseCase(
+          accountingJournalEntryRepository,
+          accountingJournalEntryIdGenerator,
+          tenantRepository,
+        ),
+    },
+    {
       provide: RequestTenantAccountingPeriodCloseoutPacketUseCase,
       inject: [
         GetTenantAccountingPeriodCloseoutReadinessUseCase,
@@ -223,6 +244,38 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantAccountingPeriodCloseoutPacketUseCase(
           getTenantAccountingPeriodCloseoutReadinessUseCase,
+          getTenantAccountingTrialBalanceWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingPeriodLockReadinessUseCase,
+      inject: [
+        ListTenantAccountingJournalRegistryUseCase,
+        GetTenantAccountingTrialBalanceWorkspaceUseCase,
+        GetTenantAccountingPeriodCloseoutReadinessUseCase,
+        RequestTenantAccountingPeriodCloseoutPacketUseCase,
+        GetTenantAccountingPeriodCloseoutReportUseCase,
+      ],
+      useFactory: (
+        listTenantAccountingJournalRegistryUseCase,
+        getTenantAccountingTrialBalanceWorkspaceUseCase,
+        getTenantAccountingPeriodCloseoutReadinessUseCase,
+        requestTenantAccountingPeriodCloseoutPacketUseCase,
+        getTenantAccountingPeriodCloseoutReportUseCase,
+      ) =>
+        new GetTenantAccountingPeriodLockReadinessUseCase(
+          listTenantAccountingJournalRegistryUseCase,
+          getTenantAccountingTrialBalanceWorkspaceUseCase,
+          getTenantAccountingPeriodCloseoutReadinessUseCase,
+          requestTenantAccountingPeriodCloseoutPacketUseCase,
+          getTenantAccountingPeriodCloseoutReportUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingFinancialStatementPreviewUseCase,
+      inject: [GetTenantAccountingTrialBalanceWorkspaceUseCase],
+      useFactory: (getTenantAccountingTrialBalanceWorkspaceUseCase) =>
+        new GetTenantAccountingFinancialStatementPreviewUseCase(
           getTenantAccountingTrialBalanceWorkspaceUseCase,
         ),
     },

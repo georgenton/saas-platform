@@ -284,4 +284,76 @@ printLine(
   `${closeoutReport.summary.sectionCount} secciones, ${closeoutReport.reportStatus}`,
 );
 
+const lockReadiness = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/period-lock-readiness?${periodQuery()}`),
+  token,
+});
+
+assertStatus('period lock readiness', lockReadiness.lockReadinessStatus);
+printLine(
+  'period lock',
+  `${lockReadiness.summary.readyCheckCount}/${lockReadiness.summary.checkCount} checks, ${lockReadiness.lockReadinessStatus}`,
+);
+
+const adjustment = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/adjusting-journal-entries'),
+  token,
+  body: {
+    period,
+    year,
+    adjustmentType: 'manual_adjustment',
+    label: 'Smoke closeout adjustment',
+    currency: 'USD',
+    lines: [
+      {
+        lineKey: 'smoke_adjustment:expense',
+        accountCode: '501.01',
+        accountName: 'Gastos operativos',
+        debitInCents: 100,
+        creditInCents: 0,
+        sourceEntryKey: 'smoke_closeout_adjustment',
+        accountHint: 'Gastos operativos',
+        notes: ['Smoke adjustment debit line.'],
+      },
+      {
+        lineKey: 'smoke_adjustment:cash',
+        accountCode: '101.01',
+        accountName: 'Caja y bancos',
+        debitInCents: 0,
+        creditInCents: 100,
+        sourceEntryKey: 'smoke_closeout_adjustment',
+        accountHint: 'Caja y bancos',
+        notes: ['Smoke adjustment credit line.'],
+      },
+    ],
+    reviewerUserId: 'smoke-accounting-reviewer',
+    reviewerEmail: 'accounting-reviewer@saas-platform.dev',
+    note: 'Smoke adjustment for accounting foundation.',
+  },
+});
+
+assertStatus('adjusting journal entry', adjustment.creationStatus);
+printLine(
+  'adjustment',
+  `${adjustment.summary.lineCount} lines, ${adjustment.creationStatus}`,
+);
+
+const financialStatementPreview = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/financial-statement-preview?${periodQuery()}`),
+  token,
+});
+
+assertStatus(
+  'financial statement preview',
+  financialStatementPreview.previewStatus,
+);
+printLine(
+  'financial preview',
+  `${financialStatementPreview.summary.trialBalanceAccountCount} cuentas, ${financialStatementPreview.previewStatus}`,
+);
+
 printSection('Accounting foundation smoke OK');

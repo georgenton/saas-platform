@@ -10,14 +10,17 @@ import {
 } from '@nestjs/common';
 import {
   ACCOUNTING_PERMISSIONS,
+  CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+  GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
+  GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ManageTenantAccountingChartMappingUseCase,
@@ -32,14 +35,27 @@ import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import {
+  AccountingAdjustingJournalEntryCreationResultResponseDto,
+  CreateAccountingAdjustingJournalEntryRequestDto,
+  toAccountingAdjustingJournalEntryCreationResultResponseDto,
+} from './dto/accounting-adjusting-journal-entry.response';
+import {
   AccountingChartMappingManagementResponseDto,
   ManageAccountingChartMappingRequestDto,
   toAccountingChartMappingManagementResponseDto,
 } from './dto/accounting-chart-mapping-management.response';
 import {
+  AccountingFinancialStatementPreviewResponseDto,
+  toAccountingFinancialStatementPreviewResponseDto,
+} from './dto/accounting-financial-statement-preview.response';
+import {
   AccountingChartOfAccountsWorkspaceResponseDto,
   toAccountingChartOfAccountsWorkspaceResponseDto,
 } from './dto/accounting-chart-of-accounts-workspace.response';
+import {
+  AccountingPeriodLockReadinessResponseDto,
+  toAccountingPeriodLockReadinessResponseDto,
+} from './dto/accounting-period-lock-readiness.response';
 import {
   AccountingIntakeWorkspaceResponseDto,
   toAccountingIntakeWorkspaceResponseDto,
@@ -109,6 +125,9 @@ export class AccountingController {
     private readonly getTenantAccountingTrialBalanceWorkspaceUseCase: GetTenantAccountingTrialBalanceWorkspaceUseCase,
     private readonly requestTenantAccountingPeriodCloseoutPacketUseCase: RequestTenantAccountingPeriodCloseoutPacketUseCase,
     private readonly getTenantAccountingPeriodCloseoutReportUseCase: GetTenantAccountingPeriodCloseoutReportUseCase,
+    private readonly getTenantAccountingPeriodLockReadinessUseCase: GetTenantAccountingPeriodLockReadinessUseCase,
+    private readonly createTenantAccountingAdjustingJournalEntryUseCase: CreateTenantAccountingAdjustingJournalEntryUseCase,
+    private readonly getTenantAccountingFinancialStatementPreviewUseCase: GetTenantAccountingFinancialStatementPreviewUseCase,
   ) {}
 
   @Get(':slug/intake-workspace')
@@ -443,6 +462,87 @@ export class AccountingController {
         });
 
       return toAccountingPeriodCloseoutReportResponseDto(report);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/period-lock-readiness')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getPeriodLockReadiness(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingPeriodLockReadinessResponseDto> {
+    try {
+      const readiness =
+        await this.getTenantAccountingPeriodLockReadinessUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingPeriodLockReadinessResponseDto(readiness);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/adjusting-journal-entries')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async createAdjustingJournalEntry(
+    @Param('slug') tenantSlug: string,
+    @Body() body: CreateAccountingAdjustingJournalEntryRequestDto,
+  ): Promise<AccountingAdjustingJournalEntryCreationResultResponseDto> {
+    try {
+      const result =
+        await this.createTenantAccountingAdjustingJournalEntryUseCase.execute({
+          tenantSlug,
+          period: body.period,
+          year: body.year,
+          adjustmentType: body.adjustmentType,
+          label: body.label,
+          currency: body.currency ?? null,
+          lines: body.lines,
+          reviewerUserId: body.reviewerUserId ?? null,
+          reviewerEmail: body.reviewerEmail ?? null,
+          note: body.note ?? null,
+        });
+
+      return toAccountingAdjustingJournalEntryCreationResultResponseDto(result);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/financial-statement-preview')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFinancialStatementPreview(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingFinancialStatementPreviewResponseDto> {
+    try {
+      const preview =
+        await this.getTenantAccountingFinancialStatementPreviewUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingFinancialStatementPreviewResponseDto(preview);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

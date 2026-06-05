@@ -241,3 +241,95 @@ export interface TenantAccountingPeriodCloseoutReportView {
   nextStep: string;
   guardrails: string[];
 }
+
+export interface TenantAccountingPeriodLockReadinessView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  lockReadinessStatus: 'ready_to_lock' | 'needs_review' | 'blocked';
+  checks: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+    blockerCount: number;
+  }>;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+    journalEntryCount: number;
+    trialBalanceBalanced: boolean;
+    closeoutReportStatus: string;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdjustingJournalEntryCreationResultView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  creationStatus: 'created' | 'blocked';
+  createdEntry: TenantAccountingJournalEntryView | null;
+  adjustmentType:
+    | 'reclassification'
+    | 'rounding'
+    | 'accrual'
+    | 'manual_adjustment';
+  summary: {
+    lineCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+    balanced: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingFinancialStatementPreviewView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  previewStatus: 'ready_for_review' | 'needs_trial_balance_review' | 'blocked';
+  incomeStatement: {
+    revenueInCents: number;
+    expenseInCents: number;
+    taxExpenseInCents: number;
+    netIncomeInCents: number;
+    sections: Array<{
+      key: string;
+      label: string;
+      amountInCents: number;
+      accountCodes: string[];
+    }>;
+  };
+  balanceSheet: {
+    assetsInCents: number;
+    liabilitiesInCents: number;
+    equityInCents: number;
+    retainedEarningsPreviewInCents: number;
+    balanced: boolean;
+    sections: Array<{
+      key: string;
+      label: string;
+      amountInCents: number;
+      accountCodes: string[];
+    }>;
+  };
+  summary: {
+    trialBalanceAccountCount: number;
+    journalEntryCount: number;
+    netIncomeInCents: number;
+    balanceSheetBalanced: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}

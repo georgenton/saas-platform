@@ -197,14 +197,17 @@ import {
 } from '@saas-platform/ecommerce-application';
 import {
   ACCOUNTING_PERMISSIONS,
+  CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+  GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
+  GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ManageTenantAccountingChartMappingUseCase,
@@ -1014,6 +1017,15 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let getTenantAccountingPeriodCloseoutReportUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingPeriodLockReadinessUseCase: {
+    execute: jest.Mock;
+  };
+  let createTenantAccountingAdjustingJournalEntryUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingFinancialStatementPreviewUseCase: {
     execute: jest.Mock;
   };
   let listTenantInvoiceItemsUseCase: { execute: jest.Mock };
@@ -4554,6 +4566,112 @@ describe('API', () => {
     blockers: [],
     nextStep: 'Usar este reporte como evidencia operativa.',
     guardrails: ['Reporte operativo interno.'],
+  };
+  const accountingPeriodLockReadiness = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    lockReadinessStatus: 'ready_to_lock' as const,
+    checks: [
+      {
+        key: 'journal_registry',
+        label: 'Journal registry',
+        status: 'ready' as const,
+        detail: '1 entries, 1 balanceados.',
+        blockerCount: 0,
+      },
+      {
+        key: 'trial_balance',
+        label: 'Balance de comprobacion',
+        status: 'ready' as const,
+        detail: '2 cuentas; balanced=true.',
+        blockerCount: 0,
+      },
+    ],
+    summary: {
+      checkCount: 2,
+      readyCheckCount: 2,
+      needsReviewCheckCount: 0,
+      blockedCheckCount: 0,
+      journalEntryCount: 1,
+      trialBalanceBalanced: true,
+      closeoutReportStatus: 'ready',
+    },
+    blockers: [],
+    nextStep: 'El periodo esta listo para un futuro bloqueo contable formal.',
+    guardrails: ['Pre-lock readiness no bloquea periodos.'],
+  };
+  const accountingAdjustingJournalEntryCreationResult = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    creationStatus: 'created' as const,
+    createdEntry: {
+      ...accountingJournalEntry,
+      id: 'journal_adjustment_001',
+      source: 'accounting_adjustment',
+      label: 'Ajuste interno de cierre',
+      sourceDraftEntryKey: null,
+      sourceApprovalPacketKey: 'adjustment:saas-platform:2026-06:e2e',
+      note: 'Ajuste contable interno desde e2e.',
+    },
+    adjustmentType: 'manual_adjustment' as const,
+    summary: {
+      lineCount: 2,
+      totalDebitInCents: 100,
+      totalCreditInCents: 100,
+      balanced: true,
+    },
+    blockers: [],
+    nextStep: 'Recalcular ledger registry, trial balance y closeout readiness.',
+    guardrails: ['Ajuste contable interno.'],
+  };
+  const accountingFinancialStatementPreview = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    previewStatus: 'ready_for_review' as const,
+    incomeStatement: {
+      revenueInCents: 25000,
+      expenseInCents: 0,
+      taxExpenseInCents: 0,
+      netIncomeInCents: 25000,
+      sections: [
+        {
+          key: 'income',
+          label: 'Ingresos',
+          amountInCents: 25000,
+          accountCodes: ['401.01'],
+        },
+      ],
+    },
+    balanceSheet: {
+      assetsInCents: 25000,
+      liabilitiesInCents: 0,
+      equityInCents: 0,
+      retainedEarningsPreviewInCents: 25000,
+      balanced: true,
+      sections: [
+        {
+          key: 'asset',
+          label: 'Activos',
+          amountInCents: 25000,
+          accountCodes: ['101.01'],
+        },
+      ],
+    },
+    summary: {
+      trialBalanceAccountCount: 2,
+      journalEntryCount: 1,
+      netIncomeInCents: 25000,
+      balanceSheetBalanced: true,
+    },
+    blockers: [],
+    nextStep: 'Revisar previews financieros con contador.',
+    guardrails: ['Preview financiero interno.'],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
@@ -13285,6 +13403,17 @@ describe('API', () => {
     getTenantAccountingPeriodCloseoutReportUseCase = {
       execute: jest.fn().mockResolvedValue(accountingPeriodCloseoutReport),
     };
+    getTenantAccountingPeriodLockReadinessUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingPeriodLockReadiness),
+    };
+    createTenantAccountingAdjustingJournalEntryUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(accountingAdjustingJournalEntryCreationResult),
+    };
+    getTenantAccountingFinancialStatementPreviewUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingFinancialStatementPreview),
+    };
     getTenantEcuadorTaxAuditReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(ecuadorTaxAuditReadiness),
     };
@@ -13909,6 +14038,12 @@ describe('API', () => {
       .useValue(requestTenantAccountingPeriodCloseoutPacketUseCase)
       .overrideProvider(GetTenantAccountingPeriodCloseoutReportUseCase)
       .useValue(getTenantAccountingPeriodCloseoutReportUseCase)
+      .overrideProvider(GetTenantAccountingPeriodLockReadinessUseCase)
+      .useValue(getTenantAccountingPeriodLockReadinessUseCase)
+      .overrideProvider(CreateTenantAccountingAdjustingJournalEntryUseCase)
+      .useValue(createTenantAccountingAdjustingJournalEntryUseCase)
+      .overrideProvider(GetTenantAccountingFinancialStatementPreviewUseCase)
+      .useValue(getTenantAccountingFinancialStatementPreviewUseCase)
       .overrideProvider(GetTenantEcuadorTaxAuditReadinessUseCase)
       .useValue(getTenantEcuadorTaxAuditReadinessUseCase)
       .overrideProvider(GetTenantEcuadorTaxObligationMatrixUseCase)
@@ -18054,6 +18189,128 @@ describe('API', () => {
 
     expect(
       getTenantAccountingPeriodCloseoutReportUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/period-lock-readiness should return accounting pre-lock readiness', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/period-lock-readiness?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      lockReadinessStatus: 'ready_to_lock',
+      summary: {
+        journalEntryCount: 1,
+        trialBalanceBalanced: true,
+        closeoutReportStatus: 'ready',
+      },
+    });
+
+    expect(
+      getTenantAccountingPeriodLockReadinessUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/adjusting-journal-entries should create an internal adjustment', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/adjusting-journal-entries')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        adjustmentType: 'manual_adjustment',
+        label: 'Ajuste interno de cierre',
+        currency: 'USD',
+        lines: [
+          {
+            lineKey: 'adjustment:expense',
+            accountCode: '501.01',
+            accountName: 'Gastos operativos',
+            debitInCents: 100,
+            creditInCents: 0,
+            sourceEntryKey: 'manual_closeout_adjustment',
+            accountHint: 'Gastos operativos',
+            notes: ['Ajuste demo.'],
+          },
+          {
+            lineKey: 'adjustment:cash',
+            accountCode: '101.01',
+            accountName: 'Caja y bancos',
+            debitInCents: 0,
+            creditInCents: 100,
+            sourceEntryKey: 'manual_closeout_adjustment',
+            accountHint: 'Caja y bancos',
+            notes: ['Contrapartida demo.'],
+          },
+        ],
+        reviewerUserId: 'user_123',
+        reviewerEmail: 'hello@saas-platform.dev',
+        note: 'Ajuste contable interno desde e2e.',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      creationStatus: 'created',
+      adjustmentType: 'manual_adjustment',
+      createdEntry: {
+        id: 'journal_adjustment_001',
+        source: 'accounting_adjustment',
+      },
+    });
+
+    expect(
+      createTenantAccountingAdjustingJournalEntryUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      adjustmentType: 'manual_adjustment',
+      label: 'Ajuste interno de cierre',
+      currency: 'USD',
+      lines: expect.any(Array),
+      reviewerUserId: 'user_123',
+      reviewerEmail: 'hello@saas-platform.dev',
+      note: 'Ajuste contable interno desde e2e.',
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/financial-statement-preview should return internal statement previews', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/financial-statement-preview?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      previewStatus: 'ready_for_review',
+      incomeStatement: {
+        revenueInCents: 25000,
+        netIncomeInCents: 25000,
+      },
+      balanceSheet: {
+        assetsInCents: 25000,
+        retainedEarningsPreviewInCents: 25000,
+        balanced: true,
+      },
+    });
+
+    expect(
+      getTenantAccountingFinancialStatementPreviewUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',

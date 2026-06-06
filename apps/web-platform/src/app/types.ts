@@ -3024,6 +3024,197 @@ export interface AccountingCloseoutCertificationReadinessResponse {
   guardrails: string[];
 }
 
+export interface AccountingCorrectionResponse {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  source: string;
+  status: string;
+  severity: string;
+  title: string;
+  detail: string;
+  recommendedAction: string;
+  ownerUserId: string | null;
+  ownerEmail: string | null;
+  evidenceReference: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountingCorrectionsQueueResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  queueStatus: string;
+  corrections: AccountingCorrectionResponse[];
+  summary: {
+    correctionCount: number;
+    openCount: number;
+    inProgressCount: number;
+    resolvedCount: number;
+    dismissedCount: number;
+    criticalCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingAdjustmentRecommendationPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  recommendationStatus: string;
+  correctionsQueue: AccountingCorrectionsQueueResponse;
+  recommendedAdjustments: Array<{
+    key: string;
+    adjustmentType: string;
+    label: string;
+    rationale: string;
+    suggestedLines: Array<{
+      accountCode: string;
+      accountName: string;
+      debitInCents: number;
+      creditInCents: number;
+      notes: string[];
+    }>;
+    sourceCorrectionIds: string[];
+  }>;
+  summary: {
+    recommendationCount: number;
+    sourceCorrectionCount: number;
+    criticalCorrectionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingEvidenceAttachmentResponse {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  attachmentType: string;
+  source: string;
+  label: string;
+  reference: string;
+  ownerUserId: string | null;
+  ownerEmail: string | null;
+  status: string;
+  hash: string | null;
+  metadata: Record<string, string | number | boolean | null>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountingEvidenceAttachmentRegistryResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  registryStatus: string;
+  attachments: AccountingEvidenceAttachmentResponse[];
+  evidenceVault: AccountingPeriodEvidenceVaultResponse;
+  summary: {
+    attachmentCount: number;
+    readyAttachmentCount: number;
+    needsReviewAttachmentCount: number;
+    archivedAttachmentCount: number;
+    vaultArtifactCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingPeriodNarrativeReportResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  reportStatus: string;
+  headline: string;
+  sections: Array<{
+    key: string;
+    title: string;
+    status: string;
+    narrative: string;
+    metrics: Array<{
+      key: string;
+      label: string;
+      value: string | number | boolean | null;
+    }>;
+  }>;
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    riskFlagCount: number;
+    correctionCount: number;
+    attachmentCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingAiReviewAssistantPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  assistantStatus: string;
+  explanation: string;
+  checklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+  }>;
+  draftedResponses: Array<{
+    question: string;
+    draftResponse: string;
+    source: string;
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    draftedResponseCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingProfessionalCloseoutWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  workspaceStatus: string;
+  certificationReadiness: AccountingCloseoutCertificationReadinessResponse;
+  correctionsQueue: AccountingCorrectionsQueueResponse;
+  adjustmentRecommendationPacket: AccountingAdjustmentRecommendationPacketResponse;
+  evidenceAttachmentRegistry: AccountingEvidenceAttachmentRegistryResponse;
+  narrativeReport: AccountingPeriodNarrativeReportResponse;
+  aiReviewAssistantPacket: AccountingAiReviewAssistantPacketResponse;
+  summary: {
+    correctionCount: number;
+    attachmentCount: number;
+    recommendationCount: number;
+    certificationReady: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxSriVoucherEvidenceResponse {
   evidenceId: string;
   direction: string;

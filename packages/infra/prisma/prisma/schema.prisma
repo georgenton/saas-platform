@@ -67,6 +67,8 @@ model Tenant {
   accountingBankStatementLines AccountingBankStatementLine[]
   accountingBankReconciliationControls AccountingBankReconciliationControl[]
   accountingAccountantReviews AccountingAccountantReview[]
+  accountingCorrections AccountingCorrection[]
+  accountingEvidenceAttachments AccountingEvidenceAttachment[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
@@ -974,6 +976,56 @@ model AccountingAccountantReview {
   @@index([tenantId, period, updatedAt], map: "AccountingAccountantReview_period_idx")
   @@index([tenantSlug, period, updatedAt], map: "AccountingAccountantReview_slug_period_idx")
   @@index([tenantId, status, updatedAt], map: "AccountingAccountantReview_status_idx")
+}
+
+model AccountingCorrection {
+  id                 String   @id
+  tenantId           String
+  tenantSlug         String
+  period             String
+  year               Int
+  source             String
+  status             String
+  severity           String
+  title              String
+  detail             String   @db.Text
+  recommendedAction  String   @db.Text
+  ownerUserId        String?
+  ownerEmail         String?
+  evidenceReference  String?
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([tenantId, period, updatedAt], map: "AccountingCorrection_period_idx")
+  @@index([tenantSlug, period, updatedAt], map: "AccountingCorrection_slug_period_idx")
+  @@index([tenantId, status, updatedAt], map: "AccountingCorrection_status_idx")
+  @@index([tenantId, source, updatedAt], map: "AccountingCorrection_source_idx")
+}
+
+model AccountingEvidenceAttachment {
+  id           String   @id
+  tenantId     String
+  tenantSlug   String
+  period       String
+  year         Int
+  attachmentType String
+  source       String
+  label        String
+  reference    String
+  ownerUserId  String?
+  ownerEmail   String?
+  status       String
+  hash         String?
+  metadataJson String   @db.Text
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId, period, updatedAt], map: "AccountingEvidenceAttachment_period_idx")
+  @@index([tenantSlug, period, updatedAt], map: "AccountingEvidenceAttachment_slug_period_idx")
+  @@index([tenantId, status, updatedAt], map: "AccountingEvidenceAttachment_status_idx")
+  @@index([tenantId, attachmentType, updatedAt], map: "AccountingEvidenceAttachment_type_idx")
 }
 
 model TaxComplianceAccountantReview {

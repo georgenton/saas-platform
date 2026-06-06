@@ -105,6 +105,7 @@ import {
   executeEcuadorTaxWithholdingDraftBridge,
   createAccountingAdjustingJournalEntry,
   fetchAccountingAuditTrailWorkspace,
+  fetchAccountingBankReconciliationWorkspace,
   fetchAccountingChartOfAccountsWorkspace,
   fetchAccountingFinancialStatementPreview,
   fetchAccountingIntakeWorkspace,
@@ -116,9 +117,11 @@ import {
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodLockRegistry,
   fetchAccountingPeriodLockReadiness,
+  fetchAccountingPeriodReconciliationReadiness,
   fetchAccountingTrialBalanceWorkspace,
   lockAccountingPeriod,
   requestAccountingPeriodReopenPacket,
+  requestAccountingReconciliationMatchPacket,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
   fetchEcuadorTaxAccountingBridgeSuggestedAccounts,
@@ -363,6 +366,7 @@ import {
   AccountingChartMappingManagementResponse,
   AccountingAdjustingJournalEntryCreationResultResponse,
   AccountingAuditTrailWorkspaceResponse,
+  AccountingBankReconciliationWorkspaceResponse,
   AccountingFinancialStatementPreviewResponse,
   AccountingIntakeWorkspaceResponse,
   AccountingJournalEntryCreationResultResponse,
@@ -377,7 +381,9 @@ import {
   AccountingPeriodLockReadinessResponse,
   AccountingPeriodLockRegistryResponse,
   AccountingPeriodLockResultResponse,
+  AccountingPeriodReconciliationReadinessResponse,
   AccountingPeriodReopenPacketResponse,
+  AccountingReconciliationMatchPacketResponse,
   AccountingTrialBalanceWorkspaceResponse,
   AiActivityFeedEventType,
   AiActivityFeedResponse,
@@ -2141,6 +2147,18 @@ export function App() {
     accountingLedgerPreviewWorkspace,
     setAccountingLedgerPreviewWorkspace,
   ] = useState<AccountingLedgerPreviewWorkspaceResponse | null>(null);
+  const [
+    accountingBankReconciliationWorkspace,
+    setAccountingBankReconciliationWorkspace,
+  ] = useState<AccountingBankReconciliationWorkspaceResponse | null>(null);
+  const [
+    accountingPeriodReconciliationReadiness,
+    setAccountingPeriodReconciliationReadiness,
+  ] = useState<AccountingPeriodReconciliationReadinessResponse | null>(null);
+  const [
+    lastAccountingReconciliationMatchPacket,
+    setLastAccountingReconciliationMatchPacket,
+  ] = useState<AccountingReconciliationMatchPacketResponse | null>(null);
   const [
     accountingPeriodCloseoutReadiness,
     setAccountingPeriodCloseoutReadiness,
@@ -19583,6 +19601,8 @@ export function App() {
         nextAccountingLedgerPreviewWorkspace,
         nextAccountingJournalRegistry,
         nextAccountingLedgerRegistryWorkspace,
+        nextAccountingBankReconciliationWorkspace,
+        nextAccountingPeriodReconciliationReadiness,
         nextAccountingPeriodCloseoutReadiness,
         nextAccountingTrialBalanceWorkspace,
         nextAccountingPeriodCloseoutReport,
@@ -19623,6 +19643,18 @@ export function App() {
               year,
             ),
             fetchAccountingLedgerRegistryWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingBankReconciliationWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingPeriodReconciliationReadiness(
               token,
               tenantSlug,
               taxCompliancePeriod,
@@ -19672,6 +19704,8 @@ export function App() {
             ),
           ])
         : [
+            null,
+            null,
             null,
             null,
             null,
@@ -19746,6 +19780,12 @@ export function App() {
         setAccountingJournalRegistry(nextAccountingJournalRegistry);
         setAccountingLedgerRegistryWorkspace(
           nextAccountingLedgerRegistryWorkspace,
+        );
+        setAccountingBankReconciliationWorkspace(
+          nextAccountingBankReconciliationWorkspace,
+        );
+        setAccountingPeriodReconciliationReadiness(
+          nextAccountingPeriodReconciliationReadiness,
         );
         setAccountingPeriodCloseoutReadiness(
           nextAccountingPeriodCloseoutReadiness,
@@ -20365,6 +20405,8 @@ export function App() {
       const [
         registry,
         ledgerRegistry,
+        bankReconciliation,
+        reconciliationReadiness,
         closeoutReadiness,
         trialBalance,
         report,
@@ -20373,6 +20415,18 @@ export function App() {
       ] = await Promise.all([
         fetchAccountingJournalRegistry(token, tenantSlug, taxCompliancePeriod, year),
         fetchAccountingLedgerRegistryWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingBankReconciliationWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingPeriodReconciliationReadiness(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -20413,6 +20467,8 @@ export function App() {
       setLastAccountingJournalEntryCreationResult(result);
       setAccountingJournalRegistry(registry);
       setAccountingLedgerRegistryWorkspace(ledgerRegistry);
+      setAccountingBankReconciliationWorkspace(bankReconciliation);
+      setAccountingPeriodReconciliationReadiness(reconciliationReadiness);
       setAccountingPeriodCloseoutReadiness(closeoutReadiness);
       setAccountingTrialBalanceWorkspace(trialBalance);
       setAccountingPeriodCloseoutReport(report);
@@ -20427,6 +20483,84 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo crear journal registry interno.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestAccountingReconciliationMatchPacket() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    const candidateKeys =
+      accountingBankReconciliationWorkspace?.candidates
+        .filter((candidate) => candidate.matchStatus === 'exact_match')
+        .map((candidate) => candidate.candidateKey) ?? [];
+
+    if (candidateKeys.length === 0) {
+      setTaxComplianceActionMessage(
+        'No hay matches bancarios exactos para preparar.',
+      );
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-reconciliation-match-packet');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const packet = await requestAccountingReconciliationMatchPacket(
+        token,
+        tenantSlug,
+        {
+          period: taxCompliancePeriod,
+          year,
+          candidateKeys,
+          decision: 'approve',
+          reviewerUserId: session?.user.id ?? null,
+          reviewerEmail: session?.user.email ?? null,
+          note: 'Conciliacion bancaria interna desde Accounting foundation.',
+        },
+      );
+      const [bankReconciliation, reconciliationReadiness, closeoutReadiness] =
+        await Promise.all([
+          fetchAccountingBankReconciliationWorkspace(
+            token,
+            tenantSlug,
+            taxCompliancePeriod,
+            year,
+          ),
+          fetchAccountingPeriodReconciliationReadiness(
+            token,
+            tenantSlug,
+            taxCompliancePeriod,
+            year,
+          ),
+          fetchAccountingPeriodCloseoutReadiness(
+            token,
+            tenantSlug,
+            taxCompliancePeriod,
+            year,
+          ),
+        ]);
+
+      setLastAccountingReconciliationMatchPacket(packet);
+      setAccountingBankReconciliationWorkspace(bankReconciliation);
+      setAccountingPeriodReconciliationReadiness(reconciliationReadiness);
+      setAccountingPeriodCloseoutReadiness(closeoutReadiness);
+      setTaxComplianceActionMessage(
+        `${packet.summary.approvedCandidateCount} matches bancarios aprobados operacionalmente.`,
+      );
+    } catch (error) {
+      setLastAccountingReconciliationMatchPacket(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo preparar match packet bancario.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -20460,6 +20594,7 @@ export function App() {
       const [
         trialBalance,
         report,
+        reconciliationReadiness,
         lockReadiness,
         lockRegistry,
         financialPreview,
@@ -20472,6 +20607,12 @@ export function App() {
           year,
         ),
         fetchAccountingPeriodCloseoutReport(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingPeriodReconciliationReadiness(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -20506,6 +20647,7 @@ export function App() {
       setLastAccountingPeriodCloseoutPacket(packet);
       setAccountingTrialBalanceWorkspace(trialBalance);
       setAccountingPeriodCloseoutReport(report);
+      setAccountingPeriodReconciliationReadiness(reconciliationReadiness);
       setAccountingPeriodLockReadiness(lockReadiness);
       setAccountingPeriodLockRegistry(lockRegistry);
       setAccountingFinancialStatementPreview(financialPreview);
@@ -30123,6 +30265,22 @@ export function App() {
                                 className={styles.ghostButton}
                                 disabled={
                                   taxComplianceActionLoading ===
+                                    'accounting-reconciliation-match-packet' ||
+                                  !accountingBankReconciliationWorkspace ||
+                                  accountingBankReconciliationWorkspace.summary
+                                    .exactMatchCount === 0
+                                }
+                                onClick={() =>
+                                  void handleRequestAccountingReconciliationMatchPacket()
+                                }
+                                type="button"
+                              >
+                                Match bancos
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
                                     'accounting-period-lock' ||
                                   accountingPeriodLockRegistry?.registryStatus ===
                                     'locked' ||
@@ -30427,6 +30585,60 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      Banco
+                                    </span>
+                                    <strong>
+                                      {accountingBankReconciliationWorkspace
+                                        ? humanizeKey(
+                                            accountingBankReconciliationWorkspace.reconciliationStatus,
+                                          )
+                                        : 'sin banco'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingBankReconciliationWorkspace
+                                        ?.summary.exactMatchCount ?? 0}{' '}
+                                      matches
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Reconciliation
+                                    </span>
+                                    <strong>
+                                      {accountingPeriodReconciliationReadiness
+                                        ? humanizeKey(
+                                            accountingPeriodReconciliationReadiness.readinessStatus,
+                                          )
+                                        : 'sin readiness'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingPeriodReconciliationReadiness
+                                        ?.summary.readyCheckCount ?? 0}
+                                      /
+                                      {accountingPeriodReconciliationReadiness
+                                        ?.summary.checkCount ?? 0}{' '}
+                                      checks
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Match packet
+                                    </span>
+                                    <strong>
+                                      {lastAccountingReconciliationMatchPacket
+                                        ? humanizeKey(
+                                            lastAccountingReconciliationMatchPacket.packetStatus,
+                                          )
+                                        : 'sin packet'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingReconciliationMatchPacket
+                                        ?.summary.approvedCandidateCount ?? 0}{' '}
+                                      aprobados
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Period lock
                                     </span>
                                     <strong>
@@ -30536,6 +30748,8 @@ export function App() {
                                 <p className={styles.muted}>
                                   {accountingPeriodLockRegistry?.nextStep ??
                                     accountingAuditTrailWorkspace?.nextStep ??
+                                    accountingPeriodReconciliationReadiness?.nextStep ??
+                                    accountingBankReconciliationWorkspace?.nextStep ??
                                     accountingPeriodLockReadiness?.nextStep ??
                                     accountingFinancialStatementPreview?.nextStep ??
                                     accountingPeriodCloseoutReport?.nextStep ??

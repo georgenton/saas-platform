@@ -13,6 +13,7 @@ import {
   CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
+  GetTenantAccountingBankReconciliationWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
@@ -22,6 +23,7 @@ import {
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
   GetTenantAccountingPeriodLockReadinessUseCase,
+  GetTenantAccountingPeriodReconciliationReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
@@ -30,6 +32,7 @@ import {
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
+  RequestTenantAccountingReconciliationMatchPacketUseCase,
 } from '@saas-platform/accounting-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
@@ -57,6 +60,15 @@ import {
   toAccountingPeriodLockResultResponseDto,
   toAccountingPeriodReopenPacketResponseDto,
 } from './dto/accounting-period-control.response';
+import {
+  AccountingBankReconciliationWorkspaceResponseDto,
+  AccountingPeriodReconciliationReadinessResponseDto,
+  AccountingReconciliationMatchPacketResponseDto,
+  RequestAccountingReconciliationMatchPacketRequestDto,
+  toAccountingBankReconciliationWorkspaceResponseDto,
+  toAccountingPeriodReconciliationReadinessResponseDto,
+  toAccountingReconciliationMatchPacketResponseDto,
+} from './dto/accounting-bank-reconciliation.response';
 import {
   AccountingChartMappingManagementResponseDto,
   ManageAccountingChartMappingRequestDto,
@@ -139,6 +151,9 @@ export class AccountingController {
     private readonly createTenantAccountingJournalEntriesFromApprovalUseCase: CreateTenantAccountingJournalEntriesFromApprovalUseCase,
     private readonly listTenantAccountingJournalRegistryUseCase: ListTenantAccountingJournalRegistryUseCase,
     private readonly getTenantAccountingLedgerRegistryWorkspaceUseCase: GetTenantAccountingLedgerRegistryWorkspaceUseCase,
+    private readonly getTenantAccountingBankReconciliationWorkspaceUseCase: GetTenantAccountingBankReconciliationWorkspaceUseCase,
+    private readonly requestTenantAccountingReconciliationMatchPacketUseCase: RequestTenantAccountingReconciliationMatchPacketUseCase,
+    private readonly getTenantAccountingPeriodReconciliationReadinessUseCase: GetTenantAccountingPeriodReconciliationReadinessUseCase,
     private readonly getTenantAccountingPeriodCloseoutReadinessUseCase: GetTenantAccountingPeriodCloseoutReadinessUseCase,
     private readonly getTenantAccountingTrialBalanceWorkspaceUseCase: GetTenantAccountingTrialBalanceWorkspaceUseCase,
     private readonly requestTenantAccountingPeriodCloseoutPacketUseCase: RequestTenantAccountingPeriodCloseoutPacketUseCase,
@@ -381,6 +396,91 @@ export class AccountingController {
         });
 
       return toAccountingLedgerRegistryWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/bank-reconciliation-workspace')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getBankReconciliationWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingBankReconciliationWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantAccountingBankReconciliationWorkspaceUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingBankReconciliationWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/reconciliation-match-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async requestReconciliationMatchPacket(
+    @Param('slug') tenantSlug: string,
+    @Body() body: RequestAccountingReconciliationMatchPacketRequestDto,
+  ): Promise<AccountingReconciliationMatchPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantAccountingReconciliationMatchPacketUseCase.execute(
+          {
+            tenantSlug,
+            period: body.period,
+            year: body.year,
+            candidateKeys: body.candidateKeys ?? [],
+            decision: body.decision,
+            reviewerUserId: body.reviewerUserId ?? null,
+            reviewerEmail: body.reviewerEmail ?? null,
+            note: body.note ?? null,
+          },
+        );
+
+      return toAccountingReconciliationMatchPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/period-reconciliation-readiness')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getPeriodReconciliationReadiness(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingPeriodReconciliationReadinessResponseDto> {
+    try {
+      const readiness =
+        await this.getTenantAccountingPeriodReconciliationReadinessUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingPeriodReconciliationReadinessResponseDto(readiness);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

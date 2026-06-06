@@ -5,6 +5,7 @@ import {
 import { GetTenantEcuadorTaxOperationalCloseoutUseCase } from '@saas-platform/tax-compliance-application';
 import { GetTenantAccountingChartOfAccountsWorkspaceUseCase } from './get-tenant-accounting-chart-of-accounts-workspace.use-case';
 import { GetTenantAccountingLedgerRegistryWorkspaceUseCase } from './get-tenant-accounting-ledger-registry-workspace.use-case';
+import { GetTenantAccountingPeriodReconciliationReadinessUseCase } from './get-tenant-accounting-period-reconciliation-readiness.use-case';
 import { ListTenantAccountingJournalRegistryUseCase } from './list-tenant-accounting-journal-registry.use-case';
 
 export class GetTenantAccountingPeriodCloseoutReadinessUseCase {
@@ -12,6 +13,7 @@ export class GetTenantAccountingPeriodCloseoutReadinessUseCase {
     private readonly getTenantAccountingChartOfAccountsWorkspaceUseCase: GetTenantAccountingChartOfAccountsWorkspaceUseCase,
     private readonly listTenantAccountingJournalRegistryUseCase: ListTenantAccountingJournalRegistryUseCase,
     private readonly getTenantAccountingLedgerRegistryWorkspaceUseCase: GetTenantAccountingLedgerRegistryWorkspaceUseCase,
+    private readonly getTenantAccountingPeriodReconciliationReadinessUseCase: GetTenantAccountingPeriodReconciliationReadinessUseCase,
     private readonly getTenantEcuadorTaxOperationalCloseoutUseCase: GetTenantEcuadorTaxOperationalCloseoutUseCase,
     private readonly nowProvider: () => Date = () => new Date(),
   ) {}
@@ -21,11 +23,17 @@ export class GetTenantAccountingPeriodCloseoutReadinessUseCase {
     period: string;
     year: number;
   }): Promise<TenantAccountingPeriodCloseoutReadinessView> {
-    const [chartWorkspace, journalRegistry, ledgerRegistry, taxCloseout] =
-      await Promise.all([
+    const [
+      chartWorkspace,
+      journalRegistry,
+      ledgerRegistry,
+      reconciliationReadiness,
+      taxCloseout,
+    ] = await Promise.all([
         this.getTenantAccountingChartOfAccountsWorkspaceUseCase.execute(input),
         this.listTenantAccountingJournalRegistryUseCase.execute(input),
         this.getTenantAccountingLedgerRegistryWorkspaceUseCase.execute(input),
+        this.getTenantAccountingPeriodReconciliationReadinessUseCase.execute(input),
         this.getTenantEcuadorTaxOperationalCloseoutUseCase.execute(input),
       ]);
     const checks: TenantAccountingPeriodCloseoutReadinessView['checks'] = [
@@ -57,6 +65,16 @@ export class GetTenantAccountingPeriodCloseoutReadinessUseCase {
         blockerCount: ledgerRegistry.blockers.length,
       },
       {
+        key: 'bank_reconciliation',
+        label: 'Conciliacion bancaria',
+        status:
+          reconciliationReadiness.readinessStatus === 'ready_for_closeout'
+            ? 'ready'
+            : reconciliationReadiness.readinessStatus,
+        detail: `${reconciliationReadiness.summary.exactMatchCount} matches exactos, diferencia ${reconciliationReadiness.summary.totalDifferenceInCents}.`,
+        blockerCount: reconciliationReadiness.blockers.length,
+      },
+      {
         key: 'tax_operational_closeout',
         label: 'Closeout tributario operacional',
         status: taxCloseout.blockers.length > 0 ? 'needs_review' : 'ready',
@@ -68,6 +86,7 @@ export class GetTenantAccountingPeriodCloseoutReadinessUseCase {
       ...chartWorkspace.blockers,
       ...journalRegistry.blockers,
       ...ledgerRegistry.blockers,
+      ...reconciliationReadiness.blockers,
       ...taxCloseout.blockers.map(
         (blocker) => `tax_operational_closeout.${blocker}`,
       ),

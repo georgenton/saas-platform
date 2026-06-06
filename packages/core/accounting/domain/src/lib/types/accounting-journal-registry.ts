@@ -117,6 +117,123 @@ export interface TenantAccountingLedgerRegistryWorkspaceView {
   guardrails: string[];
 }
 
+export interface TenantAccountingBankReconciliationWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: AccountingReadinessStatus;
+  reconciliationStatus: 'ready_for_review' | 'needs_review' | 'blocked';
+  bankAccounts: Array<{
+    accountKey: string;
+    accountCode: string;
+    accountName: string;
+    currency: string;
+    ledgerBalanceInCents: number;
+    statementBalanceInCents: number;
+    differenceInCents: number;
+    sourceJournalEntryIds: string[];
+  }>;
+  statementLines: Array<{
+    lineKey: string;
+    accountKey: string;
+    postedAt: Date;
+    description: string;
+    direction: 'inflow' | 'outflow';
+    amountInCents: number;
+    currency: string;
+    reference: string;
+    sourceJournalEntryId: string | null;
+  }>;
+  candidates: Array<{
+    candidateKey: string;
+    statementLineKey: string;
+    journalEntryId: string | null;
+    accountCode: string;
+    accountName: string;
+    matchStatus: 'exact_match' | 'needs_review' | 'unmatched';
+    confidence: number;
+    amountInCents: number;
+    differenceInCents: number;
+    rationale: string;
+  }>;
+  summary: {
+    bankAccountCount: number;
+    statementLineCount: number;
+    candidateCount: number;
+    exactMatchCount: number;
+    needsReviewCount: number;
+    unmatchedCount: number;
+    totalStatementAmountInCents: number;
+    totalLedgerBankAmountInCents: number;
+    totalDifferenceInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingReconciliationMatchPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packetStatus: 'ready_for_approval' | 'approved' | 'blocked';
+  decision: 'prepare' | 'approve';
+  reviewerUserId: string | null;
+  reviewerEmail: string | null;
+  note: string | null;
+  selectedCandidateKeys: string[];
+  approvedCandidateKeys: string[];
+  workspace: TenantAccountingBankReconciliationWorkspaceView;
+  approvalChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+  }>;
+  summary: {
+    selectedCandidateCount: number;
+    approvedCandidateCount: number;
+    exactMatchCount: number;
+    needsReviewCount: number;
+    approvedAmountInCents: number;
+    remainingDifferenceInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingPeriodReconciliationReadinessView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: 'ready_for_closeout' | 'needs_review' | 'blocked';
+  checks: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+    blockerCount: number;
+  }>;
+  workspace: TenantAccountingBankReconciliationWorkspaceView;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+    bankAccountCount: number;
+    exactMatchCount: number;
+    unmatchedCount: number;
+    totalDifferenceInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface TenantAccountingPeriodCloseoutReadinessView {
   tenantSlug: string;
   period: string;

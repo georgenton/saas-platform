@@ -356,6 +356,62 @@ printLine(
   `${financialStatementPreview.summary.trialBalanceAccountCount} cuentas, ${financialStatementPreview.previewStatus}`,
 );
 
+const bankReconciliationWorkspace = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/bank-reconciliation-workspace?${periodQuery()}`),
+  token,
+});
+
+assertStatus(
+  'bank reconciliation workspace',
+  bankReconciliationWorkspace.reconciliationStatus,
+);
+printLine(
+  'bank reconciliation',
+  `${bankReconciliationWorkspace.summary.exactMatchCount}/${bankReconciliationWorkspace.summary.candidateCount} matches, ${bankReconciliationWorkspace.reconciliationStatus}`,
+);
+
+if (bankReconciliationWorkspace.summary.exactMatchCount > 0) {
+  const matchPacket = await apiRequest({
+    baseUrl,
+    method: 'POST',
+    path: accountingPath('/reconciliation-match-packet'),
+    token,
+    body: {
+      period,
+      year,
+      candidateKeys: bankReconciliationWorkspace.candidates
+        .filter((candidate) => candidate.matchStatus === 'exact_match')
+        .map((candidate) => candidate.candidateKey),
+      decision: 'approve',
+      reviewerUserId: 'smoke-accounting-reviewer',
+      reviewerEmail: 'accounting-reviewer@saas-platform.dev',
+      note: 'Smoke bank reconciliation match packet.',
+    },
+  });
+
+  assertStatus('reconciliation match packet', matchPacket.packetStatus);
+  printLine(
+    'reconciliation packet',
+    `${matchPacket.summary.approvedCandidateCount} aprobados, ${matchPacket.packetStatus}`,
+  );
+}
+
+const reconciliationReadiness = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/period-reconciliation-readiness?${periodQuery()}`),
+  token,
+});
+
+assertStatus(
+  'period reconciliation readiness',
+  reconciliationReadiness.readinessStatus,
+);
+printLine(
+  'reconciliation readiness',
+  `${reconciliationReadiness.summary.readyCheckCount}/${reconciliationReadiness.summary.checkCount} checks, ${reconciliationReadiness.readinessStatus}`,
+);
+
 const initialLockRegistry = await apiRequest({
   baseUrl,
   path: accountingPath(`/period-lock-registry?${periodQuery()}`),

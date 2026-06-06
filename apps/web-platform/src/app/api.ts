@@ -1,6 +1,7 @@
 import {
   AccountingChartOfAccountsWorkspaceResponse,
   AccountingChartMappingManagementResponse,
+  AccountingBankReconciliationWorkspaceResponse,
   AccountingIntakeWorkspaceResponse,
   AccountingJournalDraftApprovalPacketResponse,
   AccountingAdjustingJournalEntryCreationResultResponse,
@@ -16,7 +17,9 @@ import {
   AccountingPeriodLockRegistryResponse,
   AccountingPeriodLockReadinessResponse,
   AccountingPeriodLockResultResponse,
+  AccountingPeriodReconciliationReadinessResponse,
   AccountingPeriodReopenPacketResponse,
+  AccountingReconciliationMatchPacketResponse,
   AccountingAuditTrailWorkspaceResponse,
   AccountingTrialBalanceWorkspaceResponse,
   AiActivityFeedResponse,
@@ -150,6 +153,7 @@ import {
   UpsertEcuadorTaxObligationSettingsRequest,
   RequestAccountingJournalDraftApprovalPacketRequest,
   RequestAccountingPeriodCloseoutPacketRequest,
+  RequestAccountingReconciliationMatchPacketRequest,
   RequestAccountingPeriodReopenPacketRequest,
   LockAccountingPeriodRequest,
   CreateAccountingAdjustingJournalEntryRequest,
@@ -1897,6 +1901,61 @@ export async function fetchAccountingPeriodCloseoutReadiness(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/period-closeout-readiness?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingBankReconciliationWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingBankReconciliationWorkspaceResponse> {
+  return request<AccountingBankReconciliationWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/bank-reconciliation-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestAccountingReconciliationMatchPacket(
+  token: string,
+  tenantSlug: string,
+  input: RequestAccountingReconciliationMatchPacketRequest,
+): Promise<AccountingReconciliationMatchPacketResponse> {
+  return request<AccountingReconciliationMatchPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/reconciliation-match-packet`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingPeriodReconciliationReadiness(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingPeriodReconciliationReadinessResponse> {
+  return request<AccountingPeriodReconciliationReadinessResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/period-reconciliation-readiness?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

@@ -2033,6 +2033,133 @@ export interface AccountingLedgerRegistryWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface AccountingBankReconciliationWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  reconciliationStatus: string;
+  bankAccounts: Array<{
+    accountKey: string;
+    accountCode: string;
+    accountName: string;
+    currency: string;
+    ledgerBalanceInCents: number;
+    statementBalanceInCents: number;
+    differenceInCents: number;
+    sourceJournalEntryIds: string[];
+  }>;
+  statementLines: Array<{
+    lineKey: string;
+    accountKey: string;
+    postedAt: string;
+    description: string;
+    direction: string;
+    amountInCents: number;
+    currency: string;
+    reference: string;
+    sourceJournalEntryId: string | null;
+  }>;
+  candidates: Array<{
+    candidateKey: string;
+    statementLineKey: string;
+    journalEntryId: string | null;
+    accountCode: string;
+    accountName: string;
+    matchStatus: string;
+    confidence: number;
+    amountInCents: number;
+    differenceInCents: number;
+    rationale: string;
+  }>;
+  summary: {
+    bankAccountCount: number;
+    statementLineCount: number;
+    candidateCount: number;
+    exactMatchCount: number;
+    needsReviewCount: number;
+    unmatchedCount: number;
+    totalStatementAmountInCents: number;
+    totalLedgerBankAmountInCents: number;
+    totalDifferenceInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface RequestAccountingReconciliationMatchPacketRequest {
+  period: string;
+  year: number;
+  candidateKeys?: string[];
+  decision: 'prepare' | 'approve';
+  reviewerUserId?: string | null;
+  reviewerEmail?: string | null;
+  note?: string | null;
+}
+
+export interface AccountingReconciliationMatchPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  packetStatus: string;
+  decision: string;
+  reviewerUserId: string | null;
+  reviewerEmail: string | null;
+  note: string | null;
+  selectedCandidateKeys: string[];
+  approvedCandidateKeys: string[];
+  workspace: AccountingBankReconciliationWorkspaceResponse;
+  approvalChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+  }>;
+  summary: {
+    selectedCandidateCount: number;
+    approvedCandidateCount: number;
+    exactMatchCount: number;
+    needsReviewCount: number;
+    approvedAmountInCents: number;
+    remainingDifferenceInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingPeriodReconciliationReadinessResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  checks: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+    blockerCount: number;
+  }>;
+  workspace: AccountingBankReconciliationWorkspaceResponse;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+    bankAccountCount: number;
+    exactMatchCount: number;
+    unmatchedCount: number;
+    totalDifferenceInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingPeriodCloseoutReadinessResponse {
   tenantSlug: string;
   period: string;

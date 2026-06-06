@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.104.0
+
+### Minor Changes
+
+- 302d514: Add Accounting foundation closeout summary, external professional closeout records, artifact packets, closeout timeline, legal books readiness, and final review packets.
+
 ## 0.103.0
 
 ### Minor Changes

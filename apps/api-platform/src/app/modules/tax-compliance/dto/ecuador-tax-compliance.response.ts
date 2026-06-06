@@ -10,17 +10,22 @@ import {
   EcuadorTaxAuditReadinessView,
   EcuadorTaxCalendarReviewWorkspaceView,
   EcuadorTaxComplianceEventView,
+  EcuadorTaxAiFilingAssistantPacketView,
   EcuadorTaxDeclarationFormCatalogView,
   EcuadorTaxDeclarationArtifactExportView,
   EcuadorTaxDeclarationApprovalPacketView,
   EcuadorTaxDeclarationFormDraftPacketView,
+  EcuadorTaxDeclarationReviewLoopWorkspaceView,
+  EcuadorTaxDeclarationSourceLedgerView,
   EcuadorTaxDeclarationDraftPacketView,
   EcuadorTaxDueMonitorView,
   EcuadorTaxEcommerceEvidenceSummaryView,
   EcuadorTaxEvidenceSummaryView,
   EcuadorTaxFilingHandoffView,
   EcuadorTaxFilingGuidePacketView,
+  EcuadorTaxFormMappingCatalogView,
   EcuadorTaxGrowthReminderPacketView,
+  EcuadorTaxIncomeTaxEvidenceWorkspaceView,
   EcuadorTaxIncomeTaxEvidencePacketView,
   EcuadorTaxObligationMatrixView,
   EcuadorTaxObligationCalendarView,
@@ -44,6 +49,7 @@ import {
   EcuadorTaxSriPlatformReconciliationWorkspaceView,
   EcuadorTaxpayerProfileView,
   EcuadorTaxVatDeclarationReadinessPacketView,
+  EcuadorTaxVatDeclarationDraftWorkspaceView,
   EcuadorTaxVatDeclarationApprovalView,
   EcuadorTaxVatDeclarationDraftView,
   EcuadorTaxVatInputOutputReconciliationPacketView,
@@ -2536,6 +2542,60 @@ export interface EcuadorTaxDeclarationFormDraftPacketResponseDto
   generatedAt: string;
 }
 
+export interface EcuadorTaxDeclarationSourceLedgerResponseDto
+  extends Omit<EcuadorTaxDeclarationSourceLedgerView, 'generatedAt' | 'sourceRows'> {
+  generatedAt: string;
+  sourceRows: Array<
+    Omit<EcuadorTaxDeclarationSourceLedgerView['sourceRows'][number], 'issuedAt'> & {
+      issuedAt: string | null;
+    }
+  >;
+}
+
+export interface EcuadorTaxVatDeclarationDraftWorkspaceResponseDto
+  extends Omit<
+    EcuadorTaxVatDeclarationDraftWorkspaceView,
+    'generatedAt' | 'sourceLedger' | 'formDraftPacket'
+  > {
+  generatedAt: string;
+  sourceLedger: EcuadorTaxDeclarationSourceLedgerResponseDto;
+  formDraftPacket: EcuadorTaxDeclarationFormDraftPacketResponseDto;
+}
+
+export interface EcuadorTaxFormMappingCatalogResponseDto
+  extends Omit<EcuadorTaxFormMappingCatalogView, 'generatedAt'> {
+  generatedAt: string;
+}
+
+export interface EcuadorTaxIncomeTaxEvidenceWorkspaceResponseDto
+  extends Omit<
+    EcuadorTaxIncomeTaxEvidenceWorkspaceView,
+    'generatedAt' | 'sourceLedger'
+  > {
+  generatedAt: string;
+  sourceLedger: EcuadorTaxDeclarationSourceLedgerResponseDto;
+}
+
+export interface EcuadorTaxAiFilingAssistantPacketResponseDto
+  extends Omit<
+    EcuadorTaxAiFilingAssistantPacketView,
+    'generatedAt' | 'sourceLedger' | 'vatWorkspace' | 'incomeTaxWorkspace'
+  > {
+  generatedAt: string;
+  sourceLedger: EcuadorTaxDeclarationSourceLedgerResponseDto;
+  vatWorkspace: EcuadorTaxVatDeclarationDraftWorkspaceResponseDto;
+  incomeTaxWorkspace: EcuadorTaxIncomeTaxEvidenceWorkspaceResponseDto;
+}
+
+export interface EcuadorTaxDeclarationReviewLoopWorkspaceResponseDto
+  extends Omit<
+    EcuadorTaxDeclarationReviewLoopWorkspaceView,
+    'generatedAt' | 'sourceLedger'
+  > {
+  generatedAt: string;
+  sourceLedger: EcuadorTaxDeclarationSourceLedgerResponseDto;
+}
+
 export interface EcuadorTaxFilingGuidePacketResponseDto
   extends Omit<EcuadorTaxFilingGuidePacketView, 'generatedAt'> {
   generatedAt: string;
@@ -2593,6 +2653,85 @@ export function toEcuadorTaxDeclarationFormDraftPacketResponseDto(
   return {
     ...packet,
     generatedAt: packet.generatedAt.toISOString(),
+  };
+}
+
+export function toEcuadorTaxDeclarationSourceLedgerResponseDto(
+  ledger: EcuadorTaxDeclarationSourceLedgerView,
+): EcuadorTaxDeclarationSourceLedgerResponseDto {
+  return {
+    ...ledger,
+    generatedAt: ledger.generatedAt.toISOString(),
+    sourceRows: ledger.sourceRows.map((row) => ({
+      ...row,
+      issuedAt: row.issuedAt?.toISOString() ?? null,
+    })),
+  };
+}
+
+export function toEcuadorTaxVatDeclarationDraftWorkspaceResponseDto(
+  workspace: EcuadorTaxVatDeclarationDraftWorkspaceView,
+): EcuadorTaxVatDeclarationDraftWorkspaceResponseDto {
+  return {
+    ...workspace,
+    generatedAt: workspace.generatedAt.toISOString(),
+    sourceLedger: toEcuadorTaxDeclarationSourceLedgerResponseDto(
+      workspace.sourceLedger,
+    ),
+    formDraftPacket: toEcuadorTaxDeclarationFormDraftPacketResponseDto(
+      workspace.formDraftPacket,
+    ),
+  };
+}
+
+export function toEcuadorTaxFormMappingCatalogResponseDto(
+  catalog: EcuadorTaxFormMappingCatalogView,
+): EcuadorTaxFormMappingCatalogResponseDto {
+  return {
+    ...catalog,
+    generatedAt: catalog.generatedAt.toISOString(),
+  };
+}
+
+export function toEcuadorTaxIncomeTaxEvidenceWorkspaceResponseDto(
+  workspace: EcuadorTaxIncomeTaxEvidenceWorkspaceView,
+): EcuadorTaxIncomeTaxEvidenceWorkspaceResponseDto {
+  return {
+    ...workspace,
+    generatedAt: workspace.generatedAt.toISOString(),
+    sourceLedger: toEcuadorTaxDeclarationSourceLedgerResponseDto(
+      workspace.sourceLedger,
+    ),
+  };
+}
+
+export function toEcuadorTaxAiFilingAssistantPacketResponseDto(
+  packet: EcuadorTaxAiFilingAssistantPacketView,
+): EcuadorTaxAiFilingAssistantPacketResponseDto {
+  return {
+    ...packet,
+    generatedAt: packet.generatedAt.toISOString(),
+    sourceLedger: toEcuadorTaxDeclarationSourceLedgerResponseDto(
+      packet.sourceLedger,
+    ),
+    vatWorkspace: toEcuadorTaxVatDeclarationDraftWorkspaceResponseDto(
+      packet.vatWorkspace,
+    ),
+    incomeTaxWorkspace: toEcuadorTaxIncomeTaxEvidenceWorkspaceResponseDto(
+      packet.incomeTaxWorkspace,
+    ),
+  };
+}
+
+export function toEcuadorTaxDeclarationReviewLoopWorkspaceResponseDto(
+  workspace: EcuadorTaxDeclarationReviewLoopWorkspaceView,
+): EcuadorTaxDeclarationReviewLoopWorkspaceResponseDto {
+  return {
+    ...workspace,
+    generatedAt: workspace.generatedAt.toISOString(),
+    sourceLedger: toEcuadorTaxDeclarationSourceLedgerResponseDto(
+      workspace.sourceLedger,
+    ),
   };
 }
 

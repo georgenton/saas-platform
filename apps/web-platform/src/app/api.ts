@@ -144,10 +144,15 @@ import {
   EcuadorTaxDeclarationArtifactExportResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxDeclarationFormDraftPacketResponse,
+  EcuadorTaxDeclarationReviewLoopWorkspaceResponse,
+  EcuadorTaxDeclarationSourceLedgerResponse,
+  EcuadorTaxAiFilingAssistantPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
   EcuadorTaxFilingHandoffResponse,
   EcuadorTaxFilingGuidePacketResponse,
+  EcuadorTaxFormMappingCatalogResponse,
   EcuadorTaxGrowthReminderPacketResponse,
+  EcuadorTaxIncomeTaxEvidenceWorkspaceResponse,
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
   EcuadorTaxPeriodCloseoutPacketResponse,
@@ -162,6 +167,7 @@ import {
   EcuadorTaxSupplierFiscalReadinessWorkspaceResponse,
   EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcuadorTaxVatDeclarationDraftResponse,
+  EcuadorTaxVatDeclarationDraftWorkspaceResponse,
   EcuadorTaxVatDeclarationApprovalResponse,
   EcuadorTaxVatInputOutputReconciliationPacketResponse,
   EcuadorTaxWithholdingDraftBridgePacketResponse,
@@ -2795,6 +2801,105 @@ export async function fetchEcuadorTaxDeclarationFormDraftPacket(
       method: 'GET',
       token,
     },
+  );
+}
+
+export async function fetchEcuadorTaxDeclarationSourceLedger(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxDeclarationSourceLedgerResponse> {
+  return request<EcuadorTaxDeclarationSourceLedgerResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/declaration-source-ledger?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxVatDeclarationDraftWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxVatDeclarationDraftWorkspaceResponse> {
+  return request<EcuadorTaxVatDeclarationDraftWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/vat-declaration-draft-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxFormMappingCatalog(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxFormMappingCatalogResponse> {
+  return request<EcuadorTaxFormMappingCatalogResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/form-mapping-catalog?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxIncomeTaxEvidenceWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxIncomeTaxEvidenceWorkspaceResponse> {
+  return request<EcuadorTaxIncomeTaxEvidenceWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/income-tax-evidence-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAiFilingAssistantPacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+  formKey = 'iva',
+): Promise<EcuadorTaxAiFilingAssistantPacketResponse> {
+  return request<EcuadorTaxAiFilingAssistantPacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/ai-filing-assistant-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}&formKey=${encodeURIComponent(
+      formKey,
+    )}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxDeclarationReviewLoopWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxDeclarationReviewLoopWorkspaceResponse> {
+  return request<EcuadorTaxDeclarationReviewLoopWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/declaration-review-loop-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
   );
 }
 

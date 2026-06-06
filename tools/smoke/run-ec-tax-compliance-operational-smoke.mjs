@@ -176,6 +176,12 @@ const [
   sriPlatformReconciliation,
   declarationFormCatalog,
   declarationFormDraftPacket,
+  declarationSourceLedger,
+  vatDeclarationDraftWorkspace,
+  formMappingCatalog,
+  incomeTaxEvidenceWorkspace,
+  aiFilingAssistantPacket,
+  declarationReviewLoopWorkspace,
   filingGuidePacket,
   declarationArtifactExport,
   accountingBridgeSuggestedAccounts,
@@ -313,6 +319,36 @@ const [
   }),
   apiRequest({
     baseUrl,
+    path: taxPath(`/declaration-source-ledger?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/vat-declaration-draft-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/form-mapping-catalog?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/income-tax-evidence-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/ai-filing-assistant-packet?${periodQuery()}&formKey=iva`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/declaration-review-loop-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
     path: taxPath(`/filing-guide-packet?${periodQuery()}&formKey=iva`),
     token,
   }),
@@ -382,6 +418,27 @@ assertStatus(
 assertStatus(
   'declaration form draft packet',
   declarationFormDraftPacket.readinessStatus,
+);
+assertStatus(
+  'declaration source ledger',
+  declarationSourceLedger.readinessStatus,
+);
+assertStatus(
+  'vat declaration draft workspace',
+  vatDeclarationDraftWorkspace.readinessStatus,
+);
+assertStatus('form mapping catalog', formMappingCatalog.readinessStatus);
+assertStatus(
+  'income tax evidence workspace',
+  incomeTaxEvidenceWorkspace.readinessStatus,
+);
+assertStatus(
+  'ai filing assistant packet',
+  aiFilingAssistantPacket.assistantStatus,
+);
+assertStatus(
+  'declaration review loop',
+  declarationReviewLoopWorkspace.loopStatus,
 );
 assertStatus('filing guide packet', filingGuidePacket.readinessStatus);
 assertStatus(
@@ -480,6 +537,24 @@ printLine(
 );
 printLine('declaration forms', declarationFormCatalog.forms.length);
 printLine('declaration draft', declarationFormDraftPacket.readinessStatus);
+printLine('source ledger rows', declarationSourceLedger.summary.rowCount);
+printLine(
+  'vat workspace',
+  `${vatDeclarationDraftWorkspace.summary.readyBucketCount}/${vatDeclarationDraftWorkspace.summary.bucketCount}`,
+);
+printLine(
+  'form mappings',
+  `${formMappingCatalog.summary.highConfidenceMappingCount}/${formMappingCatalog.summary.mappingCount}`,
+);
+printLine(
+  'income taxable base',
+  incomeTaxEvidenceWorkspace.summary.estimatedTaxableBaseInCents,
+);
+printLine(
+  'filing assistant',
+  `${aiFilingAssistantPacket.assistantStatus} · ${aiFilingAssistantPacket.suggestedSteps.length} steps`,
+);
+printLine('review loop', declarationReviewLoopWorkspace.loopStatus);
 printLine('filing guide steps', filingGuidePacket.steps.length);
 printLine('artifact export', declarationArtifactExport.readinessStatus);
 printLine(

@@ -1043,13 +1043,49 @@ readiness rather than ledgers or financial statements.
    - generates copy/paste guidance and review checklists over deterministic
      draft packets and source evidence
    - never submits, signs, pays, bypasses recaptcha, or replaces accountant
-     review
+
 6. `Declaration Artifact Export`
    - implemented as JSON/checklist export support for operational evidence
    - marks official XML/Excel as manual-only unless SRI publishes supported
      technical guides, templates, or schemas that are explicitly modelled
    - keep upload/submission as an external human action recorded through filing
      handoff
+
+### Declaration preparation closeout layer
+
+Tax Compliance EC now treats declaration preparation as a layered flow rather
+than a single form helper:
+
+1. `Declaration Source Ledger`
+   - normalizes issued and received evidence from Invoicing, SRI imports,
+     purchase evidence, ecommerce placeholders, and accounting closeout signals
+   - exposes source totals, VAT input/output, withholding credits, gap counts,
+     blockers, and guardrails per tax period
+2. `VAT Declaration Draft Workspace`
+   - turns the source ledger into IVA buckets such as taxable sales, zero-rate
+     sales, creditable purchases, non-creditable purchases, and withholdings
+   - links those buckets to deterministic declaration draft boxes and estimated
+     VAT payable
+3. `Tax Form Mapping Catalog`
+   - maps supported SRI form boxes to source metrics with confidence levels
+   - makes manual-only boxes visible before the operator or accountant begins
+     filing work
+4. `Income Tax Evidence Workspace`
+   - groups fiscal sources into revenue, deductible expenses, review-only
+     expenses, and withholding credits
+   - prepares income tax evidence without pretending to be a full ledger or
+     formal accounting close
+5. `Tax AI Filing Assistant Packet`
+   - explains the filing sequence over deterministic source ledgers, IVA
+     workspaces, and income tax evidence
+   - asks accountant-facing questions and preserves strict guardrails: no
+     automatic submission, signature, payment, credential handling, captcha
+     bypass, or accountant replacement
+6. `Declaration Review Loop Workspace`
+   - connects accountant reviews, filing handoff state, source ledger health,
+     and a checklist into one operational loop
+   - supports the path from draft-ready to accountant review, approved filing,
+     and externally filed/paid closeout
 
 ### Future accounting graduation
 

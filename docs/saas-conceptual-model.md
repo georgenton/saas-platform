@@ -1090,6 +1090,10 @@ product. Its current scope is intentionally operational and review-oriented:
     registry, period narrative report, AI review assistant packet, and
     professional closeout workspace as the final Accounting foundation
     operating surface
+15. external professional closeout records, closeout artifact packets, period
+    closeout timeline, legal books readiness, financial statement final review,
+    and foundation closeout summary as the closeout-ready Accounting foundation
+    capstone
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official
@@ -1104,6 +1108,27 @@ readiness model the handoff loop, but final certification remains an external
 professional act. Professional closeout workspace makes that handoff operable:
 it packages corrections, evidence, narrative, adjustment recommendations, and
 AI-assisted review notes without applying adjustments or certifying the period.
+The closeout capstone records external professional confirmation and prepares
+artifact/timeline/readiness packets, but still does not generate official legal
+books, sign financial statements, or replace the contador/auditor decision.
+
+### Accounting foundation closeout
+
+Accounting foundation can now be considered functionally complete for the
+platform's operational layer. The remaining backlog should be treated as
+`Accounting Advanced`, not foundation:
+
+1. official legal book generation and signing
+2. certified bank-feed reconciliation
+3. advanced adjusting-entry automation
+4. multi-period financial statements
+5. external accountant/auditor portal
+6. accounting policies and closing templates
+
+Recommended next product direction after this foundation is to deepen
+`Tax Compliance EC`, because accounting now supplies enough operational
+evidence, closeout packets, and professional handoff state for richer tax
+declaration workflows.
 
 ## Stage 8: Clinics products
 

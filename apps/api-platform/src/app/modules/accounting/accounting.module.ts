@@ -11,6 +11,8 @@ import {
   ACCOUNTING_CORRECTION_REPOSITORY,
   ACCOUNTING_EVIDENCE_ATTACHMENT_ID_GENERATOR,
   ACCOUNTING_EVIDENCE_ATTACHMENT_REPOSITORY,
+  ACCOUNTING_EXTERNAL_CLOSEOUT_RECORD_ID_GENERATOR,
+  ACCOUNTING_EXTERNAL_CLOSEOUT_RECORD_REPOSITORY,
   ACCOUNTING_JOURNAL_ENTRY_ID_GENERATOR,
   ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
   ACCOUNTING_PERIOD_CONTROL_ID_GENERATOR,
@@ -23,6 +25,9 @@ import {
   GetTenantAccountingBankStatementImportWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingCloseoutCertificationReadinessUseCase,
+  GetTenantAccountingFoundationCloseoutSummaryUseCase,
+  GetTenantAccountingLegalBooksReadinessPacketUseCase,
+  GetTenantAccountingPeriodCloseoutTimelineUseCase,
   GetTenantAccountingPeriodNarrativeReportUseCase,
   GetTenantAccountingProfessionalCloseoutWorkspaceUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
@@ -42,6 +47,7 @@ import {
   ListTenantAccountingAccountantReviewsUseCase,
   ListTenantAccountingCorrectionsQueueUseCase,
   ListTenantAccountingEvidenceAttachmentRegistryUseCase,
+  ListTenantAccountingExternalCloseoutRecordsUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
   LockTenantAccountingPeriodUseCase,
@@ -50,6 +56,7 @@ import {
   RequestTenantAccountingAccountantReviewUseCase,
   RequestTenantAccountingAdjustmentRecommendationPacketUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
+  RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
@@ -57,9 +64,11 @@ import {
   RecordTenantAccountingBankStatementImportUseCase,
   RecordTenantAccountingCorrectionUseCase,
   RecordTenantAccountingEvidenceAttachmentUseCase,
+  RecordTenantAccountingExternalCloseoutRecordUseCase,
   RequestTenantAccountingReconciliationExceptionPacketUseCase,
   RequestTenantAccountingReconciliationExceptionResolutionPacketUseCase,
   RequestTenantAccountingReconciliationMatchPacketUseCase,
+  RequestTenantAccountingProfessionalCloseoutArtifactPacketUseCase,
   RequestTenantAccountingReviewResolutionPacketUseCase,
   TransitionTenantAccountingAccountantReviewUseCase,
 } from '@saas-platform/accounting-application';
@@ -870,6 +879,134 @@ import { AccountingController } from './accounting.controller';
           listTenantAccountingEvidenceAttachmentRegistryUseCase,
           getTenantAccountingPeriodNarrativeReportUseCase,
           requestTenantAccountingAiReviewAssistantPacketUseCase,
+        ),
+    },
+    {
+      provide: RecordTenantAccountingExternalCloseoutRecordUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        ACCOUNTING_EXTERNAL_CLOSEOUT_RECORD_REPOSITORY,
+        ACCOUNTING_EXTERNAL_CLOSEOUT_RECORD_ID_GENERATOR,
+      ],
+      useFactory: (
+        tenantRepository,
+        accountingExternalCloseoutRecordRepository,
+        accountingExternalCloseoutRecordIdGenerator,
+      ) =>
+        new RecordTenantAccountingExternalCloseoutRecordUseCase(
+          tenantRepository,
+          accountingExternalCloseoutRecordRepository,
+          accountingExternalCloseoutRecordIdGenerator,
+        ),
+    },
+    {
+      provide: ListTenantAccountingExternalCloseoutRecordsUseCase,
+      inject: [ACCOUNTING_EXTERNAL_CLOSEOUT_RECORD_REPOSITORY],
+      useFactory: (accountingExternalCloseoutRecordRepository) =>
+        new ListTenantAccountingExternalCloseoutRecordsUseCase(
+          accountingExternalCloseoutRecordRepository,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingProfessionalCloseoutArtifactPacketUseCase,
+      inject: [
+        GetTenantAccountingProfessionalCloseoutWorkspaceUseCase,
+        ListTenantAccountingExternalCloseoutRecordsUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingProfessionalCloseoutWorkspaceUseCase,
+        listTenantAccountingExternalCloseoutRecordsUseCase,
+      ) =>
+        new RequestTenantAccountingProfessionalCloseoutArtifactPacketUseCase(
+          getTenantAccountingProfessionalCloseoutWorkspaceUseCase,
+          listTenantAccountingExternalCloseoutRecordsUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingPeriodCloseoutTimelineUseCase,
+      inject: [
+        GetTenantAccountingAuditTrailWorkspaceUseCase,
+        ListTenantAccountingCorrectionsQueueUseCase,
+        ListTenantAccountingEvidenceAttachmentRegistryUseCase,
+        ListTenantAccountingExternalCloseoutRecordsUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAuditTrailWorkspaceUseCase,
+        listTenantAccountingCorrectionsQueueUseCase,
+        listTenantAccountingEvidenceAttachmentRegistryUseCase,
+        listTenantAccountingExternalCloseoutRecordsUseCase,
+      ) =>
+        new GetTenantAccountingPeriodCloseoutTimelineUseCase(
+          getTenantAccountingAuditTrailWorkspaceUseCase,
+          listTenantAccountingCorrectionsQueueUseCase,
+          listTenantAccountingEvidenceAttachmentRegistryUseCase,
+          listTenantAccountingExternalCloseoutRecordsUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingLegalBooksReadinessPacketUseCase,
+      inject: [
+        ListTenantAccountingPeriodLockRegistryUseCase,
+        ListTenantAccountingJournalRegistryUseCase,
+        GetTenantAccountingLedgerRegistryWorkspaceUseCase,
+        GetTenantAccountingFinancialStatementPreviewUseCase,
+        GetTenantAccountingPeriodLockReadinessUseCase,
+        ListTenantAccountingExternalCloseoutRecordsUseCase,
+      ],
+      useFactory: (
+        listTenantAccountingPeriodLockRegistryUseCase,
+        listTenantAccountingJournalRegistryUseCase,
+        getTenantAccountingLedgerRegistryWorkspaceUseCase,
+        getTenantAccountingFinancialStatementPreviewUseCase,
+        getTenantAccountingPeriodLockReadinessUseCase,
+        listTenantAccountingExternalCloseoutRecordsUseCase,
+      ) =>
+        new GetTenantAccountingLegalBooksReadinessPacketUseCase(
+          listTenantAccountingPeriodLockRegistryUseCase,
+          listTenantAccountingJournalRegistryUseCase,
+          getTenantAccountingLedgerRegistryWorkspaceUseCase,
+          getTenantAccountingFinancialStatementPreviewUseCase,
+          getTenantAccountingPeriodLockReadinessUseCase,
+          listTenantAccountingExternalCloseoutRecordsUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
+      inject: [
+        GetTenantAccountingFinancialStatementPreviewUseCase,
+        GetTenantAccountingProfessionalCloseoutWorkspaceUseCase,
+        ListTenantAccountingExternalCloseoutRecordsUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingFinancialStatementPreviewUseCase,
+        getTenantAccountingProfessionalCloseoutWorkspaceUseCase,
+        listTenantAccountingExternalCloseoutRecordsUseCase,
+      ) =>
+        new RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase(
+          getTenantAccountingFinancialStatementPreviewUseCase,
+          getTenantAccountingProfessionalCloseoutWorkspaceUseCase,
+          listTenantAccountingExternalCloseoutRecordsUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingFoundationCloseoutSummaryUseCase,
+      inject: [
+        GetTenantAccountingProfessionalCloseoutWorkspaceUseCase,
+        GetTenantAccountingLegalBooksReadinessPacketUseCase,
+        RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
+        GetTenantAccountingPeriodCloseoutTimelineUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingProfessionalCloseoutWorkspaceUseCase,
+        getTenantAccountingLegalBooksReadinessPacketUseCase,
+        requestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
+        getTenantAccountingPeriodCloseoutTimelineUseCase,
+      ) =>
+        new GetTenantAccountingFoundationCloseoutSummaryUseCase(
+          getTenantAccountingProfessionalCloseoutWorkspaceUseCase,
+          getTenantAccountingLegalBooksReadinessPacketUseCase,
+          requestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
+          getTenantAccountingPeriodCloseoutTimelineUseCase,
         ),
     },
     {

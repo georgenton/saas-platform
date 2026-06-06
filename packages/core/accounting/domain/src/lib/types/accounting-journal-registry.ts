@@ -1161,6 +1161,162 @@ export interface TenantAccountingProfessionalCloseoutWorkspaceView {
   guardrails: string[];
 }
 
+export type AccountingExternalCloseoutStatus =
+  | 'draft'
+  | 'confirmed_by_accountant'
+  | 'rejected'
+  | 'voided';
+
+export interface TenantAccountingExternalCloseoutRecordView {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  status: AccountingExternalCloseoutStatus;
+  accountantName: string;
+  accountantEmail: string | null;
+  confirmedByUserId: string | null;
+  confirmedByEmail: string | null;
+  confirmedAt: Date | null;
+  evidenceReference: string | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TenantAccountingProfessionalCloseoutArtifactPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packetStatus: 'draft' | 'ready_for_share' | 'closed_externally' | 'blocked';
+  workspace: TenantAccountingProfessionalCloseoutWorkspaceView;
+  externalCloseoutRecord: TenantAccountingExternalCloseoutRecordView | null;
+  artifactSections: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    reference: string | null;
+    detail: string;
+  }>;
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    evidenceAttachmentCount: number;
+    correctionCount: number;
+    externalCloseoutRecorded: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingPeriodCloseoutTimelineView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  timelineStatus: 'empty' | 'ready' | 'needs_review';
+  events: Array<{
+    eventKey: string;
+    eventType: string;
+    source: string;
+    status: string;
+    actorEmail: string | null;
+    occurredAt: Date;
+    summary: string;
+    metadata: Record<string, string | number | boolean | null>;
+  }>;
+  summary: {
+    eventCount: number;
+    journalEventCount: number;
+    controlEventCount: number;
+    correctionEventCount: number;
+    evidenceEventCount: number;
+    externalCloseoutEventCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingLegalBooksReadinessPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: 'ready_for_legal_book_preparation' | 'needs_review' | 'blocked';
+  checks: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+  }>;
+  externalCloseoutRecord: TenantAccountingExternalCloseoutRecordView | null;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    blockedCheckCount: number;
+    externalCloseoutRecorded: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingFinancialStatementFinalReviewPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  reviewStatus: 'ready_for_final_review' | 'needs_review' | 'blocked';
+  financialStatementPreview: TenantAccountingFinancialStatementPreviewView;
+  professionalCloseoutWorkspace: TenantAccountingProfessionalCloseoutWorkspaceView;
+  externalCloseoutRecord: TenantAccountingExternalCloseoutRecordView | null;
+  checklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    correctionCount: number;
+    netIncomeInCents: number;
+    externalCloseoutRecorded: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingFoundationCloseoutSummaryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  summaryStatus: 'foundation_complete' | 'needs_review' | 'blocked';
+  professionalCloseoutWorkspace: TenantAccountingProfessionalCloseoutWorkspaceView;
+  legalBooksReadiness: TenantAccountingLegalBooksReadinessPacketView;
+  financialStatementFinalReview: TenantAccountingFinancialStatementFinalReviewPacketView;
+  closeoutTimeline: TenantAccountingPeriodCloseoutTimelineView;
+  completedScope: string[];
+  advancedAccountingBacklog: string[];
+  recommendedNextProduct: 'tax_compliance_deeper' | 'parties_2_0' | 'accounting_advanced';
+  summary: {
+    completedScopeCount: number;
+    backlogItemCount: number;
+    timelineEventCount: number;
+    legalBooksReady: boolean;
+    finalReviewReady: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export type AccountingPeriodControlStatus =
   | 'open'
   | 'ready_to_lock'

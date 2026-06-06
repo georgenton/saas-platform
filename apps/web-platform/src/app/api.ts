@@ -30,7 +30,12 @@ import {
   AccountingCorrectionsQueueResponse,
   AccountingEvidenceAttachmentRegistryResponse,
   AccountingEvidenceAttachmentResponse,
+  AccountingExternalCloseoutRecordResponse,
+  AccountingFinancialStatementFinalReviewPacketResponse,
+  AccountingFoundationCloseoutSummaryResponse,
+  AccountingLegalBooksReadinessPacketResponse,
   AccountingPeriodEvidenceVaultResponse,
+  AccountingPeriodCloseoutTimelineResponse,
   AccountingPeriodNarrativeReportResponse,
   AccountingPeriodLockRegistryResponse,
   AccountingPeriodLockReadinessResponse,
@@ -41,6 +46,7 @@ import {
   AccountingReconciliationExceptionResolutionPacketResponse,
   AccountingReconciliationMatchPacketResponse,
   AccountingReviewResolutionPacketResponse,
+  AccountingProfessionalCloseoutArtifactPacketResponse,
   AccountingProfessionalCloseoutWorkspaceResponse,
   AccountingAuditTrailWorkspaceResponse,
   AccountingTrialBalanceWorkspaceResponse,
@@ -2576,6 +2582,120 @@ export async function fetchAccountingProfessionalCloseoutWorkspace(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/professional-closeout-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function recordAccountingExternalCloseoutRecord(
+  token: string,
+  tenantSlug: string,
+  input: {
+    period: string;
+    year: number;
+    status: string;
+    accountantName: string;
+    accountantEmail?: string | null;
+    confirmedByUserId?: string | null;
+    confirmedByEmail?: string | null;
+    confirmedAt?: string | null;
+    evidenceReference?: string | null;
+    notes?: string | null;
+  },
+): Promise<AccountingExternalCloseoutRecordResponse> {
+  return request<AccountingExternalCloseoutRecordResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/external-closeout-records`,
+    { body: input, method: 'POST', token },
+  );
+}
+
+export async function fetchAccountingExternalCloseoutRecords(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingExternalCloseoutRecordResponse[]> {
+  return request<AccountingExternalCloseoutRecordResponse[]>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/external-closeout-records?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function requestAccountingProfessionalCloseoutArtifactPacket(
+  token: string,
+  tenantSlug: string,
+  input: { period: string; year: number },
+): Promise<AccountingProfessionalCloseoutArtifactPacketResponse> {
+  return request<AccountingProfessionalCloseoutArtifactPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/professional-closeout-artifact-packet`,
+    { body: input, method: 'POST', token },
+  );
+}
+
+export async function fetchAccountingPeriodCloseoutTimeline(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingPeriodCloseoutTimelineResponse> {
+  return request<AccountingPeriodCloseoutTimelineResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/period-closeout-timeline?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchAccountingLegalBooksReadinessPacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingLegalBooksReadinessPacketResponse> {
+  return request<AccountingLegalBooksReadinessPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/legal-books-readiness-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function requestAccountingFinancialStatementFinalReviewPacket(
+  token: string,
+  tenantSlug: string,
+  input: { period: string; year: number },
+): Promise<AccountingFinancialStatementFinalReviewPacketResponse> {
+  return request<AccountingFinancialStatementFinalReviewPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/financial-statement-final-review-packet`,
+    { body: input, method: 'POST', token },
+  );
+}
+
+export async function fetchAccountingFoundationCloseoutSummary(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingFoundationCloseoutSummaryResponse> {
+  return request<AccountingFoundationCloseoutSummaryResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/foundation-closeout-summary?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

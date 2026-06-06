@@ -3215,6 +3215,156 @@ export interface AccountingProfessionalCloseoutWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface AccountingExternalCloseoutRecordResponse {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  status: string;
+  accountantName: string;
+  accountantEmail: string | null;
+  confirmedByUserId: string | null;
+  confirmedByEmail: string | null;
+  confirmedAt: string | null;
+  evidenceReference: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountingProfessionalCloseoutArtifactPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  packetStatus: string;
+  workspace: AccountingProfessionalCloseoutWorkspaceResponse;
+  externalCloseoutRecord: AccountingExternalCloseoutRecordResponse | null;
+  artifactSections: Array<{
+    key: string;
+    label: string;
+    status: string;
+    reference: string | null;
+    detail: string;
+  }>;
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    evidenceAttachmentCount: number;
+    correctionCount: number;
+    externalCloseoutRecorded: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingPeriodCloseoutTimelineResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  timelineStatus: string;
+  events: Array<{
+    eventKey: string;
+    eventType: string;
+    source: string;
+    status: string;
+    actorEmail: string | null;
+    occurredAt: string;
+    summary: string;
+    metadata: Record<string, string | number | boolean | null>;
+  }>;
+  summary: {
+    eventCount: number;
+    journalEventCount: number;
+    controlEventCount: number;
+    correctionEventCount: number;
+    evidenceEventCount: number;
+    externalCloseoutEventCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingLegalBooksReadinessPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  checks: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+  }>;
+  externalCloseoutRecord: AccountingExternalCloseoutRecordResponse | null;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    blockedCheckCount: number;
+    externalCloseoutRecorded: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingFinancialStatementFinalReviewPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  reviewStatus: string;
+  financialStatementPreview: AccountingFinancialStatementPreviewResponse;
+  professionalCloseoutWorkspace: AccountingProfessionalCloseoutWorkspaceResponse;
+  externalCloseoutRecord: AccountingExternalCloseoutRecordResponse | null;
+  checklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    correctionCount: number;
+    netIncomeInCents: number;
+    externalCloseoutRecorded: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingFoundationCloseoutSummaryResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  summaryStatus: string;
+  professionalCloseoutWorkspace: AccountingProfessionalCloseoutWorkspaceResponse;
+  legalBooksReadiness: AccountingLegalBooksReadinessPacketResponse;
+  financialStatementFinalReview: AccountingFinancialStatementFinalReviewPacketResponse;
+  closeoutTimeline: AccountingPeriodCloseoutTimelineResponse;
+  completedScope: string[];
+  advancedAccountingBacklog: string[];
+  recommendedNextProduct: string;
+  summary: {
+    completedScopeCount: number;
+    backlogItemCount: number;
+    timelineEventCount: number;
+    legalBooksReady: boolean;
+    finalReviewReady: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxSriVoucherEvidenceResponse {
   evidenceId: string;
   direction: string;

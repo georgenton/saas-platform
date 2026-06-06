@@ -4,6 +4,7 @@ export * from './lib/accounting/prisma-accounting-bank-reconciliation-control.re
 export * from './lib/accounting/prisma-accounting-bank-statement.repository';
 export * from './lib/accounting/prisma-accounting-correction.repository';
 export * from './lib/accounting/prisma-accounting-evidence-attachment.repository';
+export * from './lib/accounting/prisma-accounting-external-closeout-record.repository';
 export * from './lib/accounting/prisma-accounting-journal-entry.repository';
 export * from './lib/accounting/prisma-accounting-period-control.repository';
 export * from './lib/accounting/uuid-accounting-accountant-review-id.generator';
@@ -12,6 +13,7 @@ export * from './lib/accounting/uuid-accounting-bank-statement-batch-id.generato
 export * from './lib/accounting/uuid-accounting-bank-statement-line-id.generator';
 export * from './lib/accounting/uuid-accounting-correction-id.generator';
 export * from './lib/accounting/uuid-accounting-evidence-attachment-id.generator';
+export * from './lib/accounting/uuid-accounting-external-closeout-record-id.generator';
 export * from './lib/accounting/uuid-accounting-journal-entry-id.generator';
 export * from './lib/accounting/uuid-accounting-period-control-id.generator';
 export * from './lib/ai/ai-persistence.module';

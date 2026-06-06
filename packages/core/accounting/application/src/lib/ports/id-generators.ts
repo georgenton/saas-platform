@@ -30,6 +30,10 @@ export interface AccountingEvidenceAttachmentIdGenerator {
   nextId(): string;
 }
 
+export interface AccountingExternalCloseoutRecordIdGenerator {
+  nextId(): string;
+}
+
 export const ACCOUNTING_JOURNAL_ENTRY_ID_GENERATOR = Symbol(
   'ACCOUNTING_JOURNAL_ENTRY_ID_GENERATOR',
 );
@@ -60,4 +64,8 @@ export const ACCOUNTING_CORRECTION_ID_GENERATOR = Symbol(
 
 export const ACCOUNTING_EVIDENCE_ATTACHMENT_ID_GENERATOR = Symbol(
   'ACCOUNTING_EVIDENCE_ATTACHMENT_ID_GENERATOR',
+);
+
+export const ACCOUNTING_EXTERNAL_CLOSEOUT_RECORD_ID_GENERATOR = Symbol(
+  'ACCOUNTING_EXTERNAL_CLOSEOUT_RECORD_ID_GENERATOR',
 );

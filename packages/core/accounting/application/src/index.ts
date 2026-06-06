@@ -5,6 +5,7 @@ export * from './lib/ports/accounting-bank-reconciliation-control.repository';
 export * from './lib/ports/accounting-bank-statement.repository';
 export * from './lib/ports/accounting-correction.repository';
 export * from './lib/ports/accounting-evidence-attachment.repository';
+export * from './lib/ports/accounting-external-closeout-record.repository';
 export * from './lib/ports/accounting-journal-entry.repository';
 export * from './lib/ports/accounting-period-control.repository';
 export * from './lib/ports/id-generators';
@@ -18,6 +19,9 @@ export * from './lib/use-cases/get-tenant-accounting-bank-statement-import-works
 export * from './lib/use-cases/get-tenant-accounting-financial-statement-preview.use-case';
 export * from './lib/use-cases/get-tenant-accounting-intake-workspace.use-case';
 export * from './lib/use-cases/get-tenant-accounting-closeout-certification-readiness.use-case';
+export * from './lib/use-cases/get-tenant-accounting-foundation-closeout-summary.use-case';
+export * from './lib/use-cases/get-tenant-accounting-legal-books-readiness-packet.use-case';
+export * from './lib/use-cases/get-tenant-accounting-period-closeout-timeline.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-narrative-report.use-case';
 export * from './lib/use-cases/get-tenant-accounting-professional-closeout-workspace.use-case';
 export * from './lib/use-cases/get-tenant-accounting-journal-draft-preview.use-case';
@@ -34,6 +38,7 @@ export * from './lib/use-cases/list-tenant-accounting-journal-registry.use-case'
 export * from './lib/use-cases/list-tenant-accounting-accountant-reviews.use-case';
 export * from './lib/use-cases/list-tenant-accounting-corrections-queue.use-case';
 export * from './lib/use-cases/list-tenant-accounting-evidence-attachment-registry.use-case';
+export * from './lib/use-cases/list-tenant-accounting-external-closeout-records.use-case';
 export * from './lib/use-cases/list-tenant-accounting-bank-statement-registry.use-case';
 export * from './lib/use-cases/list-tenant-accounting-bank-reconciliation-control-registry.use-case';
 export * from './lib/use-cases/list-tenant-accounting-period-lock-registry.use-case';
@@ -51,7 +56,10 @@ export * from './lib/use-cases/request-tenant-accounting-reconciliation-exceptio
 export * from './lib/use-cases/request-tenant-accounting-reconciliation-match-packet.use-case';
 export * from './lib/use-cases/record-tenant-accounting-correction.use-case';
 export * from './lib/use-cases/record-tenant-accounting-evidence-attachment.use-case';
+export * from './lib/use-cases/record-tenant-accounting-external-closeout-record.use-case';
 export * from './lib/use-cases/request-tenant-accounting-adjustment-recommendation-packet.use-case';
 export * from './lib/use-cases/request-tenant-accounting-ai-review-assistant-packet.use-case';
+export * from './lib/use-cases/request-tenant-accounting-financial-statement-final-review-packet.use-case';
+export * from './lib/use-cases/request-tenant-accounting-professional-closeout-artifact-packet.use-case';
 export * from './lib/use-cases/request-tenant-accounting-review-resolution-packet.use-case';
 export * from './lib/use-cases/transition-tenant-accounting-accountant-review.use-case';

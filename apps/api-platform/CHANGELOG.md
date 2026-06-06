@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.100.0
+
+### Minor Changes
+
+- c164c3a: Add Accounting reconciliation exception resolution, bank reconciliation controls, and cash closeout readiness.
+
 ## 0.99.0
 
 ### Minor Changes

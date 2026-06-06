@@ -159,6 +159,8 @@ import {
   fetchEcuadorTaxAccountantReviews,
   fetchEcuadorTaxAnnexesReadiness,
   fetchEcuadorTaxDeclarationArtifactExport,
+  fetchEcuadorTaxDeclarationReviewLoopWorkspace,
+  fetchEcuadorTaxDeclarationSourceLedger,
   fetchEcuadorTaxDeclarationFormDraftPacket,
   fetchEcuadorTaxDeclarationFormCatalog,
   fetchEcuadorTaxDeclarationApprovalPacket,
@@ -166,7 +168,9 @@ import {
   fetchEcuadorTaxEvents,
   fetchEcuadorTaxFilingHandoff,
   fetchEcuadorTaxFilingGuidePacket,
+  fetchEcuadorTaxFormMappingCatalog,
   fetchEcuadorTaxGrowthReminderPacket,
+  fetchEcuadorTaxIncomeTaxEvidenceWorkspace,
   fetchEcuadorTaxIncomeTaxEvidencePacket,
   fetchEcuadorTaxObligationSettings,
   fetchEcuadorTaxPeriodCloseoutPacket,
@@ -182,7 +186,9 @@ import {
   fetchEcuadorTaxSriFiscalEvidenceWorkspace,
   fetchEcuadorTaxSriPlatformReconciliationWorkspace,
   fetchEcuadorTaxSupplierFiscalReadinessWorkspace,
+  fetchEcuadorTaxAiFilingAssistantPacket,
   fetchEcuadorTaxVatDeclarationReadinessPacket,
+  fetchEcuadorTaxVatDeclarationDraftWorkspace,
   fetchEcuadorTaxVatDeclarationDraft,
   fetchEcuadorTaxVatDeclarationApproval,
   fetchEcuadorTaxVatInputOutputReconciliationPacket,
@@ -627,13 +633,18 @@ import {
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationArtifactExportResponse,
+  EcuadorTaxDeclarationReviewLoopWorkspaceResponse,
+  EcuadorTaxDeclarationSourceLedgerResponse,
+  EcuadorTaxAiFilingAssistantPacketResponse,
   EcuadorTaxDeclarationFormDraftPacketResponse,
   EcuadorTaxDeclarationFormCatalogResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
   EcuadorTaxFilingHandoffResponse,
   EcuadorTaxFilingGuidePacketResponse,
+  EcuadorTaxFormMappingCatalogResponse,
   EcuadorTaxGrowthReminderPacketResponse,
+  EcuadorTaxIncomeTaxEvidenceWorkspaceResponse,
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
   EcuadorTaxOperationalCloseoutResponse,
@@ -649,6 +660,7 @@ import {
   EcuadorTaxSriFiscalEvidenceWorkspaceResponse,
   EcuadorTaxSriPlatformReconciliationWorkspaceResponse,
   EcuadorTaxSupplierFiscalReadinessWorkspaceResponse,
+  EcuadorTaxVatDeclarationDraftWorkspaceResponse,
   EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcuadorTaxVatDeclarationDraftResponse,
   EcuadorTaxVatDeclarationApprovalResponse,
@@ -2373,6 +2385,30 @@ export function App() {
     taxComplianceDeclarationFormDraftPacket,
     setTaxComplianceDeclarationFormDraftPacket,
   ] = useState<EcuadorTaxDeclarationFormDraftPacketResponse | null>(null);
+  const [
+    taxComplianceDeclarationSourceLedger,
+    setTaxComplianceDeclarationSourceLedger,
+  ] = useState<EcuadorTaxDeclarationSourceLedgerResponse | null>(null);
+  const [
+    taxComplianceVatDeclarationDraftWorkspace,
+    setTaxComplianceVatDeclarationDraftWorkspace,
+  ] = useState<EcuadorTaxVatDeclarationDraftWorkspaceResponse | null>(null);
+  const [
+    taxComplianceFormMappingCatalog,
+    setTaxComplianceFormMappingCatalog,
+  ] = useState<EcuadorTaxFormMappingCatalogResponse | null>(null);
+  const [
+    taxComplianceIncomeTaxEvidenceWorkspace,
+    setTaxComplianceIncomeTaxEvidenceWorkspace,
+  ] = useState<EcuadorTaxIncomeTaxEvidenceWorkspaceResponse | null>(null);
+  const [
+    taxComplianceAiFilingAssistantPacket,
+    setTaxComplianceAiFilingAssistantPacket,
+  ] = useState<EcuadorTaxAiFilingAssistantPacketResponse | null>(null);
+  const [
+    taxComplianceDeclarationReviewLoopWorkspace,
+    setTaxComplianceDeclarationReviewLoopWorkspace,
+  ] = useState<EcuadorTaxDeclarationReviewLoopWorkspaceResponse | null>(null);
   const [
     taxComplianceFilingGuidePacket,
     setTaxComplianceFilingGuidePacket,
@@ -19555,6 +19591,12 @@ export function App() {
         nextSriPlatformReconciliationWorkspace,
         nextDeclarationFormCatalog,
         nextDeclarationFormDraftPacket,
+        nextDeclarationSourceLedger,
+        nextVatDeclarationDraftWorkspace,
+        nextFormMappingCatalog,
+        nextIncomeTaxEvidenceWorkspace,
+        nextAiFilingAssistantPacket,
+        nextDeclarationReviewLoopWorkspace,
         nextFilingGuidePacket,
         nextDeclarationArtifactExport,
       ] = await Promise.all([
@@ -19728,6 +19770,43 @@ export function App() {
           taxCompliancePeriod,
           year,
           'iva',
+        ),
+        fetchEcuadorTaxDeclarationSourceLedger(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxVatDeclarationDraftWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxFormMappingCatalog(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxIncomeTaxEvidenceWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAiFilingAssistantPacket(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+          'iva',
+        ),
+        fetchEcuadorTaxDeclarationReviewLoopWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
         ),
         fetchEcuadorTaxFilingGuidePacket(
           token,
@@ -20041,6 +20120,18 @@ export function App() {
         setTaxComplianceDeclarationFormCatalog(nextDeclarationFormCatalog);
         setTaxComplianceDeclarationFormDraftPacket(
           nextDeclarationFormDraftPacket,
+        );
+        setTaxComplianceDeclarationSourceLedger(nextDeclarationSourceLedger);
+        setTaxComplianceVatDeclarationDraftWorkspace(
+          nextVatDeclarationDraftWorkspace,
+        );
+        setTaxComplianceFormMappingCatalog(nextFormMappingCatalog);
+        setTaxComplianceIncomeTaxEvidenceWorkspace(
+          nextIncomeTaxEvidenceWorkspace,
+        );
+        setTaxComplianceAiFilingAssistantPacket(nextAiFilingAssistantPacket);
+        setTaxComplianceDeclarationReviewLoopWorkspace(
+          nextDeclarationReviewLoopWorkspace,
         );
         setTaxComplianceFilingGuidePacket(nextFilingGuidePacket);
         setTaxComplianceDeclarationArtifactExport(nextDeclarationArtifactExport);
@@ -30968,6 +31059,235 @@ export function App() {
                               .suggestedBoxes[0]?.explanation
                           }
                         </p>
+                      </div>
+                    ) : null}
+                    {taxComplianceDeclarationSourceLedger ? (
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <strong>Ledger fiscal de declaraciones</strong>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              taxComplianceDeclarationSourceLedger.readinessStatus,
+                            )}`}
+                          >
+                            {humanizeKey(
+                              taxComplianceDeclarationSourceLedger.readinessStatus,
+                            )}
+                          </span>
+                        </div>
+                        <div className={styles.commercialGrid}>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Fuentes</span>
+                            <strong>
+                              {
+                                taxComplianceDeclarationSourceLedger.summary
+                                  .rowCount
+                              }
+                            </strong>
+                            <span className={styles.muted}>
+                              {
+                                taxComplianceDeclarationSourceLedger
+                                  .totalsBySource.length
+                              }{' '}
+                              origenes normalizados
+                            </span>
+                          </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>IVA salida</span>
+                            <strong>
+                              {formatMoney(
+                                taxComplianceDeclarationSourceLedger.summary
+                                  .outputVatInCents,
+                                'USD',
+                              )}
+                            </strong>
+                            <span className={styles.muted}>
+                              IVA entrada{' '}
+                              {formatMoney(
+                                taxComplianceDeclarationSourceLedger.summary
+                                  .inputVatInCents,
+                                'USD',
+                              )}
+                            </span>
+                          </div>
+                          <div className={styles.commercialCard}>
+                            <span className={styles.muted}>Brechas</span>
+                            <strong>
+                              {
+                                taxComplianceDeclarationSourceLedger.summary
+                                  .gapCount
+                              }
+                            </strong>
+                            <span className={styles.muted}>
+                              closeout contable{' '}
+                              {taxComplianceDeclarationSourceLedger.summary
+                                .accountingCloseoutAvailable
+                                ? 'disponible'
+                                : 'pendiente'}
+                            </span>
+                          </div>
+                        </div>
+                        <p className={styles.muted}>
+                          {taxComplianceDeclarationSourceLedger.nextStep}
+                        </p>
+                      </div>
+                    ) : null}
+                    {taxComplianceVatDeclarationDraftWorkspace &&
+                    taxComplianceFormMappingCatalog ? (
+                      <div className={styles.invoiceInlineGrid}>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Borrador IVA operativo</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceVatDeclarationDraftWorkspace.readinessStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceVatDeclarationDraftWorkspace.readinessStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceVatDeclarationDraftWorkspace.summary
+                                .readyBucketCount
+                            }
+                            /
+                            {
+                              taxComplianceVatDeclarationDraftWorkspace.summary
+                                .bucketCount
+                            }{' '}
+                            buckets listos · IVA estimado{' '}
+                            {formatMoney(
+                              taxComplianceVatDeclarationDraftWorkspace.summary
+                                .estimatedVatPayableInCents,
+                              'USD',
+                            )}
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Mapping de formularios</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceFormMappingCatalog.readinessStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceFormMappingCatalog.readinessStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceFormMappingCatalog.summary
+                                .highConfidenceMappingCount
+                            }
+                            /
+                            {
+                              taxComplianceFormMappingCatalog.summary
+                                .mappingCount
+                            }{' '}
+                            mappings con alta confianza ·{' '}
+                            {
+                              taxComplianceFormMappingCatalog.summary
+                                .manualOnlyBoxCount
+                            }{' '}
+                            manuales
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+                    {taxComplianceIncomeTaxEvidenceWorkspace &&
+                    taxComplianceAiFilingAssistantPacket &&
+                    taxComplianceDeclarationReviewLoopWorkspace ? (
+                      <div className={styles.invoiceInlineGrid}>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Evidencia renta</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceIncomeTaxEvidenceWorkspace.readinessStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceIncomeTaxEvidenceWorkspace.readinessStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            Base estimada{' '}
+                            {formatMoney(
+                              taxComplianceIncomeTaxEvidenceWorkspace.summary
+                                .estimatedTaxableBaseInCents,
+                              'USD',
+                            )}{' '}
+                            · credito retenciones{' '}
+                            {formatMoney(
+                              taxComplianceIncomeTaxEvidenceWorkspace.summary
+                                .withholdingCreditInCents,
+                              'USD',
+                            )}
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Asistente IA filing</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceAiFilingAssistantPacket.assistantStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceAiFilingAssistantPacket.assistantStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceAiFilingAssistantPacket
+                                .suggestedSteps.length
+                            }{' '}
+                            pasos ·{' '}
+                            {
+                              taxComplianceAiFilingAssistantPacket
+                                .accountantQuestions.length
+                            }{' '}
+                            preguntas para contador
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Loop de revision</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceDeclarationReviewLoopWorkspace.loopStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceDeclarationReviewLoopWorkspace.loopStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceDeclarationReviewLoopWorkspace.summary
+                                .readyChecklistCount
+                            }
+                            /
+                            {
+                              taxComplianceDeclarationReviewLoopWorkspace.summary
+                                .checklistCount
+                            }{' '}
+                            checks listos ·{' '}
+                            {
+                              taxComplianceDeclarationReviewLoopWorkspace.summary
+                                .sourceRowCount
+                            }{' '}
+                            filas fuente
+                          </p>
+                        </div>
                       </div>
                     ) : null}
                     <p className={styles.muted}>

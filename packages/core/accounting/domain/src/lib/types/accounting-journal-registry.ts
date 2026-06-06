@@ -364,6 +364,126 @@ export interface TenantAccountingReconciliationExceptionPacketView {
   guardrails: string[];
 }
 
+export type AccountingBankReconciliationControlEventType =
+  | 'match_packet_approved'
+  | 'exception_packet_requested'
+  | 'exception_resolution_prepared'
+  | 'exception_resolved';
+
+export type AccountingBankReconciliationControlStatus =
+  | 'recorded'
+  | 'resolved'
+  | 'needs_review'
+  | 'blocked';
+
+export interface TenantAccountingBankReconciliationControlView {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  eventType: AccountingBankReconciliationControlEventType;
+  status: AccountingBankReconciliationControlStatus;
+  source: string;
+  actorUserId: string | null;
+  actorEmail: string | null;
+  occurredAt: Date;
+  reason: string | null;
+  evidenceReference: string | null;
+  payload: Record<string, string | number | boolean | null>;
+  blockers: string[];
+  impactChecklist: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TenantAccountingBankReconciliationControlRegistryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  registryStatus: 'ready' | 'empty' | 'needs_review' | 'blocked';
+  controls: TenantAccountingBankReconciliationControlView[];
+  latestControl: TenantAccountingBankReconciliationControlView | null;
+  summary: {
+    controlCount: number;
+    matchApprovedCount: number;
+    exceptionPacketCount: number;
+    exceptionResolvedCount: number;
+    blockedControlCount: number;
+    needsReviewControlCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingReconciliationExceptionResolutionPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  resolutionStatus: 'ready_to_resolve' | 'resolved' | 'blocked';
+  decision: 'prepare' | 'resolve';
+  resolutionType:
+    | 'create_adjustment_recommended'
+    | 'mark_timing_difference'
+    | 'mark_external_bank_issue'
+    | 'mark_journal_review_required';
+  exceptionKeys: string[];
+  resolvedExceptionKeys: string[];
+  exceptionPacket: TenantAccountingReconciliationExceptionPacketView;
+  control: TenantAccountingBankReconciliationControlView | null;
+  impactChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+  }>;
+  summary: {
+    requestedExceptionCount: number;
+    resolvedExceptionCount: number;
+    unresolvedExceptionCount: number;
+    totalDifferenceInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingPeriodCashCloseoutReadinessView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: 'ready_for_lock' | 'needs_review' | 'blocked';
+  checks: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+    blockerCount: number;
+  }>;
+  statementRegistry: TenantAccountingBankStatementRegistryView;
+  reconciliationWorkspace: TenantAccountingBankReconciliationWorkspaceView;
+  controlRegistry: TenantAccountingBankReconciliationControlRegistryView;
+  exceptionPacket: TenantAccountingReconciliationExceptionPacketView;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+    statementLineCount: number;
+    exactMatchCount: number;
+    exceptionCount: number;
+    resolvedExceptionCount: number;
+    totalDifferenceInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface TenantAccountingPeriodReconciliationReadinessView {
   tenantSlug: string;
   period: string;

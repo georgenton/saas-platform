@@ -461,6 +461,67 @@ printLine(
   `${exceptionPacket.summary.exceptionCount} excepciones, ${exceptionPacket.exceptionStatus}`,
 );
 
+const bankReconciliationControlRegistry = await apiRequest({
+  baseUrl,
+  path: accountingPath(
+    `/bank-reconciliation-control-registry?${periodQuery()}`,
+  ),
+  token,
+});
+
+assertStatus(
+  'bank reconciliation control registry',
+  bankReconciliationControlRegistry.registryStatus,
+);
+printLine(
+  'bank controls',
+  `${bankReconciliationControlRegistry.summary.controlCount} controles, ${bankReconciliationControlRegistry.registryStatus}`,
+);
+
+const exceptionResolutionPacket = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/reconciliation-exception-resolution-packet'),
+  token,
+  body: {
+    period,
+    year,
+    decision: 'resolve',
+    resolutionType: 'mark_timing_difference',
+    exceptionKeys: exceptionPacket.exceptions.map(
+      (exception) => exception.exceptionKey,
+    ),
+    actorUserId: 'smoke-accounting-reviewer',
+    actorEmail: 'accounting-reviewer@saas-platform.dev',
+    reason: 'Smoke reconciliation exception resolution.',
+    evidenceReference: `smoke:${tenantSlug}:${period}:reconciliation-exception-resolution`,
+  },
+});
+
+assertStatus(
+  'reconciliation exception resolution packet',
+  exceptionResolutionPacket.resolutionStatus,
+);
+printLine(
+  'exception resolution',
+  `${exceptionResolutionPacket.summary.resolvedExceptionCount}/${exceptionResolutionPacket.summary.requestedExceptionCount} resueltas, ${exceptionResolutionPacket.resolutionStatus}`,
+);
+
+const cashCloseoutReadiness = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/period-cash-closeout-readiness?${periodQuery()}`),
+  token,
+});
+
+assertStatus(
+  'period cash closeout readiness',
+  cashCloseoutReadiness.readinessStatus,
+);
+printLine(
+  'cash closeout',
+  `${cashCloseoutReadiness.summary.readyCheckCount}/${cashCloseoutReadiness.summary.checkCount} checks, ${cashCloseoutReadiness.readinessStatus}`,
+);
+
 const reconciliationReadiness = await apiRequest({
   baseUrl,
   path: accountingPath(`/period-reconciliation-readiness?${periodQuery()}`),

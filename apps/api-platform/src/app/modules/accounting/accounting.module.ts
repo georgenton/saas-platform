@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import {
+  ACCOUNTING_BANK_RECONCILIATION_CONTROL_ID_GENERATOR,
+  ACCOUNTING_BANK_RECONCILIATION_CONTROL_REPOSITORY,
   ACCOUNTING_BANK_STATEMENT_BATCH_ID_GENERATOR,
   ACCOUNTING_BANK_STATEMENT_LINE_ID_GENERATOR,
   ACCOUNTING_BANK_STATEMENT_REPOSITORY,
@@ -18,11 +20,13 @@ import {
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
   GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingPeriodReconciliationReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
+  ListTenantAccountingBankReconciliationControlRegistryUseCase,
   ListTenantAccountingBankStatementRegistryUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
@@ -31,8 +35,10 @@ import {
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
+  RecordTenantAccountingBankReconciliationControlUseCase,
   RecordTenantAccountingBankStatementImportUseCase,
   RequestTenantAccountingReconciliationExceptionPacketUseCase,
+  RequestTenantAccountingReconciliationExceptionResolutionPacketUseCase,
   RequestTenantAccountingReconciliationMatchPacketUseCase,
 } from '@saas-platform/accounting-application';
 import { PRODUCT_REPOSITORY } from '@saas-platform/catalog-application';
@@ -257,11 +263,44 @@ import { AccountingController } from './accounting.controller';
         ),
     },
     {
+      provide: RecordTenantAccountingBankReconciliationControlUseCase,
+      inject: [
+        ACCOUNTING_BANK_RECONCILIATION_CONTROL_REPOSITORY,
+        ACCOUNTING_BANK_RECONCILIATION_CONTROL_ID_GENERATOR,
+        TENANT_REPOSITORY,
+      ],
+      useFactory: (
+        accountingBankReconciliationControlRepository,
+        accountingBankReconciliationControlIdGenerator,
+        tenantRepository,
+      ) =>
+        new RecordTenantAccountingBankReconciliationControlUseCase(
+          accountingBankReconciliationControlRepository,
+          accountingBankReconciliationControlIdGenerator,
+          tenantRepository,
+        ),
+    },
+    {
+      provide: ListTenantAccountingBankReconciliationControlRegistryUseCase,
+      inject: [ACCOUNTING_BANK_RECONCILIATION_CONTROL_REPOSITORY],
+      useFactory: (accountingBankReconciliationControlRepository) =>
+        new ListTenantAccountingBankReconciliationControlRegistryUseCase(
+          accountingBankReconciliationControlRepository,
+        ),
+    },
+    {
       provide: RequestTenantAccountingReconciliationMatchPacketUseCase,
-      inject: [GetTenantAccountingBankReconciliationWorkspaceUseCase],
-      useFactory: (getTenantAccountingBankReconciliationWorkspaceUseCase) =>
+      inject: [
+        GetTenantAccountingBankReconciliationWorkspaceUseCase,
+        RecordTenantAccountingBankReconciliationControlUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingBankReconciliationWorkspaceUseCase,
+        recordTenantAccountingBankReconciliationControlUseCase,
+      ) =>
         new RequestTenantAccountingReconciliationMatchPacketUseCase(
           getTenantAccountingBankReconciliationWorkspaceUseCase,
+          recordTenantAccountingBankReconciliationControlUseCase,
         ),
     },
     {
@@ -277,6 +316,42 @@ import { AccountingController } from './accounting.controller';
         new RequestTenantAccountingReconciliationExceptionPacketUseCase(
           getTenantAccountingBankReconciliationWorkspaceUseCase,
           listTenantAccountingJournalRegistryUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingReconciliationExceptionResolutionPacketUseCase,
+      inject: [
+        RequestTenantAccountingReconciliationExceptionPacketUseCase,
+        RecordTenantAccountingBankReconciliationControlUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingReconciliationExceptionPacketUseCase,
+        recordTenantAccountingBankReconciliationControlUseCase,
+      ) =>
+        new RequestTenantAccountingReconciliationExceptionResolutionPacketUseCase(
+          requestTenantAccountingReconciliationExceptionPacketUseCase,
+          recordTenantAccountingBankReconciliationControlUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
+      inject: [
+        ListTenantAccountingBankStatementRegistryUseCase,
+        GetTenantAccountingBankReconciliationWorkspaceUseCase,
+        ListTenantAccountingBankReconciliationControlRegistryUseCase,
+        RequestTenantAccountingReconciliationExceptionPacketUseCase,
+      ],
+      useFactory: (
+        listTenantAccountingBankStatementRegistryUseCase,
+        getTenantAccountingBankReconciliationWorkspaceUseCase,
+        listTenantAccountingBankReconciliationControlRegistryUseCase,
+        requestTenantAccountingReconciliationExceptionPacketUseCase,
+      ) =>
+        new GetTenantAccountingPeriodCashCloseoutReadinessUseCase(
+          listTenantAccountingBankStatementRegistryUseCase,
+          getTenantAccountingBankReconciliationWorkspaceUseCase,
+          listTenantAccountingBankReconciliationControlRegistryUseCase,
+          requestTenantAccountingReconciliationExceptionPacketUseCase,
         ),
     },
     {
@@ -360,6 +435,7 @@ import { AccountingController } from './accounting.controller';
         GetTenantAccountingPeriodCloseoutReadinessUseCase,
         RequestTenantAccountingPeriodCloseoutPacketUseCase,
         GetTenantAccountingPeriodCloseoutReportUseCase,
+        GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
       ],
       useFactory: (
         listTenantAccountingJournalRegistryUseCase,
@@ -367,6 +443,7 @@ import { AccountingController } from './accounting.controller';
         getTenantAccountingPeriodCloseoutReadinessUseCase,
         requestTenantAccountingPeriodCloseoutPacketUseCase,
         getTenantAccountingPeriodCloseoutReportUseCase,
+        getTenantAccountingPeriodCashCloseoutReadinessUseCase,
       ) =>
         new GetTenantAccountingPeriodLockReadinessUseCase(
           listTenantAccountingJournalRegistryUseCase,
@@ -374,6 +451,7 @@ import { AccountingController } from './accounting.controller';
           getTenantAccountingPeriodCloseoutReadinessUseCase,
           requestTenantAccountingPeriodCloseoutPacketUseCase,
           getTenantAccountingPeriodCloseoutReportUseCase,
+          getTenantAccountingPeriodCashCloseoutReadinessUseCase,
         ),
     },
     {

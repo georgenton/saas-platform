@@ -4,6 +4,7 @@ import {
 } from '@saas-platform/accounting-domain';
 import { GetTenantAccountingPeriodCloseoutReportUseCase } from './get-tenant-accounting-period-closeout-report.use-case';
 import { GetTenantAccountingPeriodCloseoutReadinessUseCase } from './get-tenant-accounting-period-closeout-readiness.use-case';
+import { GetTenantAccountingPeriodCashCloseoutReadinessUseCase } from './get-tenant-accounting-period-cash-closeout-readiness.use-case';
 import { GetTenantAccountingTrialBalanceWorkspaceUseCase } from './get-tenant-accounting-trial-balance-workspace.use-case';
 import { ListTenantAccountingJournalRegistryUseCase } from './list-tenant-accounting-journal-registry.use-case';
 import { RequestTenantAccountingPeriodCloseoutPacketUseCase } from './request-tenant-accounting-period-closeout-packet.use-case';
@@ -15,6 +16,7 @@ export class GetTenantAccountingPeriodLockReadinessUseCase {
     private readonly getTenantAccountingPeriodCloseoutReadinessUseCase: GetTenantAccountingPeriodCloseoutReadinessUseCase,
     private readonly requestTenantAccountingPeriodCloseoutPacketUseCase: RequestTenantAccountingPeriodCloseoutPacketUseCase,
     private readonly getTenantAccountingPeriodCloseoutReportUseCase: GetTenantAccountingPeriodCloseoutReportUseCase,
+    private readonly getTenantAccountingPeriodCashCloseoutReadinessUseCase: GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
     private readonly nowProvider: () => Date = () => new Date(),
   ) {}
 
@@ -23,7 +25,14 @@ export class GetTenantAccountingPeriodLockReadinessUseCase {
     period: string;
     year: number;
   }): Promise<TenantAccountingPeriodLockReadinessView> {
-    const [journalRegistry, trialBalance, closeoutReadiness, closeoutPacket, closeoutReport] =
+    const [
+      journalRegistry,
+      trialBalance,
+      closeoutReadiness,
+      closeoutPacket,
+      closeoutReport,
+      cashCloseoutReadiness,
+    ] =
       await Promise.all([
         this.listTenantAccountingJournalRegistryUseCase.execute(input),
         this.getTenantAccountingTrialBalanceWorkspaceUseCase.execute(input),
@@ -36,6 +45,7 @@ export class GetTenantAccountingPeriodLockReadinessUseCase {
           note: 'Deterministic pre-lock readiness packet.',
         }),
         this.getTenantAccountingPeriodCloseoutReportUseCase.execute(input),
+        this.getTenantAccountingPeriodCashCloseoutReadinessUseCase.execute(input),
       ]);
     const checks: TenantAccountingPeriodLockReadinessView['checks'] = [
       {
@@ -77,6 +87,16 @@ export class GetTenantAccountingPeriodLockReadinessUseCase {
         detail: closeoutReport.nextStep,
         blockerCount: closeoutReport.blockers.length,
       },
+      {
+        key: 'cash_closeout',
+        label: 'Cash closeout',
+        status:
+          cashCloseoutReadiness.readinessStatus === 'ready_for_lock'
+            ? 'ready'
+            : cashCloseoutReadiness.readinessStatus,
+        detail: cashCloseoutReadiness.nextStep,
+        blockerCount: cashCloseoutReadiness.blockers.length,
+      },
     ];
     const blockedCheckCount = checks.filter(
       (check) => check.status === 'blocked',
@@ -90,6 +110,7 @@ export class GetTenantAccountingPeriodLockReadinessUseCase {
       ...closeoutReadiness.blockers,
       ...closeoutPacket.blockers,
       ...closeoutReport.blockers,
+      ...cashCloseoutReadiness.blockers,
     ];
     const lockReadinessStatus =
       blockedCheckCount > 0 || blockers.length > 0

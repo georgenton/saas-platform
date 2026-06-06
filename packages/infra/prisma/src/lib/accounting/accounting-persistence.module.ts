@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import {
+  ACCOUNTING_BANK_RECONCILIATION_CONTROL_ID_GENERATOR,
+  ACCOUNTING_BANK_RECONCILIATION_CONTROL_REPOSITORY,
   ACCOUNTING_BANK_STATEMENT_BATCH_ID_GENERATOR,
   ACCOUNTING_BANK_STATEMENT_LINE_ID_GENERATOR,
   ACCOUNTING_BANK_STATEMENT_REPOSITORY,
@@ -9,11 +11,13 @@ import {
   ACCOUNTING_PERIOD_CONTROL_REPOSITORY,
 } from '@saas-platform/accounting-application';
 import { PrismaModule } from '../prisma.module';
+import { PrismaAccountingBankReconciliationControlRepository } from './prisma-accounting-bank-reconciliation-control.repository';
 import { PrismaAccountingBankStatementRepository } from './prisma-accounting-bank-statement.repository';
 import { PrismaAccountingJournalEntryRepository } from './prisma-accounting-journal-entry.repository';
 import { PrismaAccountingPeriodControlRepository } from './prisma-accounting-period-control.repository';
 import { UuidAccountingBankStatementBatchIdGenerator } from './uuid-accounting-bank-statement-batch-id.generator';
 import { UuidAccountingBankStatementLineIdGenerator } from './uuid-accounting-bank-statement-line-id.generator';
+import { UuidAccountingBankReconciliationControlIdGenerator } from './uuid-accounting-bank-reconciliation-control-id.generator';
 import { UuidAccountingJournalEntryIdGenerator } from './uuid-accounting-journal-entry-id.generator';
 import { UuidAccountingPeriodControlIdGenerator } from './uuid-accounting-period-control-id.generator';
 
@@ -23,10 +27,12 @@ import { UuidAccountingPeriodControlIdGenerator } from './uuid-accounting-period
     PrismaAccountingJournalEntryRepository,
     PrismaAccountingPeriodControlRepository,
     PrismaAccountingBankStatementRepository,
+    PrismaAccountingBankReconciliationControlRepository,
     UuidAccountingJournalEntryIdGenerator,
     UuidAccountingPeriodControlIdGenerator,
     UuidAccountingBankStatementBatchIdGenerator,
     UuidAccountingBankStatementLineIdGenerator,
+    UuidAccountingBankReconciliationControlIdGenerator,
     {
       provide: ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
       useExisting: PrismaAccountingJournalEntryRepository,
@@ -55,6 +61,14 @@ import { UuidAccountingPeriodControlIdGenerator } from './uuid-accounting-period
       provide: ACCOUNTING_BANK_STATEMENT_LINE_ID_GENERATOR,
       useExisting: UuidAccountingBankStatementLineIdGenerator,
     },
+    {
+      provide: ACCOUNTING_BANK_RECONCILIATION_CONTROL_REPOSITORY,
+      useExisting: PrismaAccountingBankReconciliationControlRepository,
+    },
+    {
+      provide: ACCOUNTING_BANK_RECONCILIATION_CONTROL_ID_GENERATOR,
+      useExisting: UuidAccountingBankReconciliationControlIdGenerator,
+    },
   ],
   exports: [
     ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
@@ -64,6 +78,8 @@ import { UuidAccountingPeriodControlIdGenerator } from './uuid-accounting-period
     ACCOUNTING_BANK_STATEMENT_REPOSITORY,
     ACCOUNTING_BANK_STATEMENT_BATCH_ID_GENERATOR,
     ACCOUNTING_BANK_STATEMENT_LINE_ID_GENERATOR,
+    ACCOUNTING_BANK_RECONCILIATION_CONTROL_REPOSITORY,
+    ACCOUNTING_BANK_RECONCILIATION_CONTROL_ID_GENERATOR,
   ],
 })
 export class AccountingPersistenceModule {}

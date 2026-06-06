@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.103.0
+
+### Minor Changes
+
+- d735212: Add Accounting professional closeout workspace, corrections queue, adjustment recommendations, evidence attachments, narrative report, and AI review assistant.
+
 ## 0.102.0
 
 ### Minor Changes

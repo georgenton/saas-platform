@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.105.0
+
+### Minor Changes
+
+- 3b00c06: Add Tax Compliance EC declaration source ledger, VAT draft workspace, form mapping catalog, income evidence workspace, AI filing assistant, and declaration review loop.
+
 ## 0.104.0
 
 ### Minor Changes

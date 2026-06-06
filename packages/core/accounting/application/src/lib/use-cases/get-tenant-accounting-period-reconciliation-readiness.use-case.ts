@@ -59,11 +59,26 @@ export class GetTenantAccountingPeriodReconciliationReadinessUseCase {
         detail: `Diferencia total ${workspace.summary.totalDifferenceInCents} centavos.`,
         blockerCount: workspace.summary.totalDifferenceInCents === 0 ? 0 : 1,
       },
+      {
+        key: 'exception_packet',
+        label: 'Exception packet',
+        status:
+          workspace.summary.unmatchedCount === 0 &&
+          workspace.summary.needsReviewCount === 0
+            ? 'ready'
+            : 'needs_review',
+        detail: `${workspace.summary.unmatchedCount} sin match, ${workspace.summary.needsReviewCount} por revisar.`,
+        blockerCount:
+          workspace.summary.unmatchedCount + workspace.summary.needsReviewCount,
+      },
     ];
     const blockers = [
       ...workspace.blockers,
       ...(workspace.summary.unmatchedCount > 0
         ? ['accounting.period_reconciliation.unmatched_bank_lines']
+        : []),
+      ...(workspace.summary.needsReviewCount > 0
+        ? ['accounting.period_reconciliation.exception_packet_required']
         : []),
     ];
     const blockedCheckCount = checks.filter((check) => check.status === 'blocked')

@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 import {
+  ACCOUNTING_BANK_STATEMENT_BATCH_ID_GENERATOR,
+  ACCOUNTING_BANK_STATEMENT_LINE_ID_GENERATOR,
+  ACCOUNTING_BANK_STATEMENT_REPOSITORY,
   ACCOUNTING_JOURNAL_ENTRY_ID_GENERATOR,
   ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
   ACCOUNTING_PERIOD_CONTROL_ID_GENERATOR,
@@ -8,6 +11,7 @@ import {
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
   GetTenantAccountingBankReconciliationWorkspaceUseCase,
+  GetTenantAccountingBankStatementImportWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
@@ -19,6 +23,7 @@ import {
   GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingPeriodReconciliationReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
+  ListTenantAccountingBankStatementRegistryUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
   LockTenantAccountingPeriodUseCase,
@@ -26,6 +31,8 @@ import {
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
+  RecordTenantAccountingBankStatementImportUseCase,
+  RequestTenantAccountingReconciliationExceptionPacketUseCase,
   RequestTenantAccountingReconciliationMatchPacketUseCase,
 } from '@saas-platform/accounting-application';
 import { PRODUCT_REPOSITORY } from '@saas-platform/catalog-application';
@@ -195,18 +202,58 @@ import { AccountingController } from './accounting.controller';
         ),
     },
     {
+      provide: GetTenantAccountingBankStatementImportWorkspaceUseCase,
+      useFactory: () =>
+        new GetTenantAccountingBankStatementImportWorkspaceUseCase(),
+    },
+    {
+      provide: RecordTenantAccountingBankStatementImportUseCase,
+      inject: [
+        ACCOUNTING_BANK_STATEMENT_REPOSITORY,
+        ACCOUNTING_BANK_STATEMENT_BATCH_ID_GENERATOR,
+        ACCOUNTING_BANK_STATEMENT_LINE_ID_GENERATOR,
+        TENANT_REPOSITORY,
+        GetTenantAccountingBankStatementImportWorkspaceUseCase,
+      ],
+      useFactory: (
+        accountingBankStatementRepository,
+        accountingBankStatementBatchIdGenerator,
+        accountingBankStatementLineIdGenerator,
+        tenantRepository,
+        getTenantAccountingBankStatementImportWorkspaceUseCase,
+      ) =>
+        new RecordTenantAccountingBankStatementImportUseCase(
+          accountingBankStatementRepository,
+          accountingBankStatementBatchIdGenerator,
+          accountingBankStatementLineIdGenerator,
+          tenantRepository,
+          getTenantAccountingBankStatementImportWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: ListTenantAccountingBankStatementRegistryUseCase,
+      inject: [ACCOUNTING_BANK_STATEMENT_REPOSITORY],
+      useFactory: (accountingBankStatementRepository) =>
+        new ListTenantAccountingBankStatementRegistryUseCase(
+          accountingBankStatementRepository,
+        ),
+    },
+    {
       provide: GetTenantAccountingBankReconciliationWorkspaceUseCase,
       inject: [
         GetTenantAccountingLedgerRegistryWorkspaceUseCase,
         ListTenantAccountingJournalRegistryUseCase,
+        ListTenantAccountingBankStatementRegistryUseCase,
       ],
       useFactory: (
         getTenantAccountingLedgerRegistryWorkspaceUseCase,
         listTenantAccountingJournalRegistryUseCase,
+        listTenantAccountingBankStatementRegistryUseCase,
       ) =>
         new GetTenantAccountingBankReconciliationWorkspaceUseCase(
           getTenantAccountingLedgerRegistryWorkspaceUseCase,
           listTenantAccountingJournalRegistryUseCase,
+          listTenantAccountingBankStatementRegistryUseCase,
         ),
     },
     {
@@ -215,6 +262,21 @@ import { AccountingController } from './accounting.controller';
       useFactory: (getTenantAccountingBankReconciliationWorkspaceUseCase) =>
         new RequestTenantAccountingReconciliationMatchPacketUseCase(
           getTenantAccountingBankReconciliationWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingReconciliationExceptionPacketUseCase,
+      inject: [
+        GetTenantAccountingBankReconciliationWorkspaceUseCase,
+        ListTenantAccountingJournalRegistryUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingBankReconciliationWorkspaceUseCase,
+        listTenantAccountingJournalRegistryUseCase,
+      ) =>
+        new RequestTenantAccountingReconciliationExceptionPacketUseCase(
+          getTenantAccountingBankReconciliationWorkspaceUseCase,
+          listTenantAccountingJournalRegistryUseCase,
         ),
     },
     {

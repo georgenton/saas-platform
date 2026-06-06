@@ -371,6 +371,53 @@ printLine(
   `${bankReconciliationWorkspace.summary.exactMatchCount}/${bankReconciliationWorkspace.summary.candidateCount} matches, ${bankReconciliationWorkspace.reconciliationStatus}`,
 );
 
+if (bankReconciliationWorkspace.summary.bankAccountCount > 0) {
+  const statementImport = await apiRequest({
+    baseUrl,
+    method: 'POST',
+    path: accountingPath('/bank-statement-import'),
+    token,
+    body: {
+      period,
+      year,
+      source: 'manual',
+      originalFileName: `smoke-bank-${period}.json`,
+      importedByUserId: 'smoke-accounting-reviewer',
+      importedByEmail: 'accounting-reviewer@saas-platform.dev',
+      notes: 'Smoke bank statement import.',
+      lines: bankReconciliationWorkspace.bankAccounts.map((account, index) => ({
+        accountCode: account.accountCode,
+        accountName: account.accountName,
+        postedAt: `${period}-28T12:00:00.000Z`,
+        description: `Smoke bank statement ${account.accountName}`,
+        direction: account.ledgerBalanceInCents >= 0 ? 'inflow' : 'outflow',
+        amountInCents: Math.abs(account.ledgerBalanceInCents),
+        currency: account.currency,
+        reference: `smoke-bank-${period}-${index + 1}`,
+        externalLineId: `smoke:${period}:${account.accountCode}`,
+      })),
+    },
+  });
+
+  assertStatus('bank statement import', statementImport.recordStatus);
+  printLine(
+    'bank statement import',
+    `${statementImport.summary.recordedLineCount} lineas, ${statementImport.recordStatus}`,
+  );
+}
+
+const bankStatementRegistry = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/bank-statement-registry?${periodQuery()}`),
+  token,
+});
+
+assertStatus('bank statement registry', bankStatementRegistry.registryStatus);
+printLine(
+  'bank statement registry',
+  `${bankStatementRegistry.summary.batchCount} batches, ${bankStatementRegistry.summary.lineCount} lineas`,
+);
+
 if (bankReconciliationWorkspace.summary.exactMatchCount > 0) {
   const matchPacket = await apiRequest({
     baseUrl,
@@ -396,6 +443,23 @@ if (bankReconciliationWorkspace.summary.exactMatchCount > 0) {
     `${matchPacket.summary.approvedCandidateCount} aprobados, ${matchPacket.packetStatus}`,
   );
 }
+
+const exceptionPacket = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/reconciliation-exception-packet'),
+  token,
+  body: {
+    period,
+    year,
+  },
+});
+
+assertStatus('reconciliation exception packet', exceptionPacket.exceptionStatus);
+printLine(
+  'reconciliation exceptions',
+  `${exceptionPacket.summary.exceptionCount} excepciones, ${exceptionPacket.exceptionStatus}`,
+);
 
 const reconciliationReadiness = await apiRequest({
   baseUrl,

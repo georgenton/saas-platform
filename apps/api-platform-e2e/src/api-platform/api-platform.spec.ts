@@ -201,6 +201,7 @@ import {
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
   GetTenantAccountingBankReconciliationWorkspaceUseCase,
+  GetTenantAccountingBankStatementImportWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
@@ -212,6 +213,7 @@ import {
   GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingPeriodReconciliationReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
+  ListTenantAccountingBankStatementRegistryUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
   LockTenantAccountingPeriodUseCase,
@@ -219,6 +221,8 @@ import {
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
+  RecordTenantAccountingBankStatementImportUseCase,
+  RequestTenantAccountingReconciliationExceptionPacketUseCase,
   RequestTenantAccountingReconciliationMatchPacketUseCase,
 } from '@saas-platform/accounting-application';
 import {
@@ -1014,10 +1018,22 @@ describe('API', () => {
   let getTenantAccountingLedgerRegistryWorkspaceUseCase: {
     execute: jest.Mock;
   };
+  let getTenantAccountingBankStatementImportWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let recordTenantAccountingBankStatementImportUseCase: {
+    execute: jest.Mock;
+  };
+  let listTenantAccountingBankStatementRegistryUseCase: {
+    execute: jest.Mock;
+  };
   let getTenantAccountingBankReconciliationWorkspaceUseCase: {
     execute: jest.Mock;
   };
   let requestTenantAccountingReconciliationMatchPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantAccountingReconciliationExceptionPacketUseCase: {
     execute: jest.Mock;
   };
   let getTenantAccountingPeriodReconciliationReadinessUseCase: {
@@ -4758,6 +4774,123 @@ describe('API', () => {
     nextStep: 'Preparar match packet para aprobacion humana de conciliacion.',
     guardrails: ['Workspace de conciliacion interna.'],
   };
+  const accountingBankStatementImportWorkspace = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    importStatus: 'ready_to_record' as const,
+    source: 'manual' as const,
+    originalFileName: 'bank-2026-06.json',
+    previewLines: [
+      {
+        lineKey: 'import:1',
+        accountKey: 'bank:101.01',
+        accountCode: '101.01',
+        accountName: 'Caja y bancos',
+        postedAt: taxComplianceGeneratedAt,
+        description: 'Deposito cliente',
+        direction: 'inflow' as const,
+        amountInCents: 25000,
+        currency: 'USD',
+        reference: 'bank-ref-001',
+        externalLineId: 'ext-bank-001',
+        validationStatus: 'ready' as const,
+        blockers: [],
+      },
+    ],
+    summary: {
+      lineCount: 1,
+      validLineCount: 1,
+      blockedLineCount: 0,
+      totalInflowInCents: 25000,
+      totalOutflowInCents: 0,
+      currencyCount: 1,
+    },
+    blockers: [],
+    nextStep: 'Registrar batch de extracto bancario como evidencia del periodo.',
+    guardrails: ['Preview de importacion.'],
+  };
+  const accountingBankStatementLine = {
+    id: 'bank_statement_line_001',
+    batchId: 'bank_statement_batch_001',
+    tenantId: 'tenant_123',
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    accountKey: 'bank:101.01',
+    accountCode: '101.01',
+    accountName: 'Caja y bancos',
+    postedAt: taxComplianceGeneratedAt,
+    description: 'Deposito cliente',
+    direction: 'inflow' as const,
+    amountInCents: 25000,
+    currency: 'USD',
+    reference: 'bank-ref-001',
+    externalLineId: 'ext-bank-001',
+    raw: { source: 'manual' },
+    createdAt: taxComplianceGeneratedAt,
+    updatedAt: taxComplianceGeneratedAt,
+  };
+  const accountingBankStatementBatch = {
+    id: 'bank_statement_batch_001',
+    tenantId: 'tenant_123',
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    source: 'manual' as const,
+    status: 'recorded' as const,
+    importedByUserId: 'user_123',
+    importedByEmail: 'hello@saas-platform.dev',
+    importedAt: taxComplianceGeneratedAt,
+    originalFileName: 'bank-2026-06.json',
+    notes: 'Import e2e.',
+    lineCount: 1,
+    totalInflowInCents: 25000,
+    totalOutflowInCents: 0,
+    blockers: [],
+    lines: [accountingBankStatementLine],
+    createdAt: taxComplianceGeneratedAt,
+    updatedAt: taxComplianceGeneratedAt,
+  };
+  const accountingBankStatementImportResult = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    recordStatus: 'recorded' as const,
+    batch: accountingBankStatementBatch,
+    preview: accountingBankStatementImportWorkspace,
+    summary: {
+      requestedLineCount: 1,
+      recordedLineCount: 1,
+      totalInflowInCents: 25000,
+      totalOutflowInCents: 0,
+    },
+    blockers: [],
+    nextStep: 'Revisar registry y correr conciliacion bancaria.',
+    guardrails: ['El registro conserva evidencia operacional.'],
+  };
+  const accountingBankStatementRegistry = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    registryStatus: 'ready' as const,
+    batches: [accountingBankStatementBatch],
+    lines: [accountingBankStatementLine],
+    summary: {
+      batchCount: 1,
+      lineCount: 1,
+      totalInflowInCents: 25000,
+      totalOutflowInCents: 0,
+      blockedBatchCount: 0,
+      currencyCount: 1,
+    },
+    blockers: [],
+    nextStep: 'Usar statement registry como evidencia externa para conciliacion.',
+    guardrails: ['Registry de extractos bancarios cargados por usuario.'],
+  };
   const accountingReconciliationMatchPacket = {
     tenantSlug: 'saas-platform',
     period: '2026-06',
@@ -4790,6 +4923,26 @@ describe('API', () => {
     blockers: [],
     nextStep: 'Usar readiness de conciliacion como evidencia para cierre.',
     guardrails: ['Aprobacion operacional.'],
+  };
+  const accountingReconciliationExceptionPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    exceptionStatus: 'empty' as const,
+    workspace: accountingBankReconciliationWorkspace,
+    exceptions: [],
+    summary: {
+      exceptionCount: 0,
+      criticalCount: 0,
+      warningCount: 0,
+      bankLineWithoutJournalCount: 0,
+      journalWithoutBankLineCount: 0,
+      totalDifferenceInCents: 0,
+    },
+    blockers: [],
+    nextStep: 'No hay excepciones de conciliacion pendientes.',
+    guardrails: ['Exception packet no crea ajustes automaticamente.'],
   };
   const accountingPeriodReconciliationReadiness = {
     tenantSlug: 'saas-platform',
@@ -13675,11 +13828,23 @@ describe('API', () => {
     getTenantAccountingLedgerRegistryWorkspaceUseCase = {
       execute: jest.fn().mockResolvedValue(accountingLedgerRegistryWorkspace),
     };
+    getTenantAccountingBankStatementImportWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingBankStatementImportWorkspace),
+    };
+    recordTenantAccountingBankStatementImportUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingBankStatementImportResult),
+    };
+    listTenantAccountingBankStatementRegistryUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingBankStatementRegistry),
+    };
     getTenantAccountingBankReconciliationWorkspaceUseCase = {
       execute: jest.fn().mockResolvedValue(accountingBankReconciliationWorkspace),
     };
     requestTenantAccountingReconciliationMatchPacketUseCase = {
       execute: jest.fn().mockResolvedValue(accountingReconciliationMatchPacket),
+    };
+    requestTenantAccountingReconciliationExceptionPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingReconciliationExceptionPacket),
     };
     getTenantAccountingPeriodReconciliationReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(accountingPeriodReconciliationReadiness),
@@ -14335,10 +14500,18 @@ describe('API', () => {
       .useValue(listTenantAccountingJournalRegistryUseCase)
       .overrideProvider(GetTenantAccountingLedgerRegistryWorkspaceUseCase)
       .useValue(getTenantAccountingLedgerRegistryWorkspaceUseCase)
+      .overrideProvider(GetTenantAccountingBankStatementImportWorkspaceUseCase)
+      .useValue(getTenantAccountingBankStatementImportWorkspaceUseCase)
+      .overrideProvider(RecordTenantAccountingBankStatementImportUseCase)
+      .useValue(recordTenantAccountingBankStatementImportUseCase)
+      .overrideProvider(ListTenantAccountingBankStatementRegistryUseCase)
+      .useValue(listTenantAccountingBankStatementRegistryUseCase)
       .overrideProvider(GetTenantAccountingBankReconciliationWorkspaceUseCase)
       .useValue(getTenantAccountingBankReconciliationWorkspaceUseCase)
       .overrideProvider(RequestTenantAccountingReconciliationMatchPacketUseCase)
       .useValue(requestTenantAccountingReconciliationMatchPacketUseCase)
+      .overrideProvider(RequestTenantAccountingReconciliationExceptionPacketUseCase)
+      .useValue(requestTenantAccountingReconciliationExceptionPacketUseCase)
       .overrideProvider(GetTenantAccountingPeriodReconciliationReadinessUseCase)
       .useValue(getTenantAccountingPeriodReconciliationReadinessUseCase)
       .overrideProvider(GetTenantAccountingPeriodCloseoutReadinessUseCase)
@@ -18670,6 +18843,140 @@ describe('API', () => {
     });
   });
 
+  it('POST /api/accounting/tenants/:slug/bank-statement-import-preview should validate statement imports', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/bank-statement-import-preview')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        source: 'manual',
+        originalFileName: 'bank-2026-06.json',
+        lines: [
+          {
+            accountCode: '101.01',
+            accountName: 'Caja y bancos',
+            postedAt: '2026-06-04T12:00:00.000Z',
+            direction: 'inflow',
+            amountInCents: 25000,
+            currency: 'USD',
+            reference: 'bank-ref-001',
+          },
+        ],
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      importStatus: 'ready_to_record',
+      summary: {
+        lineCount: 1,
+        validLineCount: 1,
+      },
+    });
+
+    expect(
+      getTenantAccountingBankStatementImportWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      source: 'manual',
+      originalFileName: 'bank-2026-06.json',
+      lines: expect.any(Array),
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/bank-statement-import should record statement batches', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/bank-statement-import')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        source: 'manual',
+        originalFileName: 'bank-2026-06.json',
+        importedByUserId: 'user_123',
+        importedByEmail: 'hello@saas-platform.dev',
+        notes: 'Import e2e.',
+        lines: [
+          {
+            accountCode: '101.01',
+            accountName: 'Caja y bancos',
+            postedAt: '2026-06-04T12:00:00.000Z',
+            direction: 'inflow',
+            amountInCents: 25000,
+            currency: 'USD',
+            reference: 'bank-ref-001',
+          },
+        ],
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      recordStatus: 'recorded',
+      batch: {
+        id: 'bank_statement_batch_001',
+        lineCount: 1,
+      },
+      summary: {
+        recordedLineCount: 1,
+      },
+    });
+
+    expect(
+      recordTenantAccountingBankStatementImportUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      source: 'manual',
+      originalFileName: 'bank-2026-06.json',
+      importedByUserId: 'user_123',
+      importedByEmail: 'hello@saas-platform.dev',
+      notes: 'Import e2e.',
+      lines: expect.any(Array),
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/bank-statement-registry should return imported statement batches', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/bank-statement-registry?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      registryStatus: 'ready',
+      summary: {
+        batchCount: 1,
+        lineCount: 1,
+      },
+      batches: [
+        {
+          id: 'bank_statement_batch_001',
+          lines: [
+            {
+              id: 'bank_statement_line_001',
+              amountInCents: 25000,
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(
+      listTenantAccountingBankStatementRegistryUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
   it('POST /api/accounting/tenants/:slug/reconciliation-match-packet should approve exact matches', async () => {
     const response = await request(httpServer)
       .post('/api/accounting/tenants/saas-platform/reconciliation-match-packet')
@@ -18706,6 +19013,34 @@ describe('API', () => {
       reviewerUserId: 'user_123',
       reviewerEmail: 'hello@saas-platform.dev',
       note: 'Conciliacion bancaria interna desde e2e.',
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/reconciliation-exception-packet should return exception packets', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/reconciliation-exception-packet')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      exceptionStatus: 'empty',
+      summary: {
+        exceptionCount: 0,
+        totalDifferenceInCents: 0,
+      },
+    });
+
+    expect(
+      requestTenantAccountingReconciliationExceptionPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
     });
   });
 

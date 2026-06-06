@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.98.0
+
+### Minor Changes
+
+- 48a109b: Add Accounting bank reconciliation workspaces, match packets, and period reconciliation readiness.
+
 ## 0.97.0
 
 ### Minor Changes

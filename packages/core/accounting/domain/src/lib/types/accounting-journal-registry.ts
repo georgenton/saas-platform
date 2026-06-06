@@ -173,6 +173,126 @@ export interface TenantAccountingBankReconciliationWorkspaceView {
   guardrails: string[];
 }
 
+export interface TenantAccountingBankStatementLineView {
+  id: string;
+  batchId: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  accountKey: string;
+  accountCode: string;
+  accountName: string;
+  postedAt: Date;
+  description: string;
+  direction: 'inflow' | 'outflow';
+  amountInCents: number;
+  currency: string;
+  reference: string;
+  externalLineId: string | null;
+  raw: Record<string, string | number | boolean | null>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TenantAccountingBankStatementBatchView {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  source: 'manual' | 'json' | 'csv';
+  status: 'recorded' | 'blocked';
+  importedByUserId: string | null;
+  importedByEmail: string | null;
+  importedAt: Date;
+  originalFileName: string | null;
+  notes: string | null;
+  lineCount: number;
+  totalInflowInCents: number;
+  totalOutflowInCents: number;
+  blockers: string[];
+  lines: TenantAccountingBankStatementLineView[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TenantAccountingBankStatementImportWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  importStatus: 'ready_to_record' | 'needs_review' | 'blocked';
+  source: 'manual' | 'json' | 'csv';
+  originalFileName: string | null;
+  previewLines: Array<{
+    lineKey: string;
+    accountKey: string;
+    accountCode: string;
+    accountName: string;
+    postedAt: Date | null;
+    description: string;
+    direction: 'inflow' | 'outflow' | 'unknown';
+    amountInCents: number;
+    currency: string;
+    reference: string;
+    externalLineId: string | null;
+    validationStatus: AccountingReadinessStatus;
+    blockers: string[];
+  }>;
+  summary: {
+    lineCount: number;
+    validLineCount: number;
+    blockedLineCount: number;
+    totalInflowInCents: number;
+    totalOutflowInCents: number;
+    currencyCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingBankStatementImportResultView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  recordStatus: 'recorded' | 'blocked';
+  batch: TenantAccountingBankStatementBatchView | null;
+  preview: TenantAccountingBankStatementImportWorkspaceView;
+  summary: {
+    requestedLineCount: number;
+    recordedLineCount: number;
+    totalInflowInCents: number;
+    totalOutflowInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingBankStatementRegistryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  registryStatus: 'ready' | 'empty' | 'needs_review';
+  batches: TenantAccountingBankStatementBatchView[];
+  lines: TenantAccountingBankStatementLineView[];
+  summary: {
+    batchCount: number;
+    lineCount: number;
+    totalInflowInCents: number;
+    totalOutflowInCents: number;
+    blockedBatchCount: number;
+    currencyCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface TenantAccountingReconciliationMatchPacketView {
   tenantSlug: string;
   period: string;
@@ -199,6 +319,45 @@ export interface TenantAccountingReconciliationMatchPacketView {
     needsReviewCount: number;
     approvedAmountInCents: number;
     remainingDifferenceInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingReconciliationExceptionPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  exceptionStatus: 'ready_for_review' | 'blocked' | 'empty';
+  workspace: TenantAccountingBankReconciliationWorkspaceView;
+  exceptions: Array<{
+    exceptionKey: string;
+    exceptionType:
+      | 'bank_line_without_journal'
+      | 'journal_without_bank_line'
+      | 'amount_difference'
+      | 'account_mismatch';
+    severity: 'info' | 'warning' | 'critical';
+    statementLineKey: string | null;
+    journalEntryId: string | null;
+    amountInCents: number;
+    differenceInCents: number;
+    recommendation:
+      | 'create_adjustment'
+      | 'review_bank_statement'
+      | 'review_journal'
+      | 'mark_timing_difference';
+    rationale: string;
+  }>;
+  summary: {
+    exceptionCount: number;
+    criticalCount: number;
+    warningCount: number;
+    bankLineWithoutJournalCount: number;
+    journalWithoutBankLineCount: number;
+    totalDifferenceInCents: number;
   };
   blockers: string[];
   nextStep: string;

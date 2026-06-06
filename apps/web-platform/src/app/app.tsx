@@ -106,6 +106,7 @@ import {
   createAccountingAdjustingJournalEntry,
   fetchAccountingAuditTrailWorkspace,
   fetchAccountingBankReconciliationWorkspace,
+  fetchAccountingBankStatementRegistry,
   fetchAccountingChartOfAccountsWorkspace,
   fetchAccountingFinancialStatementPreview,
   fetchAccountingIntakeWorkspace,
@@ -120,7 +121,9 @@ import {
   fetchAccountingPeriodReconciliationReadiness,
   fetchAccountingTrialBalanceWorkspace,
   lockAccountingPeriod,
+  recordAccountingBankStatementImport,
   requestAccountingPeriodReopenPacket,
+  requestAccountingReconciliationExceptionPacket,
   requestAccountingReconciliationMatchPacket,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
@@ -367,6 +370,8 @@ import {
   AccountingAdjustingJournalEntryCreationResultResponse,
   AccountingAuditTrailWorkspaceResponse,
   AccountingBankReconciliationWorkspaceResponse,
+  AccountingBankStatementImportResultResponse,
+  AccountingBankStatementRegistryResponse,
   AccountingFinancialStatementPreviewResponse,
   AccountingIntakeWorkspaceResponse,
   AccountingJournalEntryCreationResultResponse,
@@ -383,6 +388,7 @@ import {
   AccountingPeriodLockResultResponse,
   AccountingPeriodReconciliationReadinessResponse,
   AccountingPeriodReopenPacketResponse,
+  AccountingReconciliationExceptionPacketResponse,
   AccountingReconciliationMatchPacketResponse,
   AccountingTrialBalanceWorkspaceResponse,
   AiActivityFeedEventType,
@@ -2152,6 +2158,14 @@ export function App() {
     setAccountingBankReconciliationWorkspace,
   ] = useState<AccountingBankReconciliationWorkspaceResponse | null>(null);
   const [
+    accountingBankStatementRegistry,
+    setAccountingBankStatementRegistry,
+  ] = useState<AccountingBankStatementRegistryResponse | null>(null);
+  const [
+    lastAccountingBankStatementImport,
+    setLastAccountingBankStatementImport,
+  ] = useState<AccountingBankStatementImportResultResponse | null>(null);
+  const [
     accountingPeriodReconciliationReadiness,
     setAccountingPeriodReconciliationReadiness,
   ] = useState<AccountingPeriodReconciliationReadinessResponse | null>(null);
@@ -2159,6 +2173,10 @@ export function App() {
     lastAccountingReconciliationMatchPacket,
     setLastAccountingReconciliationMatchPacket,
   ] = useState<AccountingReconciliationMatchPacketResponse | null>(null);
+  const [
+    lastAccountingReconciliationExceptionPacket,
+    setLastAccountingReconciliationExceptionPacket,
+  ] = useState<AccountingReconciliationExceptionPacketResponse | null>(null);
   const [
     accountingPeriodCloseoutReadiness,
     setAccountingPeriodCloseoutReadiness,
@@ -19601,6 +19619,7 @@ export function App() {
         nextAccountingLedgerPreviewWorkspace,
         nextAccountingJournalRegistry,
         nextAccountingLedgerRegistryWorkspace,
+        nextAccountingBankStatementRegistry,
         nextAccountingBankReconciliationWorkspace,
         nextAccountingPeriodReconciliationReadiness,
         nextAccountingPeriodCloseoutReadiness,
@@ -19643,6 +19662,12 @@ export function App() {
               year,
             ),
             fetchAccountingLedgerRegistryWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingBankStatementRegistry(
               token,
               tenantSlug,
               taxCompliancePeriod,
@@ -19704,6 +19729,7 @@ export function App() {
             ),
           ])
         : [
+            null,
             null,
             null,
             null,
@@ -19781,6 +19807,7 @@ export function App() {
         setAccountingLedgerRegistryWorkspace(
           nextAccountingLedgerRegistryWorkspace,
         );
+        setAccountingBankStatementRegistry(nextAccountingBankStatementRegistry);
         setAccountingBankReconciliationWorkspace(
           nextAccountingBankReconciliationWorkspace,
         );
@@ -20483,6 +20510,142 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo crear journal registry interno.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRecordAccountingBankStatementImport() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    const bankAccounts = accountingBankReconciliationWorkspace?.bankAccounts ?? [];
+
+    if (bankAccounts.length === 0) {
+      setTaxComplianceActionMessage(
+        'No hay cuentas bancarias contables para importar extracto.',
+      );
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-bank-statement-import');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const result = await recordAccountingBankStatementImport(token, tenantSlug, {
+        period: taxCompliancePeriod,
+        year,
+        source: 'manual',
+        originalFileName: `manual-${taxCompliancePeriod}.json`,
+        importedByUserId: session?.user.id ?? null,
+        importedByEmail: session?.user.email ?? null,
+        notes: 'Import manual demo desde Accounting foundation.',
+        lines: bankAccounts.map((account, index) => ({
+          accountCode: account.accountCode,
+          accountName: account.accountName,
+          postedAt: `${taxCompliancePeriod}-28T12:00:00.000Z`,
+          description: `Extracto manual ${account.accountName}`,
+          direction: account.ledgerBalanceInCents >= 0 ? 'inflow' : 'outflow',
+          amountInCents: Math.abs(account.ledgerBalanceInCents),
+          currency: account.currency,
+          reference: `manual-bank-${taxCompliancePeriod}-${index + 1}`,
+          externalLineId: `manual:${taxCompliancePeriod}:${account.accountCode}`,
+        })),
+      });
+      const [registry, bankReconciliation, reconciliationReadiness, closeout] =
+        await Promise.all([
+          fetchAccountingBankStatementRegistry(token, tenantSlug, taxCompliancePeriod, year),
+          fetchAccountingBankReconciliationWorkspace(
+            token,
+            tenantSlug,
+            taxCompliancePeriod,
+            year,
+          ),
+          fetchAccountingPeriodReconciliationReadiness(
+            token,
+            tenantSlug,
+            taxCompliancePeriod,
+            year,
+          ),
+          fetchAccountingPeriodCloseoutReadiness(
+            token,
+            tenantSlug,
+            taxCompliancePeriod,
+            year,
+          ),
+        ]);
+
+      setLastAccountingBankStatementImport(result);
+      setAccountingBankStatementRegistry(registry);
+      setAccountingBankReconciliationWorkspace(bankReconciliation);
+      setAccountingPeriodReconciliationReadiness(reconciliationReadiness);
+      setAccountingPeriodCloseoutReadiness(closeout);
+      setTaxComplianceActionMessage(
+        `${result.summary.recordedLineCount} lineas bancarias registradas.`,
+      );
+    } catch (error) {
+      setLastAccountingBankStatementImport(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo registrar extracto bancario.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestAccountingReconciliationExceptionPacket() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-reconciliation-exception-packet');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const packet = await requestAccountingReconciliationExceptionPacket(
+        token,
+        tenantSlug,
+        taxCompliancePeriod,
+        year,
+      );
+      const [reconciliationReadiness, closeout] = await Promise.all([
+        fetchAccountingPeriodReconciliationReadiness(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingPeriodCloseoutReadiness(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+      ]);
+
+      setLastAccountingReconciliationExceptionPacket(packet);
+      setAccountingBankReconciliationWorkspace(packet.workspace);
+      setAccountingPeriodReconciliationReadiness(reconciliationReadiness);
+      setAccountingPeriodCloseoutReadiness(closeout);
+      setTaxComplianceActionMessage(
+        `${packet.summary.exceptionCount} excepciones bancarias preparadas.`,
+      );
+    } catch (error) {
+      setLastAccountingReconciliationExceptionPacket(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo preparar exception packet bancario.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -30265,6 +30428,22 @@ export function App() {
                                 className={styles.ghostButton}
                                 disabled={
                                   taxComplianceActionLoading ===
+                                    'accounting-bank-statement-import' ||
+                                  !accountingBankReconciliationWorkspace ||
+                                  accountingBankReconciliationWorkspace.summary
+                                    .bankAccountCount === 0
+                                }
+                                onClick={() =>
+                                  void handleRecordAccountingBankStatementImport()
+                                }
+                                type="button"
+                              >
+                                Import banco
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
                                     'accounting-reconciliation-match-packet' ||
                                   !accountingBankReconciliationWorkspace ||
                                   accountingBankReconciliationWorkspace.summary
@@ -30276,6 +30455,20 @@ export function App() {
                                 type="button"
                               >
                                 Match bancos
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-reconciliation-exception-packet' ||
+                                  !accountingBankReconciliationWorkspace
+                                }
+                                onClick={() =>
+                                  void handleRequestAccountingReconciliationExceptionPacket()
+                                }
+                                type="button"
+                              >
+                                Excepciones
                               </button>
                               <button
                                 className={styles.ghostButton}
@@ -30509,9 +30702,24 @@ export function App() {
                                       checks listos
                                     </span>
                                   </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Extractos
+                                    </span>
+                                    <strong>
+                                      {accountingBankStatementRegistry?.summary
+                                        .batchCount ?? 0}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingBankStatementRegistry?.summary
+                                        .lineCount ?? 0}{' '}
+                                      lineas
+                                    </span>
+                                  </div>
                                 </div>
                                 <p className={styles.muted}>
                                   {accountingPeriodCloseoutReadiness?.nextStep ??
+                                    accountingBankStatementRegistry?.nextStep ??
                                     accountingLedgerRegistryWorkspace?.nextStep ??
                                     accountingJournalRegistry?.nextStep}
                                 </p>
@@ -30639,6 +30847,40 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      Import banco
+                                    </span>
+                                    <strong>
+                                      {lastAccountingBankStatementImport
+                                        ? humanizeKey(
+                                            lastAccountingBankStatementImport.recordStatus,
+                                          )
+                                        : 'sin import'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingBankStatementImport?.summary
+                                        .recordedLineCount ?? 0}{' '}
+                                      lineas
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Exceptions
+                                    </span>
+                                    <strong>
+                                      {lastAccountingReconciliationExceptionPacket
+                                        ? humanizeKey(
+                                            lastAccountingReconciliationExceptionPacket.exceptionStatus,
+                                          )
+                                        : 'sin packet'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingReconciliationExceptionPacket
+                                        ?.summary.exceptionCount ?? 0}{' '}
+                                      abiertas
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Period lock
                                     </span>
                                     <strong>
@@ -30748,6 +30990,8 @@ export function App() {
                                 <p className={styles.muted}>
                                   {accountingPeriodLockRegistry?.nextStep ??
                                     accountingAuditTrailWorkspace?.nextStep ??
+                                    lastAccountingReconciliationExceptionPacket?.nextStep ??
+                                    lastAccountingBankStatementImport?.nextStep ??
                                     accountingPeriodReconciliationReadiness?.nextStep ??
                                     accountingBankReconciliationWorkspace?.nextStep ??
                                     accountingPeriodLockReadiness?.nextStep ??

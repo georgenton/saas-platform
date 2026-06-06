@@ -63,6 +63,8 @@ model Tenant {
   taxCompliancePurchaseExpenseEvidence TaxCompliancePurchaseExpenseEvidence[]
   accountingJournalEntries AccountingJournalEntry[]
   accountingPeriodControls AccountingPeriodControl[]
+  accountingBankStatementBatches AccountingBankStatementBatch[]
+  accountingBankStatementLines AccountingBankStatementLine[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
@@ -864,6 +866,62 @@ model AccountingPeriodControl {
   @@index([tenantId, period, actionAt], map: "AccountingPeriodControl_period_idx")
   @@index([tenantSlug, period, actionAt], map: "AccountingPeriodControl_slug_period_idx")
   @@index([tenantId, status, actionAt], map: "AccountingPeriodControl_status_idx")
+}
+
+model AccountingBankStatementBatch {
+  id                    String   @id
+  tenantId              String
+  tenantSlug            String
+  period                String
+  year                  Int
+  source                String
+  status                String
+  importedByUserId      String?
+  importedByEmail       String?
+  importedAt            DateTime
+  originalFileName      String?
+  notes                 String?
+  lineCount             Int
+  totalInflowInCents    Int
+  totalOutflowInCents   Int
+  blockersJson          String   @db.Text
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines                 AccountingBankStatementLine[]
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([tenantId, period, importedAt], map: "AccountingBankStatementBatch_period_idx")
+  @@index([tenantSlug, period, importedAt], map: "AccountingBankStatementBatch_slug_period_idx")
+  @@index([tenantId, status, importedAt], map: "AccountingBankStatementBatch_status_idx")
+}
+
+model AccountingBankStatementLine {
+  id                    String   @id
+  batchId               String
+  tenantId              String
+  tenantSlug            String
+  period                String
+  year                  Int
+  accountKey            String
+  accountCode           String
+  accountName           String
+  postedAt              DateTime
+  description           String
+  direction             String
+  amountInCents         Int
+  currency              String
+  reference             String
+  externalLineId        String?
+  rawJson               String   @db.Text
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  batch                 AccountingBankStatementBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([tenantId, period, postedAt], map: "AccountingBankStatementLine_period_idx")
+  @@index([tenantSlug, period, postedAt], map: "AccountingBankStatementLine_slug_period_idx")
+  @@index([tenantId, accountCode, postedAt], map: "AccountingBankStatementLine_account_idx")
+  @@index([batchId, postedAt], map: "AccountingBankStatementLine_batch_idx")
 }
 
 model TaxComplianceAccountantReview {

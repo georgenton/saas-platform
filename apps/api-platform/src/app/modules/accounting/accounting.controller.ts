@@ -14,6 +14,7 @@ import {
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
   GetTenantAccountingBankReconciliationWorkspaceUseCase,
+  GetTenantAccountingBankStatementImportWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
@@ -25,6 +26,7 @@ import {
   GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingPeriodReconciliationReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
+  ListTenantAccountingBankStatementRegistryUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
   LockTenantAccountingPeriodUseCase,
@@ -32,6 +34,8 @@ import {
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
+  RecordTenantAccountingBankStatementImportUseCase,
+  RequestTenantAccountingReconciliationExceptionPacketUseCase,
   RequestTenantAccountingReconciliationMatchPacketUseCase,
 } from '@saas-platform/accounting-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
@@ -62,11 +66,21 @@ import {
 } from './dto/accounting-period-control.response';
 import {
   AccountingBankReconciliationWorkspaceResponseDto,
+  AccountingBankStatementImportPreviewRequestDto,
+  AccountingBankStatementImportResultResponseDto,
+  AccountingBankStatementImportWorkspaceResponseDto,
+  AccountingBankStatementRegistryResponseDto,
   AccountingPeriodReconciliationReadinessResponseDto,
+  AccountingReconciliationExceptionPacketResponseDto,
   AccountingReconciliationMatchPacketResponseDto,
+  RecordAccountingBankStatementImportRequestDto,
   RequestAccountingReconciliationMatchPacketRequestDto,
+  toAccountingBankStatementImportResultResponseDto,
+  toAccountingBankStatementImportWorkspaceResponseDto,
+  toAccountingBankStatementRegistryResponseDto,
   toAccountingBankReconciliationWorkspaceResponseDto,
   toAccountingPeriodReconciliationReadinessResponseDto,
+  toAccountingReconciliationExceptionPacketResponseDto,
   toAccountingReconciliationMatchPacketResponseDto,
 } from './dto/accounting-bank-reconciliation.response';
 import {
@@ -151,8 +165,12 @@ export class AccountingController {
     private readonly createTenantAccountingJournalEntriesFromApprovalUseCase: CreateTenantAccountingJournalEntriesFromApprovalUseCase,
     private readonly listTenantAccountingJournalRegistryUseCase: ListTenantAccountingJournalRegistryUseCase,
     private readonly getTenantAccountingLedgerRegistryWorkspaceUseCase: GetTenantAccountingLedgerRegistryWorkspaceUseCase,
+    private readonly getTenantAccountingBankStatementImportWorkspaceUseCase: GetTenantAccountingBankStatementImportWorkspaceUseCase,
+    private readonly recordTenantAccountingBankStatementImportUseCase: RecordTenantAccountingBankStatementImportUseCase,
+    private readonly listTenantAccountingBankStatementRegistryUseCase: ListTenantAccountingBankStatementRegistryUseCase,
     private readonly getTenantAccountingBankReconciliationWorkspaceUseCase: GetTenantAccountingBankReconciliationWorkspaceUseCase,
     private readonly requestTenantAccountingReconciliationMatchPacketUseCase: RequestTenantAccountingReconciliationMatchPacketUseCase,
+    private readonly requestTenantAccountingReconciliationExceptionPacketUseCase: RequestTenantAccountingReconciliationExceptionPacketUseCase,
     private readonly getTenantAccountingPeriodReconciliationReadinessUseCase: GetTenantAccountingPeriodReconciliationReadinessUseCase,
     private readonly getTenantAccountingPeriodCloseoutReadinessUseCase: GetTenantAccountingPeriodCloseoutReadinessUseCase,
     private readonly getTenantAccountingTrialBalanceWorkspaceUseCase: GetTenantAccountingTrialBalanceWorkspaceUseCase,
@@ -405,6 +423,90 @@ export class AccountingController {
     }
   }
 
+  @Post(':slug/bank-statement-import-preview')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async previewBankStatementImport(
+    @Param('slug') tenantSlug: string,
+    @Body() body: AccountingBankStatementImportPreviewRequestDto,
+  ): Promise<AccountingBankStatementImportWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantAccountingBankStatementImportWorkspaceUseCase.execute(
+          {
+            tenantSlug,
+            period: body.period,
+            year: body.year,
+            source: body.source,
+            originalFileName: body.originalFileName ?? null,
+            lines: body.lines ?? [],
+          },
+        );
+
+      return toAccountingBankStatementImportWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/bank-statement-import')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async recordBankStatementImport(
+    @Param('slug') tenantSlug: string,
+    @Body() body: RecordAccountingBankStatementImportRequestDto,
+  ): Promise<AccountingBankStatementImportResultResponseDto> {
+    try {
+      const result =
+        await this.recordTenantAccountingBankStatementImportUseCase.execute({
+          tenantSlug,
+          period: body.period,
+          year: body.year,
+          source: body.source,
+          originalFileName: body.originalFileName ?? null,
+          importedByUserId: body.importedByUserId ?? null,
+          importedByEmail: body.importedByEmail ?? null,
+          notes: body.notes ?? null,
+          lines: body.lines ?? [],
+        });
+
+      return toAccountingBankStatementImportResultResponseDto(result);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/bank-statement-registry')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getBankStatementRegistry(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingBankStatementRegistryResponseDto> {
+    try {
+      const registry =
+        await this.listTenantAccountingBankStatementRegistryUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingBankStatementRegistryResponseDto(registry);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
   @Get(':slug/bank-reconciliation-workspace')
   @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
   async getBankReconciliationWorkspace(
@@ -454,6 +556,32 @@ export class AccountingController {
         );
 
       return toAccountingReconciliationMatchPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/reconciliation-exception-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async requestReconciliationExceptionPacket(
+    @Param('slug') tenantSlug: string,
+    @Body() body: { period: string; year: number },
+  ): Promise<AccountingReconciliationExceptionPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantAccountingReconciliationExceptionPacketUseCase.execute(
+          {
+            tenantSlug,
+            period: body.period,
+            year: body.year,
+          },
+        );
+
+      return toAccountingReconciliationExceptionPacketResponseDto(packet);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

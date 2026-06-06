@@ -2089,6 +2089,153 @@ export interface AccountingBankReconciliationWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface AccountingBankStatementImportLineRequest {
+  accountCode?: string | null;
+  accountName?: string | null;
+  postedAt?: string | null;
+  description?: string | null;
+  direction?: 'inflow' | 'outflow' | null;
+  amountInCents?: number | null;
+  currency?: string | null;
+  reference?: string | null;
+  externalLineId?: string | null;
+}
+
+export interface AccountingBankStatementImportPreviewRequest {
+  period: string;
+  year: number;
+  source: 'manual' | 'json' | 'csv';
+  originalFileName?: string | null;
+  lines: AccountingBankStatementImportLineRequest[];
+}
+
+export interface RecordAccountingBankStatementImportRequest
+  extends AccountingBankStatementImportPreviewRequest {
+  importedByUserId?: string | null;
+  importedByEmail?: string | null;
+  notes?: string | null;
+}
+
+export interface AccountingBankStatementLineResponse {
+  id: string;
+  batchId: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  accountKey: string;
+  accountCode: string;
+  accountName: string;
+  postedAt: string;
+  description: string;
+  direction: string;
+  amountInCents: number;
+  currency: string;
+  reference: string;
+  externalLineId: string | null;
+  raw: Record<string, string | number | boolean | null>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountingBankStatementBatchResponse {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  source: string;
+  status: string;
+  importedByUserId: string | null;
+  importedByEmail: string | null;
+  importedAt: string;
+  originalFileName: string | null;
+  notes: string | null;
+  lineCount: number;
+  totalInflowInCents: number;
+  totalOutflowInCents: number;
+  blockers: string[];
+  lines: AccountingBankStatementLineResponse[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountingBankStatementImportWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  importStatus: string;
+  source: string;
+  originalFileName: string | null;
+  previewLines: Array<{
+    lineKey: string;
+    accountKey: string;
+    accountCode: string;
+    accountName: string;
+    postedAt: string | null;
+    description: string;
+    direction: string;
+    amountInCents: number;
+    currency: string;
+    reference: string;
+    externalLineId: string | null;
+    validationStatus: string;
+    blockers: string[];
+  }>;
+  summary: {
+    lineCount: number;
+    validLineCount: number;
+    blockedLineCount: number;
+    totalInflowInCents: number;
+    totalOutflowInCents: number;
+    currencyCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingBankStatementImportResultResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  recordStatus: string;
+  batch: AccountingBankStatementBatchResponse | null;
+  preview: AccountingBankStatementImportWorkspaceResponse;
+  summary: {
+    requestedLineCount: number;
+    recordedLineCount: number;
+    totalInflowInCents: number;
+    totalOutflowInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingBankStatementRegistryResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  registryStatus: string;
+  batches: AccountingBankStatementBatchResponse[];
+  lines: AccountingBankStatementLineResponse[];
+  summary: {
+    batchCount: number;
+    lineCount: number;
+    totalInflowInCents: number;
+    totalOutflowInCents: number;
+    blockedBatchCount: number;
+    currencyCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface RequestAccountingReconciliationMatchPacketRequest {
   period: string;
   year: number;
@@ -2125,6 +2272,37 @@ export interface AccountingReconciliationMatchPacketResponse {
     needsReviewCount: number;
     approvedAmountInCents: number;
     remainingDifferenceInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingReconciliationExceptionPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  exceptionStatus: string;
+  workspace: AccountingBankReconciliationWorkspaceResponse;
+  exceptions: Array<{
+    exceptionKey: string;
+    exceptionType: string;
+    severity: string;
+    statementLineKey: string | null;
+    journalEntryId: string | null;
+    amountInCents: number;
+    differenceInCents: number;
+    recommendation: string;
+    rationale: string;
+  }>;
+  summary: {
+    exceptionCount: number;
+    criticalCount: number;
+    warningCount: number;
+    bankLineWithoutJournalCount: number;
+    journalWithoutBankLineCount: number;
+    totalDifferenceInCents: number;
   };
   blockers: string[];
   nextStep: string;

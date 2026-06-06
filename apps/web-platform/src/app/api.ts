@@ -2,6 +2,10 @@ import {
   AccountingChartOfAccountsWorkspaceResponse,
   AccountingChartMappingManagementResponse,
   AccountingBankReconciliationWorkspaceResponse,
+  AccountingBankStatementImportPreviewRequest,
+  AccountingBankStatementImportResultResponse,
+  AccountingBankStatementImportWorkspaceResponse,
+  AccountingBankStatementRegistryResponse,
   AccountingIntakeWorkspaceResponse,
   AccountingJournalDraftApprovalPacketResponse,
   AccountingAdjustingJournalEntryCreationResultResponse,
@@ -19,6 +23,7 @@ import {
   AccountingPeriodLockResultResponse,
   AccountingPeriodReconciliationReadinessResponse,
   AccountingPeriodReopenPacketResponse,
+  AccountingReconciliationExceptionPacketResponse,
   AccountingReconciliationMatchPacketResponse,
   AccountingAuditTrailWorkspaceResponse,
   AccountingTrialBalanceWorkspaceResponse,
@@ -154,6 +159,7 @@ import {
   RequestAccountingJournalDraftApprovalPacketRequest,
   RequestAccountingPeriodCloseoutPacketRequest,
   RequestAccountingReconciliationMatchPacketRequest,
+  RecordAccountingBankStatementImportRequest,
   RequestAccountingPeriodReopenPacketRequest,
   LockAccountingPeriodRequest,
   CreateAccountingAdjustingJournalEntryRequest,
@@ -1929,6 +1935,59 @@ export async function fetchAccountingBankReconciliationWorkspace(
   );
 }
 
+export async function previewAccountingBankStatementImport(
+  token: string,
+  tenantSlug: string,
+  input: AccountingBankStatementImportPreviewRequest,
+): Promise<AccountingBankStatementImportWorkspaceResponse> {
+  return request<AccountingBankStatementImportWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/bank-statement-import-preview`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function recordAccountingBankStatementImport(
+  token: string,
+  tenantSlug: string,
+  input: RecordAccountingBankStatementImportRequest,
+): Promise<AccountingBankStatementImportResultResponse> {
+  return request<AccountingBankStatementImportResultResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/bank-statement-import`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingBankStatementRegistry(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingBankStatementRegistryResponse> {
+  return request<AccountingBankStatementRegistryResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/bank-statement-registry?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
 export async function requestAccountingReconciliationMatchPacket(
   token: string,
   tenantSlug: string,
@@ -1940,6 +1999,24 @@ export async function requestAccountingReconciliationMatchPacket(
     )}/reconciliation-match-packet`,
     {
       body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestAccountingReconciliationExceptionPacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingReconciliationExceptionPacketResponse> {
+  return request<AccountingReconciliationExceptionPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/reconciliation-exception-packet`,
+    {
+      body: { period, year },
       method: 'POST',
       token,
     },

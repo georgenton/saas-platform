@@ -8,6 +8,8 @@ import {
   EcuadorTaxAccountingReadinessPacketView,
   EcuadorTaxAnnexesReadinessView,
   EcuadorTaxAnnexesWorkspaceView,
+  EcuadorTaxAnnualRollupWorkspaceView,
+  EcuadorTaxAccountantCollaborationPackView,
   EcuadorTaxAuditReadinessView,
   EcuadorTaxCalendarReviewWorkspaceView,
   EcuadorTaxComplianceEventView,
@@ -18,13 +20,16 @@ import {
   EcuadorTaxDeclarationFormDraftPacketView,
   EcuadorTaxDeclarationReviewLoopWorkspaceView,
   EcuadorTaxDeclarationSourceLedgerView,
+  EcuadorTaxCommandCenterView,
   EcuadorTaxDeclarationDraftPacketView,
   EcuadorTaxDueMonitorView,
   EcuadorTaxEcommerceEvidenceSummaryView,
   EcuadorTaxEvidenceSummaryView,
   EcuadorTaxFilingHandoffView,
+  EcuadorTaxFilingEvidenceVaultV2View,
   EcuadorTaxFilingGuidePacketView,
   EcuadorTaxFormMappingCatalogView,
+  EcuadorTaxExceptionCenterView,
   EcuadorTaxGrowthReminderPacketView,
   EcuadorTaxIncomeTaxEvidenceWorkspaceView,
   EcuadorTaxIncomeTaxFormContractWorkspaceView,
@@ -39,6 +44,7 @@ import {
   EcuadorTaxPeriodCloseoutPacketView,
   EcuadorTaxPeriodCloseoutReportView,
   EcuadorTaxPeriodCloseoutCertificationView,
+  EcuadorTaxProductCloseoutPackView,
   EcuadorTaxPeriodWorkspaceView,
   EcuadorTaxPeriodPreparationPacketView,
   EcuadorTaxPurchaseExpenseEvidenceRecordView,
@@ -2663,6 +2669,55 @@ export interface EcuadorTaxPeriodCloseoutCertificationResponseDto
   obligationMatrix: EcuadorTaxObligationMatrixV2WorkspaceResponseDto;
 }
 
+export interface EcuadorTaxCommandCenterResponseDto
+  extends Omit<EcuadorTaxCommandCenterView, 'generatedAt' | 'certification'> {
+  generatedAt: string;
+  certification: EcuadorTaxPeriodCloseoutCertificationResponseDto;
+}
+
+export interface EcuadorTaxAccountantCollaborationPackResponseDto
+  extends Omit<
+    EcuadorTaxAccountantCollaborationPackView,
+    'generatedAt' | 'certification'
+  > {
+  generatedAt: string;
+  certification: EcuadorTaxPeriodCloseoutCertificationResponseDto;
+}
+
+export interface EcuadorTaxFilingEvidenceVaultV2ResponseDto
+  extends Omit<
+    EcuadorTaxFilingEvidenceVaultV2View,
+    'generatedAt' | 'baseVault' | 'certification'
+  > {
+  generatedAt: string;
+  baseVault: EcuadorTaxPeriodEvidenceVaultResponseDto;
+  certification: EcuadorTaxPeriodCloseoutCertificationResponseDto;
+}
+
+export interface EcuadorTaxExceptionCenterResponseDto
+  extends Omit<EcuadorTaxExceptionCenterView, 'generatedAt'> {
+  generatedAt: string;
+}
+
+export interface EcuadorTaxAnnualRollupWorkspaceResponseDto
+  extends Omit<
+    EcuadorTaxAnnualRollupWorkspaceView,
+    'generatedAt' | 'currentCertification'
+  > {
+  generatedAt: string;
+  currentCertification: EcuadorTaxPeriodCloseoutCertificationResponseDto;
+}
+
+export interface EcuadorTaxProductCloseoutPackResponseDto
+  extends Omit<
+    EcuadorTaxProductCloseoutPackView,
+    'generatedAt' | 'commandCenter' | 'annualRollup'
+  > {
+  generatedAt: string;
+  commandCenter: EcuadorTaxCommandCenterResponseDto;
+  annualRollup: EcuadorTaxAnnualRollupWorkspaceResponseDto;
+}
+
 export interface EcuadorTaxFilingGuidePacketResponseDto
   extends Omit<EcuadorTaxFilingGuidePacketView, 'generatedAt'> {
   generatedAt: string;
@@ -2889,6 +2944,77 @@ export function toEcuadorTaxPeriodCloseoutCertificationResponseDto(
     ),
     obligationMatrix: toEcuadorTaxObligationMatrixV2WorkspaceResponseDto(
       certification.obligationMatrix,
+    ),
+  };
+}
+
+export function toEcuadorTaxCommandCenterResponseDto(
+  commandCenter: EcuadorTaxCommandCenterView,
+): EcuadorTaxCommandCenterResponseDto {
+  return {
+    ...commandCenter,
+    generatedAt: commandCenter.generatedAt.toISOString(),
+    certification: toEcuadorTaxPeriodCloseoutCertificationResponseDto(
+      commandCenter.certification,
+    ),
+  };
+}
+
+export function toEcuadorTaxAccountantCollaborationPackResponseDto(
+  pack: EcuadorTaxAccountantCollaborationPackView,
+): EcuadorTaxAccountantCollaborationPackResponseDto {
+  return {
+    ...pack,
+    generatedAt: pack.generatedAt.toISOString(),
+    certification: toEcuadorTaxPeriodCloseoutCertificationResponseDto(
+      pack.certification,
+    ),
+  };
+}
+
+export function toEcuadorTaxFilingEvidenceVaultV2ResponseDto(
+  vault: EcuadorTaxFilingEvidenceVaultV2View,
+): EcuadorTaxFilingEvidenceVaultV2ResponseDto {
+  return {
+    ...vault,
+    generatedAt: vault.generatedAt.toISOString(),
+    baseVault: toEcuadorTaxPeriodEvidenceVaultResponseDto(vault.baseVault),
+    certification: toEcuadorTaxPeriodCloseoutCertificationResponseDto(
+      vault.certification,
+    ),
+  };
+}
+
+export function toEcuadorTaxExceptionCenterResponseDto(
+  center: EcuadorTaxExceptionCenterView,
+): EcuadorTaxExceptionCenterResponseDto {
+  return {
+    ...center,
+    generatedAt: center.generatedAt.toISOString(),
+  };
+}
+
+export function toEcuadorTaxAnnualRollupWorkspaceResponseDto(
+  workspace: EcuadorTaxAnnualRollupWorkspaceView,
+): EcuadorTaxAnnualRollupWorkspaceResponseDto {
+  return {
+    ...workspace,
+    generatedAt: workspace.generatedAt.toISOString(),
+    currentCertification: toEcuadorTaxPeriodCloseoutCertificationResponseDto(
+      workspace.currentCertification,
+    ),
+  };
+}
+
+export function toEcuadorTaxProductCloseoutPackResponseDto(
+  pack: EcuadorTaxProductCloseoutPackView,
+): EcuadorTaxProductCloseoutPackResponseDto {
+  return {
+    ...pack,
+    generatedAt: pack.generatedAt.toISOString(),
+    commandCenter: toEcuadorTaxCommandCenterResponseDto(pack.commandCenter),
+    annualRollup: toEcuadorTaxAnnualRollupWorkspaceResponseDto(
+      pack.annualRollup,
     ),
   };
 }

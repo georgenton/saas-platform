@@ -27,6 +27,7 @@ import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
   GetTenantEcuadorTaxAnnexesReadinessUseCase,
   GetTenantEcuadorTaxAnnexesWorkspaceUseCase,
+  GetTenantEcuadorTaxAnnualRollupWorkspaceUseCase,
   GetTenantEcuadorTaxAccountantWorkbenchUseCase,
   GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
   GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
@@ -35,10 +36,13 @@ import {
   GetTenantEcuadorTaxDeclarationFormCatalogUseCase,
   GetTenantEcuadorTaxDeclarationReviewLoopWorkspaceUseCase,
   GetTenantEcuadorTaxDeclarationSourceLedgerUseCase,
+  GetTenantEcuadorTaxCommandCenterUseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
   GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
   GetTenantEcuadorTaxFilingHandoffUseCase,
+  GetTenantEcuadorTaxFilingEvidenceVaultV2UseCase,
   GetTenantEcuadorTaxFormMappingCatalogUseCase,
+  GetTenantEcuadorTaxExceptionCenterUseCase,
   GetTenantEcuadorTaxIncomeTaxEvidenceWorkspaceUseCase,
   GetTenantEcuadorTaxIncomeTaxFormContractWorkspaceUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
@@ -68,6 +72,7 @@ import {
   RecordTenantEcuadorTaxSriFiscalEvidenceImportUseCase,
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
+  RequestTenantEcuadorTaxAccountantCollaborationPackUseCase,
   RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
   RequestTenantEcuadorTaxAiFilingAssistantPacketUseCase,
@@ -81,6 +86,7 @@ import {
   RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+  RequestTenantEcuadorTaxProductCloseoutPackUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
   RequestTenantEcuadorTaxReviewAssistantPacketUseCase,
   RequestTenantEcuadorTaxSalesBookUseCase,
@@ -1468,6 +1474,129 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
           requestTenantEcuadorTaxPeriodCloseoutReportUseCase,
           getTenantEcuadorTaxDeclarationReviewLoopWorkspaceUseCase,
           getTenantEcuadorTaxObligationMatrixV2WorkspaceUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxCommandCenterUseCase,
+      inject: [
+        RequestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+        GetTenantEcuadorTaxSriEvidenceIntakeV2WorkspaceUseCase,
+        GetTenantEcuadorTaxVatFormContractWorkspaceUseCase,
+        GetTenantEcuadorTaxIncomeTaxFormContractWorkspaceUseCase,
+        GetTenantEcuadorTaxAnnexesWorkspaceUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+        getTenantEcuadorTaxSriEvidenceIntakeV2WorkspaceUseCase,
+        getTenantEcuadorTaxVatFormContractWorkspaceUseCase,
+        getTenantEcuadorTaxIncomeTaxFormContractWorkspaceUseCase,
+        getTenantEcuadorTaxAnnexesWorkspaceUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxCommandCenterUseCase(
+          requestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+          getTenantEcuadorTaxSriEvidenceIntakeV2WorkspaceUseCase,
+          getTenantEcuadorTaxVatFormContractWorkspaceUseCase,
+          getTenantEcuadorTaxIncomeTaxFormContractWorkspaceUseCase,
+          getTenantEcuadorTaxAnnexesWorkspaceUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxAccountantCollaborationPackUseCase,
+      inject: [
+        RequestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+        GetTenantEcuadorTaxVatFormContractWorkspaceUseCase,
+        GetTenantEcuadorTaxIncomeTaxFormContractWorkspaceUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+        getTenantEcuadorTaxVatFormContractWorkspaceUseCase,
+        getTenantEcuadorTaxIncomeTaxFormContractWorkspaceUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxAccountantCollaborationPackUseCase(
+          requestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+          getTenantEcuadorTaxVatFormContractWorkspaceUseCase,
+          getTenantEcuadorTaxIncomeTaxFormContractWorkspaceUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxFilingEvidenceVaultV2UseCase,
+      inject: [
+        GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
+        RequestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxPeriodEvidenceVaultUseCase,
+        requestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxFilingEvidenceVaultV2UseCase(
+          getTenantEcuadorTaxPeriodEvidenceVaultUseCase,
+          requestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxExceptionCenterUseCase,
+      inject: [
+        RequestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+        GetTenantEcuadorTaxSriEvidenceIntakeV2WorkspaceUseCase,
+        GetTenantEcuadorTaxAnnexesWorkspaceUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+        getTenantEcuadorTaxSriEvidenceIntakeV2WorkspaceUseCase,
+        getTenantEcuadorTaxAnnexesWorkspaceUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxExceptionCenterUseCase(
+          requestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+          getTenantEcuadorTaxSriEvidenceIntakeV2WorkspaceUseCase,
+          getTenantEcuadorTaxAnnexesWorkspaceUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAnnualRollupWorkspaceUseCase,
+      inject: [
+        RequestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+        GetTenantEcuadorTaxIncomeTaxEvidenceWorkspaceUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+        getTenantEcuadorTaxIncomeTaxEvidenceWorkspaceUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxAnnualRollupWorkspaceUseCase(
+          requestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+          getTenantEcuadorTaxIncomeTaxEvidenceWorkspaceUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxProductCloseoutPackUseCase,
+      inject: [
+        GetTenantEcuadorTaxCommandCenterUseCase,
+        GetTenantEcuadorTaxAnnualRollupWorkspaceUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxCommandCenterUseCase,
+        getTenantEcuadorTaxAnnualRollupWorkspaceUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxProductCloseoutPackUseCase(
+          getTenantEcuadorTaxCommandCenterUseCase,
+          getTenantEcuadorTaxAnnualRollupWorkspaceUseCase,
           recordTenantEcuadorTaxComplianceEventUseCase,
         ),
     },

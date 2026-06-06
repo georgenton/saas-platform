@@ -3935,6 +3935,170 @@ export interface EcuadorTaxPeriodCloseoutCertificationResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxCommandCenterResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  commandStatus: string;
+  certification: EcuadorTaxPeriodCloseoutCertificationResponse;
+  commandTiles: Array<{
+    key: string;
+    label: string;
+    status: string;
+    primaryMetric: string;
+    secondaryMetric: string;
+    nextAction: string;
+  }>;
+  summary: {
+    tileCount: number;
+    readyTileCount: number;
+    blockerCount: number;
+    accountantQuestionCount: number;
+    filedExternally: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantCollaborationPackResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  certification: EcuadorTaxPeriodCloseoutCertificationResponse;
+  reviewBundle: Array<{
+    key: string;
+    label: string;
+    owner: string;
+    priority: string;
+    status: string;
+    evidenceRefs: string[];
+    questions: string[];
+  }>;
+  summary: {
+    bundleItemCount: number;
+    accountantOwnedCount: number;
+    criticalCount: number;
+    questionCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxFilingEvidenceVaultV2Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  baseVault: EcuadorTaxPeriodEvidenceVaultResponse;
+  certification: EcuadorTaxPeriodCloseoutCertificationResponse;
+  evidenceFolders: Array<{
+    key: string;
+    label: string;
+    readinessStatus: string;
+    artifactCount: number;
+    requiredFor: string[];
+    missingItems: string[];
+  }>;
+  summary: {
+    folderCount: number;
+    readyFolderCount: number;
+    artifactCount: number;
+    missingItemCount: number;
+    certificationBlockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxExceptionCenterResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  exceptions: Array<{
+    key: string;
+    label: string;
+    severity: string;
+    status: string;
+    source: string;
+    owner: string;
+    recommendedAction: string;
+  }>;
+  summary: {
+    exceptionCount: number;
+    criticalCount: number;
+    accountantOwnedCount: number;
+    operatorOwnedCount: number;
+    blockedCount: number;
+  };
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAnnualRollupWorkspaceResponse {
+  tenantSlug: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  currentPeriod: string;
+  currentCertification: EcuadorTaxPeriodCloseoutCertificationResponse;
+  monthlySnapshots: Array<{
+    period: string;
+    status: string;
+    revenueInCents: number;
+    deductibleExpenseInCents: number;
+    withholdingCreditInCents: number;
+    blockerCount: number;
+  }>;
+  annualSummary: {
+    revenueInCents: number;
+    deductibleExpenseInCents: number;
+    estimatedTaxableBaseInCents: number;
+    withholdingCreditInCents: number;
+    reviewedPeriodCount: number;
+    blockedPeriodCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxProductCloseoutPackResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  productStatus: string;
+  commandCenter: EcuadorTaxCommandCenterResponse;
+  annualRollup: EcuadorTaxAnnualRollupWorkspaceResponse;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidence: string[];
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    endpointSurfaceCount: number;
+    smokeCoverageCount: number;
+    blockerCount: number;
+  };
+  recommendedNextProduct: string;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxFilingGuidePacketResponse {
   tenantSlug: string;
   period: string;

@@ -138,9 +138,12 @@ import {
   EcuadorTaxAccountingBridgePreviewResponse,
   EcuadorTaxAccountingBridgeSuggestedAccountsResponse,
   EcuadorTaxAccountingReadinessPacketResponse,
+  EcuadorTaxAccountantCollaborationPackResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxAnnexesWorkspaceResponse,
+  EcuadorTaxAnnualRollupWorkspaceResponse,
   EcuadorTaxComplianceEventResponse,
+  EcuadorTaxCommandCenterResponse,
   EcuadorTaxDeclarationFormCatalogResponse,
   EcuadorTaxDeclarationArtifactExportResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
@@ -149,6 +152,8 @@ import {
   EcuadorTaxDeclarationSourceLedgerResponse,
   EcuadorTaxAiFilingAssistantPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
+  EcuadorTaxExceptionCenterResponse,
+  EcuadorTaxFilingEvidenceVaultV2Response,
   EcuadorTaxFilingHandoffResponse,
   EcuadorTaxFilingGuidePacketResponse,
   EcuadorTaxFormMappingCatalogResponse,
@@ -161,6 +166,7 @@ import {
   EcuadorTaxPeriodCloseoutPacketResponse,
   EcuadorTaxPeriodCloseoutReportResponse,
   EcuadorTaxPeriodCloseoutCertificationResponse,
+  EcuadorTaxProductCloseoutPackResponse,
   EcuadorTaxPeriodEvidenceVaultResponse,
   EcuadorTaxPeriodWorkspaceResponse,
   EcuadorTaxOperationalCloseoutResponse,
@@ -2999,6 +3005,102 @@ export async function fetchEcuadorTaxPeriodCloseoutCertification(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/period-closeout-certification?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxCommandCenter(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxCommandCenterResponse> {
+  return request<EcuadorTaxCommandCenterResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/command-center?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAccountantCollaborationPack(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountantCollaborationPackResponse> {
+  return request<EcuadorTaxAccountantCollaborationPackResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accountant-collaboration-pack?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxFilingEvidenceVaultV2(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxFilingEvidenceVaultV2Response> {
+  return request<EcuadorTaxFilingEvidenceVaultV2Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/filing-evidence-vault-v2?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxExceptionCenter(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxExceptionCenterResponse> {
+  return request<EcuadorTaxExceptionCenterResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/exception-center?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAnnualRollupWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAnnualRollupWorkspaceResponse> {
+  return request<EcuadorTaxAnnualRollupWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/annual-rollup-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxProductCloseoutPack(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxProductCloseoutPackResponse> {
+  return request<EcuadorTaxProductCloseoutPackResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/product-closeout-pack?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

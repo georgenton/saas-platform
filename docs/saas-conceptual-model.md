@@ -1112,6 +1112,31 @@ period-certification flow:
      checklist state, accountant questions, and external filing signal into the
      final operational certification gate
 
+### Tax Compliance EC product closeout layer
+
+The final closeout layer makes Tax Compliance EC usable as an operator-facing
+product rather than only a set of packets:
+
+1. `Tax Compliance Command Center`
+   - summarizes certification, SRI intake, VAT contract, income tax contract,
+     annexes, blockers, accountant questions, and filing state into one period
+     command surface
+2. `Accountant Collaboration Pack 2.0`
+   - packages certification blockers, VAT/renta review questions, evidence refs,
+     priority, and ownership for professional review
+3. `Tax Filing Evidence Vault 2.0`
+   - extends the fiscal evidence vault with certification evidence, missing
+     items, required-for labels, and defensible closeout folders
+4. `Tax Compliance Exception Center`
+   - turns SRI, annex and certification blockers into a prioritized resolution
+     queue with owner and recommended action
+5. `Annual Tax Rollup Workspace`
+   - rolls current certified period evidence into annual income-tax context:
+     revenue, deductible expenses, taxable base, credits and blocked periods
+6. `Tax Compliance Product Closeout Pack`
+   - declares whether the MVP is complete, records smoke/docs/guardrails, and
+     recommends the next product direction such as Parties 2.0 or hardening
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

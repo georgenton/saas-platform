@@ -838,6 +838,98 @@ export interface TenantAccountingAccountantHandoffWorkspaceView {
   guardrails: string[];
 }
 
+export type AccountingAccountantReviewStatus =
+  | 'requested'
+  | 'in_review'
+  | 'changes_requested'
+  | 'approved'
+  | 'rejected';
+
+export interface TenantAccountingAccountantReviewView {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  status: AccountingAccountantReviewStatus;
+  requestedByUserId: string | null;
+  requestedByEmail: string | null;
+  summary: string;
+  questions: string[];
+  riskFlags: TenantAccountingAccountantHandoffWorkspaceView['riskFlags'];
+  evidenceReferences: string[];
+  transitionHistory: Array<{
+    status: AccountingAccountantReviewStatus;
+    transitionedAt: Date;
+    transitionedByUserId: string | null;
+    note: string | null;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TenantAccountingReviewResolutionPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  resolutionStatus:
+    | 'ready_to_resolve'
+    | 'needs_review'
+    | 'blocked'
+    | 'no_review_changes_requested';
+  review: TenantAccountingAccountantReviewView | null;
+  handoff: TenantAccountingAccountantHandoffWorkspaceView;
+  recommendedActions: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+  }>;
+  summary: {
+    actionCount: number;
+    readyActionCount: number;
+    blockedActionCount: number;
+    riskFlagCount: number;
+    accountantQuestionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingCloseoutCertificationReadinessView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  certificationStatus:
+    | 'ready_for_professional_closeout'
+    | 'needs_review'
+    | 'blocked';
+  checks: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+    blockerCount: number;
+  }>;
+  latestAccountantReview: TenantAccountingAccountantReviewView | null;
+  handoff: TenantAccountingAccountantHandoffWorkspaceView;
+  resolutionPacket: TenantAccountingReviewResolutionPacketView;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+    accountantReviewCount: number;
+    unresolvedResolutionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export type AccountingPeriodControlStatus =
   | 'open'
   | 'ready_to_lock'

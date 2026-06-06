@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import {
+  ACCOUNTING_ACCOUNTANT_REVIEW_ID_GENERATOR,
+  ACCOUNTING_ACCOUNTANT_REVIEW_REPOSITORY,
   ACCOUNTING_BANK_RECONCILIATION_CONTROL_ID_GENERATOR,
   ACCOUNTING_BANK_RECONCILIATION_CONTROL_REPOSITORY,
   ACCOUNTING_BANK_STATEMENT_BATCH_ID_GENERATOR,
@@ -16,6 +18,7 @@ import {
   GetTenantAccountingBankReconciliationWorkspaceUseCase,
   GetTenantAccountingBankStatementImportWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+  GetTenantAccountingCloseoutCertificationReadinessUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
   GetTenantAccountingJournalDraftPreviewUseCase,
@@ -30,11 +33,13 @@ import {
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingBankReconciliationControlRegistryUseCase,
   ListTenantAccountingBankStatementRegistryUseCase,
+  ListTenantAccountingAccountantReviewsUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
   LockTenantAccountingPeriodUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
+  RequestTenantAccountingAccountantReviewUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
@@ -43,6 +48,8 @@ import {
   RequestTenantAccountingReconciliationExceptionPacketUseCase,
   RequestTenantAccountingReconciliationExceptionResolutionPacketUseCase,
   RequestTenantAccountingReconciliationMatchPacketUseCase,
+  RequestTenantAccountingReviewResolutionPacketUseCase,
+  TransitionTenantAccountingAccountantReviewUseCase,
 } from '@saas-platform/accounting-application';
 import { PRODUCT_REPOSITORY } from '@saas-platform/catalog-application';
 import {
@@ -646,6 +653,84 @@ import { AccountingController } from './accounting.controller';
         new GetTenantAccountingAccountantHandoffWorkspaceUseCase(
           getTenantAccountingPeriodEvidenceVaultUseCase,
           requestTenantAccountingFinancialStatementReviewPacketUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAccountantReviewUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        ACCOUNTING_ACCOUNTANT_REVIEW_REPOSITORY,
+        ACCOUNTING_ACCOUNTANT_REVIEW_ID_GENERATOR,
+        GetTenantAccountingAccountantHandoffWorkspaceUseCase,
+      ],
+      useFactory: (
+        tenantRepository,
+        accountingAccountantReviewRepository,
+        accountingAccountantReviewIdGenerator,
+        getTenantAccountingAccountantHandoffWorkspaceUseCase,
+      ) =>
+        new RequestTenantAccountingAccountantReviewUseCase(
+          tenantRepository,
+          accountingAccountantReviewRepository,
+          accountingAccountantReviewIdGenerator,
+          getTenantAccountingAccountantHandoffWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: ListTenantAccountingAccountantReviewsUseCase,
+      inject: [TENANT_REPOSITORY, ACCOUNTING_ACCOUNTANT_REVIEW_REPOSITORY],
+      useFactory: (tenantRepository, accountingAccountantReviewRepository) =>
+        new ListTenantAccountingAccountantReviewsUseCase(
+          tenantRepository,
+          accountingAccountantReviewRepository,
+        ),
+    },
+    {
+      provide: TransitionTenantAccountingAccountantReviewUseCase,
+      inject: [TENANT_REPOSITORY, ACCOUNTING_ACCOUNTANT_REVIEW_REPOSITORY],
+      useFactory: (tenantRepository, accountingAccountantReviewRepository) =>
+        new TransitionTenantAccountingAccountantReviewUseCase(
+          tenantRepository,
+          accountingAccountantReviewRepository,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingReviewResolutionPacketUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        ACCOUNTING_ACCOUNTANT_REVIEW_REPOSITORY,
+        GetTenantAccountingAccountantHandoffWorkspaceUseCase,
+      ],
+      useFactory: (
+        tenantRepository,
+        accountingAccountantReviewRepository,
+        getTenantAccountingAccountantHandoffWorkspaceUseCase,
+      ) =>
+        new RequestTenantAccountingReviewResolutionPacketUseCase(
+          tenantRepository,
+          accountingAccountantReviewRepository,
+          getTenantAccountingAccountantHandoffWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingCloseoutCertificationReadinessUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        ACCOUNTING_ACCOUNTANT_REVIEW_REPOSITORY,
+        GetTenantAccountingAccountantHandoffWorkspaceUseCase,
+        RequestTenantAccountingReviewResolutionPacketUseCase,
+      ],
+      useFactory: (
+        tenantRepository,
+        accountingAccountantReviewRepository,
+        getTenantAccountingAccountantHandoffWorkspaceUseCase,
+        requestTenantAccountingReviewResolutionPacketUseCase,
+      ) =>
+        new GetTenantAccountingCloseoutCertificationReadinessUseCase(
+          tenantRepository,
+          accountingAccountantReviewRepository,
+          getTenantAccountingAccountantHandoffWorkspaceUseCase,
+          requestTenantAccountingReviewResolutionPacketUseCase,
         ),
     },
     {

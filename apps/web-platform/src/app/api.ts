@@ -2,6 +2,7 @@ import {
   AccountingChartOfAccountsWorkspaceResponse,
   AccountingChartMappingManagementResponse,
   AccountingAccountantHandoffWorkspaceResponse,
+  AccountingAccountantReviewResponse,
   AccountingBankReconciliationControlRegistryResponse,
   AccountingBankReconciliationWorkspaceResponse,
   AccountingBankStatementImportPreviewRequest,
@@ -22,6 +23,7 @@ import {
   AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
   AccountingPeriodCashCloseoutReadinessResponse,
+  AccountingCloseoutCertificationReadinessResponse,
   AccountingPeriodEvidenceVaultResponse,
   AccountingPeriodLockRegistryResponse,
   AccountingPeriodLockReadinessResponse,
@@ -31,9 +33,12 @@ import {
   AccountingReconciliationExceptionPacketResponse,
   AccountingReconciliationExceptionResolutionPacketResponse,
   AccountingReconciliationMatchPacketResponse,
+  AccountingReviewResolutionPacketResponse,
   AccountingAuditTrailWorkspaceResponse,
   AccountingTrialBalanceWorkspaceResponse,
+  RequestAccountingAccountantReviewRequest,
   RequestAccountingFinancialStatementReviewPacketRequest,
+  TransitionAccountingAccountantReviewRequest,
   AiActivityFeedResponse,
   AiActionCenterResponse,
   AiApprovalCapacityWorkspaceResponse,
@@ -2331,6 +2336,93 @@ export async function fetchAccountingAccountantHandoffWorkspace(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/accountant-handoff-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestAccountingAccountantReview(
+  token: string,
+  tenantSlug: string,
+  input: RequestAccountingAccountantReviewRequest,
+): Promise<AccountingAccountantReviewResponse> {
+  return request<AccountingAccountantReviewResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/accountant-review/request`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingAccountantReviews(
+  token: string,
+  tenantSlug: string,
+  period: string,
+): Promise<AccountingAccountantReviewResponse[]> {
+  return request<AccountingAccountantReviewResponse[]>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/accountant-reviews?period=${encodeURIComponent(period)}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function transitionAccountingAccountantReview(
+  token: string,
+  tenantSlug: string,
+  reviewId: string,
+  input: TransitionAccountingAccountantReviewRequest,
+): Promise<AccountingAccountantReviewResponse> {
+  return request<AccountingAccountantReviewResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/accountant-review/${encodeURIComponent(reviewId)}/transition`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function requestAccountingReviewResolutionPacket(
+  token: string,
+  tenantSlug: string,
+  input: { period: string; year: number; reviewId?: string | null },
+): Promise<AccountingReviewResolutionPacketResponse> {
+  return request<AccountingReviewResolutionPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/review-resolution-packet`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingCloseoutCertificationReadiness(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingCloseoutCertificationReadinessResponse> {
+  return request<AccountingCloseoutCertificationReadinessResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/closeout-certification-readiness?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

@@ -103,6 +103,7 @@ import {
   fetchTenantEcommerceOrderPaymentConfirmationWorkspace,
   fetchTenantEcommerceOrderPaymentReadinessWorkspace,
   executeEcuadorTaxWithholdingDraftBridge,
+  fetchAccountingAccountantReviews,
   createAccountingAdjustingJournalEntry,
   fetchAccountingAccountantHandoffWorkspace,
   fetchAccountingAuditTrailWorkspace,
@@ -111,6 +112,7 @@ import {
   fetchAccountingBankStatementRegistry,
   fetchAccountingChartOfAccountsWorkspace,
   fetchAccountingFinancialStatementPreview,
+  fetchAccountingCloseoutCertificationReadiness,
   fetchAccountingIntakeWorkspace,
   fetchAccountingJournalDraftPreview,
   fetchAccountingJournalRegistry,
@@ -127,10 +129,13 @@ import {
   lockAccountingPeriod,
   recordAccountingBankStatementImport,
   requestAccountingPeriodReopenPacket,
+  requestAccountingAccountantReview,
   requestAccountingFinancialStatementReviewPacket,
+  requestAccountingReviewResolutionPacket,
   requestAccountingReconciliationExceptionPacket,
   requestAccountingReconciliationExceptionResolutionPacket,
   requestAccountingReconciliationMatchPacket,
+  transitionAccountingAccountantReview,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
   fetchEcuadorTaxAccountingBridgeSuggestedAccounts,
@@ -375,6 +380,7 @@ import {
   AccountingChartMappingManagementResponse,
   AccountingAdjustingJournalEntryCreationResultResponse,
   AccountingAccountantHandoffWorkspaceResponse,
+  AccountingAccountantReviewResponse,
   AccountingAuditTrailWorkspaceResponse,
   AccountingBankReconciliationControlRegistryResponse,
   AccountingBankReconciliationWorkspaceResponse,
@@ -382,6 +388,7 @@ import {
   AccountingBankStatementRegistryResponse,
   AccountingFinancialStatementPreviewResponse,
   AccountingFinancialStatementReviewPacketResponse,
+  AccountingCloseoutCertificationReadinessResponse,
   AccountingIntakeWorkspaceResponse,
   AccountingJournalEntryCreationResultResponse,
   AccountingJournalRegistryResponse,
@@ -402,6 +409,7 @@ import {
   AccountingReconciliationExceptionPacketResponse,
   AccountingReconciliationExceptionResolutionPacketResponse,
   AccountingReconciliationMatchPacketResponse,
+  AccountingReviewResolutionPacketResponse,
   AccountingTrialBalanceWorkspaceResponse,
   AiActivityFeedEventType,
   AiActivityFeedResponse,
@@ -2262,6 +2270,16 @@ export function App() {
     accountingAccountantHandoffWorkspace,
     setAccountingAccountantHandoffWorkspace,
   ] = useState<AccountingAccountantHandoffWorkspaceResponse | null>(null);
+  const [accountingAccountantReviews, setAccountingAccountantReviews] =
+    useState<AccountingAccountantReviewResponse[]>([]);
+  const [
+    lastAccountingReviewResolutionPacket,
+    setLastAccountingReviewResolutionPacket,
+  ] = useState<AccountingReviewResolutionPacketResponse | null>(null);
+  const [
+    accountingCloseoutCertificationReadiness,
+    setAccountingCloseoutCertificationReadiness,
+  ] = useState<AccountingCloseoutCertificationReadinessResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -19672,6 +19690,9 @@ export function App() {
         nextAccountingAuditTrailWorkspace,
         nextAccountingPeriodEvidenceVault,
         nextAccountingAccountantHandoffWorkspace,
+        nextAccountingAccountantReviews,
+        nextAccountingReviewResolutionPacket,
+        nextAccountingCloseoutCertificationReadiness,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -19794,6 +19815,21 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAccountantReviews(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+            ),
+            requestAccountingReviewResolutionPacket(token, tenantSlug, {
+              period: taxCompliancePeriod,
+              year,
+            }),
+            fetchAccountingCloseoutCertificationReadiness(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -19814,6 +19850,9 @@ export function App() {
             null,
             null,
             null,
+            null,
+            null,
+            [],
             null,
             null,
           ];
@@ -19905,6 +19944,13 @@ export function App() {
         setAccountingPeriodEvidenceVault(nextAccountingPeriodEvidenceVault);
         setAccountingAccountantHandoffWorkspace(
           nextAccountingAccountantHandoffWorkspace,
+        );
+        setAccountingAccountantReviews(nextAccountingAccountantReviews);
+        setLastAccountingReviewResolutionPacket(
+          nextAccountingReviewResolutionPacket,
+        );
+        setAccountingCloseoutCertificationReadiness(
+          nextAccountingCloseoutCertificationReadiness,
         );
       });
     } catch (error) {
@@ -21207,6 +21253,149 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo preparar review de estados financieros.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestAccountingAccountantReview() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-accountant-review-request');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const review = await requestAccountingAccountantReview(token, tenantSlug, {
+        period: taxCompliancePeriod,
+        year,
+        requestedByUserId: session?.user.id ?? null,
+        requestedByEmail: session?.user.email ?? null,
+      });
+      const [reviews, certification] = await Promise.all([
+        fetchAccountingAccountantReviews(token, tenantSlug, taxCompliancePeriod),
+        fetchAccountingCloseoutCertificationReadiness(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+      ]);
+
+      setAccountingAccountantReviews(reviews);
+      setAccountingCloseoutCertificationReadiness(certification);
+      setTaxComplianceActionMessage(
+        `Review contable ${humanizeKey(review.status)}.`,
+      );
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo solicitar review contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleApproveAccountingAccountantReview() {
+    if (
+      !token ||
+      !currentTenancy ||
+      !accountingEnabled ||
+      accountingAccountantReviews.length === 0
+    ) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-accountant-review-approve');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const latestReview = accountingAccountantReviews[0];
+      const review = await transitionAccountingAccountantReview(
+        token,
+        tenantSlug,
+        latestReview.id,
+        {
+          status: 'approved',
+          transitionedByUserId: session?.user.id ?? null,
+          note: 'Review profesional aprobado desde Accounting foundation.',
+        },
+      );
+      const [reviews, certification] = await Promise.all([
+        fetchAccountingAccountantReviews(token, tenantSlug, taxCompliancePeriod),
+        fetchAccountingCloseoutCertificationReadiness(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+      ]);
+
+      setAccountingAccountantReviews(reviews);
+      setAccountingCloseoutCertificationReadiness(certification);
+      setTaxComplianceActionMessage(
+        `Review contable ${humanizeKey(review.status)}.`,
+      );
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo aprobar review contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestAccountingReviewResolutionPacket() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-review-resolution-packet');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const packet = await requestAccountingReviewResolutionPacket(
+        token,
+        tenantSlug,
+        {
+          period: taxCompliancePeriod,
+          year,
+          reviewId: accountingAccountantReviews[0]?.id ?? null,
+        },
+      );
+      const certification = await fetchAccountingCloseoutCertificationReadiness(
+        token,
+        tenantSlug,
+        taxCompliancePeriod,
+        year,
+      );
+
+      setLastAccountingReviewResolutionPacket(packet);
+      setAccountingCloseoutCertificationReadiness(certification);
+      setTaxComplianceActionMessage(
+        `Resolution review ${humanizeKey(packet.resolutionStatus)}.`,
+      );
+    } catch (error) {
+      setLastAccountingReviewResolutionPacket(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo preparar resolution packet contable.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -30692,6 +30881,50 @@ export function App() {
                                 className={styles.ghostButton}
                                 disabled={
                                   taxComplianceActionLoading ===
+                                    'accounting-accountant-review-request' ||
+                                  !accountingAccountantHandoffWorkspace
+                                }
+                                onClick={() =>
+                                  void handleRequestAccountingAccountantReview()
+                                }
+                                type="button"
+                              >
+                                Review contador
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-accountant-review-approve' ||
+                                  accountingAccountantReviews.length === 0 ||
+                                  accountingAccountantReviews[0]?.status ===
+                                    'approved'
+                                }
+                                onClick={() =>
+                                  void handleApproveAccountingAccountantReview()
+                                }
+                                type="button"
+                              >
+                                Aprobar review
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-review-resolution-packet' ||
+                                  accountingAccountantReviews.length === 0
+                                }
+                                onClick={() =>
+                                  void handleRequestAccountingReviewResolutionPacket()
+                                }
+                                type="button"
+                              >
+                                Resolver review
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
                                     'accounting-adjusting-entry-create' ||
                                   !accountingJournalRegistry
                                 }
@@ -31340,6 +31573,60 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      Reviews contador
+                                    </span>
+                                    <strong>
+                                      {accountingAccountantReviews[0]
+                                        ? humanizeKey(
+                                            accountingAccountantReviews[0]
+                                              .status,
+                                          )
+                                        : 'sin review'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingAccountantReviews.length}{' '}
+                                      reviews
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Resolution packet
+                                    </span>
+                                    <strong>
+                                      {lastAccountingReviewResolutionPacket
+                                        ? humanizeKey(
+                                            lastAccountingReviewResolutionPacket.resolutionStatus,
+                                          )
+                                        : 'sin resolution'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingReviewResolutionPacket
+                                        ?.summary.actionCount ?? 0}{' '}
+                                      acciones
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Certification
+                                    </span>
+                                    <strong>
+                                      {accountingCloseoutCertificationReadiness
+                                        ? humanizeKey(
+                                            accountingCloseoutCertificationReadiness.certificationStatus,
+                                          )
+                                        : 'sin readiness'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingCloseoutCertificationReadiness
+                                        ?.summary.readyCheckCount ?? 0}
+                                      /
+                                      {accountingCloseoutCertificationReadiness
+                                        ?.summary.checkCount ?? 0}{' '}
+                                      checks
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Ultimo ajuste
                                     </span>
                                     <strong>
@@ -31391,7 +31678,9 @@ export function App() {
                                   </div>
                                 </div>
                                 <p className={styles.muted}>
-                                  {accountingAccountantHandoffWorkspace?.nextStep ??
+                                  {accountingCloseoutCertificationReadiness?.nextStep ??
+                                    lastAccountingReviewResolutionPacket?.nextStep ??
+                                    accountingAccountantHandoffWorkspace?.nextStep ??
                                     accountingPeriodEvidenceVault?.nextStep ??
                                     lastAccountingFinancialStatementReviewPacket?.nextStep ??
                                     accountingPeriodLockRegistry?.nextStep ??

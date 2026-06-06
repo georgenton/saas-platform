@@ -655,4 +655,78 @@ printLine(
   `${accountantHandoff.summary.riskFlagCount} riesgos, ${accountantHandoff.handoffStatus}`,
 );
 
+const accountantReview = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/accountant-review/request'),
+  token,
+  body: {
+    period,
+    year,
+    requestedByUserId: 'smoke-accounting-reviewer',
+    requestedByEmail: 'accounting-reviewer@saas-platform.dev',
+  },
+});
+
+assertStatus('accounting accountant review', accountantReview.status);
+printLine(
+  'accountant review',
+  `${accountantReview.status}, preguntas ${accountantReview.questions.length}`,
+);
+
+const transitionedReview = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath(
+    `/accountant-review/${encodeURIComponent(accountantReview.id)}/transition`,
+  ),
+  token,
+  body: {
+    status: 'approved',
+    transitionedByUserId: 'smoke-accounting-reviewer',
+    note: 'Smoke accounting accountant review approval.',
+  },
+});
+
+assertStatus('accounting accountant review transition', transitionedReview.status);
+printLine('review transition', transitionedReview.status);
+
+const reviewResolutionPacket = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/review-resolution-packet'),
+  token,
+  body: {
+    period,
+    year,
+    reviewId: transitionedReview.id,
+  },
+});
+
+assertStatus(
+  'accounting review resolution packet',
+  reviewResolutionPacket.resolutionStatus,
+);
+printLine(
+  'review resolution',
+  `${reviewResolutionPacket.summary.readyActionCount}/${reviewResolutionPacket.summary.actionCount} acciones, ${reviewResolutionPacket.resolutionStatus}`,
+);
+
+const certificationReadiness = await apiRequest({
+  baseUrl,
+  path: accountingPath(
+    `/closeout-certification-readiness?${periodQuery()}`,
+  ),
+  token,
+});
+
+assertStatus(
+  'accounting closeout certification readiness',
+  certificationReadiness.certificationStatus,
+);
+printLine(
+  'certification readiness',
+  `${certificationReadiness.summary.readyCheckCount}/${certificationReadiness.summary.checkCount} checks, ${certificationReadiness.certificationStatus}`,
+);
+
 printSection('Accounting foundation smoke OK');

@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import {
   ACCOUNTING_PERMISSIONS,
+  AccountingAccountantReviewNotFoundError,
   CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   GetTenantAccountingAccountantHandoffWorkspaceUseCase,
@@ -17,6 +18,7 @@ import {
   GetTenantAccountingBankReconciliationWorkspaceUseCase,
   GetTenantAccountingBankStatementImportWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+  GetTenantAccountingCloseoutCertificationReadinessUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
   GetTenantAccountingJournalDraftPreviewUseCase,
@@ -31,11 +33,13 @@ import {
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingBankReconciliationControlRegistryUseCase,
   ListTenantAccountingBankStatementRegistryUseCase,
+  ListTenantAccountingAccountantReviewsUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
   LockTenantAccountingPeriodUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
+  RequestTenantAccountingAccountantReviewUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
@@ -44,6 +48,8 @@ import {
   RequestTenantAccountingReconciliationExceptionPacketUseCase,
   RequestTenantAccountingReconciliationExceptionResolutionPacketUseCase,
   RequestTenantAccountingReconciliationMatchPacketUseCase,
+  RequestTenantAccountingReviewResolutionPacketUseCase,
+  TransitionTenantAccountingAccountantReviewUseCase,
 } from '@saas-platform/accounting-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
@@ -52,6 +58,17 @@ import { RequireTenantProductAccess } from '../tenancy/require-tenant-product-ac
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
+import {
+  AccountingAccountantReviewResponseDto,
+  AccountingCloseoutCertificationReadinessResponseDto,
+  AccountingReviewResolutionPacketResponseDto,
+  RequestAccountingAccountantReviewRequestDto,
+  RequestAccountingReviewResolutionPacketRequestDto,
+  toAccountingAccountantReviewResponseDto,
+  toAccountingCloseoutCertificationReadinessResponseDto,
+  toAccountingReviewResolutionPacketResponseDto,
+  TransitionAccountingAccountantReviewRequestDto,
+} from './dto/accounting-accountant-review.response';
 import {
   AccountingAuditTrailWorkspaceResponseDto,
   toAccountingAuditTrailWorkspaceResponseDto,
@@ -216,6 +233,11 @@ export class AccountingController {
     private readonly requestTenantAccountingFinancialStatementReviewPacketUseCase: RequestTenantAccountingFinancialStatementReviewPacketUseCase,
     private readonly getTenantAccountingPeriodEvidenceVaultUseCase: GetTenantAccountingPeriodEvidenceVaultUseCase,
     private readonly getTenantAccountingAccountantHandoffWorkspaceUseCase: GetTenantAccountingAccountantHandoffWorkspaceUseCase,
+    private readonly requestTenantAccountingAccountantReviewUseCase: RequestTenantAccountingAccountantReviewUseCase,
+    private readonly listTenantAccountingAccountantReviewsUseCase: ListTenantAccountingAccountantReviewsUseCase,
+    private readonly transitionTenantAccountingAccountantReviewUseCase: TransitionTenantAccountingAccountantReviewUseCase,
+    private readonly requestTenantAccountingReviewResolutionPacketUseCase: RequestTenantAccountingReviewResolutionPacketUseCase,
+    private readonly getTenantAccountingCloseoutCertificationReadinessUseCase: GetTenantAccountingCloseoutCertificationReadinessUseCase,
   ) {}
 
   @Get(':slug/intake-workspace')
@@ -1134,6 +1156,139 @@ export class AccountingController {
         });
 
       return toAccountingAccountantHandoffWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/accountant-review/request')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async requestAccountantReview(
+    @Param('slug') tenantSlug: string,
+    @Body() body: RequestAccountingAccountantReviewRequestDto,
+  ): Promise<AccountingAccountantReviewResponseDto> {
+    try {
+      const review =
+        await this.requestTenantAccountingAccountantReviewUseCase.execute({
+          tenantSlug,
+          period: body.period,
+          year: body.year,
+          requestedByUserId: body.requestedByUserId ?? null,
+          requestedByEmail: body.requestedByEmail ?? null,
+        });
+
+      return toAccountingAccountantReviewResponseDto(review);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/accountant-reviews')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async listAccountantReviews(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+  ): Promise<AccountingAccountantReviewResponseDto[]> {
+    try {
+      const reviews =
+        await this.listTenantAccountingAccountantReviewsUseCase.execute({
+          tenantSlug,
+          period,
+        });
+
+      return reviews.map((review) =>
+        toAccountingAccountantReviewResponseDto(review),
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/accountant-review/:reviewId/transition')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async transitionAccountantReview(
+    @Param('slug') tenantSlug: string,
+    @Param('reviewId') reviewId: string,
+    @Body() body: TransitionAccountingAccountantReviewRequestDto,
+  ): Promise<AccountingAccountantReviewResponseDto> {
+    try {
+      const review =
+        await this.transitionTenantAccountingAccountantReviewUseCase.execute({
+          tenantSlug,
+          reviewId,
+          status: body.status,
+          transitionedByUserId: body.transitionedByUserId ?? null,
+          note: body.note ?? null,
+        });
+
+      return toAccountingAccountantReviewResponseDto(review);
+    } catch (error) {
+      if (
+        error instanceof TenantNotFoundError ||
+        error instanceof AccountingAccountantReviewNotFoundError
+      ) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/review-resolution-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async requestReviewResolutionPacket(
+    @Param('slug') tenantSlug: string,
+    @Body() body: RequestAccountingReviewResolutionPacketRequestDto,
+  ): Promise<AccountingReviewResolutionPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantAccountingReviewResolutionPacketUseCase.execute({
+          tenantSlug,
+          period: body.period,
+          year: body.year,
+          reviewId: body.reviewId ?? null,
+        });
+
+      return toAccountingReviewResolutionPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/closeout-certification-readiness')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getCloseoutCertificationReadiness(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingCloseoutCertificationReadinessResponseDto> {
+    try {
+      const readiness =
+        await this.getTenantAccountingCloseoutCertificationReadinessUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingCloseoutCertificationReadinessResponseDto(readiness);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

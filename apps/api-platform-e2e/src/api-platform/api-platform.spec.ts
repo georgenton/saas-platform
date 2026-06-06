@@ -204,6 +204,7 @@ import {
   GetTenantAccountingBankReconciliationWorkspaceUseCase,
   GetTenantAccountingBankStatementImportWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
+  GetTenantAccountingCloseoutCertificationReadinessUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
   GetTenantAccountingJournalDraftPreviewUseCase,
@@ -216,12 +217,14 @@ import {
   GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingPeriodReconciliationReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
+  ListTenantAccountingAccountantReviewsUseCase,
   ListTenantAccountingBankReconciliationControlRegistryUseCase,
   ListTenantAccountingBankStatementRegistryUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
   LockTenantAccountingPeriodUseCase,
   ManageTenantAccountingChartMappingUseCase,
+  RequestTenantAccountingAccountantReviewUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
@@ -231,6 +234,8 @@ import {
   RequestTenantAccountingReconciliationExceptionPacketUseCase,
   RequestTenantAccountingReconciliationExceptionResolutionPacketUseCase,
   RequestTenantAccountingReconciliationMatchPacketUseCase,
+  RequestTenantAccountingReviewResolutionPacketUseCase,
+  TransitionTenantAccountingAccountantReviewUseCase,
 } from '@saas-platform/accounting-application';
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
@@ -1084,6 +1089,17 @@ describe('API', () => {
   };
   let getTenantAccountingPeriodEvidenceVaultUseCase: { execute: jest.Mock };
   let getTenantAccountingAccountantHandoffWorkspaceUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantAccountingAccountantReviewUseCase: { execute: jest.Mock };
+  let listTenantAccountingAccountantReviewsUseCase: { execute: jest.Mock };
+  let transitionTenantAccountingAccountantReviewUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantAccountingReviewResolutionPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingCloseoutCertificationReadinessUseCase: {
     execute: jest.Mock;
   };
   let listTenantAccountingPeriodLockRegistryUseCase: { execute: jest.Mock };
@@ -5360,6 +5376,95 @@ describe('API', () => {
     blockers: [],
     nextStep: 'Compartir handoff con contador y conservar evidencia del periodo.',
     guardrails: ['Handoff orienta revision profesional.'],
+  };
+  const accountingAccountantReview = {
+    id: 'accounting_accountant_review_001',
+    tenantId: 'tenant_123',
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    status: 'approved' as const,
+    requestedByUserId: 'user_123',
+    requestedByEmail: 'hello@saas-platform.dev',
+    summary: accountingAccountantHandoffWorkspace.executiveSummary,
+    questions: accountingAccountantHandoffWorkspace.accountantQuestions,
+    riskFlags: [],
+    evidenceReferences: accountingPeriodEvidenceVault.artifacts.map(
+      (artifact) => artifact.reference,
+    ),
+    transitionHistory: [
+      {
+        status: 'requested' as const,
+        transitionedAt: taxComplianceGeneratedAt,
+        transitionedByUserId: 'user_123',
+        note: 'Accounting accountant review requested.',
+      },
+      {
+        status: 'approved' as const,
+        transitionedAt: taxComplianceGeneratedAt,
+        transitionedByUserId: 'user_123',
+        note: 'Review aprobado desde e2e.',
+      },
+    ],
+    createdAt: taxComplianceGeneratedAt,
+    updatedAt: taxComplianceGeneratedAt,
+  };
+  const accountingReviewResolutionPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    resolutionStatus: 'no_review_changes_requested' as const,
+    review: accountingAccountantReview,
+    handoff: accountingAccountantHandoffWorkspace,
+    recommendedActions: [
+      {
+        key: 'review_questions',
+        label: 'Responder preguntas del contador',
+        status: 'ready' as const,
+        detail: 'Review ya aprobado.',
+      },
+    ],
+    summary: {
+      actionCount: 1,
+      readyActionCount: 1,
+      blockedActionCount: 0,
+      riskFlagCount: 0,
+      accountantQuestionCount: 1,
+    },
+    blockers: [],
+    nextStep: 'No hay cambios solicitados pendientes.',
+    guardrails: ['Resolution packet no aplica ajustes automaticamente.'],
+  };
+  const accountingCloseoutCertificationReadiness = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    certificationStatus: 'ready_for_professional_closeout' as const,
+    checks: [
+      {
+        key: 'accountant_review',
+        label: 'Accountant review lifecycle',
+        status: 'ready' as const,
+        detail: 'Ultimo review aprobado.',
+        blockerCount: 0,
+      },
+    ],
+    latestAccountantReview: accountingAccountantReview,
+    handoff: accountingAccountantHandoffWorkspace,
+    resolutionPacket: accountingReviewResolutionPacket,
+    summary: {
+      checkCount: 1,
+      readyCheckCount: 1,
+      needsReviewCheckCount: 0,
+      blockedCheckCount: 0,
+      accountantReviewCount: 1,
+      unresolvedResolutionCount: 0,
+    },
+    blockers: [],
+    nextStep: 'Periodo listo para cierre profesional asistido.',
+    guardrails: ['Readiness no certifica estados financieros.'],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
@@ -14150,6 +14255,23 @@ describe('API', () => {
     getTenantAccountingAccountantHandoffWorkspaceUseCase = {
       execute: jest.fn().mockResolvedValue(accountingAccountantHandoffWorkspace),
     };
+    requestTenantAccountingAccountantReviewUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingAccountantReview),
+    };
+    listTenantAccountingAccountantReviewsUseCase = {
+      execute: jest.fn().mockResolvedValue([accountingAccountantReview]),
+    };
+    transitionTenantAccountingAccountantReviewUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingAccountantReview),
+    };
+    requestTenantAccountingReviewResolutionPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingReviewResolutionPacket),
+    };
+    getTenantAccountingCloseoutCertificationReadinessUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(accountingCloseoutCertificationReadiness),
+    };
     listTenantAccountingPeriodLockRegistryUseCase = {
       execute: jest.fn().mockResolvedValue(accountingPeriodLockRegistry),
     };
@@ -14828,6 +14950,16 @@ describe('API', () => {
       .useValue(getTenantAccountingPeriodEvidenceVaultUseCase)
       .overrideProvider(GetTenantAccountingAccountantHandoffWorkspaceUseCase)
       .useValue(getTenantAccountingAccountantHandoffWorkspaceUseCase)
+      .overrideProvider(RequestTenantAccountingAccountantReviewUseCase)
+      .useValue(requestTenantAccountingAccountantReviewUseCase)
+      .overrideProvider(ListTenantAccountingAccountantReviewsUseCase)
+      .useValue(listTenantAccountingAccountantReviewsUseCase)
+      .overrideProvider(TransitionTenantAccountingAccountantReviewUseCase)
+      .useValue(transitionTenantAccountingAccountantReviewUseCase)
+      .overrideProvider(RequestTenantAccountingReviewResolutionPacketUseCase)
+      .useValue(requestTenantAccountingReviewResolutionPacketUseCase)
+      .overrideProvider(GetTenantAccountingCloseoutCertificationReadinessUseCase)
+      .useValue(getTenantAccountingCloseoutCertificationReadinessUseCase)
       .overrideProvider(ListTenantAccountingPeriodLockRegistryUseCase)
       .useValue(listTenantAccountingPeriodLockRegistryUseCase)
       .overrideProvider(LockTenantAccountingPeriodUseCase)
@@ -19210,6 +19342,144 @@ describe('API', () => {
 
     expect(
       getTenantAccountingAccountantHandoffWorkspaceUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/accountant-review/request should create accounting accountant review', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/accountant-review/request')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        requestedByUserId: 'user_123',
+        requestedByEmail: 'hello@saas-platform.dev',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      id: 'accounting_accountant_review_001',
+      tenantSlug: 'saas-platform',
+      status: 'approved',
+      requestedByEmail: 'hello@saas-platform.dev',
+    });
+
+    expect(
+      requestTenantAccountingAccountantReviewUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      requestedByUserId: 'user_123',
+      requestedByEmail: 'hello@saas-platform.dev',
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/accountant-reviews should list accounting accountant reviews', async () => {
+    const response = await request(httpServer)
+      .get('/api/accounting/tenants/saas-platform/accountant-reviews?period=2026-06')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toHaveLength(1);
+    expect(response.body[0]).toMatchObject({
+      id: 'accounting_accountant_review_001',
+      status: 'approved',
+    });
+
+    expect(
+      listTenantAccountingAccountantReviewsUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/accountant-review/:reviewId/transition should transition accounting accountant review', async () => {
+    const response = await request(httpServer)
+      .post(
+        '/api/accounting/tenants/saas-platform/accountant-review/accounting_accountant_review_001/transition',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        status: 'approved',
+        transitionedByUserId: 'user_123',
+        note: 'Review aprobado desde e2e.',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      id: 'accounting_accountant_review_001',
+      status: 'approved',
+    });
+
+    expect(
+      transitionTenantAccountingAccountantReviewUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      reviewId: 'accounting_accountant_review_001',
+      status: 'approved',
+      transitionedByUserId: 'user_123',
+      note: 'Review aprobado desde e2e.',
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/review-resolution-packet should return accounting review resolution', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/review-resolution-packet')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        reviewId: 'accounting_accountant_review_001',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      resolutionStatus: 'no_review_changes_requested',
+      summary: {
+        actionCount: 1,
+        readyActionCount: 1,
+      },
+    });
+
+    expect(
+      requestTenantAccountingReviewResolutionPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      reviewId: 'accounting_accountant_review_001',
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/closeout-certification-readiness should return certification readiness', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/closeout-certification-readiness?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      certificationStatus: 'ready_for_professional_closeout',
+      latestAccountantReview: {
+        id: 'accounting_accountant_review_001',
+      },
+      summary: {
+        checkCount: 1,
+        readyCheckCount: 1,
+      },
+    });
+
+    expect(
+      getTenantAccountingCloseoutCertificationReadinessUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',

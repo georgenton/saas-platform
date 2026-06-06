@@ -139,6 +139,7 @@ import {
   EcuadorTaxAccountingBridgeSuggestedAccountsResponse,
   EcuadorTaxAccountingReadinessPacketResponse,
   EcuadorTaxAnnexesReadinessResponse,
+  EcuadorTaxAnnexesWorkspaceResponse,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxDeclarationFormCatalogResponse,
   EcuadorTaxDeclarationArtifactExportResponse,
@@ -153,10 +154,13 @@ import {
   EcuadorTaxFormMappingCatalogResponse,
   EcuadorTaxGrowthReminderPacketResponse,
   EcuadorTaxIncomeTaxEvidenceWorkspaceResponse,
+  EcuadorTaxIncomeTaxFormContractWorkspaceResponse,
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
+  EcuadorTaxObligationMatrixV2WorkspaceResponse,
   EcuadorTaxPeriodCloseoutPacketResponse,
   EcuadorTaxPeriodCloseoutReportResponse,
+  EcuadorTaxPeriodCloseoutCertificationResponse,
   EcuadorTaxPeriodEvidenceVaultResponse,
   EcuadorTaxPeriodWorkspaceResponse,
   EcuadorTaxOperationalCloseoutResponse,
@@ -168,6 +172,7 @@ import {
   EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcuadorTaxVatDeclarationDraftResponse,
   EcuadorTaxVatDeclarationDraftWorkspaceResponse,
+  EcuadorTaxVatFormContractWorkspaceResponse,
   EcuadorTaxVatDeclarationApprovalResponse,
   EcuadorTaxVatInputOutputReconciliationPacketResponse,
   EcuadorTaxWithholdingDraftBridgePacketResponse,
@@ -178,6 +183,7 @@ import {
   EcuadorTaxReviewAssistantPacketResponse,
   EcuadorTaxSriFiscalEvidenceImportBatchResponse,
   EcuadorTaxSriFiscalEvidenceWorkspaceResponse,
+  EcuadorTaxSriEvidenceIntakeV2WorkspaceResponse,
   EcuadorTaxSriPlatformReconciliationWorkspaceResponse,
   RecordEcuadorTaxSriFiscalEvidenceImportRequest,
   UpsertEcuadorTaxAccountingBridgeMappingRequest,
@@ -2820,6 +2826,38 @@ export async function fetchEcuadorTaxDeclarationSourceLedger(
   );
 }
 
+export async function fetchEcuadorTaxObligationMatrixV2Workspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxObligationMatrixV2WorkspaceResponse> {
+  return request<EcuadorTaxObligationMatrixV2WorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/obligation-matrix-v2-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxSriEvidenceIntakeV2Workspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxSriEvidenceIntakeV2WorkspaceResponse> {
+  return request<EcuadorTaxSriEvidenceIntakeV2WorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/sri-evidence-intake-v2-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
 export async function fetchEcuadorTaxVatDeclarationDraftWorkspace(
   token: string,
   tenantSlug: string,
@@ -2830,6 +2868,22 @@ export async function fetchEcuadorTaxVatDeclarationDraftWorkspace(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/vat-declaration-draft-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxVatFormContractWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxVatFormContractWorkspaceResponse> {
+  return request<EcuadorTaxVatFormContractWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/vat-form-contract-workspace?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },
@@ -2868,6 +2922,22 @@ export async function fetchEcuadorTaxIncomeTaxEvidenceWorkspace(
   );
 }
 
+export async function fetchEcuadorTaxIncomeTaxFormContractWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxIncomeTaxFormContractWorkspaceResponse> {
+  return request<EcuadorTaxIncomeTaxFormContractWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/income-tax-form-contract-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
 export async function fetchEcuadorTaxAiFilingAssistantPacket(
   token: string,
   tenantSlug: string,
@@ -2897,6 +2967,38 @@ export async function fetchEcuadorTaxDeclarationReviewLoopWorkspace(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/declaration-review-loop-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAnnexesWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAnnexesWorkspaceResponse> {
+  return request<EcuadorTaxAnnexesWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/annexes-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPeriodCloseoutCertification(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPeriodCloseoutCertificationResponse> {
+  return request<EcuadorTaxPeriodCloseoutCertificationResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/period-closeout-certification?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

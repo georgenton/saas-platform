@@ -177,11 +177,17 @@ const [
   declarationFormCatalog,
   declarationFormDraftPacket,
   declarationSourceLedger,
+  obligationMatrixV2Workspace,
+  sriEvidenceIntakeV2Workspace,
   vatDeclarationDraftWorkspace,
+  vatFormContractWorkspace,
   formMappingCatalog,
   incomeTaxEvidenceWorkspace,
+  incomeTaxFormContractWorkspace,
   aiFilingAssistantPacket,
   declarationReviewLoopWorkspace,
+  annexesWorkspace,
+  periodCloseoutCertification,
   filingGuidePacket,
   declarationArtifactExport,
   accountingBridgeSuggestedAccounts,
@@ -324,7 +330,22 @@ const [
   }),
   apiRequest({
     baseUrl,
+    path: taxPath(`/obligation-matrix-v2-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/sri-evidence-intake-v2-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
     path: taxPath(`/vat-declaration-draft-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/vat-form-contract-workspace?${periodQuery()}`),
     token,
   }),
   apiRequest({
@@ -339,12 +360,27 @@ const [
   }),
   apiRequest({
     baseUrl,
+    path: taxPath(`/income-tax-form-contract-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
     path: taxPath(`/ai-filing-assistant-packet?${periodQuery()}&formKey=iva`),
     token,
   }),
   apiRequest({
     baseUrl,
     path: taxPath(`/declaration-review-loop-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/annexes-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/period-closeout-certification?${periodQuery()}`),
     token,
   }),
   apiRequest({
@@ -424,13 +460,29 @@ assertStatus(
   declarationSourceLedger.readinessStatus,
 );
 assertStatus(
+  'obligation matrix v2 workspace',
+  obligationMatrixV2Workspace.readinessStatus,
+);
+assertStatus(
+  'sri evidence intake v2 workspace',
+  sriEvidenceIntakeV2Workspace.readinessStatus,
+);
+assertStatus(
   'vat declaration draft workspace',
   vatDeclarationDraftWorkspace.readinessStatus,
+);
+assertStatus(
+  'vat form contract workspace',
+  vatFormContractWorkspace.readinessStatus,
 );
 assertStatus('form mapping catalog', formMappingCatalog.readinessStatus);
 assertStatus(
   'income tax evidence workspace',
   incomeTaxEvidenceWorkspace.readinessStatus,
+);
+assertStatus(
+  'income tax form contract workspace',
+  incomeTaxFormContractWorkspace.readinessStatus,
 );
 assertStatus(
   'ai filing assistant packet',
@@ -439,6 +491,11 @@ assertStatus(
 assertStatus(
   'declaration review loop',
   declarationReviewLoopWorkspace.loopStatus,
+);
+assertStatus('annexes workspace', annexesWorkspace.readinessStatus);
+assertStatus(
+  'period closeout certification',
+  periodCloseoutCertification.certificationStatus,
 );
 assertStatus('filing guide packet', filingGuidePacket.readinessStatus);
 assertStatus(
@@ -539,8 +596,20 @@ printLine('declaration forms', declarationFormCatalog.forms.length);
 printLine('declaration draft', declarationFormDraftPacket.readinessStatus);
 printLine('source ledger rows', declarationSourceLedger.summary.rowCount);
 printLine(
+  'obligation matrix v2',
+  `${obligationMatrixV2Workspace.summary.appliesCount}/${obligationMatrixV2Workspace.summary.obligationCount}`,
+);
+printLine(
+  'sri intake v2',
+  `${sriEvidenceIntakeV2Workspace.deduplication.ledgerSriRows} ledger rows`,
+);
+printLine(
   'vat workspace',
   `${vatDeclarationDraftWorkspace.summary.readyBucketCount}/${vatDeclarationDraftWorkspace.summary.bucketCount}`,
+);
+printLine(
+  'vat contract',
+  `${vatFormContractWorkspace.summary.highConfidenceBoxCount}/${vatFormContractWorkspace.summary.contractBoxCount}`,
 );
 printLine(
   'form mappings',
@@ -551,10 +620,19 @@ printLine(
   incomeTaxEvidenceWorkspace.summary.estimatedTaxableBaseInCents,
 );
 printLine(
+  'income contract lines',
+  incomeTaxFormContractWorkspace.contractLines.length,
+);
+printLine(
   'filing assistant',
   `${aiFilingAssistantPacket.assistantStatus} · ${aiFilingAssistantPacket.suggestedSteps.length} steps`,
 );
 printLine('review loop', declarationReviewLoopWorkspace.loopStatus);
+printLine('annex workspace', annexesWorkspace.readinessStatus);
+printLine(
+  'closeout certification',
+  periodCloseoutCertification.certificationStatus,
+);
 printLine('filing guide steps', filingGuidePacket.steps.length);
 printLine('artifact export', declarationArtifactExport.readinessStatus);
 printLine(

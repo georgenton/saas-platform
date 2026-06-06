@@ -19,6 +19,9 @@ import {
   GetTenantAccountingBankStatementImportWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingCloseoutCertificationReadinessUseCase,
+  GetTenantAccountingFoundationCloseoutSummaryUseCase,
+  GetTenantAccountingLegalBooksReadinessPacketUseCase,
+  GetTenantAccountingPeriodCloseoutTimelineUseCase,
   GetTenantAccountingPeriodNarrativeReportUseCase,
   GetTenantAccountingProfessionalCloseoutWorkspaceUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
@@ -38,6 +41,7 @@ import {
   ListTenantAccountingAccountantReviewsUseCase,
   ListTenantAccountingCorrectionsQueueUseCase,
   ListTenantAccountingEvidenceAttachmentRegistryUseCase,
+  ListTenantAccountingExternalCloseoutRecordsUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
   LockTenantAccountingPeriodUseCase,
@@ -46,6 +50,7 @@ import {
   RequestTenantAccountingAccountantReviewUseCase,
   RequestTenantAccountingAdjustmentRecommendationPacketUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
+  RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
@@ -53,9 +58,11 @@ import {
   RecordTenantAccountingBankStatementImportUseCase,
   RecordTenantAccountingCorrectionUseCase,
   RecordTenantAccountingEvidenceAttachmentUseCase,
+  RecordTenantAccountingExternalCloseoutRecordUseCase,
   RequestTenantAccountingReconciliationExceptionPacketUseCase,
   RequestTenantAccountingReconciliationExceptionResolutionPacketUseCase,
   RequestTenantAccountingReconciliationMatchPacketUseCase,
+  RequestTenantAccountingProfessionalCloseoutArtifactPacketUseCase,
   RequestTenantAccountingReviewResolutionPacketUseCase,
   TransitionTenantAccountingAccountantReviewUseCase,
 } from '@saas-platform/accounting-application';
@@ -190,17 +197,30 @@ import {
   AccountingCorrectionsQueueResponseDto,
   AccountingEvidenceAttachmentRegistryResponseDto,
   AccountingEvidenceAttachmentResponseDto,
+  AccountingExternalCloseoutRecordResponseDto,
+  AccountingFinancialStatementFinalReviewPacketResponseDto,
+  AccountingFoundationCloseoutSummaryResponseDto,
+  AccountingLegalBooksReadinessPacketResponseDto,
+  AccountingPeriodCloseoutTimelineResponseDto,
   AccountingPeriodNarrativeReportResponseDto,
+  AccountingProfessionalCloseoutArtifactPacketResponseDto,
   AccountingProfessionalCloseoutWorkspaceResponseDto,
   RecordAccountingCorrectionRequestDto,
   RecordAccountingEvidenceAttachmentRequestDto,
+  RecordAccountingExternalCloseoutRecordRequestDto,
   toAccountingAdjustmentRecommendationPacketResponseDto,
   toAccountingAiReviewAssistantPacketResponseDto,
   toAccountingCorrectionResponseDto,
   toAccountingCorrectionsQueueResponseDto,
   toAccountingEvidenceAttachmentRegistryResponseDto,
   toAccountingEvidenceAttachmentResponseDto,
+  toAccountingExternalCloseoutRecordResponseDto,
+  toAccountingFinancialStatementFinalReviewPacketResponseDto,
+  toAccountingFoundationCloseoutSummaryResponseDto,
+  toAccountingLegalBooksReadinessPacketResponseDto,
+  toAccountingPeriodCloseoutTimelineResponseDto,
   toAccountingPeriodNarrativeReportResponseDto,
+  toAccountingProfessionalCloseoutArtifactPacketResponseDto,
   toAccountingProfessionalCloseoutWorkspaceResponseDto,
 } from './dto/accounting-professional-closeout.response';
 import {
@@ -274,6 +294,13 @@ export class AccountingController {
     private readonly getTenantAccountingPeriodNarrativeReportUseCase: GetTenantAccountingPeriodNarrativeReportUseCase,
     private readonly requestTenantAccountingAiReviewAssistantPacketUseCase: RequestTenantAccountingAiReviewAssistantPacketUseCase,
     private readonly getTenantAccountingProfessionalCloseoutWorkspaceUseCase: GetTenantAccountingProfessionalCloseoutWorkspaceUseCase,
+    private readonly recordTenantAccountingExternalCloseoutRecordUseCase: RecordTenantAccountingExternalCloseoutRecordUseCase,
+    private readonly listTenantAccountingExternalCloseoutRecordsUseCase: ListTenantAccountingExternalCloseoutRecordsUseCase,
+    private readonly requestTenantAccountingProfessionalCloseoutArtifactPacketUseCase: RequestTenantAccountingProfessionalCloseoutArtifactPacketUseCase,
+    private readonly getTenantAccountingPeriodCloseoutTimelineUseCase: GetTenantAccountingPeriodCloseoutTimelineUseCase,
+    private readonly getTenantAccountingLegalBooksReadinessPacketUseCase: GetTenantAccountingLegalBooksReadinessPacketUseCase,
+    private readonly requestTenantAccountingFinancialStatementFinalReviewPacketUseCase: RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
+    private readonly getTenantAccountingFoundationCloseoutSummaryUseCase: GetTenantAccountingFoundationCloseoutSummaryUseCase,
   ) {}
 
   @Get(':slug/intake-workspace')
@@ -1501,5 +1528,141 @@ export class AccountingController {
       );
 
     return toAccountingProfessionalCloseoutWorkspaceResponseDto(workspace);
+  }
+
+  @Post(':slug/external-closeout-records')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async recordExternalCloseoutRecord(
+    @Param('slug') tenantSlug: string,
+    @Body() body: RecordAccountingExternalCloseoutRecordRequestDto,
+  ): Promise<AccountingExternalCloseoutRecordResponseDto> {
+    try {
+      const record =
+        await this.recordTenantAccountingExternalCloseoutRecordUseCase.execute({
+          tenantSlug,
+          period: body.period,
+          year: body.year,
+          status: body.status,
+          accountantName: body.accountantName,
+          accountantEmail: body.accountantEmail ?? null,
+          confirmedByUserId: body.confirmedByUserId ?? null,
+          confirmedByEmail: body.confirmedByEmail ?? null,
+          confirmedAt: body.confirmedAt ? new Date(body.confirmedAt) : null,
+          evidenceReference: body.evidenceReference ?? null,
+          notes: body.notes ?? null,
+        });
+
+      return toAccountingExternalCloseoutRecordResponseDto(record);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/external-closeout-records')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async listExternalCloseoutRecords(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingExternalCloseoutRecordResponseDto[]> {
+    const records =
+      await this.listTenantAccountingExternalCloseoutRecordsUseCase.execute({
+        tenantSlug,
+        period,
+        year: Number.parseInt(year, 10),
+      });
+
+    return records.map(toAccountingExternalCloseoutRecordResponseDto);
+  }
+
+  @Post(':slug/professional-closeout-artifact-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async requestProfessionalCloseoutArtifactPacket(
+    @Param('slug') tenantSlug: string,
+    @Body() body: { period: string; year: number },
+  ): Promise<AccountingProfessionalCloseoutArtifactPacketResponseDto> {
+    const packet =
+      await this.requestTenantAccountingProfessionalCloseoutArtifactPacketUseCase.execute(
+        {
+          tenantSlug,
+          period: body.period,
+          year: body.year,
+        },
+      );
+
+    return toAccountingProfessionalCloseoutArtifactPacketResponseDto(packet);
+  }
+
+  @Get(':slug/period-closeout-timeline')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getPeriodCloseoutTimeline(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingPeriodCloseoutTimelineResponseDto> {
+    const timeline =
+      await this.getTenantAccountingPeriodCloseoutTimelineUseCase.execute({
+        tenantSlug,
+        period,
+        year: Number.parseInt(year, 10),
+      });
+
+    return toAccountingPeriodCloseoutTimelineResponseDto(timeline);
+  }
+
+  @Get(':slug/legal-books-readiness-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getLegalBooksReadinessPacket(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingLegalBooksReadinessPacketResponseDto> {
+    const packet =
+      await this.getTenantAccountingLegalBooksReadinessPacketUseCase.execute({
+        tenantSlug,
+        period,
+        year: Number.parseInt(year, 10),
+      });
+
+    return toAccountingLegalBooksReadinessPacketResponseDto(packet);
+  }
+
+  @Post(':slug/financial-statement-final-review-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async requestFinancialStatementFinalReviewPacket(
+    @Param('slug') tenantSlug: string,
+    @Body() body: { period: string; year: number },
+  ): Promise<AccountingFinancialStatementFinalReviewPacketResponseDto> {
+    const packet =
+      await this.requestTenantAccountingFinancialStatementFinalReviewPacketUseCase.execute(
+        {
+          tenantSlug,
+          period: body.period,
+          year: body.year,
+        },
+      );
+
+    return toAccountingFinancialStatementFinalReviewPacketResponseDto(packet);
+  }
+
+  @Get(':slug/foundation-closeout-summary')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFoundationCloseoutSummary(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingFoundationCloseoutSummaryResponseDto> {
+    const summary =
+      await this.getTenantAccountingFoundationCloseoutSummaryUseCase.execute({
+        tenantSlug,
+        period,
+        year: Number.parseInt(year, 10),
+      });
+
+    return toAccountingFoundationCloseoutSummaryResponseDto(summary);
   }
 }

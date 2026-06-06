@@ -112,9 +112,12 @@ import {
   fetchAccountingBankStatementRegistry,
   fetchAccountingChartOfAccountsWorkspace,
   fetchAccountingFinancialStatementPreview,
+  fetchAccountingFoundationCloseoutSummary,
+  fetchAccountingLegalBooksReadinessPacket,
   fetchAccountingCloseoutCertificationReadiness,
   fetchAccountingCorrectionsQueue,
   fetchAccountingEvidenceAttachmentRegistry,
+  fetchAccountingExternalCloseoutRecords,
   fetchAccountingIntakeWorkspace,
   fetchAccountingJournalDraftPreview,
   fetchAccountingJournalRegistry,
@@ -124,6 +127,7 @@ import {
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
   fetchAccountingPeriodEvidenceVault,
+  fetchAccountingPeriodCloseoutTimeline,
   fetchAccountingPeriodNarrativeReport,
   fetchAccountingProfessionalCloseoutWorkspace,
   fetchAccountingPeriodLockRegistry,
@@ -134,10 +138,13 @@ import {
   recordAccountingBankStatementImport,
   recordAccountingCorrection,
   recordAccountingEvidenceAttachment,
+  recordAccountingExternalCloseoutRecord,
   requestAccountingPeriodReopenPacket,
   requestAccountingAccountantReview,
   requestAccountingAdjustmentRecommendationPacket,
   requestAccountingAiReviewAssistantPacket,
+  requestAccountingFinancialStatementFinalReviewPacket,
+  requestAccountingProfessionalCloseoutArtifactPacket,
   requestAccountingFinancialStatementReviewPacket,
   requestAccountingReviewResolutionPacket,
   requestAccountingReconciliationExceptionPacket,
@@ -398,9 +405,13 @@ import {
   AccountingBankStatementRegistryResponse,
   AccountingFinancialStatementPreviewResponse,
   AccountingFinancialStatementReviewPacketResponse,
+  AccountingFinancialStatementFinalReviewPacketResponse,
+  AccountingFoundationCloseoutSummaryResponse,
+  AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
   AccountingEvidenceAttachmentRegistryResponse,
+  AccountingExternalCloseoutRecordResponse,
   AccountingIntakeWorkspaceResponse,
   AccountingJournalEntryCreationResultResponse,
   AccountingJournalRegistryResponse,
@@ -413,7 +424,9 @@ import {
   AccountingPeriodCloseoutReadinessResponse,
   AccountingPeriodCashCloseoutReadinessResponse,
   AccountingPeriodEvidenceVaultResponse,
+  AccountingPeriodCloseoutTimelineResponse,
   AccountingPeriodNarrativeReportResponse,
+  AccountingProfessionalCloseoutArtifactPacketResponse,
   AccountingProfessionalCloseoutWorkspaceResponse,
   AccountingPeriodLockReadinessResponse,
   AccountingPeriodLockRegistryResponse,
@@ -2316,6 +2329,32 @@ export function App() {
     accountingProfessionalCloseoutWorkspace,
     setAccountingProfessionalCloseoutWorkspace,
   ] = useState<AccountingProfessionalCloseoutWorkspaceResponse | null>(null);
+  const [
+    accountingExternalCloseoutRecords,
+    setAccountingExternalCloseoutRecords,
+  ] = useState<AccountingExternalCloseoutRecordResponse[]>([]);
+  const [
+    lastAccountingProfessionalCloseoutArtifactPacket,
+    setLastAccountingProfessionalCloseoutArtifactPacket,
+  ] = useState<AccountingProfessionalCloseoutArtifactPacketResponse | null>(null);
+  const [
+    accountingPeriodCloseoutTimeline,
+    setAccountingPeriodCloseoutTimeline,
+  ] = useState<AccountingPeriodCloseoutTimelineResponse | null>(null);
+  const [
+    accountingLegalBooksReadinessPacket,
+    setAccountingLegalBooksReadinessPacket,
+  ] = useState<AccountingLegalBooksReadinessPacketResponse | null>(null);
+  const [
+    lastAccountingFinancialStatementFinalReviewPacket,
+    setLastAccountingFinancialStatementFinalReviewPacket,
+  ] = useState<AccountingFinancialStatementFinalReviewPacketResponse | null>(
+    null,
+  );
+  const [
+    accountingFoundationCloseoutSummary,
+    setAccountingFoundationCloseoutSummary,
+  ] = useState<AccountingFoundationCloseoutSummaryResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -19733,6 +19772,10 @@ export function App() {
         nextAccountingEvidenceAttachmentRegistry,
         nextAccountingPeriodNarrativeReport,
         nextAccountingProfessionalCloseoutWorkspace,
+        nextAccountingExternalCloseoutRecords,
+        nextAccountingPeriodCloseoutTimeline,
+        nextAccountingLegalBooksReadinessPacket,
+        nextAccountingFoundationCloseoutSummary,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -19894,6 +19937,30 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingExternalCloseoutRecords(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingPeriodCloseoutTimeline(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingLegalBooksReadinessPacket(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingFoundationCloseoutSummary(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -19920,6 +19987,10 @@ export function App() {
             null,
             null,
             null,
+            null,
+            null,
+            null,
+            [],
             null,
             null,
             null,
@@ -20027,6 +20098,16 @@ export function App() {
         setAccountingPeriodNarrativeReport(nextAccountingPeriodNarrativeReport);
         setAccountingProfessionalCloseoutWorkspace(
           nextAccountingProfessionalCloseoutWorkspace,
+        );
+        setAccountingExternalCloseoutRecords(
+          nextAccountingExternalCloseoutRecords,
+        );
+        setAccountingPeriodCloseoutTimeline(nextAccountingPeriodCloseoutTimeline);
+        setAccountingLegalBooksReadinessPacket(
+          nextAccountingLegalBooksReadinessPacket,
+        );
+        setAccountingFoundationCloseoutSummary(
+          nextAccountingFoundationCloseoutSummary,
         );
       });
     } catch (error) {
@@ -21631,6 +21712,182 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo preparar asistente contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRecordAccountingExternalCloseoutRecord() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-external-closeout-record');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      await recordAccountingExternalCloseoutRecord(token, tenantSlug, {
+        period: taxCompliancePeriod,
+        year,
+        status: 'confirmed_by_accountant',
+        accountantName: 'Contador externo',
+        accountantEmail: session?.user.email ?? null,
+        confirmedByUserId: session?.user.id ?? null,
+        confirmedByEmail: session?.user.email ?? null,
+        confirmedAt: new Date().toISOString(),
+        evidenceReference: `accounting-external-closeout://${taxCompliancePeriod}`,
+        notes: 'Confirmacion externa registrada desde Accounting foundation.',
+      });
+      const [records, legalBooks, summary] = await Promise.all([
+        fetchAccountingExternalCloseoutRecords(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingLegalBooksReadinessPacket(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingFoundationCloseoutSummary(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+      ]);
+
+      setAccountingExternalCloseoutRecords(records);
+      setAccountingLegalBooksReadinessPacket(legalBooks);
+      setAccountingFoundationCloseoutSummary(summary);
+      setTaxComplianceActionMessage('Cierre externo profesional registrado.');
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo registrar cierre externo profesional.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestAccountingProfessionalCloseoutArtifactPacket() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-closeout-artifact-packet');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const packet = await requestAccountingProfessionalCloseoutArtifactPacket(
+        token,
+        tenantSlug,
+        { period: taxCompliancePeriod, year },
+      );
+
+      setLastAccountingProfessionalCloseoutArtifactPacket(packet);
+      setTaxComplianceActionMessage(
+        `Artifact packet ${humanizeKey(packet.packetStatus)}.`,
+      );
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo preparar artifact packet contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRefreshAccountingFoundationCloseout() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-foundation-closeout-refresh');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const [timeline, legalBooks, summary] = await Promise.all([
+        fetchAccountingPeriodCloseoutTimeline(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingLegalBooksReadinessPacket(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingFoundationCloseoutSummary(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+      ]);
+
+      setAccountingPeriodCloseoutTimeline(timeline);
+      setAccountingLegalBooksReadinessPacket(legalBooks);
+      setAccountingFoundationCloseoutSummary(summary);
+      setTaxComplianceActionMessage(
+        `Foundation closeout ${humanizeKey(summary.summaryStatus)}.`,
+      );
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo refrescar cierre foundation.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestAccountingFinancialStatementFinalReviewPacket() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-final-review-packet');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const packet = await requestAccountingFinancialStatementFinalReviewPacket(
+        token,
+        tenantSlug,
+        { period: taxCompliancePeriod, year },
+      );
+
+      setLastAccountingFinancialStatementFinalReviewPacket(packet);
+      setTaxComplianceActionMessage(
+        `Final review ${humanizeKey(packet.reviewStatus)}.`,
+      );
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo preparar final review contable.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -31216,6 +31473,61 @@ export function App() {
                                 className={styles.ghostButton}
                                 disabled={
                                   taxComplianceActionLoading ===
+                                    'accounting-external-closeout-record' ||
+                                  !accountingProfessionalCloseoutWorkspace
+                                }
+                                onClick={() =>
+                                  void handleRecordAccountingExternalCloseoutRecord()
+                                }
+                                type="button"
+                              >
+                                Cierre externo
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-closeout-artifact-packet' ||
+                                  !accountingProfessionalCloseoutWorkspace
+                                }
+                                onClick={() =>
+                                  void handleRequestAccountingProfessionalCloseoutArtifactPacket()
+                                }
+                                type="button"
+                              >
+                                Artifact final
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-final-review-packet' ||
+                                  !accountingFinancialStatementPreview
+                                }
+                                onClick={() =>
+                                  void handleRequestAccountingFinancialStatementFinalReviewPacket()
+                                }
+                                type="button"
+                              >
+                                Final review
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                  'accounting-foundation-closeout-refresh'
+                                }
+                                onClick={() =>
+                                  void handleRefreshAccountingFoundationCloseout()
+                                }
+                                type="button"
+                              >
+                                Summary
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
                                     'accounting-adjusting-entry-create' ||
                                   !accountingJournalRegistry
                                 }
@@ -32024,6 +32336,117 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      External closeout
+                                    </span>
+                                    <strong>
+                                      {accountingExternalCloseoutRecords[0]
+                                        ? humanizeKey(
+                                            accountingExternalCloseoutRecords[0]
+                                              .status,
+                                          )
+                                        : 'sin record'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingExternalCloseoutRecords.length}{' '}
+                                      records
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Artifact packet
+                                    </span>
+                                    <strong>
+                                      {lastAccountingProfessionalCloseoutArtifactPacket
+                                        ? humanizeKey(
+                                            lastAccountingProfessionalCloseoutArtifactPacket.packetStatus,
+                                          )
+                                        : 'sin packet'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingProfessionalCloseoutArtifactPacket
+                                        ?.summary.readySectionCount ?? 0}
+                                      /
+                                      {lastAccountingProfessionalCloseoutArtifactPacket
+                                        ?.summary.sectionCount ?? 0}{' '}
+                                      ready
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Closeout timeline
+                                    </span>
+                                    <strong>
+                                      {accountingPeriodCloseoutTimeline
+                                        ? humanizeKey(
+                                            accountingPeriodCloseoutTimeline.timelineStatus,
+                                          )
+                                        : 'sin timeline'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingPeriodCloseoutTimeline?.summary
+                                        .eventCount ?? 0}{' '}
+                                      eventos
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Legal books
+                                    </span>
+                                    <strong>
+                                      {accountingLegalBooksReadinessPacket
+                                        ? humanizeKey(
+                                            accountingLegalBooksReadinessPacket.readinessStatus,
+                                          )
+                                        : 'sin readiness'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingLegalBooksReadinessPacket
+                                        ?.summary.readyCheckCount ?? 0}
+                                      /
+                                      {accountingLegalBooksReadinessPacket
+                                        ?.summary.checkCount ?? 0}{' '}
+                                      checks
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Final review
+                                    </span>
+                                    <strong>
+                                      {lastAccountingFinancialStatementFinalReviewPacket
+                                        ? humanizeKey(
+                                            lastAccountingFinancialStatementFinalReviewPacket.reviewStatus,
+                                          )
+                                        : 'sin packet'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingFinancialStatementFinalReviewPacket
+                                        ?.summary.readyChecklistCount ?? 0}
+                                      /
+                                      {lastAccountingFinancialStatementFinalReviewPacket
+                                        ?.summary.checklistCount ?? 0}{' '}
+                                      checks
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Foundation summary
+                                    </span>
+                                    <strong>
+                                      {accountingFoundationCloseoutSummary
+                                        ? humanizeKey(
+                                            accountingFoundationCloseoutSummary.summaryStatus,
+                                          )
+                                        : 'sin summary'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingFoundationCloseoutSummary
+                                        ?.summary.completedScopeCount ?? 0}{' '}
+                                      scopes
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Ultimo ajuste
                                     </span>
                                     <strong>
@@ -32075,7 +32498,12 @@ export function App() {
                                   </div>
                                 </div>
                                 <p className={styles.muted}>
-                                  {accountingProfessionalCloseoutWorkspace?.nextStep ??
+                                  {accountingFoundationCloseoutSummary?.nextStep ??
+                                    lastAccountingFinancialStatementFinalReviewPacket?.nextStep ??
+                                    accountingLegalBooksReadinessPacket?.nextStep ??
+                                    accountingPeriodCloseoutTimeline?.nextStep ??
+                                    lastAccountingProfessionalCloseoutArtifactPacket?.nextStep ??
+                                    accountingProfessionalCloseoutWorkspace?.nextStep ??
                                     lastAccountingAiReviewAssistantPacket?.nextStep ??
                                     accountingPeriodNarrativeReport?.nextStep ??
                                     accountingEvidenceAttachmentRegistry?.nextStep ??

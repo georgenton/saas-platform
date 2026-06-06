@@ -11,6 +11,8 @@ import {
   ACCOUNTING_CORRECTION_REPOSITORY,
   ACCOUNTING_EVIDENCE_ATTACHMENT_ID_GENERATOR,
   ACCOUNTING_EVIDENCE_ATTACHMENT_REPOSITORY,
+  ACCOUNTING_EXTERNAL_CLOSEOUT_RECORD_ID_GENERATOR,
+  ACCOUNTING_EXTERNAL_CLOSEOUT_RECORD_REPOSITORY,
   ACCOUNTING_JOURNAL_ENTRY_ID_GENERATOR,
   ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
   ACCOUNTING_PERIOD_CONTROL_ID_GENERATOR,
@@ -22,6 +24,7 @@ import { PrismaAccountingBankReconciliationControlRepository } from './prisma-ac
 import { PrismaAccountingBankStatementRepository } from './prisma-accounting-bank-statement.repository';
 import { PrismaAccountingCorrectionRepository } from './prisma-accounting-correction.repository';
 import { PrismaAccountingEvidenceAttachmentRepository } from './prisma-accounting-evidence-attachment.repository';
+import { PrismaAccountingExternalCloseoutRecordRepository } from './prisma-accounting-external-closeout-record.repository';
 import { PrismaAccountingJournalEntryRepository } from './prisma-accounting-journal-entry.repository';
 import { PrismaAccountingPeriodControlRepository } from './prisma-accounting-period-control.repository';
 import { UuidAccountingAccountantReviewIdGenerator } from './uuid-accounting-accountant-review-id.generator';
@@ -30,6 +33,7 @@ import { UuidAccountingBankStatementLineIdGenerator } from './uuid-accounting-ba
 import { UuidAccountingBankReconciliationControlIdGenerator } from './uuid-accounting-bank-reconciliation-control-id.generator';
 import { UuidAccountingCorrectionIdGenerator } from './uuid-accounting-correction-id.generator';
 import { UuidAccountingEvidenceAttachmentIdGenerator } from './uuid-accounting-evidence-attachment-id.generator';
+import { UuidAccountingExternalCloseoutRecordIdGenerator } from './uuid-accounting-external-closeout-record-id.generator';
 import { UuidAccountingJournalEntryIdGenerator } from './uuid-accounting-journal-entry-id.generator';
 import { UuidAccountingPeriodControlIdGenerator } from './uuid-accounting-period-control-id.generator';
 
@@ -43,6 +47,7 @@ import { UuidAccountingPeriodControlIdGenerator } from './uuid-accounting-period
     PrismaAccountingAccountantReviewRepository,
     PrismaAccountingCorrectionRepository,
     PrismaAccountingEvidenceAttachmentRepository,
+    PrismaAccountingExternalCloseoutRecordRepository,
     UuidAccountingJournalEntryIdGenerator,
     UuidAccountingPeriodControlIdGenerator,
     UuidAccountingBankStatementBatchIdGenerator,
@@ -51,6 +56,7 @@ import { UuidAccountingPeriodControlIdGenerator } from './uuid-accounting-period
     UuidAccountingAccountantReviewIdGenerator,
     UuidAccountingCorrectionIdGenerator,
     UuidAccountingEvidenceAttachmentIdGenerator,
+    UuidAccountingExternalCloseoutRecordIdGenerator,
     {
       provide: ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
       useExisting: PrismaAccountingJournalEntryRepository,
@@ -111,6 +117,14 @@ import { UuidAccountingPeriodControlIdGenerator } from './uuid-accounting-period
       provide: ACCOUNTING_EVIDENCE_ATTACHMENT_ID_GENERATOR,
       useExisting: UuidAccountingEvidenceAttachmentIdGenerator,
     },
+    {
+      provide: ACCOUNTING_EXTERNAL_CLOSEOUT_RECORD_REPOSITORY,
+      useExisting: PrismaAccountingExternalCloseoutRecordRepository,
+    },
+    {
+      provide: ACCOUNTING_EXTERNAL_CLOSEOUT_RECORD_ID_GENERATOR,
+      useExisting: UuidAccountingExternalCloseoutRecordIdGenerator,
+    },
   ],
   exports: [
     ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
@@ -128,6 +142,8 @@ import { UuidAccountingPeriodControlIdGenerator } from './uuid-accounting-period
     ACCOUNTING_CORRECTION_ID_GENERATOR,
     ACCOUNTING_EVIDENCE_ATTACHMENT_REPOSITORY,
     ACCOUNTING_EVIDENCE_ATTACHMENT_ID_GENERATOR,
+    ACCOUNTING_EXTERNAL_CLOSEOUT_RECORD_REPOSITORY,
+    ACCOUNTING_EXTERNAL_CLOSEOUT_RECORD_ID_GENERATOR,
   ],
 })
 export class AccountingPersistenceModule {}

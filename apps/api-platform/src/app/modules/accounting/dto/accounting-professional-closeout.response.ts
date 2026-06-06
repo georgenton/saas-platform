@@ -2,13 +2,20 @@ import {
   AccountingCorrectionSource,
   AccountingCorrectionStatus,
   AccountingEvidenceAttachmentStatus,
+  AccountingExternalCloseoutStatus,
   TenantAccountingAdjustmentRecommendationPacketView,
   TenantAccountingAiReviewAssistantPacketView,
   TenantAccountingCorrectionView,
   TenantAccountingCorrectionsQueueView,
   TenantAccountingEvidenceAttachmentRegistryView,
   TenantAccountingEvidenceAttachmentView,
+  TenantAccountingExternalCloseoutRecordView,
+  TenantAccountingFinancialStatementFinalReviewPacketView,
+  TenantAccountingFoundationCloseoutSummaryView,
+  TenantAccountingLegalBooksReadinessPacketView,
+  TenantAccountingPeriodCloseoutTimelineView,
   TenantAccountingPeriodNarrativeReportView,
+  TenantAccountingProfessionalCloseoutArtifactPacketView,
   TenantAccountingProfessionalCloseoutWorkspaceView,
 } from '@saas-platform/accounting-domain';
 
@@ -47,6 +54,19 @@ export interface RecordAccountingEvidenceAttachmentRequestDto {
   metadata?: Record<string, string | number | boolean | null>;
 }
 
+export interface RecordAccountingExternalCloseoutRecordRequestDto {
+  period: string;
+  year: number;
+  status: AccountingExternalCloseoutStatus;
+  accountantName: string;
+  accountantEmail?: string | null;
+  confirmedByUserId?: string | null;
+  confirmedByEmail?: string | null;
+  confirmedAt?: string | Date | null;
+  evidenceReference?: string | null;
+  notes?: string | null;
+}
+
 export interface AccountingCorrectionResponseDto
   extends TenantAccountingCorrectionView {}
 
@@ -70,6 +90,24 @@ export interface AccountingAiReviewAssistantPacketResponseDto
 
 export interface AccountingProfessionalCloseoutWorkspaceResponseDto
   extends TenantAccountingProfessionalCloseoutWorkspaceView {}
+
+export interface AccountingExternalCloseoutRecordResponseDto
+  extends TenantAccountingExternalCloseoutRecordView {}
+
+export interface AccountingProfessionalCloseoutArtifactPacketResponseDto
+  extends TenantAccountingProfessionalCloseoutArtifactPacketView {}
+
+export interface AccountingPeriodCloseoutTimelineResponseDto
+  extends TenantAccountingPeriodCloseoutTimelineView {}
+
+export interface AccountingLegalBooksReadinessPacketResponseDto
+  extends TenantAccountingLegalBooksReadinessPacketView {}
+
+export interface AccountingFinancialStatementFinalReviewPacketResponseDto
+  extends TenantAccountingFinancialStatementFinalReviewPacketView {}
+
+export interface AccountingFoundationCloseoutSummaryResponseDto
+  extends TenantAccountingFoundationCloseoutSummaryView {}
 
 export function toAccountingCorrectionResponseDto(
   view: TenantAccountingCorrectionView,
@@ -116,5 +154,41 @@ export function toAccountingAiReviewAssistantPacketResponseDto(
 export function toAccountingProfessionalCloseoutWorkspaceResponseDto(
   view: TenantAccountingProfessionalCloseoutWorkspaceView,
 ): AccountingProfessionalCloseoutWorkspaceResponseDto {
+  return view;
+}
+
+export function toAccountingExternalCloseoutRecordResponseDto(
+  view: TenantAccountingExternalCloseoutRecordView,
+): AccountingExternalCloseoutRecordResponseDto {
+  return view;
+}
+
+export function toAccountingProfessionalCloseoutArtifactPacketResponseDto(
+  view: TenantAccountingProfessionalCloseoutArtifactPacketView,
+): AccountingProfessionalCloseoutArtifactPacketResponseDto {
+  return view;
+}
+
+export function toAccountingPeriodCloseoutTimelineResponseDto(
+  view: TenantAccountingPeriodCloseoutTimelineView,
+): AccountingPeriodCloseoutTimelineResponseDto {
+  return view;
+}
+
+export function toAccountingLegalBooksReadinessPacketResponseDto(
+  view: TenantAccountingLegalBooksReadinessPacketView,
+): AccountingLegalBooksReadinessPacketResponseDto {
+  return view;
+}
+
+export function toAccountingFinancialStatementFinalReviewPacketResponseDto(
+  view: TenantAccountingFinancialStatementFinalReviewPacketView,
+): AccountingFinancialStatementFinalReviewPacketResponseDto {
+  return view;
+}
+
+export function toAccountingFoundationCloseoutSummaryResponseDto(
+  view: TenantAccountingFoundationCloseoutSummaryView,
+): AccountingFoundationCloseoutSummaryResponseDto {
   return view;
 }

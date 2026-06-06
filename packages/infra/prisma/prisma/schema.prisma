@@ -69,6 +69,7 @@ model Tenant {
   accountingAccountantReviews AccountingAccountantReview[]
   accountingCorrections AccountingCorrection[]
   accountingEvidenceAttachments AccountingEvidenceAttachment[]
+  accountingExternalCloseoutRecords AccountingExternalCloseoutRecord[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
@@ -1026,6 +1027,29 @@ model AccountingEvidenceAttachment {
   @@index([tenantSlug, period, updatedAt], map: "AccountingEvidenceAttachment_slug_period_idx")
   @@index([tenantId, status, updatedAt], map: "AccountingEvidenceAttachment_status_idx")
   @@index([tenantId, attachmentType, updatedAt], map: "AccountingEvidenceAttachment_type_idx")
+}
+
+model AccountingExternalCloseoutRecord {
+  id                 String   @id
+  tenantId           String
+  tenantSlug         String
+  period             String
+  year               Int
+  status             String
+  accountantName     String
+  accountantEmail    String?
+  confirmedByUserId  String?
+  confirmedByEmail   String?
+  confirmedAt        DateTime?
+  evidenceReference  String?
+  notes              String?  @db.Text
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([tenantId, period, updatedAt], map: "AccountingExternalCloseoutRecord_period_idx")
+  @@index([tenantSlug, period, updatedAt], map: "AccountingExternalCloseoutRecord_slug_period_idx")
+  @@index([tenantId, status, updatedAt], map: "AccountingExternalCloseoutRecord_status_idx")
 }
 
 model TaxComplianceAccountantReview {

@@ -870,4 +870,111 @@ printLine(
   `${professionalCloseoutWorkspace.summary.correctionCount} correcciones, ${professionalCloseoutWorkspace.workspaceStatus}`,
 );
 
+const externalCloseoutRecord = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/external-closeout-records'),
+  token,
+  body: {
+    period,
+    year,
+    status: 'confirmed_by_accountant',
+    accountantName: 'Smoke external accountant',
+    accountantEmail: 'accounting-reviewer@saas-platform.dev',
+    confirmedByUserId: 'smoke-accounting-reviewer',
+    confirmedByEmail: 'accounting-reviewer@saas-platform.dev',
+    confirmedAt: new Date().toISOString(),
+    evidenceReference: `smoke:${tenantSlug}:${period}:external-closeout`,
+    notes: 'Smoke external professional closeout confirmation.',
+  },
+});
+
+assertStatus('accounting external closeout record', externalCloseoutRecord.status);
+printLine(
+  'external closeout',
+  `${externalCloseoutRecord.id}, ${externalCloseoutRecord.status}`,
+);
+
+const closeoutArtifactPacket = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/professional-closeout-artifact-packet'),
+  token,
+  body: {
+    period,
+    year,
+  },
+});
+
+assertStatus(
+  'accounting professional closeout artifact packet',
+  closeoutArtifactPacket.packetStatus,
+);
+printLine(
+  'artifact packet',
+  `${closeoutArtifactPacket.summary.readySectionCount}/${closeoutArtifactPacket.summary.sectionCount} sections, ${closeoutArtifactPacket.packetStatus}`,
+);
+
+const closeoutTimeline = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/period-closeout-timeline?${periodQuery()}`),
+  token,
+});
+
+assertStatus('accounting period closeout timeline', closeoutTimeline.timelineStatus);
+printLine(
+  'closeout timeline',
+  `${closeoutTimeline.summary.eventCount} eventos, ${closeoutTimeline.timelineStatus}`,
+);
+
+const legalBooksReadiness = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/legal-books-readiness-packet?${periodQuery()}`),
+  token,
+});
+
+assertStatus(
+  'accounting legal books readiness',
+  legalBooksReadiness.readinessStatus,
+);
+printLine(
+  'legal books readiness',
+  `${legalBooksReadiness.summary.readyCheckCount}/${legalBooksReadiness.summary.checkCount} checks, ${legalBooksReadiness.readinessStatus}`,
+);
+
+const finalReviewPacket = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/financial-statement-final-review-packet'),
+  token,
+  body: {
+    period,
+    year,
+  },
+});
+
+assertStatus(
+  'accounting financial statement final review packet',
+  finalReviewPacket.reviewStatus,
+);
+printLine(
+  'final review',
+  `${finalReviewPacket.summary.readyChecklistCount}/${finalReviewPacket.summary.checklistCount} checks, ${finalReviewPacket.reviewStatus}`,
+);
+
+const foundationCloseoutSummary = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/foundation-closeout-summary?${periodQuery()}`),
+  token,
+});
+
+assertStatus(
+  'accounting foundation closeout summary',
+  foundationCloseoutSummary.summaryStatus,
+);
+printLine(
+  'foundation summary',
+  `${foundationCloseoutSummary.summary.completedScopeCount} scopes, ${foundationCloseoutSummary.summaryStatus}`,
+);
+
 printSection('Accounting foundation smoke OK');

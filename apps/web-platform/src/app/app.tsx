@@ -113,6 +113,8 @@ import {
   fetchAccountingChartOfAccountsWorkspace,
   fetchAccountingFinancialStatementPreview,
   fetchAccountingCloseoutCertificationReadiness,
+  fetchAccountingCorrectionsQueue,
+  fetchAccountingEvidenceAttachmentRegistry,
   fetchAccountingIntakeWorkspace,
   fetchAccountingJournalDraftPreview,
   fetchAccountingJournalRegistry,
@@ -122,14 +124,20 @@ import {
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
   fetchAccountingPeriodEvidenceVault,
+  fetchAccountingPeriodNarrativeReport,
+  fetchAccountingProfessionalCloseoutWorkspace,
   fetchAccountingPeriodLockRegistry,
   fetchAccountingPeriodLockReadiness,
   fetchAccountingPeriodReconciliationReadiness,
   fetchAccountingTrialBalanceWorkspace,
   lockAccountingPeriod,
   recordAccountingBankStatementImport,
+  recordAccountingCorrection,
+  recordAccountingEvidenceAttachment,
   requestAccountingPeriodReopenPacket,
   requestAccountingAccountantReview,
+  requestAccountingAdjustmentRecommendationPacket,
+  requestAccountingAiReviewAssistantPacket,
   requestAccountingFinancialStatementReviewPacket,
   requestAccountingReviewResolutionPacket,
   requestAccountingReconciliationExceptionPacket,
@@ -381,6 +389,8 @@ import {
   AccountingAdjustingJournalEntryCreationResultResponse,
   AccountingAccountantHandoffWorkspaceResponse,
   AccountingAccountantReviewResponse,
+  AccountingAdjustmentRecommendationPacketResponse,
+  AccountingAiReviewAssistantPacketResponse,
   AccountingAuditTrailWorkspaceResponse,
   AccountingBankReconciliationControlRegistryResponse,
   AccountingBankReconciliationWorkspaceResponse,
@@ -389,6 +399,8 @@ import {
   AccountingFinancialStatementPreviewResponse,
   AccountingFinancialStatementReviewPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
+  AccountingCorrectionsQueueResponse,
+  AccountingEvidenceAttachmentRegistryResponse,
   AccountingIntakeWorkspaceResponse,
   AccountingJournalEntryCreationResultResponse,
   AccountingJournalRegistryResponse,
@@ -401,6 +413,8 @@ import {
   AccountingPeriodCloseoutReadinessResponse,
   AccountingPeriodCashCloseoutReadinessResponse,
   AccountingPeriodEvidenceVaultResponse,
+  AccountingPeriodNarrativeReportResponse,
+  AccountingProfessionalCloseoutWorkspaceResponse,
   AccountingPeriodLockReadinessResponse,
   AccountingPeriodLockRegistryResponse,
   AccountingPeriodLockResultResponse,
@@ -2280,6 +2294,28 @@ export function App() {
     accountingCloseoutCertificationReadiness,
     setAccountingCloseoutCertificationReadiness,
   ] = useState<AccountingCloseoutCertificationReadinessResponse | null>(null);
+  const [accountingCorrectionsQueue, setAccountingCorrectionsQueue] =
+    useState<AccountingCorrectionsQueueResponse | null>(null);
+  const [
+    lastAccountingAdjustmentRecommendationPacket,
+    setLastAccountingAdjustmentRecommendationPacket,
+  ] = useState<AccountingAdjustmentRecommendationPacketResponse | null>(null);
+  const [
+    accountingEvidenceAttachmentRegistry,
+    setAccountingEvidenceAttachmentRegistry,
+  ] = useState<AccountingEvidenceAttachmentRegistryResponse | null>(null);
+  const [
+    accountingPeriodNarrativeReport,
+    setAccountingPeriodNarrativeReport,
+  ] = useState<AccountingPeriodNarrativeReportResponse | null>(null);
+  const [
+    lastAccountingAiReviewAssistantPacket,
+    setLastAccountingAiReviewAssistantPacket,
+  ] = useState<AccountingAiReviewAssistantPacketResponse | null>(null);
+  const [
+    accountingProfessionalCloseoutWorkspace,
+    setAccountingProfessionalCloseoutWorkspace,
+  ] = useState<AccountingProfessionalCloseoutWorkspaceResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -19693,6 +19729,10 @@ export function App() {
         nextAccountingAccountantReviews,
         nextAccountingReviewResolutionPacket,
         nextAccountingCloseoutCertificationReadiness,
+        nextAccountingCorrectionsQueue,
+        nextAccountingEvidenceAttachmentRegistry,
+        nextAccountingPeriodNarrativeReport,
+        nextAccountingProfessionalCloseoutWorkspace,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -19830,6 +19870,30 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingCorrectionsQueue(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingEvidenceAttachmentRegistry(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingPeriodNarrativeReport(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingProfessionalCloseoutWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -19853,6 +19917,10 @@ export function App() {
             null,
             null,
             [],
+            null,
+            null,
+            null,
+            null,
             null,
             null,
           ];
@@ -19951,6 +20019,14 @@ export function App() {
         );
         setAccountingCloseoutCertificationReadiness(
           nextAccountingCloseoutCertificationReadiness,
+        );
+        setAccountingCorrectionsQueue(nextAccountingCorrectionsQueue);
+        setAccountingEvidenceAttachmentRegistry(
+          nextAccountingEvidenceAttachmentRegistry,
+        );
+        setAccountingPeriodNarrativeReport(nextAccountingPeriodNarrativeReport);
+        setAccountingProfessionalCloseoutWorkspace(
+          nextAccountingProfessionalCloseoutWorkspace,
         );
       });
     } catch (error) {
@@ -21396,6 +21472,165 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo preparar resolution packet contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRecordAccountingCorrection() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-correction-record');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      await recordAccountingCorrection(token, tenantSlug, {
+        period: taxCompliancePeriod,
+        year,
+        source: 'accountant_review',
+        status: 'open',
+        severity: 'warning',
+        title: 'Revision profesional pendiente',
+        detail: 'Correccion operativa creada desde professional closeout.',
+        recommendedAction: 'Revisar con contador antes de crear ajuste.',
+        ownerUserId: session?.user.id ?? null,
+        ownerEmail: session?.user.email ?? null,
+        evidenceReference: `accounting-correction://${taxCompliancePeriod}`,
+      });
+      const [queue, workspace] = await Promise.all([
+        fetchAccountingCorrectionsQueue(token, tenantSlug, taxCompliancePeriod, year),
+        fetchAccountingProfessionalCloseoutWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+      ]);
+
+      setAccountingCorrectionsQueue(queue);
+      setAccountingProfessionalCloseoutWorkspace(workspace);
+      setTaxComplianceActionMessage('Correccion contable registrada.');
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo registrar correccion contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestAccountingAdjustmentRecommendationPacket() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-adjustment-recommendation');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const packet = await requestAccountingAdjustmentRecommendationPacket(
+        token,
+        tenantSlug,
+        { period: taxCompliancePeriod, year },
+      );
+
+      setLastAccountingAdjustmentRecommendationPacket(packet);
+      setTaxComplianceActionMessage(
+        `Recomendaciones ${humanizeKey(packet.recommendationStatus)}.`,
+      );
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo preparar recomendaciones de ajuste.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRecordAccountingEvidenceAttachment() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-evidence-attachment');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      await recordAccountingEvidenceAttachment(token, tenantSlug, {
+        period: taxCompliancePeriod,
+        year,
+        attachmentType: 'accountant_note',
+        source: 'professional_closeout_workspace',
+        label: 'Nota de revision profesional',
+        reference: `accounting-evidence://${taxCompliancePeriod}:note`,
+        ownerUserId: session?.user.id ?? null,
+        ownerEmail: session?.user.email ?? null,
+        status: 'ready',
+        metadata: { period: taxCompliancePeriod },
+      });
+      const registry = await fetchAccountingEvidenceAttachmentRegistry(
+        token,
+        tenantSlug,
+        taxCompliancePeriod,
+        year,
+      );
+
+      setAccountingEvidenceAttachmentRegistry(registry);
+      setTaxComplianceActionMessage('Evidencia contable adjunta.');
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo registrar evidencia contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestAccountingAiReviewAssistantPacket() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-ai-review-assistant');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const packet = await requestAccountingAiReviewAssistantPacket(
+        token,
+        tenantSlug,
+        { period: taxCompliancePeriod, year },
+      );
+
+      setLastAccountingAiReviewAssistantPacket(packet);
+      setTaxComplianceActionMessage(
+        `Asistente contable ${humanizeKey(packet.assistantStatus)}.`,
+      );
+    } catch (error) {
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo preparar asistente contable.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -30925,6 +31160,62 @@ export function App() {
                                 className={styles.ghostButton}
                                 disabled={
                                   taxComplianceActionLoading ===
+                                    'accounting-correction-record' ||
+                                  !accountingCloseoutCertificationReadiness
+                                }
+                                onClick={() =>
+                                  void handleRecordAccountingCorrection()
+                                }
+                                type="button"
+                              >
+                                Correccion
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-adjustment-recommendation' ||
+                                  !accountingCorrectionsQueue
+                                }
+                                onClick={() =>
+                                  void handleRequestAccountingAdjustmentRecommendationPacket()
+                                }
+                                type="button"
+                              >
+                                Recomendar ajuste
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-evidence-attachment' ||
+                                  !accountingPeriodEvidenceVault
+                                }
+                                onClick={() =>
+                                  void handleRecordAccountingEvidenceAttachment()
+                                }
+                                type="button"
+                              >
+                                Adjuntar evidencia
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-ai-review-assistant' ||
+                                  !accountingProfessionalCloseoutWorkspace
+                                }
+                                onClick={() =>
+                                  void handleRequestAccountingAiReviewAssistantPacket()
+                                }
+                                type="button"
+                              >
+                                AI review
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
                                     'accounting-adjusting-entry-create' ||
                                   !accountingJournalRegistry
                                 }
@@ -31627,6 +31918,112 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      Corrections
+                                    </span>
+                                    <strong>
+                                      {accountingCorrectionsQueue
+                                        ? humanizeKey(
+                                            accountingCorrectionsQueue.queueStatus,
+                                          )
+                                        : 'sin queue'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingCorrectionsQueue?.summary
+                                        .openCount ?? 0}{' '}
+                                      abiertas
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Adjustment recs
+                                    </span>
+                                    <strong>
+                                      {lastAccountingAdjustmentRecommendationPacket
+                                        ? humanizeKey(
+                                            lastAccountingAdjustmentRecommendationPacket.recommendationStatus,
+                                          )
+                                        : 'sin recs'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingAdjustmentRecommendationPacket
+                                        ?.summary.recommendationCount ?? 0}{' '}
+                                      sugeridas
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Attachments
+                                    </span>
+                                    <strong>
+                                      {accountingEvidenceAttachmentRegistry
+                                        ? humanizeKey(
+                                            accountingEvidenceAttachmentRegistry.registryStatus,
+                                          )
+                                        : 'sin registry'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingEvidenceAttachmentRegistry
+                                        ?.summary.readyAttachmentCount ?? 0}
+                                      /
+                                      {accountingEvidenceAttachmentRegistry
+                                        ?.summary.attachmentCount ?? 0}{' '}
+                                      ready
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Narrative
+                                    </span>
+                                    <strong>
+                                      {accountingPeriodNarrativeReport
+                                        ? humanizeKey(
+                                            accountingPeriodNarrativeReport.reportStatus,
+                                          )
+                                        : 'sin report'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingPeriodNarrativeReport?.summary
+                                        .sectionCount ?? 0}{' '}
+                                      secciones
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      AI assistant
+                                    </span>
+                                    <strong>
+                                      {lastAccountingAiReviewAssistantPacket
+                                        ? humanizeKey(
+                                            lastAccountingAiReviewAssistantPacket.assistantStatus,
+                                          )
+                                        : 'sin packet'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingAiReviewAssistantPacket
+                                        ?.summary.draftedResponseCount ?? 0}{' '}
+                                      respuestas
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Pro workspace
+                                    </span>
+                                    <strong>
+                                      {accountingProfessionalCloseoutWorkspace
+                                        ? humanizeKey(
+                                            accountingProfessionalCloseoutWorkspace.workspaceStatus,
+                                          )
+                                        : 'sin workspace'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingProfessionalCloseoutWorkspace
+                                        ?.summary.certificationReady
+                                        ? 'certification ready'
+                                        : 'pendiente'}
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Ultimo ajuste
                                     </span>
                                     <strong>
@@ -31678,7 +32075,13 @@ export function App() {
                                   </div>
                                 </div>
                                 <p className={styles.muted}>
-                                  {accountingCloseoutCertificationReadiness?.nextStep ??
+                                  {accountingProfessionalCloseoutWorkspace?.nextStep ??
+                                    lastAccountingAiReviewAssistantPacket?.nextStep ??
+                                    accountingPeriodNarrativeReport?.nextStep ??
+                                    accountingEvidenceAttachmentRegistry?.nextStep ??
+                                    lastAccountingAdjustmentRecommendationPacket?.nextStep ??
+                                    accountingCorrectionsQueue?.nextStep ??
+                                    accountingCloseoutCertificationReadiness?.nextStep ??
                                     lastAccountingReviewResolutionPacket?.nextStep ??
                                     accountingAccountantHandoffWorkspace?.nextStep ??
                                     accountingPeriodEvidenceVault?.nextStep ??

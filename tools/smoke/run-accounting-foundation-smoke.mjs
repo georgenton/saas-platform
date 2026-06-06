@@ -729,4 +729,145 @@ printLine(
   `${certificationReadiness.summary.readyCheckCount}/${certificationReadiness.summary.checkCount} checks, ${certificationReadiness.certificationStatus}`,
 );
 
+const correction = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/corrections'),
+  token,
+  body: {
+    period,
+    year,
+    source: 'accountant_review',
+    status: 'open',
+    severity: 'warning',
+    title: 'Smoke professional correction',
+    detail: 'Smoke correction registered before professional closeout.',
+    recommendedAction: 'Review with accountant before external closeout.',
+    ownerUserId: 'smoke-accounting-reviewer',
+    ownerEmail: 'accounting-reviewer@saas-platform.dev',
+    evidenceReference: `smoke:${tenantSlug}:${period}:professional-correction`,
+  },
+});
+
+assertStatus('accounting correction', correction.status);
+printLine('correction', `${correction.id}, ${correction.status}`);
+
+const correctionsQueue = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/corrections-queue?${periodQuery()}`),
+  token,
+});
+
+assertStatus('accounting corrections queue', correctionsQueue.queueStatus);
+printLine(
+  'corrections queue',
+  `${correctionsQueue.summary.openCount}/${correctionsQueue.summary.correctionCount} abiertas, ${correctionsQueue.queueStatus}`,
+);
+
+const adjustmentRecommendationPacket = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/adjustment-recommendation-packet'),
+  token,
+  body: {
+    period,
+    year,
+  },
+});
+
+assertStatus(
+  'accounting adjustment recommendation packet',
+  adjustmentRecommendationPacket.recommendationStatus,
+);
+printLine(
+  'adjustment recommendations',
+  `${adjustmentRecommendationPacket.summary.recommendationCount} sugeridas, ${adjustmentRecommendationPacket.recommendationStatus}`,
+);
+
+const evidenceAttachment = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/evidence-attachments'),
+  token,
+  body: {
+    period,
+    year,
+    attachmentType: 'accountant_note',
+    source: 'professional_closeout_workspace',
+    label: 'Smoke professional closeout note',
+    reference: `smoke:${tenantSlug}:${period}:professional-closeout-note`,
+    ownerUserId: 'smoke-accounting-reviewer',
+    ownerEmail: 'accounting-reviewer@saas-platform.dev',
+    status: 'ready',
+    metadata: {
+      source: 'smoke',
+    },
+  },
+});
+
+assertStatus('accounting evidence attachment', evidenceAttachment.status);
+printLine('evidence attachment', `${evidenceAttachment.id}, ${evidenceAttachment.status}`);
+
+const evidenceAttachmentRegistry = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/evidence-attachment-registry?${periodQuery()}`),
+  token,
+});
+
+assertStatus(
+  'accounting evidence attachment registry',
+  evidenceAttachmentRegistry.registryStatus,
+);
+printLine(
+  'evidence attachment registry',
+  `${evidenceAttachmentRegistry.summary.readyAttachmentCount}/${evidenceAttachmentRegistry.summary.attachmentCount} ready, ${evidenceAttachmentRegistry.registryStatus}`,
+);
+
+const narrativeReport = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/period-narrative-report?${periodQuery()}`),
+  token,
+});
+
+assertStatus('accounting period narrative report', narrativeReport.reportStatus);
+printLine(
+  'narrative report',
+  `${narrativeReport.summary.sectionCount} secciones, ${narrativeReport.reportStatus}`,
+);
+
+const aiReviewAssistantPacket = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/ai-review-assistant-packet'),
+  token,
+  body: {
+    period,
+    year,
+  },
+});
+
+assertStatus(
+  'accounting AI review assistant packet',
+  aiReviewAssistantPacket.assistantStatus,
+);
+printLine(
+  'AI review assistant',
+  `${aiReviewAssistantPacket.summary.draftedResponseCount} respuestas, ${aiReviewAssistantPacket.assistantStatus}`,
+);
+
+const professionalCloseoutWorkspace = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/professional-closeout-workspace?${periodQuery()}`),
+  token,
+});
+
+assertStatus(
+  'accounting professional closeout workspace',
+  professionalCloseoutWorkspace.workspaceStatus,
+);
+printLine(
+  'professional closeout',
+  `${professionalCloseoutWorkspace.summary.correctionCount} correcciones, ${professionalCloseoutWorkspace.workspaceStatus}`,
+);
+
 printSection('Accounting foundation smoke OK');

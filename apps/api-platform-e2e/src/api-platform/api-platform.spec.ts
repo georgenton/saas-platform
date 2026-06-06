@@ -215,16 +215,24 @@ import {
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
   GetTenantAccountingPeriodEvidenceVaultUseCase,
   GetTenantAccountingPeriodLockReadinessUseCase,
+  GetTenantAccountingPeriodNarrativeReportUseCase,
   GetTenantAccountingPeriodReconciliationReadinessUseCase,
+  GetTenantAccountingProfessionalCloseoutWorkspaceUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
   ListTenantAccountingAccountantReviewsUseCase,
   ListTenantAccountingBankReconciliationControlRegistryUseCase,
   ListTenantAccountingBankStatementRegistryUseCase,
+  ListTenantAccountingCorrectionsQueueUseCase,
+  ListTenantAccountingEvidenceAttachmentRegistryUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
   LockTenantAccountingPeriodUseCase,
   ManageTenantAccountingChartMappingUseCase,
+  RecordTenantAccountingCorrectionUseCase,
+  RecordTenantAccountingEvidenceAttachmentUseCase,
   RequestTenantAccountingAccountantReviewUseCase,
+  RequestTenantAccountingAdjustmentRecommendationPacketUseCase,
+  RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
@@ -1100,6 +1108,24 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let getTenantAccountingCloseoutCertificationReadinessUseCase: {
+    execute: jest.Mock;
+  };
+  let recordTenantAccountingCorrectionUseCase: { execute: jest.Mock };
+  let listTenantAccountingCorrectionsQueueUseCase: { execute: jest.Mock };
+  let requestTenantAccountingAdjustmentRecommendationPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let recordTenantAccountingEvidenceAttachmentUseCase: { execute: jest.Mock };
+  let listTenantAccountingEvidenceAttachmentRegistryUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingPeriodNarrativeReportUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantAccountingAiReviewAssistantPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingProfessionalCloseoutWorkspaceUseCase: {
     execute: jest.Mock;
   };
   let listTenantAccountingPeriodLockRegistryUseCase: { execute: jest.Mock };
@@ -5465,6 +5491,204 @@ describe('API', () => {
     blockers: [],
     nextStep: 'Periodo listo para cierre profesional asistido.',
     guardrails: ['Readiness no certifica estados financieros.'],
+  };
+  const accountingCorrection = {
+    id: 'accounting_correction_001',
+    tenantId: 'tenant_123',
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    source: 'accountant_review' as const,
+    status: 'open' as const,
+    severity: 'warning' as const,
+    title: 'Revision profesional pendiente',
+    detail: 'Correccion posterior al review profesional.',
+    recommendedAction: 'Evaluar ajuste antes del cierre externo.',
+    ownerUserId: 'user_123',
+    ownerEmail: 'hello@saas-platform.dev',
+    evidenceReference: 'accounting-correction://2026-06',
+    createdAt: taxComplianceGeneratedAt,
+    updatedAt: taxComplianceGeneratedAt,
+  };
+  const accountingCorrectionsQueue = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    queueStatus: 'needs_review' as const,
+    corrections: [accountingCorrection],
+    summary: {
+      correctionCount: 1,
+      openCount: 1,
+      inProgressCount: 0,
+      resolvedCount: 0,
+      dismissedCount: 0,
+      criticalCount: 0,
+    },
+    blockers: [],
+    nextStep: 'Resolver correcciones antes del cierre profesional.',
+    guardrails: ['Las correcciones no crean ajustes automaticamente.'],
+  };
+  const accountingAdjustmentRecommendationPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    recommendationStatus: 'needs_corrections' as const,
+    correctionsQueue: accountingCorrectionsQueue,
+    recommendedAdjustments: [
+      {
+        key: 'manual_adjustment:accounting_correction_001',
+        adjustmentType: 'manual_adjustment' as const,
+        label: 'Ajuste sugerido por review profesional',
+        rationale: 'Existe una correccion abierta del contador.',
+        suggestedLines: [
+          {
+            accountCode: '6999',
+            accountName: 'Ajustes varios',
+            debitInCents: 0,
+            creditInCents: 0,
+            notes: ['Definir monto con contador antes de registrar.'],
+          },
+        ],
+        sourceCorrectionIds: ['accounting_correction_001'],
+      },
+    ],
+    summary: {
+      recommendationCount: 1,
+      sourceCorrectionCount: 1,
+      criticalCorrectionCount: 0,
+    },
+    blockers: [],
+    nextStep: 'Revisar recomendaciones con contador.',
+    guardrails: ['Recommendation packet no registra journals.'],
+  };
+  const accountingEvidenceAttachment = {
+    id: 'accounting_evidence_attachment_001',
+    tenantId: 'tenant_123',
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    attachmentType: 'accountant_note' as const,
+    source: 'professional_closeout_workspace',
+    label: 'Nota de cierre profesional',
+    reference: 'accounting-evidence://2026-06/professional-note',
+    ownerUserId: 'user_123',
+    ownerEmail: 'hello@saas-platform.dev',
+    status: 'ready' as const,
+    hash: null,
+    metadata: {
+      source: 'e2e',
+    },
+    createdAt: taxComplianceGeneratedAt,
+    updatedAt: taxComplianceGeneratedAt,
+  };
+  const accountingEvidenceAttachmentRegistry = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    registryStatus: 'ready' as const,
+    attachments: [accountingEvidenceAttachment],
+    evidenceVault: accountingPeriodEvidenceVault,
+    summary: {
+      attachmentCount: 1,
+      readyAttachmentCount: 1,
+      needsReviewAttachmentCount: 0,
+      archivedAttachmentCount: 0,
+      vaultArtifactCount: 2,
+    },
+    blockers: [],
+    nextStep: 'Usar evidencias adjuntas en el cierre profesional.',
+    guardrails: ['Registry no valida documentos legales externos.'],
+  };
+  const accountingPeriodNarrativeReport = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    reportStatus: 'needs_review' as const,
+    headline: 'Periodo 2026-06 listo para revision profesional asistida.',
+    sections: [
+      {
+        key: 'professional_closeout',
+        title: 'Cierre profesional',
+        status: 'needs_review' as const,
+        narrative: 'Hay 1 correccion abierta y 1 evidencia adjunta.',
+        metrics: [
+          {
+            key: 'correction_count',
+            label: 'Correcciones',
+            value: 1,
+          },
+        ],
+      },
+    ],
+    summary: {
+      sectionCount: 1,
+      readySectionCount: 0,
+      riskFlagCount: 0,
+      correctionCount: 1,
+      attachmentCount: 1,
+    },
+    blockers: [],
+    nextStep: 'Revisar narrativa antes de compartir con contador.',
+    guardrails: ['Narrative report no emite estados financieros oficiales.'],
+  };
+  const accountingAiReviewAssistantPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    assistantStatus: 'ready' as const,
+    explanation:
+      'Asistente para preparar respuestas y checklist del cierre profesional.',
+    checklist: [
+      {
+        key: 'accountant_review',
+        label: 'Accountant review lifecycle',
+        status: 'ready' as const,
+        detail: 'Ultimo review aprobado.',
+      },
+    ],
+    draftedResponses: [
+      {
+        question: 'Confirmar evidencia principal del periodo.',
+        draftResponse: 'Revisar evidence vault y correcciones abiertas.',
+        source: 'accounting_professional_closeout_workspace',
+      },
+    ],
+    summary: {
+      checklistCount: 1,
+      readyChecklistCount: 1,
+      draftedResponseCount: 1,
+      blockerCount: 0,
+    },
+    blockers: [],
+    nextStep: 'Usar el asistente para preparar revision, no para certificar.',
+    guardrails: ['No sustituye contador ni auditor.'],
+  };
+  const accountingProfessionalCloseoutWorkspace = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    workspaceStatus: 'ready_for_accountant' as const,
+    certificationReadiness: accountingCloseoutCertificationReadiness,
+    correctionsQueue: accountingCorrectionsQueue,
+    adjustmentRecommendationPacket: accountingAdjustmentRecommendationPacket,
+    evidenceAttachmentRegistry: accountingEvidenceAttachmentRegistry,
+    narrativeReport: accountingPeriodNarrativeReport,
+    aiReviewAssistantPacket: accountingAiReviewAssistantPacket,
+    summary: {
+      correctionCount: 1,
+      attachmentCount: 1,
+      recommendationCount: 1,
+      certificationReady: true,
+    },
+    blockers: [],
+    nextStep: 'Completar correcciones, evidencia y review profesional.',
+    guardrails: ['Workspace operativo; no cierra libros legales.'],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
@@ -14272,6 +14496,36 @@ describe('API', () => {
         .fn()
         .mockResolvedValue(accountingCloseoutCertificationReadiness),
     };
+    recordTenantAccountingCorrectionUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingCorrection),
+    };
+    listTenantAccountingCorrectionsQueueUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingCorrectionsQueue),
+    };
+    requestTenantAccountingAdjustmentRecommendationPacketUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(accountingAdjustmentRecommendationPacket),
+    };
+    recordTenantAccountingEvidenceAttachmentUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingEvidenceAttachment),
+    };
+    listTenantAccountingEvidenceAttachmentRegistryUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(accountingEvidenceAttachmentRegistry),
+    };
+    getTenantAccountingPeriodNarrativeReportUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingPeriodNarrativeReport),
+    };
+    requestTenantAccountingAiReviewAssistantPacketUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingAiReviewAssistantPacket),
+    };
+    getTenantAccountingProfessionalCloseoutWorkspaceUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(accountingProfessionalCloseoutWorkspace),
+    };
     listTenantAccountingPeriodLockRegistryUseCase = {
       execute: jest.fn().mockResolvedValue(accountingPeriodLockRegistry),
     };
@@ -14960,6 +15214,24 @@ describe('API', () => {
       .useValue(requestTenantAccountingReviewResolutionPacketUseCase)
       .overrideProvider(GetTenantAccountingCloseoutCertificationReadinessUseCase)
       .useValue(getTenantAccountingCloseoutCertificationReadinessUseCase)
+      .overrideProvider(RecordTenantAccountingCorrectionUseCase)
+      .useValue(recordTenantAccountingCorrectionUseCase)
+      .overrideProvider(ListTenantAccountingCorrectionsQueueUseCase)
+      .useValue(listTenantAccountingCorrectionsQueueUseCase)
+      .overrideProvider(
+        RequestTenantAccountingAdjustmentRecommendationPacketUseCase,
+      )
+      .useValue(requestTenantAccountingAdjustmentRecommendationPacketUseCase)
+      .overrideProvider(RecordTenantAccountingEvidenceAttachmentUseCase)
+      .useValue(recordTenantAccountingEvidenceAttachmentUseCase)
+      .overrideProvider(ListTenantAccountingEvidenceAttachmentRegistryUseCase)
+      .useValue(listTenantAccountingEvidenceAttachmentRegistryUseCase)
+      .overrideProvider(GetTenantAccountingPeriodNarrativeReportUseCase)
+      .useValue(getTenantAccountingPeriodNarrativeReportUseCase)
+      .overrideProvider(RequestTenantAccountingAiReviewAssistantPacketUseCase)
+      .useValue(requestTenantAccountingAiReviewAssistantPacketUseCase)
+      .overrideProvider(GetTenantAccountingProfessionalCloseoutWorkspaceUseCase)
+      .useValue(getTenantAccountingProfessionalCloseoutWorkspaceUseCase)
       .overrideProvider(ListTenantAccountingPeriodLockRegistryUseCase)
       .useValue(listTenantAccountingPeriodLockRegistryUseCase)
       .overrideProvider(LockTenantAccountingPeriodUseCase)
@@ -19480,6 +19752,260 @@ describe('API', () => {
 
     expect(
       getTenantAccountingCloseoutCertificationReadinessUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/corrections should record professional corrections', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/corrections')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        source: 'accountant_review',
+        status: 'open',
+        severity: 'warning',
+        title: 'Revision profesional pendiente',
+        detail: 'Correccion posterior al review profesional.',
+        recommendedAction: 'Evaluar ajuste antes del cierre externo.',
+        ownerUserId: 'user_123',
+        ownerEmail: 'hello@saas-platform.dev',
+        evidenceReference: 'accounting-correction://2026-06',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      id: 'accounting_correction_001',
+      tenantSlug: 'saas-platform',
+      status: 'open',
+      source: 'accountant_review',
+    });
+
+    expect(recordTenantAccountingCorrectionUseCase.execute).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      source: 'accountant_review',
+      status: 'open',
+      severity: 'warning',
+      title: 'Revision profesional pendiente',
+      detail: 'Correccion posterior al review profesional.',
+      recommendedAction: 'Evaluar ajuste antes del cierre externo.',
+      ownerUserId: 'user_123',
+      ownerEmail: 'hello@saas-platform.dev',
+      evidenceReference: 'accounting-correction://2026-06',
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/corrections-queue should return professional correction queues', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/corrections-queue?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      queueStatus: 'needs_review',
+      summary: {
+        correctionCount: 1,
+        openCount: 1,
+      },
+    });
+
+    expect(
+      listTenantAccountingCorrectionsQueueUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/adjustment-recommendation-packet should return adjustment recommendations', async () => {
+    const response = await request(httpServer)
+      .post(
+        '/api/accounting/tenants/saas-platform/adjustment-recommendation-packet',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      recommendationStatus: 'needs_corrections',
+      summary: {
+        recommendationCount: 1,
+        sourceCorrectionCount: 1,
+      },
+    });
+
+    expect(
+      requestTenantAccountingAdjustmentRecommendationPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/evidence-attachments should record closeout evidence', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/evidence-attachments')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        attachmentType: 'accountant_note',
+        source: 'professional_closeout_workspace',
+        label: 'Nota de cierre profesional',
+        reference: 'accounting-evidence://2026-06/professional-note',
+        ownerUserId: 'user_123',
+        ownerEmail: 'hello@saas-platform.dev',
+        status: 'ready',
+        metadata: {
+          source: 'e2e',
+        },
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      id: 'accounting_evidence_attachment_001',
+      tenantSlug: 'saas-platform',
+      attachmentType: 'accountant_note',
+      status: 'ready',
+    });
+
+    expect(
+      recordTenantAccountingEvidenceAttachmentUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      attachmentType: 'accountant_note',
+      source: 'professional_closeout_workspace',
+      label: 'Nota de cierre profesional',
+      reference: 'accounting-evidence://2026-06/professional-note',
+      ownerUserId: 'user_123',
+      ownerEmail: 'hello@saas-platform.dev',
+      status: 'ready',
+      hash: null,
+      metadata: {
+        source: 'e2e',
+      },
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/evidence-attachment-registry should return closeout evidence registry', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/evidence-attachment-registry?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      registryStatus: 'ready',
+      summary: {
+        attachmentCount: 1,
+        readyAttachmentCount: 1,
+        vaultArtifactCount: 2,
+      },
+    });
+
+    expect(
+      listTenantAccountingEvidenceAttachmentRegistryUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/period-narrative-report should return closeout narrative reports', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/period-narrative-report?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      reportStatus: 'needs_review',
+      summary: {
+        sectionCount: 1,
+        correctionCount: 1,
+      },
+    });
+
+    expect(
+      getTenantAccountingPeriodNarrativeReportUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/ai-review-assistant-packet should return AI review assistant packets', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/ai-review-assistant-packet')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      assistantStatus: 'ready',
+      summary: {
+        checklistCount: 1,
+        draftedResponseCount: 1,
+      },
+    });
+
+    expect(
+      requestTenantAccountingAiReviewAssistantPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/professional-closeout-workspace should return the professional closeout workspace', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/professional-closeout-workspace?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      workspaceStatus: 'ready_for_accountant',
+      summary: {
+        correctionCount: 1,
+        attachmentCount: 1,
+        recommendationCount: 1,
+        certificationReady: true,
+      },
+    });
+
+    expect(
+      getTenantAccountingProfessionalCloseoutWorkspaceUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',

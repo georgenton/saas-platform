@@ -1086,6 +1086,10 @@ product. Its current scope is intentionally operational and review-oriented:
     accounting work
 13. accountant review lifecycle, review resolution packets, and closeout
     certification readiness as the final assisted-professional closeout gate
+14. corrections queue, adjustment recommendation packets, evidence attachment
+    registry, period narrative report, AI review assistant packet, and
+    professional closeout workspace as the final Accounting foundation
+    operating surface
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official
@@ -1097,7 +1101,9 @@ operational evidence for professional review; they are not formal statutory
 closure, certified bank-feed reconciliation, signed financial statements, or a
 replacement for a contador. Accountant review lifecycle and certification
 readiness model the handoff loop, but final certification remains an external
-professional act.
+professional act. Professional closeout workspace makes that handoff operable:
+it packages corrections, evidence, narrative, adjustment recommendations, and
+AI-assisted review notes without applying adjustments or certifying the period.
 
 ## Stage 8: Clinics products
 

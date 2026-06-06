@@ -3,6 +3,8 @@ import {
   AccountingChartMappingManagementResponse,
   AccountingAccountantHandoffWorkspaceResponse,
   AccountingAccountantReviewResponse,
+  AccountingAdjustmentRecommendationPacketResponse,
+  AccountingAiReviewAssistantPacketResponse,
   AccountingBankReconciliationControlRegistryResponse,
   AccountingBankReconciliationWorkspaceResponse,
   AccountingBankStatementImportPreviewRequest,
@@ -24,7 +26,12 @@ import {
   AccountingPeriodCloseoutReadinessResponse,
   AccountingPeriodCashCloseoutReadinessResponse,
   AccountingCloseoutCertificationReadinessResponse,
+  AccountingCorrectionResponse,
+  AccountingCorrectionsQueueResponse,
+  AccountingEvidenceAttachmentRegistryResponse,
+  AccountingEvidenceAttachmentResponse,
   AccountingPeriodEvidenceVaultResponse,
+  AccountingPeriodNarrativeReportResponse,
   AccountingPeriodLockRegistryResponse,
   AccountingPeriodLockReadinessResponse,
   AccountingPeriodLockResultResponse,
@@ -34,6 +41,7 @@ import {
   AccountingReconciliationExceptionResolutionPacketResponse,
   AccountingReconciliationMatchPacketResponse,
   AccountingReviewResolutionPacketResponse,
+  AccountingProfessionalCloseoutWorkspaceResponse,
   AccountingAuditTrailWorkspaceResponse,
   AccountingTrialBalanceWorkspaceResponse,
   RequestAccountingAccountantReviewRequest,
@@ -2429,6 +2437,148 @@ export async function fetchAccountingCloseoutCertificationReadiness(
       method: 'GET',
       token,
     },
+  );
+}
+
+export async function recordAccountingCorrection(
+  token: string,
+  tenantSlug: string,
+  input: {
+    period: string;
+    year: number;
+    source: string;
+    status: string;
+    severity: string;
+    title: string;
+    detail: string;
+    recommendedAction: string;
+    ownerUserId?: string | null;
+    ownerEmail?: string | null;
+    evidenceReference?: string | null;
+  },
+): Promise<AccountingCorrectionResponse> {
+  return request<AccountingCorrectionResponse>(
+    `/accounting/tenants/${encodeURIComponent(tenantSlug)}/corrections`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingCorrectionsQueue(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingCorrectionsQueueResponse> {
+  return request<AccountingCorrectionsQueueResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/corrections-queue?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function requestAccountingAdjustmentRecommendationPacket(
+  token: string,
+  tenantSlug: string,
+  input: { period: string; year: number },
+): Promise<AccountingAdjustmentRecommendationPacketResponse> {
+  return request<AccountingAdjustmentRecommendationPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/adjustment-recommendation-packet`,
+    { body: input, method: 'POST', token },
+  );
+}
+
+export async function recordAccountingEvidenceAttachment(
+  token: string,
+  tenantSlug: string,
+  input: {
+    period: string;
+    year: number;
+    attachmentType: string;
+    source: string;
+    label: string;
+    reference: string;
+    ownerUserId?: string | null;
+    ownerEmail?: string | null;
+    status: string;
+    hash?: string | null;
+    metadata?: Record<string, string | number | boolean | null>;
+  },
+): Promise<AccountingEvidenceAttachmentResponse> {
+  return request<AccountingEvidenceAttachmentResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/evidence-attachments`,
+    { body: input, method: 'POST', token },
+  );
+}
+
+export async function fetchAccountingEvidenceAttachmentRegistry(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingEvidenceAttachmentRegistryResponse> {
+  return request<AccountingEvidenceAttachmentRegistryResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/evidence-attachment-registry?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchAccountingPeriodNarrativeReport(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingPeriodNarrativeReportResponse> {
+  return request<AccountingPeriodNarrativeReportResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/period-narrative-report?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function requestAccountingAiReviewAssistantPacket(
+  token: string,
+  tenantSlug: string,
+  input: { period: string; year: number },
+): Promise<AccountingAiReviewAssistantPacketResponse> {
+  return request<AccountingAiReviewAssistantPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ai-review-assistant-packet`,
+    { body: input, method: 'POST', token },
+  );
+}
+
+export async function fetchAccountingProfessionalCloseoutWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingProfessionalCloseoutWorkspaceResponse> {
+  return request<AccountingProfessionalCloseoutWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/professional-closeout-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
   );
 }
 

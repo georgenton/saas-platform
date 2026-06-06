@@ -930,6 +930,237 @@ export interface TenantAccountingCloseoutCertificationReadinessView {
   guardrails: string[];
 }
 
+export type AccountingCorrectionStatus =
+  | 'open'
+  | 'in_progress'
+  | 'resolved'
+  | 'dismissed';
+
+export type AccountingCorrectionSource =
+  | 'accountant_review'
+  | 'review_resolution'
+  | 'cash_closeout'
+  | 'financial_review'
+  | 'audit_trail'
+  | 'certification_readiness';
+
+export interface TenantAccountingCorrectionView {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  source: AccountingCorrectionSource;
+  status: AccountingCorrectionStatus;
+  severity: 'info' | 'warning' | 'critical';
+  title: string;
+  detail: string;
+  recommendedAction: string;
+  ownerUserId: string | null;
+  ownerEmail: string | null;
+  evidenceReference: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TenantAccountingCorrectionsQueueView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  queueStatus: 'empty' | 'ready' | 'needs_review' | 'blocked';
+  corrections: TenantAccountingCorrectionView[];
+  summary: {
+    correctionCount: number;
+    openCount: number;
+    inProgressCount: number;
+    resolvedCount: number;
+    dismissedCount: number;
+    criticalCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdjustmentRecommendationPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  recommendationStatus:
+    | 'ready_for_review'
+    | 'needs_corrections'
+    | 'blocked'
+    | 'empty';
+  correctionsQueue: TenantAccountingCorrectionsQueueView;
+  recommendedAdjustments: Array<{
+    key: string;
+    adjustmentType:
+      | 'reclassification'
+      | 'rounding'
+      | 'accrual'
+      | 'manual_adjustment';
+    label: string;
+    rationale: string;
+    suggestedLines: Array<{
+      accountCode: string;
+      accountName: string;
+      debitInCents: number;
+      creditInCents: number;
+      notes: string[];
+    }>;
+    sourceCorrectionIds: string[];
+  }>;
+  summary: {
+    recommendationCount: number;
+    sourceCorrectionCount: number;
+    criticalCorrectionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export type AccountingEvidenceAttachmentStatus =
+  | 'draft'
+  | 'ready'
+  | 'needs_review'
+  | 'archived';
+
+export interface TenantAccountingEvidenceAttachmentView {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  attachmentType:
+    | 'pdf'
+    | 'xml'
+    | 'ride'
+    | 'bank_statement'
+    | 'report'
+    | 'accountant_note'
+    | 'other';
+  source: string;
+  label: string;
+  reference: string;
+  ownerUserId: string | null;
+  ownerEmail: string | null;
+  status: AccountingEvidenceAttachmentStatus;
+  hash: string | null;
+  metadata: Record<string, string | number | boolean | null>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TenantAccountingEvidenceAttachmentRegistryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  registryStatus: 'empty' | 'ready' | 'needs_review';
+  attachments: TenantAccountingEvidenceAttachmentView[];
+  evidenceVault: TenantAccountingPeriodEvidenceVaultView;
+  summary: {
+    attachmentCount: number;
+    readyAttachmentCount: number;
+    needsReviewAttachmentCount: number;
+    archivedAttachmentCount: number;
+    vaultArtifactCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingPeriodNarrativeReportView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  reportStatus: 'ready' | 'needs_review' | 'blocked';
+  headline: string;
+  sections: Array<{
+    key: string;
+    title: string;
+    status: AccountingReadinessStatus;
+    narrative: string;
+    metrics: Array<{
+      key: string;
+      label: string;
+      value: string | number | boolean | null;
+    }>;
+  }>;
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    riskFlagCount: number;
+    correctionCount: number;
+    attachmentCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAiReviewAssistantPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  assistantStatus: 'ready' | 'needs_review' | 'blocked';
+  explanation: string;
+  checklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+  }>;
+  draftedResponses: Array<{
+    question: string;
+    draftResponse: string;
+    source: string;
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    draftedResponseCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingProfessionalCloseoutWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workspaceStatus:
+    | 'draft'
+    | 'ready_for_accountant'
+    | 'changes_requested'
+    | 'ready_for_closeout'
+    | 'closed_externally';
+  certificationReadiness: TenantAccountingCloseoutCertificationReadinessView;
+  correctionsQueue: TenantAccountingCorrectionsQueueView;
+  adjustmentRecommendationPacket: TenantAccountingAdjustmentRecommendationPacketView;
+  evidenceAttachmentRegistry: TenantAccountingEvidenceAttachmentRegistryView;
+  narrativeReport: TenantAccountingPeriodNarrativeReportView;
+  aiReviewAssistantPacket: TenantAccountingAiReviewAssistantPacketView;
+  summary: {
+    correctionCount: number;
+    attachmentCount: number;
+    recommendationCount: number;
+    certificationReady: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export type AccountingPeriodControlStatus =
   | 'open'
   | 'ready_to_lock'

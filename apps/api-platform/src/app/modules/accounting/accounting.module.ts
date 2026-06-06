@@ -7,6 +7,10 @@ import {
   ACCOUNTING_BANK_STATEMENT_BATCH_ID_GENERATOR,
   ACCOUNTING_BANK_STATEMENT_LINE_ID_GENERATOR,
   ACCOUNTING_BANK_STATEMENT_REPOSITORY,
+  ACCOUNTING_CORRECTION_ID_GENERATOR,
+  ACCOUNTING_CORRECTION_REPOSITORY,
+  ACCOUNTING_EVIDENCE_ATTACHMENT_ID_GENERATOR,
+  ACCOUNTING_EVIDENCE_ATTACHMENT_REPOSITORY,
   ACCOUNTING_JOURNAL_ENTRY_ID_GENERATOR,
   ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
   ACCOUNTING_PERIOD_CONTROL_ID_GENERATOR,
@@ -19,6 +23,8 @@ import {
   GetTenantAccountingBankStatementImportWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingCloseoutCertificationReadinessUseCase,
+  GetTenantAccountingPeriodNarrativeReportUseCase,
+  GetTenantAccountingProfessionalCloseoutWorkspaceUseCase,
   GetTenantAccountingFinancialStatementPreviewUseCase,
   GetTenantAccountingIntakeWorkspaceUseCase,
   GetTenantAccountingJournalDraftPreviewUseCase,
@@ -34,17 +40,23 @@ import {
   ListTenantAccountingBankReconciliationControlRegistryUseCase,
   ListTenantAccountingBankStatementRegistryUseCase,
   ListTenantAccountingAccountantReviewsUseCase,
+  ListTenantAccountingCorrectionsQueueUseCase,
+  ListTenantAccountingEvidenceAttachmentRegistryUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
   LockTenantAccountingPeriodUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingAccountantReviewUseCase,
+  RequestTenantAccountingAdjustmentRecommendationPacketUseCase,
+  RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
   RecordTenantAccountingBankReconciliationControlUseCase,
   RecordTenantAccountingBankStatementImportUseCase,
+  RecordTenantAccountingCorrectionUseCase,
+  RecordTenantAccountingEvidenceAttachmentUseCase,
   RequestTenantAccountingReconciliationExceptionPacketUseCase,
   RequestTenantAccountingReconciliationExceptionResolutionPacketUseCase,
   RequestTenantAccountingReconciliationMatchPacketUseCase,
@@ -731,6 +743,133 @@ import { AccountingController } from './accounting.controller';
           accountingAccountantReviewRepository,
           getTenantAccountingAccountantHandoffWorkspaceUseCase,
           requestTenantAccountingReviewResolutionPacketUseCase,
+        ),
+    },
+    {
+      provide: RecordTenantAccountingCorrectionUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        ACCOUNTING_CORRECTION_REPOSITORY,
+        ACCOUNTING_CORRECTION_ID_GENERATOR,
+      ],
+      useFactory: (
+        tenantRepository,
+        accountingCorrectionRepository,
+        accountingCorrectionIdGenerator,
+      ) =>
+        new RecordTenantAccountingCorrectionUseCase(
+          tenantRepository,
+          accountingCorrectionRepository,
+          accountingCorrectionIdGenerator,
+        ),
+    },
+    {
+      provide: ListTenantAccountingCorrectionsQueueUseCase,
+      inject: [ACCOUNTING_CORRECTION_REPOSITORY],
+      useFactory: (accountingCorrectionRepository) =>
+        new ListTenantAccountingCorrectionsQueueUseCase(
+          accountingCorrectionRepository,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdjustmentRecommendationPacketUseCase,
+      inject: [ListTenantAccountingCorrectionsQueueUseCase],
+      useFactory: (listTenantAccountingCorrectionsQueueUseCase) =>
+        new RequestTenantAccountingAdjustmentRecommendationPacketUseCase(
+          listTenantAccountingCorrectionsQueueUseCase,
+        ),
+    },
+    {
+      provide: RecordTenantAccountingEvidenceAttachmentUseCase,
+      inject: [
+        TENANT_REPOSITORY,
+        ACCOUNTING_EVIDENCE_ATTACHMENT_REPOSITORY,
+        ACCOUNTING_EVIDENCE_ATTACHMENT_ID_GENERATOR,
+      ],
+      useFactory: (
+        tenantRepository,
+        accountingEvidenceAttachmentRepository,
+        accountingEvidenceAttachmentIdGenerator,
+      ) =>
+        new RecordTenantAccountingEvidenceAttachmentUseCase(
+          tenantRepository,
+          accountingEvidenceAttachmentRepository,
+          accountingEvidenceAttachmentIdGenerator,
+        ),
+    },
+    {
+      provide: ListTenantAccountingEvidenceAttachmentRegistryUseCase,
+      inject: [
+        ACCOUNTING_EVIDENCE_ATTACHMENT_REPOSITORY,
+        GetTenantAccountingPeriodEvidenceVaultUseCase,
+      ],
+      useFactory: (
+        accountingEvidenceAttachmentRepository,
+        getTenantAccountingPeriodEvidenceVaultUseCase,
+      ) =>
+        new ListTenantAccountingEvidenceAttachmentRegistryUseCase(
+          accountingEvidenceAttachmentRepository,
+          getTenantAccountingPeriodEvidenceVaultUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingPeriodNarrativeReportUseCase,
+      inject: [
+        GetTenantAccountingCloseoutCertificationReadinessUseCase,
+        ListTenantAccountingCorrectionsQueueUseCase,
+        ListTenantAccountingEvidenceAttachmentRegistryUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingCloseoutCertificationReadinessUseCase,
+        listTenantAccountingCorrectionsQueueUseCase,
+        listTenantAccountingEvidenceAttachmentRegistryUseCase,
+      ) =>
+        new GetTenantAccountingPeriodNarrativeReportUseCase(
+          getTenantAccountingCloseoutCertificationReadinessUseCase,
+          listTenantAccountingCorrectionsQueueUseCase,
+          listTenantAccountingEvidenceAttachmentRegistryUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAiReviewAssistantPacketUseCase,
+      inject: [
+        GetTenantAccountingCloseoutCertificationReadinessUseCase,
+        ListTenantAccountingCorrectionsQueueUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingCloseoutCertificationReadinessUseCase,
+        listTenantAccountingCorrectionsQueueUseCase,
+      ) =>
+        new RequestTenantAccountingAiReviewAssistantPacketUseCase(
+          getTenantAccountingCloseoutCertificationReadinessUseCase,
+          listTenantAccountingCorrectionsQueueUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingProfessionalCloseoutWorkspaceUseCase,
+      inject: [
+        GetTenantAccountingCloseoutCertificationReadinessUseCase,
+        ListTenantAccountingCorrectionsQueueUseCase,
+        RequestTenantAccountingAdjustmentRecommendationPacketUseCase,
+        ListTenantAccountingEvidenceAttachmentRegistryUseCase,
+        GetTenantAccountingPeriodNarrativeReportUseCase,
+        RequestTenantAccountingAiReviewAssistantPacketUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingCloseoutCertificationReadinessUseCase,
+        listTenantAccountingCorrectionsQueueUseCase,
+        requestTenantAccountingAdjustmentRecommendationPacketUseCase,
+        listTenantAccountingEvidenceAttachmentRegistryUseCase,
+        getTenantAccountingPeriodNarrativeReportUseCase,
+        requestTenantAccountingAiReviewAssistantPacketUseCase,
+      ) =>
+        new GetTenantAccountingProfessionalCloseoutWorkspaceUseCase(
+          getTenantAccountingCloseoutCertificationReadinessUseCase,
+          listTenantAccountingCorrectionsQueueUseCase,
+          requestTenantAccountingAdjustmentRecommendationPacketUseCase,
+          listTenantAccountingEvidenceAttachmentRegistryUseCase,
+          getTenantAccountingPeriodNarrativeReportUseCase,
+          requestTenantAccountingAiReviewAssistantPacketUseCase,
         ),
     },
     {

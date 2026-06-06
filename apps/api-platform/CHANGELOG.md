@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.101.0
+
+### Minor Changes
+
+- 54fd678: Add Accounting financial statement review packets, period evidence vault, and accountant handoff workspace.
+
 ## 0.100.0
 
 ### Minor Changes

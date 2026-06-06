@@ -21,11 +21,13 @@ import {
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
   GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingPeriodReconciliationReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
+  ListTenantAccountingBankReconciliationControlRegistryUseCase,
   ListTenantAccountingBankStatementRegistryUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
@@ -34,8 +36,10 @@ import {
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
+  RecordTenantAccountingBankReconciliationControlUseCase,
   RecordTenantAccountingBankStatementImportUseCase,
   RequestTenantAccountingReconciliationExceptionPacketUseCase,
+  RequestTenantAccountingReconciliationExceptionResolutionPacketUseCase,
   RequestTenantAccountingReconciliationMatchPacketUseCase,
 } from '@saas-platform/accounting-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
@@ -66,21 +70,31 @@ import {
 } from './dto/accounting-period-control.response';
 import {
   AccountingBankReconciliationWorkspaceResponseDto,
+  AccountingBankReconciliationControlRegistryResponseDto,
+  AccountingBankReconciliationControlResponseDto,
   AccountingBankStatementImportPreviewRequestDto,
   AccountingBankStatementImportResultResponseDto,
   AccountingBankStatementImportWorkspaceResponseDto,
   AccountingBankStatementRegistryResponseDto,
+  AccountingPeriodCashCloseoutReadinessResponseDto,
   AccountingPeriodReconciliationReadinessResponseDto,
   AccountingReconciliationExceptionPacketResponseDto,
+  AccountingReconciliationExceptionResolutionPacketResponseDto,
   AccountingReconciliationMatchPacketResponseDto,
+  RecordAccountingBankReconciliationControlRequestDto,
   RecordAccountingBankStatementImportRequestDto,
+  RequestAccountingReconciliationExceptionResolutionPacketRequestDto,
   RequestAccountingReconciliationMatchPacketRequestDto,
+  toAccountingBankReconciliationControlRegistryResponseDto,
+  toAccountingBankReconciliationControlResponseDto,
   toAccountingBankStatementImportResultResponseDto,
   toAccountingBankStatementImportWorkspaceResponseDto,
   toAccountingBankStatementRegistryResponseDto,
   toAccountingBankReconciliationWorkspaceResponseDto,
+  toAccountingPeriodCashCloseoutReadinessResponseDto,
   toAccountingPeriodReconciliationReadinessResponseDto,
   toAccountingReconciliationExceptionPacketResponseDto,
+  toAccountingReconciliationExceptionResolutionPacketResponseDto,
   toAccountingReconciliationMatchPacketResponseDto,
 } from './dto/accounting-bank-reconciliation.response';
 import {
@@ -171,6 +185,10 @@ export class AccountingController {
     private readonly getTenantAccountingBankReconciliationWorkspaceUseCase: GetTenantAccountingBankReconciliationWorkspaceUseCase,
     private readonly requestTenantAccountingReconciliationMatchPacketUseCase: RequestTenantAccountingReconciliationMatchPacketUseCase,
     private readonly requestTenantAccountingReconciliationExceptionPacketUseCase: RequestTenantAccountingReconciliationExceptionPacketUseCase,
+    private readonly recordTenantAccountingBankReconciliationControlUseCase: RecordTenantAccountingBankReconciliationControlUseCase,
+    private readonly listTenantAccountingBankReconciliationControlRegistryUseCase: ListTenantAccountingBankReconciliationControlRegistryUseCase,
+    private readonly requestTenantAccountingReconciliationExceptionResolutionPacketUseCase: RequestTenantAccountingReconciliationExceptionResolutionPacketUseCase,
+    private readonly getTenantAccountingPeriodCashCloseoutReadinessUseCase: GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
     private readonly getTenantAccountingPeriodReconciliationReadinessUseCase: GetTenantAccountingPeriodReconciliationReadinessUseCase,
     private readonly getTenantAccountingPeriodCloseoutReadinessUseCase: GetTenantAccountingPeriodCloseoutReadinessUseCase,
     private readonly getTenantAccountingTrialBalanceWorkspaceUseCase: GetTenantAccountingTrialBalanceWorkspaceUseCase,
@@ -582,6 +600,127 @@ export class AccountingController {
         );
 
       return toAccountingReconciliationExceptionPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/bank-reconciliation-controls')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async recordBankReconciliationControl(
+    @Param('slug') tenantSlug: string,
+    @Body() body: RecordAccountingBankReconciliationControlRequestDto,
+  ): Promise<AccountingBankReconciliationControlResponseDto> {
+    try {
+      const control =
+        await this.recordTenantAccountingBankReconciliationControlUseCase.execute({
+          tenantSlug,
+          period: body.period,
+          year: body.year,
+          eventType: body.eventType,
+          status: body.status,
+          source: body.source,
+          actorUserId: body.actorUserId ?? null,
+          actorEmail: body.actorEmail ?? null,
+          reason: body.reason ?? null,
+          evidenceReference: body.evidenceReference ?? null,
+          payload: body.payload ?? {},
+          blockers: body.blockers ?? [],
+          impactChecklist: body.impactChecklist ?? [],
+        });
+
+      return toAccountingBankReconciliationControlResponseDto(control);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/bank-reconciliation-control-registry')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getBankReconciliationControlRegistry(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingBankReconciliationControlRegistryResponseDto> {
+    try {
+      const registry =
+        await this.listTenantAccountingBankReconciliationControlRegistryUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingBankReconciliationControlRegistryResponseDto(registry);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/reconciliation-exception-resolution-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async requestReconciliationExceptionResolutionPacket(
+    @Param('slug') tenantSlug: string,
+    @Body() body: RequestAccountingReconciliationExceptionResolutionPacketRequestDto,
+  ): Promise<AccountingReconciliationExceptionResolutionPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantAccountingReconciliationExceptionResolutionPacketUseCase.execute(
+          {
+            tenantSlug,
+            period: body.period,
+            year: body.year,
+            decision: body.decision,
+            resolutionType: body.resolutionType,
+            exceptionKeys: body.exceptionKeys ?? [],
+            actorUserId: body.actorUserId ?? null,
+            actorEmail: body.actorEmail ?? null,
+            reason: body.reason ?? null,
+            evidenceReference: body.evidenceReference ?? null,
+          },
+        );
+
+      return toAccountingReconciliationExceptionResolutionPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/period-cash-closeout-readiness')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getPeriodCashCloseoutReadiness(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingPeriodCashCloseoutReadinessResponseDto> {
+    try {
+      const readiness =
+        await this.getTenantAccountingPeriodCashCloseoutReadinessUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingPeriodCashCloseoutReadinessResponseDto(readiness);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

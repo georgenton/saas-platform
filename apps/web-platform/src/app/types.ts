@@ -2309,6 +2309,126 @@ export interface AccountingReconciliationExceptionPacketResponse {
   guardrails: string[];
 }
 
+export interface AccountingBankReconciliationControlResponse {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  eventType: string;
+  status: string;
+  source: string;
+  actorUserId: string | null;
+  actorEmail: string | null;
+  occurredAt: string;
+  reason: string | null;
+  evidenceReference: string | null;
+  payload: Record<string, string | number | boolean | null>;
+  blockers: string[];
+  impactChecklist: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountingBankReconciliationControlRegistryResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  registryStatus: string;
+  controls: AccountingBankReconciliationControlResponse[];
+  latestControl: AccountingBankReconciliationControlResponse | null;
+  summary: {
+    controlCount: number;
+    matchApprovedCount: number;
+    exceptionPacketCount: number;
+    exceptionResolvedCount: number;
+    blockedControlCount: number;
+    needsReviewControlCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface RequestAccountingReconciliationExceptionResolutionPacketRequest {
+  period: string;
+  year: number;
+  decision: 'prepare' | 'resolve';
+  resolutionType:
+    | 'create_adjustment_recommended'
+    | 'mark_timing_difference'
+    | 'mark_external_bank_issue'
+    | 'mark_journal_review_required';
+  exceptionKeys?: string[];
+  actorUserId?: string | null;
+  actorEmail?: string | null;
+  reason?: string | null;
+  evidenceReference?: string | null;
+}
+
+export interface AccountingReconciliationExceptionResolutionPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  resolutionStatus: string;
+  decision: string;
+  resolutionType: string;
+  exceptionKeys: string[];
+  resolvedExceptionKeys: string[];
+  exceptionPacket: AccountingReconciliationExceptionPacketResponse;
+  control: AccountingBankReconciliationControlResponse | null;
+  impactChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+  }>;
+  summary: {
+    requestedExceptionCount: number;
+    resolvedExceptionCount: number;
+    unresolvedExceptionCount: number;
+    totalDifferenceInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingPeriodCashCloseoutReadinessResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  checks: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+    blockerCount: number;
+  }>;
+  statementRegistry: AccountingBankStatementRegistryResponse;
+  reconciliationWorkspace: AccountingBankReconciliationWorkspaceResponse;
+  controlRegistry: AccountingBankReconciliationControlRegistryResponse;
+  exceptionPacket: AccountingReconciliationExceptionPacketResponse;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+    statementLineCount: number;
+    exactMatchCount: number;
+    exceptionCount: number;
+    resolvedExceptionCount: number;
+    totalDifferenceInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingPeriodReconciliationReadinessResponse {
   tenantSlug: string;
   period: string;

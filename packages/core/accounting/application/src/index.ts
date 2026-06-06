@@ -1,4 +1,5 @@
 export * from './lib/permissions/accounting-permissions';
+export * from './lib/ports/accounting-bank-reconciliation-control.repository';
 export * from './lib/ports/accounting-bank-statement.repository';
 export * from './lib/ports/accounting-journal-entry.repository';
 export * from './lib/ports/accounting-period-control.repository';
@@ -16,11 +17,13 @@ export * from './lib/use-cases/get-tenant-accounting-ledger-registry-workspace.u
 export * from './lib/use-cases/get-tenant-accounting-ledger-preview-workspace.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-lock-readiness.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-reconciliation-readiness.use-case';
+export * from './lib/use-cases/get-tenant-accounting-period-cash-closeout-readiness.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-closeout-report.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-closeout-readiness.use-case';
 export * from './lib/use-cases/get-tenant-accounting-trial-balance-workspace.use-case';
 export * from './lib/use-cases/list-tenant-accounting-journal-registry.use-case';
 export * from './lib/use-cases/list-tenant-accounting-bank-statement-registry.use-case';
+export * from './lib/use-cases/list-tenant-accounting-bank-reconciliation-control-registry.use-case';
 export * from './lib/use-cases/list-tenant-accounting-period-lock-registry.use-case';
 export * from './lib/use-cases/lock-tenant-accounting-period.use-case';
 export * from './lib/use-cases/manage-tenant-accounting-chart-mapping.use-case';
@@ -28,5 +31,7 @@ export * from './lib/use-cases/request-tenant-accounting-journal-draft-approval-
 export * from './lib/use-cases/request-tenant-accounting-period-closeout-packet.use-case';
 export * from './lib/use-cases/request-tenant-accounting-period-reopen-packet.use-case';
 export * from './lib/use-cases/record-tenant-accounting-bank-statement-import.use-case';
+export * from './lib/use-cases/record-tenant-accounting-bank-reconciliation-control.use-case';
 export * from './lib/use-cases/request-tenant-accounting-reconciliation-exception-packet.use-case';
+export * from './lib/use-cases/request-tenant-accounting-reconciliation-exception-resolution-packet.use-case';
 export * from './lib/use-cases/request-tenant-accounting-reconciliation-match-packet.use-case';

@@ -105,6 +105,7 @@ import {
   executeEcuadorTaxWithholdingDraftBridge,
   createAccountingAdjustingJournalEntry,
   fetchAccountingAuditTrailWorkspace,
+  fetchAccountingBankReconciliationControlRegistry,
   fetchAccountingBankReconciliationWorkspace,
   fetchAccountingBankStatementRegistry,
   fetchAccountingChartOfAccountsWorkspace,
@@ -116,6 +117,7 @@ import {
   fetchAccountingLedgerPreviewWorkspace,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
+  fetchAccountingPeriodCashCloseoutReadiness,
   fetchAccountingPeriodLockRegistry,
   fetchAccountingPeriodLockReadiness,
   fetchAccountingPeriodReconciliationReadiness,
@@ -124,6 +126,7 @@ import {
   recordAccountingBankStatementImport,
   requestAccountingPeriodReopenPacket,
   requestAccountingReconciliationExceptionPacket,
+  requestAccountingReconciliationExceptionResolutionPacket,
   requestAccountingReconciliationMatchPacket,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
@@ -369,6 +372,7 @@ import {
   AccountingChartMappingManagementResponse,
   AccountingAdjustingJournalEntryCreationResultResponse,
   AccountingAuditTrailWorkspaceResponse,
+  AccountingBankReconciliationControlRegistryResponse,
   AccountingBankReconciliationWorkspaceResponse,
   AccountingBankStatementImportResultResponse,
   AccountingBankStatementRegistryResponse,
@@ -383,12 +387,14 @@ import {
   AccountingPeriodCloseoutPacketResponse,
   AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
+  AccountingPeriodCashCloseoutReadinessResponse,
   AccountingPeriodLockReadinessResponse,
   AccountingPeriodLockRegistryResponse,
   AccountingPeriodLockResultResponse,
   AccountingPeriodReconciliationReadinessResponse,
   AccountingPeriodReopenPacketResponse,
   AccountingReconciliationExceptionPacketResponse,
+  AccountingReconciliationExceptionResolutionPacketResponse,
   AccountingReconciliationMatchPacketResponse,
   AccountingTrialBalanceWorkspaceResponse,
   AiActivityFeedEventType,
@@ -2170,6 +2176,14 @@ export function App() {
     setAccountingPeriodReconciliationReadiness,
   ] = useState<AccountingPeriodReconciliationReadinessResponse | null>(null);
   const [
+    accountingBankReconciliationControlRegistry,
+    setAccountingBankReconciliationControlRegistry,
+  ] = useState<AccountingBankReconciliationControlRegistryResponse | null>(null);
+  const [
+    accountingPeriodCashCloseoutReadiness,
+    setAccountingPeriodCashCloseoutReadiness,
+  ] = useState<AccountingPeriodCashCloseoutReadinessResponse | null>(null);
+  const [
     lastAccountingReconciliationMatchPacket,
     setLastAccountingReconciliationMatchPacket,
   ] = useState<AccountingReconciliationMatchPacketResponse | null>(null);
@@ -2177,6 +2191,13 @@ export function App() {
     lastAccountingReconciliationExceptionPacket,
     setLastAccountingReconciliationExceptionPacket,
   ] = useState<AccountingReconciliationExceptionPacketResponse | null>(null);
+  const [
+    lastAccountingReconciliationExceptionResolutionPacket,
+    setLastAccountingReconciliationExceptionResolutionPacket,
+  ] =
+    useState<AccountingReconciliationExceptionResolutionPacketResponse | null>(
+      null,
+    );
   const [
     accountingPeriodCloseoutReadiness,
     setAccountingPeriodCloseoutReadiness,
@@ -19621,6 +19642,8 @@ export function App() {
         nextAccountingLedgerRegistryWorkspace,
         nextAccountingBankStatementRegistry,
         nextAccountingBankReconciliationWorkspace,
+        nextAccountingBankReconciliationControlRegistry,
+        nextAccountingPeriodCashCloseoutReadiness,
         nextAccountingPeriodReconciliationReadiness,
         nextAccountingPeriodCloseoutReadiness,
         nextAccountingTrialBalanceWorkspace,
@@ -19679,6 +19702,18 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingBankReconciliationControlRegistry(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingPeriodCashCloseoutReadiness(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
             fetchAccountingPeriodReconciliationReadiness(
               token,
               tenantSlug,
@@ -19729,6 +19764,8 @@ export function App() {
             ),
           ])
         : [
+            null,
+            null,
             null,
             null,
             null,
@@ -19810,6 +19847,12 @@ export function App() {
         setAccountingBankStatementRegistry(nextAccountingBankStatementRegistry);
         setAccountingBankReconciliationWorkspace(
           nextAccountingBankReconciliationWorkspace,
+        );
+        setAccountingBankReconciliationControlRegistry(
+          nextAccountingBankReconciliationControlRegistry,
+        );
+        setAccountingPeriodCashCloseoutReadiness(
+          nextAccountingPeriodCashCloseoutReadiness,
         );
         setAccountingPeriodReconciliationReadiness(
           nextAccountingPeriodReconciliationReadiness,
@@ -20557,10 +20600,21 @@ export function App() {
           externalLineId: `manual:${taxCompliancePeriod}:${account.accountCode}`,
         })),
       });
-      const [registry, bankReconciliation, reconciliationReadiness, closeout] =
-        await Promise.all([
+      const [
+        registry,
+        bankReconciliation,
+        cashCloseout,
+        reconciliationReadiness,
+        closeout,
+      ] = await Promise.all([
           fetchAccountingBankStatementRegistry(token, tenantSlug, taxCompliancePeriod, year),
           fetchAccountingBankReconciliationWorkspace(
+            token,
+            tenantSlug,
+            taxCompliancePeriod,
+            year,
+          ),
+          fetchAccountingPeriodCashCloseoutReadiness(
             token,
             tenantSlug,
             taxCompliancePeriod,
@@ -20583,6 +20637,7 @@ export function App() {
       setLastAccountingBankStatementImport(result);
       setAccountingBankStatementRegistry(registry);
       setAccountingBankReconciliationWorkspace(bankReconciliation);
+      setAccountingPeriodCashCloseoutReadiness(cashCloseout);
       setAccountingPeriodReconciliationReadiness(reconciliationReadiness);
       setAccountingPeriodCloseoutReadiness(closeout);
       setTaxComplianceActionMessage(
@@ -20618,7 +20673,13 @@ export function App() {
         taxCompliancePeriod,
         year,
       );
-      const [reconciliationReadiness, closeout] = await Promise.all([
+      const [cashCloseout, reconciliationReadiness, closeout] = await Promise.all([
+        fetchAccountingPeriodCashCloseoutReadiness(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
         fetchAccountingPeriodReconciliationReadiness(
           token,
           tenantSlug,
@@ -20635,6 +20696,7 @@ export function App() {
 
       setLastAccountingReconciliationExceptionPacket(packet);
       setAccountingBankReconciliationWorkspace(packet.workspace);
+      setAccountingPeriodCashCloseoutReadiness(cashCloseout);
       setAccountingPeriodReconciliationReadiness(reconciliationReadiness);
       setAccountingPeriodCloseoutReadiness(closeout);
       setTaxComplianceActionMessage(
@@ -20646,6 +20708,84 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo preparar exception packet bancario.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestAccountingReconciliationExceptionResolutionPacket() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    const exceptionKeys =
+      lastAccountingReconciliationExceptionPacket?.exceptions.map(
+        (exception) => exception.exceptionKey,
+      ) ?? [];
+
+    setTaxComplianceActionLoading(
+      'accounting-reconciliation-exception-resolution-packet',
+    );
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const packet =
+        await requestAccountingReconciliationExceptionResolutionPacket(
+          token,
+          tenantSlug,
+          {
+            period: taxCompliancePeriod,
+            year,
+            decision: 'resolve',
+            resolutionType:
+              exceptionKeys.length > 0
+                ? 'mark_timing_difference'
+                : 'mark_external_bank_issue',
+            exceptionKeys,
+            actorUserId: session?.user.id ?? null,
+            actorEmail: session?.user.email ?? null,
+            reason: 'Resolucion operacional desde Accounting foundation.',
+            evidenceReference: `cash-closeout:${taxCompliancePeriod}`,
+          },
+        );
+      const [controlRegistry, cashCloseout, lockReadiness] = await Promise.all([
+        fetchAccountingBankReconciliationControlRegistry(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingPeriodCashCloseoutReadiness(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchAccountingPeriodLockReadiness(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+      ]);
+
+      setLastAccountingReconciliationExceptionResolutionPacket(packet);
+      setAccountingBankReconciliationControlRegistry(controlRegistry);
+      setAccountingPeriodCashCloseoutReadiness(cashCloseout);
+      setAccountingPeriodLockReadiness(lockReadiness);
+      setTaxComplianceActionMessage(
+        `${packet.summary.resolvedExceptionCount} excepciones resueltas para cash closeout.`,
+      );
+    } catch (error) {
+      setLastAccountingReconciliationExceptionResolutionPacket(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo resolver excepciones bancarias.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -20689,9 +20829,26 @@ export function App() {
           note: 'Conciliacion bancaria interna desde Accounting foundation.',
         },
       );
-      const [bankReconciliation, reconciliationReadiness, closeoutReadiness] =
-        await Promise.all([
+      const [
+        bankReconciliation,
+        controlRegistry,
+        cashCloseout,
+        reconciliationReadiness,
+        closeoutReadiness,
+      ] = await Promise.all([
           fetchAccountingBankReconciliationWorkspace(
+            token,
+            tenantSlug,
+            taxCompliancePeriod,
+            year,
+          ),
+          fetchAccountingBankReconciliationControlRegistry(
+            token,
+            tenantSlug,
+            taxCompliancePeriod,
+            year,
+          ),
+          fetchAccountingPeriodCashCloseoutReadiness(
             token,
             tenantSlug,
             taxCompliancePeriod,
@@ -20713,6 +20870,8 @@ export function App() {
 
       setLastAccountingReconciliationMatchPacket(packet);
       setAccountingBankReconciliationWorkspace(bankReconciliation);
+      setAccountingBankReconciliationControlRegistry(controlRegistry);
+      setAccountingPeriodCashCloseoutReadiness(cashCloseout);
       setAccountingPeriodReconciliationReadiness(reconciliationReadiness);
       setAccountingPeriodCloseoutReadiness(closeoutReadiness);
       setTaxComplianceActionMessage(
@@ -30474,6 +30633,20 @@ export function App() {
                                 className={styles.ghostButton}
                                 disabled={
                                   taxComplianceActionLoading ===
+                                    'accounting-reconciliation-exception-resolution-packet' ||
+                                  !lastAccountingReconciliationExceptionPacket
+                                }
+                                onClick={() =>
+                                  void handleRequestAccountingReconciliationExceptionResolutionPacket()
+                                }
+                                type="button"
+                              >
+                                Resolver exc.
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
                                     'accounting-period-lock' ||
                                   accountingPeriodLockRegistry?.registryStatus ===
                                     'locked' ||
@@ -30881,6 +31054,60 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      Cash closeout
+                                    </span>
+                                    <strong>
+                                      {accountingPeriodCashCloseoutReadiness
+                                        ? humanizeKey(
+                                            accountingPeriodCashCloseoutReadiness.readinessStatus,
+                                          )
+                                        : 'sin cash'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingPeriodCashCloseoutReadiness
+                                        ?.summary.readyCheckCount ?? 0}
+                                      /
+                                      {accountingPeriodCashCloseoutReadiness
+                                        ?.summary.checkCount ?? 0}{' '}
+                                      checks
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Bank controls
+                                    </span>
+                                    <strong>
+                                      {accountingBankReconciliationControlRegistry
+                                        ? humanizeKey(
+                                            accountingBankReconciliationControlRegistry.registryStatus,
+                                          )
+                                        : 'sin controls'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingBankReconciliationControlRegistry
+                                        ?.summary.controlCount ?? 0}{' '}
+                                      eventos
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Resolution
+                                    </span>
+                                    <strong>
+                                      {lastAccountingReconciliationExceptionResolutionPacket
+                                        ? humanizeKey(
+                                            lastAccountingReconciliationExceptionResolutionPacket.resolutionStatus,
+                                          )
+                                        : 'sin resolution'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingReconciliationExceptionResolutionPacket
+                                        ?.summary.resolvedExceptionCount ?? 0}{' '}
+                                      resueltas
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Period lock
                                     </span>
                                     <strong>
@@ -30990,6 +31217,9 @@ export function App() {
                                 <p className={styles.muted}>
                                   {accountingPeriodLockRegistry?.nextStep ??
                                     accountingAuditTrailWorkspace?.nextStep ??
+                                    lastAccountingReconciliationExceptionResolutionPacket?.nextStep ??
+                                    accountingPeriodCashCloseoutReadiness?.nextStep ??
+                                    accountingBankReconciliationControlRegistry?.nextStep ??
                                     lastAccountingReconciliationExceptionPacket?.nextStep ??
                                     lastAccountingBankStatementImport?.nextStep ??
                                     accountingPeriodReconciliationReadiness?.nextStep ??

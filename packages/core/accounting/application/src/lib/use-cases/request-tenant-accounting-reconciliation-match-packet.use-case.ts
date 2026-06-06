@@ -1,9 +1,11 @@
 import { TenantAccountingReconciliationMatchPacketView } from '@saas-platform/accounting-domain';
 import { GetTenantAccountingBankReconciliationWorkspaceUseCase } from './get-tenant-accounting-bank-reconciliation-workspace.use-case';
+import { RecordTenantAccountingBankReconciliationControlUseCase } from './record-tenant-accounting-bank-reconciliation-control.use-case';
 
 export class RequestTenantAccountingReconciliationMatchPacketUseCase {
   constructor(
     private readonly getTenantAccountingBankReconciliationWorkspaceUseCase: GetTenantAccountingBankReconciliationWorkspaceUseCase,
+    private readonly recordTenantAccountingBankReconciliationControlUseCase?: RecordTenantAccountingBankReconciliationControlUseCase,
     private readonly nowProvider: () => Date = () => new Date(),
   ) {}
 
@@ -95,6 +97,33 @@ export class RequestTenantAccountingReconciliationMatchPacketUseCase {
     const exactMatchCount = selectedCandidates.filter(
       (candidate) => candidate.matchStatus === 'exact_match',
     ).length;
+    const shouldRecordControl =
+      input.decision === 'approve' &&
+      blockers.length === 0 &&
+      this.recordTenantAccountingBankReconciliationControlUseCase;
+
+    if (shouldRecordControl) {
+      await this.recordTenantAccountingBankReconciliationControlUseCase?.execute({
+        tenantSlug: input.tenantSlug,
+        period: input.period,
+        year: input.year,
+        eventType: 'match_packet_approved',
+        status: 'recorded',
+        source: 'reconciliation_match_packet',
+        actorUserId: input.reviewerUserId ?? null,
+        actorEmail: input.reviewerEmail ?? null,
+        reason: input.note ?? null,
+        evidenceReference: `match-packet:${input.period}`,
+        payload: {
+          approvedCandidateCount: approvedCandidateKeys.length,
+          approvedAmountInCents,
+          remainingDifferenceInCents: workspace.summary.totalDifferenceInCents,
+        },
+        impactChecklist: selectedCandidates.map(
+          (candidate) => `${candidate.accountCode}: ${candidate.amountInCents}`,
+        ),
+      });
+    }
 
     return {
       tenantSlug: input.tenantSlug,

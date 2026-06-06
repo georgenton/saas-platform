@@ -1,6 +1,7 @@
 import {
   AccountingChartOfAccountsWorkspaceResponse,
   AccountingChartMappingManagementResponse,
+  AccountingBankReconciliationControlRegistryResponse,
   AccountingBankReconciliationWorkspaceResponse,
   AccountingBankStatementImportPreviewRequest,
   AccountingBankStatementImportResultResponse,
@@ -18,12 +19,14 @@ import {
   AccountingPeriodCloseoutPacketResponse,
   AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
+  AccountingPeriodCashCloseoutReadinessResponse,
   AccountingPeriodLockRegistryResponse,
   AccountingPeriodLockReadinessResponse,
   AccountingPeriodLockResultResponse,
   AccountingPeriodReconciliationReadinessResponse,
   AccountingPeriodReopenPacketResponse,
   AccountingReconciliationExceptionPacketResponse,
+  AccountingReconciliationExceptionResolutionPacketResponse,
   AccountingReconciliationMatchPacketResponse,
   AccountingAuditTrailWorkspaceResponse,
   AccountingTrialBalanceWorkspaceResponse,
@@ -159,6 +162,7 @@ import {
   RequestAccountingJournalDraftApprovalPacketRequest,
   RequestAccountingPeriodCloseoutPacketRequest,
   RequestAccountingReconciliationMatchPacketRequest,
+  RequestAccountingReconciliationExceptionResolutionPacketRequest,
   RecordAccountingBankStatementImportRequest,
   RequestAccountingPeriodReopenPacketRequest,
   LockAccountingPeriodRequest,
@@ -2018,6 +2022,61 @@ export async function requestAccountingReconciliationExceptionPacket(
     {
       body: { period, year },
       method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingBankReconciliationControlRegistry(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingBankReconciliationControlRegistryResponse> {
+  return request<AccountingBankReconciliationControlRegistryResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/bank-reconciliation-control-registry?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestAccountingReconciliationExceptionResolutionPacket(
+  token: string,
+  tenantSlug: string,
+  input: RequestAccountingReconciliationExceptionResolutionPacketRequest,
+): Promise<AccountingReconciliationExceptionResolutionPacketResponse> {
+  return request<AccountingReconciliationExceptionResolutionPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/reconciliation-exception-resolution-packet`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingPeriodCashCloseoutReadiness(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingPeriodCashCloseoutReadinessResponse> {
+  return request<AccountingPeriodCashCloseoutReadinessResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/period-cash-closeout-readiness?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
       token,
     },
   );

@@ -208,11 +208,13 @@ import {
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
   GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingPeriodReconciliationReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
+  ListTenantAccountingBankReconciliationControlRegistryUseCase,
   ListTenantAccountingBankStatementRegistryUseCase,
   ListTenantAccountingJournalRegistryUseCase,
   ListTenantAccountingPeriodLockRegistryUseCase,
@@ -221,8 +223,10 @@ import {
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
+  RecordTenantAccountingBankReconciliationControlUseCase,
   RecordTenantAccountingBankStatementImportUseCase,
   RequestTenantAccountingReconciliationExceptionPacketUseCase,
+  RequestTenantAccountingReconciliationExceptionResolutionPacketUseCase,
   RequestTenantAccountingReconciliationMatchPacketUseCase,
 } from '@saas-platform/accounting-application';
 import {
@@ -1034,6 +1038,18 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let requestTenantAccountingReconciliationExceptionPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let recordTenantAccountingBankReconciliationControlUseCase: {
+    execute: jest.Mock;
+  };
+  let listTenantAccountingBankReconciliationControlRegistryUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantAccountingReconciliationExceptionResolutionPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingPeriodCashCloseoutReadinessUseCase: {
     execute: jest.Mock;
   };
   let getTenantAccountingPeriodReconciliationReadinessUseCase: {
@@ -4943,6 +4959,124 @@ describe('API', () => {
     blockers: [],
     nextStep: 'No hay excepciones de conciliacion pendientes.',
     guardrails: ['Exception packet no crea ajustes automaticamente.'],
+  };
+  const accountingBankReconciliationControl = {
+    id: 'bank_reconciliation_control_001',
+    tenantId: 'tenant_123',
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    eventType: 'match_packet_approved' as const,
+    status: 'recorded' as const,
+    source: 'reconciliation_match_packet',
+    actorUserId: 'user_123',
+    actorEmail: 'hello@saas-platform.dev',
+    occurredAt: taxComplianceGeneratedAt,
+    reason: 'Conciliacion bancaria interna desde e2e.',
+    evidenceReference: 'match-packet:2026-06',
+    payload: { approvedCandidateCount: 1, approvedAmountInCents: 25000 },
+    blockers: [],
+    impactChecklist: ['101.01: 25000'],
+    createdAt: taxComplianceGeneratedAt,
+    updatedAt: taxComplianceGeneratedAt,
+  };
+  const accountingBankReconciliationResolvedControl = {
+    ...accountingBankReconciliationControl,
+    id: 'bank_reconciliation_control_002',
+    eventType: 'exception_resolved' as const,
+    status: 'resolved' as const,
+    source: 'reconciliation_exception_resolution_packet',
+    evidenceReference: 'resolution-packet:2026-06',
+    payload: {
+      resolutionType: 'mark_timing_difference',
+      resolvedExceptionCount: 0,
+    },
+    impactChecklist: ['exceptions: 0'],
+  };
+  const accountingBankReconciliationControlRegistry = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    registryStatus: 'ready' as const,
+    controls: [accountingBankReconciliationControl],
+    latestControl: accountingBankReconciliationControl,
+    summary: {
+      controlCount: 1,
+      matchApprovedCount: 1,
+      exceptionPacketCount: 0,
+      exceptionResolvedCount: 0,
+      blockedControlCount: 0,
+      needsReviewControlCount: 0,
+    },
+    blockers: [],
+    nextStep:
+      'Usar control registry como evidencia operacional de conciliacion bancaria.',
+    guardrails: ['Control registry no reemplaza conciliacion bancaria certificada.'],
+  };
+  const accountingReconciliationExceptionResolutionPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    resolutionStatus: 'resolved' as const,
+    decision: 'resolve' as const,
+    resolutionType: 'mark_timing_difference' as const,
+    exceptionKeys: [],
+    resolvedExceptionKeys: [],
+    exceptionPacket: accountingReconciliationExceptionPacket,
+    control: accountingBankReconciliationResolvedControl,
+    impactChecklist: [
+      {
+        key: 'exceptions',
+        label: 'Excepciones seleccionadas',
+        status: 'ready' as const,
+        detail: '0 excepciones seleccionadas.',
+      },
+    ],
+    summary: {
+      requestedExceptionCount: 0,
+      resolvedExceptionCount: 0,
+      unresolvedExceptionCount: 0,
+      totalDifferenceInCents: 0,
+    },
+    blockers: [],
+    nextStep: 'Excepciones marcadas como resueltas para cierre interno.',
+    guardrails: ['Resolution packet no crea asientos ni ajustes automaticamente.'],
+  };
+  const accountingPeriodCashCloseoutReadiness = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    readinessStatus: 'ready_for_lock' as const,
+    checks: [
+      {
+        key: 'statement_registry',
+        label: 'Statement registry',
+        status: 'ready' as const,
+        detail: '1 lineas bancarias cargadas para el periodo.',
+        blockerCount: 0,
+      },
+    ],
+    statementRegistry: accountingBankStatementRegistry,
+    reconciliationWorkspace: accountingBankReconciliationWorkspace,
+    controlRegistry: accountingBankReconciliationControlRegistry,
+    exceptionPacket: accountingReconciliationExceptionPacket,
+    summary: {
+      checkCount: 5,
+      readyCheckCount: 5,
+      needsReviewCheckCount: 0,
+      blockedCheckCount: 0,
+      statementLineCount: 1,
+      exactMatchCount: 1,
+      exceptionCount: 0,
+      resolvedExceptionCount: 0,
+      totalDifferenceInCents: 0,
+    },
+    blockers: [],
+    nextStep: 'Caja/bancos listos para alimentar el lock interno del periodo.',
+    guardrails: ['Cash closeout readiness es un control interno operacional.'],
   };
   const accountingPeriodReconciliationReadiness = {
     tenantSlug: 'saas-platform',
@@ -13846,6 +13980,22 @@ describe('API', () => {
     requestTenantAccountingReconciliationExceptionPacketUseCase = {
       execute: jest.fn().mockResolvedValue(accountingReconciliationExceptionPacket),
     };
+    recordTenantAccountingBankReconciliationControlUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingBankReconciliationControl),
+    };
+    listTenantAccountingBankReconciliationControlRegistryUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(accountingBankReconciliationControlRegistry),
+    };
+    requestTenantAccountingReconciliationExceptionResolutionPacketUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(accountingReconciliationExceptionResolutionPacket),
+    };
+    getTenantAccountingPeriodCashCloseoutReadinessUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingPeriodCashCloseoutReadiness),
+    };
     getTenantAccountingPeriodReconciliationReadinessUseCase = {
       execute: jest.fn().mockResolvedValue(accountingPeriodReconciliationReadiness),
     };
@@ -14512,6 +14662,20 @@ describe('API', () => {
       .useValue(requestTenantAccountingReconciliationMatchPacketUseCase)
       .overrideProvider(RequestTenantAccountingReconciliationExceptionPacketUseCase)
       .useValue(requestTenantAccountingReconciliationExceptionPacketUseCase)
+      .overrideProvider(RecordTenantAccountingBankReconciliationControlUseCase)
+      .useValue(recordTenantAccountingBankReconciliationControlUseCase)
+      .overrideProvider(
+        ListTenantAccountingBankReconciliationControlRegistryUseCase,
+      )
+      .useValue(listTenantAccountingBankReconciliationControlRegistryUseCase)
+      .overrideProvider(
+        RequestTenantAccountingReconciliationExceptionResolutionPacketUseCase,
+      )
+      .useValue(
+        requestTenantAccountingReconciliationExceptionResolutionPacketUseCase,
+      )
+      .overrideProvider(GetTenantAccountingPeriodCashCloseoutReadinessUseCase)
+      .useValue(getTenantAccountingPeriodCashCloseoutReadinessUseCase)
       .overrideProvider(GetTenantAccountingPeriodReconciliationReadinessUseCase)
       .useValue(getTenantAccountingPeriodReconciliationReadinessUseCase)
       .overrideProvider(GetTenantAccountingPeriodCloseoutReadinessUseCase)
@@ -19037,6 +19201,162 @@ describe('API', () => {
 
     expect(
       requestTenantAccountingReconciliationExceptionPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/bank-reconciliation-controls should record bank reconciliation controls', async () => {
+    const response = await request(httpServer)
+      .post('/api/accounting/tenants/saas-platform/bank-reconciliation-controls')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        eventType: 'match_packet_approved',
+        status: 'recorded',
+        source: 'reconciliation_match_packet',
+        actorUserId: 'user_123',
+        actorEmail: 'hello@saas-platform.dev',
+        reason: 'Conciliacion bancaria interna desde e2e.',
+        evidenceReference: 'match-packet:2026-06',
+        payload: { approvedCandidateCount: 1, approvedAmountInCents: 25000 },
+        blockers: [],
+        impactChecklist: ['101.01: 25000'],
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      id: 'bank_reconciliation_control_001',
+      tenantSlug: 'saas-platform',
+      eventType: 'match_packet_approved',
+      status: 'recorded',
+      payload: {
+        approvedCandidateCount: 1,
+      },
+    });
+
+    expect(
+      recordTenantAccountingBankReconciliationControlUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      eventType: 'match_packet_approved',
+      status: 'recorded',
+      source: 'reconciliation_match_packet',
+      actorUserId: 'user_123',
+      actorEmail: 'hello@saas-platform.dev',
+      reason: 'Conciliacion bancaria interna desde e2e.',
+      evidenceReference: 'match-packet:2026-06',
+      payload: { approvedCandidateCount: 1, approvedAmountInCents: 25000 },
+      blockers: [],
+      impactChecklist: ['101.01: 25000'],
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/bank-reconciliation-control-registry should return bank control registry', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/bank-reconciliation-control-registry?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      registryStatus: 'ready',
+      latestControl: {
+        id: 'bank_reconciliation_control_001',
+      },
+      summary: {
+        controlCount: 1,
+        matchApprovedCount: 1,
+      },
+    });
+
+    expect(
+      listTenantAccountingBankReconciliationControlRegistryUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/reconciliation-exception-resolution-packet should resolve exception packets', async () => {
+    const response = await request(httpServer)
+      .post(
+        '/api/accounting/tenants/saas-platform/reconciliation-exception-resolution-packet',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        decision: 'resolve',
+        resolutionType: 'mark_timing_difference',
+        exceptionKeys: [],
+        actorUserId: 'user_123',
+        actorEmail: 'hello@saas-platform.dev',
+        reason: 'Excepciones revisadas desde e2e.',
+        evidenceReference: 'resolution-packet:2026-06',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      resolutionStatus: 'resolved',
+      control: {
+        id: 'bank_reconciliation_control_002',
+        status: 'resolved',
+      },
+      summary: {
+        resolvedExceptionCount: 0,
+      },
+    });
+
+    expect(
+      requestTenantAccountingReconciliationExceptionResolutionPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      decision: 'resolve',
+      resolutionType: 'mark_timing_difference',
+      exceptionKeys: [],
+      actorUserId: 'user_123',
+      actorEmail: 'hello@saas-platform.dev',
+      reason: 'Excepciones revisadas desde e2e.',
+      evidenceReference: 'resolution-packet:2026-06',
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/period-cash-closeout-readiness should return cash closeout readiness', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/period-cash-closeout-readiness?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      readinessStatus: 'ready_for_lock',
+      controlRegistry: {
+        summary: {
+          matchApprovedCount: 1,
+        },
+      },
+      summary: {
+        checkCount: 5,
+        readyCheckCount: 5,
+      },
+    });
+
+    expect(
+      getTenantAccountingPeriodCashCloseoutReadinessUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',

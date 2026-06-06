@@ -1081,13 +1081,19 @@ product. Its current scope is intentionally operational and review-oriented:
 11. reconciliation exception resolution packets, bank reconciliation control
     registry, and cash closeout readiness as the cash/bank gate before period
     lock
+12. financial statement review packets, period evidence vault, and accountant
+    handoff workspace as the professional review bridge before formal
+    accounting work
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official
 financial statements, or replace professional accounting review. Period locks
 bank statement imports, bank matches, exception resolutions, and cash closeout
-readiness are internal operational controls with auditable review packets, not
-formal statutory closure or certified bank-feed reconciliation.
+readiness are internal operational controls with auditable review packets.
+Financial review packets, evidence vaults, and accountant handoffs package
+operational evidence for professional review; they are not formal statutory
+closure, certified bank-feed reconciliation, signed financial statements, or a
+replacement for a contador.
 
 ## Stage 8: Clinics products
 

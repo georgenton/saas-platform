@@ -730,6 +730,114 @@ export interface TenantAccountingFinancialStatementPreviewView {
   guardrails: string[];
 }
 
+export interface TenantAccountingFinancialStatementReviewPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  reviewStatus:
+    | 'ready_for_approval'
+    | 'approved'
+    | 'flagged'
+    | 'blocked';
+  decision: 'prepare' | 'approve' | 'flag';
+  reviewerUserId: string | null;
+  reviewerEmail: string | null;
+  note: string | null;
+  evidenceReference: string | null;
+  preview: TenantAccountingFinancialStatementPreviewView;
+  closeoutReport: TenantAccountingPeriodCloseoutReportView;
+  reviewChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    netIncomeInCents: number;
+    balanceSheetBalanced: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingPeriodEvidenceVaultView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  vaultStatus: 'ready' | 'needs_review' | 'blocked';
+  artifacts: Array<{
+    key: string;
+    label: string;
+    artifactType:
+      | 'registry'
+      | 'workspace'
+      | 'packet'
+      | 'report'
+      | 'control'
+      | 'preview';
+    status: AccountingReadinessStatus;
+    reference: string;
+    metricCount: number;
+    blockerCount: number;
+  }>;
+  journalRegistry: TenantAccountingJournalRegistryView;
+  ledgerRegistry: TenantAccountingLedgerRegistryWorkspaceView;
+  trialBalance: TenantAccountingTrialBalanceWorkspaceView;
+  closeoutReport: TenantAccountingPeriodCloseoutReportView;
+  financialPreview: TenantAccountingFinancialStatementPreviewView;
+  bankStatementRegistry: TenantAccountingBankStatementRegistryView;
+  bankControlRegistry: TenantAccountingBankReconciliationControlRegistryView;
+  cashCloseoutReadiness: TenantAccountingPeriodCashCloseoutReadinessView;
+  periodLockRegistry: TenantAccountingPeriodLockRegistryView;
+  auditTrail: TenantAccountingAuditTrailWorkspaceView;
+  summary: {
+    artifactCount: number;
+    readyArtifactCount: number;
+    needsReviewArtifactCount: number;
+    blockedArtifactCount: number;
+    journalEntryCount: number;
+    bankControlCount: number;
+    auditEventCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAccountantHandoffWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  handoffStatus: 'ready_for_accountant' | 'needs_review' | 'blocked';
+  executiveSummary: string;
+  evidenceVault: TenantAccountingPeriodEvidenceVaultView;
+  financialReviewPacket: TenantAccountingFinancialStatementReviewPacketView;
+  riskFlags: Array<{
+    key: string;
+    severity: 'info' | 'warning' | 'critical';
+    detail: string;
+  }>;
+  accountantQuestions: string[];
+  recommendedActions: string[];
+  summary: {
+    evidenceArtifactCount: number;
+    readyArtifactCount: number;
+    riskFlagCount: number;
+    criticalRiskFlagCount: number;
+    accountantQuestionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export type AccountingPeriodControlStatus =
   | 'open'
   | 'ready_to_lock'

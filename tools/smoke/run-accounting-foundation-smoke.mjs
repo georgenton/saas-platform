@@ -606,4 +606,53 @@ printLine(
   `${auditTrailWorkspace.summary.eventCount} eventos, ${auditTrailWorkspace.auditStatus}`,
 );
 
+const financialReviewPacket = await apiRequest({
+  baseUrl,
+  method: 'POST',
+  path: accountingPath('/financial-statement-review-packet'),
+  token,
+  body: {
+    period,
+    year,
+    decision: 'prepare',
+    reviewerUserId: 'smoke-accounting-reviewer',
+    reviewerEmail: 'accounting-reviewer@saas-platform.dev',
+    note: 'Smoke financial statement review packet.',
+    evidenceReference: `smoke:${tenantSlug}:${period}:financial-statement-review`,
+  },
+});
+
+assertStatus(
+  'financial statement review packet',
+  financialReviewPacket.reviewStatus,
+);
+printLine(
+  'financial review',
+  `${financialReviewPacket.summary.readyChecklistCount}/${financialReviewPacket.summary.checklistCount} checks, ${financialReviewPacket.reviewStatus}`,
+);
+
+const evidenceVault = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/period-evidence-vault?${periodQuery()}`),
+  token,
+});
+
+assertStatus('period evidence vault', evidenceVault.vaultStatus);
+printLine(
+  'evidence vault',
+  `${evidenceVault.summary.readyArtifactCount}/${evidenceVault.summary.artifactCount} artifacts, ${evidenceVault.vaultStatus}`,
+);
+
+const accountantHandoff = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/accountant-handoff-workspace?${periodQuery()}`),
+  token,
+});
+
+assertStatus('accountant handoff workspace', accountantHandoff.handoffStatus);
+printLine(
+  'accountant handoff',
+  `${accountantHandoff.summary.riskFlagCount} riesgos, ${accountantHandoff.handoffStatus}`,
+);
+
 printSection('Accounting foundation smoke OK');

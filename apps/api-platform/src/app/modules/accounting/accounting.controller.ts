@@ -12,6 +12,7 @@ import {
   ACCOUNTING_PERMISSIONS,
   CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
+  GetTenantAccountingAccountantHandoffWorkspaceUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
   GetTenantAccountingBankReconciliationWorkspaceUseCase,
   GetTenantAccountingBankStatementImportWorkspaceUseCase,
@@ -24,6 +25,7 @@ import {
   GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
+  GetTenantAccountingPeriodEvidenceVaultUseCase,
   GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingPeriodReconciliationReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
@@ -34,6 +36,7 @@ import {
   LockTenantAccountingPeriodUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
+  RequestTenantAccountingFinancialStatementReviewPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
   RecordTenantAccountingBankReconciliationControlUseCase,
@@ -156,6 +159,15 @@ import {
   toAccountingPeriodCloseoutReadinessResponseDto,
 } from './dto/accounting-period-closeout-readiness.response';
 import {
+  AccountingAccountantHandoffWorkspaceResponseDto,
+  AccountingFinancialStatementReviewPacketResponseDto,
+  AccountingPeriodEvidenceVaultResponseDto,
+  RequestAccountingFinancialStatementReviewPacketRequestDto,
+  toAccountingAccountantHandoffWorkspaceResponseDto,
+  toAccountingFinancialStatementReviewPacketResponseDto,
+  toAccountingPeriodEvidenceVaultResponseDto,
+} from './dto/accounting-review-evidence-handoff.response';
+import {
   AccountingTrialBalanceWorkspaceResponseDto,
   toAccountingTrialBalanceWorkspaceResponseDto,
 } from './dto/accounting-trial-balance-workspace.response';
@@ -201,6 +213,9 @@ export class AccountingController {
     private readonly lockTenantAccountingPeriodUseCase: LockTenantAccountingPeriodUseCase,
     private readonly requestTenantAccountingPeriodReopenPacketUseCase: RequestTenantAccountingPeriodReopenPacketUseCase,
     private readonly getTenantAccountingAuditTrailWorkspaceUseCase: GetTenantAccountingAuditTrailWorkspaceUseCase,
+    private readonly requestTenantAccountingFinancialStatementReviewPacketUseCase: RequestTenantAccountingFinancialStatementReviewPacketUseCase,
+    private readonly getTenantAccountingPeriodEvidenceVaultUseCase: GetTenantAccountingPeriodEvidenceVaultUseCase,
+    private readonly getTenantAccountingAccountantHandoffWorkspaceUseCase: GetTenantAccountingAccountantHandoffWorkspaceUseCase,
   ) {}
 
   @Get(':slug/intake-workspace')
@@ -1038,6 +1053,87 @@ export class AccountingController {
         });
 
       return toAccountingAuditTrailWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/financial-statement-review-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async requestFinancialStatementReviewPacket(
+    @Param('slug') tenantSlug: string,
+    @Body() body: RequestAccountingFinancialStatementReviewPacketRequestDto,
+  ): Promise<AccountingFinancialStatementReviewPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantAccountingFinancialStatementReviewPacketUseCase.execute(
+          {
+            tenantSlug,
+            period: body.period,
+            year: body.year,
+            decision: body.decision,
+            reviewerUserId: body.reviewerUserId ?? null,
+            reviewerEmail: body.reviewerEmail ?? null,
+            note: body.note ?? null,
+            evidenceReference: body.evidenceReference ?? null,
+          },
+        );
+
+      return toAccountingFinancialStatementReviewPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/period-evidence-vault')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getPeriodEvidenceVault(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingPeriodEvidenceVaultResponseDto> {
+    try {
+      const vault =
+        await this.getTenantAccountingPeriodEvidenceVaultUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingPeriodEvidenceVaultResponseDto(vault);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/accountant-handoff-workspace')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAccountantHandoffWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAccountantHandoffWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantAccountingAccountantHandoffWorkspaceUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingAccountantHandoffWorkspaceResponseDto(workspace);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

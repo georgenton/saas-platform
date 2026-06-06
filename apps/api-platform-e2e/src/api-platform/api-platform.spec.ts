@@ -199,6 +199,7 @@ import {
   ACCOUNTING_PERMISSIONS,
   CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
+  GetTenantAccountingAccountantHandoffWorkspaceUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
   GetTenantAccountingBankReconciliationWorkspaceUseCase,
   GetTenantAccountingBankStatementImportWorkspaceUseCase,
@@ -211,6 +212,7 @@ import {
   GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
+  GetTenantAccountingPeriodEvidenceVaultUseCase,
   GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingPeriodReconciliationReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
@@ -220,6 +222,7 @@ import {
   ListTenantAccountingPeriodLockRegistryUseCase,
   LockTenantAccountingPeriodUseCase,
   ManageTenantAccountingChartMappingUseCase,
+  RequestTenantAccountingFinancialStatementReviewPacketUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
@@ -1074,6 +1077,13 @@ describe('API', () => {
     execute: jest.Mock;
   };
   let getTenantAccountingFinancialStatementPreviewUseCase: {
+    execute: jest.Mock;
+  };
+  let requestTenantAccountingFinancialStatementReviewPacketUseCase: {
+    execute: jest.Mock;
+  };
+  let getTenantAccountingPeriodEvidenceVaultUseCase: { execute: jest.Mock };
+  let getTenantAccountingAccountantHandoffWorkspaceUseCase: {
     execute: jest.Mock;
   };
   let listTenantAccountingPeriodLockRegistryUseCase: { execute: jest.Mock };
@@ -5243,6 +5253,113 @@ describe('API', () => {
     blockers: [],
     nextStep: 'Usar audit trail como bitacora del cierre interno.',
     guardrails: ['Audit trail interno.'],
+  };
+  const accountingFinancialStatementReviewPacket = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    reviewStatus: 'ready_for_approval' as const,
+    decision: 'prepare' as const,
+    reviewerUserId: 'user_123',
+    reviewerEmail: 'hello@saas-platform.dev',
+    note: 'Review e2e.',
+    evidenceReference: 'financial-review:2026-06',
+    preview: accountingFinancialStatementPreview,
+    closeoutReport: accountingPeriodCloseoutReport,
+    reviewChecklist: [
+      {
+        key: 'financial_preview',
+        label: 'Financial preview',
+        status: 'ready' as const,
+        detail: 'Preview financiero listo.',
+      },
+    ],
+    summary: {
+      checklistCount: 1,
+      readyChecklistCount: 1,
+      blockedChecklistCount: 0,
+      netIncomeInCents: 25000,
+      balanceSheetBalanced: true,
+    },
+    blockers: [],
+    nextStep: 'Enviar previews financieros a aprobacion humana.',
+    guardrails: ['Review interno no emite estados financieros oficiales.'],
+  };
+  const accountingPeriodEvidenceVault = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    vaultStatus: 'ready' as const,
+    artifacts: [
+      {
+        key: 'journal_registry',
+        label: 'Journal registry',
+        artifactType: 'registry' as const,
+        status: 'ready' as const,
+        reference: 'accounting://saas-platform/2026-06/journal-registry',
+        metricCount: 1,
+        blockerCount: 0,
+      },
+      {
+        key: 'financial_preview',
+        label: 'Financial statement preview',
+        artifactType: 'preview' as const,
+        status: 'ready' as const,
+        reference: 'accounting://saas-platform/2026-06/financial-preview',
+        metricCount: 2,
+        blockerCount: 0,
+      },
+    ],
+    journalRegistry: accountingJournalRegistry,
+    ledgerRegistry: accountingLedgerRegistryWorkspace,
+    trialBalance: accountingTrialBalanceWorkspace,
+    closeoutReport: accountingPeriodCloseoutReport,
+    financialPreview: accountingFinancialStatementPreview,
+    bankStatementRegistry: accountingBankStatementRegistry,
+    bankControlRegistry: accountingBankReconciliationControlRegistry,
+    cashCloseoutReadiness: accountingPeriodCashCloseoutReadiness,
+    periodLockRegistry: accountingPeriodLockRegistry,
+    auditTrail: accountingAuditTrailWorkspace,
+    summary: {
+      artifactCount: 2,
+      readyArtifactCount: 2,
+      needsReviewArtifactCount: 0,
+      blockedArtifactCount: 0,
+      journalEntryCount: 1,
+      bankControlCount: 1,
+      auditEventCount: 2,
+    },
+    blockers: [],
+    nextStep: 'Usar vault como paquete de evidencia del periodo.',
+    guardrails: ['Vault operativo interno.'],
+  };
+  const accountingAccountantHandoffWorkspace = {
+    tenantSlug: 'saas-platform',
+    period: '2026-06',
+    year: 2026,
+    generatedAt: taxComplianceGeneratedAt,
+    handoffStatus: 'ready_for_accountant' as const,
+    executiveSummary:
+      'Periodo contable listo para handoff profesional con evidencia operativa completa.',
+    evidenceVault: accountingPeriodEvidenceVault,
+    financialReviewPacket: accountingFinancialStatementReviewPacket,
+    riskFlags: [],
+    accountantQuestions: [
+      'Confirmar si los previews financieros son suficientes para revision profesional.',
+    ],
+    recommendedActions: ['Entregar vault de evidencia al contador.'],
+    summary: {
+      evidenceArtifactCount: 2,
+      readyArtifactCount: 2,
+      riskFlagCount: 0,
+      criticalRiskFlagCount: 0,
+      accountantQuestionCount: 1,
+    },
+    blockers: [],
+    nextStep: 'Compartir handoff con contador y conservar evidencia del periodo.',
+    guardrails: ['Handoff orienta revision profesional.'],
   };
   const ecuadorTaxPeriodCloseoutPacket = {
     tenantSlug: 'saas-platform',
@@ -14022,6 +14139,17 @@ describe('API', () => {
     getTenantAccountingFinancialStatementPreviewUseCase = {
       execute: jest.fn().mockResolvedValue(accountingFinancialStatementPreview),
     };
+    requestTenantAccountingFinancialStatementReviewPacketUseCase = {
+      execute: jest
+        .fn()
+        .mockResolvedValue(accountingFinancialStatementReviewPacket),
+    };
+    getTenantAccountingPeriodEvidenceVaultUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingPeriodEvidenceVault),
+    };
+    getTenantAccountingAccountantHandoffWorkspaceUseCase = {
+      execute: jest.fn().mockResolvedValue(accountingAccountantHandoffWorkspace),
+    };
     listTenantAccountingPeriodLockRegistryUseCase = {
       execute: jest.fn().mockResolvedValue(accountingPeriodLockRegistry),
     };
@@ -14692,6 +14820,14 @@ describe('API', () => {
       .useValue(createTenantAccountingAdjustingJournalEntryUseCase)
       .overrideProvider(GetTenantAccountingFinancialStatementPreviewUseCase)
       .useValue(getTenantAccountingFinancialStatementPreviewUseCase)
+      .overrideProvider(
+        RequestTenantAccountingFinancialStatementReviewPacketUseCase,
+      )
+      .useValue(requestTenantAccountingFinancialStatementReviewPacketUseCase)
+      .overrideProvider(GetTenantAccountingPeriodEvidenceVaultUseCase)
+      .useValue(getTenantAccountingPeriodEvidenceVaultUseCase)
+      .overrideProvider(GetTenantAccountingAccountantHandoffWorkspaceUseCase)
+      .useValue(getTenantAccountingAccountantHandoffWorkspaceUseCase)
       .overrideProvider(ListTenantAccountingPeriodLockRegistryUseCase)
       .useValue(listTenantAccountingPeriodLockRegistryUseCase)
       .overrideProvider(LockTenantAccountingPeriodUseCase)
@@ -18967,6 +19103,113 @@ describe('API', () => {
 
     expect(
       getTenantAccountingFinancialStatementPreviewUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('POST /api/accounting/tenants/:slug/financial-statement-review-packet should return review packet', async () => {
+    const response = await request(httpServer)
+      .post(
+        '/api/accounting/tenants/saas-platform/financial-statement-review-packet',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        period: '2026-06',
+        year: 2026,
+        decision: 'prepare',
+        reviewerUserId: 'user_123',
+        reviewerEmail: 'hello@saas-platform.dev',
+        note: 'Review e2e.',
+        evidenceReference: 'financial-review:2026-06',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      reviewStatus: 'ready_for_approval',
+      decision: 'prepare',
+      summary: {
+        checklistCount: 1,
+        readyChecklistCount: 1,
+        balanceSheetBalanced: true,
+      },
+    });
+
+    expect(
+      requestTenantAccountingFinancialStatementReviewPacketUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+      decision: 'prepare',
+      reviewerUserId: 'user_123',
+      reviewerEmail: 'hello@saas-platform.dev',
+      note: 'Review e2e.',
+      evidenceReference: 'financial-review:2026-06',
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/period-evidence-vault should return period evidence package', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/period-evidence-vault?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      vaultStatus: 'ready',
+      summary: {
+        artifactCount: 2,
+        readyArtifactCount: 2,
+        journalEntryCount: 1,
+      },
+      artifacts: expect.arrayContaining([
+        expect.objectContaining({
+          key: 'financial_preview',
+          status: 'ready',
+        }),
+      ]),
+    });
+
+    expect(
+      getTenantAccountingPeriodEvidenceVaultUseCase.execute,
+    ).toHaveBeenCalledWith({
+      tenantSlug: 'saas-platform',
+      period: '2026-06',
+      year: 2026,
+    });
+  });
+
+  it('GET /api/accounting/tenants/:slug/accountant-handoff-workspace should return accountant handoff', async () => {
+    const response = await request(httpServer)
+      .get(
+        '/api/accounting/tenants/saas-platform/accountant-handoff-workspace?period=2026-06&year=2026',
+      )
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      tenantSlug: 'saas-platform',
+      handoffStatus: 'ready_for_accountant',
+      evidenceVault: {
+        vaultStatus: 'ready',
+      },
+      financialReviewPacket: {
+        reviewStatus: 'ready_for_approval',
+      },
+      summary: {
+        evidenceArtifactCount: 2,
+        riskFlagCount: 0,
+      },
+    });
+
+    expect(
+      getTenantAccountingAccountantHandoffWorkspaceUseCase.execute,
     ).toHaveBeenCalledWith({
       tenantSlug: 'saas-platform',
       period: '2026-06',

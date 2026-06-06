@@ -7,6 +7,7 @@ export * from './lib/ports/id-generators';
 export * from './lib/use-cases/create-tenant-accounting-journal-entries-from-approval.use-case';
 export * from './lib/use-cases/create-tenant-accounting-adjusting-journal-entry.use-case';
 export * from './lib/use-cases/get-tenant-accounting-chart-of-accounts-workspace.use-case';
+export * from './lib/use-cases/get-tenant-accounting-accountant-handoff-workspace.use-case';
 export * from './lib/use-cases/get-tenant-accounting-audit-trail-workspace.use-case';
 export * from './lib/use-cases/get-tenant-accounting-bank-reconciliation-workspace.use-case';
 export * from './lib/use-cases/get-tenant-accounting-bank-statement-import-workspace.use-case';
@@ -20,6 +21,7 @@ export * from './lib/use-cases/get-tenant-accounting-period-reconciliation-readi
 export * from './lib/use-cases/get-tenant-accounting-period-cash-closeout-readiness.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-closeout-report.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-closeout-readiness.use-case';
+export * from './lib/use-cases/get-tenant-accounting-period-evidence-vault.use-case';
 export * from './lib/use-cases/get-tenant-accounting-trial-balance-workspace.use-case';
 export * from './lib/use-cases/list-tenant-accounting-journal-registry.use-case';
 export * from './lib/use-cases/list-tenant-accounting-bank-statement-registry.use-case';
@@ -28,6 +30,7 @@ export * from './lib/use-cases/list-tenant-accounting-period-lock-registry.use-c
 export * from './lib/use-cases/lock-tenant-accounting-period.use-case';
 export * from './lib/use-cases/manage-tenant-accounting-chart-mapping.use-case';
 export * from './lib/use-cases/request-tenant-accounting-journal-draft-approval-packet.use-case';
+export * from './lib/use-cases/request-tenant-accounting-financial-statement-review-packet.use-case';
 export * from './lib/use-cases/request-tenant-accounting-period-closeout-packet.use-case';
 export * from './lib/use-cases/request-tenant-accounting-period-reopen-packet.use-case';
 export * from './lib/use-cases/record-tenant-accounting-bank-statement-import.use-case';

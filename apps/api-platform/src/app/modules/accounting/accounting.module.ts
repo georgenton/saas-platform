@@ -11,6 +11,7 @@ import {
   ACCOUNTING_PERIOD_CONTROL_REPOSITORY,
   CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
+  GetTenantAccountingAccountantHandoffWorkspaceUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
   GetTenantAccountingBankReconciliationWorkspaceUseCase,
   GetTenantAccountingBankStatementImportWorkspaceUseCase,
@@ -23,6 +24,7 @@ import {
   GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
+  GetTenantAccountingPeriodEvidenceVaultUseCase,
   GetTenantAccountingPeriodLockReadinessUseCase,
   GetTenantAccountingPeriodReconciliationReadinessUseCase,
   GetTenantAccountingTrialBalanceWorkspaceUseCase,
@@ -33,6 +35,7 @@ import {
   LockTenantAccountingPeriodUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
+  RequestTenantAccountingFinancialStatementReviewPacketUseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
   RecordTenantAccountingBankReconciliationControlUseCase,
@@ -574,6 +577,75 @@ import { AccountingController } from './accounting.controller';
           getTenantAccountingLedgerRegistryWorkspaceUseCase,
           getTenantAccountingTrialBalanceWorkspaceUseCase,
           getTenantAccountingPeriodCloseoutReadinessUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingFinancialStatementReviewPacketUseCase,
+      inject: [
+        GetTenantAccountingFinancialStatementPreviewUseCase,
+        GetTenantAccountingPeriodCloseoutReportUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingFinancialStatementPreviewUseCase,
+        getTenantAccountingPeriodCloseoutReportUseCase,
+      ) =>
+        new RequestTenantAccountingFinancialStatementReviewPacketUseCase(
+          getTenantAccountingFinancialStatementPreviewUseCase,
+          getTenantAccountingPeriodCloseoutReportUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingPeriodEvidenceVaultUseCase,
+      inject: [
+        ListTenantAccountingJournalRegistryUseCase,
+        GetTenantAccountingLedgerRegistryWorkspaceUseCase,
+        GetTenantAccountingTrialBalanceWorkspaceUseCase,
+        GetTenantAccountingPeriodCloseoutReportUseCase,
+        GetTenantAccountingFinancialStatementPreviewUseCase,
+        ListTenantAccountingBankStatementRegistryUseCase,
+        ListTenantAccountingBankReconciliationControlRegistryUseCase,
+        GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
+        ListTenantAccountingPeriodLockRegistryUseCase,
+        GetTenantAccountingAuditTrailWorkspaceUseCase,
+      ],
+      useFactory: (
+        listTenantAccountingJournalRegistryUseCase,
+        getTenantAccountingLedgerRegistryWorkspaceUseCase,
+        getTenantAccountingTrialBalanceWorkspaceUseCase,
+        getTenantAccountingPeriodCloseoutReportUseCase,
+        getTenantAccountingFinancialStatementPreviewUseCase,
+        listTenantAccountingBankStatementRegistryUseCase,
+        listTenantAccountingBankReconciliationControlRegistryUseCase,
+        getTenantAccountingPeriodCashCloseoutReadinessUseCase,
+        listTenantAccountingPeriodLockRegistryUseCase,
+        getTenantAccountingAuditTrailWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingPeriodEvidenceVaultUseCase(
+          listTenantAccountingJournalRegistryUseCase,
+          getTenantAccountingLedgerRegistryWorkspaceUseCase,
+          getTenantAccountingTrialBalanceWorkspaceUseCase,
+          getTenantAccountingPeriodCloseoutReportUseCase,
+          getTenantAccountingFinancialStatementPreviewUseCase,
+          listTenantAccountingBankStatementRegistryUseCase,
+          listTenantAccountingBankReconciliationControlRegistryUseCase,
+          getTenantAccountingPeriodCashCloseoutReadinessUseCase,
+          listTenantAccountingPeriodLockRegistryUseCase,
+          getTenantAccountingAuditTrailWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAccountantHandoffWorkspaceUseCase,
+      inject: [
+        GetTenantAccountingPeriodEvidenceVaultUseCase,
+        RequestTenantAccountingFinancialStatementReviewPacketUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingPeriodEvidenceVaultUseCase,
+        requestTenantAccountingFinancialStatementReviewPacketUseCase,
+      ) =>
+        new GetTenantAccountingAccountantHandoffWorkspaceUseCase(
+          getTenantAccountingPeriodEvidenceVaultUseCase,
+          requestTenantAccountingFinancialStatementReviewPacketUseCase,
         ),
     },
     {

@@ -2692,6 +2692,47 @@ export interface AccountingFinancialStatementPreviewResponse {
   guardrails: string[];
 }
 
+export interface RequestAccountingFinancialStatementReviewPacketRequest {
+  period: string;
+  year: number;
+  decision: 'prepare' | 'approve' | 'flag';
+  reviewerUserId?: string | null;
+  reviewerEmail?: string | null;
+  note?: string | null;
+  evidenceReference?: string | null;
+}
+
+export interface AccountingFinancialStatementReviewPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  reviewStatus: string;
+  decision: string;
+  reviewerUserId: string | null;
+  reviewerEmail: string | null;
+  note: string | null;
+  evidenceReference: string | null;
+  preview: AccountingFinancialStatementPreviewResponse;
+  closeoutReport: AccountingPeriodCloseoutReportResponse;
+  reviewChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    netIncomeInCents: number;
+    balanceSheetBalanced: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingPeriodControlResponse {
   id: string;
   tenantId: string;
@@ -2819,6 +2860,73 @@ export interface AccountingAuditTrailWorkspaceResponse {
     controlEventCount: number;
     lockedCount: number;
     reopenedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingPeriodEvidenceVaultResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  vaultStatus: string;
+  artifacts: Array<{
+    key: string;
+    label: string;
+    artifactType: string;
+    status: string;
+    reference: string;
+    metricCount: number;
+    blockerCount: number;
+  }>;
+  journalRegistry: AccountingJournalRegistryResponse;
+  ledgerRegistry: AccountingLedgerRegistryWorkspaceResponse;
+  trialBalance: AccountingTrialBalanceWorkspaceResponse;
+  closeoutReport: AccountingPeriodCloseoutReportResponse;
+  financialPreview: AccountingFinancialStatementPreviewResponse;
+  bankStatementRegistry: AccountingBankStatementRegistryResponse;
+  bankControlRegistry: AccountingBankReconciliationControlRegistryResponse;
+  cashCloseoutReadiness: AccountingPeriodCashCloseoutReadinessResponse;
+  periodLockRegistry: AccountingPeriodLockRegistryResponse;
+  auditTrail: AccountingAuditTrailWorkspaceResponse;
+  summary: {
+    artifactCount: number;
+    readyArtifactCount: number;
+    needsReviewArtifactCount: number;
+    blockedArtifactCount: number;
+    journalEntryCount: number;
+    bankControlCount: number;
+    auditEventCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingAccountantHandoffWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  handoffStatus: string;
+  executiveSummary: string;
+  evidenceVault: AccountingPeriodEvidenceVaultResponse;
+  financialReviewPacket: AccountingFinancialStatementReviewPacketResponse;
+  riskFlags: Array<{
+    key: string;
+    severity: string;
+    detail: string;
+  }>;
+  accountantQuestions: string[];
+  recommendedActions: string[];
+  summary: {
+    evidenceArtifactCount: number;
+    readyArtifactCount: number;
+    riskFlagCount: number;
+    criticalRiskFlagCount: number;
+    accountantQuestionCount: number;
   };
   blockers: string[];
   nextStep: string;

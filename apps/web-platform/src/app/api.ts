@@ -1,6 +1,7 @@
 import {
   AccountingChartOfAccountsWorkspaceResponse,
   AccountingChartMappingManagementResponse,
+  AccountingAccountantHandoffWorkspaceResponse,
   AccountingBankReconciliationControlRegistryResponse,
   AccountingBankReconciliationWorkspaceResponse,
   AccountingBankStatementImportPreviewRequest,
@@ -10,6 +11,7 @@ import {
   AccountingIntakeWorkspaceResponse,
   AccountingJournalDraftApprovalPacketResponse,
   AccountingAdjustingJournalEntryCreationResultResponse,
+  AccountingFinancialStatementReviewPacketResponse,
   AccountingFinancialStatementPreviewResponse,
   AccountingJournalEntryCreationResultResponse,
   AccountingJournalRegistryResponse,
@@ -20,6 +22,7 @@ import {
   AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
   AccountingPeriodCashCloseoutReadinessResponse,
+  AccountingPeriodEvidenceVaultResponse,
   AccountingPeriodLockRegistryResponse,
   AccountingPeriodLockReadinessResponse,
   AccountingPeriodLockResultResponse,
@@ -30,6 +33,7 @@ import {
   AccountingReconciliationMatchPacketResponse,
   AccountingAuditTrailWorkspaceResponse,
   AccountingTrialBalanceWorkspaceResponse,
+  RequestAccountingFinancialStatementReviewPacketRequest,
   AiActivityFeedResponse,
   AiActionCenterResponse,
   AiApprovalCapacityWorkspaceResponse,
@@ -2272,6 +2276,61 @@ export async function fetchAccountingFinancialStatementPreview(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/financial-statement-preview?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestAccountingFinancialStatementReviewPacket(
+  token: string,
+  tenantSlug: string,
+  input: RequestAccountingFinancialStatementReviewPacketRequest,
+): Promise<AccountingFinancialStatementReviewPacketResponse> {
+  return request<AccountingFinancialStatementReviewPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/financial-statement-review-packet`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingPeriodEvidenceVault(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingPeriodEvidenceVaultResponse> {
+  return request<AccountingPeriodEvidenceVaultResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/period-evidence-vault?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingAccountantHandoffWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingAccountantHandoffWorkspaceResponse> {
+  return request<AccountingAccountantHandoffWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/accountant-handoff-workspace?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

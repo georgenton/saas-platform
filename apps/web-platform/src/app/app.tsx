@@ -104,6 +104,7 @@ import {
   fetchTenantEcommerceOrderPaymentReadinessWorkspace,
   executeEcuadorTaxWithholdingDraftBridge,
   createAccountingAdjustingJournalEntry,
+  fetchAccountingAccountantHandoffWorkspace,
   fetchAccountingAuditTrailWorkspace,
   fetchAccountingBankReconciliationControlRegistry,
   fetchAccountingBankReconciliationWorkspace,
@@ -118,6 +119,7 @@ import {
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
+  fetchAccountingPeriodEvidenceVault,
   fetchAccountingPeriodLockRegistry,
   fetchAccountingPeriodLockReadiness,
   fetchAccountingPeriodReconciliationReadiness,
@@ -125,6 +127,7 @@ import {
   lockAccountingPeriod,
   recordAccountingBankStatementImport,
   requestAccountingPeriodReopenPacket,
+  requestAccountingFinancialStatementReviewPacket,
   requestAccountingReconciliationExceptionPacket,
   requestAccountingReconciliationExceptionResolutionPacket,
   requestAccountingReconciliationMatchPacket,
@@ -371,12 +374,14 @@ import {
   AccountingChartOfAccountsWorkspaceResponse,
   AccountingChartMappingManagementResponse,
   AccountingAdjustingJournalEntryCreationResultResponse,
+  AccountingAccountantHandoffWorkspaceResponse,
   AccountingAuditTrailWorkspaceResponse,
   AccountingBankReconciliationControlRegistryResponse,
   AccountingBankReconciliationWorkspaceResponse,
   AccountingBankStatementImportResultResponse,
   AccountingBankStatementRegistryResponse,
   AccountingFinancialStatementPreviewResponse,
+  AccountingFinancialStatementReviewPacketResponse,
   AccountingIntakeWorkspaceResponse,
   AccountingJournalEntryCreationResultResponse,
   AccountingJournalRegistryResponse,
@@ -388,6 +393,7 @@ import {
   AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
   AccountingPeriodCashCloseoutReadinessResponse,
+  AccountingPeriodEvidenceVaultResponse,
   AccountingPeriodLockReadinessResponse,
   AccountingPeriodLockRegistryResponse,
   AccountingPeriodLockResultResponse,
@@ -2244,6 +2250,18 @@ export function App() {
     accountingFinancialStatementPreview,
     setAccountingFinancialStatementPreview,
   ] = useState<AccountingFinancialStatementPreviewResponse | null>(null);
+  const [
+    lastAccountingFinancialStatementReviewPacket,
+    setLastAccountingFinancialStatementReviewPacket,
+  ] = useState<AccountingFinancialStatementReviewPacketResponse | null>(null);
+  const [
+    accountingPeriodEvidenceVault,
+    setAccountingPeriodEvidenceVault,
+  ] = useState<AccountingPeriodEvidenceVaultResponse | null>(null);
+  const [
+    accountingAccountantHandoffWorkspace,
+    setAccountingAccountantHandoffWorkspace,
+  ] = useState<AccountingAccountantHandoffWorkspaceResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -19652,6 +19670,8 @@ export function App() {
         nextAccountingPeriodLockRegistry,
         nextAccountingFinancialStatementPreview,
         nextAccountingAuditTrailWorkspace,
+        nextAccountingPeriodEvidenceVault,
+        nextAccountingAccountantHandoffWorkspace,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -19762,8 +19782,22 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingPeriodEvidenceVault(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingAccountantHandoffWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
+            null,
+            null,
             null,
             null,
             null,
@@ -19868,6 +19902,10 @@ export function App() {
           nextAccountingFinancialStatementPreview,
         );
         setAccountingAuditTrailWorkspace(nextAccountingAuditTrailWorkspace);
+        setAccountingPeriodEvidenceVault(nextAccountingPeriodEvidenceVault);
+        setAccountingAccountantHandoffWorkspace(
+          nextAccountingAccountantHandoffWorkspace,
+        );
       });
     } catch (error) {
       setTaxComplianceError(
@@ -21103,6 +21141,72 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo crear ajuste contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleRequestAccountingFinancialStatementReviewPacket() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-financial-review-packet');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const tenantSlug = currentTenancy.tenant.slug;
+      const year = resolveNumericYear(taxComplianceYear);
+      const packet = await requestAccountingFinancialStatementReviewPacket(
+        token,
+        tenantSlug,
+        {
+          period: taxCompliancePeriod,
+          year,
+          decision: 'prepare',
+          reviewerUserId: session?.user.id ?? null,
+          reviewerEmail: session?.user.email ?? null,
+          note: 'Financial statement review packet desde Accounting foundation.',
+          evidenceReference: `accounting-financial-review://${taxCompliancePeriod}`,
+        },
+      );
+      const [financialPreview, evidenceVault, accountantHandoff] =
+        await Promise.all([
+          fetchAccountingFinancialStatementPreview(
+            token,
+            tenantSlug,
+            taxCompliancePeriod,
+            year,
+          ),
+          fetchAccountingPeriodEvidenceVault(
+            token,
+            tenantSlug,
+            taxCompliancePeriod,
+            year,
+          ),
+          fetchAccountingAccountantHandoffWorkspace(
+            token,
+            tenantSlug,
+            taxCompliancePeriod,
+            year,
+          ),
+        ]);
+
+      setLastAccountingFinancialStatementReviewPacket(packet);
+      setAccountingFinancialStatementPreview(financialPreview);
+      setAccountingPeriodEvidenceVault(evidenceVault);
+      setAccountingAccountantHandoffWorkspace(accountantHandoff);
+      setTaxComplianceActionMessage(
+        `Review estados ${humanizeKey(packet.reviewStatus)}.`,
+      );
+    } catch (error) {
+      setLastAccountingFinancialStatementReviewPacket(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo preparar review de estados financieros.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -30573,6 +30677,21 @@ export function App() {
                                 className={styles.ghostButton}
                                 disabled={
                                   taxComplianceActionLoading ===
+                                    'accounting-financial-review-packet' ||
+                                  !accountingFinancialStatementPreview ||
+                                  !accountingPeriodCloseoutReport
+                                }
+                                onClick={() =>
+                                  void handleRequestAccountingFinancialStatementReviewPacket()
+                                }
+                                type="button"
+                              >
+                                Review estados
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
                                     'accounting-adjusting-entry-create' ||
                                   !accountingJournalRegistry
                                 }
@@ -31164,6 +31283,63 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      Review estados
+                                    </span>
+                                    <strong>
+                                      {lastAccountingFinancialStatementReviewPacket
+                                        ? humanizeKey(
+                                            lastAccountingFinancialStatementReviewPacket.reviewStatus,
+                                          )
+                                        : 'sin review'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingFinancialStatementReviewPacket
+                                        ?.summary.readyChecklistCount ?? 0}
+                                      /
+                                      {lastAccountingFinancialStatementReviewPacket
+                                        ?.summary.checklistCount ?? 0}{' '}
+                                      checks
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Evidence vault
+                                    </span>
+                                    <strong>
+                                      {accountingPeriodEvidenceVault
+                                        ? humanizeKey(
+                                            accountingPeriodEvidenceVault.vaultStatus,
+                                          )
+                                        : 'sin vault'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingPeriodEvidenceVault?.summary
+                                        .readyArtifactCount ?? 0}
+                                      /
+                                      {accountingPeriodEvidenceVault?.summary
+                                        .artifactCount ?? 0}{' '}
+                                      artifacts
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Handoff contador
+                                    </span>
+                                    <strong>
+                                      {accountingAccountantHandoffWorkspace
+                                        ? humanizeKey(
+                                            accountingAccountantHandoffWorkspace.handoffStatus,
+                                          )
+                                        : 'sin handoff'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingAccountantHandoffWorkspace
+                                        ?.summary.riskFlagCount ?? 0}{' '}
+                                      riesgos
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Ultimo ajuste
                                     </span>
                                     <strong>
@@ -31215,7 +31391,10 @@ export function App() {
                                   </div>
                                 </div>
                                 <p className={styles.muted}>
-                                  {accountingPeriodLockRegistry?.nextStep ??
+                                  {accountingAccountantHandoffWorkspace?.nextStep ??
+                                    accountingPeriodEvidenceVault?.nextStep ??
+                                    lastAccountingFinancialStatementReviewPacket?.nextStep ??
+                                    accountingPeriodLockRegistry?.nextStep ??
                                     accountingAuditTrailWorkspace?.nextStep ??
                                     lastAccountingReconciliationExceptionResolutionPacket?.nextStep ??
                                     accountingPeriodCashCloseoutReadiness?.nextStep ??

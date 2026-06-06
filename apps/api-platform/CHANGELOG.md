@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.99.0
+
+### Minor Changes
+
+- 0675816: Add Accounting bank statement imports, persisted statement registries, and reconciliation exception packets.
+
 ## 0.98.0
 
 ### Minor Changes

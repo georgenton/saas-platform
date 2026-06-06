@@ -1087,6 +1087,31 @@ than a single form helper:
    - supports the path from draft-ready to accountant review, approved filing,
      and externally filed/paid closeout
 
+### Tax compliance closeout expansion
+
+The next Tax Compliance EC layer strengthens declaration readiness into a
+period-certification flow:
+
+1. `Taxpayer Obligation Matrix 2.0`
+   - projects taxpayer profile, current period applicability, accountant gates,
+     form coverage, evidence sources, and closeout gates into one workspace
+2. `SRI Evidence Intake 2.0`
+   - reviews SRI report/XML/manual channels, deduplication, ledger coverage,
+     blocked vouchers, and review vouchers before the evidence enters forms
+3. `IVA Form Contract 2.0`
+   - turns VAT draft buckets and form mappings into deterministic contract boxes
+     with confidence, evidence source, amount, and manual-only visibility
+4. `Income Tax Form Contract 1.0`
+   - groups revenue, deductible expenses, taxable base, and withholding credits
+     into accountant-reviewable lines without replacing formal accounting
+5. `Annexes Readiness Workspace`
+   - elevates annex readiness into actionable work items connected to the
+     declaration source ledger and evidence sources
+6. `Tax Period Closeout Certification`
+   - combines closeout report, declaration review loop, obligation matrix,
+     checklist state, accountant questions, and external filing signal into the
+     final operational certification gate
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

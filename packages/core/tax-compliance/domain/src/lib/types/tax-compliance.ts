@@ -136,7 +136,13 @@ export type EcuadorTaxComplianceEventType =
   | 'tax_declaration_form_catalog_reviewed'
   | 'tax_declaration_form_draft_packet_requested'
   | 'tax_filing_guide_packet_requested'
-  | 'tax_declaration_artifact_export_requested';
+  | 'tax_declaration_artifact_export_requested'
+  | 'tax_obligation_matrix_v2_reviewed'
+  | 'sri_evidence_intake_v2_reviewed'
+  | 'tax_vat_form_contract_reviewed'
+  | 'tax_income_tax_form_contract_reviewed'
+  | 'tax_annexes_workspace_reviewed'
+  | 'tax_period_closeout_certification_requested';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -867,6 +873,181 @@ export interface EcuadorTaxDeclarationReviewLoopWorkspaceView {
     readyChecklistCount: number;
     sourceRowCount: number;
     blockerCount: number;
+    filedExternally: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxObligationMatrixV2WorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  taxpayerProfile: EcuadorTaxpayerProfileView;
+  matrix: EcuadorTaxObligationMatrixView;
+  obligations: Array<
+    EcuadorTaxObligationView & {
+      periodApplicability: 'current_period' | 'annual_context' | 'needs_review';
+      accountantRequired: boolean;
+      declarationForms: EcuadorTaxDeclarationFormKey[];
+      evidenceSources: string[];
+      closeoutGate: EcuadorTaxReadinessStatus;
+    }
+  >;
+  summary: {
+    obligationCount: number;
+    appliesCount: number;
+    accountantRequiredCount: number;
+    blockedCount: number;
+    needsReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxSriEvidenceIntakeV2WorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  workspace: EcuadorTaxSriFiscalEvidenceWorkspaceView;
+  sourceLedger: EcuadorTaxDeclarationSourceLedgerView;
+  intakeChannels: Array<{
+    key: EcuadorTaxSriEvidenceImportSource;
+    label: string;
+    acceptedFormats: string[];
+    voucherCount: number;
+    readinessStatus: EcuadorTaxReadinessStatus;
+    nextStep: string;
+  }>;
+  deduplication: {
+    duplicateAccessKeys: number;
+    ledgerSriRows: number;
+    blockedVoucherCount: number;
+    needsReviewVoucherCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxVatFormContractWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  vatWorkspace: EcuadorTaxVatDeclarationDraftWorkspaceView;
+  formMappingCatalog: EcuadorTaxFormMappingCatalogView;
+  contractBoxes: Array<{
+    boxKey: string;
+    label: string;
+    metricKey: string;
+    amountInCents: number;
+    source: string;
+    confidence: 'high' | 'medium' | 'low';
+    readinessStatus: EcuadorTaxReadinessStatus;
+    explanation: string;
+  }>;
+  summary: {
+    contractBoxCount: number;
+    highConfidenceBoxCount: number;
+    manualOnlyBoxCount: number;
+    outputVatInCents: number;
+    inputVatInCents: number;
+    estimatedVatPayableInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxIncomeTaxFormContractWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  incomeTaxWorkspace: EcuadorTaxIncomeTaxEvidenceWorkspaceView;
+  formMappingCatalog: EcuadorTaxFormMappingCatalogView;
+  contractLines: Array<{
+    key: string;
+    label: string;
+    amountInCents: number;
+    source: string;
+    readinessStatus: EcuadorTaxReadinessStatus;
+    accountantReviewRequired: boolean;
+    notes: string[];
+  }>;
+  summary: {
+    grossRevenueInCents: number;
+    deductibleExpenseInCents: number;
+    estimatedTaxableBaseInCents: number;
+    withholdingCreditInCents: number;
+    accountantReviewLineCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAnnexesWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  annexesReadiness: EcuadorTaxAnnexesReadinessView;
+  sourceLedger: EcuadorTaxDeclarationSourceLedgerView;
+  annexWorkItems: Array<{
+    key: string;
+    label: string;
+    readinessStatus: EcuadorTaxReadinessStatus;
+    sourceRowCount: number;
+    evidenceSources: string[];
+    blockers: string[];
+    nextStep: string;
+  }>;
+  summary: {
+    applicableAnnexCount: number;
+    readyAnnexCount: number;
+    sourceRowCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPeriodCloseoutCertificationView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  certificationStatus:
+    | 'blocked'
+    | 'needs_accountant_review'
+    | 'ready_to_certify'
+    | 'externally_filed';
+  closeoutReport: EcuadorTaxPeriodCloseoutReportView;
+  declarationReviewLoop: EcuadorTaxDeclarationReviewLoopWorkspaceView;
+  obligationMatrix: EcuadorTaxObligationMatrixV2WorkspaceView;
+  certificationChecklist: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    detail: string;
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    accountantQuestionCount: number;
     filedExternally: boolean;
   };
   blockers: string[];

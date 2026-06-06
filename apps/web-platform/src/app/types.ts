@@ -2933,6 +2933,97 @@ export interface AccountingAccountantHandoffWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface AccountingAccountantReviewResponse {
+  id: string;
+  tenantId: string;
+  tenantSlug: string;
+  period: string;
+  year: number;
+  status: string;
+  requestedByUserId: string | null;
+  requestedByEmail: string | null;
+  summary: string;
+  questions: string[];
+  riskFlags: AccountingAccountantHandoffWorkspaceResponse['riskFlags'];
+  evidenceReferences: string[];
+  transitionHistory: Array<{
+    status: string;
+    transitionedAt: string;
+    transitionedByUserId: string | null;
+    note: string | null;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RequestAccountingAccountantReviewRequest {
+  period: string;
+  year: number;
+  requestedByUserId?: string | null;
+  requestedByEmail?: string | null;
+}
+
+export interface TransitionAccountingAccountantReviewRequest {
+  status: 'requested' | 'in_review' | 'changes_requested' | 'approved' | 'rejected';
+  transitionedByUserId?: string | null;
+  note?: string | null;
+}
+
+export interface AccountingReviewResolutionPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  resolutionStatus: string;
+  review: AccountingAccountantReviewResponse | null;
+  handoff: AccountingAccountantHandoffWorkspaceResponse;
+  recommendedActions: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+  }>;
+  summary: {
+    actionCount: number;
+    readyActionCount: number;
+    blockedActionCount: number;
+    riskFlagCount: number;
+    accountantQuestionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingCloseoutCertificationReadinessResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  certificationStatus: string;
+  checks: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+    blockerCount: number;
+  }>;
+  latestAccountantReview: AccountingAccountantReviewResponse | null;
+  handoff: AccountingAccountantHandoffWorkspaceResponse;
+  resolutionPacket: AccountingReviewResolutionPacketResponse;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+    accountantReviewCount: number;
+    unresolvedResolutionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxSriVoucherEvidenceResponse {
   evidenceId: string;
   direction: string;

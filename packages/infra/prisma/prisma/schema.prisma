@@ -66,6 +66,7 @@ model Tenant {
   accountingBankStatementBatches AccountingBankStatementBatch[]
   accountingBankStatementLines AccountingBankStatementLine[]
   accountingBankReconciliationControls AccountingBankReconciliationControl[]
+  accountingAccountantReviews AccountingAccountantReview[]
   webhookEventEnvelopes WebhookEventEnvelope[]
   customers    Customer[]
   taxRates     TaxRate[]
@@ -950,6 +951,29 @@ model AccountingBankReconciliationControl {
   @@index([tenantSlug, period, occurredAt], map: "AccountingBankReconciliationControl_slug_period_idx")
   @@index([tenantId, eventType, occurredAt], map: "AccountingBankReconciliationControl_event_idx")
   @@index([tenantId, status, occurredAt], map: "AccountingBankReconciliationControl_status_idx")
+}
+
+model AccountingAccountantReview {
+  id                    String   @id
+  tenantId              String
+  tenantSlug            String
+  period                String
+  year                  Int
+  status                String
+  requestedByUserId     String?
+  requestedByEmail      String?
+  summary               String
+  questionsJson         String   @db.Text
+  riskFlagsJson         String   @db.Text
+  evidenceReferencesJson String   @db.Text
+  transitionHistoryJson String   @db.Text
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([tenantId, period, updatedAt], map: "AccountingAccountantReview_period_idx")
+  @@index([tenantSlug, period, updatedAt], map: "AccountingAccountantReview_slug_period_idx")
+  @@index([tenantId, status, updatedAt], map: "AccountingAccountantReview_status_idx")
 }
 
 model TaxComplianceAccountantReview {

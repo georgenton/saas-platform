@@ -1084,6 +1084,8 @@ product. Its current scope is intentionally operational and review-oriented:
 12. financial statement review packets, period evidence vault, and accountant
     handoff workspace as the professional review bridge before formal
     accounting work
+13. accountant review lifecycle, review resolution packets, and closeout
+    certification readiness as the final assisted-professional closeout gate
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official
@@ -1093,7 +1095,9 @@ readiness are internal operational controls with auditable review packets.
 Financial review packets, evidence vaults, and accountant handoffs package
 operational evidence for professional review; they are not formal statutory
 closure, certified bank-feed reconciliation, signed financial statements, or a
-replacement for a contador.
+replacement for a contador. Accountant review lifecycle and certification
+readiness model the handoff loop, but final certification remains an external
+professional act.
 
 ## Stage 8: Clinics products
 

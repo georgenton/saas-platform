@@ -146,13 +146,17 @@ import {
   EcuadorTaxAccountingBridgeMappingResponse,
   EcuadorTaxAccountingBridgePreviewResponse,
   EcuadorTaxAccountingBridgeSuggestedAccountsResponse,
+  EcuadorTaxAccountingBoundaryCloseoutResponse,
+  EcuadorTaxAccountingEvidenceFromFoundationResponse,
   EcuadorTaxAccountingReadinessPacketResponse,
   EcuadorTaxAccountantCollaborationPackResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxAnnexesWorkspaceResponse,
   EcuadorTaxAnnualRollupWorkspaceResponse,
+  EcuadorTaxAssistedDeclarationReviewPackV2Response,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxCommandCenterResponse,
+  EcuadorTaxCommandCenterV2Response,
   EcuadorTaxDeclarationFormCatalogResponse,
   EcuadorTaxDeclarationArtifactExportResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
@@ -3156,6 +3160,70 @@ export async function fetchEcuadorTaxCommandCenter(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/command-center?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAccountingEvidenceFromFoundation(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountingEvidenceFromFoundationResponse> {
+  return request<EcuadorTaxAccountingEvidenceFromFoundationResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accounting-evidence-from-foundation?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxCommandCenterV2(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxCommandCenterV2Response> {
+  return request<EcuadorTaxCommandCenterV2Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/command-center-v2?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAssistedDeclarationReviewPackV2(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAssistedDeclarationReviewPackV2Response> {
+  return request<EcuadorTaxAssistedDeclarationReviewPackV2Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/assisted-declaration-review-pack-v2?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}&formKey=iva`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAccountingBoundaryCloseout(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountingBoundaryCloseoutResponse> {
+  return request<EcuadorTaxAccountingBoundaryCloseoutResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accounting-boundary-closeout?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

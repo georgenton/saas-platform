@@ -4230,6 +4230,106 @@ export interface EcuadorTaxCommandCenterResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxAccountingEvidenceFromFoundationResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  evidenceSources: Array<{
+    key: string;
+    label: string;
+    status: string;
+    source: string;
+    detail: string;
+  }>;
+  summary: {
+    sourceCount: number;
+    readySourceCount: number;
+    needsReviewSourceCount: number;
+    blockedSourceCount: number;
+    accountingMappedHints: number;
+    accountingUnmappedHints: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxCommandCenterV2Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  commandStatus: string;
+  baseCommandCenter: EcuadorTaxCommandCenterResponse;
+  accountingEvidence: EcuadorTaxAccountingEvidenceFromFoundationResponse;
+  commandTiles: EcuadorTaxCommandCenterResponse['commandTiles'];
+  summary: EcuadorTaxCommandCenterResponse['summary'] & {
+    accountingReadySourceCount: number;
+    accountingBlockedSourceCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAssistedDeclarationReviewPackV2Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  commandCenter: EcuadorTaxCommandCenterV2Response;
+  accountingEvidence: EcuadorTaxAccountingEvidenceFromFoundationResponse;
+  reviewItems: Array<{
+    key: string;
+    label: string;
+    status: string;
+    owner: string;
+    evidenceRefs: string[];
+    question: string;
+  }>;
+  summary: {
+    reviewItemCount: number;
+    accountantQuestionCount: number;
+    blockedItemCount: number;
+    readyItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingBoundaryCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  boundaryStatus: string;
+  currentOperatingModel: string;
+  escalationRules: Array<{
+    key: string;
+    label: string;
+    targetProduct: string;
+    rationale: string;
+  }>;
+  backlog: Array<{
+    key: string;
+    label: string;
+    product: string;
+    priority: string;
+  }>;
+  summary: {
+    escalationRuleCount: number;
+    taxBacklogCount: number;
+    accountingAdvancedBacklogCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxAccountantCollaborationPackResponse {
   tenantSlug: string;
   period: string;

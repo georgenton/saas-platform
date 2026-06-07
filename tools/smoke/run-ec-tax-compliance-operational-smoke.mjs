@@ -189,6 +189,10 @@ const [
   annexesWorkspace,
   periodCloseoutCertification,
   commandCenter,
+  accountingEvidenceFromFoundation,
+  commandCenterV2,
+  assistedDeclarationReviewPackV2,
+  accountingBoundaryCloseout,
   accountantCollaborationPack,
   filingEvidenceVaultV2,
   exceptionCenter,
@@ -396,6 +400,28 @@ const [
   }),
   apiRequest({
     baseUrl,
+    path: taxPath(`/accounting-evidence-from-foundation?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/command-center-v2?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(
+      `/assisted-declaration-review-pack-v2?${periodQuery()}&formKey=iva`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accounting-boundary-closeout?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
     path: taxPath(`/accountant-collaboration-pack?${periodQuery()}`),
     token,
   }),
@@ -534,6 +560,19 @@ assertStatus(
   periodCloseoutCertification.certificationStatus,
 );
 assertStatus('command center', commandCenter.commandStatus);
+assertStatus(
+  'accounting evidence from foundation',
+  accountingEvidenceFromFoundation.readinessStatus,
+);
+assertStatus('command center v2', commandCenterV2.commandStatus);
+assertStatus(
+  'assisted declaration review pack v2',
+  assistedDeclarationReviewPackV2.readinessStatus,
+);
+assertStatus(
+  'accounting boundary closeout',
+  accountingBoundaryCloseout.boundaryStatus,
+);
 assertStatus(
   'accountant collaboration pack',
   accountantCollaborationPack.readinessStatus,
@@ -679,6 +718,19 @@ printLine(
   periodCloseoutCertification.certificationStatus,
 );
 printLine('command center', commandCenter.commandStatus);
+printLine(
+  'accounting evidence foundation',
+  `${accountingEvidenceFromFoundation.summary.readySourceCount}/${accountingEvidenceFromFoundation.summary.sourceCount}`,
+);
+printLine('command center v2', commandCenterV2.commandStatus);
+printLine(
+  'assisted review v2',
+  `${assistedDeclarationReviewPackV2.summary.readyItemCount}/${assistedDeclarationReviewPackV2.summary.reviewItemCount}`,
+);
+printLine(
+  'tax/accounting boundary',
+  accountingBoundaryCloseout.boundaryStatus,
+);
 printLine(
   'collaboration questions',
   accountantCollaborationPack.summary.questionCount,

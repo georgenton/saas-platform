@@ -159,16 +159,20 @@ import {
   requestAccountingOpeningBalanceApprovalPacket,
   transitionAccountingAccountantReview,
   fetchEcuadorTaxAccountantCollaborationPack,
+  fetchEcuadorTaxAccountingBoundaryCloseout,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
   fetchEcuadorTaxAccountingBridgeSuggestedAccounts,
+  fetchEcuadorTaxAccountingEvidenceFromFoundation,
   fetchEcuadorTaxAccountingReadinessPacket,
   fetchEcuadorTaxAccountantWorkbench,
   fetchEcuadorTaxAccountantReviews,
   fetchEcuadorTaxAnnexesReadiness,
   fetchEcuadorTaxAnnexesWorkspace,
   fetchEcuadorTaxAnnualRollupWorkspace,
+  fetchEcuadorTaxAssistedDeclarationReviewPackV2,
   fetchEcuadorTaxCommandCenter,
+  fetchEcuadorTaxCommandCenterV2,
   fetchEcuadorTaxDeclarationArtifactExport,
   fetchEcuadorTaxDeclarationReviewLoopWorkspace,
   fetchEcuadorTaxDeclarationSourceLedger,
@@ -655,13 +659,17 @@ import {
   EcuadorTaxAccountingBridgeMappingResponse,
   EcuadorTaxAccountingBridgePreviewResponse,
   EcuadorTaxAccountingBridgeSuggestedAccountsResponse,
+  EcuadorTaxAccountingBoundaryCloseoutResponse,
+  EcuadorTaxAccountingEvidenceFromFoundationResponse,
   EcuadorTaxAccountingReadinessPacketResponse,
   EcuadorTaxAccountantCollaborationPackResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxAnnexesWorkspaceResponse,
   EcuadorTaxAnnualRollupWorkspaceResponse,
+  EcuadorTaxAssistedDeclarationReviewPackV2Response,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxCommandCenterResponse,
+  EcuadorTaxCommandCenterV2Response,
   EcuadorTaxDeclarationArtifactExportResponse,
   EcuadorTaxDeclarationReviewLoopWorkspaceResponse,
   EcuadorTaxDeclarationSourceLedgerResponse,
@@ -2505,6 +2513,20 @@ export function App() {
   ] = useState<EcuadorTaxPeriodCloseoutCertificationResponse | null>(null);
   const [taxComplianceCommandCenter, setTaxComplianceCommandCenter] =
     useState<EcuadorTaxCommandCenterResponse | null>(null);
+  const [
+    taxComplianceAccountingEvidenceFromFoundation,
+    setTaxComplianceAccountingEvidenceFromFoundation,
+  ] = useState<EcuadorTaxAccountingEvidenceFromFoundationResponse | null>(null);
+  const [taxComplianceCommandCenterV2, setTaxComplianceCommandCenterV2] =
+    useState<EcuadorTaxCommandCenterV2Response | null>(null);
+  const [
+    taxComplianceAssistedDeclarationReviewPackV2,
+    setTaxComplianceAssistedDeclarationReviewPackV2,
+  ] = useState<EcuadorTaxAssistedDeclarationReviewPackV2Response | null>(null);
+  const [
+    taxComplianceAccountingBoundaryCloseout,
+    setTaxComplianceAccountingBoundaryCloseout,
+  ] = useState<EcuadorTaxAccountingBoundaryCloseoutResponse | null>(null);
   const [
     taxComplianceAccountantCollaborationPack,
     setTaxComplianceAccountantCollaborationPack,
@@ -19716,6 +19738,10 @@ export function App() {
         nextAnnexesWorkspace,
         nextPeriodCloseoutCertification,
         nextCommandCenter,
+        nextAccountingEvidenceFromFoundation,
+        nextCommandCenterV2,
+        nextAssistedDeclarationReviewPackV2,
+        nextAccountingBoundaryCloseout,
         nextAccountantCollaborationPack,
         nextFilingEvidenceVaultV2,
         nextExceptionCenter,
@@ -19969,6 +19995,30 @@ export function App() {
           year,
         ),
         fetchEcuadorTaxCommandCenter(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAccountingEvidenceFromFoundation(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxCommandCenterV2(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAssistedDeclarationReviewPackV2(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAccountingBoundaryCloseout(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -20384,6 +20434,16 @@ export function App() {
           nextPeriodCloseoutCertification,
         );
         setTaxComplianceCommandCenter(nextCommandCenter);
+        setTaxComplianceAccountingEvidenceFromFoundation(
+          nextAccountingEvidenceFromFoundation,
+        );
+        setTaxComplianceCommandCenterV2(nextCommandCenterV2);
+        setTaxComplianceAssistedDeclarationReviewPackV2(
+          nextAssistedDeclarationReviewPackV2,
+        );
+        setTaxComplianceAccountingBoundaryCloseout(
+          nextAccountingBoundaryCloseout,
+        );
         setTaxComplianceAccountantCollaborationPack(
           nextAccountantCollaborationPack,
         );
@@ -31915,6 +31975,129 @@ export function App() {
                             {humanizeKey(
                               taxComplianceProductCloseoutPack.recommendedNextProduct,
                             )}
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+                    {taxComplianceAccountingEvidenceFromFoundation &&
+                    taxComplianceCommandCenterV2 &&
+                    taxComplianceAssistedDeclarationReviewPackV2 &&
+                    taxComplianceAccountingBoundaryCloseout ? (
+                      <div className={styles.invoiceInlineGrid}>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Accounting evidence</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceAccountingEvidenceFromFoundation.readinessStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceAccountingEvidenceFromFoundation.readinessStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceAccountingEvidenceFromFoundation
+                                .summary.readySourceCount
+                            }
+                            /
+                            {
+                              taxComplianceAccountingEvidenceFromFoundation
+                                .summary.sourceCount
+                            }{' '}
+                            fuentes ·{' '}
+                            {
+                              taxComplianceAccountingEvidenceFromFoundation
+                                .summary.accountingUnmappedHints
+                            }{' '}
+                            hints pendientes
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Command center 2.0</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceCommandCenterV2.commandStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceCommandCenterV2.commandStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceCommandCenterV2.summary
+                                .accountingReadySourceCount
+                            }{' '}
+                            fuentes contables listas ·{' '}
+                            {
+                              taxComplianceCommandCenterV2.summary
+                                .accountingBlockedSourceCount
+                            }{' '}
+                            bloqueadas
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Review asistido V2</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceAssistedDeclarationReviewPackV2.readinessStatus,
+                              )}`}
+                            >
+                              {
+                                taxComplianceAssistedDeclarationReviewPackV2
+                                  .summary.accountantQuestionCount
+                              }{' '}
+                              preguntas
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceAssistedDeclarationReviewPackV2
+                                .summary.readyItemCount
+                            }
+                            /
+                            {
+                              taxComplianceAssistedDeclarationReviewPackV2
+                                .summary.reviewItemCount
+                            }{' '}
+                            items listos ·{' '}
+                            {
+                              taxComplianceAssistedDeclarationReviewPackV2
+                                .summary.blockedItemCount
+                            }{' '}
+                            bloqueados
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Boundary Tax/Accounting</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceAccountingBoundaryCloseout.boundaryStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceAccountingBoundaryCloseout.boundaryStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceAccountingBoundaryCloseout.summary
+                                .taxBacklogCount
+                            }{' '}
+                            tax ·{' '}
+                            {
+                              taxComplianceAccountingBoundaryCloseout.summary
+                                .accountingAdvancedBacklogCount
+                            }{' '}
+                            accounting advanced
                           </p>
                         </div>
                       </div>

@@ -33,6 +33,7 @@ export * from './lib/use-cases/get-tenant-accounting-ledger-preview-workspace.us
 export * from './lib/use-cases/get-tenant-accounting-opening-balance-workspace.use-case';
 export * from './lib/use-cases/get-tenant-accounting-opening-balance-control-registry.use-case';
 export * from './lib/use-cases/get-tenant-accounting-operational-command-center.use-case';
+export * from './lib/use-cases/get-tenant-accounting-tax-declaration-evidence-bridge.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-lock-readiness.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-reconciliation-readiness.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-cash-closeout-readiness.use-case';
@@ -54,6 +55,7 @@ export * from './lib/use-cases/request-tenant-accounting-journal-draft-approval-
 export * from './lib/use-cases/request-tenant-accounting-opening-balance-approval-packet.use-case';
 export * from './lib/use-cases/request-tenant-accounting-accountant-review.use-case';
 export * from './lib/use-cases/request-tenant-accounting-financial-statement-review-packet.use-case';
+export * from './lib/use-cases/request-tenant-accounting-foundation-closeout-pack-v2.use-case';
 export * from './lib/use-cases/request-tenant-accounting-period-closeout-packet.use-case';
 export * from './lib/use-cases/request-tenant-accounting-period-reopen-packet.use-case';
 export * from './lib/use-cases/record-tenant-accounting-bank-statement-import.use-case';
@@ -69,4 +71,5 @@ export * from './lib/use-cases/request-tenant-accounting-ai-review-assistant-pac
 export * from './lib/use-cases/request-tenant-accounting-financial-statement-final-review-packet.use-case';
 export * from './lib/use-cases/request-tenant-accounting-professional-closeout-artifact-packet.use-case';
 export * from './lib/use-cases/request-tenant-accounting-review-resolution-packet.use-case';
+export * from './lib/use-cases/request-tenant-accounting-tax-compliance-feedback-bridge.use-case';
 export * from './lib/use-cases/transition-tenant-accounting-accountant-review.use-case';

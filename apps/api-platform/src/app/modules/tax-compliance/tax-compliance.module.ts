@@ -31,12 +31,15 @@ import {
   GetTenantEcuadorTaxAccountantWorkbenchUseCase,
   GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
   GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
+  GetTenantEcuadorTaxAccountingBoundaryCloseoutUseCase,
+  GetTenantEcuadorTaxAccountingEvidenceFromFoundationUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
   GetTenantEcuadorTaxDeclarationFormCatalogUseCase,
   GetTenantEcuadorTaxDeclarationReviewLoopWorkspaceUseCase,
   GetTenantEcuadorTaxDeclarationSourceLedgerUseCase,
   GetTenantEcuadorTaxCommandCenterUseCase,
+  GetTenantEcuadorTaxCommandCenterV2UseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
   GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
   GetTenantEcuadorTaxFilingHandoffUseCase,
@@ -75,6 +78,7 @@ import {
   RequestTenantEcuadorTaxAccountantCollaborationPackUseCase,
   RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
+  RequestTenantEcuadorTaxAssistedDeclarationReviewPackV2UseCase,
   RequestTenantEcuadorTaxAiFilingAssistantPacketUseCase,
   RequestTenantEcuadorTaxDeclarationArtifactExportUseCase,
   RequestTenantEcuadorTaxGrowthReminderPacketUseCase,
@@ -1619,6 +1623,65 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
           requestTenantEcuadorTaxPeriodCloseoutReportUseCase,
           requestTenantEcuadorTaxReviewAssistantPacketUseCase,
           recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAccountingEvidenceFromFoundationUseCase,
+      inject: [
+        RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
+        RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
+        GetTenantEcuadorTaxCommandCenterUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxAccountingReadinessPacketUseCase,
+        requestTenantEcuadorTaxPeriodCloseoutReportUseCase,
+        getTenantEcuadorTaxCommandCenterUseCase,
+      ) =>
+        new GetTenantEcuadorTaxAccountingEvidenceFromFoundationUseCase(
+          requestTenantEcuadorTaxAccountingReadinessPacketUseCase,
+          requestTenantEcuadorTaxPeriodCloseoutReportUseCase,
+          getTenantEcuadorTaxCommandCenterUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxCommandCenterV2UseCase,
+      inject: [
+        GetTenantEcuadorTaxCommandCenterUseCase,
+        GetTenantEcuadorTaxAccountingEvidenceFromFoundationUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxCommandCenterUseCase,
+        getTenantEcuadorTaxAccountingEvidenceFromFoundationUseCase,
+      ) =>
+        new GetTenantEcuadorTaxCommandCenterV2UseCase(
+          getTenantEcuadorTaxCommandCenterUseCase,
+          getTenantEcuadorTaxAccountingEvidenceFromFoundationUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxAssistedDeclarationReviewPackV2UseCase,
+      inject: [
+        GetTenantEcuadorTaxCommandCenterV2UseCase,
+        GetTenantEcuadorTaxAccountingEvidenceFromFoundationUseCase,
+        RequestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxCommandCenterV2UseCase,
+        getTenantEcuadorTaxAccountingEvidenceFromFoundationUseCase,
+        requestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxAssistedDeclarationReviewPackV2UseCase(
+          getTenantEcuadorTaxCommandCenterV2UseCase,
+          getTenantEcuadorTaxAccountingEvidenceFromFoundationUseCase,
+          requestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAccountingBoundaryCloseoutUseCase,
+      inject: [GetTenantEcuadorTaxCommandCenterV2UseCase],
+      useFactory: (getTenantEcuadorTaxCommandCenterV2UseCase) =>
+        new GetTenantEcuadorTaxAccountingBoundaryCloseoutUseCase(
+          getTenantEcuadorTaxCommandCenterV2UseCase,
         ),
     },
     {

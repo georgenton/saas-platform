@@ -1137,6 +1137,29 @@ product rather than only a set of packets:
    - declares whether the MVP is complete, records smoke/docs/guardrails, and
      recommends the next product direction such as Parties 2.0 or hardening
 
+### Tax Compliance EC accounting closeout bridge
+
+The next Tax Compliance EC layer consumes the completed Accounting foundation as
+comparative evidence, not as a full statutory accounting subsystem:
+
+1. `Accounting Evidence From Foundation`
+   - gathers tax accounting readiness, period closeout report and command center
+     evidence into one source summary for declaration review
+2. `Tax Compliance Command Center 2.0`
+   - extends the command center with Accounting foundation status, accounting
+     evidence blockers and mapped/unmapped accounting hints
+3. `Assisted Declaration Review Pack 2.0`
+   - combines form draft boxes, Accounting comparative evidence and command
+     center tiles into accountant-owned review questions before filing handoff
+4. `Tax / Accounting Boundary Closeout`
+   - records which gaps remain inside Tax Compliance EC and which ones belong to
+     future `Accounting Advanced`, such as official books, certified bank feeds,
+     multi-period statements or auditor workflows
+
+Guardrail: this layer prepares, compares and explains. It still does not file
+returns automatically, pay taxes, certify financial statements, or replace the
+contador decision.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -1191,6 +1214,11 @@ product. Its current scope is intentionally operational and review-oriented:
     a derived control registry, and summarized alongside bank accounts,
     statement import profiles, bank reconciliation, financial previews, and
     closeout certification in one command surface.
+18. foundation closeout pack 2.0, Tax Compliance feedback bridge, and Tax
+    declaration evidence bridge as the final cross-product handoff layer. These
+    surfaces expose Accounting Foundation outputs as comparative tax evidence
+    without moving declaration ownership, fiscal source-of-truth ownership, or
+    statutory accounting certification into Accounting Foundation.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

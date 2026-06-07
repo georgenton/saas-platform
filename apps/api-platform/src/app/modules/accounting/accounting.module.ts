@@ -41,6 +41,7 @@ import {
   GetTenantAccountingOpeningBalanceControlRegistryUseCase,
   GetTenantAccountingOpeningBalanceWorkspaceUseCase,
   GetTenantAccountingOperationalCommandCenterUseCase,
+  GetTenantAccountingTaxDeclarationEvidenceBridgeUseCase,
   GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
@@ -65,6 +66,7 @@ import {
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
+  RequestTenantAccountingFoundationCloseoutPackV2UseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
   RecordTenantAccountingBankReconciliationControlUseCase,
@@ -77,6 +79,7 @@ import {
   RequestTenantAccountingReconciliationMatchPacketUseCase,
   RequestTenantAccountingProfessionalCloseoutArtifactPacketUseCase,
   RequestTenantAccountingReviewResolutionPacketUseCase,
+  RequestTenantAccountingTaxComplianceFeedbackBridgeUseCase,
   TransitionTenantAccountingAccountantReviewUseCase,
 } from '@saas-platform/accounting-application';
 import { PRODUCT_REPOSITORY } from '@saas-platform/catalog-application';
@@ -1141,6 +1144,37 @@ import { AccountingController } from './accounting.controller';
           getTenantAccountingBankReconciliationWorkspaceUseCase,
           getTenantAccountingCloseoutCertificationReadinessUseCase,
           getTenantAccountingFinancialStatementPreviewUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingFoundationCloseoutPackV2UseCase,
+      inject: [
+        GetTenantAccountingFoundationCloseoutSummaryUseCase,
+        GetTenantAccountingOperationalCommandCenterUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingFoundationCloseoutSummaryUseCase,
+        getTenantAccountingOperationalCommandCenterUseCase,
+      ) =>
+        new RequestTenantAccountingFoundationCloseoutPackV2UseCase(
+          getTenantAccountingFoundationCloseoutSummaryUseCase,
+          getTenantAccountingOperationalCommandCenterUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingTaxComplianceFeedbackBridgeUseCase,
+      inject: [RequestTenantAccountingFoundationCloseoutPackV2UseCase],
+      useFactory: (requestTenantAccountingFoundationCloseoutPackV2UseCase) =>
+        new RequestTenantAccountingTaxComplianceFeedbackBridgeUseCase(
+          requestTenantAccountingFoundationCloseoutPackV2UseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingTaxDeclarationEvidenceBridgeUseCase,
+      inject: [RequestTenantAccountingTaxComplianceFeedbackBridgeUseCase],
+      useFactory: (requestTenantAccountingTaxComplianceFeedbackBridgeUseCase) =>
+        new GetTenantAccountingTaxDeclarationEvidenceBridgeUseCase(
+          requestTenantAccountingTaxComplianceFeedbackBridgeUseCase,
         ),
     },
     {

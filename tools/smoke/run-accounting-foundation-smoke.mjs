@@ -1118,4 +1118,51 @@ printLine(
   `${operationalCommandCenter.summary.readyLaneCount}/${operationalCommandCenter.summary.laneCount} lanes, ${operationalCommandCenter.commandStatus}`,
 );
 
+const [
+  foundationCloseoutPackV2,
+  taxComplianceFeedbackBridge,
+  taxDeclarationEvidenceBridge,
+] = await Promise.all([
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/foundation-closeout-pack-v2?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/tax-compliance-feedback-bridge?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/tax-declaration-evidence-bridge?${periodQuery()}`),
+    token,
+  }),
+]);
+
+assertStatus(
+  'accounting foundation closeout pack v2',
+  foundationCloseoutPackV2.closeoutStatus,
+);
+assertStatus(
+  'accounting tax compliance feedback bridge',
+  taxComplianceFeedbackBridge.bridgeStatus,
+);
+assertStatus(
+  'accounting tax declaration evidence bridge',
+  taxDeclarationEvidenceBridge.evidenceStatus,
+);
+printLine(
+  'foundation pack v2',
+  `${foundationCloseoutPackV2.summary.completedCapabilityCount}/${foundationCloseoutPackV2.summary.capabilityCount} capabilities, ${foundationCloseoutPackV2.closeoutStatus}`,
+);
+printLine(
+  'tax feedback bridge',
+  `${taxComplianceFeedbackBridge.summary.usableSignalCount}/${taxComplianceFeedbackBridge.summary.signalCount} signals, ${taxComplianceFeedbackBridge.bridgeStatus}`,
+);
+printLine(
+  'tax evidence bridge',
+  `${taxDeclarationEvidenceBridge.summary.highConfidenceLineCount}/${taxDeclarationEvidenceBridge.summary.evidenceLineCount} lines, ${taxDeclarationEvidenceBridge.evidenceStatus}`,
+);
+
 printSection('Accounting foundation smoke OK');

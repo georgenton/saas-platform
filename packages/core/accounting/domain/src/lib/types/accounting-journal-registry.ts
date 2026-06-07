@@ -1501,3 +1501,203 @@ export interface TenantAccountingAuditTrailWorkspaceView {
   nextStep: string;
   guardrails: string[];
 }
+
+export interface TenantAccountingOpeningBalanceApprovalPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  approvalStatus:
+    | 'ready_for_approval'
+    | 'approved'
+    | 'needs_review'
+    | 'blocked';
+  decision: 'prepare' | 'approve' | 'reject';
+  reviewerUserId: string | null;
+  reviewerEmail: string | null;
+  note: string | null;
+  evidenceReference: string | null;
+  workspace: TenantAccountingOpeningBalanceWorkspaceView;
+  approvedLineKeys: string[];
+  rejectedLineKeys: string[];
+  checklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    detail: string;
+  }>;
+  summary: {
+    lineCount: number;
+    approvedLineCount: number;
+    rejectedLineCount: number;
+    blockedLineCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+    balanced: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingOpeningBalanceControlRegistryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  registryStatus: 'ready' | 'empty' | 'needs_review' | 'blocked';
+  latestControl: {
+    controlKey: string;
+    eventType:
+      | 'approval_prepared'
+      | 'approval_approved'
+      | 'approval_rejected'
+      | 'journal_materialized';
+    status: AccountingReadinessStatus;
+    actorEmail: string | null;
+    occurredAt: Date;
+    evidenceReference: string | null;
+    summary: string;
+  } | null;
+  controls: Array<{
+    controlKey: string;
+    eventType:
+      | 'approval_prepared'
+      | 'approval_approved'
+      | 'approval_rejected'
+      | 'journal_materialized';
+    status: AccountingReadinessStatus;
+    actorEmail: string | null;
+    occurredAt: Date;
+    evidenceReference: string | null;
+    summary: string;
+  }>;
+  approvalPacket: TenantAccountingOpeningBalanceApprovalPacketView;
+  materializedJournalEntries: TenantAccountingJournalEntryView[];
+  summary: {
+    controlCount: number;
+    approvedControlCount: number;
+    materializedEntryCount: number;
+    openingLineCount: number;
+    blockedLineCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingOpeningBalanceJournalMaterializationView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  materializationStatus: 'created' | 'already_materialized' | 'blocked';
+  approvalPacket: TenantAccountingOpeningBalanceApprovalPacketView;
+  createdEntry: TenantAccountingJournalEntryView | null;
+  existingEntries: TenantAccountingJournalEntryView[];
+  summary: {
+    createdEntryCount: number;
+    existingEntryCount: number;
+    lineCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingBankAccountRegistryWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  registryStatus: 'ready' | 'empty' | 'needs_review' | 'blocked';
+  accounts: Array<{
+    accountKey: string;
+    accountCode: string;
+    accountName: string;
+    bankName: string | null;
+    alias: string;
+    currency: string;
+    isPrimary: boolean;
+    status: 'active' | 'needs_review' | 'inactive';
+    source: 'ledger_registry' | 'bank_statement' | 'opening_balance';
+    ledgerBalanceInCents: number;
+    statementLineCount: number;
+    notes: string[];
+  }>;
+  summary: {
+    accountCount: number;
+    activeAccountCount: number;
+    needsReviewAccountCount: number;
+    primaryAccountCount: number;
+    statementLinkedAccountCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingBankStatementImportProfileWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  profileStatus: 'ready' | 'needs_review' | 'blocked';
+  profiles: Array<{
+    profileKey: string;
+    label: string;
+    source: 'manual' | 'json' | 'csv';
+    delimiter: string | null;
+    dateFormat: string;
+    columnMapping: Record<string, string>;
+    validationStatus: AccountingReadinessStatus;
+    duplicatePolicy: 'external_line_id' | 'reference_amount_date';
+    notes: string[];
+  }>;
+  recommendedProfileKey: string | null;
+  preview: TenantAccountingBankStatementImportWorkspaceView;
+  summary: {
+    profileCount: number;
+    readyProfileCount: number;
+    blockedProfileCount: number;
+    previewLineCount: number;
+    duplicateCandidateCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingOperationalCommandCenterView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  commandStatus: 'ready' | 'needs_review' | 'blocked';
+  lanes: Array<{
+    laneKey: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    blockerCount: number;
+    primaryMetric: string;
+    nextAction: string;
+  }>;
+  openingBalance: TenantAccountingOpeningBalanceControlRegistryView;
+  bankAccounts: TenantAccountingBankAccountRegistryWorkspaceView;
+  importProfiles: TenantAccountingBankStatementImportProfileWorkspaceView;
+  bankReconciliation: TenantAccountingBankReconciliationWorkspaceView;
+  closeoutCertification: TenantAccountingCloseoutCertificationReadinessView;
+  financialPreview: TenantAccountingFinancialStatementPreviewView;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}

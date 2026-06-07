@@ -19,9 +19,12 @@ import {
   ACCOUNTING_PERIOD_CONTROL_REPOSITORY,
   CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
+  CreateTenantAccountingOpeningBalanceJournalEntryUseCase,
   GetTenantAccountingAccountantHandoffWorkspaceUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
+  GetTenantAccountingBankAccountRegistryWorkspaceUseCase,
   GetTenantAccountingBankReconciliationWorkspaceUseCase,
+  GetTenantAccountingBankStatementImportProfileWorkspaceUseCase,
   GetTenantAccountingBankStatementImportWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingCloseoutCertificationReadinessUseCase,
@@ -35,7 +38,9 @@ import {
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingOpeningBalanceControlRegistryUseCase,
   GetTenantAccountingOpeningBalanceWorkspaceUseCase,
+  GetTenantAccountingOperationalCommandCenterUseCase,
   GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
@@ -54,6 +59,7 @@ import {
   LockTenantAccountingPeriodUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
+  RequestTenantAccountingOpeningBalanceApprovalPacketUseCase,
   RequestTenantAccountingAccountantReviewUseCase,
   RequestTenantAccountingAdjustmentRecommendationPacketUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
@@ -255,6 +261,50 @@ import { AccountingController } from './accounting.controller';
         ),
     },
     {
+      provide: RequestTenantAccountingOpeningBalanceApprovalPacketUseCase,
+      inject: [GetTenantAccountingOpeningBalanceWorkspaceUseCase],
+      useFactory: (getTenantAccountingOpeningBalanceWorkspaceUseCase) =>
+        new RequestTenantAccountingOpeningBalanceApprovalPacketUseCase(
+          getTenantAccountingOpeningBalanceWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: CreateTenantAccountingOpeningBalanceJournalEntryUseCase,
+      inject: [
+        RequestTenantAccountingOpeningBalanceApprovalPacketUseCase,
+        ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
+        ACCOUNTING_JOURNAL_ENTRY_ID_GENERATOR,
+        TENANT_REPOSITORY,
+      ],
+      useFactory: (
+        requestTenantAccountingOpeningBalanceApprovalPacketUseCase,
+        accountingJournalEntryRepository,
+        accountingJournalEntryIdGenerator,
+        tenantRepository,
+      ) =>
+        new CreateTenantAccountingOpeningBalanceJournalEntryUseCase(
+          requestTenantAccountingOpeningBalanceApprovalPacketUseCase,
+          accountingJournalEntryRepository,
+          accountingJournalEntryIdGenerator,
+          tenantRepository,
+        ),
+    },
+    {
+      provide: GetTenantAccountingOpeningBalanceControlRegistryUseCase,
+      inject: [
+        RequestTenantAccountingOpeningBalanceApprovalPacketUseCase,
+        ACCOUNTING_JOURNAL_ENTRY_REPOSITORY,
+      ],
+      useFactory: (
+        requestTenantAccountingOpeningBalanceApprovalPacketUseCase,
+        accountingJournalEntryRepository,
+      ) =>
+        new GetTenantAccountingOpeningBalanceControlRegistryUseCase(
+          requestTenantAccountingOpeningBalanceApprovalPacketUseCase,
+          accountingJournalEntryRepository,
+        ),
+    },
+    {
       provide: GetTenantAccountingBankStatementImportWorkspaceUseCase,
       useFactory: () =>
         new GetTenantAccountingBankStatementImportWorkspaceUseCase(),
@@ -289,6 +339,42 @@ import { AccountingController } from './accounting.controller';
       useFactory: (accountingBankStatementRepository) =>
         new ListTenantAccountingBankStatementRegistryUseCase(
           accountingBankStatementRepository,
+        ),
+    },
+    {
+      provide: GetTenantAccountingBankAccountRegistryWorkspaceUseCase,
+      inject: [
+        GetTenantAccountingLedgerRegistryWorkspaceUseCase,
+        ListTenantAccountingBankStatementRegistryUseCase,
+        GetTenantAccountingOpeningBalanceWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingLedgerRegistryWorkspaceUseCase,
+        listTenantAccountingBankStatementRegistryUseCase,
+        getTenantAccountingOpeningBalanceWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingBankAccountRegistryWorkspaceUseCase(
+          getTenantAccountingLedgerRegistryWorkspaceUseCase,
+          listTenantAccountingBankStatementRegistryUseCase,
+          getTenantAccountingOpeningBalanceWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingBankStatementImportProfileWorkspaceUseCase,
+      inject: [
+        GetTenantAccountingBankAccountRegistryWorkspaceUseCase,
+        GetTenantAccountingBankStatementImportWorkspaceUseCase,
+        ListTenantAccountingBankStatementRegistryUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingBankAccountRegistryWorkspaceUseCase,
+        getTenantAccountingBankStatementImportWorkspaceUseCase,
+        listTenantAccountingBankStatementRegistryUseCase,
+      ) =>
+        new GetTenantAccountingBankStatementImportProfileWorkspaceUseCase(
+          getTenantAccountingBankAccountRegistryWorkspaceUseCase,
+          getTenantAccountingBankStatementImportWorkspaceUseCase,
+          listTenantAccountingBankStatementRegistryUseCase,
         ),
     },
     {
@@ -1028,6 +1114,33 @@ import { AccountingController } from './accounting.controller';
           getTenantAccountingLegalBooksReadinessPacketUseCase,
           requestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
           getTenantAccountingPeriodCloseoutTimelineUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingOperationalCommandCenterUseCase,
+      inject: [
+        GetTenantAccountingOpeningBalanceControlRegistryUseCase,
+        GetTenantAccountingBankAccountRegistryWorkspaceUseCase,
+        GetTenantAccountingBankStatementImportProfileWorkspaceUseCase,
+        GetTenantAccountingBankReconciliationWorkspaceUseCase,
+        GetTenantAccountingCloseoutCertificationReadinessUseCase,
+        GetTenantAccountingFinancialStatementPreviewUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingOpeningBalanceControlRegistryUseCase,
+        getTenantAccountingBankAccountRegistryWorkspaceUseCase,
+        getTenantAccountingBankStatementImportProfileWorkspaceUseCase,
+        getTenantAccountingBankReconciliationWorkspaceUseCase,
+        getTenantAccountingCloseoutCertificationReadinessUseCase,
+        getTenantAccountingFinancialStatementPreviewUseCase,
+      ) =>
+        new GetTenantAccountingOperationalCommandCenterUseCase(
+          getTenantAccountingOpeningBalanceControlRegistryUseCase,
+          getTenantAccountingBankAccountRegistryWorkspaceUseCase,
+          getTenantAccountingBankStatementImportProfileWorkspaceUseCase,
+          getTenantAccountingBankReconciliationWorkspaceUseCase,
+          getTenantAccountingCloseoutCertificationReadinessUseCase,
+          getTenantAccountingFinancialStatementPreviewUseCase,
         ),
     },
     {

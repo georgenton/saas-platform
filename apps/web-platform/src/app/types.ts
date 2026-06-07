@@ -1881,6 +1881,113 @@ export interface AccountingOpeningBalanceWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface RequestAccountingOpeningBalanceApprovalPacketRequest {
+  period: string;
+  year: number;
+  decision: 'prepare' | 'approve' | 'reject';
+  reviewerUserId?: string | null;
+  reviewerEmail?: string | null;
+  note?: string | null;
+  evidenceReference?: string | null;
+  lineKeys?: string[];
+}
+
+export interface CreateAccountingOpeningBalanceJournalEntryRequest {
+  period: string;
+  year: number;
+  reviewerUserId?: string | null;
+  reviewerEmail?: string | null;
+  note?: string | null;
+  evidenceReference?: string | null;
+}
+
+export interface AccountingOpeningBalanceApprovalPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  approvalStatus: string;
+  decision: string;
+  reviewerUserId: string | null;
+  reviewerEmail: string | null;
+  note: string | null;
+  evidenceReference: string | null;
+  workspace: AccountingOpeningBalanceWorkspaceResponse;
+  approvedLineKeys: string[];
+  rejectedLineKeys: string[];
+  checklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    detail: string;
+  }>;
+  summary: {
+    lineCount: number;
+    approvedLineCount: number;
+    rejectedLineCount: number;
+    blockedLineCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+    balanced: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingOpeningBalanceControlRegistryResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  registryStatus: string;
+  latestControl: {
+    controlKey: string;
+    eventType: string;
+    status: string;
+    actorEmail: string | null;
+    occurredAt: string;
+    evidenceReference: string | null;
+    summary: string;
+  } | null;
+  controls: NonNullable<
+    AccountingOpeningBalanceControlRegistryResponse['latestControl']
+  >[];
+  approvalPacket: AccountingOpeningBalanceApprovalPacketResponse;
+  materializedJournalEntries: AccountingJournalEntryResponse[];
+  summary: {
+    controlCount: number;
+    approvedControlCount: number;
+    materializedEntryCount: number;
+    openingLineCount: number;
+    blockedLineCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingOpeningBalanceJournalMaterializationResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  materializationStatus: string;
+  approvalPacket: AccountingOpeningBalanceApprovalPacketResponse;
+  createdEntry: AccountingJournalEntryResponse | null;
+  existingEntries: AccountingJournalEntryResponse[];
+  summary: {
+    createdEntryCount: number;
+    existingEntryCount: number;
+    lineCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface ManageAccountingChartMappingRequest {
   period: string;
   year: number;
@@ -2288,6 +2395,69 @@ export interface AccountingBankStatementRegistryResponse {
     totalOutflowInCents: number;
     blockedBatchCount: number;
     currencyCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingBankAccountRegistryWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  registryStatus: string;
+  accounts: Array<{
+    accountKey: string;
+    accountCode: string;
+    accountName: string;
+    bankName: string | null;
+    alias: string;
+    currency: string;
+    isPrimary: boolean;
+    status: string;
+    source: string;
+    ledgerBalanceInCents: number;
+    statementLineCount: number;
+    notes: string[];
+  }>;
+  summary: {
+    accountCount: number;
+    activeAccountCount: number;
+    needsReviewAccountCount: number;
+    primaryAccountCount: number;
+    statementLinkedAccountCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingBankStatementImportProfileWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  profileStatus: string;
+  profiles: Array<{
+    profileKey: string;
+    label: string;
+    source: string;
+    delimiter: string | null;
+    dateFormat: string;
+    columnMapping: Record<string, string>;
+    validationStatus: string;
+    duplicatePolicy: string;
+    notes: string[];
+  }>;
+  recommendedProfileKey: string | null;
+  preview: AccountingBankStatementImportWorkspaceResponse;
+  summary: {
+    profileCount: number;
+    readyProfileCount: number;
+    blockedProfileCount: number;
+    previewLineCount: number;
+    duplicateCandidateCount: number;
   };
   blockers: string[];
   nextStep: string;
@@ -3422,6 +3592,38 @@ export interface AccountingFoundationCloseoutSummaryResponse {
     timelineEventCount: number;
     legalBooksReady: boolean;
     finalReviewReady: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingOperationalCommandCenterResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  commandStatus: string;
+  lanes: Array<{
+    laneKey: string;
+    label: string;
+    status: string;
+    blockerCount: number;
+    primaryMetric: string;
+    nextAction: string;
+  }>;
+  openingBalance: AccountingOpeningBalanceControlRegistryResponse;
+  bankAccounts: AccountingBankAccountRegistryWorkspaceResponse;
+  importProfiles: AccountingBankStatementImportProfileWorkspaceResponse;
+  bankReconciliation: AccountingBankReconciliationWorkspaceResponse;
+  closeoutCertification: AccountingCloseoutCertificationReadinessResponse;
+  financialPreview: AccountingFinancialStatementPreviewResponse;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+    blockerCount: number;
   };
   blockers: string[];
   nextStep: string;

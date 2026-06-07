@@ -1184,6 +1184,13 @@ product. Its current scope is intentionally operational and review-oriented:
     with reviewed balance-sheet accounts, suggested opening adjustments, and
     certification blockers before bank reconciliation, financial statements,
     or professional closeout are treated as complete
+17. opening balance approval/control/materialization, bank account registry,
+    bank import profiles, and an Accounting operational command center as the
+    next foundation hardening layer. Opening balances can now be approved by a
+    human packet, materialized into the internal journal registry, observed via
+    a derived control registry, and summarized alongside bank accounts,
+    statement import profiles, bank reconciliation, financial previews, and
+    closeout certification in one command surface.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

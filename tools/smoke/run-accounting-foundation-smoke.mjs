@@ -70,6 +70,9 @@ const [
   chartOfAccountsWorkspace,
   journalDraftPreview,
   openingBalanceWorkspace,
+  openingBalanceControlRegistry,
+  bankAccountRegistryWorkspace,
+  bankStatementImportProfileWorkspace,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -91,6 +94,23 @@ const [
     path: accountingPath(`/opening-balance-workspace?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/opening-balance-control-registry?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/bank-account-registry-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/bank-statement-import-profile-workspace?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus('intake workspace', intakeWorkspace.readinessStatus);
@@ -102,6 +122,18 @@ assertStatus('journal draft preview', journalDraftPreview.journalStatus);
 assertStatus(
   'opening balance workspace',
   openingBalanceWorkspace.openingBalanceStatus,
+);
+assertStatus(
+  'opening balance control registry',
+  openingBalanceControlRegistry.registryStatus,
+);
+assertStatus(
+  'bank account registry workspace',
+  bankAccountRegistryWorkspace.registryStatus,
+);
+assertStatus(
+  'bank statement import profiles',
+  bankStatementImportProfileWorkspace.profileStatus,
 );
 
 if (!Array.isArray(chartOfAccountsWorkspace.accounts)) {
@@ -125,7 +157,68 @@ printLine(
   'opening balances',
   `${openingBalanceWorkspace.summary.readyLineCount}/${openingBalanceWorkspace.summary.lineCount} listas, ${openingBalanceWorkspace.openingBalanceStatus}`,
 );
+printLine(
+  'opening controls',
+  `${openingBalanceControlRegistry.summary.materializedEntryCount} journals, ${openingBalanceControlRegistry.registryStatus}`,
+);
+printLine(
+  'bank accounts',
+  `${bankAccountRegistryWorkspace.summary.accountCount} cuentas, ${bankAccountRegistryWorkspace.registryStatus}`,
+);
+printLine(
+  'bank import profiles',
+  `${bankStatementImportProfileWorkspace.summary.readyProfileCount}/${bankStatementImportProfileWorkspace.summary.profileCount} listos`,
+);
 printLine('next step', journalDraftPreview.nextStep);
+
+if (
+  openingBalanceWorkspace.summary.lineCount > 0 &&
+  openingBalanceWorkspace.summary.balanced
+) {
+  const openingApproval = await apiRequest({
+    baseUrl,
+    path: accountingPath('/opening-balance-approval-packet'),
+    token,
+    method: 'POST',
+    body: {
+      period,
+      year,
+      decision: 'approve',
+      reviewerEmail: 'smoke@saas-platform.dev',
+      note: 'Smoke opening balance approval.',
+      evidenceReference: `smoke://accounting/${period}/opening-balance`,
+    },
+  });
+
+  assertStatus('opening balance approval', openingApproval.approvalStatus);
+  printLine(
+    'opening approval',
+    `${openingApproval.summary.approvedLineCount} aprobadas, ${openingApproval.approvalStatus}`,
+  );
+
+  const openingMaterialization = await apiRequest({
+    baseUrl,
+    path: accountingPath('/opening-balance-journal-entry'),
+    token,
+    method: 'POST',
+    body: {
+      period,
+      year,
+      reviewerEmail: 'smoke@saas-platform.dev',
+      note: 'Smoke opening balance materialization.',
+      evidenceReference: `smoke://accounting/${period}/opening-balance`,
+    },
+  });
+
+  assertStatus(
+    'opening balance materialization',
+    openingMaterialization.materializationStatus,
+  );
+  printLine(
+    'opening materialization',
+    `${openingMaterialization.summary.createdEntryCount} creados, ${openingMaterialization.materializationStatus}`,
+  );
+}
 
 const pendingAccounts = chartOfAccountsWorkspace.accounts.filter(
   (account) => account.mappedAccountHint && account.status !== 'mapped',
@@ -1008,6 +1101,21 @@ assertStatus(
 printLine(
   'foundation summary',
   `${foundationCloseoutSummary.summary.completedScopeCount} scopes, ${foundationCloseoutSummary.summaryStatus}`,
+);
+
+const operationalCommandCenter = await apiRequest({
+  baseUrl,
+  path: accountingPath(`/operational-command-center?${periodQuery()}`),
+  token,
+});
+
+assertStatus(
+  'accounting operational command center',
+  operationalCommandCenter.commandStatus,
+);
+printLine(
+  'command center',
+  `${operationalCommandCenter.summary.readyLaneCount}/${operationalCommandCenter.summary.laneCount} lanes, ${operationalCommandCenter.commandStatus}`,
 );
 
 printSection('Accounting foundation smoke OK');

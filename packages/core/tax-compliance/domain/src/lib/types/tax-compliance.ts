@@ -1225,6 +1225,106 @@ export interface EcuadorTaxProductCloseoutPackView {
   guardrails: string[];
 }
 
+export interface EcuadorTaxAccountingEvidenceFromFoundationView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  evidenceSources: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    source: 'tax_accounting_readiness' | 'tax_closeout_report' | 'tax_command_center';
+    detail: string;
+  }>;
+  summary: {
+    sourceCount: number;
+    readySourceCount: number;
+    needsReviewSourceCount: number;
+    blockedSourceCount: number;
+    accountingMappedHints: number;
+    accountingUnmappedHints: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxCommandCenterV2View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  commandStatus: 'blocked' | 'needs_review' | 'ready' | 'externally_filed';
+  baseCommandCenter: EcuadorTaxCommandCenterView;
+  accountingEvidence: EcuadorTaxAccountingEvidenceFromFoundationView;
+  commandTiles: EcuadorTaxCommandCenterView['commandTiles'];
+  summary: EcuadorTaxCommandCenterView['summary'] & {
+    accountingReadySourceCount: number;
+    accountingBlockedSourceCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAssistedDeclarationReviewPackV2View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  commandCenter: EcuadorTaxCommandCenterV2View;
+  accountingEvidence: EcuadorTaxAccountingEvidenceFromFoundationView;
+  reviewItems: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    owner: 'operator' | 'accountant' | 'system';
+    evidenceRefs: string[];
+    question: string;
+  }>;
+  summary: {
+    reviewItemCount: number;
+    accountantQuestionCount: number;
+    blockedItemCount: number;
+    readyItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingBoundaryCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  boundaryStatus: 'ready' | 'needs_review' | 'blocked';
+  currentOperatingModel: 'tax_compliance_plus_accounting_foundation';
+  escalationRules: Array<{
+    key: string;
+    label: string;
+    targetProduct: 'tax-compliance-ec' | 'accounting-advanced';
+    rationale: string;
+  }>;
+  backlog: Array<{
+    key: string;
+    label: string;
+    product: 'tax-compliance-ec' | 'accounting-advanced';
+    priority: EcuadorTaxReviewPriority;
+  }>;
+  summary: {
+    escalationRuleCount: number;
+    taxBacklogCount: number;
+    accountingAdvancedBacklogCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxFilingGuidePacketView {
   tenantSlug: string;
   period: string;

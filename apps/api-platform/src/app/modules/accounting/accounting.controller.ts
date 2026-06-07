@@ -35,6 +35,7 @@ import {
   GetTenantAccountingOpeningBalanceControlRegistryUseCase,
   GetTenantAccountingOpeningBalanceWorkspaceUseCase,
   GetTenantAccountingOperationalCommandCenterUseCase,
+  GetTenantAccountingTaxDeclarationEvidenceBridgeUseCase,
   GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
@@ -59,6 +60,7 @@ import {
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
+  RequestTenantAccountingFoundationCloseoutPackV2UseCase,
   RequestTenantAccountingPeriodCloseoutPacketUseCase,
   RequestTenantAccountingPeriodReopenPacketUseCase,
   RecordTenantAccountingBankReconciliationControlUseCase,
@@ -71,6 +73,7 @@ import {
   RequestTenantAccountingReconciliationMatchPacketUseCase,
   RequestTenantAccountingProfessionalCloseoutArtifactPacketUseCase,
   RequestTenantAccountingReviewResolutionPacketUseCase,
+  RequestTenantAccountingTaxComplianceFeedbackBridgeUseCase,
   TransitionTenantAccountingAccountantReviewUseCase,
 } from '@saas-platform/accounting-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
@@ -263,6 +266,14 @@ import {
   AccountingTrialBalanceWorkspaceResponseDto,
   toAccountingTrialBalanceWorkspaceResponseDto,
 } from './dto/accounting-trial-balance-workspace.response';
+import {
+  AccountingFoundationCloseoutPackV2ResponseDto,
+  AccountingTaxComplianceFeedbackBridgeResponseDto,
+  AccountingTaxDeclarationEvidenceBridgeResponseDto,
+  toAccountingFoundationCloseoutPackV2ResponseDto,
+  toAccountingTaxComplianceFeedbackBridgeResponseDto,
+  toAccountingTaxDeclarationEvidenceBridgeResponseDto,
+} from './dto/accounting-tax-bridge.response';
 
 @Controller('accounting/tenants')
 @UseGuards(
@@ -335,6 +346,9 @@ export class AccountingController {
     private readonly requestTenantAccountingFinancialStatementFinalReviewPacketUseCase: RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
     private readonly getTenantAccountingFoundationCloseoutSummaryUseCase: GetTenantAccountingFoundationCloseoutSummaryUseCase,
     private readonly getTenantAccountingOperationalCommandCenterUseCase: GetTenantAccountingOperationalCommandCenterUseCase,
+    private readonly requestTenantAccountingFoundationCloseoutPackV2UseCase: RequestTenantAccountingFoundationCloseoutPackV2UseCase,
+    private readonly requestTenantAccountingTaxComplianceFeedbackBridgeUseCase: RequestTenantAccountingTaxComplianceFeedbackBridgeUseCase,
+    private readonly getTenantAccountingTaxDeclarationEvidenceBridgeUseCase: GetTenantAccountingTaxDeclarationEvidenceBridgeUseCase,
   ) {}
 
   @Get(':slug/intake-workspace')
@@ -1895,5 +1909,56 @@ export class AccountingController {
       });
 
     return toAccountingOperationalCommandCenterResponseDto(commandCenter);
+  }
+
+  @Get(':slug/foundation-closeout-pack-v2')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFoundationCloseoutPackV2(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingFoundationCloseoutPackV2ResponseDto> {
+    const pack =
+      await this.requestTenantAccountingFoundationCloseoutPackV2UseCase.execute({
+        tenantSlug,
+        period,
+        year: Number.parseInt(year, 10),
+      });
+
+    return toAccountingFoundationCloseoutPackV2ResponseDto(pack);
+  }
+
+  @Get(':slug/tax-compliance-feedback-bridge')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getTaxComplianceFeedbackBridge(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingTaxComplianceFeedbackBridgeResponseDto> {
+    const bridge =
+      await this.requestTenantAccountingTaxComplianceFeedbackBridgeUseCase.execute({
+        tenantSlug,
+        period,
+        year: Number.parseInt(year, 10),
+      });
+
+    return toAccountingTaxComplianceFeedbackBridgeResponseDto(bridge);
+  }
+
+  @Get(':slug/tax-declaration-evidence-bridge')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getTaxDeclarationEvidenceBridge(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingTaxDeclarationEvidenceBridgeResponseDto> {
+    const bridge =
+      await this.getTenantAccountingTaxDeclarationEvidenceBridgeUseCase.execute({
+        tenantSlug,
+        period,
+        year: Number.parseInt(year, 10),
+      });
+
+    return toAccountingTaxDeclarationEvidenceBridgeResponseDto(bridge);
   }
 }

@@ -1701,3 +1701,97 @@ export interface TenantAccountingOperationalCommandCenterView {
   nextStep: string;
   guardrails: string[];
 }
+
+export interface TenantAccountingFoundationCloseoutPackV2View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: 'foundation_complete' | 'needs_review' | 'blocked';
+  foundationSummary: TenantAccountingFoundationCloseoutSummaryView;
+  commandCenter: TenantAccountingOperationalCommandCenterView;
+  completedCapabilities: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidence: string[];
+  }>;
+  productBoundary: {
+    currentProduct: 'accounting_foundation';
+    nextRecommendedProduct: 'tax_compliance_ec';
+    advancedAccountingTriggers: string[];
+  };
+  summary: {
+    capabilityCount: number;
+    readyCapabilityCount: number;
+    blockerCount: number;
+    advancedBacklogCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingTaxComplianceFeedbackBridgeView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  bridgeStatus: 'usable_for_tax' | 'needs_accountant_review' | 'blocked';
+  closeoutPack: TenantAccountingFoundationCloseoutPackV2View;
+  feedbackSignals: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    taxUse:
+      | 'declaration_evidence'
+      | 'annex_review'
+      | 'accountant_handoff'
+      | 'period_guardrail';
+    detail: string;
+  }>;
+  summary: {
+    signalCount: number;
+    usableSignalCount: number;
+    needsReviewSignalCount: number;
+    blockedSignalCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingTaxDeclarationEvidenceBridgeView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  evidenceStatus: AccountingReadinessStatus;
+  feedbackBridge: TenantAccountingTaxComplianceFeedbackBridgeView;
+  evidenceLines: Array<{
+    lineKey: string;
+    label: string;
+    source: string;
+    amountInCents: number;
+    taxUse: 'vat' | 'income_tax' | 'withholding' | 'annex' | 'review_only';
+    confidence: 'high' | 'medium' | 'review_required';
+    notes: string[];
+  }>;
+  reconciliationHints: Array<{
+    key: string;
+    label: string;
+    severity: 'normal' | 'high' | 'critical';
+    detail: string;
+  }>;
+  summary: {
+    evidenceLineCount: number;
+    highConfidenceLineCount: number;
+    reviewRequiredLineCount: number;
+    totalRevenueInCents: number;
+    totalExpenseInCents: number;
+    totalTaxInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}

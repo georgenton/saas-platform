@@ -18,6 +18,9 @@ export * from './lib/use-cases/get-tenant-ecuador-tax-annexes-workspace.use-case
 export * from './lib/use-cases/get-tenant-ecuador-tax-annual-rollup-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accounting-bridge-mapping.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accounting-bridge-suggested-accounts.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-accounting-boundary-closeout.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-accounting-evidence-from-foundation.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-command-center-v2.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-declaration-form-catalog.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-declaration-review-loop-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-declaration-source-ledger.use-case';
@@ -57,6 +60,7 @@ export * from './lib/use-cases/request-tenant-ecuador-tax-accountant-review-pack
 export * from './lib/use-cases/request-tenant-ecuador-tax-accountant-review.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-accountant-collaboration-pack.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-accounting-bridge-preview.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-assisted-declaration-review-pack-v2.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-ai-filing-assistant-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-artifact-export.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-form-draft-packet.use-case';

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.3
+
+### Patch Changes
+
+- f93fcea: Add Accounting Foundation closeout bridge surfaces and Tax Compliance EC 2.0 accounting evidence review packets.
+
 ## 0.107.2
 
 ### Patch Changes

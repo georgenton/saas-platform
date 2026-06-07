@@ -6,7 +6,9 @@ import {
   AccountingAdjustmentRecommendationPacketResponse,
   AccountingAiReviewAssistantPacketResponse,
   AccountingBankReconciliationControlRegistryResponse,
+  AccountingBankAccountRegistryWorkspaceResponse,
   AccountingBankReconciliationWorkspaceResponse,
+  AccountingBankStatementImportProfileWorkspaceResponse,
   AccountingBankStatementImportPreviewRequest,
   AccountingBankStatementImportResultResponse,
   AccountingBankStatementImportWorkspaceResponse,
@@ -21,7 +23,11 @@ import {
   AccountingJournalDraftPreviewResponse,
   AccountingLedgerRegistryWorkspaceResponse,
   AccountingLedgerPreviewWorkspaceResponse,
+  AccountingOpeningBalanceApprovalPacketResponse,
+  AccountingOpeningBalanceControlRegistryResponse,
+  AccountingOpeningBalanceJournalMaterializationResponse,
   AccountingOpeningBalanceWorkspaceResponse,
+  AccountingOperationalCommandCenterResponse,
   AccountingPeriodCloseoutPacketResponse,
   AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
@@ -53,6 +59,8 @@ import {
   AccountingTrialBalanceWorkspaceResponse,
   RequestAccountingAccountantReviewRequest,
   RequestAccountingFinancialStatementReviewPacketRequest,
+  RequestAccountingOpeningBalanceApprovalPacketRequest,
+  CreateAccountingOpeningBalanceJournalEntryRequest,
   TransitionAccountingAccountantReviewRequest,
   AiActivityFeedResponse,
   AiActionCenterResponse,
@@ -1858,6 +1866,59 @@ export async function fetchAccountingOpeningBalanceWorkspace(
   );
 }
 
+export async function requestAccountingOpeningBalanceApprovalPacket(
+  token: string,
+  tenantSlug: string,
+  input: RequestAccountingOpeningBalanceApprovalPacketRequest,
+): Promise<AccountingOpeningBalanceApprovalPacketResponse> {
+  return request<AccountingOpeningBalanceApprovalPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/opening-balance-approval-packet`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingOpeningBalanceControlRegistry(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingOpeningBalanceControlRegistryResponse> {
+  return request<AccountingOpeningBalanceControlRegistryResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/opening-balance-control-registry?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function createAccountingOpeningBalanceJournalEntry(
+  token: string,
+  tenantSlug: string,
+  input: CreateAccountingOpeningBalanceJournalEntryRequest,
+): Promise<AccountingOpeningBalanceJournalMaterializationResponse> {
+  return request<AccountingOpeningBalanceJournalMaterializationResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/opening-balance-journal-entry`,
+    {
+      body: input,
+      method: 'POST',
+      token,
+    },
+  );
+}
+
 export async function manageAccountingChartMapping(
   token: string,
   tenantSlug: string,
@@ -1953,6 +2014,44 @@ export async function fetchAccountingLedgerRegistryWorkspace(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ledger-registry-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingBankAccountRegistryWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingBankAccountRegistryWorkspaceResponse> {
+  return request<AccountingBankAccountRegistryWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/bank-account-registry-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingBankStatementImportProfileWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingBankStatementImportProfileWorkspaceResponse> {
+  return request<AccountingBankStatementImportProfileWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/bank-statement-import-profile-workspace?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {
@@ -2734,6 +2833,22 @@ export async function fetchAccountingFoundationCloseoutSummary(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/foundation-closeout-summary?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchAccountingOperationalCommandCenter(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingOperationalCommandCenterResponse> {
+  return request<AccountingOperationalCommandCenterResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/operational-command-center?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

@@ -13,9 +13,12 @@ import {
   AccountingAccountantReviewNotFoundError,
   CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
+  CreateTenantAccountingOpeningBalanceJournalEntryUseCase,
   GetTenantAccountingAccountantHandoffWorkspaceUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
+  GetTenantAccountingBankAccountRegistryWorkspaceUseCase,
   GetTenantAccountingBankReconciliationWorkspaceUseCase,
+  GetTenantAccountingBankStatementImportProfileWorkspaceUseCase,
   GetTenantAccountingBankStatementImportWorkspaceUseCase,
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingCloseoutCertificationReadinessUseCase,
@@ -29,7 +32,9 @@ import {
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingOpeningBalanceControlRegistryUseCase,
   GetTenantAccountingOpeningBalanceWorkspaceUseCase,
+  GetTenantAccountingOperationalCommandCenterUseCase,
   GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
@@ -48,6 +53,7 @@ import {
   LockTenantAccountingPeriodUseCase,
   ManageTenantAccountingChartMappingUseCase,
   RequestTenantAccountingJournalDraftApprovalPacketUseCase,
+  RequestTenantAccountingOpeningBalanceApprovalPacketUseCase,
   RequestTenantAccountingAccountantReviewUseCase,
   RequestTenantAccountingAdjustmentRecommendationPacketUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
@@ -183,6 +189,22 @@ import {
   toAccountingOpeningBalanceWorkspaceResponseDto,
 } from './dto/accounting-opening-balance-workspace.response';
 import {
+  AccountingBankAccountRegistryWorkspaceResponseDto,
+  AccountingBankStatementImportProfileWorkspaceResponseDto,
+  AccountingOpeningBalanceApprovalPacketResponseDto,
+  AccountingOpeningBalanceControlRegistryResponseDto,
+  AccountingOpeningBalanceJournalMaterializationResponseDto,
+  AccountingOperationalCommandCenterResponseDto,
+  CreateAccountingOpeningBalanceJournalEntryRequestDto,
+  RequestAccountingOpeningBalanceApprovalPacketRequestDto,
+  toAccountingBankAccountRegistryWorkspaceResponseDto,
+  toAccountingBankStatementImportProfileWorkspaceResponseDto,
+  toAccountingOpeningBalanceApprovalPacketResponseDto,
+  toAccountingOpeningBalanceControlRegistryResponseDto,
+  toAccountingOpeningBalanceJournalMaterializationResponseDto,
+  toAccountingOperationalCommandCenterResponseDto,
+} from './dto/accounting-operational-command-center.response';
+import {
   AccountingPeriodCloseoutPacketResponseDto,
   RequestAccountingPeriodCloseoutPacketRequestDto,
   toAccountingPeriodCloseoutPacketResponseDto,
@@ -256,12 +278,17 @@ export class AccountingController {
     private readonly getTenantAccountingChartOfAccountsWorkspaceUseCase: GetTenantAccountingChartOfAccountsWorkspaceUseCase,
     private readonly getTenantAccountingJournalDraftPreviewUseCase: GetTenantAccountingJournalDraftPreviewUseCase,
     private readonly getTenantAccountingOpeningBalanceWorkspaceUseCase: GetTenantAccountingOpeningBalanceWorkspaceUseCase,
+    private readonly requestTenantAccountingOpeningBalanceApprovalPacketUseCase: RequestTenantAccountingOpeningBalanceApprovalPacketUseCase,
+    private readonly getTenantAccountingOpeningBalanceControlRegistryUseCase: GetTenantAccountingOpeningBalanceControlRegistryUseCase,
+    private readonly createTenantAccountingOpeningBalanceJournalEntryUseCase: CreateTenantAccountingOpeningBalanceJournalEntryUseCase,
     private readonly manageTenantAccountingChartMappingUseCase: ManageTenantAccountingChartMappingUseCase,
     private readonly requestTenantAccountingJournalDraftApprovalPacketUseCase: RequestTenantAccountingJournalDraftApprovalPacketUseCase,
     private readonly getTenantAccountingLedgerPreviewWorkspaceUseCase: GetTenantAccountingLedgerPreviewWorkspaceUseCase,
     private readonly createTenantAccountingJournalEntriesFromApprovalUseCase: CreateTenantAccountingJournalEntriesFromApprovalUseCase,
     private readonly listTenantAccountingJournalRegistryUseCase: ListTenantAccountingJournalRegistryUseCase,
     private readonly getTenantAccountingLedgerRegistryWorkspaceUseCase: GetTenantAccountingLedgerRegistryWorkspaceUseCase,
+    private readonly getTenantAccountingBankAccountRegistryWorkspaceUseCase: GetTenantAccountingBankAccountRegistryWorkspaceUseCase,
+    private readonly getTenantAccountingBankStatementImportProfileWorkspaceUseCase: GetTenantAccountingBankStatementImportProfileWorkspaceUseCase,
     private readonly getTenantAccountingBankStatementImportWorkspaceUseCase: GetTenantAccountingBankStatementImportWorkspaceUseCase,
     private readonly recordTenantAccountingBankStatementImportUseCase: RecordTenantAccountingBankStatementImportUseCase,
     private readonly listTenantAccountingBankStatementRegistryUseCase: ListTenantAccountingBankStatementRegistryUseCase,
@@ -307,6 +334,7 @@ export class AccountingController {
     private readonly getTenantAccountingLegalBooksReadinessPacketUseCase: GetTenantAccountingLegalBooksReadinessPacketUseCase,
     private readonly requestTenantAccountingFinancialStatementFinalReviewPacketUseCase: RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
     private readonly getTenantAccountingFoundationCloseoutSummaryUseCase: GetTenantAccountingFoundationCloseoutSummaryUseCase,
+    private readonly getTenantAccountingOperationalCommandCenterUseCase: GetTenantAccountingOperationalCommandCenterUseCase,
   ) {}
 
   @Get(':slug/intake-workspace')
@@ -427,6 +455,95 @@ export class AccountingController {
         });
 
       return toAccountingOpeningBalanceWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/opening-balance-approval-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async requestOpeningBalanceApprovalPacket(
+    @Param('slug') tenantSlug: string,
+    @Body() body: RequestAccountingOpeningBalanceApprovalPacketRequestDto,
+  ): Promise<AccountingOpeningBalanceApprovalPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantAccountingOpeningBalanceApprovalPacketUseCase.execute(
+          {
+            tenantSlug,
+            period: body.period,
+            year: body.year,
+            decision: body.decision,
+            reviewerUserId: body.reviewerUserId ?? null,
+            reviewerEmail: body.reviewerEmail ?? null,
+            note: body.note ?? null,
+            evidenceReference: body.evidenceReference ?? null,
+            lineKeys: body.lineKeys,
+          },
+        );
+
+      return toAccountingOpeningBalanceApprovalPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/opening-balance-control-registry')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getOpeningBalanceControlRegistry(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingOpeningBalanceControlRegistryResponseDto> {
+    try {
+      const registry =
+        await this.getTenantAccountingOpeningBalanceControlRegistryUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingOpeningBalanceControlRegistryResponseDto(registry);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/opening-balance-journal-entry')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
+  async createOpeningBalanceJournalEntry(
+    @Param('slug') tenantSlug: string,
+    @Body() body: CreateAccountingOpeningBalanceJournalEntryRequestDto,
+  ): Promise<AccountingOpeningBalanceJournalMaterializationResponseDto> {
+    try {
+      const result =
+        await this.createTenantAccountingOpeningBalanceJournalEntryUseCase.execute(
+          {
+            tenantSlug,
+            period: body.period,
+            year: body.year,
+            reviewerUserId: body.reviewerUserId ?? null,
+            reviewerEmail: body.reviewerEmail ?? null,
+            note: body.note ?? null,
+            evidenceReference: body.evidenceReference ?? null,
+          },
+        );
+
+      return toAccountingOpeningBalanceJournalMaterializationResponseDto(result);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
@@ -563,6 +680,62 @@ export class AccountingController {
         });
 
       return toAccountingLedgerRegistryWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/bank-account-registry-workspace')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getBankAccountRegistryWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingBankAccountRegistryWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantAccountingBankAccountRegistryWorkspaceUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingBankAccountRegistryWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/bank-statement-import-profile-workspace')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getBankStatementImportProfileWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingBankStatementImportProfileWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantAccountingBankStatementImportProfileWorkspaceUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingBankStatementImportProfileWorkspaceResponseDto(
+        workspace,
+      );
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
@@ -1705,5 +1878,22 @@ export class AccountingController {
       });
 
     return toAccountingFoundationCloseoutSummaryResponseDto(summary);
+  }
+
+  @Get(':slug/operational-command-center')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getOperationalCommandCenter(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingOperationalCommandCenterResponseDto> {
+    const commandCenter =
+      await this.getTenantAccountingOperationalCommandCenterUseCase.execute({
+        tenantSlug,
+        period,
+        year: Number.parseInt(year, 10),
+      });
+
+    return toAccountingOperationalCommandCenterResponseDto(commandCenter);
   }
 }

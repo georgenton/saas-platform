@@ -105,10 +105,13 @@ import {
   executeEcuadorTaxWithholdingDraftBridge,
   fetchAccountingAccountantReviews,
   createAccountingAdjustingJournalEntry,
+  createAccountingOpeningBalanceJournalEntry,
   fetchAccountingAccountantHandoffWorkspace,
   fetchAccountingAuditTrailWorkspace,
+  fetchAccountingBankAccountRegistryWorkspace,
   fetchAccountingBankReconciliationControlRegistry,
   fetchAccountingBankReconciliationWorkspace,
+  fetchAccountingBankStatementImportProfileWorkspace,
   fetchAccountingBankStatementRegistry,
   fetchAccountingChartOfAccountsWorkspace,
   fetchAccountingFinancialStatementPreview,
@@ -123,7 +126,9 @@ import {
   fetchAccountingJournalRegistry,
   fetchAccountingLedgerRegistryWorkspace,
   fetchAccountingLedgerPreviewWorkspace,
+  fetchAccountingOpeningBalanceControlRegistry,
   fetchAccountingOpeningBalanceWorkspace,
+  fetchAccountingOperationalCommandCenter,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -151,6 +156,7 @@ import {
   requestAccountingReconciliationExceptionPacket,
   requestAccountingReconciliationExceptionResolutionPacket,
   requestAccountingReconciliationMatchPacket,
+  requestAccountingOpeningBalanceApprovalPacket,
   transitionAccountingAccountantReview,
   fetchEcuadorTaxAccountantCollaborationPack,
   fetchEcuadorTaxAccountingBridgeMapping,
@@ -418,8 +424,10 @@ import {
   AccountingAdjustmentRecommendationPacketResponse,
   AccountingAiReviewAssistantPacketResponse,
   AccountingAuditTrailWorkspaceResponse,
+  AccountingBankAccountRegistryWorkspaceResponse,
   AccountingBankReconciliationControlRegistryResponse,
   AccountingBankReconciliationWorkspaceResponse,
+  AccountingBankStatementImportProfileWorkspaceResponse,
   AccountingBankStatementImportResultResponse,
   AccountingBankStatementRegistryResponse,
   AccountingFinancialStatementPreviewResponse,
@@ -438,7 +446,11 @@ import {
   AccountingJournalDraftPreviewResponse,
   AccountingLedgerRegistryWorkspaceResponse,
   AccountingLedgerPreviewWorkspaceResponse,
+  AccountingOpeningBalanceApprovalPacketResponse,
+  AccountingOpeningBalanceControlRegistryResponse,
+  AccountingOpeningBalanceJournalMaterializationResponse,
   AccountingOpeningBalanceWorkspaceResponse,
+  AccountingOperationalCommandCenterResponse,
   AccountingPeriodCloseoutPacketResponse,
   AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
@@ -2218,6 +2230,34 @@ export function App() {
     accountingOpeningBalanceWorkspace,
     setAccountingOpeningBalanceWorkspace,
   ] = useState<AccountingOpeningBalanceWorkspaceResponse | null>(null);
+  const [
+    lastAccountingOpeningBalanceApprovalPacket,
+    setLastAccountingOpeningBalanceApprovalPacket,
+  ] = useState<AccountingOpeningBalanceApprovalPacketResponse | null>(null);
+  const [
+    accountingOpeningBalanceControlRegistry,
+    setAccountingOpeningBalanceControlRegistry,
+  ] = useState<AccountingOpeningBalanceControlRegistryResponse | null>(null);
+  const [
+    lastAccountingOpeningBalanceMaterialization,
+    setLastAccountingOpeningBalanceMaterialization,
+  ] = useState<AccountingOpeningBalanceJournalMaterializationResponse | null>(
+    null,
+  );
+  const [
+    accountingBankAccountRegistryWorkspace,
+    setAccountingBankAccountRegistryWorkspace,
+  ] = useState<AccountingBankAccountRegistryWorkspaceResponse | null>(null);
+  const [
+    accountingBankStatementImportProfileWorkspace,
+    setAccountingBankStatementImportProfileWorkspace,
+  ] = useState<AccountingBankStatementImportProfileWorkspaceResponse | null>(
+    null,
+  );
+  const [
+    accountingOperationalCommandCenter,
+    setAccountingOperationalCommandCenter,
+  ] = useState<AccountingOperationalCommandCenterResponse | null>(null);
   const [
     lastAccountingChartMappingManagement,
     setLastAccountingChartMappingManagement,
@@ -19984,6 +20024,10 @@ export function App() {
         nextAccountingChartOfAccountsWorkspace,
         nextAccountingJournalDraftPreview,
         nextAccountingOpeningBalanceWorkspace,
+        nextAccountingOpeningBalanceControlRegistry,
+        nextAccountingBankAccountRegistryWorkspace,
+        nextAccountingBankStatementImportProfileWorkspace,
+        nextAccountingOperationalCommandCenter,
         nextAccountingLedgerPreviewWorkspace,
         nextAccountingJournalRegistry,
         nextAccountingLedgerRegistryWorkspace,
@@ -20033,6 +20077,30 @@ export function App() {
               year,
             ),
             fetchAccountingOpeningBalanceWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingOpeningBalanceControlRegistry(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingBankAccountRegistryWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingBankStatementImportProfileWorkspace(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingOperationalCommandCenter(
               token,
               tenantSlug,
               taxCompliancePeriod,
@@ -20226,6 +20294,10 @@ export function App() {
             null,
             null,
             null,
+            null,
+            null,
+            null,
+            null,
             [],
             null,
             null,
@@ -20329,6 +20401,16 @@ export function App() {
         setAccountingOpeningBalanceWorkspace(
           nextAccountingOpeningBalanceWorkspace,
         );
+        setAccountingOpeningBalanceControlRegistry(
+          nextAccountingOpeningBalanceControlRegistry,
+        );
+        setAccountingBankAccountRegistryWorkspace(
+          nextAccountingBankAccountRegistryWorkspace,
+        );
+        setAccountingBankStatementImportProfileWorkspace(
+          nextAccountingBankStatementImportProfileWorkspace,
+        );
+        setAccountingOperationalCommandCenter(nextAccountingOperationalCommandCenter);
         setAccountingLedgerPreviewWorkspace(
           nextAccountingLedgerPreviewWorkspace,
         );
@@ -20953,6 +21035,115 @@ export function App() {
         error instanceof Error
           ? error.message
           : 'No se pudo solicitar approval packet contable.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleApproveAccountingOpeningBalance() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-opening-balance-approval');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const packet = await requestAccountingOpeningBalanceApprovalPacket(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          period: taxCompliancePeriod,
+          year: resolveNumericYear(taxComplianceYear),
+          decision: 'approve',
+          reviewerUserId: session?.user.id ?? null,
+          reviewerEmail: session?.user.email ?? null,
+          note: 'Opening balance approved from Accounting console.',
+          evidenceReference: `accounting://opening-balance/${taxCompliancePeriod}`,
+        },
+      );
+      const registry = await fetchAccountingOpeningBalanceControlRegistry(
+        token,
+        currentTenancy.tenant.slug,
+        taxCompliancePeriod,
+        resolveNumericYear(taxComplianceYear),
+      );
+
+      setLastAccountingOpeningBalanceApprovalPacket(packet);
+      setAccountingOpeningBalanceControlRegistry(registry);
+      setTaxComplianceActionMessage(
+        `Apertura ${humanizeKey(packet.approvalStatus)} con ${packet.summary.approvedLineCount} lineas aprobadas.`,
+      );
+    } catch (error) {
+      setLastAccountingOpeningBalanceApprovalPacket(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo aprobar saldos iniciales.',
+      );
+    } finally {
+      setTaxComplianceActionLoading(null);
+    }
+  }
+
+  async function handleCreateAccountingOpeningBalanceJournalEntry() {
+    if (!token || !currentTenancy || !accountingEnabled) {
+      return;
+    }
+
+    setTaxComplianceActionLoading('accounting-opening-balance-materialize');
+    setTaxComplianceError(null);
+    setTaxComplianceActionMessage(null);
+
+    try {
+      const result = await createAccountingOpeningBalanceJournalEntry(
+        token,
+        currentTenancy.tenant.slug,
+        {
+          period: taxCompliancePeriod,
+          year: resolveNumericYear(taxComplianceYear),
+          reviewerUserId: session?.user.id ?? null,
+          reviewerEmail: session?.user.email ?? null,
+          note: 'Opening balance materialized from Accounting console.',
+          evidenceReference: `accounting://opening-balance/${taxCompliancePeriod}`,
+        },
+      );
+      const [registry, ledger, commandCenter] = await Promise.all([
+        fetchAccountingOpeningBalanceControlRegistry(
+          token,
+          currentTenancy.tenant.slug,
+          taxCompliancePeriod,
+          resolveNumericYear(taxComplianceYear),
+        ),
+        fetchAccountingLedgerRegistryWorkspace(
+          token,
+          currentTenancy.tenant.slug,
+          taxCompliancePeriod,
+          resolveNumericYear(taxComplianceYear),
+        ),
+        fetchAccountingOperationalCommandCenter(
+          token,
+          currentTenancy.tenant.slug,
+          taxCompliancePeriod,
+          resolveNumericYear(taxComplianceYear),
+        ),
+      ]);
+
+      setLastAccountingOpeningBalanceMaterialization(result);
+      setAccountingOpeningBalanceControlRegistry(registry);
+      setAccountingLedgerRegistryWorkspace(ledger);
+      setAccountingOperationalCommandCenter(commandCenter);
+      setTaxComplianceActionMessage(
+        `Apertura ${humanizeKey(result.materializationStatus)} con ${result.summary.lineCount} lineas.`,
+      );
+    } catch (error) {
+      setLastAccountingOpeningBalanceMaterialization(null);
+      setTaxComplianceError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo materializar el asiento de apertura.',
       );
     } finally {
       setTaxComplianceActionLoading(null);
@@ -32101,6 +32292,34 @@ export function App() {
                                 className={styles.ghostButton}
                                 disabled={
                                   taxComplianceActionLoading ===
+                                    'accounting-opening-balance-approval' ||
+                                  !accountingOpeningBalanceWorkspace
+                                }
+                                onClick={() =>
+                                  void handleApproveAccountingOpeningBalance()
+                                }
+                                type="button"
+                              >
+                                Aprobar apertura
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
+                                    'accounting-opening-balance-materialize' ||
+                                  !accountingOpeningBalanceWorkspace
+                                }
+                                onClick={() =>
+                                  void handleCreateAccountingOpeningBalanceJournalEntry()
+                                }
+                                type="button"
+                              >
+                                Journal apertura
+                              </button>
+                              <button
+                                className={styles.ghostButton}
+                                disabled={
+                                  taxComplianceActionLoading ===
                                     'accounting-period-closeout-packet' ||
                                   !accountingPeriodCloseoutReadiness ||
                                   !accountingTrialBalanceWorkspace
@@ -32461,6 +32680,92 @@ export function App() {
                                 </span>
                               </div>
                             ) : null}
+                            {accountingOperationalCommandCenter ? (
+                              <div className={styles.invoiceItemCard}>
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>Accounting command center</strong>
+                                  <span
+                                    className={`${styles.statusPill} ${operationalStatusTone(
+                                      accountingOperationalCommandCenter.commandStatus,
+                                    )}`}
+                                  >
+                                    {humanizeKey(
+                                      accountingOperationalCommandCenter.commandStatus,
+                                    )}
+                                  </span>
+                                </div>
+                                <div className={styles.commercialGrid}>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>Lanes</span>
+                                    <strong>
+                                      {
+                                        accountingOperationalCommandCenter.summary
+                                          .readyLaneCount
+                                      }
+                                      /
+                                      {
+                                        accountingOperationalCommandCenter.summary
+                                          .laneCount
+                                      }
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      listas
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Bloqueos
+                                    </span>
+                                    <strong>
+                                      {
+                                        accountingOperationalCommandCenter.summary
+                                          .blockerCount
+                                      }
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      priorizados
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>Banco</span>
+                                    <strong>
+                                      {accountingBankAccountRegistryWorkspace
+                                        ? humanizeKey(
+                                            accountingBankAccountRegistryWorkspace.registryStatus,
+                                          )
+                                        : 'sin registry'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingBankAccountRegistryWorkspace
+                                        ?.summary.accountCount ?? 0}{' '}
+                                      cuentas
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Profiles
+                                    </span>
+                                    <strong>
+                                      {accountingBankStatementImportProfileWorkspace
+                                        ? humanizeKey(
+                                            accountingBankStatementImportProfileWorkspace.profileStatus,
+                                          )
+                                        : 'sin profiles'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {
+                                        accountingBankStatementImportProfileWorkspace
+                                          ?.summary.readyProfileCount ?? 0
+                                      }{' '}
+                                      listos
+                                    </span>
+                                  </div>
+                                </div>
+                                <p className={styles.muted}>
+                                  {accountingOperationalCommandCenter.nextStep}
+                                </p>
+                              </div>
+                            ) : null}
                             {accountingOpeningBalanceWorkspace ? (
                               <div className={styles.invoiceItemCard}>
                                 <div className={styles.invoiceCardHeader}>
@@ -32532,6 +32837,44 @@ export function App() {
                                         .balanced
                                         ? 'balanceado'
                                         : 'por revisar'}
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Approval
+                                    </span>
+                                    <strong>
+                                      {lastAccountingOpeningBalanceApprovalPacket
+                                        ? humanizeKey(
+                                            lastAccountingOpeningBalanceApprovalPacket.approvalStatus,
+                                          )
+                                        : 'sin approval'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {
+                                        lastAccountingOpeningBalanceApprovalPacket
+                                          ?.summary.approvedLineCount ?? 0
+                                      }{' '}
+                                      aprobadas
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Control
+                                    </span>
+                                    <strong>
+                                      {accountingOpeningBalanceControlRegistry
+                                        ? humanizeKey(
+                                            accountingOpeningBalanceControlRegistry.registryStatus,
+                                          )
+                                        : 'sin registry'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {lastAccountingOpeningBalanceMaterialization
+                                        ? humanizeKey(
+                                            lastAccountingOpeningBalanceMaterialization.materializationStatus,
+                                          )
+                                        : 'sin journal'}
                                     </span>
                                   </div>
                                 </div>

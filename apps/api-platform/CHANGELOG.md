@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.5
+
+### Patch Changes
+
+- e734585: Add Tax Compliance EC operating readiness 3.0 surfaces for evidence quality, obligation risk, accountant handoff, filing readiness, dashboard, and product closeout.
+
 ## 0.107.4
 
 ### Patch Changes

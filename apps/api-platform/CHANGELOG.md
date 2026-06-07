@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.6
+
+### Patch Changes
+
+- 22e4bb1: Add Parties 2.0 fiscal directory, role bridge, duplicate readiness, supplier/customer readiness, and closeout pack surfaces.
+
 ## 0.107.5
 
 ### Patch Changes

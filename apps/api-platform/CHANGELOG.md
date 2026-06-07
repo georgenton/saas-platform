@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.4
+
+### Patch Changes
+
+- af64a07: Add Tax Compliance EC declaration closeout 2.0 surfaces for SRI import, VAT, income tax, filing assistant, accountant escalation, and closeout.
+
 ## 0.107.3
 
 ### Patch Changes

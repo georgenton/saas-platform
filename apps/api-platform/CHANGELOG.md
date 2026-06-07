@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.0
+
+### Minor Changes
+
+- 6d5bc3a: Add Tax Compliance EC command center, accountant collaboration pack, filing evidence vault 2.0, exception center, annual rollup, and product closeout pack.
+
 ## 0.106.0
 
 ### Minor Changes

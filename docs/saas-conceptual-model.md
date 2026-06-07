@@ -608,28 +608,33 @@ blocking gap in the current implemented flow.
 
 The current platform history suggests this product order:
 
-1. `Ecommerce Closeout`
-   - status: next small closeout slice
-   - purpose: lock the Ecommerce MVP as an operator-assisted commerce control
-     layer
-   - output: documentation, diagrams, acceptance checklist and smoke narrative
-   - reason: closes the long Ecommerce build without opening a new product
-2. `Parties 2.0`
-   - status: enabling foundation
+1. `Parties 2.0`
+   - status: foundation closeout in progress
    - purpose: turn the first party directory into a stronger fiscal/customer/
      supplier foundation
-   - output: fiscal third-party profiles, customer/supplier roles, addresses,
-     contacts, duplicate handling and links back to invoicing/ecommerce
+   - output: fiscal third-party profiles, customer/supplier role bridge,
+     duplicate/merge readiness, supplier/customer declaration readiness,
+     closeout pack and smoke narrative
    - reason: `Tax Compliance EC` depends heavily on reliable third-party fiscal
      data
-3. `Tax Compliance EC`
-   - status: recommended next major product candidate
-   - purpose: cover Ecuador tax obligations like VAT, income tax, retentions,
-     period readiness, evidence and accountant review
-   - output: taxpayer profile, obligation matrix, tax period workspaces,
-     declaration preparation packets and accountant handoff
-   - reason: connects the already-built platform strengths:
-     `Invoicing`, `Ecommerce`, `Parties`, `Growth` and `AI`
+2. `Tax Compliance EC hardening`
+   - status: active product already built, next hardening candidate after
+     Parties 2.0 closeout
+   - purpose: keep improving Ecuador tax obligations like VAT, income tax,
+     retentions, period readiness, evidence quality and accountant review
+   - output: stronger SRI evidence intake, declaration artifacts, quality
+     center and accountant collaboration loops
+   - reason: now consumes `Invoicing`, `Ecommerce`, `Parties`, `Growth`, `AI`
+     and Accounting Foundation
+3. `Accounting Advanced`
+   - status: future candidate, not automatic
+   - purpose: graduate from foundation accounting only when tenants need formal
+     books, certified bank feeds, ledger-grade controls or accountant-owned
+     closeout
+   - output: official books, bank statement certification, advanced closeout
+     and professional accounting workspaces
+   - reason: should be opened only when Tax Compliance and Parties surface gaps
+     that cannot be handled by assisted tax workflows
 
 ```mermaid
 flowchart LR
@@ -646,9 +651,10 @@ flowchart LR
 
 ### Product decision
 
-`Tax Compliance EC` is the recommended next major product, but `Parties 2.0`
-should be treated as the enabling foundation either immediately before it or as
-the first phase inside it.
+`Parties 2.0` is the current enabling foundation closeout. Once its fiscal
+directory, role bridge, duplicate readiness and closeout pack are stable, the
+recommended next step is to return to `Tax Compliance EC` hardening rather than
+opening `Accounting Advanced` by default.
 
 The product should support businesses that can self-serve tax readiness, while
 also recognizing that larger or more complex taxpayers will need a human
@@ -1216,6 +1222,38 @@ accountant handoff and internal readiness certification:
 Guardrail: operating readiness is an internal control layer. It helps decide,
 prioritize and hand off, but still does not submit declarations, pay taxes, or
 certify official financial/accounting outputs.
+
+### Parties 2.0 closeout layer
+
+Parties 2.0 now becomes the shared fiscal directory foundation between
+Invoicing, Ecommerce, Tax Compliance EC and Accounting Foundation. It does not
+yet introduce independent party persistence; instead it hardens the existing
+party facade and makes the extraction path explicit.
+
+1. `Party Directory 2.0 Core`
+   - exposes a tenant-scoped fiscal directory with role, source context,
+     linked products, fiscal status and next-step guidance
+2. `Fiscal Identity and Ecuador Tax Profile`
+   - packages RUC/cedula, identification type, fiscal address, email,
+     missing-field counters and review notes for Ecuador tax readiness
+3. `Party Roles Across Products`
+   - bridges customer, supplier and lead roles back to Invoicing, Ecommerce,
+     Growth, Tax Compliance EC and Accounting Foundation
+4. `Duplicate and Merge Readiness Workspace`
+   - detects duplicate candidates by taxpayer ID, email and normalized display
+     name, suggests a survivor, and keeps merge execution out of scope
+5. `Supplier and Customer Fiscal Readiness`
+   - separates customer/supplier readiness for invoicing and declaration
+     evidence without assuming that every party participates in every period
+6. `Parties 2.0 Product Closeout Pack`
+   - combines the five workspaces into an acceptance checklist and recommends
+     either Tax Compliance hardening or Accounting Advanced discovery
+
+The next product decision should read this closeout as a gate. If identity,
+duplicates and supplier/customer readiness are clean, continue hardening Tax
+Compliance EC. If the closeout repeatedly shows needs around formal books,
+certified bank feeds or accountant-owned closeout, open Accounting Advanced
+discovery.
 
 ### Future accounting graduation
 

@@ -57,6 +57,12 @@ import {
   AccountingProfessionalCloseoutWorkspaceResponse,
   AccountingAuditTrailWorkspaceResponse,
   AccountingTrialBalanceWorkspaceResponse,
+  PartiesProductCloseoutPackResponse,
+  PartyDirectoryCoreV2WorkspaceResponse,
+  PartyDuplicateMergeReadinessWorkspaceResponse,
+  PartyFiscalIdentityProfileWorkspaceResponse,
+  PartyProductRoleBridgeWorkspaceResponse,
+  PartySupplierCustomerFiscalReadinessWorkspaceResponse,
   RequestAccountingAccountantReviewRequest,
   RequestAccountingFinancialStatementReviewPacketRequest,
   RequestAccountingOpeningBalanceApprovalPacketRequest,
@@ -1277,6 +1283,90 @@ export async function fetchEcuadorTaxSupplierFiscalReadinessWorkspace(
     )}&year=${encodeURIComponent(String(year))}`,
     {
       method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPartyDirectoryCoreV2Workspace(
+  token: string,
+  tenantSlug: string,
+): Promise<PartyDirectoryCoreV2WorkspaceResponse> {
+  return request<PartyDirectoryCoreV2WorkspaceResponse>(
+    `/parties/tenants/${encodeURIComponent(tenantSlug)}/directory-core-v2`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPartyFiscalIdentityProfileWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<PartyFiscalIdentityProfileWorkspaceResponse> {
+  return request<PartyFiscalIdentityProfileWorkspaceResponse>(
+    `/parties/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/fiscal-identity-profile`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPartyProductRoleBridgeWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<PartyProductRoleBridgeWorkspaceResponse> {
+  return request<PartyProductRoleBridgeWorkspaceResponse>(
+    `/parties/tenants/${encodeURIComponent(tenantSlug)}/product-role-bridge`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPartyDuplicateMergeReadinessWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<PartyDuplicateMergeReadinessWorkspaceResponse> {
+  return request<PartyDuplicateMergeReadinessWorkspaceResponse>(
+    `/parties/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/duplicate-merge-readiness`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPartySupplierCustomerFiscalReadinessWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<PartySupplierCustomerFiscalReadinessWorkspaceResponse> {
+  return request<PartySupplierCustomerFiscalReadinessWorkspaceResponse>(
+    `/parties/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/supplier-customer-fiscal-readiness`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestPartiesProductCloseoutPack(
+  token: string,
+  tenantSlug: string,
+): Promise<PartiesProductCloseoutPackResponse> {
+  return request<PartiesProductCloseoutPackResponse>(
+    `/parties/tenants/${encodeURIComponent(tenantSlug)}/product-closeout-pack`,
+    {
+      method: 'POST',
       token,
     },
   );

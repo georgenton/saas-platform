@@ -10,11 +10,17 @@ import { CUSTOMER_REPOSITORY } from '@saas-platform/invoicing-application';
 import {
   ApplyTenantPartyFiscalCorrectionUseCase,
   GetTenantPartyByIdUseCase,
+  GetTenantPartyDirectoryCoreV2WorkspaceUseCase,
+  GetTenantPartyDuplicateMergeReadinessWorkspaceUseCase,
   GetTenantPartyFiscalCleanupPacketUseCase,
   GetTenantPartyFiscalCleanupWorkspaceUseCase,
+  GetTenantPartyFiscalIdentityProfileWorkspaceUseCase,
   GetTenantPartyFiscalReadinessSummaryUseCase,
+  GetTenantPartyProductRoleBridgeWorkspaceUseCase,
+  GetTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase,
   ListTenantPartiesUseCase,
   PARTY_DIRECTORY_REPOSITORY,
+  RequestTenantPartiesProductCloseoutPackUseCase,
 } from '@saas-platform/parties-application';
 import {
   CatalogPersistenceModule,
@@ -112,6 +118,84 @@ import { PartiesController } from './parties.controller';
         ),
     },
     {
+      provide: GetTenantPartyDirectoryCoreV2WorkspaceUseCase,
+      inject: [
+        ListTenantPartiesUseCase,
+        GetTenantPartyFiscalReadinessSummaryUseCase,
+      ],
+      useFactory: (
+        listTenantPartiesUseCase,
+        getTenantPartyFiscalReadinessSummaryUseCase,
+      ) =>
+        new GetTenantPartyDirectoryCoreV2WorkspaceUseCase(
+          listTenantPartiesUseCase,
+          getTenantPartyFiscalReadinessSummaryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantPartyFiscalIdentityProfileWorkspaceUseCase,
+      inject: [
+        ListTenantPartiesUseCase,
+        GetTenantPartyFiscalReadinessSummaryUseCase,
+      ],
+      useFactory: (
+        listTenantPartiesUseCase,
+        getTenantPartyFiscalReadinessSummaryUseCase,
+      ) =>
+        new GetTenantPartyFiscalIdentityProfileWorkspaceUseCase(
+          listTenantPartiesUseCase,
+          getTenantPartyFiscalReadinessSummaryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantPartyProductRoleBridgeWorkspaceUseCase,
+      inject: [ListTenantPartiesUseCase],
+      useFactory: (listTenantPartiesUseCase) =>
+        new GetTenantPartyProductRoleBridgeWorkspaceUseCase(
+          listTenantPartiesUseCase,
+        ),
+    },
+    {
+      provide: GetTenantPartyDuplicateMergeReadinessWorkspaceUseCase,
+      inject: [ListTenantPartiesUseCase],
+      useFactory: (listTenantPartiesUseCase) =>
+        new GetTenantPartyDuplicateMergeReadinessWorkspaceUseCase(
+          listTenantPartiesUseCase,
+        ),
+    },
+    {
+      provide: GetTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase,
+      inject: [ListTenantPartiesUseCase],
+      useFactory: (listTenantPartiesUseCase) =>
+        new GetTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase(
+          listTenantPartiesUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantPartiesProductCloseoutPackUseCase,
+      inject: [
+        GetTenantPartyDirectoryCoreV2WorkspaceUseCase,
+        GetTenantPartyFiscalIdentityProfileWorkspaceUseCase,
+        GetTenantPartyProductRoleBridgeWorkspaceUseCase,
+        GetTenantPartyDuplicateMergeReadinessWorkspaceUseCase,
+        GetTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantPartyDirectoryCoreV2WorkspaceUseCase,
+        getTenantPartyFiscalIdentityProfileWorkspaceUseCase,
+        getTenantPartyProductRoleBridgeWorkspaceUseCase,
+        getTenantPartyDuplicateMergeReadinessWorkspaceUseCase,
+        getTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase,
+      ) =>
+        new RequestTenantPartiesProductCloseoutPackUseCase(
+          getTenantPartyDirectoryCoreV2WorkspaceUseCase,
+          getTenantPartyFiscalIdentityProfileWorkspaceUseCase,
+          getTenantPartyProductRoleBridgeWorkspaceUseCase,
+          getTenantPartyDuplicateMergeReadinessWorkspaceUseCase,
+          getTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase,
+        ),
+    },
+    {
       provide: ListTenantEnabledProductsUseCase,
       inject: [
         TENANT_REPOSITORY,
@@ -145,7 +229,10 @@ import { PartiesController } from './parties.controller';
       provide: ResolveTenantAccessUseCase,
       inject: [TENANT_REPOSITORY, TENANT_ACCESS_REPOSITORY],
       useFactory: (tenantRepository, tenantAccessRepository) =>
-        new ResolveTenantAccessUseCase(tenantRepository, tenantAccessRepository),
+        new ResolveTenantAccessUseCase(
+          tenantRepository,
+          tenantAccessRepository,
+        ),
     },
     TenantMembershipGuard,
     TenantPermissionGuard,

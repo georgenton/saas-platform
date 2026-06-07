@@ -1,9 +1,16 @@
 import {
+  PartiesProductCloseoutPack,
   Party,
   PartyFiscalCorrectionResult,
   PartyFiscalCleanupPacket,
   PartyFiscalCleanupWorkspace,
   PartyFiscalReadinessSummary,
+  PartyDirectoryCoreV2Workspace,
+  PartyDirectoryV2Snapshot,
+  PartyDuplicateMergeReadinessWorkspace,
+  PartyFiscalIdentityProfileWorkspace,
+  PartyProductRoleBridgeWorkspace,
+  PartySupplierCustomerFiscalReadinessWorkspace,
 } from '@saas-platform/parties-domain';
 
 export interface PartyResponseDto {
@@ -158,6 +165,48 @@ export interface PartyFiscalCorrectionResultResponseDto {
   guardrails: string[];
 }
 
+type PartyDirectoryV2SnapshotResponseDto = Omit<
+  PartyDirectoryV2Snapshot,
+  'updatedAt'
+> & { updatedAt: string };
+
+export type PartyDirectoryCoreV2WorkspaceResponseDto = Omit<
+  PartyDirectoryCoreV2Workspace,
+  'generatedAt' | 'parties'
+> & {
+  generatedAt: string;
+  parties: PartyDirectoryV2SnapshotResponseDto[];
+};
+
+export type PartyFiscalIdentityProfileWorkspaceResponseDto = Omit<
+  PartyFiscalIdentityProfileWorkspace,
+  'generatedAt'
+> & { generatedAt: string };
+
+export type PartyProductRoleBridgeWorkspaceResponseDto = Omit<
+  PartyProductRoleBridgeWorkspace,
+  'generatedAt'
+> & { generatedAt: string };
+
+export type PartyDuplicateMergeReadinessWorkspaceResponseDto = Omit<
+  PartyDuplicateMergeReadinessWorkspace,
+  'generatedAt'
+> & { generatedAt: string };
+
+export type PartySupplierCustomerFiscalReadinessWorkspaceResponseDto = Omit<
+  PartySupplierCustomerFiscalReadinessWorkspace,
+  'generatedAt' | 'customerReadiness' | 'supplierReadiness'
+> & {
+  generatedAt: string;
+  customerReadiness: PartyDirectoryV2SnapshotResponseDto[];
+  supplierReadiness: PartyDirectoryV2SnapshotResponseDto[];
+};
+
+export type PartiesProductCloseoutPackResponseDto = Omit<
+  PartiesProductCloseoutPack,
+  'generatedAt'
+> & { generatedAt: string };
+
 export const toPartyResponseDto = (party: Party): PartyResponseDto => {
   const data = party.toPrimitives();
 
@@ -291,4 +340,107 @@ export const toPartyFiscalCorrectionResultResponseDto = (
   reviewNotes: [...result.reviewNotes],
   nextStep: result.nextStep,
   guardrails: [...result.guardrails],
+});
+
+const toPartyDirectoryV2SnapshotResponseDto = (
+  party: PartyDirectoryV2Snapshot,
+): PartyDirectoryV2SnapshotResponseDto => ({
+  ...party,
+  roles: [...party.roles],
+  missingFields: [...party.missingFields],
+  reviewNotes: [...party.reviewNotes],
+  linkedProducts: [...party.linkedProducts],
+  updatedAt: party.updatedAt.toISOString(),
+});
+
+export const toPartyDirectoryCoreV2WorkspaceResponseDto = (
+  workspace: PartyDirectoryCoreV2Workspace,
+): PartyDirectoryCoreV2WorkspaceResponseDto => ({
+  ...workspace,
+  generatedAt: workspace.generatedAt.toISOString(),
+  summary: { ...workspace.summary },
+  parties: workspace.parties.map((party) =>
+    toPartyDirectoryV2SnapshotResponseDto(party),
+  ),
+  guardrails: [...workspace.guardrails],
+});
+
+export const toPartyFiscalIdentityProfileWorkspaceResponseDto = (
+  workspace: PartyFiscalIdentityProfileWorkspace,
+): PartyFiscalIdentityProfileWorkspaceResponseDto => ({
+  ...workspace,
+  generatedAt: workspace.generatedAt.toISOString(),
+  summary: { ...workspace.summary },
+  profiles: workspace.profiles.map((profile) => ({
+    ...profile,
+    missingFields: [...profile.missingFields],
+    reviewNotes: [...profile.reviewNotes],
+  })),
+  issueSummaries: workspace.issueSummaries.map((issueSummary) => ({
+    ...issueSummary,
+  })),
+  guardrails: [...workspace.guardrails],
+});
+
+export const toPartyProductRoleBridgeWorkspaceResponseDto = (
+  workspace: PartyProductRoleBridgeWorkspace,
+): PartyProductRoleBridgeWorkspaceResponseDto => ({
+  ...workspace,
+  generatedAt: workspace.generatedAt.toISOString(),
+  roleSummaries: workspace.roleSummaries.map((summary) => ({
+    ...summary,
+    linkedProducts: [...summary.linkedProducts],
+  })),
+  productLinks: workspace.productLinks.map((link) => ({
+    ...link,
+    partyIds: [...link.partyIds],
+  })),
+  guardrails: [...workspace.guardrails],
+});
+
+export const toPartyDuplicateMergeReadinessWorkspaceResponseDto = (
+  workspace: PartyDuplicateMergeReadinessWorkspace,
+): PartyDuplicateMergeReadinessWorkspaceResponseDto => ({
+  ...workspace,
+  generatedAt: workspace.generatedAt.toISOString(),
+  summary: { ...workspace.summary },
+  duplicateGroups: workspace.duplicateGroups.map((group) => ({
+    ...group,
+    partyIds: [...group.partyIds],
+    displayNames: [...group.displayNames],
+    checklist: [...group.checklist],
+  })),
+  guardrails: [...workspace.guardrails],
+});
+
+export const toPartySupplierCustomerFiscalReadinessWorkspaceResponseDto = (
+  workspace: PartySupplierCustomerFiscalReadinessWorkspace,
+): PartySupplierCustomerFiscalReadinessWorkspaceResponseDto => ({
+  ...workspace,
+  generatedAt: workspace.generatedAt.toISOString(),
+  summary: { ...workspace.summary },
+  customerReadiness: workspace.customerReadiness.map((party) =>
+    toPartyDirectoryV2SnapshotResponseDto(party),
+  ),
+  supplierReadiness: workspace.supplierReadiness.map((party) =>
+    toPartyDirectoryV2SnapshotResponseDto(party),
+  ),
+  guardrails: [...workspace.guardrails],
+});
+
+export const toPartiesProductCloseoutPackResponseDto = (
+  pack: PartiesProductCloseoutPack,
+): PartiesProductCloseoutPackResponseDto => ({
+  ...pack,
+  generatedAt: pack.generatedAt.toISOString(),
+  directoryCore: { ...pack.directoryCore },
+  fiscalIdentity: { ...pack.fiscalIdentity },
+  productRoleBridge: pack.productRoleBridge.map((summary) => ({
+    ...summary,
+    linkedProducts: [...summary.linkedProducts],
+  })),
+  duplicateMerge: { ...pack.duplicateMerge },
+  supplierCustomerReadiness: { ...pack.supplierCustomerReadiness },
+  acceptanceChecklist: pack.acceptanceChecklist.map((item) => ({ ...item })),
+  guardrails: [...pack.guardrails],
 });

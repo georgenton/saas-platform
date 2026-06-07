@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
+  GetTenantEcuadorTaxAccountantEscalationServiceBoundaryUseCase,
   GetTenantEcuadorTaxAnnexesReadinessUseCase,
   GetTenantEcuadorTaxAnnexesWorkspaceUseCase,
   GetTenantEcuadorTaxAnnualRollupWorkspaceUseCase,
@@ -32,6 +33,7 @@ import {
   GetTenantEcuadorTaxFormMappingCatalogUseCase,
   GetTenantEcuadorTaxFilingEvidenceVaultV2UseCase,
   GetTenantEcuadorTaxIncomeTaxEvidenceWorkspaceUseCase,
+  GetTenantEcuadorTaxIncomeTaxEvidenceWorkspaceV2UseCase,
   GetTenantEcuadorTaxIncomeTaxFormContractWorkspaceUseCase,
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxObligationMatrixV2WorkspaceUseCase,
@@ -47,8 +49,10 @@ import {
   GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
   GetTenantEcuadorTaxSriEvidenceIntakeV2WorkspaceUseCase,
   GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
+  GetTenantEcuadorTaxSriSourceImportCenterV2UseCase,
   GetTenantEcuadorTaxVatDeclarationApprovalUseCase,
   GetTenantEcuadorTaxVatDeclarationDraftWorkspaceUseCase,
+  GetTenantEcuadorTaxVatDeclarationWorkspaceV2UseCase,
   GetTenantEcuadorTaxVatFormContractWorkspaceUseCase,
   GetTenantEcuadorTaxpayerProfileUseCase,
   GetTenantEcuadorTaxWithholdingRegistryUseCase,
@@ -70,10 +74,12 @@ import {
   RequestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
   RequestTenantEcuadorTaxDeclarationDraftPacketUseCase,
   RequestTenantEcuadorTaxFilingGuidePacketUseCase,
+  RequestTenantEcuadorTaxFilingAssistantV2UseCase,
   RequestTenantEcuadorTaxIncomeTaxEvidencePacketUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+  RequestTenantEcuadorTaxComplianceCloseoutV2UseCase,
   RequestTenantEcuadorTaxProductCloseoutPackUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
   RequestTenantEcuadorTaxReviewAssistantPacketUseCase,
@@ -248,6 +254,20 @@ import {
   toEcuadorTaxAssistedDeclarationReviewPackV2ResponseDto,
   toEcuadorTaxCommandCenterV2ResponseDto,
 } from './dto/ecuador-tax-accounting-closeout.response';
+import {
+  EcuadorTaxAccountantEscalationServiceBoundaryResponseDto,
+  EcuadorTaxComplianceCloseoutV2ResponseDto,
+  EcuadorTaxFilingAssistantV2ResponseDto,
+  EcuadorTaxIncomeTaxEvidenceWorkspaceV2ResponseDto,
+  EcuadorTaxSriSourceImportCenterV2ResponseDto,
+  EcuadorTaxVatDeclarationWorkspaceV2ResponseDto,
+  toEcuadorTaxAccountantEscalationServiceBoundaryResponseDto,
+  toEcuadorTaxComplianceCloseoutV2ResponseDto,
+  toEcuadorTaxFilingAssistantV2ResponseDto,
+  toEcuadorTaxIncomeTaxEvidenceWorkspaceV2ResponseDto,
+  toEcuadorTaxSriSourceImportCenterV2ResponseDto,
+  toEcuadorTaxVatDeclarationWorkspaceV2ResponseDto,
+} from './dto/ecuador-tax-declaration-closeout-v2.response';
 
 type TenantAccessContext = {
   tenantSlug?: string;
@@ -483,6 +503,12 @@ export class TaxComplianceController {
     private readonly getTenantEcuadorTaxCommandCenterV2UseCase: GetTenantEcuadorTaxCommandCenterV2UseCase,
     private readonly requestTenantEcuadorTaxAssistedDeclarationReviewPackV2UseCase: RequestTenantEcuadorTaxAssistedDeclarationReviewPackV2UseCase,
     private readonly getTenantEcuadorTaxAccountingBoundaryCloseoutUseCase: GetTenantEcuadorTaxAccountingBoundaryCloseoutUseCase,
+    private readonly getTenantEcuadorTaxSriSourceImportCenterV2UseCase: GetTenantEcuadorTaxSriSourceImportCenterV2UseCase,
+    private readonly getTenantEcuadorTaxVatDeclarationWorkspaceV2UseCase: GetTenantEcuadorTaxVatDeclarationWorkspaceV2UseCase,
+    private readonly getTenantEcuadorTaxIncomeTaxEvidenceWorkspaceV2UseCase: GetTenantEcuadorTaxIncomeTaxEvidenceWorkspaceV2UseCase,
+    private readonly requestTenantEcuadorTaxFilingAssistantV2UseCase: RequestTenantEcuadorTaxFilingAssistantV2UseCase,
+    private readonly getTenantEcuadorTaxAccountantEscalationServiceBoundaryUseCase: GetTenantEcuadorTaxAccountantEscalationServiceBoundaryUseCase,
+    private readonly requestTenantEcuadorTaxComplianceCloseoutV2UseCase: RequestTenantEcuadorTaxComplianceCloseoutV2UseCase,
   ) {}
 
   @Get(':slug/ec/taxpayer-profile')
@@ -2312,6 +2338,170 @@ export class TaxComplianceController {
         );
 
       return toEcuadorTaxAccountingBoundaryCloseoutResponseDto(closeout);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/sri-source-import-center-v2')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getSriSourceImportCenterV2(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxSriSourceImportCenterV2ResponseDto> {
+    try {
+      const center =
+        await this.getTenantEcuadorTaxSriSourceImportCenterV2UseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxSriSourceImportCenterV2ResponseDto(center);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/vat-declaration-workspace-v2')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getVatDeclarationWorkspaceV2(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxVatDeclarationWorkspaceV2ResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantEcuadorTaxVatDeclarationWorkspaceV2UseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxVatDeclarationWorkspaceV2ResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/income-tax-evidence-workspace-v2')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getIncomeTaxEvidenceWorkspaceV2(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxIncomeTaxEvidenceWorkspaceV2ResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantEcuadorTaxIncomeTaxEvidenceWorkspaceV2UseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period,
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxIncomeTaxEvidenceWorkspaceV2ResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/filing-assistant-v2')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getFilingAssistantV2(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @Query('formKey') formKey?: EcuadorTaxDeclarationFormKey,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxFilingAssistantV2ResponseDto> {
+    try {
+      const assistant =
+        await this.requestTenantEcuadorTaxFilingAssistantV2UseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+          formKey,
+        });
+
+      return toEcuadorTaxFilingAssistantV2ResponseDto(assistant);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/accountant-escalation-service-boundary')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getAccountantEscalationServiceBoundary(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountantEscalationServiceBoundaryResponseDto> {
+    try {
+      const boundary =
+        await this.getTenantEcuadorTaxAccountantEscalationServiceBoundaryUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period,
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxAccountantEscalationServiceBoundaryResponseDto(
+        boundary,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/compliance-closeout-v2')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getComplianceCloseoutV2(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxComplianceCloseoutV2ResponseDto> {
+    try {
+      const closeout =
+        await this.requestTenantEcuadorTaxComplianceCloseoutV2UseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period,
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxComplianceCloseoutV2ResponseDto(closeout);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

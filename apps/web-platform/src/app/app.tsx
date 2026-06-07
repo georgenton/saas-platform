@@ -159,6 +159,7 @@ import {
   requestAccountingOpeningBalanceApprovalPacket,
   transitionAccountingAccountantReview,
   fetchEcuadorTaxAccountantCollaborationPack,
+  fetchEcuadorTaxAccountantEscalationServiceBoundary,
   fetchEcuadorTaxAccountingBoundaryCloseout,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
@@ -171,6 +172,7 @@ import {
   fetchEcuadorTaxAnnexesWorkspace,
   fetchEcuadorTaxAnnualRollupWorkspace,
   fetchEcuadorTaxAssistedDeclarationReviewPackV2,
+  fetchEcuadorTaxComplianceCloseoutV2,
   fetchEcuadorTaxCommandCenter,
   fetchEcuadorTaxCommandCenterV2,
   fetchEcuadorTaxDeclarationArtifactExport,
@@ -185,9 +187,11 @@ import {
   fetchEcuadorTaxFilingEvidenceVaultV2,
   fetchEcuadorTaxFilingHandoff,
   fetchEcuadorTaxFilingGuidePacket,
+  fetchEcuadorTaxFilingAssistantV2,
   fetchEcuadorTaxFormMappingCatalog,
   fetchEcuadorTaxGrowthReminderPacket,
   fetchEcuadorTaxIncomeTaxEvidenceWorkspace,
+  fetchEcuadorTaxIncomeTaxEvidenceWorkspaceV2,
   fetchEcuadorTaxIncomeTaxFormContractWorkspace,
   fetchEcuadorTaxIncomeTaxEvidencePacket,
   fetchEcuadorTaxObligationMatrixV2Workspace,
@@ -207,11 +211,13 @@ import {
   fetchEcuadorTaxSriFiscalEvidenceWorkspace,
   fetchEcuadorTaxSriEvidenceIntakeV2Workspace,
   fetchEcuadorTaxSriPlatformReconciliationWorkspace,
+  fetchEcuadorTaxSriSourceImportCenterV2,
   fetchEcuadorTaxSupplierFiscalReadinessWorkspace,
   fetchEcuadorTaxAiFilingAssistantPacket,
   fetchEcuadorTaxVatDeclarationReadinessPacket,
   fetchEcuadorTaxVatFormContractWorkspace,
   fetchEcuadorTaxVatDeclarationDraftWorkspace,
+  fetchEcuadorTaxVatDeclarationWorkspaceV2,
   fetchEcuadorTaxVatDeclarationDraft,
   fetchEcuadorTaxVatDeclarationApproval,
   fetchEcuadorTaxVatInputOutputReconciliationPacket,
@@ -662,11 +668,13 @@ import {
   EcuadorTaxAccountingBoundaryCloseoutResponse,
   EcuadorTaxAccountingEvidenceFromFoundationResponse,
   EcuadorTaxAccountingReadinessPacketResponse,
+  EcuadorTaxAccountantEscalationServiceBoundaryResponse,
   EcuadorTaxAccountantCollaborationPackResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxAnnexesWorkspaceResponse,
   EcuadorTaxAnnualRollupWorkspaceResponse,
   EcuadorTaxAssistedDeclarationReviewPackV2Response,
+  EcuadorTaxComplianceCloseoutV2Response,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxCommandCenterResponse,
   EcuadorTaxCommandCenterV2Response,
@@ -682,9 +690,11 @@ import {
   EcuadorTaxFilingEvidenceVaultV2Response,
   EcuadorTaxFilingHandoffResponse,
   EcuadorTaxFilingGuidePacketResponse,
+  EcuadorTaxFilingAssistantV2Response,
   EcuadorTaxFormMappingCatalogResponse,
   EcuadorTaxGrowthReminderPacketResponse,
   EcuadorTaxIncomeTaxEvidenceWorkspaceResponse,
+  EcuadorTaxIncomeTaxEvidenceWorkspaceV2Response,
   EcuadorTaxIncomeTaxFormContractWorkspaceResponse,
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
@@ -704,8 +714,10 @@ import {
   EcuadorTaxSriFiscalEvidenceWorkspaceResponse,
   EcuadorTaxSriEvidenceIntakeV2WorkspaceResponse,
   EcuadorTaxSriPlatformReconciliationWorkspaceResponse,
+  EcuadorTaxSriSourceImportCenterV2Response,
   EcuadorTaxSupplierFiscalReadinessWorkspaceResponse,
   EcuadorTaxVatDeclarationDraftWorkspaceResponse,
+  EcuadorTaxVatDeclarationWorkspaceV2Response,
   EcuadorTaxVatFormContractWorkspaceResponse,
   EcuadorTaxVatDeclarationReadinessPacketResponse,
   EcuadorTaxVatDeclarationDraftResponse,
@@ -2527,6 +2539,33 @@ export function App() {
     taxComplianceAccountingBoundaryCloseout,
     setTaxComplianceAccountingBoundaryCloseout,
   ] = useState<EcuadorTaxAccountingBoundaryCloseoutResponse | null>(null);
+  const [
+    taxComplianceSriSourceImportCenterV2,
+    setTaxComplianceSriSourceImportCenterV2,
+  ] = useState<EcuadorTaxSriSourceImportCenterV2Response | null>(null);
+  const [
+    taxComplianceVatDeclarationWorkspaceV2,
+    setTaxComplianceVatDeclarationWorkspaceV2,
+  ] = useState<EcuadorTaxVatDeclarationWorkspaceV2Response | null>(null);
+  const [
+    taxComplianceIncomeTaxEvidenceWorkspaceV2,
+    setTaxComplianceIncomeTaxEvidenceWorkspaceV2,
+  ] = useState<EcuadorTaxIncomeTaxEvidenceWorkspaceV2Response | null>(null);
+  const [
+    taxComplianceFilingAssistantV2,
+    setTaxComplianceFilingAssistantV2,
+  ] = useState<EcuadorTaxFilingAssistantV2Response | null>(null);
+  const [
+    taxComplianceAccountantEscalationBoundary,
+    setTaxComplianceAccountantEscalationBoundary,
+  ] =
+    useState<EcuadorTaxAccountantEscalationServiceBoundaryResponse | null>(
+      null,
+    );
+  const [
+    taxComplianceCloseoutV2,
+    setTaxComplianceCloseoutV2,
+  ] = useState<EcuadorTaxComplianceCloseoutV2Response | null>(null);
   const [
     taxComplianceAccountantCollaborationPack,
     setTaxComplianceAccountantCollaborationPack,
@@ -19742,6 +19781,12 @@ export function App() {
         nextCommandCenterV2,
         nextAssistedDeclarationReviewPackV2,
         nextAccountingBoundaryCloseout,
+        nextSriSourceImportCenterV2,
+        nextVatDeclarationWorkspaceV2,
+        nextIncomeTaxEvidenceWorkspaceV2,
+        nextFilingAssistantV2,
+        nextAccountantEscalationBoundary,
+        nextCloseoutV2,
         nextAccountantCollaborationPack,
         nextFilingEvidenceVaultV2,
         nextExceptionCenter,
@@ -20019,6 +20064,42 @@ export function App() {
           year,
         ),
         fetchEcuadorTaxAccountingBoundaryCloseout(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxSriSourceImportCenterV2(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxVatDeclarationWorkspaceV2(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxIncomeTaxEvidenceWorkspaceV2(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxFilingAssistantV2(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAccountantEscalationServiceBoundary(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxComplianceCloseoutV2(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -20444,6 +20525,18 @@ export function App() {
         setTaxComplianceAccountingBoundaryCloseout(
           nextAccountingBoundaryCloseout,
         );
+        setTaxComplianceSriSourceImportCenterV2(nextSriSourceImportCenterV2);
+        setTaxComplianceVatDeclarationWorkspaceV2(
+          nextVatDeclarationWorkspaceV2,
+        );
+        setTaxComplianceIncomeTaxEvidenceWorkspaceV2(
+          nextIncomeTaxEvidenceWorkspaceV2,
+        );
+        setTaxComplianceFilingAssistantV2(nextFilingAssistantV2);
+        setTaxComplianceAccountantEscalationBoundary(
+          nextAccountantEscalationBoundary,
+        );
+        setTaxComplianceCloseoutV2(nextCloseoutV2);
         setTaxComplianceAccountantCollaborationPack(
           nextAccountantCollaborationPack,
         );
@@ -32098,6 +32191,168 @@ export function App() {
                                 .accountingAdvancedBacklogCount
                             }{' '}
                             accounting advanced
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+                    {taxComplianceSriSourceImportCenterV2 &&
+                    taxComplianceVatDeclarationWorkspaceV2 &&
+                    taxComplianceIncomeTaxEvidenceWorkspaceV2 &&
+                    taxComplianceFilingAssistantV2 &&
+                    taxComplianceAccountantEscalationBoundary &&
+                    taxComplianceCloseoutV2 ? (
+                      <div className={styles.invoiceInlineGrid}>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>SRI import 2.0</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceSriSourceImportCenterV2.centerStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceSriSourceImportCenterV2.centerStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceSriSourceImportCenterV2.summary
+                                .sriVoucherCount
+                            }{' '}
+                            comprobantes ·{' '}
+                            {
+                              taxComplianceSriSourceImportCenterV2.summary
+                                .reconciliationIssueCount
+                            }{' '}
+                            diferencias
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>IVA 2.0</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceVatDeclarationWorkspaceV2.readinessStatus,
+                              )}`}
+                            >
+                              {formatMoney(
+                                taxComplianceVatDeclarationWorkspaceV2.summary
+                                  .estimatedVatPayableInCents,
+                                'USD',
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceVatDeclarationWorkspaceV2.summary
+                                .readyBucketCount
+                            }
+                            /
+                            {
+                              taxComplianceVatDeclarationWorkspaceV2.summary
+                                .bucketCount
+                            }{' '}
+                            buckets listos
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Renta 2.0</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceIncomeTaxEvidenceWorkspaceV2.readinessStatus,
+                              )}`}
+                            >
+                              {
+                                taxComplianceIncomeTaxEvidenceWorkspaceV2
+                                  .summary.accountantReviewLineCount
+                              }{' '}
+                              review
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            Base{' '}
+                            {formatMoney(
+                              taxComplianceIncomeTaxEvidenceWorkspaceV2.summary
+                                .estimatedTaxableBaseInCents,
+                              'USD',
+                            )}
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Assistant 2.0</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceFilingAssistantV2.assistantStatus,
+                              )}`}
+                            >
+                              {
+                                taxComplianceFilingAssistantV2.summary
+                                  .humanGateCount
+                              }{' '}
+                              gates
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceFilingAssistantV2.summary.stepCount
+                            }{' '}
+                            pasos ·{' '}
+                            {
+                              taxComplianceFilingAssistantV2.summary
+                                .accountantQuestionCount
+                            }{' '}
+                            preguntas
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Escalamiento</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceAccountantEscalationBoundary.escalationStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceAccountantEscalationBoundary.escalationStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceAccountantEscalationBoundary.summary
+                                .accountantRuleCount
+                            }{' '}
+                            contador ·{' '}
+                            {
+                              taxComplianceAccountantEscalationBoundary.summary
+                                .accountingAdvancedRuleCount
+                            }{' '}
+                            advanced
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Closeout 2.0</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceCloseoutV2.closeoutStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceCloseoutV2.closeoutStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {taxComplianceCloseoutV2.summary.readyChecklistCount}
+                            /{taxComplianceCloseoutV2.summary.checklistCount}{' '}
+                            checks ·{' '}
+                            {humanizeKey(
+                              taxComplianceCloseoutV2.recommendedNextStep,
+                            )}
                           </p>
                         </div>
                       </div>

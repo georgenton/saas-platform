@@ -1160,6 +1160,34 @@ Guardrail: this layer prepares, compares and explains. It still does not file
 returns automatically, pay taxes, certify financial statements, or replace the
 contador decision.
 
+### Tax Compliance EC declaration closeout 2.0
+
+The next layer turns the accounting bridge into an end-to-end declaration
+preparation control room:
+
+1. `SRI Source Import Center 2.0`
+   - centralizes taxpayer-provided SRI report/XML/manual imports, source
+     channels, deduplication and reconciliation issues against platform data
+2. `VAT Declaration Workspace 2.0`
+   - packages IVA buckets, suggested form boxes and Accounting Foundation
+     comparative evidence for human review
+3. `Income Tax Evidence Workspace 2.0`
+   - combines period income-tax evidence, annual rollup and Accounting
+     comparative evidence into accountant-owned renta review lines
+4. `Tax Filing Assistant 2.0`
+   - converts evidence into a guided, step-by-step manual SRI filing walkthrough
+     with human gates and accountant questions
+5. `Accountant Escalation & Service Boundary`
+   - decides whether the tenant can continue with Tax Compliance assisted flow,
+     needs accountant review, or should open `Accounting Advanced` discovery
+6. `Tax Compliance Closeout 2.0`
+   - summarizes SRI import, IVA, renta, assistant, escalation and command center
+     readiness into one product closeout surface
+
+Guardrail: this closeout is a preparation and review layer. It does not log into
+SRI, submit returns, pay obligations, sign official books, or certify financial
+statements.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

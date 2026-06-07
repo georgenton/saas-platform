@@ -4330,6 +4330,165 @@ export interface EcuadorTaxAccountingBoundaryCloseoutResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxSriSourceImportCenterV2Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  centerStatus: string;
+  sourceChannels: Array<{
+    key: string;
+    label: string;
+    status: string;
+    voucherCount: number;
+    issueCount: number;
+    nextAction: string;
+  }>;
+  summary: {
+    channelCount: number;
+    readyChannelCount: number;
+    sriVoucherCount: number;
+    duplicateAccessKeys: number;
+    reconciliationIssueCount: number;
+    blockingIssueCount: number;
+    ledgerSriRows: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxVatDeclarationWorkspaceV2Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  reviewBuckets: Array<{
+    key: string;
+    label: string;
+    status: string;
+    amountInCents: number;
+    vatInCents: number;
+    reviewQuestion: string;
+  }>;
+  summary: {
+    bucketCount: number;
+    readyBucketCount: number;
+    suggestedBoxCount: number;
+    outputVatInCents: number;
+    inputVatInCents: number;
+    estimatedVatPayableInCents: number;
+    accountingBlockedSourceCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxIncomeTaxEvidenceWorkspaceV2Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  evidenceLines: Array<{
+    key: string;
+    label: string;
+    status: string;
+    amountInCents: number;
+    accountantReviewRequired: boolean;
+    note: string;
+  }>;
+  summary: {
+    evidenceLineCount: number;
+    accountantReviewLineCount: number;
+    grossRevenueInCents: number;
+    deductibleExpenseInCents: number;
+    estimatedTaxableBaseInCents: number;
+    withholdingCreditInCents: number;
+    annualBlockedPeriodCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxFilingAssistantV2Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  assistantStatus: string;
+  walkthrough: Array<{
+    key: string;
+    order: number;
+    title: string;
+    status: string;
+    humanGate: boolean;
+    instruction: string;
+  }>;
+  summary: {
+    stepCount: number;
+    humanGateCount: number;
+    accountantQuestionCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantEscalationServiceBoundaryResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  escalationStatus: string;
+  escalationRules: Array<{
+    key: string;
+    label: string;
+    status: string;
+    target: string;
+    trigger: string;
+    recommendedAction: string;
+  }>;
+  summary: {
+    ruleCount: number;
+    accountantRuleCount: number;
+    accountingAdvancedRuleCount: number;
+    blockedRuleCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxComplianceCloseoutV2Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  checklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidence: string[];
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    taxComplianceSurfaceCount: number;
+    accountingAdvancedEscalationCount: number;
+  };
+  recommendedNextStep: string;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxAccountantCollaborationPackResponse {
   tenantSlug: string;
   period: string;

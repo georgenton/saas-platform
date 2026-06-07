@@ -188,6 +188,12 @@ const [
   declarationReviewLoopWorkspace,
   annexesWorkspace,
   periodCloseoutCertification,
+  commandCenter,
+  accountantCollaborationPack,
+  filingEvidenceVaultV2,
+  exceptionCenter,
+  annualRollupWorkspace,
+  productCloseoutPack,
   filingGuidePacket,
   declarationArtifactExport,
   accountingBridgeSuggestedAccounts,
@@ -385,6 +391,36 @@ const [
   }),
   apiRequest({
     baseUrl,
+    path: taxPath(`/command-center?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accountant-collaboration-pack?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/filing-evidence-vault-v2?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/exception-center?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/annual-rollup-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/product-closeout-pack?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
     path: taxPath(`/filing-guide-packet?${periodQuery()}&formKey=iva`),
     token,
   }),
@@ -497,6 +533,15 @@ assertStatus(
   'period closeout certification',
   periodCloseoutCertification.certificationStatus,
 );
+assertStatus('command center', commandCenter.commandStatus);
+assertStatus(
+  'accountant collaboration pack',
+  accountantCollaborationPack.readinessStatus,
+);
+assertStatus('filing evidence vault v2', filingEvidenceVaultV2.readinessStatus);
+assertStatus('exception center', exceptionCenter.readinessStatus);
+assertStatus('annual rollup workspace', annualRollupWorkspace.readinessStatus);
+assertStatus('product closeout pack', productCloseoutPack.productStatus);
 assertStatus('filing guide packet', filingGuidePacket.readinessStatus);
 assertStatus(
   'declaration artifact export',
@@ -633,6 +678,18 @@ printLine(
   'closeout certification',
   periodCloseoutCertification.certificationStatus,
 );
+printLine('command center', commandCenter.commandStatus);
+printLine(
+  'collaboration questions',
+  accountantCollaborationPack.summary.questionCount,
+);
+printLine('vault v2 folders', filingEvidenceVaultV2.summary.folderCount);
+printLine('exceptions', exceptionCenter.summary.exceptionCount);
+printLine(
+  'annual taxable base',
+  annualRollupWorkspace.annualSummary.estimatedTaxableBaseInCents,
+);
+printLine('product closeout', productCloseoutPack.productStatus);
 printLine('filing guide steps', filingGuidePacket.steps.length);
 printLine('artifact export', declarationArtifactExport.readinessStatus);
 printLine(

@@ -151,6 +151,7 @@ import {
   requestAccountingReconciliationExceptionResolutionPacket,
   requestAccountingReconciliationMatchPacket,
   transitionAccountingAccountantReview,
+  fetchEcuadorTaxAccountantCollaborationPack,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
   fetchEcuadorTaxAccountingBridgeSuggestedAccounts,
@@ -159,6 +160,8 @@ import {
   fetchEcuadorTaxAccountantReviews,
   fetchEcuadorTaxAnnexesReadiness,
   fetchEcuadorTaxAnnexesWorkspace,
+  fetchEcuadorTaxAnnualRollupWorkspace,
+  fetchEcuadorTaxCommandCenter,
   fetchEcuadorTaxDeclarationArtifactExport,
   fetchEcuadorTaxDeclarationReviewLoopWorkspace,
   fetchEcuadorTaxDeclarationSourceLedger,
@@ -167,6 +170,8 @@ import {
   fetchEcuadorTaxDeclarationApprovalPacket,
   fetchEcuadorTaxEcommerceEvidence,
   fetchEcuadorTaxEvents,
+  fetchEcuadorTaxExceptionCenter,
+  fetchEcuadorTaxFilingEvidenceVaultV2,
   fetchEcuadorTaxFilingHandoff,
   fetchEcuadorTaxFilingGuidePacket,
   fetchEcuadorTaxFormMappingCatalog,
@@ -179,6 +184,7 @@ import {
   fetchEcuadorTaxPeriodCloseoutPacket,
   fetchEcuadorTaxPeriodCloseoutReport,
   fetchEcuadorTaxPeriodCloseoutCertification,
+  fetchEcuadorTaxProductCloseoutPack,
   fetchEcuadorTaxPeriodEvidenceVault,
   fetchEcuadorTaxOperationalCloseout,
   fetchEcuadorTaxPeriodWorkspace,
@@ -636,9 +642,12 @@ import {
   EcuadorTaxAccountingBridgePreviewResponse,
   EcuadorTaxAccountingBridgeSuggestedAccountsResponse,
   EcuadorTaxAccountingReadinessPacketResponse,
+  EcuadorTaxAccountantCollaborationPackResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxAnnexesWorkspaceResponse,
+  EcuadorTaxAnnualRollupWorkspaceResponse,
   EcuadorTaxComplianceEventResponse,
+  EcuadorTaxCommandCenterResponse,
   EcuadorTaxDeclarationArtifactExportResponse,
   EcuadorTaxDeclarationReviewLoopWorkspaceResponse,
   EcuadorTaxDeclarationSourceLedgerResponse,
@@ -647,6 +656,8 @@ import {
   EcuadorTaxDeclarationFormCatalogResponse,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxEcommerceEvidenceSummaryResponse,
+  EcuadorTaxExceptionCenterResponse,
+  EcuadorTaxFilingEvidenceVaultV2Response,
   EcuadorTaxFilingHandoffResponse,
   EcuadorTaxFilingGuidePacketResponse,
   EcuadorTaxFormMappingCatalogResponse,
@@ -660,6 +671,7 @@ import {
   EcuadorTaxPeriodCloseoutPacketResponse,
   EcuadorTaxPeriodCloseoutReportResponse,
   EcuadorTaxPeriodCloseoutCertificationResponse,
+  EcuadorTaxProductCloseoutPackResponse,
   EcuadorTaxPeriodEvidenceVaultResponse,
   EcuadorTaxPeriodWorkspaceResponse,
   EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse,
@@ -2445,6 +2457,24 @@ export function App() {
     taxCompliancePeriodCloseoutCertification,
     setTaxCompliancePeriodCloseoutCertification,
   ] = useState<EcuadorTaxPeriodCloseoutCertificationResponse | null>(null);
+  const [taxComplianceCommandCenter, setTaxComplianceCommandCenter] =
+    useState<EcuadorTaxCommandCenterResponse | null>(null);
+  const [
+    taxComplianceAccountantCollaborationPack,
+    setTaxComplianceAccountantCollaborationPack,
+  ] = useState<EcuadorTaxAccountantCollaborationPackResponse | null>(null);
+  const [
+    taxComplianceFilingEvidenceVaultV2,
+    setTaxComplianceFilingEvidenceVaultV2,
+  ] = useState<EcuadorTaxFilingEvidenceVaultV2Response | null>(null);
+  const [taxComplianceExceptionCenter, setTaxComplianceExceptionCenter] =
+    useState<EcuadorTaxExceptionCenterResponse | null>(null);
+  const [
+    taxComplianceAnnualRollupWorkspace,
+    setTaxComplianceAnnualRollupWorkspace,
+  ] = useState<EcuadorTaxAnnualRollupWorkspaceResponse | null>(null);
+  const [taxComplianceProductCloseoutPack, setTaxComplianceProductCloseoutPack] =
+    useState<EcuadorTaxProductCloseoutPackResponse | null>(null);
   const [
     taxComplianceFilingGuidePacket,
     setTaxComplianceFilingGuidePacket,
@@ -19639,6 +19669,12 @@ export function App() {
         nextDeclarationReviewLoopWorkspace,
         nextAnnexesWorkspace,
         nextPeriodCloseoutCertification,
+        nextCommandCenter,
+        nextAccountantCollaborationPack,
+        nextFilingEvidenceVaultV2,
+        nextExceptionCenter,
+        nextAnnualRollupWorkspace,
+        nextProductCloseoutPack,
         nextFilingGuidePacket,
         nextDeclarationArtifactExport,
       ] = await Promise.all([
@@ -19881,6 +19917,42 @@ export function App() {
           year,
         ),
         fetchEcuadorTaxPeriodCloseoutCertification(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxCommandCenter(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAccountantCollaborationPack(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxFilingEvidenceVaultV2(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxExceptionCenter(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAnnualRollupWorkspace(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxProductCloseoutPack(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -20225,6 +20297,14 @@ export function App() {
         setTaxCompliancePeriodCloseoutCertification(
           nextPeriodCloseoutCertification,
         );
+        setTaxComplianceCommandCenter(nextCommandCenter);
+        setTaxComplianceAccountantCollaborationPack(
+          nextAccountantCollaborationPack,
+        );
+        setTaxComplianceFilingEvidenceVaultV2(nextFilingEvidenceVaultV2);
+        setTaxComplianceExceptionCenter(nextExceptionCenter);
+        setTaxComplianceAnnualRollupWorkspace(nextAnnualRollupWorkspace);
+        setTaxComplianceProductCloseoutPack(nextProductCloseoutPack);
         setTaxComplianceFilingGuidePacket(nextFilingGuidePacket);
         setTaxComplianceDeclarationArtifactExport(nextDeclarationArtifactExport);
         setAccountingIntakeWorkspace(nextAccountingIntakeWorkspace);
@@ -31510,6 +31590,123 @@ export function App() {
                                 .checklistCount
                             }{' '}
                             checks
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+                    {taxComplianceCommandCenter &&
+                    taxComplianceAccountantCollaborationPack &&
+                    taxComplianceFilingEvidenceVaultV2 &&
+                    taxComplianceExceptionCenter &&
+                    taxComplianceAnnualRollupWorkspace &&
+                    taxComplianceProductCloseoutPack ? (
+                      <div className={styles.invoiceInlineGrid}>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Command center</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceCommandCenter.commandStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceCommandCenter.commandStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {taxComplianceCommandCenter.summary.readyTileCount}/
+                            {taxComplianceCommandCenter.summary.tileCount}{' '}
+                            tiles listos ·{' '}
+                            {taxComplianceCommandCenter.summary.blockerCount}{' '}
+                            blockers
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Pack contador</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceAccountantCollaborationPack.readinessStatus,
+                              )}`}
+                            >
+                              {
+                                taxComplianceAccountantCollaborationPack.summary
+                                  .questionCount
+                              }{' '}
+                              preguntas
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceAccountantCollaborationPack.summary
+                                .bundleItemCount
+                            }{' '}
+                            items ·{' '}
+                            {
+                              taxComplianceAccountantCollaborationPack.summary
+                                .criticalCount
+                            }{' '}
+                            criticos
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Vault 2.0 / excepciones</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceExceptionCenter.readinessStatus,
+                              )}`}
+                            >
+                              {
+                                taxComplianceExceptionCenter.summary
+                                  .exceptionCount
+                              }{' '}
+                              excepciones
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceFilingEvidenceVaultV2.summary
+                                .readyFolderCount
+                            }
+                            /
+                            {
+                              taxComplianceFilingEvidenceVaultV2.summary
+                                .folderCount
+                            }{' '}
+                            carpetas ·{' '}
+                            {
+                              taxComplianceFilingEvidenceVaultV2.summary
+                                .artifactCount
+                            }{' '}
+                            artefactos
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Rollup y closeout</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceProductCloseoutPack.productStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceProductCloseoutPack.productStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            Renta anual{' '}
+                            {formatMoney(
+                              taxComplianceAnnualRollupWorkspace.annualSummary
+                                .estimatedTaxableBaseInCents,
+                              'USD',
+                            )}{' '}
+                            · siguiente{' '}
+                            {humanizeKey(
+                              taxComplianceProductCloseoutPack.recommendedNextProduct,
+                            )}
                           </p>
                         </div>
                       </div>

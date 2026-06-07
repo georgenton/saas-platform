@@ -1188,6 +1188,35 @@ Guardrail: this closeout is a preparation and review layer. It does not log into
 SRI, submit returns, pay obligations, sign official books, or certify financial
 statements.
 
+### Tax Compliance EC operating readiness 3.0
+
+The next layer makes Tax Compliance EC operable across evidence quality, risk,
+accountant handoff and internal readiness certification:
+
+1. `Tax Compliance Evidence Quality Center`
+   - scores period evidence quality and highlights missing, duplicated,
+     contradictory or stale evidence across SRI, platform, Accounting and manual
+     sources
+2. `Tax Obligation Risk Monitor`
+   - converts IVA, renta, SRI import and accountant-boundary readiness into
+     operational risk signals with accountant escalation flags
+3. `Tax Accountant Handoff Room 2.0`
+   - groups SRI, IVA, renta and filing questions into accountant/operator-owned
+     sections with evidence references
+4. `Tax Filing Readiness Certificate`
+   - produces an internal readiness certificate before filing or accountant
+     review; it is not proof of SRI submission or payment
+5. `Tax Compliance Operating Dashboard 3.0`
+   - summarizes command center, quality, obligation risk and readiness
+     certificate tiles in one operational view
+6. `Tax Compliance Product Closeout 3.0`
+   - closes the MVP as operable, needs hardening, or blocked, and recommends Tax
+     hardening, Parties 2.0, or Accounting Advanced discovery
+
+Guardrail: operating readiness is an internal control layer. It helps decide,
+prioritize and hand off, but still does not submit declarations, pay taxes, or
+certify official financial/accounting outputs.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

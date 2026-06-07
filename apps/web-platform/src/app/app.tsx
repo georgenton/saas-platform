@@ -160,6 +160,7 @@ import {
   transitionAccountingAccountantReview,
   fetchEcuadorTaxAccountantCollaborationPack,
   fetchEcuadorTaxAccountantEscalationServiceBoundary,
+  fetchEcuadorTaxAccountantHandoffRoomV2,
   fetchEcuadorTaxAccountingBoundaryCloseout,
   fetchEcuadorTaxAccountingBridgeMapping,
   fetchEcuadorTaxAccountingBridgePreview,
@@ -173,6 +174,7 @@ import {
   fetchEcuadorTaxAnnualRollupWorkspace,
   fetchEcuadorTaxAssistedDeclarationReviewPackV2,
   fetchEcuadorTaxComplianceCloseoutV2,
+  fetchEcuadorTaxComplianceProductCloseoutV3,
   fetchEcuadorTaxCommandCenter,
   fetchEcuadorTaxCommandCenterV2,
   fetchEcuadorTaxDeclarationArtifactExport,
@@ -188,20 +190,24 @@ import {
   fetchEcuadorTaxFilingHandoff,
   fetchEcuadorTaxFilingGuidePacket,
   fetchEcuadorTaxFilingAssistantV2,
+  fetchEcuadorTaxFilingReadinessCertificate,
   fetchEcuadorTaxFormMappingCatalog,
   fetchEcuadorTaxGrowthReminderPacket,
+  fetchEcuadorTaxEvidenceQualityCenter,
   fetchEcuadorTaxIncomeTaxEvidenceWorkspace,
   fetchEcuadorTaxIncomeTaxEvidenceWorkspaceV2,
   fetchEcuadorTaxIncomeTaxFormContractWorkspace,
   fetchEcuadorTaxIncomeTaxEvidencePacket,
   fetchEcuadorTaxObligationMatrixV2Workspace,
   fetchEcuadorTaxObligationSettings,
+  fetchEcuadorTaxObligationRiskMonitor,
   fetchEcuadorTaxPeriodCloseoutPacket,
   fetchEcuadorTaxPeriodCloseoutReport,
   fetchEcuadorTaxPeriodCloseoutCertification,
   fetchEcuadorTaxProductCloseoutPack,
   fetchEcuadorTaxPeriodEvidenceVault,
   fetchEcuadorTaxOperationalCloseout,
+  fetchEcuadorTaxOperatingDashboardV3,
   fetchEcuadorTaxPeriodWorkspace,
   fetchEcuadorTaxPurchaseExpenseEvidenceWorkspace,
   fetchEcuadorTaxReconciliationWorkspace,
@@ -669,12 +675,14 @@ import {
   EcuadorTaxAccountingEvidenceFromFoundationResponse,
   EcuadorTaxAccountingReadinessPacketResponse,
   EcuadorTaxAccountantEscalationServiceBoundaryResponse,
+  EcuadorTaxAccountantHandoffRoomV2Response,
   EcuadorTaxAccountantCollaborationPackResponse,
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxAnnexesWorkspaceResponse,
   EcuadorTaxAnnualRollupWorkspaceResponse,
   EcuadorTaxAssistedDeclarationReviewPackV2Response,
   EcuadorTaxComplianceCloseoutV2Response,
+  EcuadorTaxComplianceProductCloseoutV3Response,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxCommandCenterResponse,
   EcuadorTaxCommandCenterV2Response,
@@ -691,15 +699,19 @@ import {
   EcuadorTaxFilingHandoffResponse,
   EcuadorTaxFilingGuidePacketResponse,
   EcuadorTaxFilingAssistantV2Response,
+  EcuadorTaxFilingReadinessCertificateResponse,
   EcuadorTaxFormMappingCatalogResponse,
   EcuadorTaxGrowthReminderPacketResponse,
+  EcuadorTaxEvidenceQualityCenterResponse,
   EcuadorTaxIncomeTaxEvidenceWorkspaceResponse,
   EcuadorTaxIncomeTaxEvidenceWorkspaceV2Response,
   EcuadorTaxIncomeTaxFormContractWorkspaceResponse,
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
+  EcuadorTaxObligationRiskMonitorResponse,
   EcuadorTaxObligationMatrixV2WorkspaceResponse,
   EcuadorTaxOperationalCloseoutResponse,
+  EcuadorTaxOperatingDashboardV3Response,
   EcuadorTaxPeriodCloseoutPacketResponse,
   EcuadorTaxPeriodCloseoutReportResponse,
   EcuadorTaxPeriodCloseoutCertificationResponse,
@@ -2566,6 +2578,30 @@ export function App() {
     taxComplianceCloseoutV2,
     setTaxComplianceCloseoutV2,
   ] = useState<EcuadorTaxComplianceCloseoutV2Response | null>(null);
+  const [
+    taxComplianceEvidenceQualityCenter,
+    setTaxComplianceEvidenceQualityCenter,
+  ] = useState<EcuadorTaxEvidenceQualityCenterResponse | null>(null);
+  const [
+    taxComplianceObligationRiskMonitor,
+    setTaxComplianceObligationRiskMonitor,
+  ] = useState<EcuadorTaxObligationRiskMonitorResponse | null>(null);
+  const [
+    taxComplianceAccountantHandoffRoomV2,
+    setTaxComplianceAccountantHandoffRoomV2,
+  ] = useState<EcuadorTaxAccountantHandoffRoomV2Response | null>(null);
+  const [
+    taxComplianceFilingReadinessCertificate,
+    setTaxComplianceFilingReadinessCertificate,
+  ] = useState<EcuadorTaxFilingReadinessCertificateResponse | null>(null);
+  const [
+    taxComplianceOperatingDashboardV3,
+    setTaxComplianceOperatingDashboardV3,
+  ] = useState<EcuadorTaxOperatingDashboardV3Response | null>(null);
+  const [
+    taxComplianceProductCloseoutV3,
+    setTaxComplianceProductCloseoutV3,
+  ] = useState<EcuadorTaxComplianceProductCloseoutV3Response | null>(null);
   const [
     taxComplianceAccountantCollaborationPack,
     setTaxComplianceAccountantCollaborationPack,
@@ -19787,6 +19823,12 @@ export function App() {
         nextFilingAssistantV2,
         nextAccountantEscalationBoundary,
         nextCloseoutV2,
+        nextEvidenceQualityCenter,
+        nextObligationRiskMonitor,
+        nextAccountantHandoffRoomV2,
+        nextFilingReadinessCertificate,
+        nextOperatingDashboardV3,
+        nextProductCloseoutV3,
         nextAccountantCollaborationPack,
         nextFilingEvidenceVaultV2,
         nextExceptionCenter,
@@ -20100,6 +20142,42 @@ export function App() {
           year,
         ),
         fetchEcuadorTaxComplianceCloseoutV2(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxEvidenceQualityCenter(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxObligationRiskMonitor(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAccountantHandoffRoomV2(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxFilingReadinessCertificate(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxOperatingDashboardV3(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxComplianceProductCloseoutV3(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -20537,6 +20615,14 @@ export function App() {
           nextAccountantEscalationBoundary,
         );
         setTaxComplianceCloseoutV2(nextCloseoutV2);
+        setTaxComplianceEvidenceQualityCenter(nextEvidenceQualityCenter);
+        setTaxComplianceObligationRiskMonitor(nextObligationRiskMonitor);
+        setTaxComplianceAccountantHandoffRoomV2(nextAccountantHandoffRoomV2);
+        setTaxComplianceFilingReadinessCertificate(
+          nextFilingReadinessCertificate,
+        );
+        setTaxComplianceOperatingDashboardV3(nextOperatingDashboardV3);
+        setTaxComplianceProductCloseoutV3(nextProductCloseoutV3);
         setTaxComplianceAccountantCollaborationPack(
           nextAccountantCollaborationPack,
         );
@@ -32352,6 +32438,177 @@ export function App() {
                             checks ·{' '}
                             {humanizeKey(
                               taxComplianceCloseoutV2.recommendedNextStep,
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+                    {taxComplianceEvidenceQualityCenter &&
+                    taxComplianceObligationRiskMonitor &&
+                    taxComplianceAccountantHandoffRoomV2 &&
+                    taxComplianceFilingReadinessCertificate &&
+                    taxComplianceOperatingDashboardV3 &&
+                    taxComplianceProductCloseoutV3 ? (
+                      <div className={styles.invoiceInlineGrid}>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Quality center</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceEvidenceQualityCenter.qualityStatus,
+                              )}`}
+                            >
+                              {
+                                taxComplianceEvidenceQualityCenter.summary
+                                  .qualityScore
+                              }
+                              %
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceEvidenceQualityCenter.summary
+                                .readyFindingCount
+                            }
+                            /
+                            {
+                              taxComplianceEvidenceQualityCenter.summary
+                                .findingCount
+                            }{' '}
+                            hallazgos listos
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Risk monitor</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceObligationRiskMonitor.riskStatus,
+                              )}`}
+                            >
+                              {
+                                taxComplianceObligationRiskMonitor.summary
+                                  .criticalRiskCount
+                              }{' '}
+                              criticos
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceObligationRiskMonitor.summary
+                                .accountantRequiredCount
+                            }{' '}
+                            requieren contador
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Handoff room</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceAccountantHandoffRoomV2.roomStatus,
+                              )}`}
+                            >
+                              {
+                                taxComplianceAccountantHandoffRoomV2.summary
+                                  .questionCount
+                              }{' '}
+                              preguntas
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceAccountantHandoffRoomV2.summary
+                                .readySectionCount
+                            }
+                            /
+                            {
+                              taxComplianceAccountantHandoffRoomV2.summary
+                                .sectionCount
+                            }{' '}
+                            secciones listas
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Readiness cert</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceFilingReadinessCertificate.certificateStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceFilingReadinessCertificate.certificateStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceFilingReadinessCertificate.summary
+                                .readyItemCount
+                            }
+                            /
+                            {
+                              taxComplianceFilingReadinessCertificate.summary
+                                .itemCount
+                            }{' '}
+                            attestations
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Dashboard 3.0</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceOperatingDashboardV3.dashboardStatus,
+                              )}`}
+                            >
+                              {
+                                taxComplianceOperatingDashboardV3.summary
+                                  .qualityScore
+                              }
+                              %
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceOperatingDashboardV3.summary
+                                .readyTileCount
+                            }
+                            /
+                            {
+                              taxComplianceOperatingDashboardV3.summary
+                                .tileCount
+                            }{' '}
+                            tiles listos
+                          </p>
+                        </div>
+                        <div className={styles.invoiceItemCard}>
+                          <div className={styles.invoiceCardHeader}>
+                            <strong>Product closeout 3.0</strong>
+                            <span
+                              className={`${styles.statusPill} ${operationalStatusTone(
+                                taxComplianceProductCloseoutV3.closeoutStatus,
+                              )}`}
+                            >
+                              {humanizeKey(
+                                taxComplianceProductCloseoutV3.closeoutStatus,
+                              )}
+                            </span>
+                          </div>
+                          <p className={styles.muted}>
+                            {
+                              taxComplianceProductCloseoutV3.summary
+                                .readyChecklistCount
+                            }
+                            /
+                            {
+                              taxComplianceProductCloseoutV3.summary
+                                .checklistCount
+                            }{' '}
+                            checks ·{' '}
+                            {humanizeKey(
+                              taxComplianceProductCloseoutV3.recommendedNextProduct,
                             )}
                           </p>
                         </div>

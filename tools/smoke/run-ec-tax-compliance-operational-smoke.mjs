@@ -199,6 +199,12 @@ const [
   filingAssistantV2,
   accountantEscalationBoundary,
   complianceCloseoutV2,
+  evidenceQualityCenter,
+  obligationRiskMonitor,
+  accountantHandoffRoomV2,
+  filingReadinessCertificate,
+  operatingDashboardV3,
+  complianceProductCloseoutV3,
   accountantCollaborationPack,
   filingEvidenceVaultV2,
   exceptionCenter,
@@ -458,6 +464,36 @@ const [
   }),
   apiRequest({
     baseUrl,
+    path: taxPath(`/evidence-quality-center?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/obligation-risk-monitor?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accountant-handoff-room-v2?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/filing-readiness-certificate?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/operating-dashboard-v3?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/compliance-product-closeout-v3?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
     path: taxPath(`/accountant-collaboration-pack?${periodQuery()}`),
     token,
   }),
@@ -624,6 +660,18 @@ assertStatus(
   accountantEscalationBoundary.escalationStatus,
 );
 assertStatus('compliance closeout v2', complianceCloseoutV2.closeoutStatus);
+assertStatus('evidence quality center', evidenceQualityCenter.qualityStatus);
+assertStatus('obligation risk monitor', obligationRiskMonitor.riskStatus);
+assertStatus('accountant handoff room v2', accountantHandoffRoomV2.roomStatus);
+assertStatus(
+  'filing readiness certificate',
+  filingReadinessCertificate.certificateStatus,
+);
+assertStatus('operating dashboard v3', operatingDashboardV3.dashboardStatus);
+assertStatus(
+  'compliance product closeout v3',
+  complianceProductCloseoutV3.closeoutStatus,
+);
 assertStatus(
   'accountant collaboration pack',
   accountantCollaborationPack.readinessStatus,
@@ -800,6 +848,21 @@ printLine(
   accountantEscalationBoundary.escalationStatus,
 );
 printLine('compliance closeout v2', complianceCloseoutV2.closeoutStatus);
+printLine(
+  'evidence quality',
+  `${evidenceQualityCenter.summary.qualityScore}%`,
+);
+printLine('obligation risk', obligationRiskMonitor.riskStatus);
+printLine('handoff room v2', accountantHandoffRoomV2.roomStatus);
+printLine(
+  'readiness certificate',
+  filingReadinessCertificate.certificateStatus,
+);
+printLine('operating dashboard v3', operatingDashboardV3.dashboardStatus);
+printLine(
+  'product closeout v3',
+  complianceProductCloseoutV3.closeoutStatus,
+);
 printLine(
   'collaboration questions',
   accountantCollaborationPack.summary.questionCount,

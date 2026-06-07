@@ -4489,6 +4489,158 @@ export interface EcuadorTaxComplianceCloseoutV2Response {
   guardrails: string[];
 }
 
+export interface EcuadorTaxEvidenceQualityCenterResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  qualityStatus: string;
+  qualityFindings: Array<{
+    key: string;
+    label: string;
+    status: string;
+    source: string;
+    severity: string;
+    recommendedAction: string;
+  }>;
+  summary: {
+    findingCount: number;
+    readyFindingCount: number;
+    blockedFindingCount: number;
+    criticalFindingCount: number;
+    qualityScore: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxObligationRiskMonitorResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  riskStatus: string;
+  obligationRisks: Array<{
+    key: string;
+    label: string;
+    status: string;
+    riskLevel: string;
+    accountantRequired: boolean;
+    recommendedAction: string;
+  }>;
+  summary: {
+    obligationRiskCount: number;
+    criticalRiskCount: number;
+    accountantRequiredCount: number;
+    blockedRiskCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantHandoffRoomV2Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  roomStatus: string;
+  handoffSections: Array<{
+    key: string;
+    label: string;
+    status: string;
+    owner: string;
+    questionCount: number;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    accountantSectionCount: number;
+    questionCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxFilingReadinessCertificateResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  certificateStatus: string;
+  certificationItems: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidence: string[];
+    attestation: string;
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    blockerCount: number;
+    accountantQuestionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxOperatingDashboardV3Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  dashboardStatus: string;
+  dashboardTiles: Array<{
+    key: string;
+    label: string;
+    status: string;
+    primaryMetric: string;
+    secondaryMetric: string;
+    nextAction: string;
+  }>;
+  summary: {
+    tileCount: number;
+    readyTileCount: number;
+    blockerCount: number;
+    accountantRequiredCount: number;
+    qualityScore: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxComplianceProductCloseoutV3Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidence: string[];
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    operatingSurfaceCount: number;
+    qualityScore: number;
+  };
+  recommendedNextProduct: string;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxAccountantCollaborationPackResponse {
   tenantSlug: string;
   period: string;

@@ -11,11 +11,17 @@ import { INVOICING_PERMISSIONS } from '@saas-platform/invoicing-application';
 import {
   ApplyTenantPartyFiscalCorrectionUseCase,
   GetTenantPartyByIdUseCase,
+  GetTenantPartyDirectoryCoreV2WorkspaceUseCase,
+  GetTenantPartyDuplicateMergeReadinessWorkspaceUseCase,
   GetTenantPartyFiscalCleanupPacketUseCase,
   GetTenantPartyFiscalCleanupWorkspaceUseCase,
+  GetTenantPartyFiscalIdentityProfileWorkspaceUseCase,
   GetTenantPartyFiscalReadinessSummaryUseCase,
+  GetTenantPartyProductRoleBridgeWorkspaceUseCase,
+  GetTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase,
   ListTenantPartiesUseCase,
   PartyNotFoundError,
+  RequestTenantPartiesProductCloseoutPackUseCase,
 } from '@saas-platform/parties-application';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
@@ -30,12 +36,24 @@ import {
   PartyFiscalCorrectionResultResponseDto,
   PartyFiscalCleanupPacketResponseDto,
   PartyFiscalCleanupWorkspaceResponseDto,
+  PartiesProductCloseoutPackResponseDto,
+  PartyDirectoryCoreV2WorkspaceResponseDto,
+  PartyDuplicateMergeReadinessWorkspaceResponseDto,
+  PartyFiscalIdentityProfileWorkspaceResponseDto,
   PartyResponseDto,
+  PartyProductRoleBridgeWorkspaceResponseDto,
+  PartySupplierCustomerFiscalReadinessWorkspaceResponseDto,
+  toPartiesProductCloseoutPackResponseDto,
+  toPartyDirectoryCoreV2WorkspaceResponseDto,
+  toPartyDuplicateMergeReadinessWorkspaceResponseDto,
   toPartyFiscalCorrectionResultResponseDto,
   toPartyFiscalCleanupPacketResponseDto,
   toPartyFiscalCleanupWorkspaceResponseDto,
+  toPartyFiscalIdentityProfileWorkspaceResponseDto,
   toPartyFiscalReadinessSummaryResponseDto,
+  toPartyProductRoleBridgeWorkspaceResponseDto,
   toPartyResponseDto,
+  toPartySupplierCustomerFiscalReadinessWorkspaceResponseDto,
 } from './dto/party.response';
 
 type TenantAccessContext = {
@@ -66,6 +84,12 @@ export class PartiesController {
     private readonly getTenantPartyFiscalCleanupWorkspaceUseCase: GetTenantPartyFiscalCleanupWorkspaceUseCase,
     private readonly getTenantPartyFiscalCleanupPacketUseCase: GetTenantPartyFiscalCleanupPacketUseCase,
     private readonly applyTenantPartyFiscalCorrectionUseCase: ApplyTenantPartyFiscalCorrectionUseCase,
+    private readonly getTenantPartyDirectoryCoreV2WorkspaceUseCase: GetTenantPartyDirectoryCoreV2WorkspaceUseCase,
+    private readonly getTenantPartyFiscalIdentityProfileWorkspaceUseCase: GetTenantPartyFiscalIdentityProfileWorkspaceUseCase,
+    private readonly getTenantPartyProductRoleBridgeWorkspaceUseCase: GetTenantPartyProductRoleBridgeWorkspaceUseCase,
+    private readonly getTenantPartyDuplicateMergeReadinessWorkspaceUseCase: GetTenantPartyDuplicateMergeReadinessWorkspaceUseCase,
+    private readonly getTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase: GetTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase,
+    private readonly requestTenantPartiesProductCloseoutPackUseCase: RequestTenantPartiesProductCloseoutPackUseCase,
   ) {}
 
   @Get(':slug/parties')
@@ -80,6 +104,140 @@ export class PartiesController {
       );
 
       return parties.map((party) => toPartyResponseDto(party));
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/directory-core-v2')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.CUSTOMERS_READ)
+  async getTenantPartyDirectoryCoreV2Workspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PartyDirectoryCoreV2WorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantPartyDirectoryCoreV2WorkspaceUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toPartyDirectoryCoreV2WorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/fiscal-identity-profile')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.CUSTOMERS_READ)
+  async getTenantPartyFiscalIdentityProfileWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PartyFiscalIdentityProfileWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantPartyFiscalIdentityProfileWorkspaceUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toPartyFiscalIdentityProfileWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/product-role-bridge')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.CUSTOMERS_READ)
+  async getTenantPartyProductRoleBridgeWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PartyProductRoleBridgeWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantPartyProductRoleBridgeWorkspaceUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toPartyProductRoleBridgeWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/duplicate-merge-readiness')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.CUSTOMERS_READ)
+  async getTenantPartyDuplicateMergeReadinessWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PartyDuplicateMergeReadinessWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantPartyDuplicateMergeReadinessWorkspaceUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toPartyDuplicateMergeReadinessWorkspaceResponseDto(workspace);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/supplier-customer-fiscal-readiness')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.CUSTOMERS_READ)
+  async getTenantPartySupplierCustomerFiscalReadinessWorkspace(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PartySupplierCustomerFiscalReadinessWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toPartySupplierCustomerFiscalReadinessWorkspaceResponseDto(
+        workspace,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/product-closeout-pack')
+  @RequireTenantPermission(INVOICING_PERMISSIONS.CUSTOMERS_READ)
+  async requestTenantPartiesProductCloseoutPack(
+    @Param('slug') slug: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<PartiesProductCloseoutPackResponseDto> {
+    try {
+      const pack =
+        await this.requestTenantPartiesProductCloseoutPackUseCase.execute(
+          tenantAccess?.tenantSlug ?? slug,
+        );
+
+      return toPartiesProductCloseoutPackResponseDto(pack);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
@@ -169,8 +327,8 @@ export class PartiesController {
     @TenantAccess() tenantAccess?: TenantAccessContext,
   ): Promise<PartyFiscalCorrectionResultResponseDto> {
     try {
-      const result =
-        await this.applyTenantPartyFiscalCorrectionUseCase.execute({
+      const result = await this.applyTenantPartyFiscalCorrectionUseCase.execute(
+        {
           tenantSlug: tenantAccess?.tenantSlug ?? slug,
           partyId,
           taxpayerId: body.taxpayerId ?? null,
@@ -178,7 +336,8 @@ export class PartiesController {
           fiscalAddress: body.fiscalAddress ?? null,
           email: body.email ?? null,
           taxpayerName: body.taxpayerName ?? null,
-        });
+        },
+      );
 
       return toPartyFiscalCorrectionResultResponseDto(result);
     } catch (error) {

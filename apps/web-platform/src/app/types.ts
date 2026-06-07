@@ -10083,3 +10083,151 @@ export interface WhatsappOperationalMonitorAnalyticsResponse {
   alertFrequency: WhatsappOperationalAlertFrequencyResponse[];
   thresholdCalibration: WhatsappOperationalThresholdCalibrationResponse[];
 }
+
+export type PartyDirectoryV2ReadinessStatus =
+  | 'ready'
+  | 'needs_review'
+  | 'blocked';
+
+export interface PartyDirectoryV2SnapshotResponse {
+  id: string;
+  displayName: string;
+  roles: string[];
+  sourceContext: string;
+  taxpayerId: string | null;
+  identificationType: string | null;
+  fiscalAddress: string | null;
+  email: string | null;
+  completenessStatus: string;
+  missingFields: string[];
+  reviewNotes: string[];
+  linkedProducts: string[];
+  updatedAt: string;
+}
+
+export interface PartyDirectoryCoreV2WorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  readinessStatus: PartyDirectoryV2ReadinessStatus;
+  summary: {
+    totalParties: number;
+    completeParties: number;
+    needsReviewParties: number;
+    customerCount: number;
+    supplierCount: number;
+    linkedProductCount: number;
+  };
+  parties: PartyDirectoryV2SnapshotResponse[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface PartyFiscalIdentityProfileWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  readinessStatus: PartyDirectoryV2ReadinessStatus;
+  summary: {
+    totalParties: number;
+    completeProfiles: number;
+    needsReviewProfiles: number;
+    missingTaxpayerIdCount: number;
+    missingIdentificationTypeCount: number;
+    missingFiscalAddressCount: number;
+    missingEmailCount: number;
+  };
+  profiles: Array<{
+    partyId: string;
+    displayName: string;
+    taxpayerId: string | null;
+    taxpayerName: string;
+    identificationType: string | null;
+    fiscalAddress: string | null;
+    email: string | null;
+    status: string;
+    missingFields: string[];
+    reviewNotes: string[];
+  }>;
+  issueSummaries: Array<{ issue: string; count: number }>;
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface PartyProductRoleBridgeWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  readinessStatus: PartyDirectoryV2ReadinessStatus;
+  roleSummaries: Array<{
+    role: string;
+    totalParties: number;
+    linkedProducts: string[];
+    missingFiscalProfileCount: number;
+  }>;
+  productLinks: Array<{
+    productKey: string;
+    role: string;
+    partyIds: string[];
+    readinessImpact: string;
+  }>;
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface PartyDuplicateMergeReadinessWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  readinessStatus: PartyDirectoryV2ReadinessStatus;
+  summary: {
+    duplicateGroupCount: number;
+    affectedPartyCount: number;
+    blockingGroupCount: number;
+  };
+  duplicateGroups: Array<{
+    key: string;
+    reason: 'taxpayer_id' | 'email' | 'display_name';
+    partyIds: string[];
+    displayNames: string[];
+    suggestedSurvivorPartyId: string | null;
+    mergeRisk: 'high' | 'medium' | 'low';
+    checklist: string[];
+  }>;
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface PartySupplierCustomerFiscalReadinessWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  readinessStatus: PartyDirectoryV2ReadinessStatus;
+  summary: {
+    customerCount: number;
+    supplierCount: number;
+    readyForInvoicingCount: number;
+    readyForTaxComplianceCount: number;
+    blockedForDeclarationsCount: number;
+  };
+  customerReadiness: PartyDirectoryV2SnapshotResponse[];
+  supplierReadiness: PartyDirectoryV2SnapshotResponse[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface PartiesProductCloseoutPackResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  readinessStatus: PartyDirectoryV2ReadinessStatus;
+  directoryCore: PartyDirectoryCoreV2WorkspaceResponse['summary'];
+  fiscalIdentity: PartyFiscalIdentityProfileWorkspaceResponse['summary'];
+  productRoleBridge: PartyProductRoleBridgeWorkspaceResponse['roleSummaries'];
+  duplicateMerge: PartyDuplicateMergeReadinessWorkspaceResponse['summary'];
+  supplierCustomerReadiness: PartySupplierCustomerFiscalReadinessWorkspaceResponse['summary'];
+  acceptanceChecklist: Array<{
+    item: string;
+    status: 'passed' | 'needs_review' | 'blocked';
+    evidence: string;
+  }>;
+  recommendedNextProduct:
+    | 'tax-compliance-hardening'
+    | 'accounting-advanced-discovery';
+  nextStep: string;
+  guardrails: string[];
+}

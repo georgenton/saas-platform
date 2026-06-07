@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.1
+
+### Patch Changes
+
+- 1df20c9: Add an Accounting opening balance workspace that reviews balance-sheet opening lines, exposes suggested opening adjustments, feeds closeout certification, and appears in the Accounting console and smoke flow.
+
 ## 0.107.0
 
 ### Minor Changes

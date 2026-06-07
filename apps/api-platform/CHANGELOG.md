@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.2
+
+### Patch Changes
+
+- 2637982: Expand Accounting foundation with opening balance approval/control/materialization, bank account registry, bank import profiles, and an operational command center.
+
 ## 0.107.1
 
 ### Patch Changes

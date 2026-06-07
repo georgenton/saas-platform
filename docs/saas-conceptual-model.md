@@ -1180,6 +1180,10 @@ product. Its current scope is intentionally operational and review-oriented:
     closeout timeline, legal books readiness, financial statement final review,
     and foundation closeout summary as the closeout-ready Accounting foundation
     capstone
+16. opening balance workspace as the next operating layer for starting a period
+    with reviewed balance-sheet accounts, suggested opening adjustments, and
+    certification blockers before bank reconciliation, financial statements,
+    or professional closeout are treated as complete
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

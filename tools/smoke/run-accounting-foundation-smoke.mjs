@@ -65,24 +65,33 @@ if (!accountingEnabled) {
 
 printLine('product access', 'accounting');
 
-const [intakeWorkspace, chartOfAccountsWorkspace, journalDraftPreview] =
-  await Promise.all([
-    apiRequest({
-      baseUrl,
-      path: accountingPath(`/intake-workspace?${periodQuery()}`),
-      token,
-    }),
-    apiRequest({
-      baseUrl,
-      path: accountingPath(`/chart-of-accounts-workspace?${periodQuery()}`),
-      token,
-    }),
-    apiRequest({
-      baseUrl,
-      path: accountingPath(`/journal-draft-preview?${periodQuery()}`),
-      token,
-    }),
-  ]);
+const [
+  intakeWorkspace,
+  chartOfAccountsWorkspace,
+  journalDraftPreview,
+  openingBalanceWorkspace,
+] = await Promise.all([
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/intake-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/chart-of-accounts-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/journal-draft-preview?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/opening-balance-workspace?${periodQuery()}`),
+    token,
+  }),
+]);
 
 assertStatus('intake workspace', intakeWorkspace.readinessStatus);
 assertStatus(
@@ -90,6 +99,10 @@ assertStatus(
   chartOfAccountsWorkspace.readinessStatus,
 );
 assertStatus('journal draft preview', journalDraftPreview.journalStatus);
+assertStatus(
+  'opening balance workspace',
+  openingBalanceWorkspace.openingBalanceStatus,
+);
 
 if (!Array.isArray(chartOfAccountsWorkspace.accounts)) {
   throw new Error('chart-of-accounts-workspace no devolvio accounts[].');
@@ -107,6 +120,10 @@ printLine(
 printLine(
   'journal drafts',
   `${journalDraftPreview.summary.draftEntryCount} borradores, ${journalDraftPreview.summary.balancedDraftCount} balanceados`,
+);
+printLine(
+  'opening balances',
+  `${openingBalanceWorkspace.summary.readyLineCount}/${openingBalanceWorkspace.summary.lineCount} listas, ${openingBalanceWorkspace.openingBalanceStatus}`,
 );
 printLine('next step', journalDraftPreview.nextStep);
 
@@ -455,7 +472,10 @@ const exceptionPacket = await apiRequest({
   },
 });
 
-assertStatus('reconciliation exception packet', exceptionPacket.exceptionStatus);
+assertStatus(
+  'reconciliation exception packet',
+  exceptionPacket.exceptionStatus,
+);
 printLine(
   'reconciliation exceptions',
   `${exceptionPacket.summary.exceptionCount} excepciones, ${exceptionPacket.exceptionStatus}`,
@@ -688,7 +708,10 @@ const transitionedReview = await apiRequest({
   },
 });
 
-assertStatus('accounting accountant review transition', transitionedReview.status);
+assertStatus(
+  'accounting accountant review transition',
+  transitionedReview.status,
+);
 printLine('review transition', transitionedReview.status);
 
 const reviewResolutionPacket = await apiRequest({
@@ -714,9 +737,7 @@ printLine(
 
 const certificationReadiness = await apiRequest({
   baseUrl,
-  path: accountingPath(
-    `/closeout-certification-readiness?${periodQuery()}`,
-  ),
+  path: accountingPath(`/closeout-certification-readiness?${periodQuery()}`),
   token,
 });
 
@@ -806,7 +827,10 @@ const evidenceAttachment = await apiRequest({
 });
 
 assertStatus('accounting evidence attachment', evidenceAttachment.status);
-printLine('evidence attachment', `${evidenceAttachment.id}, ${evidenceAttachment.status}`);
+printLine(
+  'evidence attachment',
+  `${evidenceAttachment.id}, ${evidenceAttachment.status}`,
+);
 
 const evidenceAttachmentRegistry = await apiRequest({
   baseUrl,
@@ -829,7 +853,10 @@ const narrativeReport = await apiRequest({
   token,
 });
 
-assertStatus('accounting period narrative report', narrativeReport.reportStatus);
+assertStatus(
+  'accounting period narrative report',
+  narrativeReport.reportStatus,
+);
 printLine(
   'narrative report',
   `${narrativeReport.summary.sectionCount} secciones, ${narrativeReport.reportStatus}`,
@@ -889,7 +916,10 @@ const externalCloseoutRecord = await apiRequest({
   },
 });
 
-assertStatus('accounting external closeout record', externalCloseoutRecord.status);
+assertStatus(
+  'accounting external closeout record',
+  externalCloseoutRecord.status,
+);
 printLine(
   'external closeout',
   `${externalCloseoutRecord.id}, ${externalCloseoutRecord.status}`,
@@ -921,7 +951,10 @@ const closeoutTimeline = await apiRequest({
   token,
 });
 
-assertStatus('accounting period closeout timeline', closeoutTimeline.timelineStatus);
+assertStatus(
+  'accounting period closeout timeline',
+  closeoutTimeline.timelineStatus,
+);
 printLine(
   'closeout timeline',
   `${closeoutTimeline.summary.eventCount} eventos, ${closeoutTimeline.timelineStatus}`,

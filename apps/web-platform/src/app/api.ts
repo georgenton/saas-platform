@@ -21,6 +21,7 @@ import {
   AccountingJournalDraftPreviewResponse,
   AccountingLedgerRegistryWorkspaceResponse,
   AccountingLedgerPreviewWorkspaceResponse,
+  AccountingOpeningBalanceWorkspaceResponse,
   AccountingPeriodCloseoutPacketResponse,
   AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
@@ -1829,6 +1830,25 @@ export async function fetchAccountingJournalDraftPreview(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/journal-draft-preview?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAccountingOpeningBalanceWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingOpeningBalanceWorkspaceResponse> {
+  return request<AccountingOpeningBalanceWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/opening-balance-workspace?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     {

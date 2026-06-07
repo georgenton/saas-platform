@@ -29,6 +29,7 @@ import {
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingOpeningBalanceWorkspaceUseCase,
   GetTenantAccountingPeriodCashCloseoutReadinessUseCase,
   GetTenantAccountingPeriodCloseoutReportUseCase,
   GetTenantAccountingPeriodCloseoutReadinessUseCase,
@@ -178,6 +179,10 @@ import {
   toAccountingLedgerPreviewWorkspaceResponseDto,
 } from './dto/accounting-ledger-preview-workspace.response';
 import {
+  AccountingOpeningBalanceWorkspaceResponseDto,
+  toAccountingOpeningBalanceWorkspaceResponseDto,
+} from './dto/accounting-opening-balance-workspace.response';
+import {
   AccountingPeriodCloseoutPacketResponseDto,
   RequestAccountingPeriodCloseoutPacketRequestDto,
   toAccountingPeriodCloseoutPacketResponseDto,
@@ -250,6 +255,7 @@ export class AccountingController {
     private readonly getTenantAccountingIntakeWorkspaceUseCase: GetTenantAccountingIntakeWorkspaceUseCase,
     private readonly getTenantAccountingChartOfAccountsWorkspaceUseCase: GetTenantAccountingChartOfAccountsWorkspaceUseCase,
     private readonly getTenantAccountingJournalDraftPreviewUseCase: GetTenantAccountingJournalDraftPreviewUseCase,
+    private readonly getTenantAccountingOpeningBalanceWorkspaceUseCase: GetTenantAccountingOpeningBalanceWorkspaceUseCase,
     private readonly manageTenantAccountingChartMappingUseCase: ManageTenantAccountingChartMappingUseCase,
     private readonly requestTenantAccountingJournalDraftApprovalPacketUseCase: RequestTenantAccountingJournalDraftApprovalPacketUseCase,
     private readonly getTenantAccountingLedgerPreviewWorkspaceUseCase: GetTenantAccountingLedgerPreviewWorkspaceUseCase,
@@ -396,6 +402,31 @@ export class AccountingController {
         });
 
       return toAccountingJournalDraftPreviewResponseDto(preview);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/opening-balance-workspace')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getOpeningBalanceWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingOpeningBalanceWorkspaceResponseDto> {
+    try {
+      const workspace =
+        await this.getTenantAccountingOpeningBalanceWorkspaceUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingOpeningBalanceWorkspaceResponseDto(workspace);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
@@ -717,21 +748,23 @@ export class AccountingController {
   ): Promise<AccountingBankReconciliationControlResponseDto> {
     try {
       const control =
-        await this.recordTenantAccountingBankReconciliationControlUseCase.execute({
-          tenantSlug,
-          period: body.period,
-          year: body.year,
-          eventType: body.eventType,
-          status: body.status,
-          source: body.source,
-          actorUserId: body.actorUserId ?? null,
-          actorEmail: body.actorEmail ?? null,
-          reason: body.reason ?? null,
-          evidenceReference: body.evidenceReference ?? null,
-          payload: body.payload ?? {},
-          blockers: body.blockers ?? [],
-          impactChecklist: body.impactChecklist ?? [],
-        });
+        await this.recordTenantAccountingBankReconciliationControlUseCase.execute(
+          {
+            tenantSlug,
+            period: body.period,
+            year: body.year,
+            eventType: body.eventType,
+            status: body.status,
+            source: body.source,
+            actorUserId: body.actorUserId ?? null,
+            actorEmail: body.actorEmail ?? null,
+            reason: body.reason ?? null,
+            evidenceReference: body.evidenceReference ?? null,
+            payload: body.payload ?? {},
+            blockers: body.blockers ?? [],
+            impactChecklist: body.impactChecklist ?? [],
+          },
+        );
 
       return toAccountingBankReconciliationControlResponseDto(control);
     } catch (error) {
@@ -774,7 +807,8 @@ export class AccountingController {
   @RequireTenantPermission(ACCOUNTING_PERMISSIONS.MANAGE)
   async requestReconciliationExceptionResolutionPacket(
     @Param('slug') tenantSlug: string,
-    @Body() body: RequestAccountingReconciliationExceptionResolutionPacketRequestDto,
+    @Body()
+    body: RequestAccountingReconciliationExceptionResolutionPacketRequestDto,
   ): Promise<AccountingReconciliationExceptionResolutionPacketResponseDto> {
     try {
       const packet =
@@ -793,7 +827,9 @@ export class AccountingController {
           },
         );
 
-      return toAccountingReconciliationExceptionResolutionPacketResponseDto(packet);
+      return toAccountingReconciliationExceptionResolutionPacketResponseDto(
+        packet,
+      );
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
@@ -1212,11 +1248,13 @@ export class AccountingController {
   ): Promise<AccountingAccountantHandoffWorkspaceResponseDto> {
     try {
       const workspace =
-        await this.getTenantAccountingAccountantHandoffWorkspaceUseCase.execute({
-          tenantSlug,
-          period,
-          year: Number.parseInt(year, 10),
-        });
+        await this.getTenantAccountingAccountantHandoffWorkspaceUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
 
       return toAccountingAccountantHandoffWorkspaceResponseDto(workspace);
     } catch (error) {
@@ -1317,12 +1355,14 @@ export class AccountingController {
   ): Promise<AccountingReviewResolutionPacketResponseDto> {
     try {
       const packet =
-        await this.requestTenantAccountingReviewResolutionPacketUseCase.execute({
-          tenantSlug,
-          period: body.period,
-          year: body.year,
-          reviewId: body.reviewId ?? null,
-        });
+        await this.requestTenantAccountingReviewResolutionPacketUseCase.execute(
+          {
+            tenantSlug,
+            period: body.period,
+            year: body.year,
+            reviewId: body.reviewId ?? null,
+          },
+        );
 
       return toAccountingReviewResolutionPacketResponseDto(packet);
     } catch (error) {
@@ -1401,11 +1441,12 @@ export class AccountingController {
     @Query('period') period = '2026-06',
     @Query('year') year = '2026',
   ): Promise<AccountingCorrectionsQueueResponseDto> {
-    const queue = await this.listTenantAccountingCorrectionsQueueUseCase.execute({
-      tenantSlug,
-      period,
-      year: Number.parseInt(year, 10),
-    });
+    const queue =
+      await this.listTenantAccountingCorrectionsQueueUseCase.execute({
+        tenantSlug,
+        period,
+        year: Number.parseInt(year, 10),
+      });
 
     return toAccountingCorrectionsQueueResponseDto(queue);
   }

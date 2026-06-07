@@ -123,6 +123,7 @@ import {
   fetchAccountingJournalRegistry,
   fetchAccountingLedgerRegistryWorkspace,
   fetchAccountingLedgerPreviewWorkspace,
+  fetchAccountingOpeningBalanceWorkspace,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -437,6 +438,7 @@ import {
   AccountingJournalDraftPreviewResponse,
   AccountingLedgerRegistryWorkspaceResponse,
   AccountingLedgerPreviewWorkspaceResponse,
+  AccountingOpeningBalanceWorkspaceResponse,
   AccountingPeriodCloseoutPacketResponse,
   AccountingPeriodCloseoutReportResponse,
   AccountingPeriodCloseoutReadinessResponse,
@@ -2212,6 +2214,10 @@ export function App() {
     accountingJournalDraftPreview,
     setAccountingJournalDraftPreview,
   ] = useState<AccountingJournalDraftPreviewResponse | null>(null);
+  const [
+    accountingOpeningBalanceWorkspace,
+    setAccountingOpeningBalanceWorkspace,
+  ] = useState<AccountingOpeningBalanceWorkspaceResponse | null>(null);
   const [
     lastAccountingChartMappingManagement,
     setLastAccountingChartMappingManagement,
@@ -19977,6 +19983,7 @@ export function App() {
         nextAccountingIntakeWorkspace,
         nextAccountingChartOfAccountsWorkspace,
         nextAccountingJournalDraftPreview,
+        nextAccountingOpeningBalanceWorkspace,
         nextAccountingLedgerPreviewWorkspace,
         nextAccountingJournalRegistry,
         nextAccountingLedgerRegistryWorkspace,
@@ -20020,6 +20027,12 @@ export function App() {
               year,
             ),
             fetchAccountingJournalDraftPreview(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchAccountingOpeningBalanceWorkspace(
               token,
               tenantSlug,
               taxCompliancePeriod,
@@ -20212,6 +20225,7 @@ export function App() {
             null,
             null,
             null,
+            null,
             [],
             null,
             null,
@@ -20312,6 +20326,9 @@ export function App() {
           nextAccountingChartOfAccountsWorkspace,
         );
         setAccountingJournalDraftPreview(nextAccountingJournalDraftPreview);
+        setAccountingOpeningBalanceWorkspace(
+          nextAccountingOpeningBalanceWorkspace,
+        );
         setAccountingLedgerPreviewWorkspace(
           nextAccountingLedgerPreviewWorkspace,
         );
@@ -32442,6 +32459,85 @@ export function App() {
                                   }{' '}
                                   guardados
                                 </span>
+                              </div>
+                            ) : null}
+                            {accountingOpeningBalanceWorkspace ? (
+                              <div className={styles.invoiceItemCard}>
+                                <div className={styles.invoiceCardHeader}>
+                                  <strong>Saldos iniciales</strong>
+                                  <span
+                                    className={`${styles.statusPill} ${operationalStatusTone(
+                                      accountingOpeningBalanceWorkspace.openingBalanceStatus,
+                                    )}`}
+                                  >
+                                    {humanizeKey(
+                                      accountingOpeningBalanceWorkspace.openingBalanceStatus,
+                                    )}
+                                  </span>
+                                </div>
+                                <div className={styles.commercialGrid}>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
+                                      Periodo previo
+                                    </span>
+                                    <strong>
+                                      {
+                                        accountingOpeningBalanceWorkspace.previousPeriod
+                                      }
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      base apertura
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>Lineas</span>
+                                    <strong>
+                                      {
+                                        accountingOpeningBalanceWorkspace.summary
+                                          .lineCount
+                                      }
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {
+                                        accountingOpeningBalanceWorkspace.summary
+                                          .readyLineCount
+                                      }{' '}
+                                      listas
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>Debito</span>
+                                    <strong>
+                                      {formatMoney(
+                                        accountingOpeningBalanceWorkspace.summary
+                                          .totalDebitInCents,
+                                        'USD',
+                                      )}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      apertura
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>Credito</span>
+                                    <strong>
+                                      {formatMoney(
+                                        accountingOpeningBalanceWorkspace.summary
+                                          .totalCreditInCents,
+                                        'USD',
+                                      )}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingOpeningBalanceWorkspace.summary
+                                        .balanced
+                                        ? 'balanceado'
+                                        : 'por revisar'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <p className={styles.muted}>
+                                  {accountingOpeningBalanceWorkspace.nextStep}
+                                </p>
                               </div>
                             ) : null}
                             {accountingLedgerPreviewWorkspace ? (

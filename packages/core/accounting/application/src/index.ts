@@ -27,6 +27,7 @@ export * from './lib/use-cases/get-tenant-accounting-professional-closeout-works
 export * from './lib/use-cases/get-tenant-accounting-journal-draft-preview.use-case';
 export * from './lib/use-cases/get-tenant-accounting-ledger-registry-workspace.use-case';
 export * from './lib/use-cases/get-tenant-accounting-ledger-preview-workspace.use-case';
+export * from './lib/use-cases/get-tenant-accounting-opening-balance-workspace.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-lock-readiness.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-reconciliation-readiness.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-cash-closeout-readiness.use-case';

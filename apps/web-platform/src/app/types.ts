@@ -1285,7 +1285,11 @@ export interface EcuadorTaxObligationSettingsResponse {
 }
 
 export interface UpsertEcuadorTaxObligationSettingsRequest {
-  regime?: 'general' | 'rimpe_entrepreneur' | 'rimpe_popular_business' | 'unknown';
+  regime?:
+    | 'general'
+    | 'rimpe_entrepreneur'
+    | 'rimpe_popular_business'
+    | 'unknown';
   accountingObligated?: boolean | null;
   specialTaxpayerCode?: string | null;
   ninthDigit?: string | null;
@@ -1817,6 +1821,60 @@ export interface AccountingJournalDraftPreviewResponse {
     needsMappingDraftCount: number;
     totalDebitInCents: number;
     totalCreditInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingOpeningBalanceWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  openingBalanceStatus: string;
+  previousPeriod: string;
+  balanceLines: Array<{
+    lineKey: string;
+    accountCode: string;
+    accountName: string;
+    category: string;
+    debitInCents: number;
+    creditInCents: number;
+    source: string;
+    reviewStatus: string;
+    sourceJournalEntryIds: string[];
+    notes: string[];
+  }>;
+  suggestedAdjustment: {
+    adjustmentKey: string;
+    label: string;
+    currency: string;
+    lines: Array<{
+      lineKey: string;
+      accountCode: string;
+      accountName: string;
+      debitInCents: number;
+      creditInCents: number;
+      sourceEntryKey: string;
+      accountHint: string;
+      notes: string[];
+    }>;
+    totals: {
+      debitInCents: number;
+      creditInCents: number;
+      balanced: boolean;
+    };
+  } | null;
+  summary: {
+    lineCount: number;
+    readyLineCount: number;
+    needsReviewLineCount: number;
+    blockedLineCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+    balanced: boolean;
   };
   blockers: string[];
   nextStep: string;
@@ -2964,7 +3022,12 @@ export interface RequestAccountingAccountantReviewRequest {
 }
 
 export interface TransitionAccountingAccountantReviewRequest {
-  status: 'requested' | 'in_review' | 'changes_requested' | 'approved' | 'rejected';
+  status:
+    | 'requested'
+    | 'in_review'
+    | 'changes_requested'
+    | 'approved'
+    | 'rejected';
   transitionedByUserId?: string | null;
   note?: string | null;
 }
@@ -3427,7 +3490,10 @@ export interface EcuadorTaxSriFiscalEvidenceWorkspaceResponse {
 }
 
 export interface EcuadorTaxSriFiscalEvidenceImportBatchResponse
-  extends Omit<EcuadorTaxSriFiscalEvidenceWorkspaceResponse, 'source' | 'totalsByDirectionAndCurrency' | 'nextStep'> {
+  extends Omit<
+    EcuadorTaxSriFiscalEvidenceWorkspaceResponse,
+    'source' | 'totalsByDirectionAndCurrency' | 'nextStep'
+  > {
   importId: string;
   source: string;
   importedByUserId: string | null;

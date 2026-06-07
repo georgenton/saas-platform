@@ -173,6 +173,63 @@ export interface TenantAccountingBankReconciliationWorkspaceView {
   guardrails: string[];
 }
 
+export interface TenantAccountingOpeningBalanceWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: AccountingReadinessStatus;
+  openingBalanceStatus: 'ready_for_review' | 'needs_opening_review' | 'blocked';
+  previousPeriod: string;
+  balanceLines: Array<{
+    lineKey: string;
+    accountCode: string;
+    accountName: string;
+    category: AccountingAccountCategory;
+    debitInCents: number;
+    creditInCents: number;
+    source:
+      | 'current_ledger_baseline'
+      | 'chart_account_placeholder'
+      | 'manual_required';
+    reviewStatus: AccountingReadinessStatus;
+    sourceJournalEntryIds: string[];
+    notes: string[];
+  }>;
+  suggestedAdjustment: {
+    adjustmentKey: string;
+    label: string;
+    currency: string;
+    lines: Array<{
+      lineKey: string;
+      accountCode: string;
+      accountName: string;
+      debitInCents: number;
+      creditInCents: number;
+      sourceEntryKey: string;
+      accountHint: string;
+      notes: string[];
+    }>;
+    totals: {
+      debitInCents: number;
+      creditInCents: number;
+      balanced: boolean;
+    };
+  } | null;
+  summary: {
+    lineCount: number;
+    readyLineCount: number;
+    needsReviewLineCount: number;
+    blockedLineCount: number;
+    totalDebitInCents: number;
+    totalCreditInCents: number;
+    balanced: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface TenantAccountingBankStatementLineView {
   id: string;
   batchId: string;
@@ -735,11 +792,7 @@ export interface TenantAccountingFinancialStatementReviewPacketView {
   period: string;
   year: number;
   generatedAt: Date;
-  reviewStatus:
-    | 'ready_for_approval'
-    | 'approved'
-    | 'flagged'
-    | 'blocked';
+  reviewStatus: 'ready_for_approval' | 'approved' | 'flagged' | 'blocked';
   decision: 'prepare' | 'approve' | 'flag';
   reviewerUserId: string | null;
   reviewerEmail: string | null;
@@ -1246,7 +1299,10 @@ export interface TenantAccountingLegalBooksReadinessPacketView {
   period: string;
   year: number;
   generatedAt: Date;
-  readinessStatus: 'ready_for_legal_book_preparation' | 'needs_review' | 'blocked';
+  readinessStatus:
+    | 'ready_for_legal_book_preparation'
+    | 'needs_review'
+    | 'blocked';
   checks: Array<{
     key: string;
     label: string;
@@ -1304,7 +1360,10 @@ export interface TenantAccountingFoundationCloseoutSummaryView {
   closeoutTimeline: TenantAccountingPeriodCloseoutTimelineView;
   completedScope: string[];
   advancedAccountingBacklog: string[];
-  recommendedNextProduct: 'tax_compliance_deeper' | 'parties_2_0' | 'accounting_advanced';
+  recommendedNextProduct:
+    | 'tax_compliance_deeper'
+    | 'parties_2_0'
+    | 'accounting_advanced';
   summary: {
     completedScopeCount: number;
     backlogItemCount: number;

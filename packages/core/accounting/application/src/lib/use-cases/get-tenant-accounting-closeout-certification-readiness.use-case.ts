@@ -8,6 +8,7 @@ import {
 } from '@saas-platform/tenancy-application';
 import { AccountingAccountantReviewRepository } from '../ports/accounting-accountant-review.repository';
 import { GetTenantAccountingAccountantHandoffWorkspaceUseCase } from './get-tenant-accounting-accountant-handoff-workspace.use-case';
+import { GetTenantAccountingOpeningBalanceWorkspaceUseCase } from './get-tenant-accounting-opening-balance-workspace.use-case';
 import { RequestTenantAccountingReviewResolutionPacketUseCase } from './request-tenant-accounting-review-resolution-packet.use-case';
 
 export class GetTenantAccountingCloseoutCertificationReadinessUseCase {
@@ -15,6 +16,7 @@ export class GetTenantAccountingCloseoutCertificationReadinessUseCase {
     private readonly tenantRepository: TenantRepository,
     private readonly reviewRepository: AccountingAccountantReviewRepository,
     private readonly getTenantAccountingAccountantHandoffWorkspaceUseCase: GetTenantAccountingAccountantHandoffWorkspaceUseCase,
+    private readonly getTenantAccountingOpeningBalanceWorkspaceUseCase: GetTenantAccountingOpeningBalanceWorkspaceUseCase,
     private readonly requestTenantAccountingReviewResolutionPacketUseCase: RequestTenantAccountingReviewResolutionPacketUseCase,
     private readonly nowProvider: () => Date = () => new Date(),
   ) {}
@@ -30,14 +32,31 @@ export class GetTenantAccountingCloseoutCertificationReadinessUseCase {
       throw new TenantNotFoundError(input.tenantSlug);
     }
 
-    const [reviews, handoff, resolutionPacket] = await Promise.all([
-      this.reviewRepository.listByTenantIdAndPeriod(tenant.id, input.period),
-      this.getTenantAccountingAccountantHandoffWorkspaceUseCase.execute(input),
-      this.requestTenantAccountingReviewResolutionPacketUseCase.execute(input),
-    ]);
+    const [reviews, handoff, openingBalance, resolutionPacket] =
+      await Promise.all([
+        this.reviewRepository.listByTenantIdAndPeriod(tenant.id, input.period),
+        this.getTenantAccountingAccountantHandoffWorkspaceUseCase.execute(
+          input,
+        ),
+        this.getTenantAccountingOpeningBalanceWorkspaceUseCase.execute(input),
+        this.requestTenantAccountingReviewResolutionPacketUseCase.execute(
+          input,
+        ),
+      ]);
     const latestAccountantReview = reviews[0] ?? null;
     const checks: TenantAccountingCloseoutCertificationReadinessView['checks'] =
       [
+        check(
+          'opening_balances',
+          'Opening balances',
+          openingBalance.openingBalanceStatus === 'ready_for_review'
+            ? 'ready'
+            : openingBalance.openingBalanceStatus === 'blocked'
+              ? 'blocked'
+              : 'needs_review',
+          `${openingBalance.summary.readyLineCount}/${openingBalance.summary.lineCount} saldos iniciales listos.`,
+          openingBalance.blockers.length,
+        ),
         check(
           'handoff',
           'Accountant handoff',
@@ -100,6 +119,7 @@ export class GetTenantAccountingCloseoutCertificationReadinessUseCase {
       ];
     const blockers = [
       ...handoff.blockers,
+      ...openingBalance.blockers,
       ...resolutionPacket.blockers,
       ...(latestAccountantReview
         ? []
@@ -136,7 +156,8 @@ export class GetTenantAccountingCloseoutCertificationReadinessUseCase {
       resolutionPacket,
       summary: {
         checkCount: checks.length,
-        readyCheckCount: checks.filter((item) => item.status === 'ready').length,
+        readyCheckCount: checks.filter((item) => item.status === 'ready')
+          .length,
         needsReviewCheckCount,
         blockedCheckCount,
         accountantReviewCount: reviews.length,

@@ -193,6 +193,12 @@ const [
   commandCenterV2,
   assistedDeclarationReviewPackV2,
   accountingBoundaryCloseout,
+  sriSourceImportCenterV2,
+  vatDeclarationWorkspaceV2,
+  incomeTaxEvidenceWorkspaceV2,
+  filingAssistantV2,
+  accountantEscalationBoundary,
+  complianceCloseoutV2,
   accountantCollaborationPack,
   filingEvidenceVaultV2,
   exceptionCenter,
@@ -422,6 +428,36 @@ const [
   }),
   apiRequest({
     baseUrl,
+    path: taxPath(`/sri-source-import-center-v2?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/vat-declaration-workspace-v2?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/income-tax-evidence-workspace-v2?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/filing-assistant-v2?${periodQuery()}&formKey=iva`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accountant-escalation-service-boundary?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/compliance-closeout-v2?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
     path: taxPath(`/accountant-collaboration-pack?${periodQuery()}`),
     token,
   }),
@@ -573,6 +609,21 @@ assertStatus(
   'accounting boundary closeout',
   accountingBoundaryCloseout.boundaryStatus,
 );
+assertStatus('sri source import center v2', sriSourceImportCenterV2.centerStatus);
+assertStatus(
+  'vat declaration workspace v2',
+  vatDeclarationWorkspaceV2.readinessStatus,
+);
+assertStatus(
+  'income tax evidence workspace v2',
+  incomeTaxEvidenceWorkspaceV2.readinessStatus,
+);
+assertStatus('filing assistant v2', filingAssistantV2.assistantStatus);
+assertStatus(
+  'accountant escalation boundary',
+  accountantEscalationBoundary.escalationStatus,
+);
+assertStatus('compliance closeout v2', complianceCloseoutV2.closeoutStatus);
 assertStatus(
   'accountant collaboration pack',
   accountantCollaborationPack.readinessStatus,
@@ -731,6 +782,24 @@ printLine(
   'tax/accounting boundary',
   accountingBoundaryCloseout.boundaryStatus,
 );
+printLine('sri import center v2', sriSourceImportCenterV2.centerStatus);
+printLine(
+  'vat declaration v2',
+  `${vatDeclarationWorkspaceV2.summary.readyBucketCount}/${vatDeclarationWorkspaceV2.summary.bucketCount}`,
+);
+printLine(
+  'income tax v2',
+  incomeTaxEvidenceWorkspaceV2.summary.estimatedTaxableBaseInCents,
+);
+printLine(
+  'filing assistant v2',
+  `${filingAssistantV2.assistantStatus} · ${filingAssistantV2.summary.stepCount} steps`,
+);
+printLine(
+  'accountant escalation',
+  accountantEscalationBoundary.escalationStatus,
+);
+printLine('compliance closeout v2', complianceCloseoutV2.closeoutStatus);
 printLine(
   'collaboration questions',
   accountantCollaborationPack.summary.questionCount,

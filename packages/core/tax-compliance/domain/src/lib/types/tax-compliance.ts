@@ -1508,6 +1508,173 @@ export interface EcuadorTaxComplianceCloseoutV2View {
   guardrails: string[];
 }
 
+export interface EcuadorTaxEvidenceQualityCenterView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  qualityStatus: EcuadorTaxReadinessStatus;
+  closeout: EcuadorTaxComplianceCloseoutV2View;
+  qualityFindings: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    source: 'sri' | 'platform' | 'accounting' | 'manual' | 'cross_check';
+    severity: EcuadorTaxReviewPriority;
+    recommendedAction: string;
+  }>;
+  summary: {
+    findingCount: number;
+    readyFindingCount: number;
+    blockedFindingCount: number;
+    criticalFindingCount: number;
+    qualityScore: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxObligationRiskMonitorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  riskStatus: EcuadorTaxReadinessStatus;
+  qualityCenter: EcuadorTaxEvidenceQualityCenterView;
+  obligationRisks: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    riskLevel: EcuadorTaxReviewPriority;
+    dueSignal: string;
+    evidenceSignal: string;
+    accountantRequired: boolean;
+    recommendedAction: string;
+  }>;
+  summary: {
+    obligationRiskCount: number;
+    criticalRiskCount: number;
+    accountantRequiredCount: number;
+    blockedRiskCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantHandoffRoomV2View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  roomStatus: EcuadorTaxReadinessStatus;
+  riskMonitor: EcuadorTaxObligationRiskMonitorView;
+  filingHandoff: EcuadorTaxFilingHandoffView;
+  handoffSections: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    owner: 'operator' | 'accountant' | 'system';
+    questionCount: number;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    accountantSectionCount: number;
+    questionCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxFilingReadinessCertificateView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  certificateStatus: 'blocked' | 'ready_for_accountant_review' | 'ready_for_external_filing';
+  handoffRoom: EcuadorTaxAccountantHandoffRoomV2View;
+  certificationItems: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidence: string[];
+    attestation: string;
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    blockerCount: number;
+    accountantQuestionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxOperatingDashboardV3View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  dashboardStatus: EcuadorTaxReadinessStatus;
+  commandCenter: EcuadorTaxCommandCenterV2View;
+  qualityCenter: EcuadorTaxEvidenceQualityCenterView;
+  riskMonitor: EcuadorTaxObligationRiskMonitorView;
+  readinessCertificate: EcuadorTaxFilingReadinessCertificateView;
+  dashboardTiles: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    primaryMetric: string;
+    secondaryMetric: string;
+    nextAction: string;
+  }>;
+  summary: {
+    tileCount: number;
+    readyTileCount: number;
+    blockerCount: number;
+    accountantRequiredCount: number;
+    qualityScore: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxComplianceProductCloseoutV3View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: 'mvp_operable' | 'needs_hardening' | 'blocked';
+  dashboard: EcuadorTaxOperatingDashboardV3View;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidence: string[];
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    operatingSurfaceCount: number;
+    qualityScore: number;
+  };
+  recommendedNextProduct:
+    | 'tax_compliance_hardening'
+    | 'parties_2_0'
+    | 'accounting_advanced_discovery';
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxFilingGuidePacketView {
   tenantSlug: string;
   period: string;

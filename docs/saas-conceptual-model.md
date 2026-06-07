@@ -1255,6 +1255,37 @@ Compliance EC. If the closeout repeatedly shows needs around formal books,
 certified bank feeds or accountant-owned closeout, open Accounting Advanced
 discovery.
 
+### Tax Compliance EC party hardening 4.0
+
+After Parties 2.0 closeout, Tax Compliance EC consumes the shared fiscal
+directory as a hardening layer for declarations. The goal is to connect third
+party data quality to VAT, income tax, withholdings, annexes, assisted
+corrections and accountant review without claiming automated filing.
+
+1. `Tax Compliance Party Evidence Bridge`
+   - maps Parties 2.0 identity, duplicate and customer/supplier readiness into
+     tax risks for IVA, renta, retenciones and anexos
+2. `SRI Taxpayer Validation Readiness`
+   - prepares candidate checks for RUC/cedula, identification type, taxpayer
+     name and future official SRI validation or imported evidence comparison
+3. `Declaration Party Impact Workspace`
+   - groups risky parties by declaration type so operators can see exactly why
+     a taxpayer, supplier or duplicate blocks a form
+4. `Assisted Fiscal Correction Flow`
+   - converts party risks into correction candidates with suggested payloads,
+     affected declarations and an audit-oriented next step
+5. `Accountant Review From Party Risks`
+   - turns critical identity, supplier deductibility and declaration blocker
+     signals into accountant questions and evidence references
+6. `Tax Compliance Hardening Closeout 4.0`
+   - combines party evidence bridge, validation readiness, declaration impact,
+     correction flow, accountant review and product closeout v3 into a gate for
+     continuing Tax hardening, opening Parties persistence, or considering
+     Accounting Advanced discovery
+
+Guardrail: this layer explains and prepares. It does not query SRI directly,
+submit declarations, pay obligations, or mutate party records automatically.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

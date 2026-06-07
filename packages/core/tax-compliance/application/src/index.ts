@@ -42,6 +42,11 @@ export * from './lib/use-cases/get-tenant-ecuador-tax-obligation-settings.use-ca
 export * from './lib/use-cases/get-tenant-ecuador-tax-obligation-risk-monitor.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-operational-closeout.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-operating-dashboard-v3.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-review-from-party-risks.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-assisted-fiscal-correction-flow.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-declaration-party-impact-workspace.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-party-evidence-bridge.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-sri-taxpayer-validation-readiness.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-taxpayer-profile.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-period-evidence-vault.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-period-workspace.use-case';
@@ -82,6 +87,7 @@ export * from './lib/use-cases/request-tenant-ecuador-tax-period-preparation-pac
 export * from './lib/use-cases/request-tenant-ecuador-tax-period-closeout-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-period-closeout-report.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-compliance-closeout-v2.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-compliance-hardening-closeout-v4.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-compliance-product-closeout-v3.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-product-closeout-pack.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-period-closeout-certification.use-case';

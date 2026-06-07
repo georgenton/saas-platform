@@ -20,13 +20,20 @@ import {
   TAX_RATE_REPOSITORY,
 } from '@saas-platform/invoicing-application';
 import {
+  GetTenantPartyDirectoryCoreV2WorkspaceUseCase,
+  GetTenantPartyDuplicateMergeReadinessWorkspaceUseCase,
+  GetTenantPartyFiscalCleanupWorkspaceUseCase,
+  GetTenantPartyFiscalIdentityProfileWorkspaceUseCase,
   GetTenantPartyFiscalReadinessSummaryUseCase,
+  GetTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase,
+  ListTenantPartiesUseCase,
   PARTY_DIRECTORY_REPOSITORY,
 } from '@saas-platform/parties-application';
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
   GetTenantEcuadorTaxAccountantEscalationServiceBoundaryUseCase,
   GetTenantEcuadorTaxAccountantHandoffRoomV2UseCase,
+  GetTenantEcuadorTaxAccountantReviewFromPartyRisksUseCase,
   GetTenantEcuadorTaxAnnexesReadinessUseCase,
   GetTenantEcuadorTaxAnnexesWorkspaceUseCase,
   GetTenantEcuadorTaxAnnualRollupWorkspaceUseCase,
@@ -36,12 +43,14 @@ import {
   GetTenantEcuadorTaxAccountingBoundaryCloseoutUseCase,
   GetTenantEcuadorTaxAccountingEvidenceFromFoundationUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
+  GetTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
   GetTenantEcuadorTaxDeclarationFormCatalogUseCase,
   GetTenantEcuadorTaxDeclarationReviewLoopWorkspaceUseCase,
   GetTenantEcuadorTaxDeclarationSourceLedgerUseCase,
   GetTenantEcuadorTaxCommandCenterUseCase,
   GetTenantEcuadorTaxCommandCenterV2UseCase,
+  GetTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
   GetTenantEcuadorTaxDueMonitorUseCase,
   GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
   GetTenantEcuadorTaxEvidenceQualityCenterUseCase,
@@ -59,6 +68,7 @@ import {
   GetTenantEcuadorTaxObligationRiskMonitorUseCase,
   GetTenantEcuadorTaxOperationalCloseoutUseCase,
   GetTenantEcuadorTaxOperatingDashboardV3UseCase,
+  GetTenantEcuadorTaxPartyEvidenceBridgeUseCase,
   GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
@@ -69,6 +79,7 @@ import {
   GetTenantEcuadorTaxSriEvidenceIntakeV2WorkspaceUseCase,
   GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
   GetTenantEcuadorTaxSriSourceImportCenterV2UseCase,
+  GetTenantEcuadorTaxSriTaxpayerValidationReadinessUseCase,
   GetTenantEcuadorTaxVatDeclarationApprovalUseCase,
   GetTenantEcuadorTaxVatDeclarationDraftWorkspaceUseCase,
   GetTenantEcuadorTaxVatDeclarationWorkspaceV2UseCase,
@@ -101,6 +112,7 @@ import {
   RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
   RequestTenantEcuadorTaxComplianceCloseoutV2UseCase,
+  RequestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
   RequestTenantEcuadorTaxComplianceProductCloseoutV3UseCase,
   RequestTenantEcuadorTaxProductCloseoutPackUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
@@ -275,6 +287,76 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
         new GetTenantPartyFiscalReadinessSummaryUseCase(
           tenantRepository,
           partyDirectoryRepository,
+        ),
+    },
+    {
+      provide: ListTenantPartiesUseCase,
+      inject: [TENANT_REPOSITORY, PARTY_DIRECTORY_REPOSITORY],
+      useFactory: (tenantRepository, partyDirectoryRepository) =>
+        new ListTenantPartiesUseCase(
+          tenantRepository,
+          partyDirectoryRepository,
+        ),
+    },
+    {
+      provide: GetTenantPartyFiscalCleanupWorkspaceUseCase,
+      inject: [
+        GetTenantPartyFiscalReadinessSummaryUseCase,
+        ListTenantPartiesUseCase,
+      ],
+      useFactory: (
+        getTenantPartyFiscalReadinessSummaryUseCase,
+        listTenantPartiesUseCase,
+      ) =>
+        new GetTenantPartyFiscalCleanupWorkspaceUseCase(
+          getTenantPartyFiscalReadinessSummaryUseCase,
+          listTenantPartiesUseCase,
+        ),
+    },
+    {
+      provide: GetTenantPartyDirectoryCoreV2WorkspaceUseCase,
+      inject: [
+        ListTenantPartiesUseCase,
+        GetTenantPartyFiscalReadinessSummaryUseCase,
+      ],
+      useFactory: (
+        listTenantPartiesUseCase,
+        getTenantPartyFiscalReadinessSummaryUseCase,
+      ) =>
+        new GetTenantPartyDirectoryCoreV2WorkspaceUseCase(
+          listTenantPartiesUseCase,
+          getTenantPartyFiscalReadinessSummaryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantPartyDuplicateMergeReadinessWorkspaceUseCase,
+      inject: [ListTenantPartiesUseCase],
+      useFactory: (listTenantPartiesUseCase) =>
+        new GetTenantPartyDuplicateMergeReadinessWorkspaceUseCase(
+          listTenantPartiesUseCase,
+        ),
+    },
+    {
+      provide: GetTenantPartyFiscalIdentityProfileWorkspaceUseCase,
+      inject: [
+        ListTenantPartiesUseCase,
+        GetTenantPartyFiscalReadinessSummaryUseCase,
+      ],
+      useFactory: (
+        listTenantPartiesUseCase,
+        getTenantPartyFiscalReadinessSummaryUseCase,
+      ) =>
+        new GetTenantPartyFiscalIdentityProfileWorkspaceUseCase(
+          listTenantPartiesUseCase,
+          getTenantPartyFiscalReadinessSummaryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase,
+      inject: [ListTenantPartiesUseCase],
+      useFactory: (listTenantPartiesUseCase) =>
+        new GetTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase(
+          listTenantPartiesUseCase,
         ),
     },
     {
@@ -1867,6 +1949,97 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
       useFactory: (getTenantEcuadorTaxOperatingDashboardV3UseCase) =>
         new RequestTenantEcuadorTaxComplianceProductCloseoutV3UseCase(
           getTenantEcuadorTaxOperatingDashboardV3UseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxPartyEvidenceBridgeUseCase,
+      inject: [
+        GetTenantPartyDirectoryCoreV2WorkspaceUseCase,
+        GetTenantPartyDuplicateMergeReadinessWorkspaceUseCase,
+        GetTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantPartyDirectoryCoreV2WorkspaceUseCase,
+        getTenantPartyDuplicateMergeReadinessWorkspaceUseCase,
+        getTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase,
+      ) =>
+        new GetTenantEcuadorTaxPartyEvidenceBridgeUseCase(
+          getTenantPartyDirectoryCoreV2WorkspaceUseCase,
+          getTenantPartyDuplicateMergeReadinessWorkspaceUseCase,
+          getTenantPartySupplierCustomerFiscalReadinessWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxSriTaxpayerValidationReadinessUseCase,
+      inject: [GetTenantPartyFiscalIdentityProfileWorkspaceUseCase],
+      useFactory: (getTenantPartyFiscalIdentityProfileWorkspaceUseCase) =>
+        new GetTenantEcuadorTaxSriTaxpayerValidationReadinessUseCase(
+          getTenantPartyFiscalIdentityProfileWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
+      inject: [GetTenantEcuadorTaxPartyEvidenceBridgeUseCase],
+      useFactory: (getTenantEcuadorTaxPartyEvidenceBridgeUseCase) =>
+        new GetTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase(
+          getTenantEcuadorTaxPartyEvidenceBridgeUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
+      inject: [
+        GetTenantPartyFiscalCleanupWorkspaceUseCase,
+        GetTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantPartyFiscalCleanupWorkspaceUseCase,
+        getTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
+      ) =>
+        new GetTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase(
+          getTenantPartyFiscalCleanupWorkspaceUseCase,
+          getTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAccountantReviewFromPartyRisksUseCase,
+      inject: [
+        GetTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
+        GetTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
+        getTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
+      ) =>
+        new GetTenantEcuadorTaxAccountantReviewFromPartyRisksUseCase(
+          getTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
+          getTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
+      inject: [
+        GetTenantEcuadorTaxPartyEvidenceBridgeUseCase,
+        GetTenantEcuadorTaxSriTaxpayerValidationReadinessUseCase,
+        GetTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
+        GetTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
+        GetTenantEcuadorTaxAccountantReviewFromPartyRisksUseCase,
+        RequestTenantEcuadorTaxComplianceProductCloseoutV3UseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxPartyEvidenceBridgeUseCase,
+        getTenantEcuadorTaxSriTaxpayerValidationReadinessUseCase,
+        getTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
+        getTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
+        getTenantEcuadorTaxAccountantReviewFromPartyRisksUseCase,
+        requestTenantEcuadorTaxComplianceProductCloseoutV3UseCase,
+      ) =>
+        new RequestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase(
+          getTenantEcuadorTaxPartyEvidenceBridgeUseCase,
+          getTenantEcuadorTaxSriTaxpayerValidationReadinessUseCase,
+          getTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
+          getTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
+          getTenantEcuadorTaxAccountantReviewFromPartyRisksUseCase,
+          requestTenantEcuadorTaxComplianceProductCloseoutV3UseCase,
         ),
     },
     {

@@ -1,10 +1,13 @@
 import {
+  CreateTenantMedicalClinicAppointmentUseCase,
   GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
   GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
   GetTenantMedicalClinicProductAnchorUseCase,
   GetTenantMedicalClinicProfileWorkspaceUseCase,
+  RegisterTenantMedicalClinicPatientIntakeUseCase,
   RequestTenantMedicalClinicBillingTaxBridgeUseCase,
   RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
+  UpsertTenantMedicalClinicProfileWorkspaceUseCase,
 } from '@saas-platform/medical-clinics-application';
 
 const fixedNow = new Date('2026-06-07T12:00:00.000Z');
@@ -32,6 +35,7 @@ describe('Medical Clinics foundation use cases', () => {
 
   it('exposes clinic profile and service catalog readiness', async () => {
     const workspace = await new GetTenantMedicalClinicProfileWorkspaceUseCase(
+      undefined,
       () => fixedNow,
     ).execute({
       tenantSlug: 'clinic-demo',
@@ -48,6 +52,7 @@ describe('Medical Clinics foundation use cases', () => {
   it('keeps patient intake blocked until consent is complete', async () => {
     const workspace =
       await new GetTenantMedicalClinicPatientIntakeWorkspaceUseCase(
+        undefined,
         () => fixedNow,
       ).execute({
         tenantSlug: 'clinic-demo',
@@ -62,6 +67,7 @@ describe('Medical Clinics foundation use cases', () => {
   it('summarizes appointment scheduling with reminder and billing readiness', async () => {
     const workspace =
       await new GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase(
+        undefined,
         () => fixedNow,
       ).execute({
         tenantSlug: 'clinic-demo',
@@ -76,6 +82,8 @@ describe('Medical Clinics foundation use cases', () => {
   it('builds a Growth reminder bridge without sending messages', async () => {
     const bridge =
       await new RequestTenantMedicalClinicGrowthReminderBridgeUseCase(
+        undefined,
+        undefined,
         () => fixedNow,
       ).execute({
         tenantSlug: 'clinic-demo',
@@ -89,6 +97,8 @@ describe('Medical Clinics foundation use cases', () => {
 
   it('builds a billing and tax bridge without issuing invoices', async () => {
     const bridge = await new RequestTenantMedicalClinicBillingTaxBridgeUseCase(
+      undefined,
+      undefined,
       () => fixedNow,
     ).execute({
       tenantSlug: 'clinic-demo',
@@ -102,4 +112,130 @@ describe('Medical Clinics foundation use cases', () => {
       'no emite comprobantes electronicos',
     );
   });
+
+  it('uses persisted profile, patient and appointment operations when a repository is provided', async () => {
+    const repository: any = createInMemoryMedicalClinicRepository();
+    const idGenerator = {
+      generate: jest.fn(() => `id_${idGenerator.generate.mock.calls.length}`),
+    };
+
+    await new UpsertTenantMedicalClinicProfileWorkspaceUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({
+      tenantSlug: 'clinic-demo',
+      snapshot: {
+        workspaceStatus: 'ready',
+        blockers: [],
+        clinicProfile: {
+          legalName: 'Clinica Persistida S.A.S.',
+          tradeName: 'Clinica Persistida',
+          rucStatus: 'linked',
+          operatingMode: 'single_location',
+        },
+      },
+    });
+    const patient = await new RegisterTenantMedicalClinicPatientIntakeUseCase(
+      repository,
+      idGenerator,
+    ).execute({
+      tenantSlug: 'clinic-demo',
+      patientDisplayName: 'Paciente Persistido',
+      identificationStatus: 'ready',
+      contactStatus: 'ready',
+      consentStatus: 'ready',
+      messagingOptInStatus: 'ready',
+      triageReason: 'Consulta general',
+    });
+    await new CreateTenantMedicalClinicAppointmentUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({
+      tenantSlug: 'clinic-demo',
+      patientId: patient.id,
+      serviceName: 'Consulta general',
+      professionalId: 'professional_general_001',
+      professionalName: 'Dra. Ana Paredes',
+      startsAt: fixedNow,
+      amountInCents: 3500,
+      currency: 'USD',
+    });
+
+    const profile = await new GetTenantMedicalClinicProfileWorkspaceUseCase(
+      repository,
+      () => fixedNow,
+    ).execute({ tenantSlug: 'clinic-demo' });
+    const intake =
+      await new GetTenantMedicalClinicPatientIntakeWorkspaceUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'clinic-demo' });
+    const appointments =
+      await new GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'clinic-demo' });
+
+    expect(profile.clinicProfile.tradeName).toBe('Clinica Persistida');
+    expect(intake.summary.patientCount).toBe(1);
+    expect(intake.summary.readyPatientCount).toBe(1);
+    expect(appointments.summary.appointmentCount).toBe(1);
+    expect(appointments.appointments[0]?.patientDisplayName).toBe(
+      'Paciente Persistido',
+    );
+  });
 });
+
+function createInMemoryMedicalClinicRepository() {
+  const state: any = {
+    profile: null,
+    patients: [],
+    appointments: [],
+    events: [],
+  };
+
+  return {
+    getTenantIdBySlug: jest.fn(async () => 'tenant_001'),
+    getProfile: jest.fn(async () => state.profile),
+    upsertProfile: jest.fn(async (command) => {
+      state.profile = command.snapshot;
+      return state.profile;
+    }),
+    listPatients: jest.fn(async () => state.patients),
+    savePatient: jest.fn(async (command) => {
+      const patient = {
+        ...command,
+        createdAt: fixedNow,
+        updatedAt: fixedNow,
+      };
+      state.patients.push(patient);
+      return patient;
+    }),
+    listAppointments: jest.fn(async () => state.appointments),
+    saveAppointment: jest.fn(async (command) => {
+      const patient = state.patients.find(
+        (item) => item.id === command.patientId,
+      );
+      const appointment = {
+        ...command,
+        patientDisplayName: patient?.patientDisplayName ?? 'Paciente',
+        createdAt: fixedNow,
+        updatedAt: fixedNow,
+      };
+      state.appointments.push(appointment);
+      return appointment;
+    }),
+    transitionAppointment: jest.fn(async () => null),
+    recordEvent: jest.fn(async (command) => {
+      const event = {
+        ...command,
+        createdAt: fixedNow,
+      };
+      state.events.push(event);
+      return event;
+    }),
+    listEvents: jest.fn(async () => state.events),
+  };
+}

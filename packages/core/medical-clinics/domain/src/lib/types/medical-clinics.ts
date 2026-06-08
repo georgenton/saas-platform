@@ -17,6 +17,71 @@ export interface MedicalClinicOperationalLane {
   nextAction: string;
 }
 
+export interface MedicalClinicProfileSnapshot {
+  clinicProfile: TenantMedicalClinicProfileWorkspace['clinicProfile'];
+  careLocations: TenantMedicalClinicProfileWorkspace['careLocations'];
+  professionals: TenantMedicalClinicProfileWorkspace['professionals'];
+  serviceCatalog: TenantMedicalClinicProfileWorkspace['serviceCatalog'];
+  workspaceStatus: MedicalClinicReadinessStatus;
+  blockers: string[];
+  guardrails: string[];
+}
+
+export interface TenantMedicalClinicPatientRecord {
+  id: string;
+  tenantSlug: string;
+  patientDisplayName: string;
+  identificationStatus: MedicalClinicReadinessStatus;
+  contactStatus: MedicalClinicReadinessStatus;
+  consentStatus: MedicalClinicReadinessStatus;
+  messagingOptInStatus: MedicalClinicReadinessStatus;
+  triageReason: string;
+  contact: {
+    email: string | null;
+    phoneE164: string | null;
+    whatsappE164: string | null;
+  };
+  representative: {
+    displayName: string | null;
+    relationship: string | null;
+    identification: string | null;
+  };
+  blockers: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TenantMedicalClinicAppointmentRecord {
+  id: string;
+  tenantSlug: string;
+  patientId: string;
+  patientDisplayName: string;
+  serviceName: string;
+  professionalId: string;
+  professionalName: string;
+  startsAt: Date;
+  status: MedicalClinicAppointmentStatus;
+  reminderStatus: MedicalClinicReadinessStatus;
+  billingStatus: MedicalClinicReadinessStatus;
+  amountInCents: number | null;
+  currency: 'USD' | null;
+  blockers: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TenantMedicalClinicOperationalEventRecord {
+  id: string;
+  tenantSlug: string;
+  appointmentId: string | null;
+  eventType: string;
+  source: string;
+  status: MedicalClinicReadinessStatus;
+  payload: Record<string, unknown>;
+  occurredAt: Date;
+  createdAt: Date;
+}
+
 export interface TenantMedicalClinicProductAnchorView {
   tenantSlug: string;
   generatedAt: Date;

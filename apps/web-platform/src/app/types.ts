@@ -11039,6 +11039,30 @@ export interface MedicalClinicPatientIntakeWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface MedicalClinicPatientRecordResponse {
+  id: string;
+  tenantSlug: string;
+  patientDisplayName: string;
+  identificationStatus: MedicalClinicReadinessStatus;
+  contactStatus: MedicalClinicReadinessStatus;
+  consentStatus: MedicalClinicReadinessStatus;
+  messagingOptInStatus: MedicalClinicReadinessStatus;
+  triageReason: string;
+  contact: {
+    email: string | null;
+    phoneE164: string | null;
+    whatsappE164: string | null;
+  };
+  representative: {
+    displayName: string | null;
+    relationship: string | null;
+    identification: string | null;
+  };
+  blockers: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface MedicalClinicAppointmentSchedulingWorkspaceResponse {
   tenantSlug: string;
   generatedAt: string;
@@ -11080,6 +11104,67 @@ export interface MedicalClinicAppointmentSchedulingWorkspaceResponse {
   blockers: string[];
   nextStep: string;
   guardrails: string[];
+}
+
+export interface MedicalClinicAppointmentRecordResponse {
+  id: string;
+  tenantSlug: string;
+  patientId: string;
+  patientDisplayName: string;
+  serviceName: string;
+  professionalId: string;
+  professionalName: string;
+  startsAt: string;
+  status:
+    | 'requested'
+    | 'confirmed'
+    | 'checked_in'
+    | 'completed'
+    | 'cancelled'
+    | 'no_show';
+  reminderStatus: MedicalClinicReadinessStatus;
+  billingStatus: MedicalClinicReadinessStatus;
+  amountInCents: number | null;
+  currency: 'USD' | null;
+  blockers: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertMedicalClinicProfileWorkspaceRequest {
+  snapshot: Partial<
+    Omit<MedicalClinicProfileWorkspaceResponse, 'tenantSlug' | 'generatedAt'>
+  >;
+}
+
+export interface RegisterMedicalClinicPatientIntakeRequest {
+  patientDisplayName: string;
+  identificationStatus?: MedicalClinicReadinessStatus;
+  contactStatus?: MedicalClinicReadinessStatus;
+  consentStatus?: MedicalClinicReadinessStatus;
+  messagingOptInStatus?: MedicalClinicReadinessStatus;
+  triageReason: string;
+  contact?: Partial<MedicalClinicPatientRecordResponse['contact']>;
+  representative?: Partial<
+    MedicalClinicPatientRecordResponse['representative']
+  >;
+  blockers?: string[];
+}
+
+export interface CreateMedicalClinicAppointmentRequest {
+  patientId: string;
+  serviceName: string;
+  professionalId: string;
+  professionalName: string;
+  startsAt: string;
+  amountInCents?: number | null;
+  currency?: 'USD' | null;
+  blockers?: string[];
+}
+
+export interface TransitionMedicalClinicAppointmentRequest {
+  status: MedicalClinicAppointmentRecordResponse['status'];
+  blockers?: string[];
 }
 
 export interface MedicalClinicGrowthReminderBridgeResponse {

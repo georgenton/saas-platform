@@ -505,7 +505,23 @@ statements.
 
 ### Current repository status
 
-Not implemented yet.
+Implemented as an initial foundation product. Current repository coverage now
+includes:
+
+1. product catalog anchor, modules, permissions and entitlement
+2. operational profile workspace for clinic identity, care locations,
+   professionals and service catalog
+3. patient intake workspace with identification, contact, consent and
+   representative readiness
+4. appointment scheduling workspace with lifecycle status, reminders and
+   billing readiness
+5. Growth reminder bridge for reviewed WhatsApp handoff
+6. Billing and Tax bridge for invoice draft readiness and Tax Compliance EC
+   evidence handoff
+
+The next operating layer adds persistence for profile, patients, appointments
+and operational events. It still intentionally excludes formal clinical history,
+diagnosis, prescriptions and signed medical records.
 
 ## Product: Psychology Clinics
 
@@ -1509,6 +1525,22 @@ Boundary: Medical Clinics does not manage official clinical history, diagnose,
 replace medical judgment, certify health permissions, emit electronic invoices,
 or declare taxes. It coordinates operational evidence and handoff packets across
 existing products.
+
+### Medical Clinics operations 2.0
+
+After the foundation product anchor, Medical Clinics needs durable operational
+state before building clinical records. The next layer persists:
+
+1. clinic profile and service catalog records
+2. patient intake and consent registry
+3. appointment lifecycle operations
+4. operational events for handoffs and transitions
+5. Growth reminder handoff packets derived from real appointments
+6. Billing and Tax bridge packets derived from completed or invoiceable services
+
+Boundary: this layer remains operational. It does not store formal medical
+history, issue prescriptions, infer diagnoses, send patient messages
+automatically, emit invoices, or declare taxes.
 
 ## Practical delivery rules
 

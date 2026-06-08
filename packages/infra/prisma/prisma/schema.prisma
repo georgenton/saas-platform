@@ -58,6 +58,10 @@ model Tenant {
   ecommerceProductSetups EcommerceProductSetup[]
   ecommerceProductEntityChannelDrafts EcommerceProductEntityChannelDraft[]
   ecommerceProductEntities EcommerceProductEntity[]
+  medicalClinicProfile MedicalClinicProfile?
+  medicalClinicPatients MedicalClinicPatient[]
+  medicalClinicAppointments MedicalClinicAppointment[]
+  medicalClinicOperationalEvents MedicalClinicOperationalEvent[]
   taxComplianceEvents TaxComplianceEvent[]
   taxComplianceAccountantReviews TaxComplianceAccountantReview[]
   taxCompliancePurchaseExpenseEvidence TaxCompliancePurchaseExpenseEvidence[]
@@ -801,6 +805,91 @@ model EcommerceOrderOperationalEvent {
   @@index([tenantSlug, productEntityId, orderDraftId, eventType], map: "EcommerceOrderOperationalEvent_order_event_type_idx")
   @@index([tenantId, eventType, occurredAt], map: "EcommerceOrderOperationalEvent_event_type_idx")
   @@index([tenantId, orderDraftId, occurredAt], map: "EcommerceOrderOperationalEvent_order_draft_idx")
+}
+
+model MedicalClinicProfile {
+  id                 String   @id
+  tenantId           String   @unique
+  tenantSlug         String
+  readinessStatus    String
+  clinicProfileJson  String   @db.Text
+  careLocationsJson  String   @db.Text
+  professionalsJson  String   @db.Text
+  serviceCatalogJson String   @db.Text
+  blockersJson       String   @db.Text
+  guardrailsJson     String   @db.Text
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([tenantSlug])
+}
+
+model MedicalClinicPatient {
+  id                   String   @id
+  tenantId             String
+  tenantSlug           String
+  patientDisplayName   String
+  identificationStatus String
+  contactStatus        String
+  consentStatus        String
+  messagingOptInStatus String
+  triageReason         String
+  contactJson          String   @db.Text
+  representativeJson   String   @db.Text
+  blockersJson         String   @db.Text
+  tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments         MedicalClinicAppointment[]
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([tenantSlug, createdAt])
+  @@index([tenantId, consentStatus, createdAt])
+}
+
+model MedicalClinicAppointment {
+  id                String   @id
+  tenantId          String
+  tenantSlug        String
+  patientId         String
+  serviceName       String
+  professionalId    String
+  professionalName  String
+  startsAt          DateTime
+  status            String
+  reminderStatus    String
+  billingStatus     String
+  amountInCents     Int?
+  currency          String?
+  blockersJson      String   @db.Text
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient           MedicalClinicPatient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  operationalEvents MedicalClinicOperationalEvent[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([tenantSlug, startsAt])
+  @@index([tenantId, status, startsAt])
+  @@index([tenantId, patientId])
+}
+
+model MedicalClinicOperationalEvent {
+  id            String   @id
+  tenantId      String
+  tenantSlug    String
+  appointmentId String?
+  eventType     String
+  source        String
+  status        String
+  payloadJson   String   @db.Text
+  occurredAt    DateTime
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointment   MedicalClinicAppointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+
+  @@index([tenantSlug, occurredAt])
+  @@index([tenantId, eventType, occurredAt])
+  @@index([tenantId, appointmentId, occurredAt])
 }
 
 model TaxComplianceEvent {

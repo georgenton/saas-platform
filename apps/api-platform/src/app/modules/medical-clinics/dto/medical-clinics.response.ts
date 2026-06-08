@@ -1,8 +1,10 @@
 import {
   TenantMedicalClinicAppointmentSchedulingWorkspace,
+  TenantMedicalClinicAppointmentRecord,
   TenantMedicalClinicBillingTaxBridge,
   TenantMedicalClinicGrowthReminderBridge,
   TenantMedicalClinicPatientIntakeWorkspace,
+  TenantMedicalClinicPatientRecord,
   TenantMedicalClinicProductAnchorView,
   TenantMedicalClinicProfileWorkspace,
 } from '@saas-platform/medical-clinics-domain';
@@ -19,6 +21,44 @@ export type MedicalClinicGrowthReminderBridgeResponseDto =
   TenantMedicalClinicGrowthReminderBridge;
 export type MedicalClinicBillingTaxBridgeResponseDto =
   TenantMedicalClinicBillingTaxBridge;
+export type MedicalClinicPatientRecordResponseDto =
+  TenantMedicalClinicPatientRecord;
+export type MedicalClinicAppointmentRecordResponseDto =
+  TenantMedicalClinicAppointmentRecord;
+
+export interface UpsertMedicalClinicProfileWorkspaceRequestDto {
+  snapshot: Partial<
+    Omit<TenantMedicalClinicProfileWorkspace, 'tenantSlug' | 'generatedAt'>
+  >;
+}
+
+export interface RegisterMedicalClinicPatientIntakeRequestDto {
+  patientDisplayName: string;
+  identificationStatus?: TenantMedicalClinicPatientRecord['identificationStatus'];
+  contactStatus?: TenantMedicalClinicPatientRecord['contactStatus'];
+  consentStatus?: TenantMedicalClinicPatientRecord['consentStatus'];
+  messagingOptInStatus?: TenantMedicalClinicPatientRecord['messagingOptInStatus'];
+  triageReason: string;
+  contact?: Partial<TenantMedicalClinicPatientRecord['contact']>;
+  representative?: Partial<TenantMedicalClinicPatientRecord['representative']>;
+  blockers?: string[];
+}
+
+export interface CreateMedicalClinicAppointmentRequestDto {
+  patientId: string;
+  serviceName: string;
+  professionalId: string;
+  professionalName: string;
+  startsAt: string;
+  amountInCents?: number | null;
+  currency?: 'USD' | null;
+  blockers?: string[];
+}
+
+export interface TransitionMedicalClinicAppointmentRequestDto {
+  status: TenantMedicalClinicAppointmentRecord['status'];
+  blockers?: string[];
+}
 
 export const toMedicalClinicProductAnchorResponseDto = (
   view: TenantMedicalClinicProductAnchorView,
@@ -43,3 +83,11 @@ export const toMedicalClinicGrowthReminderBridgeResponseDto = (
 export const toMedicalClinicBillingTaxBridgeResponseDto = (
   view: TenantMedicalClinicBillingTaxBridge,
 ): MedicalClinicBillingTaxBridgeResponseDto => view;
+
+export const toMedicalClinicPatientRecordResponseDto = (
+  view: TenantMedicalClinicPatientRecord,
+): MedicalClinicPatientRecordResponseDto => view;
+
+export const toMedicalClinicAppointmentRecordResponseDto = (
+  view: TenantMedicalClinicAppointmentRecord,
+): MedicalClinicAppointmentRecordResponseDto => view;

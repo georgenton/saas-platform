@@ -1,12 +1,25 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import {
+  Body,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  CreateTenantMedicalClinicAppointmentUseCase,
   GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
   GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
   GetTenantMedicalClinicProductAnchorUseCase,
   GetTenantMedicalClinicProfileWorkspaceUseCase,
   MEDICAL_CLINICS_PERMISSIONS,
+  RegisterTenantMedicalClinicPatientIntakeUseCase,
   RequestTenantMedicalClinicBillingTaxBridgeUseCase,
   RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
+  TransitionTenantMedicalClinicAppointmentUseCase,
+  UpsertTenantMedicalClinicProfileWorkspaceUseCase,
 } from '@saas-platform/medical-clinics-application';
 import { JwtAuthenticationGuard } from '../auth/jwt-authentication.guard';
 import { RequireTenantPermission } from '../tenancy/require-tenant-permission.decorator';
@@ -15,15 +28,23 @@ import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import {
+  CreateMedicalClinicAppointmentRequestDto,
+  MedicalClinicAppointmentRecordResponseDto,
   MedicalClinicAppointmentSchedulingWorkspaceResponseDto,
   MedicalClinicBillingTaxBridgeResponseDto,
   MedicalClinicGrowthReminderBridgeResponseDto,
+  MedicalClinicPatientRecordResponseDto,
   MedicalClinicPatientIntakeWorkspaceResponseDto,
   MedicalClinicProductAnchorResponseDto,
   MedicalClinicProfileWorkspaceResponseDto,
+  RegisterMedicalClinicPatientIntakeRequestDto,
+  TransitionMedicalClinicAppointmentRequestDto,
+  UpsertMedicalClinicProfileWorkspaceRequestDto,
+  toMedicalClinicAppointmentRecordResponseDto,
   toMedicalClinicAppointmentSchedulingWorkspaceResponseDto,
   toMedicalClinicBillingTaxBridgeResponseDto,
   toMedicalClinicGrowthReminderBridgeResponseDto,
+  toMedicalClinicPatientRecordResponseDto,
   toMedicalClinicPatientIntakeWorkspaceResponseDto,
   toMedicalClinicProductAnchorResponseDto,
   toMedicalClinicProfileWorkspaceResponseDto,
@@ -42,8 +63,12 @@ export class MedicalClinicsController {
   constructor(
     private readonly getTenantMedicalClinicProductAnchorUseCase: GetTenantMedicalClinicProductAnchorUseCase,
     private readonly getTenantMedicalClinicProfileWorkspaceUseCase: GetTenantMedicalClinicProfileWorkspaceUseCase,
+    private readonly upsertTenantMedicalClinicProfileWorkspaceUseCase: UpsertTenantMedicalClinicProfileWorkspaceUseCase,
     private readonly getTenantMedicalClinicPatientIntakeWorkspaceUseCase: GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
+    private readonly registerTenantMedicalClinicPatientIntakeUseCase: RegisterTenantMedicalClinicPatientIntakeUseCase,
     private readonly getTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase: GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
+    private readonly createTenantMedicalClinicAppointmentUseCase: CreateTenantMedicalClinicAppointmentUseCase,
+    private readonly transitionTenantMedicalClinicAppointmentUseCase: TransitionTenantMedicalClinicAppointmentUseCase,
     private readonly requestTenantMedicalClinicGrowthReminderBridgeUseCase: RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
     private readonly requestTenantMedicalClinicBillingTaxBridgeUseCase: RequestTenantMedicalClinicBillingTaxBridgeUseCase,
   ) {}
@@ -70,6 +95,20 @@ export class MedicalClinicsController {
     );
   }
 
+  @Put(':slug/profile-workspace')
+  @RequireTenantPermission(MEDICAL_CLINICS_PERMISSIONS.MANAGE)
+  async upsertProfileWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Body() body: UpsertMedicalClinicProfileWorkspaceRequestDto,
+  ): Promise<MedicalClinicProfileWorkspaceResponseDto> {
+    return toMedicalClinicProfileWorkspaceResponseDto(
+      await this.upsertTenantMedicalClinicProfileWorkspaceUseCase.execute({
+        tenantSlug,
+        snapshot: body.snapshot,
+      }),
+    );
+  }
+
   @Get(':slug/patient-intake-workspace')
   async getPatientIntakeWorkspace(
     @Param('slug') tenantSlug: string,
@@ -77,6 +116,20 @@ export class MedicalClinicsController {
     return toMedicalClinicPatientIntakeWorkspaceResponseDto(
       await this.getTenantMedicalClinicPatientIntakeWorkspaceUseCase.execute({
         tenantSlug,
+      }),
+    );
+  }
+
+  @Post(':slug/patient-intake')
+  @RequireTenantPermission(MEDICAL_CLINICS_PERMISSIONS.MANAGE)
+  async registerPatientIntake(
+    @Param('slug') tenantSlug: string,
+    @Body() body: RegisterMedicalClinicPatientIntakeRequestDto,
+  ): Promise<MedicalClinicPatientRecordResponseDto> {
+    return toMedicalClinicPatientRecordResponseDto(
+      await this.registerTenantMedicalClinicPatientIntakeUseCase.execute({
+        tenantSlug,
+        ...body,
       }),
     );
   }
@@ -92,6 +145,49 @@ export class MedicalClinicsController {
         },
       ),
     );
+  }
+
+  @Post(':slug/appointments')
+  @RequireTenantPermission(MEDICAL_CLINICS_PERMISSIONS.MANAGE)
+  async createAppointment(
+    @Param('slug') tenantSlug: string,
+    @Body() body: CreateMedicalClinicAppointmentRequestDto,
+  ): Promise<MedicalClinicAppointmentRecordResponseDto> {
+    return toMedicalClinicAppointmentRecordResponseDto(
+      await this.createTenantMedicalClinicAppointmentUseCase.execute({
+        tenantSlug,
+        patientId: body.patientId,
+        serviceName: body.serviceName,
+        professionalId: body.professionalId,
+        professionalName: body.professionalName,
+        startsAt: new Date(body.startsAt),
+        amountInCents: body.amountInCents,
+        currency: body.currency,
+        blockers: body.blockers,
+      }),
+    );
+  }
+
+  @Post(':slug/appointments/:appointmentId/transitions')
+  @RequireTenantPermission(MEDICAL_CLINICS_PERMISSIONS.MANAGE)
+  async transitionAppointment(
+    @Param('slug') tenantSlug: string,
+    @Param('appointmentId') appointmentId: string,
+    @Body() body: TransitionMedicalClinicAppointmentRequestDto,
+  ): Promise<MedicalClinicAppointmentRecordResponseDto> {
+    const appointment =
+      await this.transitionTenantMedicalClinicAppointmentUseCase.execute({
+        tenantSlug,
+        appointmentId,
+        status: body.status,
+        blockers: body.blockers,
+      });
+
+    if (!appointment) {
+      throw new NotFoundException('Medical clinic appointment was not found.');
+    }
+
+    return toMedicalClinicAppointmentRecordResponseDto(appointment);
   }
 
   @Get(':slug/growth-reminder-bridge')

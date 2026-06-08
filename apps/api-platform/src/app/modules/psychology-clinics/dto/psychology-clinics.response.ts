@@ -1,13 +1,19 @@
 import {
   PsychologyClinicProfileSnapshot,
   TenantPsychologyClinicFoundationCloseout,
+  TenantPsychologyClinicBillingTaxBridge,
+  TenantPsychologyClinicGrowthReminderBridge,
+  TenantPsychologyClinicOperationsCloseout,
   TenantPsychologyClinicPatientIntakeWorkspace,
   TenantPsychologyClinicPatientRecord,
+  TenantPsychologyClinicPatientTimelineWorkspace,
   TenantPsychologyClinicProductAnchorView,
   TenantPsychologyClinicProfileWorkspace,
   TenantPsychologyClinicSessionNoteDraftPacket,
   TenantPsychologyClinicSessionRecord,
   TenantPsychologyClinicSessionSchedulingWorkspace,
+  TenantPsychologyClinicTreatmentFollowUpReadiness,
+  TenantPsychologyClinicTreatmentPlanWorkspace,
 } from '@saas-platform/psychology-clinics-domain';
 
 export type PsychologyClinicProductAnchorResponseDto =
@@ -26,6 +32,18 @@ export type PsychologyClinicSessionNoteDraftPacketResponseDto =
   TenantPsychologyClinicSessionNoteDraftPacket;
 export type PsychologyClinicFoundationCloseoutResponseDto =
   TenantPsychologyClinicFoundationCloseout;
+export type PsychologyClinicTreatmentPlanWorkspaceResponseDto =
+  TenantPsychologyClinicTreatmentPlanWorkspace;
+export type PsychologyClinicTreatmentFollowUpReadinessResponseDto =
+  TenantPsychologyClinicTreatmentFollowUpReadiness;
+export type PsychologyClinicGrowthReminderBridgeResponseDto =
+  TenantPsychologyClinicGrowthReminderBridge;
+export type PsychologyClinicBillingTaxBridgeResponseDto =
+  TenantPsychologyClinicBillingTaxBridge;
+export type PsychologyClinicPatientTimelineWorkspaceResponseDto =
+  TenantPsychologyClinicPatientTimelineWorkspace;
+export type PsychologyClinicOperationsCloseoutResponseDto =
+  TenantPsychologyClinicOperationsCloseout;
 
 export interface UpsertPsychologyClinicProfileWorkspaceRequestDto {
   snapshot: Partial<PsychologyClinicProfileSnapshot>;
@@ -92,3 +110,27 @@ export const toPsychologyClinicSessionNoteDraftPacketResponseDto = (
 export const toPsychologyClinicFoundationCloseoutResponseDto = (
   view: TenantPsychologyClinicFoundationCloseout,
 ): PsychologyClinicFoundationCloseoutResponseDto => view;
+
+export const toPsychologyClinicTreatmentPlanWorkspaceResponseDto = (
+  view: TenantPsychologyClinicTreatmentPlanWorkspace,
+): PsychologyClinicTreatmentPlanWorkspaceResponseDto => view;
+
+export const toPsychologyClinicTreatmentFollowUpReadinessResponseDto = (
+  view: TenantPsychologyClinicTreatmentFollowUpReadiness,
+): PsychologyClinicTreatmentFollowUpReadinessResponseDto => view;
+
+export const toPsychologyClinicGrowthReminderBridgeResponseDto = (
+  view: TenantPsychologyClinicGrowthReminderBridge,
+): PsychologyClinicGrowthReminderBridgeResponseDto => view;
+
+export const toPsychologyClinicBillingTaxBridgeResponseDto = (
+  view: TenantPsychologyClinicBillingTaxBridge,
+): PsychologyClinicBillingTaxBridgeResponseDto => view;
+
+export const toPsychologyClinicPatientTimelineWorkspaceResponseDto = (
+  view: TenantPsychologyClinicPatientTimelineWorkspace,
+): PsychologyClinicPatientTimelineWorkspaceResponseDto => view;
+
+export const toPsychologyClinicOperationsCloseoutResponseDto = (
+  view: TenantPsychologyClinicOperationsCloseout,
+): PsychologyClinicOperationsCloseoutResponseDto => view;

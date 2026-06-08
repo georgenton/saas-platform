@@ -810,6 +810,11 @@ const LazyMedicalClinicsSection = lazy(() =>
     default: module.MedicalClinicsSection,
   })),
 );
+const LazyPsychologyClinicsSection = lazy(() =>
+  import('./psychology-clinics-section').then((module) => ({
+    default: module.PsychologyClinicsSection,
+  })),
+);
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:3000/api';
@@ -25536,6 +25541,21 @@ export function App() {
           }
         >
           <LazyMedicalClinicsSection
+            token={token}
+            tenantSlug={currentTenancy?.tenant.slug ?? null}
+            formatDate={formatDate}
+            humanizeKey={humanizeKey}
+          />
+        </Suspense>
+
+        <Suspense
+          fallback={
+            <small className={styles.muted}>
+              Cargando consola Psychology Clinics...
+            </small>
+          }
+        >
+          <LazyPsychologyClinicsSection
             token={token}
             tenantSlug={currentTenancy?.tenant.slug ?? null}
             formatDate={formatDate}

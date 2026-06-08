@@ -10,13 +10,19 @@ import {
 } from '@nestjs/common';
 import {
   CreateTenantPsychologyClinicSessionUseCase,
+  GetTenantPsychologyClinicOperationsCloseoutUseCase,
   GetTenantPsychologyClinicFoundationCloseoutUseCase,
   GetTenantPsychologyClinicPatientIntakeWorkspaceUseCase,
+  GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase,
   GetTenantPsychologyClinicProductAnchorUseCase,
   GetTenantPsychologyClinicProfileWorkspaceUseCase,
   GetTenantPsychologyClinicSessionSchedulingWorkspaceUseCase,
+  GetTenantPsychologyClinicTreatmentFollowUpReadinessUseCase,
+  GetTenantPsychologyClinicTreatmentPlanWorkspaceUseCase,
   PSYCHOLOGY_CLINICS_PERMISSIONS,
   RegisterTenantPsychologyClinicPatientIntakeUseCase,
+  RequestTenantPsychologyClinicBillingTaxBridgeUseCase,
+  RequestTenantPsychologyClinicGrowthReminderBridgeUseCase,
   RequestTenantPsychologyClinicSessionNoteDraftPacketUseCase,
   TransitionTenantPsychologyClinicSessionUseCase,
   UpsertTenantPsychologyClinicProfileWorkspaceUseCase,
@@ -29,25 +35,37 @@ import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import {
   CreatePsychologyClinicSessionRequestDto,
+  PsychologyClinicBillingTaxBridgeResponseDto,
   PsychologyClinicFoundationCloseoutResponseDto,
+  PsychologyClinicGrowthReminderBridgeResponseDto,
+  PsychologyClinicOperationsCloseoutResponseDto,
   PsychologyClinicPatientIntakeWorkspaceResponseDto,
   PsychologyClinicPatientRecordResponseDto,
+  PsychologyClinicPatientTimelineWorkspaceResponseDto,
   PsychologyClinicProductAnchorResponseDto,
   PsychologyClinicProfileWorkspaceResponseDto,
   PsychologyClinicSessionNoteDraftPacketResponseDto,
   PsychologyClinicSessionRecordResponseDto,
   PsychologyClinicSessionSchedulingWorkspaceResponseDto,
+  PsychologyClinicTreatmentFollowUpReadinessResponseDto,
+  PsychologyClinicTreatmentPlanWorkspaceResponseDto,
   RegisterPsychologyClinicPatientIntakeRequestDto,
   TransitionPsychologyClinicSessionRequestDto,
   UpsertPsychologyClinicProfileWorkspaceRequestDto,
+  toPsychologyClinicBillingTaxBridgeResponseDto,
   toPsychologyClinicFoundationCloseoutResponseDto,
+  toPsychologyClinicGrowthReminderBridgeResponseDto,
+  toPsychologyClinicOperationsCloseoutResponseDto,
   toPsychologyClinicPatientIntakeWorkspaceResponseDto,
   toPsychologyClinicPatientRecordResponseDto,
+  toPsychologyClinicPatientTimelineWorkspaceResponseDto,
   toPsychologyClinicProductAnchorResponseDto,
   toPsychologyClinicProfileWorkspaceResponseDto,
   toPsychologyClinicSessionNoteDraftPacketResponseDto,
   toPsychologyClinicSessionRecordResponseDto,
   toPsychologyClinicSessionSchedulingWorkspaceResponseDto,
+  toPsychologyClinicTreatmentFollowUpReadinessResponseDto,
+  toPsychologyClinicTreatmentPlanWorkspaceResponseDto,
 } from './dto/psychology-clinics.response';
 
 @Controller('psychology-clinics/tenants')
@@ -71,6 +89,12 @@ export class PsychologyClinicsController {
     private readonly transitionTenantPsychologyClinicSessionUseCase: TransitionTenantPsychologyClinicSessionUseCase,
     private readonly requestTenantPsychologyClinicSessionNoteDraftPacketUseCase: RequestTenantPsychologyClinicSessionNoteDraftPacketUseCase,
     private readonly getTenantPsychologyClinicFoundationCloseoutUseCase: GetTenantPsychologyClinicFoundationCloseoutUseCase,
+    private readonly getTenantPsychologyClinicTreatmentPlanWorkspaceUseCase: GetTenantPsychologyClinicTreatmentPlanWorkspaceUseCase,
+    private readonly getTenantPsychologyClinicTreatmentFollowUpReadinessUseCase: GetTenantPsychologyClinicTreatmentFollowUpReadinessUseCase,
+    private readonly requestTenantPsychologyClinicGrowthReminderBridgeUseCase: RequestTenantPsychologyClinicGrowthReminderBridgeUseCase,
+    private readonly requestTenantPsychologyClinicBillingTaxBridgeUseCase: RequestTenantPsychologyClinicBillingTaxBridgeUseCase,
+    private readonly getTenantPsychologyClinicPatientTimelineWorkspaceUseCase: GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase,
+    private readonly getTenantPsychologyClinicOperationsCloseoutUseCase: GetTenantPsychologyClinicOperationsCloseoutUseCase,
   ) {}
 
   @Get(':slug/product-anchor')
@@ -214,6 +238,86 @@ export class PsychologyClinicsController {
       await this.getTenantPsychologyClinicFoundationCloseoutUseCase.execute({
         tenantSlug,
       }),
+    );
+  }
+
+  @Get(':slug/operations-closeout')
+  async getOperationsCloseout(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicOperationsCloseoutResponseDto> {
+    return toPsychologyClinicOperationsCloseoutResponseDto(
+      await this.getTenantPsychologyClinicOperationsCloseoutUseCase.execute({
+        tenantSlug,
+      }),
+    );
+  }
+
+  @Get(':slug/growth-reminder-bridge')
+  async requestGrowthReminderBridge(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicGrowthReminderBridgeResponseDto> {
+    return toPsychologyClinicGrowthReminderBridgeResponseDto(
+      await this.requestTenantPsychologyClinicGrowthReminderBridgeUseCase.execute(
+        {
+          tenantSlug,
+        },
+      ),
+    );
+  }
+
+  @Get(':slug/billing-tax-bridge')
+  async requestBillingTaxBridge(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicBillingTaxBridgeResponseDto> {
+    return toPsychologyClinicBillingTaxBridgeResponseDto(
+      await this.requestTenantPsychologyClinicBillingTaxBridgeUseCase.execute({
+        tenantSlug,
+      }),
+    );
+  }
+
+  @Get(':slug/sessions/:sessionId/treatment-follow-up-readiness')
+  async getTreatmentFollowUpReadiness(
+    @Param('slug') tenantSlug: string,
+    @Param('sessionId') sessionId: string,
+  ): Promise<PsychologyClinicTreatmentFollowUpReadinessResponseDto> {
+    return toPsychologyClinicTreatmentFollowUpReadinessResponseDto(
+      await this.getTenantPsychologyClinicTreatmentFollowUpReadinessUseCase.execute(
+        {
+          tenantSlug,
+          sessionId,
+        },
+      ),
+    );
+  }
+
+  @Get(':slug/patients/:patientId/treatment-plan-workspace')
+  async getTreatmentPlanWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Param('patientId') patientId: string,
+  ): Promise<PsychologyClinicTreatmentPlanWorkspaceResponseDto> {
+    return toPsychologyClinicTreatmentPlanWorkspaceResponseDto(
+      await this.getTenantPsychologyClinicTreatmentPlanWorkspaceUseCase.execute(
+        {
+          tenantSlug,
+          patientId,
+        },
+      ),
+    );
+  }
+
+  @Get(':slug/patients/:patientId/timeline-workspace')
+  async getPatientTimelineWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Param('patientId') patientId: string,
+  ): Promise<PsychologyClinicPatientTimelineWorkspaceResponseDto> {
+    return toPsychologyClinicPatientTimelineWorkspaceResponseDto(
+      await this.getTenantPsychologyClinicPatientTimelineWorkspaceUseCase.execute(
+        {
+          tenantSlug,
+          patientId,
+        },
+      ),
     );
   }
 }

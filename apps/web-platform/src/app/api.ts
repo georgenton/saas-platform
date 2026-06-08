@@ -381,14 +381,20 @@ import {
   MedicalClinicRecordsCloseoutResponse,
   MedicalClinicTreatmentFollowUpReadinessResponse,
   CreatePsychologyClinicSessionRequest,
+  PsychologyClinicBillingTaxBridgeResponse,
   PsychologyClinicFoundationCloseoutResponse,
+  PsychologyClinicGrowthReminderBridgeResponse,
+  PsychologyClinicOperationsCloseoutResponse,
   PsychologyClinicPatientIntakeWorkspaceResponse,
   PsychologyClinicPatientRecordResponse,
+  PsychologyClinicPatientTimelineWorkspaceResponse,
   PsychologyClinicProductAnchorResponse,
   PsychologyClinicProfileWorkspaceResponse,
   PsychologyClinicSessionNoteDraftPacketResponse,
   PsychologyClinicSessionRecordResponse,
   PsychologyClinicSessionSchedulingWorkspaceResponse,
+  PsychologyClinicTreatmentFollowUpReadinessResponse,
+  PsychologyClinicTreatmentPlanWorkspaceResponse,
   RegisterPsychologyClinicPatientIntakeRequest,
   TransitionPsychologyClinicSessionRequest,
   UpsertPsychologyClinicProfileWorkspaceRequest,
@@ -9038,6 +9044,99 @@ export async function fetchPsychologyClinicFoundationCloseout(
     `/psychology-clinics/tenants/${encodeURIComponent(
       tenantSlug,
     )}/foundation-closeout`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicOperationsCloseout(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicOperationsCloseoutResponse> {
+  return request<PsychologyClinicOperationsCloseoutResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/operations-closeout`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestPsychologyClinicGrowthReminderBridge(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicGrowthReminderBridgeResponse> {
+  return request<PsychologyClinicGrowthReminderBridgeResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/growth-reminder-bridge`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestPsychologyClinicBillingTaxBridge(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicBillingTaxBridgeResponse> {
+  return request<PsychologyClinicBillingTaxBridgeResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/billing-tax-bridge`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicTreatmentFollowUpReadiness(
+  token: string,
+  tenantSlug: string,
+  sessionId: string,
+): Promise<PsychologyClinicTreatmentFollowUpReadinessResponse> {
+  return request<PsychologyClinicTreatmentFollowUpReadinessResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/sessions/${encodeURIComponent(sessionId)}/treatment-follow-up-readiness`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicTreatmentPlanWorkspace(
+  token: string,
+  tenantSlug: string,
+  patientId: string,
+): Promise<PsychologyClinicTreatmentPlanWorkspaceResponse> {
+  return request<PsychologyClinicTreatmentPlanWorkspaceResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patients/${encodeURIComponent(patientId)}/treatment-plan-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicPatientTimelineWorkspace(
+  token: string,
+  tenantSlug: string,
+  patientId: string,
+): Promise<PsychologyClinicPatientTimelineWorkspaceResponse> {
+  return request<PsychologyClinicPatientTimelineWorkspaceResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patients/${encodeURIComponent(patientId)}/timeline-workspace`,
     {
       method: 'GET',
       token,

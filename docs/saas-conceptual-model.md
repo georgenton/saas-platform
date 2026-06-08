@@ -564,12 +564,18 @@ review and cannot be signed automatically.
 
 Recommended next slices:
 
-1. `psychology-product-activation-ui`: expose product readiness, profile,
-   intake, sessions, note draft packet, and closeout in the web console.
-2. `psychology-treatment-plans`: add therapist-reviewed goals, care plan tasks,
-   and follow-up tracking without automated diagnosis.
-3. `psychology-growth-billing-bridges`: connect reviewed reminders to Growth and
-   invoiceable session handoff to Invoicing/Tax Compliance.
+1. `psychology-records-hardening`: deepen longitudinal patient records while
+   keeping review-first boundaries.
+2. `psychology-clinical-evidence`: add evidence registry and external documents
+   without becoming a legal EHR.
+3. `psychology-ehr-discovery`: evaluate future integrations, consent, privacy
+   and signature boundaries before storing formal clinical records.
+
+Operations 2.0 is now represented by the web command center plus treatment
+plans, follow-up readiness, Growth reminder bridge, Billing/Tax bridge, patient
+timeline and operations closeout packets. The product is still intentionally
+review-first: reminders are drafts, billing is a handoff, and treatment plans do
+not infer diagnosis or clinical risk.
 
 ## Product: Ecommerce
 

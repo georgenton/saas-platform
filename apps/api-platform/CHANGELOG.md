@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.12
+
+### Patch Changes
+
+- 03c3b23: Add Medical Clinics clinical encounter workspaces, note draft packets, treatment follow-up readiness, prescription readiness, closeout, and boundary guardrails.
+
 ## 0.107.11
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.21
+
+### Patch Changes
+
+- 4851fe4: Add medical and psychology clinic assistant templates to the transversal AI platform.
+
 ## 0.107.20
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.8
+
+### Patch Changes
+
+- b6b781f: Add Tax + Parties validation operations with SRI party evidence import, fiscal validation ledger, declaration recalculation, accountant execution, persistence decision, and operational command center.
+
 ## 0.107.7
 
 ### Patch Changes

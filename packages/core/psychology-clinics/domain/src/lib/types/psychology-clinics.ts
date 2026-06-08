@@ -226,3 +226,193 @@ export interface TenantPsychologyClinicFoundationCloseout {
   nextStep: string;
   guardrails: string[];
 }
+
+export interface TenantPsychologyClinicTreatmentPlanWorkspace {
+  tenantSlug: string;
+  patientId: string;
+  generatedAt: Date;
+  workspaceStatus: PsychologyClinicReadinessStatus;
+  patient: {
+    id: string;
+    displayName: string;
+    presentingConcern: string;
+    therapyConsentStatus: PsychologyClinicReadinessStatus;
+    initialRiskReviewStatus: PsychologyClinicReadinessStatus;
+  };
+  goals: Array<{
+    id: string;
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    reviewCadence: string;
+    nextAction: string;
+  }>;
+  careTasks: Array<{
+    id: string;
+    label: string;
+    owner: 'therapist' | 'patient' | 'front_desk';
+    status: PsychologyClinicReadinessStatus;
+    dueWindow: string;
+    growthBridgeStatus: PsychologyClinicReadinessStatus;
+  }>;
+  summary: {
+    goalCount: number;
+    readyGoalCount: number;
+    taskCount: number;
+    blockedTaskCount: number;
+    growthReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicTreatmentFollowUpReadiness {
+  tenantSlug: string;
+  sessionId: string;
+  patientId: string;
+  generatedAt: Date;
+  readinessStatus: PsychologyClinicReadinessStatus;
+  session: {
+    id: string;
+    patientDisplayName: string;
+    serviceName: string;
+    therapistName: string;
+    status: PsychologyClinicSessionStatus;
+    startsAt: string;
+  };
+  planItems: Array<{
+    key: string;
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    evidence: string;
+  }>;
+  suggestedFollowUp: {
+    recommendedWindow: string;
+    channel: 'in_session' | 'whatsapp_review_required';
+    requiresTherapistReview: true;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicGrowthReminderBridge {
+  tenantSlug: string;
+  generatedAt: Date;
+  bridgeStatus: PsychologyClinicReadinessStatus;
+  channel: 'whatsapp';
+  reminders: Array<{
+    sessionId: string;
+    patientDisplayName: string;
+    templateKey: string;
+    sendWindow: string;
+    status: PsychologyClinicReadinessStatus;
+    nextAction: string;
+  }>;
+  handoff: {
+    growthProductKey: 'growth';
+    conversationPurpose: 'therapy_session_confirmation' | 'therapy_follow_up';
+    requiresHumanReview: true;
+    privacyReviewRequired: true;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicBillingTaxBridge {
+  tenantSlug: string;
+  generatedAt: Date;
+  bridgeStatus: PsychologyClinicReadinessStatus;
+  invoiceableItems: Array<{
+    sessionId: string;
+    patientDisplayName: string;
+    serviceName: string;
+    therapistName: string;
+    occurredAt: string;
+    partyStatus: PsychologyClinicReadinessStatus;
+    invoiceDraftStatus: PsychologyClinicReadinessStatus;
+    taxEvidenceStatus: PsychologyClinicReadinessStatus;
+  }>;
+  handoff: {
+    invoicingProductKey: 'invoicing';
+    taxComplianceProductKey: 'tax-compliance-ec';
+    requiresHumanReview: true;
+  };
+  summary: {
+    invoiceableItemCount: number;
+    readyItemCount: number;
+    blockedItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicPatientTimelineWorkspace {
+  tenantSlug: string;
+  patientId: string;
+  generatedAt: Date;
+  workspaceStatus: PsychologyClinicReadinessStatus;
+  patient: {
+    id: string;
+    displayName: string;
+    presentingConcern: string;
+    therapyConsentStatus: PsychologyClinicReadinessStatus;
+  };
+  timeline: Array<{
+    id: string;
+    occurredAt: string;
+    label: string;
+    source:
+      | 'patient-intake'
+      | 'session'
+      | 'session-note'
+      | 'growth-bridge'
+      | 'billing-tax-bridge'
+      | 'treatment-plan';
+    status: PsychologyClinicReadinessStatus;
+    evidence: string;
+  }>;
+  summary: {
+    eventCount: number;
+    sessionCount: number;
+    noteDraftCount: number;
+    bridgeEventCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicOperationsCloseout {
+  tenantSlug: string;
+  generatedAt: Date;
+  closeoutStatus: PsychologyClinicReadinessStatus;
+  closedLayers: Array<{
+    key: string;
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    evidence: string;
+  }>;
+  productReadiness: {
+    foundationReady: boolean;
+    productActivationReady: boolean;
+    treatmentPlansReady: boolean;
+    growthBridgeReady: boolean;
+    billingTaxBridgeReady: boolean;
+    timelineReady: boolean;
+  };
+  summary: {
+    patientCount: number;
+    sessionCount: number;
+    operationalEventCount: number;
+    blockerCount: number;
+  };
+  remainingGaps: string[];
+  recommendedNextProduct:
+    | 'psychology-records-hardening'
+    | 'medical-clinics-ehr-discovery';
+  nextStep: string;
+  guardrails: string[];
+}

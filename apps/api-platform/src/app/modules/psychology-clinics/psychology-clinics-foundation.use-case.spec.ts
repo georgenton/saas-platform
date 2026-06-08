@@ -1,10 +1,16 @@
 import {
   GetTenantPsychologyClinicFoundationCloseoutUseCase,
+  GetTenantPsychologyClinicOperationsCloseoutUseCase,
   GetTenantPsychologyClinicPatientIntakeWorkspaceUseCase,
+  GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase,
   GetTenantPsychologyClinicProductAnchorUseCase,
   GetTenantPsychologyClinicProfileWorkspaceUseCase,
   GetTenantPsychologyClinicSessionSchedulingWorkspaceUseCase,
+  GetTenantPsychologyClinicTreatmentFollowUpReadinessUseCase,
+  GetTenantPsychologyClinicTreatmentPlanWorkspaceUseCase,
   RegisterTenantPsychologyClinicPatientIntakeUseCase,
+  RequestTenantPsychologyClinicBillingTaxBridgeUseCase,
+  RequestTenantPsychologyClinicGrowthReminderBridgeUseCase,
   RequestTenantPsychologyClinicSessionNoteDraftPacketUseCase,
   TransitionTenantPsychologyClinicSessionUseCase,
   UpsertTenantPsychologyClinicProfileWorkspaceUseCase,
@@ -171,6 +177,101 @@ describe('Psychology Clinics foundation use cases', () => {
     expect(closeout.summary.blockedCheckCount).toBe(0);
     expect(closeout.recommendedNextSlice).toBe(
       'psychology-product-activation-ui',
+    );
+  });
+
+  it('builds treatment, bridge, timeline and operations closeout packets', async () => {
+    const repository = createInMemoryPsychologyClinicRepository();
+    const idGenerator = {
+      generate: jest.fn(
+        () => `psychology_id_${idGenerator.generate.mock.calls.length}`,
+      ),
+    };
+    const patient =
+      await new RegisterTenantPsychologyClinicPatientIntakeUseCase(
+        repository,
+        idGenerator,
+      ).execute({
+        tenantSlug: 'psychology-demo',
+        patientDisplayName: 'Paciente Operaciones',
+        identificationStatus: 'ready',
+        contactStatus: 'ready',
+        therapyConsentStatus: 'ready',
+        messagingOptInStatus: 'ready',
+        initialRiskReviewStatus: 'ready',
+        presentingConcern: 'Seguimiento terapeutico',
+      });
+    const session = await new CreateTenantPsychologyClinicSessionUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({
+      tenantSlug: 'psychology-demo',
+      patientId: patient.id,
+      serviceName: 'Terapia individual',
+      therapistId: 'therapist_001',
+      therapistName: 'Ps. Ana Morales',
+      startsAt: fixedNow,
+    });
+    await new TransitionTenantPsychologyClinicSessionUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({
+      tenantSlug: 'psychology-demo',
+      sessionId: session.id,
+      status: 'completed',
+    });
+    await new RequestTenantPsychologyClinicSessionNoteDraftPacketUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({
+      tenantSlug: 'psychology-demo',
+      sessionId: session.id,
+    });
+
+    const treatmentPlan =
+      await new GetTenantPsychologyClinicTreatmentPlanWorkspaceUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo', patientId: patient.id });
+    const followUp =
+      await new GetTenantPsychologyClinicTreatmentFollowUpReadinessUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo', sessionId: session.id });
+    const growthBridge =
+      await new RequestTenantPsychologyClinicGrowthReminderBridgeUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo' });
+    const billingBridge =
+      await new RequestTenantPsychologyClinicBillingTaxBridgeUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo' });
+    const timeline =
+      await new GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo', patientId: patient.id });
+    const operationsCloseout =
+      await new GetTenantPsychologyClinicOperationsCloseoutUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo' });
+
+    expect(treatmentPlan.summary.goalCount).toBe(2);
+    expect(treatmentPlan.summary.taskCount).toBe(3);
+    expect(followUp.suggestedFollowUp.recommendedWindow).toBe('24-72 horas');
+    expect(growthBridge.handoff.growthProductKey).toBe('growth');
+    expect(billingBridge.handoff.invoicingProductKey).toBe('invoicing');
+    expect(billingBridge.summary.invoiceableItemCount).toBe(1);
+    expect(timeline.summary.noteDraftCount).toBe(1);
+    expect(operationsCloseout.productReadiness.timelineReady).toBe(true);
+    expect(operationsCloseout.recommendedNextProduct).toBe(
+      'psychology-records-hardening',
     );
   });
 });

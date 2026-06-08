@@ -21,13 +21,19 @@ import {
 import {
   CreateTenantPsychologyClinicSessionUseCase,
   GetTenantPsychologyClinicFoundationCloseoutUseCase,
+  GetTenantPsychologyClinicOperationsCloseoutUseCase,
   GetTenantPsychologyClinicPatientIntakeWorkspaceUseCase,
+  GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase,
   GetTenantPsychologyClinicProductAnchorUseCase,
   GetTenantPsychologyClinicProfileWorkspaceUseCase,
   GetTenantPsychologyClinicSessionSchedulingWorkspaceUseCase,
+  GetTenantPsychologyClinicTreatmentFollowUpReadinessUseCase,
+  GetTenantPsychologyClinicTreatmentPlanWorkspaceUseCase,
   PSYCHOLOGY_CLINIC_ID_GENERATOR,
   PSYCHOLOGY_CLINIC_OPERATIONS_REPOSITORY,
   RegisterTenantPsychologyClinicPatientIntakeUseCase,
+  RequestTenantPsychologyClinicBillingTaxBridgeUseCase,
+  RequestTenantPsychologyClinicGrowthReminderBridgeUseCase,
   RequestTenantPsychologyClinicSessionNoteDraftPacketUseCase,
   TransitionTenantPsychologyClinicSessionUseCase,
   UpsertTenantPsychologyClinicProfileWorkspaceUseCase,
@@ -139,6 +145,54 @@ import { PsychologyClinicsController } from './psychology-clinics.controller';
       inject: [PSYCHOLOGY_CLINIC_OPERATIONS_REPOSITORY],
       useFactory: (operationsRepository) =>
         new GetTenantPsychologyClinicFoundationCloseoutUseCase(
+          operationsRepository,
+        ),
+    },
+    {
+      provide: GetTenantPsychologyClinicTreatmentPlanWorkspaceUseCase,
+      inject: [PSYCHOLOGY_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new GetTenantPsychologyClinicTreatmentPlanWorkspaceUseCase(
+          operationsRepository,
+        ),
+    },
+    {
+      provide: GetTenantPsychologyClinicTreatmentFollowUpReadinessUseCase,
+      inject: [PSYCHOLOGY_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new GetTenantPsychologyClinicTreatmentFollowUpReadinessUseCase(
+          operationsRepository,
+        ),
+    },
+    {
+      provide: RequestTenantPsychologyClinicGrowthReminderBridgeUseCase,
+      inject: [PSYCHOLOGY_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new RequestTenantPsychologyClinicGrowthReminderBridgeUseCase(
+          operationsRepository,
+        ),
+    },
+    {
+      provide: RequestTenantPsychologyClinicBillingTaxBridgeUseCase,
+      inject: [PSYCHOLOGY_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new RequestTenantPsychologyClinicBillingTaxBridgeUseCase(
+          operationsRepository,
+        ),
+    },
+    {
+      provide: GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase,
+      inject: [PSYCHOLOGY_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase(
+          operationsRepository,
+        ),
+    },
+    {
+      provide: GetTenantPsychologyClinicOperationsCloseoutUseCase,
+      inject: [PSYCHOLOGY_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new GetTenantPsychologyClinicOperationsCloseoutUseCase(
           operationsRepository,
         ),
     },

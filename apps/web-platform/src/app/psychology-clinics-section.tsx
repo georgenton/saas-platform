@@ -1,12 +1,17 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   createPsychologyClinicSession,
+  fetchPsychologyClinicClinicalEvidenceRegistry,
   fetchPsychologyClinicFoundationCloseout,
   fetchPsychologyClinicOperationsCloseout,
   fetchPsychologyClinicPatientIntakeWorkspace,
   fetchPsychologyClinicPatientTimelineWorkspace,
+  fetchPsychologyClinicPrivacyConsentControlCenter,
   fetchPsychologyClinicProductAnchor,
   fetchPsychologyClinicProfileWorkspace,
+  fetchPsychologyClinicRecordsCloseoutV3,
+  fetchPsychologyClinicRecordsHardeningWorkspace,
+  fetchPsychologyClinicRiskSafetyReviewWorkspace,
   fetchPsychologyClinicSessionSchedulingWorkspace,
   fetchPsychologyClinicTreatmentFollowUpReadiness,
   fetchPsychologyClinicTreatmentPlanWorkspace,
@@ -14,19 +19,26 @@ import {
   requestPsychologyClinicBillingTaxBridge,
   requestPsychologyClinicGrowthReminderBridge,
   requestPsychologyClinicSessionNoteDraftPacket,
+  requestPsychologyClinicSessionNoteReviewLoop,
   transitionPsychologyClinicSession,
 } from './api';
 import styles from './app.module.css';
 import {
   PsychologyClinicBillingTaxBridgeResponse,
+  PsychologyClinicClinicalEvidenceRegistryResponse,
   PsychologyClinicFoundationCloseoutResponse,
   PsychologyClinicGrowthReminderBridgeResponse,
   PsychologyClinicOperationsCloseoutResponse,
   PsychologyClinicPatientIntakeWorkspaceResponse,
   PsychologyClinicPatientTimelineWorkspaceResponse,
+  PsychologyClinicPrivacyConsentControlCenterResponse,
   PsychologyClinicProductAnchorResponse,
   PsychologyClinicProfileWorkspaceResponse,
+  PsychologyClinicRecordsCloseoutV3Response,
+  PsychologyClinicRecordsHardeningWorkspaceResponse,
+  PsychologyClinicRiskSafetyReviewWorkspaceResponse,
   PsychologyClinicSessionNoteDraftPacketResponse,
+  PsychologyClinicSessionNoteReviewLoopResponse,
   PsychologyClinicSessionRecordResponse,
   PsychologyClinicSessionSchedulingWorkspaceResponse,
   PsychologyClinicTreatmentFollowUpReadinessResponse,
@@ -59,6 +71,15 @@ type PatientSurface = {
 type SessionSurface = {
   note: PsychologyClinicSessionNoteDraftPacketResponse | null;
   followUp: PsychologyClinicTreatmentFollowUpReadinessResponse | null;
+  reviewLoop: PsychologyClinicSessionNoteReviewLoopResponse | null;
+};
+
+type RecordsSurface = {
+  hardening: PsychologyClinicRecordsHardeningWorkspaceResponse | null;
+  evidence: PsychologyClinicClinicalEvidenceRegistryResponse | null;
+  safety: PsychologyClinicRiskSafetyReviewWorkspaceResponse | null;
+  privacy: PsychologyClinicPrivacyConsentControlCenterResponse | null;
+  closeout: PsychologyClinicRecordsCloseoutV3Response | null;
 };
 
 const emptySurface: PsychologySurface = {
@@ -86,6 +107,14 @@ export function PsychologyClinicsSection({
   const [sessionSurface, setSessionSurface] = useState<SessionSurface>({
     note: null,
     followUp: null,
+    reviewLoop: null,
+  });
+  const [recordsSurface, setRecordsSurface] = useState<RecordsSurface>({
+    hardening: null,
+    evidence: null,
+    safety: null,
+    privacy: null,
+    closeout: null,
   });
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState('');
@@ -294,7 +323,7 @@ export function PsychologyClinicsSection({
     setActionLoading('session-packets');
     setError(null);
     try {
-      const [note, followUp] = await Promise.all([
+      const [note, followUp, reviewLoop] = await Promise.all([
         requestPsychologyClinicSessionNoteDraftPacket(
           token,
           tenantSlug,
@@ -305,8 +334,13 @@ export function PsychologyClinicsSection({
           tenantSlug,
           activeSessionId,
         ),
+        requestPsychologyClinicSessionNoteReviewLoop(
+          token,
+          tenantSlug,
+          activeSessionId,
+        ),
       ]);
-      setSessionSurface({ note, followUp });
+      setSessionSurface({ note, followUp, reviewLoop });
       setMessage('Packets de sesion cargados.');
       await refreshSurface();
     } catch (caughtError) {
@@ -368,6 +402,48 @@ export function PsychologyClinicsSection({
       ]);
       setSurface((current) => ({ ...current, growthBridge, billingBridge }));
       setMessage('Bridge packets cargados.');
+      await refreshSurface();
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : String(caughtError),
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function loadRecordsPackets() {
+    if (!token || !tenantSlug || !activePatientId) {
+      return;
+    }
+
+    setActionLoading('records-packets');
+    setError(null);
+    try {
+      const [hardening, evidence, safety, privacy, closeout] =
+        await Promise.all([
+          fetchPsychologyClinicRecordsHardeningWorkspace(
+            token,
+            tenantSlug,
+            activePatientId,
+          ),
+          fetchPsychologyClinicClinicalEvidenceRegistry(
+            token,
+            tenantSlug,
+            activePatientId,
+          ),
+          fetchPsychologyClinicRiskSafetyReviewWorkspace(
+            token,
+            tenantSlug,
+            activePatientId,
+          ),
+          fetchPsychologyClinicPrivacyConsentControlCenter(token, tenantSlug),
+          fetchPsychologyClinicRecordsCloseoutV3(token, tenantSlug),
+        ]);
+      setRecordsSurface({ hardening, evidence, safety, privacy, closeout });
+      setMessage('Records 3.0 cargados.');
       await refreshSurface();
     } catch (caughtError) {
       setError(
@@ -760,6 +836,98 @@ export function PsychologyClinicsSection({
                 'Carga treatment/timeline para revisar continuidad.'}
             </small>
           </div>
+        </div>
+      </div>
+
+      <div className={styles.contentGrid}>
+        <div className={styles.panel}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.label}>Records 3.0</span>
+              <h3>Hardening y evidencia</h3>
+            </div>
+            <button
+              className={styles.secondaryButton}
+              disabled={!activePatientId || actionLoading === 'records-packets'}
+              onClick={() => void loadRecordsPackets()}
+              type="button"
+            >
+              {actionLoading === 'records-packets'
+                ? 'Cargando...'
+                : 'Cargar records 3.0'}
+            </button>
+          </div>
+          <div className={styles.stack}>
+            {(recordsSurface.hardening?.recordLayers ?? []).map((layer) => (
+              <div className={styles.assistCueCard} key={layer.key}>
+                <div className={styles.invoiceCardHeader}>
+                  <strong>{layer.label}</strong>
+                  <StatusPill status={layer.status} />
+                </div>
+                <small>
+                  {layer.evidenceCount} evidencias · {layer.nextAction}
+                </small>
+              </div>
+            ))}
+            {(recordsSurface.evidence?.evidenceItems ?? [])
+              .slice(0, 4)
+              .map((item) => (
+                <small className={styles.muted} key={item.id}>
+                  {item.label} · {humanizeKey(item.status)}
+                </small>
+              ))}
+          </div>
+        </div>
+
+        <div className={styles.panel}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.label}>Safety & privacy</span>
+              <h3>Revision humana</h3>
+            </div>
+            <StatusPill
+              status={
+                recordsSurface.closeout?.closeoutStatus ??
+                recordsSurface.privacy?.controlStatus ??
+                'needs_review'
+              }
+            />
+          </div>
+          <div className={styles.commercialGrid}>
+            <div className={styles.commercialCard}>
+              <span className={styles.muted}>Safety signals</span>
+              <strong>
+                {recordsSurface.safety?.reviewSignals.length ?? 0}
+              </strong>
+              <small>
+                {humanizeKey(
+                  recordsSurface.safety?.workspaceStatus ?? 'needs_review',
+                )}
+              </small>
+            </div>
+            <div className={styles.commercialCard}>
+              <span className={styles.muted}>Privacy controls</span>
+              <strong>{recordsSurface.privacy?.controls.length ?? 0}</strong>
+              <small>
+                {humanizeKey(
+                  recordsSurface.privacy?.controlStatus ?? 'needs_review',
+                )}
+              </small>
+            </div>
+            <div className={styles.commercialCard}>
+              <span className={styles.muted}>Review stages</span>
+              <strong>{sessionSurface.reviewLoop?.stages.length ?? 0}</strong>
+              <small>
+                {humanizeKey(
+                  sessionSurface.reviewLoop?.reviewStatus ?? 'needs_review',
+                )}
+              </small>
+            </div>
+          </div>
+          <small className={styles.muted}>
+            {recordsSurface.closeout?.nextStep ??
+              'Records 3.0 mantiene boundary no-EHR y review-first.'}
+          </small>
         </div>
       </div>
     </section>

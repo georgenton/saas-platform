@@ -1,15 +1,21 @@
 import {
   PsychologyClinicProfileSnapshot,
-  TenantPsychologyClinicFoundationCloseout,
   TenantPsychologyClinicBillingTaxBridge,
+  TenantPsychologyClinicClinicalEvidenceRegistry,
+  TenantPsychologyClinicFoundationCloseout,
   TenantPsychologyClinicGrowthReminderBridge,
   TenantPsychologyClinicOperationsCloseout,
   TenantPsychologyClinicPatientIntakeWorkspace,
   TenantPsychologyClinicPatientRecord,
   TenantPsychologyClinicPatientTimelineWorkspace,
+  TenantPsychologyClinicPrivacyConsentControlCenter,
   TenantPsychologyClinicProductAnchorView,
   TenantPsychologyClinicProfileWorkspace,
+  TenantPsychologyClinicRecordsCloseoutV3,
+  TenantPsychologyClinicRecordsHardeningWorkspace,
+  TenantPsychologyClinicRiskSafetyReviewWorkspace,
   TenantPsychologyClinicSessionNoteDraftPacket,
+  TenantPsychologyClinicSessionNoteReviewLoop,
   TenantPsychologyClinicSessionRecord,
   TenantPsychologyClinicSessionSchedulingWorkspace,
   TenantPsychologyClinicTreatmentFollowUpReadiness,
@@ -44,6 +50,18 @@ export type PsychologyClinicPatientTimelineWorkspaceResponseDto =
   TenantPsychologyClinicPatientTimelineWorkspace;
 export type PsychologyClinicOperationsCloseoutResponseDto =
   TenantPsychologyClinicOperationsCloseout;
+export type PsychologyClinicRecordsHardeningWorkspaceResponseDto =
+  TenantPsychologyClinicRecordsHardeningWorkspace;
+export type PsychologyClinicClinicalEvidenceRegistryResponseDto =
+  TenantPsychologyClinicClinicalEvidenceRegistry;
+export type PsychologyClinicSessionNoteReviewLoopResponseDto =
+  TenantPsychologyClinicSessionNoteReviewLoop;
+export type PsychologyClinicRiskSafetyReviewWorkspaceResponseDto =
+  TenantPsychologyClinicRiskSafetyReviewWorkspace;
+export type PsychologyClinicPrivacyConsentControlCenterResponseDto =
+  TenantPsychologyClinicPrivacyConsentControlCenter;
+export type PsychologyClinicRecordsCloseoutV3ResponseDto =
+  TenantPsychologyClinicRecordsCloseoutV3;
 
 export interface UpsertPsychologyClinicProfileWorkspaceRequestDto {
   snapshot: Partial<PsychologyClinicProfileSnapshot>;
@@ -134,3 +152,27 @@ export const toPsychologyClinicPatientTimelineWorkspaceResponseDto = (
 export const toPsychologyClinicOperationsCloseoutResponseDto = (
   view: TenantPsychologyClinicOperationsCloseout,
 ): PsychologyClinicOperationsCloseoutResponseDto => view;
+
+export const toPsychologyClinicRecordsHardeningWorkspaceResponseDto = (
+  view: TenantPsychologyClinicRecordsHardeningWorkspace,
+): PsychologyClinicRecordsHardeningWorkspaceResponseDto => view;
+
+export const toPsychologyClinicClinicalEvidenceRegistryResponseDto = (
+  view: TenantPsychologyClinicClinicalEvidenceRegistry,
+): PsychologyClinicClinicalEvidenceRegistryResponseDto => view;
+
+export const toPsychologyClinicSessionNoteReviewLoopResponseDto = (
+  view: TenantPsychologyClinicSessionNoteReviewLoop,
+): PsychologyClinicSessionNoteReviewLoopResponseDto => view;
+
+export const toPsychologyClinicRiskSafetyReviewWorkspaceResponseDto = (
+  view: TenantPsychologyClinicRiskSafetyReviewWorkspace,
+): PsychologyClinicRiskSafetyReviewWorkspaceResponseDto => view;
+
+export const toPsychologyClinicPrivacyConsentControlCenterResponseDto = (
+  view: TenantPsychologyClinicPrivacyConsentControlCenter,
+): PsychologyClinicPrivacyConsentControlCenterResponseDto => view;
+
+export const toPsychologyClinicRecordsCloseoutV3ResponseDto = (
+  view: TenantPsychologyClinicRecordsCloseoutV3,
+): PsychologyClinicRecordsCloseoutV3ResponseDto => view;

@@ -1219,7 +1219,10 @@ export interface EcuadorTaxProductCloseoutPackView {
     smokeCoverageCount: number;
     blockerCount: number;
   };
-  recommendedNextProduct: 'parties_2_0' | 'accounting_2_0' | 'tax_compliance_hardening';
+  recommendedNextProduct:
+    | 'parties_2_0'
+    | 'accounting_2_0'
+    | 'tax_compliance_hardening';
   blockers: string[];
   nextStep: string;
   guardrails: string[];
@@ -1235,7 +1238,10 @@ export interface EcuadorTaxAccountingEvidenceFromFoundationView {
     key: string;
     label: string;
     status: EcuadorTaxReadinessStatus;
-    source: 'tax_accounting_readiness' | 'tax_closeout_report' | 'tax_command_center';
+    source:
+      | 'tax_accounting_readiness'
+      | 'tax_closeout_report'
+      | 'tax_command_center';
     detail: string;
   }>;
   summary: {
@@ -1452,7 +1458,10 @@ export interface EcuadorTaxAccountantEscalationServiceBoundaryView {
   period: string;
   year: number;
   generatedAt: Date;
-  escalationStatus: 'self_service_ready' | 'accountant_review_required' | 'accounting_advanced_required';
+  escalationStatus:
+    | 'self_service_ready'
+    | 'accountant_review_required'
+    | 'accounting_advanced_required';
   boundaryCloseout: EcuadorTaxAccountingBoundaryCloseoutView;
   incomeTaxWorkspace: EcuadorTaxIncomeTaxEvidenceWorkspaceV2View;
   escalationRules: Array<{
@@ -1596,7 +1605,10 @@ export interface EcuadorTaxFilingReadinessCertificateView {
   period: string;
   year: number;
   generatedAt: Date;
-  certificateStatus: 'blocked' | 'ready_for_accountant_review' | 'ready_for_external_filing';
+  certificateStatus:
+    | 'blocked'
+    | 'ready_for_accountant_review'
+    | 'ready_for_external_filing';
   handoffRoom: EcuadorTaxAccountantHandoffRoomV2View;
   certificationItems: Array<{
     key: string;
@@ -1669,6 +1681,201 @@ export interface EcuadorTaxComplianceProductCloseoutV3View {
   recommendedNextProduct:
     | 'tax_compliance_hardening'
     | 'parties_2_0'
+    | 'accounting_advanced_discovery';
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export type EcuadorTaxPartyHardeningRiskLevel =
+  | 'critical'
+  | 'high'
+  | 'medium'
+  | 'low';
+
+export interface EcuadorTaxPartyEvidenceBridgeView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  partyDirectoryStatus: string;
+  impactedParties: Array<{
+    partyId: string;
+    displayName: string;
+    roles: string[];
+    taxpayerId: string | null;
+    riskLevel: EcuadorTaxPartyHardeningRiskLevel;
+    impactedObligations: Array<'iva' | 'renta' | 'retenciones' | 'anexos'>;
+    missingFields: string[];
+    reviewNotes: string[];
+    recommendedAction: string;
+  }>;
+  summary: {
+    totalParties: number;
+    impactedPartyCount: number;
+    criticalPartyCount: number;
+    duplicateGroupCount: number;
+    blockedForDeclarationsCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxSriTaxpayerValidationReadinessView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  validationMode: 'readiness_only';
+  validationCandidates: Array<{
+    partyId: string;
+    displayName: string;
+    taxpayerId: string | null;
+    identificationType: string | null;
+    validationStatus: EcuadorTaxReadinessStatus;
+    checks: Array<{
+      key: string;
+      label: string;
+      status: EcuadorTaxReadinessStatus;
+      detail: string;
+    }>;
+    recommendedAction: string;
+  }>;
+  summary: {
+    candidateCount: number;
+    readyCandidateCount: number;
+    blockedCandidateCount: number;
+    needsReviewCandidateCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxDeclarationPartyImpactWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  declarationImpacts: Array<{
+    declarationKey: 'iva' | 'renta' | 'retenciones' | 'anexos';
+    label: string;
+    impactedPartyIds: string[];
+    blockedPartyIds: string[];
+    readinessStatus: EcuadorTaxReadinessStatus;
+    evidenceSource: string;
+    nextAction: string;
+  }>;
+  partyRiskRows: EcuadorTaxPartyEvidenceBridgeView['impactedParties'];
+  summary: {
+    declarationCount: number;
+    blockedDeclarationCount: number;
+    impactedPartyCount: number;
+    accountantReviewCandidateCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAssistedFiscalCorrectionFlowView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  flowStatus: EcuadorTaxReadinessStatus;
+  correctionCandidates: Array<{
+    partyId: string;
+    displayName: string;
+    priority: 'critical' | 'high' | 'normal';
+    source: 'parties_2_0' | 'tax_declaration_impact';
+    correctionFields: string[];
+    affectedDeclarations: string[];
+    suggestedPayload: {
+      taxpayerId: string | null;
+      identificationType: string | null;
+      fiscalAddress: string | null;
+      email: string | null;
+      taxpayerName: string;
+    };
+    nextAction: string;
+  }>;
+  auditTrail: Array<{
+    eventKey: string;
+    source: string;
+    detail: string;
+  }>;
+  summary: {
+    candidateCount: number;
+    criticalCandidateCount: number;
+    affectedDeclarationCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantReviewFromPartyRisksView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  escalationStatus: EcuadorTaxReadinessStatus;
+  reviewTriggers: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    affectedPartyIds: string[];
+    suggestedQuestion: string;
+  }>;
+  suggestedReviewRequest: {
+    reason: string;
+    questions: string[];
+    evidenceReferences: string[];
+  };
+  summary: {
+    triggerCount: number;
+    blockingTriggerCount: number;
+    affectedPartyCount: number;
+    suggestedQuestionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxComplianceHardeningCloseoutV4View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: 'tax_hardened' | 'needs_party_cleanup' | 'blocked';
+  partyEvidenceBridge: EcuadorTaxPartyEvidenceBridgeView;
+  taxpayerValidationReadiness: EcuadorTaxSriTaxpayerValidationReadinessView;
+  declarationPartyImpact: EcuadorTaxDeclarationPartyImpactWorkspaceView;
+  assistedFiscalCorrectionFlow: EcuadorTaxAssistedFiscalCorrectionFlowView;
+  accountantReviewFromPartyRisks: EcuadorTaxAccountantReviewFromPartyRisksView;
+  productCloseoutV3: EcuadorTaxComplianceProductCloseoutV3View;
+  hardeningChecklist: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidence: string[];
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    partyRiskCount: number;
+    accountantTriggerCount: number;
+  };
+  recommendedNextProduct:
+    | 'tax_compliance_hardening'
+    | 'parties_persistence'
     | 'accounting_advanced_discovery';
   blockers: string[];
   nextStep: string;

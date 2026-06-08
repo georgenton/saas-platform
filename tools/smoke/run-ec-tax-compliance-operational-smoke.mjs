@@ -215,6 +215,12 @@ const [
   accountingBridgeSuggestedAccounts,
   growthReminderPacket,
   accountingReadinessPacket,
+  partyEvidenceBridge,
+  sriTaxpayerValidationReadiness,
+  declarationPartyImpactWorkspace,
+  assistedFiscalCorrectionFlow,
+  accountantReviewFromPartyRisks,
+  complianceHardeningCloseoutV4,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -544,6 +550,36 @@ const [
     path: taxPath(`/accounting-readiness-packet?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/party-evidence-bridge?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/sri-taxpayer-validation-readiness?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/declaration-party-impact-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/assisted-fiscal-correction-flow?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accountant-review-from-party-risks?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/compliance-hardening-closeout-v4?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus('purchase workspace', purchaseWorkspace.readinessStatus);
@@ -645,7 +681,10 @@ assertStatus(
   'accounting boundary closeout',
   accountingBoundaryCloseout.boundaryStatus,
 );
-assertStatus('sri source import center v2', sriSourceImportCenterV2.centerStatus);
+assertStatus(
+  'sri source import center v2',
+  sriSourceImportCenterV2.centerStatus,
+);
 assertStatus(
   'vat declaration workspace v2',
   vatDeclarationWorkspaceV2.readinessStatus,
@@ -671,6 +710,27 @@ assertStatus('operating dashboard v3', operatingDashboardV3.dashboardStatus);
 assertStatus(
   'compliance product closeout v3',
   complianceProductCloseoutV3.closeoutStatus,
+);
+assertStatus('party evidence bridge', partyEvidenceBridge.readinessStatus);
+assertStatus(
+  'sri taxpayer validation readiness',
+  sriTaxpayerValidationReadiness.readinessStatus,
+);
+assertStatus(
+  'declaration party impact workspace',
+  declarationPartyImpactWorkspace.readinessStatus,
+);
+assertStatus(
+  'assisted fiscal correction flow',
+  assistedFiscalCorrectionFlow.flowStatus,
+);
+assertStatus(
+  'accountant review from party risks',
+  accountantReviewFromPartyRisks.escalationStatus,
+);
+assertStatus(
+  'compliance hardening closeout v4',
+  complianceHardeningCloseoutV4.closeoutStatus,
 );
 assertStatus(
   'accountant collaboration pack',
@@ -826,10 +886,7 @@ printLine(
   'assisted review v2',
   `${assistedDeclarationReviewPackV2.summary.readyItemCount}/${assistedDeclarationReviewPackV2.summary.reviewItemCount}`,
 );
-printLine(
-  'tax/accounting boundary',
-  accountingBoundaryCloseout.boundaryStatus,
-);
+printLine('tax/accounting boundary', accountingBoundaryCloseout.boundaryStatus);
 printLine('sri import center v2', sriSourceImportCenterV2.centerStatus);
 printLine(
   'vat declaration v2',
@@ -848,10 +905,7 @@ printLine(
   accountantEscalationBoundary.escalationStatus,
 );
 printLine('compliance closeout v2', complianceCloseoutV2.closeoutStatus);
-printLine(
-  'evidence quality',
-  `${evidenceQualityCenter.summary.qualityScore}%`,
-);
+printLine('evidence quality', `${evidenceQualityCenter.summary.qualityScore}%`);
 printLine('obligation risk', obligationRiskMonitor.riskStatus);
 printLine('handoff room v2', accountantHandoffRoomV2.roomStatus);
 printLine(
@@ -859,9 +913,27 @@ printLine(
   filingReadinessCertificate.certificateStatus,
 );
 printLine('operating dashboard v3', operatingDashboardV3.dashboardStatus);
+printLine('product closeout v3', complianceProductCloseoutV3.closeoutStatus);
+printLine('party evidence bridge', partyEvidenceBridge.readinessStatus);
 printLine(
-  'product closeout v3',
-  complianceProductCloseoutV3.closeoutStatus,
+  'sri taxpayer validation',
+  sriTaxpayerValidationReadiness.readinessStatus,
+);
+printLine(
+  'declaration party impact',
+  declarationPartyImpactWorkspace.readinessStatus,
+);
+printLine(
+  'assisted fiscal correction',
+  assistedFiscalCorrectionFlow.flowStatus,
+);
+printLine(
+  'accountant party risk',
+  accountantReviewFromPartyRisks.escalationStatus,
+);
+printLine(
+  'hardening closeout v4',
+  complianceHardeningCloseoutV4.closeoutStatus,
 );
 printLine(
   'collaboration questions',

@@ -20,9 +20,15 @@ import {
 } from '@saas-platform/tenancy-application';
 import {
   CreateTenantPsychologyClinicSessionUseCase,
+  GetTenantPsychologyClinicAssessmentScaleRegistryUseCase,
   GetTenantPsychologyClinicClinicalEvidenceRegistryUseCase,
+  GetTenantPsychologyClinicCloseoutV4UseCase,
+  GetTenantPsychologyClinicEhrDiscoveryWorkspaceUseCase,
+  GetTenantPsychologyClinicExternalDocumentHandoffContractsUseCase,
   GetTenantPsychologyClinicFoundationCloseoutUseCase,
+  GetTenantPsychologyClinicFormalRecordSignatureReadinessUseCase,
   GetTenantPsychologyClinicOperationsCloseoutUseCase,
+  GetTenantPsychologyClinicOutcomesReviewWorkspaceUseCase,
   GetTenantPsychologyClinicPatientIntakeWorkspaceUseCase,
   GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase,
   GetTenantPsychologyClinicPrivacyConsentControlCenterUseCase,
@@ -209,6 +215,12 @@ import { PsychologyClinicsController } from './psychology-clinics.controller';
       GetTenantPsychologyClinicRiskSafetyReviewWorkspaceUseCase,
       GetTenantPsychologyClinicPrivacyConsentControlCenterUseCase,
       GetTenantPsychologyClinicRecordsCloseoutV3UseCase,
+      GetTenantPsychologyClinicEhrDiscoveryWorkspaceUseCase,
+      GetTenantPsychologyClinicFormalRecordSignatureReadinessUseCase,
+      GetTenantPsychologyClinicOutcomesReviewWorkspaceUseCase,
+      GetTenantPsychologyClinicAssessmentScaleRegistryUseCase,
+      GetTenantPsychologyClinicExternalDocumentHandoffContractsUseCase,
+      GetTenantPsychologyClinicCloseoutV4UseCase,
     ].map((useCase) => ({
       provide: useCase,
       inject: [PSYCHOLOGY_CLINIC_OPERATIONS_REPOSITORY],

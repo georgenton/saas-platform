@@ -10,9 +10,15 @@ import {
 } from '@nestjs/common';
 import {
   CreateTenantPsychologyClinicSessionUseCase,
+  GetTenantPsychologyClinicAssessmentScaleRegistryUseCase,
   GetTenantPsychologyClinicClinicalEvidenceRegistryUseCase,
+  GetTenantPsychologyClinicCloseoutV4UseCase,
+  GetTenantPsychologyClinicEhrDiscoveryWorkspaceUseCase,
+  GetTenantPsychologyClinicExternalDocumentHandoffContractsUseCase,
   GetTenantPsychologyClinicOperationsCloseoutUseCase,
   GetTenantPsychologyClinicFoundationCloseoutUseCase,
+  GetTenantPsychologyClinicFormalRecordSignatureReadinessUseCase,
+  GetTenantPsychologyClinicOutcomesReviewWorkspaceUseCase,
   GetTenantPsychologyClinicPatientIntakeWorkspaceUseCase,
   GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase,
   GetTenantPsychologyClinicPrivacyConsentControlCenterUseCase,
@@ -41,11 +47,17 @@ import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import {
   CreatePsychologyClinicSessionRequestDto,
+  PsychologyClinicAssessmentScaleRegistryResponseDto,
   PsychologyClinicBillingTaxBridgeResponseDto,
   PsychologyClinicClinicalEvidenceRegistryResponseDto,
+  PsychologyClinicCloseoutV4ResponseDto,
+  PsychologyClinicEhrDiscoveryWorkspaceResponseDto,
+  PsychologyClinicExternalDocumentHandoffContractsResponseDto,
   PsychologyClinicFoundationCloseoutResponseDto,
+  PsychologyClinicFormalRecordSignatureReadinessResponseDto,
   PsychologyClinicGrowthReminderBridgeResponseDto,
   PsychologyClinicOperationsCloseoutResponseDto,
+  PsychologyClinicOutcomesReviewWorkspaceResponseDto,
   PsychologyClinicPatientIntakeWorkspaceResponseDto,
   PsychologyClinicPatientRecordResponseDto,
   PsychologyClinicPatientTimelineWorkspaceResponseDto,
@@ -65,10 +77,16 @@ import {
   TransitionPsychologyClinicSessionRequestDto,
   UpsertPsychologyClinicProfileWorkspaceRequestDto,
   toPsychologyClinicBillingTaxBridgeResponseDto,
+  toPsychologyClinicAssessmentScaleRegistryResponseDto,
   toPsychologyClinicClinicalEvidenceRegistryResponseDto,
+  toPsychologyClinicCloseoutV4ResponseDto,
+  toPsychologyClinicEhrDiscoveryWorkspaceResponseDto,
+  toPsychologyClinicExternalDocumentHandoffContractsResponseDto,
   toPsychologyClinicFoundationCloseoutResponseDto,
+  toPsychologyClinicFormalRecordSignatureReadinessResponseDto,
   toPsychologyClinicGrowthReminderBridgeResponseDto,
   toPsychologyClinicOperationsCloseoutResponseDto,
+  toPsychologyClinicOutcomesReviewWorkspaceResponseDto,
   toPsychologyClinicPatientIntakeWorkspaceResponseDto,
   toPsychologyClinicPatientRecordResponseDto,
   toPsychologyClinicPatientTimelineWorkspaceResponseDto,
@@ -119,6 +137,12 @@ export class PsychologyClinicsController {
     private readonly getTenantPsychologyClinicRiskSafetyReviewWorkspaceUseCase: GetTenantPsychologyClinicRiskSafetyReviewWorkspaceUseCase,
     private readonly getTenantPsychologyClinicPrivacyConsentControlCenterUseCase: GetTenantPsychologyClinicPrivacyConsentControlCenterUseCase,
     private readonly getTenantPsychologyClinicRecordsCloseoutV3UseCase: GetTenantPsychologyClinicRecordsCloseoutV3UseCase,
+    private readonly getTenantPsychologyClinicEhrDiscoveryWorkspaceUseCase: GetTenantPsychologyClinicEhrDiscoveryWorkspaceUseCase,
+    private readonly getTenantPsychologyClinicFormalRecordSignatureReadinessUseCase: GetTenantPsychologyClinicFormalRecordSignatureReadinessUseCase,
+    private readonly getTenantPsychologyClinicOutcomesReviewWorkspaceUseCase: GetTenantPsychologyClinicOutcomesReviewWorkspaceUseCase,
+    private readonly getTenantPsychologyClinicAssessmentScaleRegistryUseCase: GetTenantPsychologyClinicAssessmentScaleRegistryUseCase,
+    private readonly getTenantPsychologyClinicExternalDocumentHandoffContractsUseCase: GetTenantPsychologyClinicExternalDocumentHandoffContractsUseCase,
+    private readonly getTenantPsychologyClinicCloseoutV4UseCase: GetTenantPsychologyClinicCloseoutV4UseCase,
   ) {}
 
   @Get(':slug/product-anchor')
@@ -410,6 +434,84 @@ export class PsychologyClinicsController {
   ): Promise<PsychologyClinicRecordsCloseoutV3ResponseDto> {
     return toPsychologyClinicRecordsCloseoutV3ResponseDto(
       await this.getTenantPsychologyClinicRecordsCloseoutV3UseCase.execute({
+        tenantSlug,
+      }),
+    );
+  }
+
+  @Get(':slug/ehr-discovery-workspace')
+  async getEhrDiscoveryWorkspace(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicEhrDiscoveryWorkspaceResponseDto> {
+    return toPsychologyClinicEhrDiscoveryWorkspaceResponseDto(
+      await this.getTenantPsychologyClinicEhrDiscoveryWorkspaceUseCase.execute({
+        tenantSlug,
+      }),
+    );
+  }
+
+  @Get(':slug/formal-record-signature-readiness')
+  async getFormalRecordSignatureReadiness(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicFormalRecordSignatureReadinessResponseDto> {
+    return toPsychologyClinicFormalRecordSignatureReadinessResponseDto(
+      await this.getTenantPsychologyClinicFormalRecordSignatureReadinessUseCase.execute(
+        {
+          tenantSlug,
+        },
+      ),
+    );
+  }
+
+  @Get(':slug/patients/:patientId/outcomes-review-workspace')
+  async getOutcomesReviewWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Param('patientId') patientId: string,
+  ): Promise<PsychologyClinicOutcomesReviewWorkspaceResponseDto> {
+    return toPsychologyClinicOutcomesReviewWorkspaceResponseDto(
+      await this.getTenantPsychologyClinicOutcomesReviewWorkspaceUseCase.execute(
+        {
+          tenantSlug,
+          patientId,
+        },
+      ),
+    );
+  }
+
+  @Get(':slug/patients/:patientId/assessment-scale-registry')
+  async getAssessmentScaleRegistry(
+    @Param('slug') tenantSlug: string,
+    @Param('patientId') patientId: string,
+  ): Promise<PsychologyClinicAssessmentScaleRegistryResponseDto> {
+    return toPsychologyClinicAssessmentScaleRegistryResponseDto(
+      await this.getTenantPsychologyClinicAssessmentScaleRegistryUseCase.execute(
+        {
+          tenantSlug,
+          patientId,
+        },
+      ),
+    );
+  }
+
+  @Get(':slug/external-document-handoff-contracts')
+  async getExternalDocumentHandoffContracts(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicExternalDocumentHandoffContractsResponseDto> {
+    return toPsychologyClinicExternalDocumentHandoffContractsResponseDto(
+      await this.getTenantPsychologyClinicExternalDocumentHandoffContractsUseCase.execute(
+        {
+          tenantSlug,
+        },
+      ),
+    );
+  }
+
+  @Get(':slug/closeout-v4')
+  async getCloseoutV4(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicCloseoutV4ResponseDto> {
+    return toPsychologyClinicCloseoutV4ResponseDto(
+      await this.getTenantPsychologyClinicCloseoutV4UseCase.execute({
         tenantSlug,
       }),
     );

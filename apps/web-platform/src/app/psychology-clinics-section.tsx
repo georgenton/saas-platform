@@ -1,9 +1,15 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   createPsychologyClinicSession,
+  fetchPsychologyClinicAssessmentScaleRegistry,
   fetchPsychologyClinicClinicalEvidenceRegistry,
+  fetchPsychologyClinicCloseoutV4,
+  fetchPsychologyClinicEhrDiscoveryWorkspace,
+  fetchPsychologyClinicExternalDocumentHandoffContracts,
   fetchPsychologyClinicFoundationCloseout,
+  fetchPsychologyClinicFormalRecordSignatureReadiness,
   fetchPsychologyClinicOperationsCloseout,
+  fetchPsychologyClinicOutcomesReviewWorkspace,
   fetchPsychologyClinicPatientIntakeWorkspace,
   fetchPsychologyClinicPatientTimelineWorkspace,
   fetchPsychologyClinicPrivacyConsentControlCenter,
@@ -25,10 +31,16 @@ import {
 import styles from './app.module.css';
 import {
   PsychologyClinicBillingTaxBridgeResponse,
+  PsychologyClinicAssessmentScaleRegistryResponse,
   PsychologyClinicClinicalEvidenceRegistryResponse,
+  PsychologyClinicCloseoutV4Response,
+  PsychologyClinicEhrDiscoveryWorkspaceResponse,
+  PsychologyClinicExternalDocumentHandoffContractsResponse,
   PsychologyClinicFoundationCloseoutResponse,
+  PsychologyClinicFormalRecordSignatureReadinessResponse,
   PsychologyClinicGrowthReminderBridgeResponse,
   PsychologyClinicOperationsCloseoutResponse,
+  PsychologyClinicOutcomesReviewWorkspaceResponse,
   PsychologyClinicPatientIntakeWorkspaceResponse,
   PsychologyClinicPatientTimelineWorkspaceResponse,
   PsychologyClinicPrivacyConsentControlCenterResponse,
@@ -82,6 +94,15 @@ type RecordsSurface = {
   closeout: PsychologyClinicRecordsCloseoutV3Response | null;
 };
 
+type EhrReadinessSurface = {
+  discovery: PsychologyClinicEhrDiscoveryWorkspaceResponse | null;
+  signature: PsychologyClinicFormalRecordSignatureReadinessResponse | null;
+  outcomes: PsychologyClinicOutcomesReviewWorkspaceResponse | null;
+  assessments: PsychologyClinicAssessmentScaleRegistryResponse | null;
+  handoff: PsychologyClinicExternalDocumentHandoffContractsResponse | null;
+  closeout: PsychologyClinicCloseoutV4Response | null;
+};
+
 const emptySurface: PsychologySurface = {
   anchor: null,
   foundationCloseout: null,
@@ -114,6 +135,14 @@ export function PsychologyClinicsSection({
     evidence: null,
     safety: null,
     privacy: null,
+    closeout: null,
+  });
+  const [ehrSurface, setEhrSurface] = useState<EhrReadinessSurface>({
+    discovery: null,
+    signature: null,
+    outcomes: null,
+    assessments: null,
+    handoff: null,
     closeout: null,
   });
   const [selectedPatientId, setSelectedPatientId] = useState('');
@@ -444,6 +473,58 @@ export function PsychologyClinicsSection({
         ]);
       setRecordsSurface({ hardening, evidence, safety, privacy, closeout });
       setMessage('Records 3.0 cargados.');
+      await refreshSurface();
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : String(caughtError),
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function loadEhrReadinessPackets() {
+    if (!token || !tenantSlug || !activePatientId) {
+      return;
+    }
+
+    setActionLoading('ehr-readiness-packets');
+    setError(null);
+    try {
+      const [discovery, signature, outcomes, assessments, handoff, closeout] =
+        await Promise.all([
+          fetchPsychologyClinicEhrDiscoveryWorkspace(token, tenantSlug),
+          fetchPsychologyClinicFormalRecordSignatureReadiness(
+            token,
+            tenantSlug,
+          ),
+          fetchPsychologyClinicOutcomesReviewWorkspace(
+            token,
+            tenantSlug,
+            activePatientId,
+          ),
+          fetchPsychologyClinicAssessmentScaleRegistry(
+            token,
+            tenantSlug,
+            activePatientId,
+          ),
+          fetchPsychologyClinicExternalDocumentHandoffContracts(
+            token,
+            tenantSlug,
+          ),
+          fetchPsychologyClinicCloseoutV4(token, tenantSlug),
+        ]);
+      setEhrSurface({
+        discovery,
+        signature,
+        outcomes,
+        assessments,
+        handoff,
+        closeout,
+      });
+      setMessage('EHR readiness cargado.');
       await refreshSurface();
     } catch (caughtError) {
       setError(
@@ -927,6 +1008,99 @@ export function PsychologyClinicsSection({
           <small className={styles.muted}>
             {recordsSurface.closeout?.nextStep ??
               'Records 3.0 mantiene boundary no-EHR y review-first.'}
+          </small>
+        </div>
+      </div>
+
+      <div className={styles.contentGrid}>
+        <div className={styles.panel}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.label}>EHR readiness</span>
+              <h3>Discovery y firma formal</h3>
+            </div>
+            <button
+              className={styles.secondaryButton}
+              disabled={
+                !activePatientId ||
+                actionLoading === 'ehr-readiness-packets'
+              }
+              onClick={() => void loadEhrReadinessPackets()}
+              type="button"
+            >
+              {actionLoading === 'ehr-readiness-packets'
+                ? 'Cargando...'
+                : 'Cargar EHR readiness'}
+            </button>
+          </div>
+          <div className={styles.stack}>
+            {(ehrSurface.discovery?.discoveryAreas ?? []).map((area) => (
+              <div className={styles.assistCueCard} key={area.key}>
+                <div className={styles.invoiceCardHeader}>
+                  <strong>{area.label}</strong>
+                  <StatusPill status={area.status} />
+                </div>
+                <small>
+                  {area.evidence} · {area.nextAction}
+                </small>
+              </div>
+            ))}
+            {(ehrSurface.signature?.signatureStages ?? [])
+              .slice(0, 3)
+              .map((stage) => (
+                <small className={styles.muted} key={stage.key}>
+                  {stage.label} · {humanizeKey(stage.status)}
+                </small>
+              ))}
+          </div>
+        </div>
+
+        <div className={styles.panel}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.label}>Clinical review</span>
+              <h3>Outcomes, escalas y handoff</h3>
+            </div>
+            <StatusPill
+              status={
+                ehrSurface.closeout?.closeoutStatus ??
+                ehrSurface.outcomes?.workspaceStatus ??
+                'needs_review'
+              }
+            />
+          </div>
+          <div className={styles.commercialGrid}>
+            <div className={styles.commercialCard}>
+              <span className={styles.muted}>Outcome signals</span>
+              <strong>{ehrSurface.outcomes?.outcomeSignals.length ?? 0}</strong>
+              <small>
+                {humanizeKey(
+                  ehrSurface.outcomes?.workspaceStatus ?? 'needs_review',
+                )}
+              </small>
+            </div>
+            <div className={styles.commercialCard}>
+              <span className={styles.muted}>Scales</span>
+              <strong>{ehrSurface.assessments?.summary.scaleCount ?? 0}</strong>
+              <small>
+                {humanizeKey(
+                  ehrSurface.assessments?.registryStatus ?? 'needs_review',
+                )}
+              </small>
+            </div>
+            <div className={styles.commercialCard}>
+              <span className={styles.muted}>Export packets</span>
+              <strong>{ehrSurface.handoff?.summary.packetCount ?? 0}</strong>
+              <small>
+                {humanizeKey(
+                  ehrSurface.handoff?.handoffStatus ?? 'needs_review',
+                )}
+              </small>
+            </div>
+          </div>
+          <small className={styles.muted}>
+            {ehrSurface.closeout?.nextStep ??
+              'EHR readiness prepara contratos, no firma ni diagnostica automaticamente.'}
           </small>
         </div>
       </div>

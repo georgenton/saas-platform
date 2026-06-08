@@ -162,13 +162,18 @@ import {
   EcuadorTaxAnnexesReadinessResponse,
   EcuadorTaxAnnexesReadinessV2Response,
   EcuadorTaxAnnexesWorkspaceResponse,
+  EcuadorTaxAccountingAdvancedDiscoveryGateResponse,
+  EcuadorTaxAnnualFiscalYearWorkspaceResponse,
+  EcuadorTaxAnnualIncomeTaxReconciliationV2Response,
   EcuadorTaxAnnualRollupWorkspaceResponse,
+  EcuadorTaxAuditReadinessBinderResponse,
   EcuadorTaxAssistedDeclarationReviewPackV2Response,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxComplianceCloseoutV2Response,
   EcuadorTaxComplianceDeclarationCloseoutV3Response,
   EcuadorTaxComplianceHardeningCloseoutV4Response,
   EcuadorTaxCompliancePostFilingCloseoutV4Response,
+  EcuadorTaxComplianceAnnualCloseoutV5Response,
   EcuadorTaxComplianceProductCloseoutV3Response,
   EcuadorTaxPartySriEvidenceImportResponse,
   EcuadorTaxCommandCenterResponse,
@@ -188,6 +193,7 @@ import {
   EcuadorTaxFilingEvidenceVaultV2Response,
   EcuadorTaxFilingHandoffResponse,
   EcuadorTaxFilingGuidePacketResponse,
+  EcuadorTaxExternalAccountantAnnualReviewRoomResponse,
   EcuadorTaxFilingAssistantV2Response,
   EcuadorTaxFilingReadinessCertificateResponse,
   EcuadorTaxAccountantReviewFromPartyRisksResponse,
@@ -4124,6 +4130,92 @@ export async function fetchEcuadorTaxAnnualRollupWorkspace(
     )}/ec/annual-rollup-workspace?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAnnualFiscalYearWorkspace(
+  token: string,
+  tenantSlug: string,
+  year: number,
+): Promise<EcuadorTaxAnnualFiscalYearWorkspaceResponse> {
+  return request<EcuadorTaxAnnualFiscalYearWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/annual-fiscal-year-workspace?year=${encodeURIComponent(
+      String(year),
+    )}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAnnualIncomeTaxReconciliationV2(
+  token: string,
+  tenantSlug: string,
+  year: number,
+): Promise<EcuadorTaxAnnualIncomeTaxReconciliationV2Response> {
+  return request<EcuadorTaxAnnualIncomeTaxReconciliationV2Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/annual-income-tax-reconciliation-v2?year=${encodeURIComponent(
+      String(year),
+    )}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAuditReadinessBinder(
+  token: string,
+  tenantSlug: string,
+  year: number,
+): Promise<EcuadorTaxAuditReadinessBinderResponse> {
+  return request<EcuadorTaxAuditReadinessBinderResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/audit-readiness-binder?year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxExternalAccountantAnnualReviewRoom(
+  token: string,
+  tenantSlug: string,
+  year: number,
+): Promise<EcuadorTaxExternalAccountantAnnualReviewRoomResponse> {
+  return request<EcuadorTaxExternalAccountantAnnualReviewRoomResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/external-accountant-annual-review-room?year=${encodeURIComponent(
+      String(year),
+    )}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAccountingAdvancedDiscoveryGate(
+  token: string,
+  tenantSlug: string,
+  year: number,
+): Promise<EcuadorTaxAccountingAdvancedDiscoveryGateResponse> {
+  return request<EcuadorTaxAccountingAdvancedDiscoveryGateResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accounting-advanced-discovery-gate?year=${encodeURIComponent(
+      String(year),
+    )}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxComplianceAnnualCloseoutV5(
+  token: string,
+  tenantSlug: string,
+  year: number,
+): Promise<EcuadorTaxComplianceAnnualCloseoutV5Response> {
+  return request<EcuadorTaxComplianceAnnualCloseoutV5Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/annual-closeout-v5?year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },
   );
 }

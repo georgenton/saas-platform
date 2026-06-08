@@ -3339,3 +3339,145 @@ export interface EcuadorTaxDeclarationApprovalPacketView {
   nextStep: string;
   guardrails: string[];
 }
+
+export interface EcuadorTaxAnnualFiscalYearWorkspaceView {
+  tenantSlug: string;
+  year: number;
+  generatedAt: Date;
+  workspaceStatus: EcuadorTaxReadinessStatus;
+  periodRows: Array<{
+    period: string;
+    eventCount: number;
+    filingEventCount: number;
+    paymentEventCount: number;
+    exceptionEventCount: number;
+    readinessStatus: EcuadorTaxReadinessStatus;
+  }>;
+  annualTotals: {
+    periodCount: number;
+    eventCount: number;
+    filingEventCount: number;
+    paymentEventCount: number;
+    exceptionEventCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAnnualIncomeTaxReconciliationV2View {
+  tenantSlug: string;
+  year: number;
+  generatedAt: Date;
+  reconciliationStatus: EcuadorTaxReadinessStatus;
+  reconciliationRows: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidence: string;
+    differenceSignal: 'none' | 'review_required' | 'blocked';
+  }>;
+  summary: {
+    rowCount: number;
+    needsReviewCount: number;
+    blockedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAuditReadinessBinderView {
+  tenantSlug: string;
+  year: number;
+  generatedAt: Date;
+  binderStatus: EcuadorTaxReadinessStatus;
+  folders: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidenceCount: number;
+    owner: 'operator' | 'accountant';
+  }>;
+  summary: {
+    folderCount: number;
+    readyFolderCount: number;
+    needsReviewFolderCount: number;
+    blockedFolderCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxExternalAccountantAnnualReviewRoomView {
+  tenantSlug: string;
+  year: number;
+  generatedAt: Date;
+  roomStatus: EcuadorTaxReadinessStatus;
+  reviewSections: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    questions: string[];
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    sectionCount: number;
+    questionCount: number;
+    blockedSectionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingAdvancedDiscoveryGateView {
+  tenantSlug: string;
+  year: number;
+  generatedAt: Date;
+  gateStatus: EcuadorTaxReadinessStatus;
+  decisionSignals: Array<{
+    key: string;
+    label: string;
+    severity: EcuadorTaxReviewPriority;
+    rationale: string;
+  }>;
+  recommendation: {
+    nextProduct: 'tax-compliance-ec' | 'accounting-advanced';
+    reason: string;
+    openAdvancedAccountingNow: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxComplianceAnnualCloseoutV5View {
+  tenantSlug: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: EcuadorTaxReadinessStatus;
+  checklist: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidence: string;
+  }>;
+  decision: {
+    status:
+      | 'ready_for_external_accountant_review'
+      | 'needs_evidence_hardening'
+      | 'blocked';
+    recommendedNextProduct: 'tax-compliance-ec' | 'accounting-advanced';
+  };
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}

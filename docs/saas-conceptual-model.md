@@ -1450,6 +1450,47 @@ Guardrail: post-filing operations record and organize human-provided external
 evidence. They do not submit returns, pay taxes, download SRI receipts, certify
 official compliance, or replace a contador.
 
+### Tax Compliance EC annual and audit readiness 5.0
+
+After period filing and post-filing operations, Tax Compliance EC can roll
+evidence into an annual review layer for income tax, audit readiness and
+accountant decisioning:
+
+1. `Tax Annual Fiscal Year Workspace`
+   - consolidates monthly period evidence, filing events, payment evidence and
+     exceptions into a year-level operating view
+2. `Annual Income Tax Reconciliation 2.0`
+   - compares annual income, expense, withholding, accounting bridge and
+     post-filing evidence before annual income-tax review
+3. `Tax Audit Readiness Binder`
+   - groups SRI evidence, declarations, receipts, party risks and accountant
+     questions into review folders
+4. `External Accountant Annual Review Room`
+   - gives the external accountant a year-level room for blockers, questions,
+     evidence references and manual review
+5. `Accounting Advanced Discovery Gate`
+   - decides whether official books, certified bank feeds, signed financials or
+     auditor workflows justify opening Accounting Advanced
+6. `Tax Compliance Annual Closeout 5.0`
+   - closes the annual tax review as ready for external accountant review,
+     blocked, or a trigger for Accounting Advanced discovery
+
+Guardrail: annual readiness is still assisted evidence preparation. It does not
+submit annual income tax, certify compliance, sign accounting outputs, or
+replace a contador.
+
+### Transversal AI/Growth clinic connectivity
+
+Growth is connected to both clinic products through reviewed reminder/handoff
+bridges: Medical Clinics has appointment confirmation/follow-up handoff
+contracts and Psychology Clinics has reminder/follow-up bridge packets. AI is
+conceptually transversal for both products through assistant opportunities and
+review-first note/summary packets, but it is not yet exposed as explicit
+Medical/Psychology AI agent templates in the AI platform. The recommended
+future hardening is an `ai-clinics-assistant-template` slice that consumes the
+deterministic clinic contracts without diagnosing, signing, classifying risk, or
+replacing professional judgment.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

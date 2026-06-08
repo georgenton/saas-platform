@@ -5458,6 +5458,145 @@ export interface EcuadorTaxAnnualRollupWorkspaceResponse {
   guardrails: string[];
 }
 
+export interface EcuadorTaxAnnualFiscalYearWorkspaceResponse {
+  tenantSlug: string;
+  year: number;
+  generatedAt: string;
+  workspaceStatus: string;
+  periodRows: Array<{
+    period: string;
+    eventCount: number;
+    filingEventCount: number;
+    paymentEventCount: number;
+    exceptionEventCount: number;
+    readinessStatus: string;
+  }>;
+  annualTotals: {
+    periodCount: number;
+    eventCount: number;
+    filingEventCount: number;
+    paymentEventCount: number;
+    exceptionEventCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAnnualIncomeTaxReconciliationV2Response {
+  tenantSlug: string;
+  year: number;
+  generatedAt: string;
+  reconciliationStatus: string;
+  reconciliationRows: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidence: string;
+    differenceSignal: string;
+  }>;
+  summary: {
+    rowCount: number;
+    needsReviewCount: number;
+    blockedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAuditReadinessBinderResponse {
+  tenantSlug: string;
+  year: number;
+  generatedAt: string;
+  binderStatus: string;
+  folders: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceCount: number;
+    owner: string;
+  }>;
+  summary: {
+    folderCount: number;
+    readyFolderCount: number;
+    needsReviewFolderCount: number;
+    blockedFolderCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxExternalAccountantAnnualReviewRoomResponse {
+  tenantSlug: string;
+  year: number;
+  generatedAt: string;
+  roomStatus: string;
+  reviewSections: Array<{
+    key: string;
+    label: string;
+    status: string;
+    questions: string[];
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    sectionCount: number;
+    questionCount: number;
+    blockedSectionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingAdvancedDiscoveryGateResponse {
+  tenantSlug: string;
+  year: number;
+  generatedAt: string;
+  gateStatus: string;
+  decisionSignals: Array<{
+    key: string;
+    label: string;
+    severity: string;
+    rationale: string;
+  }>;
+  recommendation: {
+    nextProduct: string;
+    reason: string;
+    openAdvancedAccountingNow: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxComplianceAnnualCloseoutV5Response {
+  tenantSlug: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  checklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidence: string;
+  }>;
+  decision: {
+    status: string;
+    recommendedNextProduct: string;
+  };
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxProductCloseoutPackResponse {
   tenantSlug: string;
   period: string;

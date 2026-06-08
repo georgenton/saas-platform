@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.14
+
+### Patch Changes
+
+- 32e458d: Add Medical Clinics product activation closeout, command center web surface, and activation smoke narrative.
+
 ## 0.107.13
 
 ### Patch Changes

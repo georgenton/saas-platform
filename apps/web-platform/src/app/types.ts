@@ -5176,6 +5176,178 @@ export interface EcuadorTaxComplianceDeclarationCloseoutV3Response {
   guardrails: string[];
 }
 
+export interface EcuadorTaxExternalFilingResultRecordResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  resultId: string;
+  obligationKey: string;
+  formKey: string | null;
+  resultStatus: string;
+  externalReference: string | null;
+  filedAt: string | null;
+  paidAt: string | null;
+  expectedAmountInCents: number | null;
+  paidAmountInCents: number | null;
+  currency: string;
+  responsibleUserId: string | null;
+  responsibleEmail: string | null;
+  evidenceRefs: string[];
+  note: string | null;
+  handoff: EcuadorTaxFilingHandoffResponse;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPaymentObligationTrackerResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  trackerStatus: string;
+  filingResults: EcuadorTaxExternalFilingResultRecordResponse[];
+  paymentRows: Array<{
+    key: string;
+    obligationKey: string;
+    formKey: string | null;
+    paymentStatus: string;
+    expectedAmountInCents: number;
+    paidAmountInCents: number;
+    outstandingAmountInCents: number;
+    currency: string;
+    dueSignal: string;
+    externalReference: string | null;
+    nextAction: string;
+  }>;
+  summary: {
+    rowCount: number;
+    paidRowCount: number;
+    pendingRowCount: number;
+    expectedAmountInCents: number;
+    paidAmountInCents: number;
+    outstandingAmountInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxSriFilingReceiptEvidenceVaultResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  vaultStatus: string;
+  filingResults: EcuadorTaxExternalFilingResultRecordResponse[];
+  receiptFolders: Array<{
+    key: string;
+    label: string;
+    readinessStatus: string;
+    externalReference: string | null;
+    evidenceRefs: string[];
+    requiredItems: string[];
+    missingItems: string[];
+  }>;
+  summary: {
+    folderCount: number;
+    readyFolderCount: number;
+    evidenceRefCount: number;
+    missingItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPostFilingExceptionCenterResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  centerStatus: string;
+  paymentTracker: EcuadorTaxPaymentObligationTrackerResponse;
+  receiptVault: EcuadorTaxSriFilingReceiptEvidenceVaultResponse;
+  exceptions: Array<{
+    key: string;
+    label: string;
+    status: string;
+    severity: string;
+    owner: string;
+    source: string;
+    recommendedAction: string;
+  }>;
+  summary: {
+    exceptionCount: number;
+    criticalCount: number;
+    accountantOwnedCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPeriodPostFilingCertificateResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  certificateStatus: string;
+  declarationCloseout: EcuadorTaxComplianceDeclarationCloseoutV3Response;
+  paymentTracker: EcuadorTaxPaymentObligationTrackerResponse;
+  receiptVault: EcuadorTaxSriFilingReceiptEvidenceVaultResponse;
+  exceptionCenter: EcuadorTaxPostFilingExceptionCenterResponse;
+  certificateItems: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidence: string[];
+    attestation: string;
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    blockerCount: number;
+    outstandingAmountInCents: number;
+    evidenceRefCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxCompliancePostFilingCloseoutV4Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  filingResults: EcuadorTaxExternalFilingResultRecordResponse[];
+  paymentTracker: EcuadorTaxPaymentObligationTrackerResponse;
+  receiptVault: EcuadorTaxSriFilingReceiptEvidenceVaultResponse;
+  exceptionCenter: EcuadorTaxPostFilingExceptionCenterResponse;
+  postFilingCertificate: EcuadorTaxPeriodPostFilingCertificateResponse;
+  closeoutItems: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidence: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    blockerCount: number;
+    outstandingAmountInCents: number;
+    exceptionCount: number;
+  };
+  recommendedNextStep: string;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxAccountantCollaborationPackResponse {
   tenantSlug: string;
   period: string;

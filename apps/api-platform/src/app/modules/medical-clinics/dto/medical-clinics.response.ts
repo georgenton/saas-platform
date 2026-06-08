@@ -16,6 +16,7 @@ import {
   TenantMedicalClinicPatientRecord,
   TenantMedicalClinicPrescriptionReadinessPacket,
   TenantMedicalClinicProductAnchorView,
+  TenantMedicalClinicProductCloseout,
   TenantMedicalClinicProfileWorkspace,
   TenantMedicalClinicRecordsCloseout,
   TenantMedicalClinicTreatmentFollowUpReadiness,
@@ -23,6 +24,8 @@ import {
 
 export type MedicalClinicProductAnchorResponseDto =
   TenantMedicalClinicProductAnchorView;
+export type MedicalClinicProductCloseoutResponseDto =
+  TenantMedicalClinicProductCloseout;
 export type MedicalClinicProfileWorkspaceResponseDto =
   TenantMedicalClinicProfileWorkspace;
 export type MedicalClinicPatientIntakeWorkspaceResponseDto =
@@ -99,6 +102,10 @@ export interface TransitionMedicalClinicAppointmentRequestDto {
 export const toMedicalClinicProductAnchorResponseDto = (
   view: TenantMedicalClinicProductAnchorView,
 ): MedicalClinicProductAnchorResponseDto => view;
+
+export const toMedicalClinicProductCloseoutResponseDto = (
+  view: TenantMedicalClinicProductCloseout,
+): MedicalClinicProductCloseoutResponseDto => view;
 
 export const toMedicalClinicProfileWorkspaceResponseDto = (
   view: TenantMedicalClinicProfileWorkspace,

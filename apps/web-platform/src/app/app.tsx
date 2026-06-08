@@ -805,6 +805,11 @@ const LazyAiEcommerceLaunchSection = lazy(() =>
     default: module.AiEcommerceLaunchSection,
   })),
 );
+const LazyMedicalClinicsSection = lazy(() =>
+  import('./medical-clinics-section').then((module) => ({
+    default: module.MedicalClinicsSection,
+  })),
+);
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:3000/api';
@@ -25522,6 +25527,21 @@ export function App() {
             )}
           </article>
         </section>
+
+        <Suspense
+          fallback={
+            <small className={styles.muted}>
+              Cargando consola Medical Clinics...
+            </small>
+          }
+        >
+          <LazyMedicalClinicsSection
+            token={token}
+            tenantSlug={currentTenancy?.tenant.slug ?? null}
+            formatDate={formatDate}
+            humanizeKey={humanizeKey}
+          />
+        </Suspense>
 
         <Suspense
           fallback={

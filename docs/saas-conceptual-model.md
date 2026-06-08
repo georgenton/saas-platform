@@ -505,7 +505,7 @@ statements.
 
 ### Current repository status
 
-Implemented as an initial foundation product. Current repository coverage now
+Implemented as an operational vertical MVP. Current repository coverage now
 includes:
 
 1. product catalog anchor, modules, permissions and entitlement
@@ -518,10 +518,16 @@ includes:
 5. Growth reminder bridge for reviewed WhatsApp handoff
 6. Billing and Tax bridge for invoice draft readiness and Tax Compliance EC
    evidence handoff
+7. durable persistence for profile, patients, appointments and operational
+   events
+8. clinical encounter packets for note drafts, follow-up readiness,
+   prescription readiness and encounter closeout
+9. patient records workspaces for timeline, medical history drafts, evidence
+   registry, orders/referrals, care plan tasks and records closeout
+10. product activation closeout and web command center surfaces
 
-The next operating layer adds persistence for profile, patients, appointments
-and operational events. It still intentionally excludes formal clinical history,
-diagnosis, prescriptions and signed medical records.
+It still intentionally excludes formal signed EHR records, automatic diagnosis,
+official prescriptions and replacement of professional medical judgment.
 
 ## Product: Psychology Clinics
 
@@ -1588,6 +1594,26 @@ Boundary: this layer remains operational and review-first. It does not create a
 signed legal medical history, issue official prescriptions, certify clinical
 documents, store binary medical files, diagnose, or replace professional medical
 judgment.
+
+### Medical Clinics product activation 5.0
+
+After records 4.0, Medical Clinics needs a usable product surface and closeout
+before opening another vertical. This layer adds:
+
+1. product closeout summary across foundation, operations, encounters, records
+   and UI activation
+2. Medical Clinics command center UI with product readiness, operations lanes
+   and cross-product bridges
+3. patient operations UI for intake, consent readiness and patient creation
+4. appointment and encounter UI for appointment creation, state transition and
+   clinical packets
+5. patient records UI for timeline, history draft, evidence, orders, care plan
+   and records closeout
+6. smoke narrative covering the product from patient intake to product closeout
+
+Boundary: this layer activates the existing operational product; it does not add
+legal EHR storage, binary document vaulting, automated clinical decisions or
+official prescription issuance.
 
 ## Practical delivery rules
 

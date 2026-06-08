@@ -375,6 +375,7 @@ import {
   MedicalClinicPatientRecordResponse,
   MedicalClinicPatientIntakeWorkspaceResponse,
   MedicalClinicProductAnchorResponse,
+  MedicalClinicProductCloseoutResponse,
   MedicalClinicPrescriptionReadinessPacketResponse,
   MedicalClinicProfileWorkspaceResponse,
   MedicalClinicRecordsCloseoutResponse,
@@ -8513,6 +8514,21 @@ export async function fetchMedicalClinicProductAnchor(
 ): Promise<MedicalClinicProductAnchorResponse> {
   return request<MedicalClinicProductAnchorResponse>(
     `/medical-clinics/tenants/${encodeURIComponent(tenantSlug)}/product-anchor`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchMedicalClinicProductCloseout(
+  token: string,
+  tenantSlug: string,
+): Promise<MedicalClinicProductCloseoutResponse> {
+  return request<MedicalClinicProductCloseoutResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-closeout`,
     {
       method: 'GET',
       token,

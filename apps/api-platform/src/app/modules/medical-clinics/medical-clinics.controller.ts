@@ -17,6 +17,7 @@ import {
   GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
   GetTenantMedicalClinicPatientClinicalTimelineWorkspaceUseCase,
   GetTenantMedicalClinicProductAnchorUseCase,
+  GetTenantMedicalClinicProductCloseoutUseCase,
   GetTenantMedicalClinicProfileWorkspaceUseCase,
   GetTenantMedicalClinicTreatmentFollowUpReadinessUseCase,
   MEDICAL_CLINICS_PERMISSIONS,
@@ -58,6 +59,7 @@ import {
   MedicalClinicPatientIntakeWorkspaceResponseDto,
   MedicalClinicPrescriptionReadinessPacketResponseDto,
   MedicalClinicProductAnchorResponseDto,
+  MedicalClinicProductCloseoutResponseDto,
   MedicalClinicProfileWorkspaceResponseDto,
   MedicalClinicRecordsCloseoutResponseDto,
   MedicalClinicTreatmentFollowUpReadinessResponseDto,
@@ -81,6 +83,7 @@ import {
   toMedicalClinicPatientIntakeWorkspaceResponseDto,
   toMedicalClinicPrescriptionReadinessPacketResponseDto,
   toMedicalClinicProductAnchorResponseDto,
+  toMedicalClinicProductCloseoutResponseDto,
   toMedicalClinicProfileWorkspaceResponseDto,
   toMedicalClinicRecordsCloseoutResponseDto,
   toMedicalClinicTreatmentFollowUpReadinessResponseDto,
@@ -119,6 +122,7 @@ export class MedicalClinicsController {
     private readonly requestTenantMedicalClinicOrdersReferralReadinessPacketUseCase: RequestTenantMedicalClinicOrdersReferralReadinessPacketUseCase,
     private readonly getTenantMedicalClinicCarePlanTaskWorkspaceUseCase: GetTenantMedicalClinicCarePlanTaskWorkspaceUseCase,
     private readonly requestTenantMedicalClinicRecordsCloseoutUseCase: RequestTenantMedicalClinicRecordsCloseoutUseCase,
+    private readonly getTenantMedicalClinicProductCloseoutUseCase: GetTenantMedicalClinicProductCloseoutUseCase,
   ) {}
 
   @Get(':slug/product-anchor')
@@ -127,6 +131,17 @@ export class MedicalClinicsController {
   ): Promise<MedicalClinicProductAnchorResponseDto> {
     return toMedicalClinicProductAnchorResponseDto(
       await this.getTenantMedicalClinicProductAnchorUseCase.execute({
+        tenantSlug,
+      }),
+    );
+  }
+
+  @Get(':slug/product-closeout')
+  async getProductCloseout(
+    @Param('slug') tenantSlug: string,
+  ): Promise<MedicalClinicProductCloseoutResponseDto> {
+    return toMedicalClinicProductCloseoutResponseDto(
+      await this.getTenantMedicalClinicProductCloseoutUseCase.execute({
         tenantSlug,
       }),
     );

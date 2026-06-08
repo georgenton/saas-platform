@@ -376,6 +376,21 @@
   color: #5a5045;
 }
 
+.statusPillSuccess {
+  background: rgba(39, 137, 91, 0.14);
+  color: #236944;
+}
+
+.statusPillWarning {
+  background: rgba(171, 112, 42, 0.16);
+  color: #8b5818;
+}
+
+.statusPillDanger {
+  background: rgba(125, 42, 34, 0.14);
+  color: #7d2a22;
+}
+
 .pending {
   background: rgba(32, 111, 193, 0.12);
   color: #1f5e9b;
@@ -444,6 +459,7 @@
 }
 
 .commercialGrid,
+.commercialMetricsGrid,
 .featureGrid {
   display: grid;
   gap: 14px;

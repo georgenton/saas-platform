@@ -24,3 +24,4 @@ export * from './lib/use-cases/get-tenant-medical-clinic-clinical-evidence-regis
 export * from './lib/use-cases/request-tenant-medical-clinic-orders-referral-readiness-packet.use-case';
 export * from './lib/use-cases/get-tenant-medical-clinic-care-plan-task-workspace.use-case';
 export * from './lib/use-cases/request-tenant-medical-clinic-records-closeout.use-case';
+export * from './lib/use-cases/get-tenant-medical-clinic-product-closeout.use-case';

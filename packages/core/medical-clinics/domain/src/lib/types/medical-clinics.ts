@@ -536,3 +536,34 @@ export interface TenantMedicalClinicRecordsCloseout {
   nextStep: string;
   guardrails: string[];
 }
+
+export interface TenantMedicalClinicProductCloseout {
+  tenantSlug: string;
+  generatedAt: Date;
+  closeoutStatus: MedicalClinicReadinessStatus;
+  closedLayers: Array<{
+    key: string;
+    label: string;
+    status: MedicalClinicReadinessStatus;
+    evidence: string;
+  }>;
+  productReadiness: {
+    foundationReady: boolean;
+    operationsReady: boolean;
+    encountersReady: boolean;
+    recordsReady: boolean;
+    uiActivationReady: boolean;
+  };
+  summary: {
+    patientCount: number;
+    appointmentCount: number;
+    operationalEventCount: number;
+    blockerCount: number;
+  };
+  remainingGaps: string[];
+  recommendedNextProduct:
+    | 'psychology-clinics-foundation'
+    | 'medical-clinics-ehr-discovery';
+  nextStep: string;
+  guardrails: string[];
+}

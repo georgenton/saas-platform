@@ -8,6 +8,7 @@ import {
   GetTenantMedicalClinicPatientClinicalTimelineWorkspaceUseCase,
   GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
   GetTenantMedicalClinicProductAnchorUseCase,
+  GetTenantMedicalClinicProductCloseoutUseCase,
   GetTenantMedicalClinicProfileWorkspaceUseCase,
   GetTenantMedicalClinicTreatmentFollowUpReadinessUseCase,
   MEDICAL_CLINIC_ID_GENERATOR,
@@ -62,6 +63,12 @@ import { MedicalClinicsController } from './medical-clinics.controller';
   controllers: [MedicalClinicsController],
   providers: [
     GetTenantMedicalClinicProductAnchorUseCase,
+    {
+      provide: GetTenantMedicalClinicProductCloseoutUseCase,
+      inject: [MEDICAL_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new GetTenantMedicalClinicProductCloseoutUseCase(operationsRepository),
+    },
     {
       provide: GetTenantMedicalClinicProfileWorkspaceUseCase,
       inject: [MEDICAL_CLINIC_OPERATIONS_REPOSITORY],

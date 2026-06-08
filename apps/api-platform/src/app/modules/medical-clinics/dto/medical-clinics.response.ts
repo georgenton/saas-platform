@@ -2,16 +2,22 @@ import {
   TenantMedicalClinicAppointmentSchedulingWorkspace,
   TenantMedicalClinicAppointmentRecord,
   TenantMedicalClinicBillingTaxBridge,
+  TenantMedicalClinicCarePlanTaskWorkspace,
   TenantMedicalClinicClinicalBoundaryCloseout,
+  TenantMedicalClinicClinicalEvidenceRegistry,
   TenantMedicalClinicClinicalNoteDraftPacket,
   TenantMedicalClinicEncounterCloseout,
   TenantMedicalClinicEncounterWorkspace,
   TenantMedicalClinicGrowthReminderBridge,
+  TenantMedicalClinicMedicalHistoryDraftRecord,
+  TenantMedicalClinicOrdersReferralReadinessPacket,
+  TenantMedicalClinicPatientClinicalTimelineWorkspace,
   TenantMedicalClinicPatientIntakeWorkspace,
   TenantMedicalClinicPatientRecord,
   TenantMedicalClinicPrescriptionReadinessPacket,
   TenantMedicalClinicProductAnchorView,
   TenantMedicalClinicProfileWorkspace,
+  TenantMedicalClinicRecordsCloseout,
   TenantMedicalClinicTreatmentFollowUpReadiness,
 } from '@saas-platform/medical-clinics-domain';
 
@@ -43,6 +49,18 @@ export type MedicalClinicEncounterCloseoutResponseDto =
   TenantMedicalClinicEncounterCloseout;
 export type MedicalClinicClinicalBoundaryCloseoutResponseDto =
   TenantMedicalClinicClinicalBoundaryCloseout;
+export type MedicalClinicPatientClinicalTimelineWorkspaceResponseDto =
+  TenantMedicalClinicPatientClinicalTimelineWorkspace;
+export type MedicalClinicMedicalHistoryDraftRecordResponseDto =
+  TenantMedicalClinicMedicalHistoryDraftRecord;
+export type MedicalClinicClinicalEvidenceRegistryResponseDto =
+  TenantMedicalClinicClinicalEvidenceRegistry;
+export type MedicalClinicOrdersReferralReadinessPacketResponseDto =
+  TenantMedicalClinicOrdersReferralReadinessPacket;
+export type MedicalClinicCarePlanTaskWorkspaceResponseDto =
+  TenantMedicalClinicCarePlanTaskWorkspace;
+export type MedicalClinicRecordsCloseoutResponseDto =
+  TenantMedicalClinicRecordsCloseout;
 
 export interface UpsertMedicalClinicProfileWorkspaceRequestDto {
   snapshot: Partial<
@@ -133,3 +151,27 @@ export const toMedicalClinicEncounterCloseoutResponseDto = (
 export const toMedicalClinicClinicalBoundaryCloseoutResponseDto = (
   view: TenantMedicalClinicClinicalBoundaryCloseout,
 ): MedicalClinicClinicalBoundaryCloseoutResponseDto => view;
+
+export const toMedicalClinicPatientClinicalTimelineWorkspaceResponseDto = (
+  view: TenantMedicalClinicPatientClinicalTimelineWorkspace,
+): MedicalClinicPatientClinicalTimelineWorkspaceResponseDto => view;
+
+export const toMedicalClinicMedicalHistoryDraftRecordResponseDto = (
+  view: TenantMedicalClinicMedicalHistoryDraftRecord,
+): MedicalClinicMedicalHistoryDraftRecordResponseDto => view;
+
+export const toMedicalClinicClinicalEvidenceRegistryResponseDto = (
+  view: TenantMedicalClinicClinicalEvidenceRegistry,
+): MedicalClinicClinicalEvidenceRegistryResponseDto => view;
+
+export const toMedicalClinicOrdersReferralReadinessPacketResponseDto = (
+  view: TenantMedicalClinicOrdersReferralReadinessPacket,
+): MedicalClinicOrdersReferralReadinessPacketResponseDto => view;
+
+export const toMedicalClinicCarePlanTaskWorkspaceResponseDto = (
+  view: TenantMedicalClinicCarePlanTaskWorkspace,
+): MedicalClinicCarePlanTaskWorkspaceResponseDto => view;
+
+export const toMedicalClinicRecordsCloseoutResponseDto = (
+  view: TenantMedicalClinicRecordsCloseout,
+): MedicalClinicRecordsCloseoutResponseDto => view;

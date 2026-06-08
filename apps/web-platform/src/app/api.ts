@@ -361,17 +361,23 @@ import {
   MedicalClinicAppointmentSchedulingWorkspaceResponse,
   MedicalClinicBillingTaxBridgeResponse,
   MedicalClinicAppointmentRecordResponse,
+  MedicalClinicCarePlanTaskWorkspaceResponse,
   CreateMedicalClinicAppointmentRequest,
   MedicalClinicClinicalBoundaryCloseoutResponse,
+  MedicalClinicClinicalEvidenceRegistryResponse,
   MedicalClinicClinicalNoteDraftPacketResponse,
   MedicalClinicEncounterCloseoutResponse,
   MedicalClinicEncounterWorkspaceResponse,
   MedicalClinicGrowthReminderBridgeResponse,
+  MedicalClinicMedicalHistoryDraftRecordResponse,
+  MedicalClinicOrdersReferralReadinessPacketResponse,
+  MedicalClinicPatientClinicalTimelineWorkspaceResponse,
   MedicalClinicPatientRecordResponse,
   MedicalClinicPatientIntakeWorkspaceResponse,
   MedicalClinicProductAnchorResponse,
   MedicalClinicPrescriptionReadinessPacketResponse,
   MedicalClinicProfileWorkspaceResponse,
+  MedicalClinicRecordsCloseoutResponse,
   MedicalClinicTreatmentFollowUpReadinessResponse,
   RegisterMedicalClinicPatientIntakeRequest,
   TransitionMedicalClinicAppointmentRequest,
@@ -8748,6 +8754,104 @@ export async function requestMedicalClinicClinicalBoundaryCloseout(
     `/medical-clinics/tenants/${encodeURIComponent(
       tenantSlug,
     )}/clinical-boundary-closeout`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchMedicalClinicPatientClinicalTimelineWorkspace(
+  token: string,
+  tenantSlug: string,
+  patientId: string,
+): Promise<MedicalClinicPatientClinicalTimelineWorkspaceResponse> {
+  return request<MedicalClinicPatientClinicalTimelineWorkspaceResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patients/${encodeURIComponent(patientId)}/clinical-timeline-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestMedicalClinicMedicalHistoryDraftRecord(
+  token: string,
+  tenantSlug: string,
+  patientId: string,
+): Promise<MedicalClinicMedicalHistoryDraftRecordResponse> {
+  return request<MedicalClinicMedicalHistoryDraftRecordResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patients/${encodeURIComponent(patientId)}/medical-history-draft-record`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchMedicalClinicClinicalEvidenceRegistry(
+  token: string,
+  tenantSlug: string,
+  patientId: string,
+): Promise<MedicalClinicClinicalEvidenceRegistryResponse> {
+  return request<MedicalClinicClinicalEvidenceRegistryResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patients/${encodeURIComponent(patientId)}/clinical-evidence-registry`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestMedicalClinicOrdersReferralReadinessPacket(
+  token: string,
+  tenantSlug: string,
+  appointmentId: string,
+): Promise<MedicalClinicOrdersReferralReadinessPacketResponse> {
+  return request<MedicalClinicOrdersReferralReadinessPacketResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/appointments/${encodeURIComponent(
+      appointmentId,
+    )}/orders-referral-readiness-packet`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchMedicalClinicCarePlanTaskWorkspace(
+  token: string,
+  tenantSlug: string,
+  patientId: string,
+): Promise<MedicalClinicCarePlanTaskWorkspaceResponse> {
+  return request<MedicalClinicCarePlanTaskWorkspaceResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patients/${encodeURIComponent(patientId)}/care-plan-task-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestMedicalClinicRecordsCloseout(
+  token: string,
+  tenantSlug: string,
+  patientId: string,
+): Promise<MedicalClinicRecordsCloseoutResponse> {
+  return request<MedicalClinicRecordsCloseoutResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patients/${encodeURIComponent(patientId)}/records-closeout`,
     {
       method: 'GET',
       token,

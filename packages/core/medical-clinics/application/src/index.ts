@@ -18,3 +18,9 @@ export * from './lib/use-cases/get-tenant-medical-clinic-treatment-follow-up-rea
 export * from './lib/use-cases/request-tenant-medical-clinic-prescription-readiness-packet.use-case';
 export * from './lib/use-cases/request-tenant-medical-clinic-encounter-closeout.use-case';
 export * from './lib/use-cases/request-tenant-medical-clinic-clinical-boundary-closeout.use-case';
+export * from './lib/use-cases/get-tenant-medical-clinic-patient-clinical-timeline-workspace.use-case';
+export * from './lib/use-cases/request-tenant-medical-clinic-medical-history-draft-record.use-case';
+export * from './lib/use-cases/get-tenant-medical-clinic-clinical-evidence-registry.use-case';
+export * from './lib/use-cases/request-tenant-medical-clinic-orders-referral-readiness-packet.use-case';
+export * from './lib/use-cases/get-tenant-medical-clinic-care-plan-task-workspace.use-case';
+export * from './lib/use-cases/request-tenant-medical-clinic-records-closeout.use-case';

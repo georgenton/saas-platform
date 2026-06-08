@@ -1349,6 +1349,37 @@ Guardrail: this layer prepares declarations for human action. It does not store
 SRI credentials, bypass recaptcha, submit declarations, pay obligations, generate
 unverified official files, or certify accountant review.
 
+### Tax Compliance EC post-filing operations 4.0
+
+After assisted declaration preparation, Tax Compliance EC needs an operational
+control layer for what humans or accountants did outside the platform. This
+layer records filing outcomes, payments, receipts and exceptions without logging
+into SRI or paying obligations automatically.
+
+1. `External Filing Result Recorder`
+   - records submitted, rejected, under-review, payment-pending or paid external
+     outcomes per obligation/form with reference, dates, responsible party,
+     evidence refs and note
+2. `Tax Payment Obligation Tracker`
+   - separates filing from payment and tracks expected, paid and outstanding
+     amounts, status, due signal and next action per obligation
+3. `SRI Filing Receipt Evidence Vault`
+   - organizes externally provided filing/payment receipts, references, PDFs,
+     screenshots and accountant support into required/missing folders
+4. `Post-Filing Exception Center`
+   - prioritizes rejected filings, missing receipts, pending/partial payments
+     and unresolved accountant-owned exceptions after external filing
+5. `Tax Period Post-Filing Certificate`
+   - issues an internal certificate that post-filing evidence, payment tracking,
+     receipts and exceptions are complete enough for operational closeout
+6. `Tax Compliance Post-Filing Closeout 4.0`
+   - closes the period operationally, keeps it pending for payment/evidence,
+     routes it to accountant review, or recommends Accounting Advanced discovery
+
+Guardrail: post-filing operations record and organize human-provided external
+evidence. They do not submit returns, pay taxes, download SRI receipts, certify
+official compliance, or replace a contador.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

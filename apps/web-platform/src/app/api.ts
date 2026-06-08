@@ -168,6 +168,7 @@ import {
   EcuadorTaxComplianceCloseoutV2Response,
   EcuadorTaxComplianceDeclarationCloseoutV3Response,
   EcuadorTaxComplianceHardeningCloseoutV4Response,
+  EcuadorTaxCompliancePostFilingCloseoutV4Response,
   EcuadorTaxComplianceProductCloseoutV3Response,
   EcuadorTaxPartySriEvidenceImportResponse,
   EcuadorTaxCommandCenterResponse,
@@ -196,6 +197,7 @@ import {
   EcuadorTaxFormMappingCatalogResponse,
   EcuadorTaxGrowthReminderPacketResponse,
   EcuadorTaxEvidenceQualityCenterResponse,
+  EcuadorTaxExternalFilingResultRecordResponse,
   EcuadorTaxIncomeTaxEvidenceWorkspaceResponse,
   EcuadorTaxIncomeTaxEvidenceWorkspaceV2Response,
   EcuadorTaxIncomeTaxFormContractWorkspaceResponse,
@@ -207,17 +209,20 @@ import {
   EcuadorTaxPeriodCloseoutPacketResponse,
   EcuadorTaxPeriodCloseoutReportResponse,
   EcuadorTaxPeriodCloseoutCertificationResponse,
+  EcuadorTaxPeriodPostFilingCertificateResponse,
   EcuadorTaxProductCloseoutPackResponse,
   EcuadorTaxPeriodEvidenceVaultResponse,
   EcuadorTaxPeriodWorkspaceResponse,
   EcuadorTaxOperationalCloseoutResponse,
   EcuadorTaxOperatingDashboardV3Response,
+  EcuadorTaxPaymentObligationTrackerResponse,
   EcuadorTaxPartyEvidenceBridgeResponse,
   EcuadorTaxPartyFiscalValidationLedgerResponse,
   EcuadorTaxPartiesOperationalCommandCenterResponse,
   EcuadorTaxPartiesPersistenceDecisionPackResponse,
   EcuadorTaxPurchaseExpenseEvidenceRecordResponse,
   EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse,
+  EcuadorTaxPostFilingExceptionCenterResponse,
   EcuadorTaxReconciliationWorkspaceResponse,
   EcuadorTaxSalesBookResponse,
   EcuadorTaxSupplierFiscalReadinessWorkspaceResponse,
@@ -236,6 +241,7 @@ import {
   EcuadorTaxReviewAssistantPacketResponse,
   EcuadorTaxSriFiscalEvidenceImportBatchResponse,
   EcuadorTaxSriFiscalEvidenceWorkspaceResponse,
+  EcuadorTaxSriFilingReceiptEvidenceVaultResponse,
   EcuadorTaxSriEvidenceIntakeV2WorkspaceResponse,
   EcuadorTaxSriPlatformReconciliationWorkspaceResponse,
   EcuadorTaxSriTaxpayerValidationReadinessResponse,
@@ -3859,6 +3865,140 @@ export async function fetchEcuadorTaxComplianceDeclarationCloseoutV3(
     )}&year=${encodeURIComponent(String(year))}&formKey=${encodeURIComponent(
       formKey,
     )}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxExternalFilingResults(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxExternalFilingResultRecordResponse[]> {
+  return request<EcuadorTaxExternalFilingResultRecordResponse[]>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/external-filing-results?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function recordEcuadorTaxExternalFilingResult(
+  token: string,
+  tenantSlug: string,
+  body: {
+    period?: string;
+    year?: number;
+    obligationKey: 'iva' | 'income_tax' | 'withholding' | 'annexes';
+    formKey?: string | null;
+    resultStatus:
+      | 'submitted_externally'
+      | 'rejected_externally'
+      | 'under_review'
+      | 'payment_pending'
+      | 'paid_externally';
+    externalReference?: string | null;
+    filedAt?: string | null;
+    paidAt?: string | null;
+    expectedAmountInCents?: number | null;
+    paidAmountInCents?: number | null;
+    currency?: string | null;
+    responsibleUserId?: string | null;
+    responsibleEmail?: string | null;
+    evidenceRefs?: string[];
+    note?: string | null;
+  },
+): Promise<EcuadorTaxExternalFilingResultRecordResponse> {
+  return request<EcuadorTaxExternalFilingResultRecordResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/external-filing-results`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchEcuadorTaxPaymentObligationTracker(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPaymentObligationTrackerResponse> {
+  return request<EcuadorTaxPaymentObligationTrackerResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/payment-obligation-tracker?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxSriFilingReceiptEvidenceVault(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxSriFilingReceiptEvidenceVaultResponse> {
+  return request<EcuadorTaxSriFilingReceiptEvidenceVaultResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/sri-filing-receipt-evidence-vault?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPostFilingExceptionCenter(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPostFilingExceptionCenterResponse> {
+  return request<EcuadorTaxPostFilingExceptionCenterResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/post-filing-exception-center?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPeriodPostFilingCertificate(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPeriodPostFilingCertificateResponse> {
+  return request<EcuadorTaxPeriodPostFilingCertificateResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/period-post-filing-certificate?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxCompliancePostFilingCloseoutV4(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxCompliancePostFilingCloseoutV4Response> {
+  return request<EcuadorTaxCompliancePostFilingCloseoutV4Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/compliance-post-filing-closeout-v4?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },
   );
 }

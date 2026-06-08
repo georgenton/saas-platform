@@ -160,7 +160,13 @@ export type EcuadorTaxComplianceEventType =
   | 'tax_annexes_readiness_v2_reviewed'
   | 'tax_accountant_filing_review_room_v3_reviewed'
   | 'tax_declaration_artifact_export_v2_requested'
-  | 'tax_compliance_declaration_closeout_v3_requested';
+  | 'tax_compliance_declaration_closeout_v3_requested'
+  | 'tax_external_filing_result_recorded'
+  | 'tax_payment_obligation_tracker_reviewed'
+  | 'tax_sri_filing_receipt_evidence_vault_reviewed'
+  | 'tax_post_filing_exception_center_reviewed'
+  | 'tax_period_post_filing_certificate_requested'
+  | 'tax_compliance_post_filing_closeout_v4_requested';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -2253,6 +2259,201 @@ export interface EcuadorTaxComplianceDeclarationCloseoutV3View {
     | 'external_filing_handoff'
     | 'accountant_review'
     | 'tax_evidence_cleanup'
+    | 'accounting_advanced_discovery';
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxExternalFilingResultRecordView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  resultId: string;
+  obligationKey: 'iva' | 'income_tax' | 'withholding' | 'annexes';
+  formKey: EcuadorTaxDeclarationFormKey | null;
+  resultStatus:
+    | 'submitted_externally'
+    | 'rejected_externally'
+    | 'under_review'
+    | 'payment_pending'
+    | 'paid_externally';
+  externalReference: string | null;
+  filedAt: Date | null;
+  paidAt: Date | null;
+  expectedAmountInCents: number | null;
+  paidAmountInCents: number | null;
+  currency: string;
+  responsibleUserId: string | null;
+  responsibleEmail: string | null;
+  evidenceRefs: string[];
+  note: string | null;
+  handoff: EcuadorTaxFilingHandoffView;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPaymentObligationTrackerView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  trackerStatus: EcuadorTaxReadinessStatus;
+  filingResults: EcuadorTaxExternalFilingResultRecordView[];
+  paymentRows: Array<{
+    key: string;
+    obligationKey: string;
+    formKey: EcuadorTaxDeclarationFormKey | null;
+    paymentStatus:
+      | 'not_applicable'
+      | 'pending'
+      | 'partial'
+      | 'paid'
+      | 'rejected';
+    expectedAmountInCents: number;
+    paidAmountInCents: number;
+    outstandingAmountInCents: number;
+    currency: string;
+    dueSignal: string;
+    externalReference: string | null;
+    nextAction: string;
+  }>;
+  summary: {
+    rowCount: number;
+    paidRowCount: number;
+    pendingRowCount: number;
+    expectedAmountInCents: number;
+    paidAmountInCents: number;
+    outstandingAmountInCents: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxSriFilingReceiptEvidenceVaultView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  vaultStatus: EcuadorTaxReadinessStatus;
+  filingResults: EcuadorTaxExternalFilingResultRecordView[];
+  receiptFolders: Array<{
+    key: string;
+    label: string;
+    readinessStatus: EcuadorTaxReadinessStatus;
+    externalReference: string | null;
+    evidenceRefs: string[];
+    requiredItems: string[];
+    missingItems: string[];
+  }>;
+  summary: {
+    folderCount: number;
+    readyFolderCount: number;
+    evidenceRefCount: number;
+    missingItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPostFilingExceptionCenterView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  centerStatus: EcuadorTaxReadinessStatus;
+  paymentTracker: EcuadorTaxPaymentObligationTrackerView;
+  receiptVault: EcuadorTaxSriFilingReceiptEvidenceVaultView;
+  exceptions: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    severity: EcuadorTaxReviewPriority;
+    owner: 'operator' | 'accountant' | 'system';
+    source: 'filing_result' | 'payment' | 'receipt_vault' | 'closeout';
+    recommendedAction: string;
+  }>;
+  summary: {
+    exceptionCount: number;
+    criticalCount: number;
+    accountantOwnedCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPeriodPostFilingCertificateView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  certificateStatus:
+    | 'post_filing_complete'
+    | 'payment_or_receipt_pending'
+    | 'accountant_review_required'
+    | 'blocked';
+  declarationCloseout: EcuadorTaxComplianceDeclarationCloseoutV3View;
+  paymentTracker: EcuadorTaxPaymentObligationTrackerView;
+  receiptVault: EcuadorTaxSriFilingReceiptEvidenceVaultView;
+  exceptionCenter: EcuadorTaxPostFilingExceptionCenterView;
+  certificateItems: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidence: string[];
+    attestation: string;
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    blockerCount: number;
+    outstandingAmountInCents: number;
+    evidenceRefCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxCompliancePostFilingCloseoutV4View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus:
+    | 'closed_operationally'
+    | 'payment_or_evidence_pending'
+    | 'accountant_review_required'
+    | 'accounting_advanced_candidate'
+    | 'blocked';
+  filingResults: EcuadorTaxExternalFilingResultRecordView[];
+  paymentTracker: EcuadorTaxPaymentObligationTrackerView;
+  receiptVault: EcuadorTaxSriFilingReceiptEvidenceVaultView;
+  exceptionCenter: EcuadorTaxPostFilingExceptionCenterView;
+  postFilingCertificate: EcuadorTaxPeriodPostFilingCertificateView;
+  closeoutItems: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidence: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    blockerCount: number;
+    outstandingAmountInCents: number;
+    exceptionCount: number;
+  };
+  recommendedNextStep:
+    | 'period_closed'
+    | 'collect_payment_or_receipt'
+    | 'accountant_review'
     | 'accounting_advanced_discovery';
   blockers: string[];
   nextStep: string;

@@ -8,14 +8,20 @@ import {
   EcuadorTaxComplianceHardeningCloseoutV4View,
   EcuadorTaxComplianceProductCloseoutV3View,
   EcuadorTaxDeclarationArtifactExportV2View,
+  EcuadorTaxCompliancePostFilingCloseoutV4View,
   EcuadorTaxDeclarationPartyImpactWorkspaceView,
   EcuadorTaxDeclarationPartyRecalculationPacketView,
   EcuadorTaxEvidenceQualityCenterView,
   EcuadorTaxFilingReadinessCertificateView,
+  EcuadorTaxExternalFilingResultRecordView,
   EcuadorTaxFormBoxEvidenceBinderView,
   EcuadorTaxObligationFilingWorkspaceView,
   EcuadorTaxObligationRiskMonitorView,
   EcuadorTaxOperatingDashboardV3View,
+  EcuadorTaxPaymentObligationTrackerView,
+  EcuadorTaxPeriodPostFilingCertificateView,
+  EcuadorTaxPostFilingExceptionCenterView,
+  EcuadorTaxSriFilingReceiptEvidenceVaultView,
   EcuadorTaxAccountantPartyRiskReviewExecutionView,
   EcuadorTaxPartiesOperationalCommandCenterView,
   EcuadorTaxPartiesPersistenceDecisionPackView,
@@ -73,6 +79,18 @@ export type EcuadorTaxDeclarationArtifactExportV2ResponseDto =
   Serialized<EcuadorTaxDeclarationArtifactExportV2View>;
 export type EcuadorTaxComplianceDeclarationCloseoutV3ResponseDto =
   Serialized<EcuadorTaxComplianceDeclarationCloseoutV3View>;
+export type EcuadorTaxExternalFilingResultRecordResponseDto =
+  Serialized<EcuadorTaxExternalFilingResultRecordView>;
+export type EcuadorTaxPaymentObligationTrackerResponseDto =
+  Serialized<EcuadorTaxPaymentObligationTrackerView>;
+export type EcuadorTaxSriFilingReceiptEvidenceVaultResponseDto =
+  Serialized<EcuadorTaxSriFilingReceiptEvidenceVaultView>;
+export type EcuadorTaxPostFilingExceptionCenterResponseDto =
+  Serialized<EcuadorTaxPostFilingExceptionCenterView>;
+export type EcuadorTaxPeriodPostFilingCertificateResponseDto =
+  Serialized<EcuadorTaxPeriodPostFilingCertificateView>;
+export type EcuadorTaxCompliancePostFilingCloseoutV4ResponseDto =
+  Serialized<EcuadorTaxCompliancePostFilingCloseoutV4View>;
 
 export function toEcuadorTaxEvidenceQualityCenterResponseDto(
   view: EcuadorTaxEvidenceQualityCenterView,
@@ -215,6 +233,42 @@ export function toEcuadorTaxDeclarationArtifactExportV2ResponseDto(
 export function toEcuadorTaxComplianceDeclarationCloseoutV3ResponseDto(
   view: EcuadorTaxComplianceDeclarationCloseoutV3View,
 ): EcuadorTaxComplianceDeclarationCloseoutV3ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxExternalFilingResultRecordResponseDto(
+  view: EcuadorTaxExternalFilingResultRecordView,
+): EcuadorTaxExternalFilingResultRecordResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxPaymentObligationTrackerResponseDto(
+  view: EcuadorTaxPaymentObligationTrackerView,
+): EcuadorTaxPaymentObligationTrackerResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxSriFilingReceiptEvidenceVaultResponseDto(
+  view: EcuadorTaxSriFilingReceiptEvidenceVaultView,
+): EcuadorTaxSriFilingReceiptEvidenceVaultResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxPostFilingExceptionCenterResponseDto(
+  view: EcuadorTaxPostFilingExceptionCenterView,
+): EcuadorTaxPostFilingExceptionCenterResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxPeriodPostFilingCertificateResponseDto(
+  view: EcuadorTaxPeriodPostFilingCertificateView,
+): EcuadorTaxPeriodPostFilingCertificateResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxCompliancePostFilingCloseoutV4ResponseDto(
+  view: EcuadorTaxCompliancePostFilingCloseoutV4View,
+): EcuadorTaxCompliancePostFilingCloseoutV4ResponseDto {
   return serialize(view);
 }
 

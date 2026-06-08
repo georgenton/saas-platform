@@ -173,6 +173,30 @@ const partySriEvidenceImport = await apiRequest({
 });
 printLine('party sri evidence', partySriEvidenceImport.importStatus);
 
+const externalFilingResult = await apiRequest({
+  baseUrl,
+  path: taxPath('/external-filing-results'),
+  token,
+  method: 'POST',
+  body: {
+    period,
+    year,
+    obligationKey: 'iva',
+    formKey: 'iva',
+    resultStatus: 'paid_externally',
+    externalReference: `SRI-SMOKE-${period}`,
+    filedAt: `${period}-20T00:00:00.000Z`,
+    paidAt: `${period}-20T01:00:00.000Z`,
+    expectedAmountInCents: 0,
+    paidAmountInCents: 0,
+    currency: 'USD',
+    responsibleEmail: 'smoke@saas-platform.dev',
+    evidenceRefs: [`smoke://tax-compliance/${period}/sri-filing-receipt.pdf`],
+    note: 'Smoke post-filing result.',
+  },
+});
+printLine('external filing result', externalFilingResult.resultStatus);
+
 const [
   purchaseWorkspace,
   supplierReadiness,
@@ -255,6 +279,12 @@ const [
   accountantFilingReviewRoomV3,
   declarationArtifactExportV2,
   complianceDeclarationCloseoutV3,
+  externalFilingResults,
+  paymentObligationTracker,
+  sriFilingReceiptEvidenceVault,
+  postFilingExceptionCenter,
+  periodPostFilingCertificate,
+  compliancePostFilingCloseoutV4,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -682,6 +712,36 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/external-filing-results?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/payment-obligation-tracker?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/sri-filing-receipt-evidence-vault?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/post-filing-exception-center?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/period-post-filing-certificate?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/compliance-post-filing-closeout-v4?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus('purchase workspace', purchaseWorkspace.readinessStatus);
@@ -872,6 +932,28 @@ assertStatus(
 assertStatus(
   'compliance declaration closeout v3',
   complianceDeclarationCloseoutV3.closeoutStatus,
+);
+assertStatus('external filing result', externalFilingResult.resultStatus);
+assertStatus('external filing results', externalFilingResults.length);
+assertStatus(
+  'payment obligation tracker',
+  paymentObligationTracker.trackerStatus,
+);
+assertStatus(
+  'sri filing receipt evidence vault',
+  sriFilingReceiptEvidenceVault.vaultStatus,
+);
+assertStatus(
+  'post filing exception center',
+  postFilingExceptionCenter.centerStatus,
+);
+assertStatus(
+  'period post filing certificate',
+  periodPostFilingCertificate.certificateStatus,
+);
+assertStatus(
+  'compliance post filing closeout v4',
+  compliancePostFilingCloseoutV4.closeoutStatus,
 );
 assertStatus(
   'accountant collaboration pack',
@@ -1117,6 +1199,27 @@ printLine(
 printLine(
   'declaration closeout v3',
   complianceDeclarationCloseoutV3.closeoutStatus,
+);
+printLine('external filing results', externalFilingResults.length);
+printLine(
+  'payment tracker',
+  `${paymentObligationTracker.trackerStatus} · ${paymentObligationTracker.summary.outstandingAmountInCents} outstanding`,
+);
+printLine(
+  'receipt vault',
+  `${sriFilingReceiptEvidenceVault.vaultStatus} · ${sriFilingReceiptEvidenceVault.summary.evidenceRefCount} refs`,
+);
+printLine(
+  'post filing exceptions',
+  `${postFilingExceptionCenter.centerStatus} · ${postFilingExceptionCenter.summary.exceptionCount}`,
+);
+printLine(
+  'post filing certificate',
+  periodPostFilingCertificate.certificateStatus,
+);
+printLine(
+  'post filing closeout v4',
+  compliancePostFilingCloseoutV4.closeoutStatus,
 );
 printLine(
   'collaboration questions',

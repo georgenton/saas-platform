@@ -72,16 +72,19 @@ import {
   GetTenantEcuadorTaxObligationRiskMonitorUseCase,
   GetTenantEcuadorTaxOperationalCloseoutUseCase,
   GetTenantEcuadorTaxOperatingDashboardV3UseCase,
+  GetTenantEcuadorTaxPaymentObligationTrackerUseCase,
   GetTenantEcuadorTaxPartyEvidenceBridgeUseCase,
   GetTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
   GetTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
   GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
+  GetTenantEcuadorTaxPostFilingExceptionCenterUseCase,
   GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
   GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
   GetTenantEcuadorTaxRuleCatalogUseCase,
   GetTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
   GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+  GetTenantEcuadorTaxSriFilingReceiptEvidenceVaultUseCase,
   GetTenantEcuadorTaxSriEvidenceIntakeV2WorkspaceUseCase,
   GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
   GetTenantEcuadorTaxSriSourceImportCenterV2UseCase,
@@ -94,7 +97,9 @@ import {
   GetTenantEcuadorTaxWithholdingRegistryUseCase,
   ListTenantEcuadorTaxAccountantReviewsUseCase,
   ListTenantEcuadorTaxComplianceEventsUseCase,
+  ListTenantEcuadorTaxExternalFilingResultsUseCase,
   RecordTenantEcuadorTaxComplianceEventUseCase,
+  RecordTenantEcuadorTaxExternalFilingResultUseCase,
   RecordTenantEcuadorTaxFilingHandoffUseCase,
   RecordTenantEcuadorTaxPartySriEvidenceImportUseCase,
   RecordTenantEcuadorTaxPurchaseExpenseEvidenceUseCase,
@@ -120,9 +125,11 @@ import {
   RequestTenantEcuadorTaxPeriodCloseoutPacketUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
+  RequestTenantEcuadorTaxPeriodPostFilingCertificateUseCase,
   RequestTenantEcuadorTaxComplianceCloseoutV2UseCase,
   RequestTenantEcuadorTaxComplianceDeclarationCloseoutV3UseCase,
   RequestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
+  RequestTenantEcuadorTaxCompliancePostFilingCloseoutV4UseCase,
   RequestTenantEcuadorTaxComplianceProductCloseoutV3UseCase,
   RequestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase,
   RequestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase,
@@ -2292,6 +2299,138 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
       ) =>
         new RequestTenantEcuadorTaxComplianceDeclarationCloseoutV3UseCase(
           requestTenantEcuadorTaxDeclarationArtifactExportV2UseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: ListTenantEcuadorTaxExternalFilingResultsUseCase,
+      inject: [
+        ListTenantEcuadorTaxComplianceEventsUseCase,
+        GetTenantEcuadorTaxFilingHandoffUseCase,
+      ],
+      useFactory: (
+        listTenantEcuadorTaxComplianceEventsUseCase,
+        getTenantEcuadorTaxFilingHandoffUseCase,
+      ) =>
+        new ListTenantEcuadorTaxExternalFilingResultsUseCase(
+          listTenantEcuadorTaxComplianceEventsUseCase,
+          getTenantEcuadorTaxFilingHandoffUseCase,
+        ),
+    },
+    {
+      provide: RecordTenantEcuadorTaxExternalFilingResultUseCase,
+      inject: [
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+        RecordTenantEcuadorTaxFilingHandoffUseCase,
+        ListTenantEcuadorTaxExternalFilingResultsUseCase,
+      ],
+      useFactory: (
+        recordTenantEcuadorTaxComplianceEventUseCase,
+        recordTenantEcuadorTaxFilingHandoffUseCase,
+        listTenantEcuadorTaxExternalFilingResultsUseCase,
+      ) =>
+        new RecordTenantEcuadorTaxExternalFilingResultUseCase(
+          recordTenantEcuadorTaxComplianceEventUseCase,
+          recordTenantEcuadorTaxFilingHandoffUseCase,
+          listTenantEcuadorTaxExternalFilingResultsUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxPaymentObligationTrackerUseCase,
+      inject: [
+        ListTenantEcuadorTaxExternalFilingResultsUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        listTenantEcuadorTaxExternalFilingResultsUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxPaymentObligationTrackerUseCase(
+          listTenantEcuadorTaxExternalFilingResultsUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxSriFilingReceiptEvidenceVaultUseCase,
+      inject: [
+        ListTenantEcuadorTaxExternalFilingResultsUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        listTenantEcuadorTaxExternalFilingResultsUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxSriFilingReceiptEvidenceVaultUseCase(
+          listTenantEcuadorTaxExternalFilingResultsUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxPostFilingExceptionCenterUseCase,
+      inject: [
+        GetTenantEcuadorTaxPaymentObligationTrackerUseCase,
+        GetTenantEcuadorTaxSriFilingReceiptEvidenceVaultUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxPaymentObligationTrackerUseCase,
+        getTenantEcuadorTaxSriFilingReceiptEvidenceVaultUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxPostFilingExceptionCenterUseCase(
+          getTenantEcuadorTaxPaymentObligationTrackerUseCase,
+          getTenantEcuadorTaxSriFilingReceiptEvidenceVaultUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxPeriodPostFilingCertificateUseCase,
+      inject: [
+        RequestTenantEcuadorTaxComplianceDeclarationCloseoutV3UseCase,
+        GetTenantEcuadorTaxPaymentObligationTrackerUseCase,
+        GetTenantEcuadorTaxSriFilingReceiptEvidenceVaultUseCase,
+        GetTenantEcuadorTaxPostFilingExceptionCenterUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxComplianceDeclarationCloseoutV3UseCase,
+        getTenantEcuadorTaxPaymentObligationTrackerUseCase,
+        getTenantEcuadorTaxSriFilingReceiptEvidenceVaultUseCase,
+        getTenantEcuadorTaxPostFilingExceptionCenterUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxPeriodPostFilingCertificateUseCase(
+          requestTenantEcuadorTaxComplianceDeclarationCloseoutV3UseCase,
+          getTenantEcuadorTaxPaymentObligationTrackerUseCase,
+          getTenantEcuadorTaxSriFilingReceiptEvidenceVaultUseCase,
+          getTenantEcuadorTaxPostFilingExceptionCenterUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxCompliancePostFilingCloseoutV4UseCase,
+      inject: [
+        ListTenantEcuadorTaxExternalFilingResultsUseCase,
+        GetTenantEcuadorTaxPaymentObligationTrackerUseCase,
+        GetTenantEcuadorTaxSriFilingReceiptEvidenceVaultUseCase,
+        GetTenantEcuadorTaxPostFilingExceptionCenterUseCase,
+        RequestTenantEcuadorTaxPeriodPostFilingCertificateUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        listTenantEcuadorTaxExternalFilingResultsUseCase,
+        getTenantEcuadorTaxPaymentObligationTrackerUseCase,
+        getTenantEcuadorTaxSriFilingReceiptEvidenceVaultUseCase,
+        getTenantEcuadorTaxPostFilingExceptionCenterUseCase,
+        requestTenantEcuadorTaxPeriodPostFilingCertificateUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxCompliancePostFilingCloseoutV4UseCase(
+          listTenantEcuadorTaxExternalFilingResultsUseCase,
+          getTenantEcuadorTaxPaymentObligationTrackerUseCase,
+          getTenantEcuadorTaxSriFilingReceiptEvidenceVaultUseCase,
+          getTenantEcuadorTaxPostFilingExceptionCenterUseCase,
+          requestTenantEcuadorTaxPeriodPostFilingCertificateUseCase,
           recordTenantEcuadorTaxComplianceEventUseCase,
         ),
     },

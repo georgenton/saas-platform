@@ -227,15 +227,37 @@ describe('AI operating model use case', () => {
           guardedExecutionCandidateToolKey: null,
           guardedExecutionCandidate: null,
         }),
+        expect.objectContaining({
+          agent: expect.objectContaining({
+            key: 'medical-clinic-assistant',
+            domainKey: 'medical',
+          }),
+          requiredPermissionKey: 'medical-clinics.read',
+          primaryApprovalPolicyKey:
+            'medical-clinic-assistant-suggestion-review',
+          guardedExecutionCandidateToolKey: null,
+          guardedExecutionCandidate: null,
+        }),
+        expect.objectContaining({
+          agent: expect.objectContaining({
+            key: 'psychology-clinic-assistant',
+            domainKey: 'psychology',
+          }),
+          requiredPermissionKey: 'psychology-clinics.read',
+          primaryApprovalPolicyKey:
+            'psychology-clinic-assistant-suggestion-review',
+          guardedExecutionCandidateToolKey: null,
+          guardedExecutionCandidate: null,
+        }),
       ]),
       counts: {
-        totalAgents: 4,
-        readyAgents: 4,
+        totalAgents: 6,
+        readyAgents: 6,
         plannedAgents: 0,
-        agentsWithApprovalPolicies: 4,
+        agentsWithApprovalPolicies: 6,
         agentsWithGuardedExecutionCandidate: 3,
-        totalToolAccessEntries: 8,
-        approvalRequiredToolAccessEntries: 3,
+        totalToolAccessEntries: 10,
+        approvalRequiredToolAccessEntries: 5,
         blockedToolAccessEntries: 3,
       },
     });

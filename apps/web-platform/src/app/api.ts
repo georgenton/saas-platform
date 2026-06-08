@@ -94,6 +94,9 @@ import {
   AiHealthWorkspaceResponse,
   AiPolicySimulationWorkspaceResponse,
   AiApprovalWorkspaceResponse,
+  AiClinicsCloseoutGrowthBridgeReviewResponse,
+  AiClinicsDomainContractRegistryResponse,
+  AiClinicsGuardrailApprovalPackResponse,
   AiEcommerceLaunchWorkspaceResponse,
   AiMemoryWorkspaceResponse,
   AiMemoryRecordDetailResponse,
@@ -4826,6 +4829,42 @@ export async function fetchAiOperatingModel(
     method: 'GET',
     token,
   });
+}
+
+export async function fetchAiClinicsDomainContractRegistry(
+  token: string,
+): Promise<AiClinicsDomainContractRegistryResponse> {
+  return request<AiClinicsDomainContractRegistryResponse>(
+    '/ai/clinics/domain-contract-registry',
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAiClinicsGuardrailApprovalPack(
+  token: string,
+): Promise<AiClinicsGuardrailApprovalPackResponse> {
+  return request<AiClinicsGuardrailApprovalPackResponse>(
+    '/ai/clinics/guardrail-approval-pack',
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchAiClinicsCloseoutGrowthBridgeReview(
+  token: string,
+): Promise<AiClinicsCloseoutGrowthBridgeReviewResponse> {
+  return request<AiClinicsCloseoutGrowthBridgeReviewResponse>(
+    '/ai/clinics/closeout-growth-bridge-review',
+    {
+      method: 'GET',
+      token,
+    },
+  );
 }
 
 export async function fetchAiAgentApprovalPolicies(

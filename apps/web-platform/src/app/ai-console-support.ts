@@ -49,6 +49,24 @@ export const AI_AGENT_WEB_REGISTRY = {
       loadDetail: 'load-ecommerce-ai-run-detail',
     },
   },
+  'medical-clinic-assistant': {
+    fallbackTitle: 'Medical Clinic Assistant',
+    dedicatedActionKeyPrefixes: {
+      prepare: 'prepare-medical-clinic-ai-suggestion-run',
+      requestApproval: 'request-medical-clinic-ai-approval',
+      reviewApproval: 'review-medical-clinic-ai-approval',
+      loadDetail: 'load-medical-clinic-ai-run-detail',
+    },
+  },
+  'psychology-clinic-assistant': {
+    fallbackTitle: 'Psychology Clinic Assistant',
+    dedicatedActionKeyPrefixes: {
+      prepare: 'prepare-psychology-clinic-ai-suggestion-run',
+      requestApproval: 'request-psychology-clinic-ai-approval',
+      reviewApproval: 'review-psychology-clinic-ai-approval',
+      loadDetail: 'load-psychology-clinic-ai-run-detail',
+    },
+  },
 } as const satisfies Record<
   string,
   {
@@ -84,7 +102,7 @@ export function fallbackAiAgentTitle(agentKey: string): string {
 }
 
 export function shortAiAgentLabel(input: {
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiAgentCatalogResponse['domainKey'];
   title: string;
 }): string {
   switch (input.domainKey) {
@@ -94,6 +112,12 @@ export function shortAiAgentLabel(input: {
       return 'Invoice';
     case 'ecommerce':
       return 'Ecommerce';
+    case 'tax-compliance':
+      return 'Taxes';
+    case 'medical':
+      return 'Medical';
+    case 'psychology':
+      return 'Psychology';
     default:
       return input.title;
   }

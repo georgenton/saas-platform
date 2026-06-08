@@ -11,13 +11,19 @@ import {
 import {
   CreateTenantMedicalClinicAppointmentUseCase,
   GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
+  GetTenantMedicalClinicEncounterWorkspaceUseCase,
   GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
   GetTenantMedicalClinicProductAnchorUseCase,
   GetTenantMedicalClinicProfileWorkspaceUseCase,
+  GetTenantMedicalClinicTreatmentFollowUpReadinessUseCase,
   MEDICAL_CLINICS_PERMISSIONS,
   RegisterTenantMedicalClinicPatientIntakeUseCase,
   RequestTenantMedicalClinicBillingTaxBridgeUseCase,
+  RequestTenantMedicalClinicClinicalBoundaryCloseoutUseCase,
+  RequestTenantMedicalClinicClinicalNoteDraftPacketUseCase,
+  RequestTenantMedicalClinicEncounterCloseoutUseCase,
   RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
+  RequestTenantMedicalClinicPrescriptionReadinessPacketUseCase,
   TransitionTenantMedicalClinicAppointmentUseCase,
   UpsertTenantMedicalClinicProfileWorkspaceUseCase,
 } from '@saas-platform/medical-clinics-application';
@@ -32,22 +38,34 @@ import {
   MedicalClinicAppointmentRecordResponseDto,
   MedicalClinicAppointmentSchedulingWorkspaceResponseDto,
   MedicalClinicBillingTaxBridgeResponseDto,
+  MedicalClinicClinicalBoundaryCloseoutResponseDto,
+  MedicalClinicClinicalNoteDraftPacketResponseDto,
+  MedicalClinicEncounterCloseoutResponseDto,
+  MedicalClinicEncounterWorkspaceResponseDto,
   MedicalClinicGrowthReminderBridgeResponseDto,
   MedicalClinicPatientRecordResponseDto,
   MedicalClinicPatientIntakeWorkspaceResponseDto,
+  MedicalClinicPrescriptionReadinessPacketResponseDto,
   MedicalClinicProductAnchorResponseDto,
   MedicalClinicProfileWorkspaceResponseDto,
+  MedicalClinicTreatmentFollowUpReadinessResponseDto,
   RegisterMedicalClinicPatientIntakeRequestDto,
   TransitionMedicalClinicAppointmentRequestDto,
   UpsertMedicalClinicProfileWorkspaceRequestDto,
   toMedicalClinicAppointmentRecordResponseDto,
   toMedicalClinicAppointmentSchedulingWorkspaceResponseDto,
   toMedicalClinicBillingTaxBridgeResponseDto,
+  toMedicalClinicClinicalBoundaryCloseoutResponseDto,
+  toMedicalClinicClinicalNoteDraftPacketResponseDto,
+  toMedicalClinicEncounterCloseoutResponseDto,
+  toMedicalClinicEncounterWorkspaceResponseDto,
   toMedicalClinicGrowthReminderBridgeResponseDto,
   toMedicalClinicPatientRecordResponseDto,
   toMedicalClinicPatientIntakeWorkspaceResponseDto,
+  toMedicalClinicPrescriptionReadinessPacketResponseDto,
   toMedicalClinicProductAnchorResponseDto,
   toMedicalClinicProfileWorkspaceResponseDto,
+  toMedicalClinicTreatmentFollowUpReadinessResponseDto,
 } from './dto/medical-clinics.response';
 
 @Controller('medical-clinics/tenants')
@@ -71,6 +89,12 @@ export class MedicalClinicsController {
     private readonly transitionTenantMedicalClinicAppointmentUseCase: TransitionTenantMedicalClinicAppointmentUseCase,
     private readonly requestTenantMedicalClinicGrowthReminderBridgeUseCase: RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
     private readonly requestTenantMedicalClinicBillingTaxBridgeUseCase: RequestTenantMedicalClinicBillingTaxBridgeUseCase,
+    private readonly getTenantMedicalClinicEncounterWorkspaceUseCase: GetTenantMedicalClinicEncounterWorkspaceUseCase,
+    private readonly requestTenantMedicalClinicClinicalNoteDraftPacketUseCase: RequestTenantMedicalClinicClinicalNoteDraftPacketUseCase,
+    private readonly getTenantMedicalClinicTreatmentFollowUpReadinessUseCase: GetTenantMedicalClinicTreatmentFollowUpReadinessUseCase,
+    private readonly requestTenantMedicalClinicPrescriptionReadinessPacketUseCase: RequestTenantMedicalClinicPrescriptionReadinessPacketUseCase,
+    private readonly requestTenantMedicalClinicEncounterCloseoutUseCase: RequestTenantMedicalClinicEncounterCloseoutUseCase,
+    private readonly requestTenantMedicalClinicClinicalBoundaryCloseoutUseCase: RequestTenantMedicalClinicClinicalBoundaryCloseoutUseCase,
   ) {}
 
   @Get(':slug/product-anchor')
@@ -209,6 +233,90 @@ export class MedicalClinicsController {
       await this.requestTenantMedicalClinicBillingTaxBridgeUseCase.execute({
         tenantSlug,
       }),
+    );
+  }
+
+  @Get(':slug/appointments/:appointmentId/encounter-workspace')
+  async getEncounterWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Param('appointmentId') appointmentId: string,
+  ): Promise<MedicalClinicEncounterWorkspaceResponseDto> {
+    return toMedicalClinicEncounterWorkspaceResponseDto(
+      await this.getTenantMedicalClinicEncounterWorkspaceUseCase.execute({
+        tenantSlug,
+        appointmentId,
+      }),
+    );
+  }
+
+  @Get(':slug/appointments/:appointmentId/clinical-note-draft-packet')
+  async requestClinicalNoteDraftPacket(
+    @Param('slug') tenantSlug: string,
+    @Param('appointmentId') appointmentId: string,
+  ): Promise<MedicalClinicClinicalNoteDraftPacketResponseDto> {
+    return toMedicalClinicClinicalNoteDraftPacketResponseDto(
+      await this.requestTenantMedicalClinicClinicalNoteDraftPacketUseCase.execute(
+        {
+          tenantSlug,
+          appointmentId,
+        },
+      ),
+    );
+  }
+
+  @Get(':slug/appointments/:appointmentId/treatment-follow-up-readiness')
+  async getTreatmentFollowUpReadiness(
+    @Param('slug') tenantSlug: string,
+    @Param('appointmentId') appointmentId: string,
+  ): Promise<MedicalClinicTreatmentFollowUpReadinessResponseDto> {
+    return toMedicalClinicTreatmentFollowUpReadinessResponseDto(
+      await this.getTenantMedicalClinicTreatmentFollowUpReadinessUseCase.execute(
+        {
+          tenantSlug,
+          appointmentId,
+        },
+      ),
+    );
+  }
+
+  @Get(':slug/appointments/:appointmentId/prescription-readiness-packet')
+  async requestPrescriptionReadinessPacket(
+    @Param('slug') tenantSlug: string,
+    @Param('appointmentId') appointmentId: string,
+  ): Promise<MedicalClinicPrescriptionReadinessPacketResponseDto> {
+    return toMedicalClinicPrescriptionReadinessPacketResponseDto(
+      await this.requestTenantMedicalClinicPrescriptionReadinessPacketUseCase.execute(
+        {
+          tenantSlug,
+          appointmentId,
+        },
+      ),
+    );
+  }
+
+  @Get(':slug/appointments/:appointmentId/encounter-closeout')
+  async requestEncounterCloseout(
+    @Param('slug') tenantSlug: string,
+    @Param('appointmentId') appointmentId: string,
+  ): Promise<MedicalClinicEncounterCloseoutResponseDto> {
+    return toMedicalClinicEncounterCloseoutResponseDto(
+      await this.requestTenantMedicalClinicEncounterCloseoutUseCase.execute({
+        tenantSlug,
+        appointmentId,
+      }),
+    );
+  }
+
+  @Get(':slug/clinical-boundary-closeout')
+  async requestClinicalBoundaryCloseout(
+    @Param('slug') tenantSlug: string,
+  ): Promise<MedicalClinicClinicalBoundaryCloseoutResponseDto> {
+    return toMedicalClinicClinicalBoundaryCloseoutResponseDto(
+      await this.requestTenantMedicalClinicClinicalBoundaryCloseoutUseCase.execute(
+        {
+          tenantSlug,
+        },
+      ),
     );
   }
 }

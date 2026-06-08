@@ -1,13 +1,19 @@
 import { Module } from '@nestjs/common';
 import {
   CreateTenantMedicalClinicAppointmentUseCase,
+  GetTenantMedicalClinicEncounterWorkspaceUseCase,
   GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
   GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
   GetTenantMedicalClinicProductAnchorUseCase,
   GetTenantMedicalClinicProfileWorkspaceUseCase,
+  GetTenantMedicalClinicTreatmentFollowUpReadinessUseCase,
   MEDICAL_CLINIC_ID_GENERATOR,
   MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
   RegisterTenantMedicalClinicPatientIntakeUseCase,
+  RequestTenantMedicalClinicClinicalBoundaryCloseoutUseCase,
+  RequestTenantMedicalClinicClinicalNoteDraftPacketUseCase,
+  RequestTenantMedicalClinicEncounterCloseoutUseCase,
+  RequestTenantMedicalClinicPrescriptionReadinessPacketUseCase,
   RequestTenantMedicalClinicBillingTaxBridgeUseCase,
   RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
   TransitionTenantMedicalClinicAppointmentUseCase,
@@ -144,6 +150,59 @@ import { MedicalClinicsController } from './medical-clinics.controller';
           idGenerator,
         ),
     },
+    {
+      provide: GetTenantMedicalClinicEncounterWorkspaceUseCase,
+      inject: [MEDICAL_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new GetTenantMedicalClinicEncounterWorkspaceUseCase(
+          operationsRepository,
+        ),
+    },
+    {
+      provide: RequestTenantMedicalClinicClinicalNoteDraftPacketUseCase,
+      inject: [
+        MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
+        MEDICAL_CLINIC_ID_GENERATOR,
+      ],
+      useFactory: (operationsRepository, idGenerator) =>
+        new RequestTenantMedicalClinicClinicalNoteDraftPacketUseCase(
+          operationsRepository,
+          idGenerator,
+        ),
+    },
+    {
+      provide: GetTenantMedicalClinicTreatmentFollowUpReadinessUseCase,
+      inject: [MEDICAL_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new GetTenantMedicalClinicTreatmentFollowUpReadinessUseCase(
+          operationsRepository,
+        ),
+    },
+    {
+      provide: RequestTenantMedicalClinicPrescriptionReadinessPacketUseCase,
+      inject: [
+        MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
+        MEDICAL_CLINIC_ID_GENERATOR,
+      ],
+      useFactory: (operationsRepository, idGenerator) =>
+        new RequestTenantMedicalClinicPrescriptionReadinessPacketUseCase(
+          operationsRepository,
+          idGenerator,
+        ),
+    },
+    {
+      provide: RequestTenantMedicalClinicEncounterCloseoutUseCase,
+      inject: [
+        MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
+        MEDICAL_CLINIC_ID_GENERATOR,
+      ],
+      useFactory: (operationsRepository, idGenerator) =>
+        new RequestTenantMedicalClinicEncounterCloseoutUseCase(
+          operationsRepository,
+          idGenerator,
+        ),
+    },
+    RequestTenantMedicalClinicClinicalBoundaryCloseoutUseCase,
     {
       provide: ResolveTenantAccessUseCase,
       inject: [TENANT_REPOSITORY, TENANT_ACCESS_REPOSITORY],

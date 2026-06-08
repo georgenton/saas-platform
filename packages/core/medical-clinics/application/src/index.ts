@@ -12,3 +12,9 @@ export * from './lib/use-cases/create-tenant-medical-clinic-appointment.use-case
 export * from './lib/use-cases/transition-tenant-medical-clinic-appointment.use-case';
 export * from './lib/use-cases/request-tenant-medical-clinic-growth-reminder-bridge.use-case';
 export * from './lib/use-cases/request-tenant-medical-clinic-billing-tax-bridge.use-case';
+export * from './lib/use-cases/get-tenant-medical-clinic-encounter-workspace.use-case';
+export * from './lib/use-cases/request-tenant-medical-clinic-clinical-note-draft-packet.use-case';
+export * from './lib/use-cases/get-tenant-medical-clinic-treatment-follow-up-readiness.use-case';
+export * from './lib/use-cases/request-tenant-medical-clinic-prescription-readiness-packet.use-case';
+export * from './lib/use-cases/request-tenant-medical-clinic-encounter-closeout.use-case';
+export * from './lib/use-cases/request-tenant-medical-clinic-clinical-boundary-closeout.use-case';

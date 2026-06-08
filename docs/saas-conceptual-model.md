@@ -1542,6 +1542,30 @@ Boundary: this layer remains operational. It does not store formal medical
 history, issue prescriptions, infer diagnoses, send patient messages
 automatically, emit invoices, or declare taxes.
 
+### Medical Clinics clinical encounters 3.0
+
+After durable appointment operations, Medical Clinics can model the first
+clinical operating layer without becoming a formal electronic health record.
+This layer adds:
+
+1. encounter workspace per appointment with patient, professional, service,
+   consent, intake and billing context
+2. clinical note draft packet with subjective/objective/assessment/plan fields
+   pending professional review
+3. treatment plan and follow-up readiness connected to appointment state and
+   Growth reminder readiness
+4. prescription readiness packet for draft indications only, with mandatory
+   professional approval outside automatic flows
+5. encounter closeout checklist across note, follow-up, prescription boundary
+   and billing readiness
+6. clinical boundary closeout documenting accepted capabilities, excluded
+   capabilities and required human controls
+
+Boundary: this layer does not diagnose, sign notes, issue official
+prescriptions, store a legal medical history, certify consent, or replace
+medical judgment. It prepares reviewed operational packets around a clinical
+appointment.
+
 ## Practical delivery rules
 
 1. New cross-product logic should first be evaluated as `Shared Foundation`, `Growth`, or `AI Platform` before being placed inside a product.

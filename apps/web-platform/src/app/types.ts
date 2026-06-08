@@ -11219,3 +11219,132 @@ export interface MedicalClinicBillingTaxBridgeResponse {
   nextStep: string;
   guardrails: string[];
 }
+
+export interface MedicalClinicEncounterWorkspaceResponse {
+  tenantSlug: string;
+  appointmentId: string;
+  generatedAt: string;
+  workspaceStatus: MedicalClinicReadinessStatus;
+  appointment: {
+    id: string;
+    patientDisplayName: string;
+    serviceName: string;
+    professionalName: string;
+    startsAt: string;
+    status: MedicalClinicAppointmentRecordResponse['status'];
+  };
+  clinicalContext: {
+    chiefConcern: string;
+    visitMode: 'in_person' | 'teleconsultation_review_required';
+    consentStatus: MedicalClinicReadinessStatus;
+    intakeStatus: MedicalClinicReadinessStatus;
+    billingStatus: MedicalClinicReadinessStatus;
+  };
+  encounterChecklist: Array<{
+    key: string;
+    label: string;
+    status: MedicalClinicReadinessStatus;
+  }>;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface MedicalClinicClinicalNoteDraftPacketResponse {
+  tenantSlug: string;
+  appointmentId: string;
+  generatedAt: string;
+  packetStatus: MedicalClinicReadinessStatus;
+  draftSections: {
+    subjective: string;
+    objective: string;
+    assessment: string;
+    plan: string;
+    pendingFields: string[];
+  };
+  review: {
+    requiresProfessionalReview: boolean;
+    mayBeSigned: false;
+    reviewerRole: 'medical_professional';
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface MedicalClinicTreatmentFollowUpReadinessResponse {
+  tenantSlug: string;
+  appointmentId: string;
+  generatedAt: string;
+  readinessStatus: MedicalClinicReadinessStatus;
+  planItems: Array<{
+    key: string;
+    label: string;
+    owner: 'patient' | 'clinic' | 'professional';
+    status: MedicalClinicReadinessStatus;
+    dueHint: string;
+  }>;
+  suggestedFollowUp: {
+    recommendedWindow: string;
+    schedulingStatus: MedicalClinicReadinessStatus;
+    growthReminderStatus: MedicalClinicReadinessStatus;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface MedicalClinicPrescriptionReadinessPacketResponse {
+  tenantSlug: string;
+  appointmentId: string;
+  generatedAt: string;
+  packetStatus: MedicalClinicReadinessStatus;
+  draftItems: Array<{
+    label: string;
+    category: 'medication' | 'indication' | 'exam' | 'referral';
+    status: MedicalClinicReadinessStatus;
+    reviewNote: string;
+  }>;
+  approval: {
+    requiresMedicalApproval: true;
+    officialPrescriptionIssued: false;
+    signatureStatus: 'not_supported_in_clinics';
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface MedicalClinicEncounterCloseoutResponse {
+  tenantSlug: string;
+  appointmentId: string;
+  generatedAt: string;
+  closeoutStatus: MedicalClinicReadinessStatus;
+  checklist: Array<{
+    key: string;
+    label: string;
+    status: MedicalClinicReadinessStatus;
+    evidence: string;
+  }>;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    blockedCheckCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface MedicalClinicClinicalBoundaryCloseoutResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  boundaryStatus: MedicalClinicReadinessStatus;
+  acceptedCapabilities: string[];
+  explicitlyExcludedCapabilities: string[];
+  requiredHumanControls: string[];
+  nextRecommendedSlice:
+    | 'medical-history-records'
+    | 'psychology-clinics-foundation';
+  guardrails: string[];
+}

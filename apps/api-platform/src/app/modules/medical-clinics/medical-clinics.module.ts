@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import {
   CreateTenantMedicalClinicAppointmentUseCase,
-  GetTenantMedicalClinicEncounterWorkspaceUseCase,
   GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
+  GetTenantMedicalClinicCarePlanTaskWorkspaceUseCase,
+  GetTenantMedicalClinicClinicalEvidenceRegistryUseCase,
+  GetTenantMedicalClinicEncounterWorkspaceUseCase,
+  GetTenantMedicalClinicPatientClinicalTimelineWorkspaceUseCase,
   GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
   GetTenantMedicalClinicProductAnchorUseCase,
   GetTenantMedicalClinicProfileWorkspaceUseCase,
@@ -16,6 +19,9 @@ import {
   RequestTenantMedicalClinicPrescriptionReadinessPacketUseCase,
   RequestTenantMedicalClinicBillingTaxBridgeUseCase,
   RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
+  RequestTenantMedicalClinicMedicalHistoryDraftRecordUseCase,
+  RequestTenantMedicalClinicOrdersReferralReadinessPacketUseCase,
+  RequestTenantMedicalClinicRecordsCloseoutUseCase,
   TransitionTenantMedicalClinicAppointmentUseCase,
   UpsertTenantMedicalClinicProfileWorkspaceUseCase,
 } from '@saas-platform/medical-clinics-application';
@@ -203,6 +209,66 @@ import { MedicalClinicsController } from './medical-clinics.controller';
         ),
     },
     RequestTenantMedicalClinicClinicalBoundaryCloseoutUseCase,
+    {
+      provide: GetTenantMedicalClinicPatientClinicalTimelineWorkspaceUseCase,
+      inject: [MEDICAL_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new GetTenantMedicalClinicPatientClinicalTimelineWorkspaceUseCase(
+          operationsRepository,
+        ),
+    },
+    {
+      provide: RequestTenantMedicalClinicMedicalHistoryDraftRecordUseCase,
+      inject: [
+        MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
+        MEDICAL_CLINIC_ID_GENERATOR,
+      ],
+      useFactory: (operationsRepository, idGenerator) =>
+        new RequestTenantMedicalClinicMedicalHistoryDraftRecordUseCase(
+          operationsRepository,
+          idGenerator,
+        ),
+    },
+    {
+      provide: GetTenantMedicalClinicClinicalEvidenceRegistryUseCase,
+      inject: [MEDICAL_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new GetTenantMedicalClinicClinicalEvidenceRegistryUseCase(
+          operationsRepository,
+        ),
+    },
+    {
+      provide: RequestTenantMedicalClinicOrdersReferralReadinessPacketUseCase,
+      inject: [
+        MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
+        MEDICAL_CLINIC_ID_GENERATOR,
+      ],
+      useFactory: (operationsRepository, idGenerator) =>
+        new RequestTenantMedicalClinicOrdersReferralReadinessPacketUseCase(
+          operationsRepository,
+          idGenerator,
+        ),
+    },
+    {
+      provide: GetTenantMedicalClinicCarePlanTaskWorkspaceUseCase,
+      inject: [MEDICAL_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new GetTenantMedicalClinicCarePlanTaskWorkspaceUseCase(
+          operationsRepository,
+        ),
+    },
+    {
+      provide: RequestTenantMedicalClinicRecordsCloseoutUseCase,
+      inject: [
+        MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
+        MEDICAL_CLINIC_ID_GENERATOR,
+      ],
+      useFactory: (operationsRepository, idGenerator) =>
+        new RequestTenantMedicalClinicRecordsCloseoutUseCase(
+          operationsRepository,
+          idGenerator,
+        ),
+    },
     {
       provide: ResolveTenantAccessUseCase,
       inject: [TENANT_REPOSITORY, TENANT_ACCESS_REPOSITORY],

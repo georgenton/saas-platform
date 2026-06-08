@@ -389,3 +389,150 @@ export interface TenantMedicalClinicClinicalBoundaryCloseout {
     | 'psychology-clinics-foundation';
   guardrails: string[];
 }
+
+export interface TenantMedicalClinicPatientClinicalTimelineWorkspace {
+  tenantSlug: string;
+  patientId: string;
+  generatedAt: Date;
+  workspaceStatus: MedicalClinicReadinessStatus;
+  patient: {
+    id: string;
+    displayName: string;
+    identificationStatus: MedicalClinicReadinessStatus;
+    consentStatus: MedicalClinicReadinessStatus;
+  };
+  timeline: Array<{
+    key: string;
+    occurredAt: string;
+    source: 'appointment' | 'clinical_event' | 'handoff';
+    label: string;
+    status: MedicalClinicReadinessStatus;
+    evidence: string;
+  }>;
+  summary: {
+    appointmentCount: number;
+    clinicalEventCount: number;
+    needsReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantMedicalClinicMedicalHistoryDraftRecord {
+  tenantSlug: string;
+  patientId: string;
+  generatedAt: Date;
+  recordStatus: MedicalClinicReadinessStatus;
+  sections: {
+    reportedConditions: string[];
+    reportedAllergies: string[];
+    reportedMedication: string[];
+    familyHistory: string[];
+    professionalObservations: string[];
+  };
+  provenance: {
+    source: 'patient_reported' | 'professional_reported';
+    requiresProfessionalReview: true;
+    mayBecomeLegalRecord: false;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantMedicalClinicClinicalEvidenceRegistry {
+  tenantSlug: string;
+  patientId: string;
+  generatedAt: Date;
+  registryStatus: MedicalClinicReadinessStatus;
+  evidenceItems: Array<{
+    key: string;
+    label: string;
+    category:
+      | 'consent'
+      | 'external_result'
+      | 'clinical_order'
+      | 'administrative'
+      | 'referral';
+    status: MedicalClinicReadinessStatus;
+    source: string;
+    linkedAppointmentId: string | null;
+  }>;
+  summary: {
+    evidenceCount: number;
+    acceptedCount: number;
+    needsReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantMedicalClinicOrdersReferralReadinessPacket {
+  tenantSlug: string;
+  appointmentId: string;
+  generatedAt: Date;
+  packetStatus: MedicalClinicReadinessStatus;
+  orders: Array<{
+    key: string;
+    category: 'lab' | 'imaging' | 'referral' | 'prescription' | 'certificate';
+    label: string;
+    status: MedicalClinicReadinessStatus;
+    approvalRequired: true;
+  }>;
+  professionalApproval: {
+    required: true;
+    officialDocumentIssued: false;
+    allowedAction: 'prepare_review_packet';
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantMedicalClinicCarePlanTaskWorkspace {
+  tenantSlug: string;
+  patientId: string;
+  generatedAt: Date;
+  workspaceStatus: MedicalClinicReadinessStatus;
+  tasks: Array<{
+    key: string;
+    label: string;
+    owner: 'patient' | 'clinic' | 'professional';
+    status: MedicalClinicReadinessStatus;
+    dueHint: string;
+    growthBridgeStatus: MedicalClinicReadinessStatus;
+  }>;
+  summary: {
+    taskCount: number;
+    readyTaskCount: number;
+    blockedTaskCount: number;
+    growthReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantMedicalClinicRecordsCloseout {
+  tenantSlug: string;
+  patientId: string;
+  generatedAt: Date;
+  closeoutStatus: MedicalClinicReadinessStatus;
+  checklist: Array<{
+    key: string;
+    label: string;
+    status: MedicalClinicReadinessStatus;
+    evidence: string;
+  }>;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}

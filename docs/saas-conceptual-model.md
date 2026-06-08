@@ -1566,6 +1566,29 @@ prescriptions, store a legal medical history, certify consent, or replace
 medical judgment. It prepares reviewed operational packets around a clinical
 appointment.
 
+### Medical Clinics records 4.0
+
+After clinical encounter packets, Medical Clinics can add longitudinal patient
+records without becoming a legal EHR. This layer adds:
+
+1. patient clinical timeline workspace across appointments, encounter packets,
+   handoffs and clinical events
+2. medical history draft records for reported conditions, allergies,
+   medication, family history and professional observations
+3. clinical evidence registry for consent, external results, clinical orders,
+   administrative evidence and referrals
+4. orders and referral readiness packets for labs, imaging, referrals,
+   prescriptions and certificates
+5. care plan task workspace connected to follow-up operations and Growth
+   reminder review
+6. records closeout across timeline, history draft, evidence, orders,
+   referrals and care plan tasks
+
+Boundary: this layer remains operational and review-first. It does not create a
+signed legal medical history, issue official prescriptions, certify clinical
+documents, store binary medical files, diagnose, or replace professional medical
+judgment.
+
 ## Practical delivery rules
 
 1. New cross-product logic should first be evaluated as `Shared Foundation`, `Growth`, or `AI Platform` before being placed inside a product.

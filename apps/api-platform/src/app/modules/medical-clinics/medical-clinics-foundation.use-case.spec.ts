@@ -1,7 +1,10 @@
 import {
   CreateTenantMedicalClinicAppointmentUseCase,
   GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
+  GetTenantMedicalClinicCarePlanTaskWorkspaceUseCase,
+  GetTenantMedicalClinicClinicalEvidenceRegistryUseCase,
   GetTenantMedicalClinicEncounterWorkspaceUseCase,
+  GetTenantMedicalClinicPatientClinicalTimelineWorkspaceUseCase,
   GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
   GetTenantMedicalClinicProductAnchorUseCase,
   GetTenantMedicalClinicProfileWorkspaceUseCase,
@@ -12,7 +15,10 @@ import {
   RequestTenantMedicalClinicClinicalNoteDraftPacketUseCase,
   RequestTenantMedicalClinicEncounterCloseoutUseCase,
   RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
+  RequestTenantMedicalClinicMedicalHistoryDraftRecordUseCase,
+  RequestTenantMedicalClinicOrdersReferralReadinessPacketUseCase,
   RequestTenantMedicalClinicPrescriptionReadinessPacketUseCase,
+  RequestTenantMedicalClinicRecordsCloseoutUseCase,
   UpsertTenantMedicalClinicProfileWorkspaceUseCase,
 } from '@saas-platform/medical-clinics-application';
 
@@ -284,6 +290,109 @@ describe('Medical Clinics foundation use cases', () => {
     expect(repository.recordEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         eventType: 'clinical_note_draft_packet_requested',
+      }),
+    );
+  });
+
+  it('builds patient records workspaces without creating a legal EHR', async () => {
+    const repository: any = createInMemoryMedicalClinicRepository();
+    const idGenerator = {
+      generate: jest.fn(() => `id_${idGenerator.generate.mock.calls.length}`),
+    };
+    const patient = await new RegisterTenantMedicalClinicPatientIntakeUseCase(
+      repository,
+      idGenerator,
+    ).execute({
+      tenantSlug: 'clinic-demo',
+      patientDisplayName: 'Paciente Longitudinal',
+      identificationStatus: 'ready',
+      contactStatus: 'ready',
+      consentStatus: 'ready',
+      messagingOptInStatus: 'ready',
+      triageReason: 'Control general',
+    });
+    const appointment = await new CreateTenantMedicalClinicAppointmentUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({
+      tenantSlug: 'clinic-demo',
+      patientId: patient.id,
+      serviceName: 'Control general',
+      professionalId: 'professional_general_001',
+      professionalName: 'Dra. Ana Paredes',
+      startsAt: fixedNow,
+      amountInCents: 3500,
+      currency: 'USD',
+    });
+    appointment.status = 'completed';
+    appointment.billingStatus = 'ready';
+
+    const history =
+      await new RequestTenantMedicalClinicMedicalHistoryDraftRecordUseCase(
+        repository,
+        idGenerator,
+        () => fixedNow,
+      ).execute({
+        tenantSlug: 'clinic-demo',
+        patientId: patient.id,
+      });
+    const orders =
+      await new RequestTenantMedicalClinicOrdersReferralReadinessPacketUseCase(
+        repository,
+        idGenerator,
+        () => fixedNow,
+      ).execute({
+        tenantSlug: 'clinic-demo',
+        appointmentId: appointment.id,
+      });
+    const timeline =
+      await new GetTenantMedicalClinicPatientClinicalTimelineWorkspaceUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({
+        tenantSlug: 'clinic-demo',
+        patientId: patient.id,
+      });
+    const evidence =
+      await new GetTenantMedicalClinicClinicalEvidenceRegistryUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({
+        tenantSlug: 'clinic-demo',
+        patientId: patient.id,
+      });
+    const carePlan =
+      await new GetTenantMedicalClinicCarePlanTaskWorkspaceUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({
+        tenantSlug: 'clinic-demo',
+        patientId: patient.id,
+      });
+    const closeout = await new RequestTenantMedicalClinicRecordsCloseoutUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({
+      tenantSlug: 'clinic-demo',
+      patientId: patient.id,
+    });
+
+    expect(history.provenance.mayBecomeLegalRecord).toBe(false);
+    expect(orders.professionalApproval.officialDocumentIssued).toBe(false);
+    expect(timeline.summary.appointmentCount).toBe(1);
+    expect(timeline.summary.clinicalEventCount).toBeGreaterThanOrEqual(2);
+    expect(evidence.summary.evidenceCount).toBeGreaterThanOrEqual(2);
+    expect(carePlan.summary.taskCount).toBe(4);
+    expect(closeout.summary.checkCount).toBe(7);
+    expect(closeout.summary.blockedCheckCount).toBe(0);
+    expect(closeout.guardrails.join(' ')).toContain(
+      'no son historia clinica legal firmada',
+    );
+    expect(repository.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'records_closeout_requested',
       }),
     );
   });

@@ -2,9 +2,13 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   createPsychologyClinicSession,
   fetchPsychologyClinicAssessmentScaleRegistry,
+  fetchPsychologyClinicBoundaryComplianceCloseout,
+  fetchPsychologyClinicClinicalAdminHardeningWorkspace,
   fetchPsychologyClinicClinicalEvidenceRegistry,
   fetchPsychologyClinicCloseoutV4,
+  fetchPsychologyClinicCloseoutV5,
   fetchPsychologyClinicEhrDiscoveryWorkspace,
+  fetchPsychologyClinicEhrIntegrationEvaluation,
   fetchPsychologyClinicExternalDocumentHandoffContracts,
   fetchPsychologyClinicFoundationCloseout,
   fetchPsychologyClinicFormalRecordSignatureReadiness,
@@ -14,6 +18,7 @@ import {
   fetchPsychologyClinicPatientTimelineWorkspace,
   fetchPsychologyClinicPrivacyConsentControlCenter,
   fetchPsychologyClinicProductAnchor,
+  fetchPsychologyClinicProductReadinessReport,
   fetchPsychologyClinicProfileWorkspace,
   fetchPsychologyClinicRecordsCloseoutV3,
   fetchPsychologyClinicRecordsHardeningWorkspace,
@@ -21,6 +26,7 @@ import {
   fetchPsychologyClinicSessionSchedulingWorkspace,
   fetchPsychologyClinicTreatmentFollowUpReadiness,
   fetchPsychologyClinicTreatmentPlanWorkspace,
+  fetchPsychologyClinicTherapistReviewWorkQueue,
   registerPsychologyClinicPatientIntake,
   requestPsychologyClinicBillingTaxBridge,
   requestPsychologyClinicGrowthReminderBridge,
@@ -32,9 +38,13 @@ import styles from './app.module.css';
 import {
   PsychologyClinicBillingTaxBridgeResponse,
   PsychologyClinicAssessmentScaleRegistryResponse,
+  PsychologyClinicBoundaryComplianceCloseoutResponse,
+  PsychologyClinicClinicalAdminHardeningWorkspaceResponse,
   PsychologyClinicClinicalEvidenceRegistryResponse,
   PsychologyClinicCloseoutV4Response,
+  PsychologyClinicCloseoutV5Response,
   PsychologyClinicEhrDiscoveryWorkspaceResponse,
+  PsychologyClinicEhrIntegrationEvaluationResponse,
   PsychologyClinicExternalDocumentHandoffContractsResponse,
   PsychologyClinicFoundationCloseoutResponse,
   PsychologyClinicFormalRecordSignatureReadinessResponse,
@@ -45,6 +55,7 @@ import {
   PsychologyClinicPatientTimelineWorkspaceResponse,
   PsychologyClinicPrivacyConsentControlCenterResponse,
   PsychologyClinicProductAnchorResponse,
+  PsychologyClinicProductReadinessReportResponse,
   PsychologyClinicProfileWorkspaceResponse,
   PsychologyClinicRecordsCloseoutV3Response,
   PsychologyClinicRecordsHardeningWorkspaceResponse,
@@ -55,6 +66,7 @@ import {
   PsychologyClinicSessionSchedulingWorkspaceResponse,
   PsychologyClinicTreatmentFollowUpReadinessResponse,
   PsychologyClinicTreatmentPlanWorkspaceResponse,
+  PsychologyClinicTherapistReviewWorkQueueResponse,
 } from './types';
 
 type PsychologyClinicsSectionProps = {
@@ -103,6 +115,15 @@ type EhrReadinessSurface = {
   closeout: PsychologyClinicCloseoutV4Response | null;
 };
 
+type ProductCloseoutSurface = {
+  evaluation: PsychologyClinicEhrIntegrationEvaluationResponse | null;
+  admin: PsychologyClinicClinicalAdminHardeningWorkspaceResponse | null;
+  queue: PsychologyClinicTherapistReviewWorkQueueResponse | null;
+  report: PsychologyClinicProductReadinessReportResponse | null;
+  boundary: PsychologyClinicBoundaryComplianceCloseoutResponse | null;
+  closeout: PsychologyClinicCloseoutV5Response | null;
+};
+
 const emptySurface: PsychologySurface = {
   anchor: null,
   foundationCloseout: null,
@@ -145,6 +166,15 @@ export function PsychologyClinicsSection({
     handoff: null,
     closeout: null,
   });
+  const [productCloseoutSurface, setProductCloseoutSurface] =
+    useState<ProductCloseoutSurface>({
+      evaluation: null,
+      admin: null,
+      queue: null,
+      report: null,
+      boundary: null,
+      closeout: null,
+    });
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState('');
   const [patientName, setPatientName] = useState('Paciente Psicologia');
@@ -525,6 +555,47 @@ export function PsychologyClinicsSection({
         closeout,
       });
       setMessage('EHR readiness cargado.');
+      await refreshSurface();
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : String(caughtError),
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function loadProductCloseoutPackets() {
+    if (!token || !tenantSlug) {
+      return;
+    }
+
+    setActionLoading('product-closeout-packets');
+    setError(null);
+    try {
+      const [evaluation, admin, queue, report, boundary, closeout] =
+        await Promise.all([
+          fetchPsychologyClinicEhrIntegrationEvaluation(token, tenantSlug),
+          fetchPsychologyClinicClinicalAdminHardeningWorkspace(
+            token,
+            tenantSlug,
+          ),
+          fetchPsychologyClinicTherapistReviewWorkQueue(token, tenantSlug),
+          fetchPsychologyClinicProductReadinessReport(token, tenantSlug),
+          fetchPsychologyClinicBoundaryComplianceCloseout(token, tenantSlug),
+          fetchPsychologyClinicCloseoutV5(token, tenantSlug),
+        ]);
+      setProductCloseoutSurface({
+        evaluation,
+        admin,
+        queue,
+        report,
+        boundary,
+        closeout,
+      });
+      setMessage('Closeout 5.0 cargado.');
       await refreshSurface();
     } catch (caughtError) {
       setError(
@@ -1101,6 +1172,106 @@ export function PsychologyClinicsSection({
           <small className={styles.muted}>
             {ehrSurface.closeout?.nextStep ??
               'EHR readiness prepara contratos, no firma ni diagnostica automaticamente.'}
+          </small>
+        </div>
+      </div>
+
+      <div className={styles.contentGrid}>
+        <div className={styles.panel}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.label}>Closeout 5.0</span>
+              <h3>Decision de producto</h3>
+            </div>
+            <button
+              className={styles.secondaryButton}
+              disabled={actionLoading === 'product-closeout-packets'}
+              onClick={() => void loadProductCloseoutPackets()}
+              type="button"
+            >
+              {actionLoading === 'product-closeout-packets'
+                ? 'Cargando...'
+                : 'Cargar closeout 5.0'}
+            </button>
+          </div>
+          <div className={styles.stack}>
+            {(productCloseoutSurface.evaluation?.options ?? []).map(
+              (option) => (
+                <div className={styles.assistCueCard} key={option.key}>
+                  <div className={styles.invoiceCardHeader}>
+                    <strong>{option.label}</strong>
+                    <StatusPill status={option.status} />
+                  </div>
+                  <small>
+                    {option.rationale} · {option.nextAction}
+                  </small>
+                </div>
+              ),
+            )}
+            {(productCloseoutSurface.closeout?.checklist ?? [])
+              .slice(0, 4)
+              .map((item) => (
+                <small className={styles.muted} key={item.key}>
+                  {item.label} · {humanizeKey(item.status)}
+                </small>
+              ))}
+          </div>
+        </div>
+
+        <div className={styles.panel}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.label}>Admin & boundary</span>
+              <h3>Revision final</h3>
+            </div>
+            <StatusPill
+              status={
+                productCloseoutSurface.closeout?.closeoutStatus ??
+                productCloseoutSurface.report?.reportStatus ??
+                'needs_review'
+              }
+            />
+          </div>
+          <div className={styles.commercialGrid}>
+            <div className={styles.commercialCard}>
+              <span className={styles.muted}>Admin controls</span>
+              <strong>
+                {productCloseoutSurface.admin?.summary.controlCount ?? 0}
+              </strong>
+              <small>
+                {humanizeKey(
+                  productCloseoutSurface.admin?.workspaceStatus ??
+                    'needs_review',
+                )}
+              </small>
+            </div>
+            <div className={styles.commercialCard}>
+              <span className={styles.muted}>Review queue</span>
+              <strong>
+                {productCloseoutSurface.queue?.summary.itemCount ?? 0}
+              </strong>
+              <small>
+                {humanizeKey(
+                  productCloseoutSurface.queue?.queueStatus ?? 'needs_review',
+                )}
+              </small>
+            </div>
+            <div className={styles.commercialCard}>
+              <span className={styles.muted}>Next product</span>
+              <strong>
+                {productCloseoutSurface.closeout?.decision
+                  .recommendedNextProduct ?? 'tax-compliance-ec'}
+              </strong>
+              <small>
+                {productCloseoutSurface.closeout?.decision.status ??
+                  'pending'}
+              </small>
+            </div>
+          </div>
+          <small className={styles.muted}>
+            {productCloseoutSurface.boundary?.nextStep ??
+              productCloseoutSurface.closeout?.nextStep ??
+              'Closeout 5.0 decide pausa MVP y difiere integracion EHR externa.'}
           </small>
         </div>
       </div>

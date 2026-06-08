@@ -1,10 +1,14 @@
 import {
   PsychologyClinicProfileSnapshot,
   TenantPsychologyClinicAssessmentScaleRegistry,
+  TenantPsychologyClinicBoundaryComplianceCloseout,
   TenantPsychologyClinicBillingTaxBridge,
+  TenantPsychologyClinicClinicalAdminHardeningWorkspace,
   TenantPsychologyClinicClinicalEvidenceRegistry,
   TenantPsychologyClinicCloseoutV4,
+  TenantPsychologyClinicCloseoutV5,
   TenantPsychologyClinicEhrDiscoveryWorkspace,
+  TenantPsychologyClinicEhrIntegrationEvaluation,
   TenantPsychologyClinicExternalDocumentHandoffContracts,
   TenantPsychologyClinicFoundationCloseout,
   TenantPsychologyClinicFormalRecordSignatureReadiness,
@@ -16,6 +20,7 @@ import {
   TenantPsychologyClinicPatientTimelineWorkspace,
   TenantPsychologyClinicPrivacyConsentControlCenter,
   TenantPsychologyClinicProductAnchorView,
+  TenantPsychologyClinicProductReadinessReport,
   TenantPsychologyClinicProfileWorkspace,
   TenantPsychologyClinicRecordsCloseoutV3,
   TenantPsychologyClinicRecordsHardeningWorkspace,
@@ -26,6 +31,7 @@ import {
   TenantPsychologyClinicSessionSchedulingWorkspace,
   TenantPsychologyClinicTreatmentFollowUpReadiness,
   TenantPsychologyClinicTreatmentPlanWorkspace,
+  TenantPsychologyClinicTherapistReviewWorkQueue,
 } from '@saas-platform/psychology-clinics-domain';
 
 export type PsychologyClinicProductAnchorResponseDto =
@@ -80,6 +86,18 @@ export type PsychologyClinicExternalDocumentHandoffContractsResponseDto =
   TenantPsychologyClinicExternalDocumentHandoffContracts;
 export type PsychologyClinicCloseoutV4ResponseDto =
   TenantPsychologyClinicCloseoutV4;
+export type PsychologyClinicEhrIntegrationEvaluationResponseDto =
+  TenantPsychologyClinicEhrIntegrationEvaluation;
+export type PsychologyClinicClinicalAdminHardeningWorkspaceResponseDto =
+  TenantPsychologyClinicClinicalAdminHardeningWorkspace;
+export type PsychologyClinicTherapistReviewWorkQueueResponseDto =
+  TenantPsychologyClinicTherapistReviewWorkQueue;
+export type PsychologyClinicProductReadinessReportResponseDto =
+  TenantPsychologyClinicProductReadinessReport;
+export type PsychologyClinicBoundaryComplianceCloseoutResponseDto =
+  TenantPsychologyClinicBoundaryComplianceCloseout;
+export type PsychologyClinicCloseoutV5ResponseDto =
+  TenantPsychologyClinicCloseoutV5;
 
 export interface UpsertPsychologyClinicProfileWorkspaceRequestDto {
   snapshot: Partial<PsychologyClinicProfileSnapshot>;
@@ -218,3 +236,27 @@ export const toPsychologyClinicExternalDocumentHandoffContractsResponseDto = (
 export const toPsychologyClinicCloseoutV4ResponseDto = (
   view: TenantPsychologyClinicCloseoutV4,
 ): PsychologyClinicCloseoutV4ResponseDto => view;
+
+export const toPsychologyClinicEhrIntegrationEvaluationResponseDto = (
+  view: TenantPsychologyClinicEhrIntegrationEvaluation,
+): PsychologyClinicEhrIntegrationEvaluationResponseDto => view;
+
+export const toPsychologyClinicClinicalAdminHardeningWorkspaceResponseDto = (
+  view: TenantPsychologyClinicClinicalAdminHardeningWorkspace,
+): PsychologyClinicClinicalAdminHardeningWorkspaceResponseDto => view;
+
+export const toPsychologyClinicTherapistReviewWorkQueueResponseDto = (
+  view: TenantPsychologyClinicTherapistReviewWorkQueue,
+): PsychologyClinicTherapistReviewWorkQueueResponseDto => view;
+
+export const toPsychologyClinicProductReadinessReportResponseDto = (
+  view: TenantPsychologyClinicProductReadinessReport,
+): PsychologyClinicProductReadinessReportResponseDto => view;
+
+export const toPsychologyClinicBoundaryComplianceCloseoutResponseDto = (
+  view: TenantPsychologyClinicBoundaryComplianceCloseout,
+): PsychologyClinicBoundaryComplianceCloseoutResponseDto => view;
+
+export const toPsychologyClinicCloseoutV5ResponseDto = (
+  view: TenantPsychologyClinicCloseoutV5,
+): PsychologyClinicCloseoutV5ResponseDto => view;

@@ -564,14 +564,12 @@ review and cannot be signed automatically.
 
 Recommended next slices:
 
-1. `psychology-ehr-integration-evaluation`: evaluate whether the platform
-   should integrate with an external EHR, document management system, or
-   clinical archive after readiness boundaries are reviewed.
-2. `psychology-clinical-admin-hardening`: strengthen operational controls for
-   clinic admins, therapist review ownership and audit-friendly work queues.
-3. `psychology-closeout-readiness-report`: produce a final product readiness
-   report that decides whether to pause Psychology Clinics or move into
-   external integrations.
+1. `tax-compliance-ec-operating-hardening`: return to Tax Compliance EC now
+   that Psychology Clinics can pause as an MVP.
+2. `accounting-advanced-discovery`: evaluate whether Accounting Foundation
+   should graduate into ledger-grade advanced workflows.
+3. `psychology-external-ehr-discovery`: reopen Psychology Clinics only if a
+   customer explicitly needs an external EHR/document integration.
 
 Operations 2.0 is now represented by the web command center plus treatment
 plans, follow-up readiness, Growth reminder bridge, Billing/Tax bridge, patient
@@ -588,6 +586,12 @@ reviewable contracts and evidence, but does not create a signed legal EHR
 record, does not store binary clinical files as the source of truth, does not
 auto-diagnose, does not automatically interpret assessment scales and does not
 sign records on behalf of a therapist.
+
+Closeout 5.0 adds EHR integration evaluation, clinical admin hardening,
+therapist review work queue, product readiness report, boundary/compliance
+closeout and final product closeout. The result is that Psychology Clinics can
+pause as an MVP while external EHR integration is intentionally deferred. The
+recommended next product focus returns to `Tax Compliance EC`.
 
 Records 3.0 adds records hardening, clinical evidence registry, session note
 review loop, risk/safety review workspace, privacy/consent control center and

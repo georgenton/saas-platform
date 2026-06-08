@@ -1,12 +1,18 @@
 import {
   CreateTenantMedicalClinicAppointmentUseCase,
   GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
+  GetTenantMedicalClinicEncounterWorkspaceUseCase,
   GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
   GetTenantMedicalClinicProductAnchorUseCase,
   GetTenantMedicalClinicProfileWorkspaceUseCase,
+  GetTenantMedicalClinicTreatmentFollowUpReadinessUseCase,
   RegisterTenantMedicalClinicPatientIntakeUseCase,
   RequestTenantMedicalClinicBillingTaxBridgeUseCase,
+  RequestTenantMedicalClinicClinicalBoundaryCloseoutUseCase,
+  RequestTenantMedicalClinicClinicalNoteDraftPacketUseCase,
+  RequestTenantMedicalClinicEncounterCloseoutUseCase,
   RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
+  RequestTenantMedicalClinicPrescriptionReadinessPacketUseCase,
   UpsertTenantMedicalClinicProfileWorkspaceUseCase,
 } from '@saas-platform/medical-clinics-application';
 
@@ -184,6 +190,101 @@ describe('Medical Clinics foundation use cases', () => {
     expect(appointments.summary.appointmentCount).toBe(1);
     expect(appointments.appointments[0]?.patientDisplayName).toBe(
       'Paciente Persistido',
+    );
+  });
+
+  it('builds clinical encounter packets with professional-review boundaries', async () => {
+    const repository: any = createInMemoryMedicalClinicRepository();
+    const idGenerator = {
+      generate: jest.fn(() => `id_${idGenerator.generate.mock.calls.length}`),
+    };
+    const patient = await new RegisterTenantMedicalClinicPatientIntakeUseCase(
+      repository,
+      idGenerator,
+    ).execute({
+      tenantSlug: 'clinic-demo',
+      patientDisplayName: 'Paciente Clinico',
+      identificationStatus: 'ready',
+      contactStatus: 'ready',
+      consentStatus: 'ready',
+      messagingOptInStatus: 'ready',
+      triageReason: 'Consulta general',
+    });
+    const appointment = await new CreateTenantMedicalClinicAppointmentUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({
+      tenantSlug: 'clinic-demo',
+      patientId: patient.id,
+      serviceName: 'Consulta general',
+      professionalId: 'professional_general_001',
+      professionalName: 'Dra. Ana Paredes',
+      startsAt: fixedNow,
+      amountInCents: 3500,
+      currency: 'USD',
+    });
+
+    const encounter = await new GetTenantMedicalClinicEncounterWorkspaceUseCase(
+      repository,
+      () => fixedNow,
+    ).execute({
+      tenantSlug: 'clinic-demo',
+      appointmentId: appointment.id,
+    });
+    const note =
+      await new RequestTenantMedicalClinicClinicalNoteDraftPacketUseCase(
+        repository,
+        idGenerator,
+        () => fixedNow,
+      ).execute({
+        tenantSlug: 'clinic-demo',
+        appointmentId: appointment.id,
+      });
+    const followUp =
+      await new GetTenantMedicalClinicTreatmentFollowUpReadinessUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({
+        tenantSlug: 'clinic-demo',
+        appointmentId: appointment.id,
+      });
+    const prescription =
+      await new RequestTenantMedicalClinicPrescriptionReadinessPacketUseCase(
+        repository,
+        idGenerator,
+        () => fixedNow,
+      ).execute({
+        tenantSlug: 'clinic-demo',
+        appointmentId: appointment.id,
+      });
+    const closeout =
+      await new RequestTenantMedicalClinicEncounterCloseoutUseCase(
+        repository,
+        idGenerator,
+        () => fixedNow,
+      ).execute({
+        tenantSlug: 'clinic-demo',
+        appointmentId: appointment.id,
+      });
+    const boundary =
+      await new RequestTenantMedicalClinicClinicalBoundaryCloseoutUseCase(
+        () => fixedNow,
+      ).execute({ tenantSlug: 'clinic-demo' });
+
+    expect(encounter.appointment.patientDisplayName).toBe('Paciente Clinico');
+    expect(note.review.requiresProfessionalReview).toBe(true);
+    expect(note.review.mayBeSigned).toBe(false);
+    expect(followUp.suggestedFollowUp.recommendedWindow).toBe('7-30 days');
+    expect(prescription.approval.officialPrescriptionIssued).toBe(false);
+    expect(closeout.summary.checkCount).toBe(5);
+    expect(boundary.explicitlyExcludedCapabilities).toContain(
+      'diagnostico automatico',
+    );
+    expect(repository.recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'clinical_note_draft_packet_requested',
+      }),
     );
   });
 });

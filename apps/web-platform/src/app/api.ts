@@ -362,11 +362,17 @@ import {
   MedicalClinicBillingTaxBridgeResponse,
   MedicalClinicAppointmentRecordResponse,
   CreateMedicalClinicAppointmentRequest,
+  MedicalClinicClinicalBoundaryCloseoutResponse,
+  MedicalClinicClinicalNoteDraftPacketResponse,
+  MedicalClinicEncounterCloseoutResponse,
+  MedicalClinicEncounterWorkspaceResponse,
   MedicalClinicGrowthReminderBridgeResponse,
   MedicalClinicPatientRecordResponse,
   MedicalClinicPatientIntakeWorkspaceResponse,
   MedicalClinicProductAnchorResponse,
+  MedicalClinicPrescriptionReadinessPacketResponse,
   MedicalClinicProfileWorkspaceResponse,
+  MedicalClinicTreatmentFollowUpReadinessResponse,
   RegisterMedicalClinicPatientIntakeRequest,
   TransitionMedicalClinicAppointmentRequest,
   UpsertMedicalClinicProfileWorkspaceRequest,
@@ -8641,6 +8647,107 @@ export async function requestMedicalClinicBillingTaxBridge(
     `/medical-clinics/tenants/${encodeURIComponent(
       tenantSlug,
     )}/billing-tax-bridge`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchMedicalClinicEncounterWorkspace(
+  token: string,
+  tenantSlug: string,
+  appointmentId: string,
+): Promise<MedicalClinicEncounterWorkspaceResponse> {
+  return request<MedicalClinicEncounterWorkspaceResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/appointments/${encodeURIComponent(appointmentId)}/encounter-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestMedicalClinicClinicalNoteDraftPacket(
+  token: string,
+  tenantSlug: string,
+  appointmentId: string,
+): Promise<MedicalClinicClinicalNoteDraftPacketResponse> {
+  return request<MedicalClinicClinicalNoteDraftPacketResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/appointments/${encodeURIComponent(
+      appointmentId,
+    )}/clinical-note-draft-packet`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchMedicalClinicTreatmentFollowUpReadiness(
+  token: string,
+  tenantSlug: string,
+  appointmentId: string,
+): Promise<MedicalClinicTreatmentFollowUpReadinessResponse> {
+  return request<MedicalClinicTreatmentFollowUpReadinessResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/appointments/${encodeURIComponent(
+      appointmentId,
+    )}/treatment-follow-up-readiness`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestMedicalClinicPrescriptionReadinessPacket(
+  token: string,
+  tenantSlug: string,
+  appointmentId: string,
+): Promise<MedicalClinicPrescriptionReadinessPacketResponse> {
+  return request<MedicalClinicPrescriptionReadinessPacketResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/appointments/${encodeURIComponent(
+      appointmentId,
+    )}/prescription-readiness-packet`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestMedicalClinicEncounterCloseout(
+  token: string,
+  tenantSlug: string,
+  appointmentId: string,
+): Promise<MedicalClinicEncounterCloseoutResponse> {
+  return request<MedicalClinicEncounterCloseoutResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/appointments/${encodeURIComponent(appointmentId)}/encounter-closeout`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestMedicalClinicClinicalBoundaryCloseout(
+  token: string,
+  tenantSlug: string,
+): Promise<MedicalClinicClinicalBoundaryCloseoutResponse> {
+  return request<MedicalClinicClinicalBoundaryCloseoutResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/clinical-boundary-closeout`,
     {
       method: 'GET',
       token,

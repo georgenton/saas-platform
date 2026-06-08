@@ -48,6 +48,8 @@ import {
   GetTenantEcuadorTaxOperationalCloseoutUseCase,
   GetTenantEcuadorTaxOperatingDashboardV3UseCase,
   GetTenantEcuadorTaxPartyEvidenceBridgeUseCase,
+  GetTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
+  GetTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
   GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
@@ -68,8 +70,10 @@ import {
   ListTenantEcuadorTaxAccountantReviewsUseCase,
   ListTenantEcuadorTaxComplianceEventsUseCase,
   RecordTenantEcuadorTaxPurchaseExpenseEvidenceUseCase,
+  RecordTenantEcuadorTaxPartySriEvidenceImportUseCase,
   RecordTenantEcuadorTaxSriFiscalEvidenceImportUseCase,
   RecordTenantEcuadorTaxFilingHandoffUseCase,
+  RequestTenantEcuadorTaxAccountantPartyRiskReviewExecutionUseCase,
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
   RequestTenantEcuadorTaxAccountantCollaborationPackUseCase,
@@ -92,8 +96,10 @@ import {
   RequestTenantEcuadorTaxComplianceCloseoutV2UseCase,
   RequestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
   RequestTenantEcuadorTaxComplianceProductCloseoutV3UseCase,
+  RequestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase,
   RequestTenantEcuadorTaxProductCloseoutPackUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
+  RequestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase,
   RequestTenantEcuadorTaxReviewAssistantPacketUseCase,
   RequestTenantEcuadorTaxSalesBookUseCase,
   RequestTenantEcuadorTaxVatDeclarationReadinessPacketUseCase,
@@ -282,28 +288,40 @@ import {
 } from './dto/ecuador-tax-declaration-closeout-v2.response';
 import {
   EcuadorTaxAccountantHandoffRoomV2ResponseDto,
+  EcuadorTaxAccountantPartyRiskReviewExecutionResponseDto,
   EcuadorTaxAccountantReviewFromPartyRisksResponseDto,
   EcuadorTaxAssistedFiscalCorrectionFlowResponseDto,
   EcuadorTaxComplianceHardeningCloseoutV4ResponseDto,
   EcuadorTaxComplianceProductCloseoutV3ResponseDto,
   EcuadorTaxDeclarationPartyImpactWorkspaceResponseDto,
+  EcuadorTaxDeclarationPartyRecalculationPacketResponseDto,
   EcuadorTaxEvidenceQualityCenterResponseDto,
   EcuadorTaxFilingReadinessCertificateResponseDto,
   EcuadorTaxObligationRiskMonitorResponseDto,
   EcuadorTaxOperatingDashboardV3ResponseDto,
+  EcuadorTaxPartiesOperationalCommandCenterResponseDto,
+  EcuadorTaxPartiesPersistenceDecisionPackResponseDto,
   EcuadorTaxPartyEvidenceBridgeResponseDto,
+  EcuadorTaxPartyFiscalValidationLedgerResponseDto,
+  EcuadorTaxPartySriEvidenceImportResponseDto,
   EcuadorTaxSriTaxpayerValidationReadinessResponseDto,
   toEcuadorTaxAccountantHandoffRoomV2ResponseDto,
+  toEcuadorTaxAccountantPartyRiskReviewExecutionResponseDto,
   toEcuadorTaxAccountantReviewFromPartyRisksResponseDto,
   toEcuadorTaxAssistedFiscalCorrectionFlowResponseDto,
   toEcuadorTaxComplianceHardeningCloseoutV4ResponseDto,
   toEcuadorTaxComplianceProductCloseoutV3ResponseDto,
   toEcuadorTaxDeclarationPartyImpactWorkspaceResponseDto,
+  toEcuadorTaxDeclarationPartyRecalculationPacketResponseDto,
   toEcuadorTaxEvidenceQualityCenterResponseDto,
   toEcuadorTaxFilingReadinessCertificateResponseDto,
   toEcuadorTaxObligationRiskMonitorResponseDto,
   toEcuadorTaxOperatingDashboardV3ResponseDto,
+  toEcuadorTaxPartiesOperationalCommandCenterResponseDto,
+  toEcuadorTaxPartiesPersistenceDecisionPackResponseDto,
   toEcuadorTaxPartyEvidenceBridgeResponseDto,
+  toEcuadorTaxPartyFiscalValidationLedgerResponseDto,
+  toEcuadorTaxPartySriEvidenceImportResponseDto,
   toEcuadorTaxSriTaxpayerValidationReadinessResponseDto,
 } from './dto/ecuador-tax-operating-readiness-v3.response';
 
@@ -456,6 +474,29 @@ interface RecordSriFiscalEvidenceImportBodyDto {
   }>;
 }
 
+interface RecordPartySriEvidenceImportBodyDto {
+  period?: string;
+  year?: number;
+  source?: 'sri_report' | 'sri_xml' | 'manual_summary' | 'future_api';
+  importedByEmail?: string | null;
+  rows: Array<{
+    partyId?: string | null;
+    taxpayerId?: string | null;
+    taxpayerName?: string | null;
+    validationStatus?: 'ready' | 'needs_review' | 'blocked';
+    sourceReference?: string | null;
+    observedAt?: string | null;
+  }>;
+}
+
+interface RequestAccountantPartyRiskReviewExecutionBodyDto {
+  period?: string;
+  year?: number;
+  requestedByUserId?: string | null;
+  requestedByEmail?: string | null;
+  executeReview?: boolean;
+}
+
 @Controller('tax-compliance/tenants')
 @UseGuards(
   JwtAuthenticationGuard,
@@ -563,6 +604,12 @@ export class TaxComplianceController {
     private readonly getTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase: GetTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
     private readonly getTenantEcuadorTaxAccountantReviewFromPartyRisksUseCase: GetTenantEcuadorTaxAccountantReviewFromPartyRisksUseCase,
     private readonly requestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase: RequestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
+    private readonly recordTenantEcuadorTaxPartySriEvidenceImportUseCase: RecordTenantEcuadorTaxPartySriEvidenceImportUseCase,
+    private readonly getTenantEcuadorTaxPartyFiscalValidationLedgerUseCase: GetTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
+    private readonly requestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase: RequestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase,
+    private readonly requestTenantEcuadorTaxAccountantPartyRiskReviewExecutionUseCase: RequestTenantEcuadorTaxAccountantPartyRiskReviewExecutionUseCase,
+    private readonly requestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase: RequestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase,
+    private readonly getTenantEcuadorTaxPartiesOperationalCommandCenterUseCase: GetTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
   ) {}
 
   @Get(':slug/ec/taxpayer-profile')
@@ -2892,6 +2939,179 @@ export class TaxComplianceController {
         );
 
       return toEcuadorTaxComplianceHardeningCloseoutV4ResponseDto(closeout);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/ec/party-sri-evidence-import')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_MANAGE)
+  async recordPartySriEvidenceImport(
+    @Param('slug') slug: string,
+    @Body() body: RecordPartySriEvidenceImportBodyDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxPartySriEvidenceImportResponseDto> {
+    try {
+      const result =
+        await this.recordTenantEcuadorTaxPartySriEvidenceImportUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period: body.period ?? 'current',
+          year: body.year ?? resolveCalendarYear(),
+          source: body.source ?? 'manual_summary',
+          importedByEmail: body.importedByEmail ?? null,
+          rows: body.rows.map((row) => ({
+            ...row,
+            validationStatus: row.validationStatus ?? 'needs_review',
+          })),
+        });
+
+      return toEcuadorTaxPartySriEvidenceImportResponseDto(result);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/party-fiscal-validation-ledger')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getPartyFiscalValidationLedger(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxPartyFiscalValidationLedgerResponseDto> {
+    try {
+      const ledger =
+        await this.getTenantEcuadorTaxPartyFiscalValidationLedgerUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period,
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxPartyFiscalValidationLedgerResponseDto(ledger);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/declaration-party-recalculation-packet')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getDeclarationPartyRecalculationPacket(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxDeclarationPartyRecalculationPacketResponseDto> {
+    try {
+      const packet =
+        await this.requestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period,
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxDeclarationPartyRecalculationPacketResponseDto(packet);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Post(':slug/ec/accountant-party-risk-review-execution')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_MANAGE)
+  async requestAccountantPartyRiskReviewExecution(
+    @Param('slug') slug: string,
+    @Body() body: RequestAccountantPartyRiskReviewExecutionBodyDto,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountantPartyRiskReviewExecutionResponseDto> {
+    try {
+      const result =
+        await this.requestTenantEcuadorTaxAccountantPartyRiskReviewExecutionUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period: body.period ?? 'current',
+            year: body.year ?? resolveCalendarYear(),
+            requestedByUserId: body.requestedByUserId ?? null,
+            requestedByEmail: body.requestedByEmail ?? null,
+            executeReview: body.executeReview ?? true,
+          },
+        );
+
+      return toEcuadorTaxAccountantPartyRiskReviewExecutionResponseDto(result);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/parties-persistence-decision-pack')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getPartiesPersistenceDecisionPack(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxPartiesPersistenceDecisionPackResponseDto> {
+    try {
+      const pack =
+        await this.requestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period,
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxPartiesPersistenceDecisionPackResponseDto(pack);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/parties-operational-command-center')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getPartiesOperationalCommandCenter(
+    @Param('slug') slug: string,
+    @Query('period') period = 'current',
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxPartiesOperationalCommandCenterResponseDto> {
+    try {
+      const center =
+        await this.getTenantEcuadorTaxPartiesOperationalCommandCenterUseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period,
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxPartiesOperationalCommandCenterResponseDto(center);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

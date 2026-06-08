@@ -46,6 +46,8 @@ export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-review-from-par
 export * from './lib/use-cases/get-tenant-ecuador-tax-assisted-fiscal-correction-flow.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-declaration-party-impact-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-party-evidence-bridge.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-party-fiscal-validation-ledger.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-parties-operational-command-center.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-sri-taxpayer-validation-readiness.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-taxpayer-profile.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-period-evidence-vault.use-case';
@@ -68,7 +70,9 @@ export * from './lib/use-cases/list-tenant-ecuador-tax-compliance-events.use-cas
 export * from './lib/use-cases/record-tenant-ecuador-tax-compliance-event.use-case';
 export * from './lib/use-cases/record-tenant-ecuador-tax-filing-handoff.use-case';
 export * from './lib/use-cases/record-tenant-ecuador-tax-purchase-expense-evidence.use-case';
+export * from './lib/use-cases/record-tenant-ecuador-tax-party-sri-evidence-import.use-case';
 export * from './lib/use-cases/record-tenant-ecuador-tax-sri-fiscal-evidence-import.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-accountant-party-risk-review-execution.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-accountant-review-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-accountant-review.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-accountant-collaboration-pack.use-case';
@@ -89,6 +93,8 @@ export * from './lib/use-cases/request-tenant-ecuador-tax-period-closeout-report
 export * from './lib/use-cases/request-tenant-ecuador-tax-compliance-closeout-v2.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-compliance-hardening-closeout-v4.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-compliance-product-closeout-v3.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-party-recalculation-packet.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-parties-persistence-decision-pack.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-product-closeout-pack.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-period-closeout-certification.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-review-assistant-packet.use-case';

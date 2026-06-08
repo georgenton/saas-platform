@@ -5,11 +5,17 @@ import {
   EcuadorTaxComplianceHardeningCloseoutV4View,
   EcuadorTaxComplianceProductCloseoutV3View,
   EcuadorTaxDeclarationPartyImpactWorkspaceView,
+  EcuadorTaxDeclarationPartyRecalculationPacketView,
   EcuadorTaxEvidenceQualityCenterView,
   EcuadorTaxFilingReadinessCertificateView,
   EcuadorTaxObligationRiskMonitorView,
   EcuadorTaxOperatingDashboardV3View,
+  EcuadorTaxAccountantPartyRiskReviewExecutionView,
+  EcuadorTaxPartiesOperationalCommandCenterView,
+  EcuadorTaxPartiesPersistenceDecisionPackView,
+  EcuadorTaxPartyFiscalValidationLedgerView,
   EcuadorTaxPartyEvidenceBridgeView,
+  EcuadorTaxPartySriEvidenceImportView,
   EcuadorTaxSriTaxpayerValidationReadinessView,
 } from '@saas-platform/tax-compliance-domain';
 
@@ -37,6 +43,18 @@ export type EcuadorTaxAccountantReviewFromPartyRisksResponseDto =
   Serialized<EcuadorTaxAccountantReviewFromPartyRisksView>;
 export type EcuadorTaxComplianceHardeningCloseoutV4ResponseDto =
   Serialized<EcuadorTaxComplianceHardeningCloseoutV4View>;
+export type EcuadorTaxPartySriEvidenceImportResponseDto =
+  Serialized<EcuadorTaxPartySriEvidenceImportView>;
+export type EcuadorTaxPartyFiscalValidationLedgerResponseDto =
+  Serialized<EcuadorTaxPartyFiscalValidationLedgerView>;
+export type EcuadorTaxDeclarationPartyRecalculationPacketResponseDto =
+  Serialized<EcuadorTaxDeclarationPartyRecalculationPacketView>;
+export type EcuadorTaxAccountantPartyRiskReviewExecutionResponseDto =
+  Serialized<EcuadorTaxAccountantPartyRiskReviewExecutionView>;
+export type EcuadorTaxPartiesPersistenceDecisionPackResponseDto =
+  Serialized<EcuadorTaxPartiesPersistenceDecisionPackView>;
+export type EcuadorTaxPartiesOperationalCommandCenterResponseDto =
+  Serialized<EcuadorTaxPartiesOperationalCommandCenterView>;
 
 export function toEcuadorTaxEvidenceQualityCenterResponseDto(
   view: EcuadorTaxEvidenceQualityCenterView,
@@ -107,6 +125,42 @@ export function toEcuadorTaxAccountantReviewFromPartyRisksResponseDto(
 export function toEcuadorTaxComplianceHardeningCloseoutV4ResponseDto(
   view: EcuadorTaxComplianceHardeningCloseoutV4View,
 ): EcuadorTaxComplianceHardeningCloseoutV4ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxPartySriEvidenceImportResponseDto(
+  view: EcuadorTaxPartySriEvidenceImportView,
+): EcuadorTaxPartySriEvidenceImportResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxPartyFiscalValidationLedgerResponseDto(
+  view: EcuadorTaxPartyFiscalValidationLedgerView,
+): EcuadorTaxPartyFiscalValidationLedgerResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxDeclarationPartyRecalculationPacketResponseDto(
+  view: EcuadorTaxDeclarationPartyRecalculationPacketView,
+): EcuadorTaxDeclarationPartyRecalculationPacketResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxAccountantPartyRiskReviewExecutionResponseDto(
+  view: EcuadorTaxAccountantPartyRiskReviewExecutionView,
+): EcuadorTaxAccountantPartyRiskReviewExecutionResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxPartiesPersistenceDecisionPackResponseDto(
+  view: EcuadorTaxPartiesPersistenceDecisionPackView,
+): EcuadorTaxPartiesPersistenceDecisionPackResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxPartiesOperationalCommandCenterResponseDto(
+  view: EcuadorTaxPartiesOperationalCommandCenterView,
+): EcuadorTaxPartiesOperationalCommandCenterResponseDto {
   return serialize(view);
 }
 

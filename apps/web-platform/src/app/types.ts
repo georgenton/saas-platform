@@ -4825,6 +4825,175 @@ export interface EcuadorTaxComplianceHardeningCloseoutV4Response {
   guardrails: string[];
 }
 
+export interface EcuadorTaxPartySriEvidenceImportResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  importStatus: string;
+  source: string;
+  importedByEmail: string | null;
+  evidenceRows: Array<{
+    partyId: string | null;
+    displayName: string;
+    taxpayerId: string | null;
+    taxpayerName: string | null;
+    validationStatus: string;
+    sourceReference: string | null;
+    observedAt: string | null;
+    matchedReadinessStatus: string;
+    discrepancies: string[];
+  }>;
+  summary: {
+    rowCount: number;
+    matchedPartyCount: number;
+    blockedRowCount: number;
+    discrepancyCount: number;
+  };
+  eventId: string;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPartyFiscalValidationLedgerResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  ledgerStatus: string;
+  entries: Array<{
+    partyId: string;
+    displayName: string;
+    taxpayerId: string | null;
+    currentReadinessStatus: string;
+    latestEvidenceStatus: string | null;
+    latestEvidenceSource: string | null;
+    latestEvidenceAt: string | null;
+    discrepancyCount: number;
+    overrideRequired: boolean;
+    auditTrail: Array<{
+      eventId: string;
+      eventType: string;
+      source: string;
+      occurredAt: string;
+      detail: string;
+    }>;
+  }>;
+  summary: {
+    entryCount: number;
+    evidenceBackedCount: number;
+    discrepancyCount: number;
+    overrideRequiredCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxDeclarationPartyRecalculationPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  recalculationStatus: string;
+  recalculationRows: Array<{
+    partyId: string;
+    displayName: string;
+    affectedDeclarations: string[];
+    previousRiskLevel: string;
+    currentValidationStatus: string | null;
+    correctionPending: boolean;
+    before: string;
+    after: string;
+    recommendedAction: string;
+  }>;
+  summary: {
+    rowCount: number;
+    declarationCount: number;
+    improvedPartyCount: number;
+    stillBlockedPartyCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantPartyRiskReviewExecutionResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  executionStatus: string;
+  review: EcuadorTaxAccountantReviewResponse | null;
+  suggestedReviewRequest: {
+    reason: string;
+    questions: string[];
+    evidenceReferences: string[];
+  };
+  partyRiskSummary: EcuadorTaxAccountantReviewFromPartyRisksResponse['summary'];
+  executionNotes: string[];
+  eventId: string | null;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPartiesPersistenceDecisionPackResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  decisionStatus: string;
+  decisionDrivers: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidence: string;
+  }>;
+  summary: {
+    driverCount: number;
+    blockingDriverCount: number;
+    persistenceDriverCount: number;
+    validationDiscrepancyCount: number;
+  };
+  recommendedAction: string;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPartiesOperationalCommandCenterResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  commandStatus: string;
+  sriEvidenceImport: EcuadorTaxPartySriEvidenceImportResponse | null;
+  validationLedger: EcuadorTaxPartyFiscalValidationLedgerResponse;
+  recalculationPacket: EcuadorTaxDeclarationPartyRecalculationPacketResponse;
+  accountantReviewExecution: EcuadorTaxAccountantPartyRiskReviewExecutionResponse;
+  persistenceDecision: EcuadorTaxPartiesPersistenceDecisionPackResponse;
+  hardeningCloseout: EcuadorTaxComplianceHardeningCloseoutV4Response;
+  commandTiles: Array<{
+    key: string;
+    label: string;
+    status: string;
+    metric: string;
+    nextAction: string;
+  }>;
+  summary: {
+    tileCount: number;
+    readyTileCount: number;
+    blockerCount: number;
+    validationDiscrepancyCount: number;
+    accountantQuestionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxAccountantCollaborationPackResponse {
   tenantSlug: string;
   period: string;

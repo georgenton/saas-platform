@@ -166,6 +166,7 @@ import {
   EcuadorTaxComplianceCloseoutV2Response,
   EcuadorTaxComplianceHardeningCloseoutV4Response,
   EcuadorTaxComplianceProductCloseoutV3Response,
+  EcuadorTaxPartySriEvidenceImportResponse,
   EcuadorTaxCommandCenterResponse,
   EcuadorTaxCommandCenterV2Response,
   EcuadorTaxDeclarationFormCatalogResponse,
@@ -173,6 +174,7 @@ import {
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxDeclarationFormDraftPacketResponse,
   EcuadorTaxDeclarationPartyImpactWorkspaceResponse,
+  EcuadorTaxDeclarationPartyRecalculationPacketResponse,
   EcuadorTaxDeclarationReviewLoopWorkspaceResponse,
   EcuadorTaxDeclarationSourceLedgerResponse,
   EcuadorTaxAiFilingAssistantPacketResponse,
@@ -184,6 +186,7 @@ import {
   EcuadorTaxFilingAssistantV2Response,
   EcuadorTaxFilingReadinessCertificateResponse,
   EcuadorTaxAccountantReviewFromPartyRisksResponse,
+  EcuadorTaxAccountantPartyRiskReviewExecutionResponse,
   EcuadorTaxAssistedFiscalCorrectionFlowResponse,
   EcuadorTaxFormMappingCatalogResponse,
   EcuadorTaxGrowthReminderPacketResponse,
@@ -204,6 +207,9 @@ import {
   EcuadorTaxOperationalCloseoutResponse,
   EcuadorTaxOperatingDashboardV3Response,
   EcuadorTaxPartyEvidenceBridgeResponse,
+  EcuadorTaxPartyFiscalValidationLedgerResponse,
+  EcuadorTaxPartiesOperationalCommandCenterResponse,
+  EcuadorTaxPartiesPersistenceDecisionPackResponse,
   EcuadorTaxPurchaseExpenseEvidenceRecordResponse,
   EcuadorTaxPurchaseExpenseEvidenceWorkspaceResponse,
   EcuadorTaxReconciliationWorkspaceResponse,
@@ -3620,6 +3626,123 @@ export async function fetchEcuadorTaxComplianceHardeningCloseoutV4(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/compliance-hardening-closeout-v4?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function recordEcuadorTaxPartySriEvidenceImport(
+  token: string,
+  tenantSlug: string,
+  body: {
+    period?: string;
+    year?: number;
+    source?: 'sri_report' | 'sri_xml' | 'manual_summary' | 'future_api';
+    importedByEmail?: string | null;
+    rows: Array<{
+      partyId?: string | null;
+      taxpayerId?: string | null;
+      taxpayerName?: string | null;
+      validationStatus?: 'ready' | 'needs_review' | 'blocked';
+      sourceReference?: string | null;
+      observedAt?: string | null;
+    }>;
+  },
+): Promise<EcuadorTaxPartySriEvidenceImportResponse> {
+  return request<EcuadorTaxPartySriEvidenceImportResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/party-sri-evidence-import`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchEcuadorTaxPartyFiscalValidationLedger(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPartyFiscalValidationLedgerResponse> {
+  return request<EcuadorTaxPartyFiscalValidationLedgerResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/party-fiscal-validation-ledger?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxDeclarationPartyRecalculationPacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxDeclarationPartyRecalculationPacketResponse> {
+  return request<EcuadorTaxDeclarationPartyRecalculationPacketResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/declaration-party-recalculation-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function requestEcuadorTaxAccountantPartyRiskReviewExecution(
+  token: string,
+  tenantSlug: string,
+  body: {
+    period?: string;
+    year?: number;
+    requestedByUserId?: string | null;
+    requestedByEmail?: string | null;
+    executeReview?: boolean;
+  },
+): Promise<EcuadorTaxAccountantPartyRiskReviewExecutionResponse> {
+  return request<EcuadorTaxAccountantPartyRiskReviewExecutionResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accountant-party-risk-review-execution`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchEcuadorTaxPartiesPersistenceDecisionPack(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPartiesPersistenceDecisionPackResponse> {
+  return request<EcuadorTaxPartiesPersistenceDecisionPackResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/parties-persistence-decision-pack?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPartiesOperationalCommandCenter(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPartiesOperationalCommandCenterResponse> {
+  return request<EcuadorTaxPartiesOperationalCommandCenterResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/parties-operational-command-center?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

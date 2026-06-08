@@ -381,11 +381,17 @@ import {
   MedicalClinicRecordsCloseoutResponse,
   MedicalClinicTreatmentFollowUpReadinessResponse,
   CreatePsychologyClinicSessionRequest,
+  PsychologyClinicAssessmentScaleRegistryResponse,
   PsychologyClinicBillingTaxBridgeResponse,
   PsychologyClinicClinicalEvidenceRegistryResponse,
+  PsychologyClinicCloseoutV4Response,
+  PsychologyClinicEhrDiscoveryWorkspaceResponse,
+  PsychologyClinicExternalDocumentHandoffContractsResponse,
   PsychologyClinicFoundationCloseoutResponse,
+  PsychologyClinicFormalRecordSignatureReadinessResponse,
   PsychologyClinicGrowthReminderBridgeResponse,
   PsychologyClinicOperationsCloseoutResponse,
+  PsychologyClinicOutcomesReviewWorkspaceResponse,
   PsychologyClinicPatientIntakeWorkspaceResponse,
   PsychologyClinicPatientRecordResponse,
   PsychologyClinicPatientTimelineWorkspaceResponse,
@@ -9237,6 +9243,98 @@ export async function fetchPsychologyClinicRecordsCloseoutV3(
     `/psychology-clinics/tenants/${encodeURIComponent(
       tenantSlug,
     )}/records-closeout-v3`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicEhrDiscoveryWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicEhrDiscoveryWorkspaceResponse> {
+  return request<PsychologyClinicEhrDiscoveryWorkspaceResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ehr-discovery-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicFormalRecordSignatureReadiness(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicFormalRecordSignatureReadinessResponse> {
+  return request<PsychologyClinicFormalRecordSignatureReadinessResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/formal-record-signature-readiness`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicOutcomesReviewWorkspace(
+  token: string,
+  tenantSlug: string,
+  patientId: string,
+): Promise<PsychologyClinicOutcomesReviewWorkspaceResponse> {
+  return request<PsychologyClinicOutcomesReviewWorkspaceResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patients/${encodeURIComponent(patientId)}/outcomes-review-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicAssessmentScaleRegistry(
+  token: string,
+  tenantSlug: string,
+  patientId: string,
+): Promise<PsychologyClinicAssessmentScaleRegistryResponse> {
+  return request<PsychologyClinicAssessmentScaleRegistryResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patients/${encodeURIComponent(patientId)}/assessment-scale-registry`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicExternalDocumentHandoffContracts(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicExternalDocumentHandoffContractsResponse> {
+  return request<PsychologyClinicExternalDocumentHandoffContractsResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/external-document-handoff-contracts`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicCloseoutV4(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicCloseoutV4Response> {
+  return request<PsychologyClinicCloseoutV4Response>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/closeout-v4`,
     {
       method: 'GET',
       token,

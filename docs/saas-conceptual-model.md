@@ -564,18 +564,30 @@ review and cannot be signed automatically.
 
 Recommended next slices:
 
-1. `psychology-ehr-discovery`: evaluate future integrations, consent, privacy
-   and signature boundaries before storing formal clinical records.
-2. `psychology-outcomes-review`: add reviewed outcomes/progress summaries
-   without automated clinical conclusions.
-3. `psychology-integrations-readiness`: prepare handoff contracts for external
-   EHR/document systems.
+1. `psychology-ehr-integration-evaluation`: evaluate whether the platform
+   should integrate with an external EHR, document management system, or
+   clinical archive after readiness boundaries are reviewed.
+2. `psychology-clinical-admin-hardening`: strengthen operational controls for
+   clinic admins, therapist review ownership and audit-friendly work queues.
+3. `psychology-closeout-readiness-report`: produce a final product readiness
+   report that decides whether to pause Psychology Clinics or move into
+   external integrations.
 
 Operations 2.0 is now represented by the web command center plus treatment
 plans, follow-up readiness, Growth reminder bridge, Billing/Tax bridge, patient
 timeline and operations closeout packets. The product is still intentionally
 review-first: reminders are drafts, billing is a handoff, and treatment plans do
 not infer diagnosis or clinical risk.
+
+Records 3.0 and EHR Readiness 4.0 are represented by records hardening,
+clinical evidence registry, session note review loop, risk/safety review,
+privacy consent controls, EHR discovery, formal signature readiness, outcomes
+review, assessment scale registry, external document handoff contracts and
+closeout v4 packets. The boundary remains explicit: the platform prepares
+reviewable contracts and evidence, but does not create a signed legal EHR
+record, does not store binary clinical files as the source of truth, does not
+auto-diagnose, does not automatically interpret assessment scales and does not
+sign records on behalf of a therapist.
 
 Records 3.0 adds records hardening, clinical evidence registry, session note
 review loop, risk/safety review workspace, privacy/consent control center and

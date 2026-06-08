@@ -1,10 +1,16 @@
 import {
   PsychologyClinicProfileSnapshot,
+  TenantPsychologyClinicAssessmentScaleRegistry,
   TenantPsychologyClinicBillingTaxBridge,
   TenantPsychologyClinicClinicalEvidenceRegistry,
+  TenantPsychologyClinicCloseoutV4,
+  TenantPsychologyClinicEhrDiscoveryWorkspace,
+  TenantPsychologyClinicExternalDocumentHandoffContracts,
   TenantPsychologyClinicFoundationCloseout,
+  TenantPsychologyClinicFormalRecordSignatureReadiness,
   TenantPsychologyClinicGrowthReminderBridge,
   TenantPsychologyClinicOperationsCloseout,
+  TenantPsychologyClinicOutcomesReviewWorkspace,
   TenantPsychologyClinicPatientIntakeWorkspace,
   TenantPsychologyClinicPatientRecord,
   TenantPsychologyClinicPatientTimelineWorkspace,
@@ -62,6 +68,18 @@ export type PsychologyClinicPrivacyConsentControlCenterResponseDto =
   TenantPsychologyClinicPrivacyConsentControlCenter;
 export type PsychologyClinicRecordsCloseoutV3ResponseDto =
   TenantPsychologyClinicRecordsCloseoutV3;
+export type PsychologyClinicEhrDiscoveryWorkspaceResponseDto =
+  TenantPsychologyClinicEhrDiscoveryWorkspace;
+export type PsychologyClinicFormalRecordSignatureReadinessResponseDto =
+  TenantPsychologyClinicFormalRecordSignatureReadiness;
+export type PsychologyClinicOutcomesReviewWorkspaceResponseDto =
+  TenantPsychologyClinicOutcomesReviewWorkspace;
+export type PsychologyClinicAssessmentScaleRegistryResponseDto =
+  TenantPsychologyClinicAssessmentScaleRegistry;
+export type PsychologyClinicExternalDocumentHandoffContractsResponseDto =
+  TenantPsychologyClinicExternalDocumentHandoffContracts;
+export type PsychologyClinicCloseoutV4ResponseDto =
+  TenantPsychologyClinicCloseoutV4;
 
 export interface UpsertPsychologyClinicProfileWorkspaceRequestDto {
   snapshot: Partial<PsychologyClinicProfileSnapshot>;
@@ -176,3 +194,27 @@ export const toPsychologyClinicPrivacyConsentControlCenterResponseDto = (
 export const toPsychologyClinicRecordsCloseoutV3ResponseDto = (
   view: TenantPsychologyClinicRecordsCloseoutV3,
 ): PsychologyClinicRecordsCloseoutV3ResponseDto => view;
+
+export const toPsychologyClinicEhrDiscoveryWorkspaceResponseDto = (
+  view: TenantPsychologyClinicEhrDiscoveryWorkspace,
+): PsychologyClinicEhrDiscoveryWorkspaceResponseDto => view;
+
+export const toPsychologyClinicFormalRecordSignatureReadinessResponseDto = (
+  view: TenantPsychologyClinicFormalRecordSignatureReadiness,
+): PsychologyClinicFormalRecordSignatureReadinessResponseDto => view;
+
+export const toPsychologyClinicOutcomesReviewWorkspaceResponseDto = (
+  view: TenantPsychologyClinicOutcomesReviewWorkspace,
+): PsychologyClinicOutcomesReviewWorkspaceResponseDto => view;
+
+export const toPsychologyClinicAssessmentScaleRegistryResponseDto = (
+  view: TenantPsychologyClinicAssessmentScaleRegistry,
+): PsychologyClinicAssessmentScaleRegistryResponseDto => view;
+
+export const toPsychologyClinicExternalDocumentHandoffContractsResponseDto = (
+  view: TenantPsychologyClinicExternalDocumentHandoffContracts,
+): PsychologyClinicExternalDocumentHandoffContractsResponseDto => view;
+
+export const toPsychologyClinicCloseoutV4ResponseDto = (
+  view: TenantPsychologyClinicCloseoutV4,
+): PsychologyClinicCloseoutV4ResponseDto => view;

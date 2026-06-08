@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.19
+
+### Patch Changes
+
+- 7bce830: Add Psychology Clinics product closeout workspaces for EHR integration evaluation, clinical admin hardening, therapist review queues, readiness reporting, boundary compliance and closeout v5.
+
 ## 0.107.18
 
 ### Patch Changes

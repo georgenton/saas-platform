@@ -416,3 +416,146 @@ export interface TenantPsychologyClinicOperationsCloseout {
   nextStep: string;
   guardrails: string[];
 }
+
+export interface TenantPsychologyClinicRecordsHardeningWorkspace {
+  tenantSlug: string;
+  patientId: string;
+  generatedAt: Date;
+  workspaceStatus: PsychologyClinicReadinessStatus;
+  recordLayers: Array<{
+    key: string;
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    evidenceCount: number;
+    nextAction: string;
+  }>;
+  continuity: {
+    sessionCount: number;
+    noteDraftCount: number;
+    treatmentEventCount: number;
+    bridgeEventCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicClinicalEvidenceRegistry {
+  tenantSlug: string;
+  patientId: string;
+  generatedAt: Date;
+  registryStatus: PsychologyClinicReadinessStatus;
+  evidenceItems: Array<{
+    id: string;
+    type:
+      | 'consent'
+      | 'session_note_draft'
+      | 'treatment_plan'
+      | 'external_document'
+      | 'privacy_review'
+      | 'safety_review';
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    source: string;
+    capturedAt: string;
+    requiresTherapistReview: boolean;
+  }>;
+  summary: {
+    evidenceCount: number;
+    consentEvidenceCount: number;
+    reviewRequiredCount: number;
+    blockedEvidenceCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicSessionNoteReviewLoop {
+  tenantSlug: string;
+  sessionId: string;
+  generatedAt: Date;
+  reviewStatus: PsychologyClinicReadinessStatus;
+  stages: Array<{
+    key: 'draft' | 'therapist_review' | 'approved_draft' | 'archived_record';
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    evidence: string;
+  }>;
+  reviewPolicy: {
+    requiresTherapistReview: true;
+    mayBeSigned: false;
+    legalEhrRecord: false;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicRiskSafetyReviewWorkspace {
+  tenantSlug: string;
+  patientId: string;
+  generatedAt: Date;
+  workspaceStatus: PsychologyClinicReadinessStatus;
+  reviewSignals: Array<{
+    key: string;
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    evidence: string;
+    owner: 'therapist' | 'front_desk';
+  }>;
+  escalation: {
+    emergencyContactPresent: boolean;
+    requiresHumanReview: true;
+    automationAllowed: false;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicPrivacyConsentControlCenter {
+  tenantSlug: string;
+  generatedAt: Date;
+  controlStatus: PsychologyClinicReadinessStatus;
+  controls: Array<{
+    key: string;
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    affectedPatientCount: number;
+    nextAction: string;
+  }>;
+  summary: {
+    patientCount: number;
+    consentReadyCount: number;
+    messagingReadyCount: number;
+    privacyReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicRecordsCloseoutV3 {
+  tenantSlug: string;
+  generatedAt: Date;
+  closeoutStatus: PsychologyClinicReadinessStatus;
+  checklist: Array<{
+    key: string;
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    evidence: string;
+  }>;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+  };
+  recommendedNextProduct:
+    | 'psychology-ehr-discovery'
+    | 'psychology-clinical-evidence-hardening';
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}

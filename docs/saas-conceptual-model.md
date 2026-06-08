@@ -564,18 +564,24 @@ review and cannot be signed automatically.
 
 Recommended next slices:
 
-1. `psychology-records-hardening`: deepen longitudinal patient records while
-   keeping review-first boundaries.
-2. `psychology-clinical-evidence`: add evidence registry and external documents
-   without becoming a legal EHR.
-3. `psychology-ehr-discovery`: evaluate future integrations, consent, privacy
+1. `psychology-ehr-discovery`: evaluate future integrations, consent, privacy
    and signature boundaries before storing formal clinical records.
+2. `psychology-outcomes-review`: add reviewed outcomes/progress summaries
+   without automated clinical conclusions.
+3. `psychology-integrations-readiness`: prepare handoff contracts for external
+   EHR/document systems.
 
 Operations 2.0 is now represented by the web command center plus treatment
 plans, follow-up readiness, Growth reminder bridge, Billing/Tax bridge, patient
 timeline and operations closeout packets. The product is still intentionally
 review-first: reminders are drafts, billing is a handoff, and treatment plans do
 not infer diagnosis or clinical risk.
+
+Records 3.0 adds records hardening, clinical evidence registry, session note
+review loop, risk/safety review workspace, privacy/consent control center and
+records closeout. It still does not create a signed legal EHR record, store
+binary clinical files, diagnose, classify risk automatically, or replace
+therapist judgment.
 
 ## Product: Ecommerce
 

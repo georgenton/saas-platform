@@ -10,12 +10,17 @@ import {
 } from '@nestjs/common';
 import {
   CreateTenantPsychologyClinicSessionUseCase,
+  GetTenantPsychologyClinicClinicalEvidenceRegistryUseCase,
   GetTenantPsychologyClinicOperationsCloseoutUseCase,
   GetTenantPsychologyClinicFoundationCloseoutUseCase,
   GetTenantPsychologyClinicPatientIntakeWorkspaceUseCase,
   GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase,
+  GetTenantPsychologyClinicPrivacyConsentControlCenterUseCase,
   GetTenantPsychologyClinicProductAnchorUseCase,
   GetTenantPsychologyClinicProfileWorkspaceUseCase,
+  GetTenantPsychologyClinicRecordsCloseoutV3UseCase,
+  GetTenantPsychologyClinicRecordsHardeningWorkspaceUseCase,
+  GetTenantPsychologyClinicRiskSafetyReviewWorkspaceUseCase,
   GetTenantPsychologyClinicSessionSchedulingWorkspaceUseCase,
   GetTenantPsychologyClinicTreatmentFollowUpReadinessUseCase,
   GetTenantPsychologyClinicTreatmentPlanWorkspaceUseCase,
@@ -24,6 +29,7 @@ import {
   RequestTenantPsychologyClinicBillingTaxBridgeUseCase,
   RequestTenantPsychologyClinicGrowthReminderBridgeUseCase,
   RequestTenantPsychologyClinicSessionNoteDraftPacketUseCase,
+  RequestTenantPsychologyClinicSessionNoteReviewLoopUseCase,
   TransitionTenantPsychologyClinicSessionUseCase,
   UpsertTenantPsychologyClinicProfileWorkspaceUseCase,
 } from '@saas-platform/psychology-clinics-application';
@@ -36,15 +42,21 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
 import {
   CreatePsychologyClinicSessionRequestDto,
   PsychologyClinicBillingTaxBridgeResponseDto,
+  PsychologyClinicClinicalEvidenceRegistryResponseDto,
   PsychologyClinicFoundationCloseoutResponseDto,
   PsychologyClinicGrowthReminderBridgeResponseDto,
   PsychologyClinicOperationsCloseoutResponseDto,
   PsychologyClinicPatientIntakeWorkspaceResponseDto,
   PsychologyClinicPatientRecordResponseDto,
   PsychologyClinicPatientTimelineWorkspaceResponseDto,
+  PsychologyClinicPrivacyConsentControlCenterResponseDto,
   PsychologyClinicProductAnchorResponseDto,
   PsychologyClinicProfileWorkspaceResponseDto,
+  PsychologyClinicRecordsCloseoutV3ResponseDto,
+  PsychologyClinicRecordsHardeningWorkspaceResponseDto,
+  PsychologyClinicRiskSafetyReviewWorkspaceResponseDto,
   PsychologyClinicSessionNoteDraftPacketResponseDto,
+  PsychologyClinicSessionNoteReviewLoopResponseDto,
   PsychologyClinicSessionRecordResponseDto,
   PsychologyClinicSessionSchedulingWorkspaceResponseDto,
   PsychologyClinicTreatmentFollowUpReadinessResponseDto,
@@ -53,15 +65,21 @@ import {
   TransitionPsychologyClinicSessionRequestDto,
   UpsertPsychologyClinicProfileWorkspaceRequestDto,
   toPsychologyClinicBillingTaxBridgeResponseDto,
+  toPsychologyClinicClinicalEvidenceRegistryResponseDto,
   toPsychologyClinicFoundationCloseoutResponseDto,
   toPsychologyClinicGrowthReminderBridgeResponseDto,
   toPsychologyClinicOperationsCloseoutResponseDto,
   toPsychologyClinicPatientIntakeWorkspaceResponseDto,
   toPsychologyClinicPatientRecordResponseDto,
   toPsychologyClinicPatientTimelineWorkspaceResponseDto,
+  toPsychologyClinicPrivacyConsentControlCenterResponseDto,
   toPsychologyClinicProductAnchorResponseDto,
   toPsychologyClinicProfileWorkspaceResponseDto,
+  toPsychologyClinicRecordsCloseoutV3ResponseDto,
+  toPsychologyClinicRecordsHardeningWorkspaceResponseDto,
+  toPsychologyClinicRiskSafetyReviewWorkspaceResponseDto,
   toPsychologyClinicSessionNoteDraftPacketResponseDto,
+  toPsychologyClinicSessionNoteReviewLoopResponseDto,
   toPsychologyClinicSessionRecordResponseDto,
   toPsychologyClinicSessionSchedulingWorkspaceResponseDto,
   toPsychologyClinicTreatmentFollowUpReadinessResponseDto,
@@ -95,6 +113,12 @@ export class PsychologyClinicsController {
     private readonly requestTenantPsychologyClinicBillingTaxBridgeUseCase: RequestTenantPsychologyClinicBillingTaxBridgeUseCase,
     private readonly getTenantPsychologyClinicPatientTimelineWorkspaceUseCase: GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase,
     private readonly getTenantPsychologyClinicOperationsCloseoutUseCase: GetTenantPsychologyClinicOperationsCloseoutUseCase,
+    private readonly getTenantPsychologyClinicRecordsHardeningWorkspaceUseCase: GetTenantPsychologyClinicRecordsHardeningWorkspaceUseCase,
+    private readonly getTenantPsychologyClinicClinicalEvidenceRegistryUseCase: GetTenantPsychologyClinicClinicalEvidenceRegistryUseCase,
+    private readonly requestTenantPsychologyClinicSessionNoteReviewLoopUseCase: RequestTenantPsychologyClinicSessionNoteReviewLoopUseCase,
+    private readonly getTenantPsychologyClinicRiskSafetyReviewWorkspaceUseCase: GetTenantPsychologyClinicRiskSafetyReviewWorkspaceUseCase,
+    private readonly getTenantPsychologyClinicPrivacyConsentControlCenterUseCase: GetTenantPsychologyClinicPrivacyConsentControlCenterUseCase,
+    private readonly getTenantPsychologyClinicRecordsCloseoutV3UseCase: GetTenantPsychologyClinicRecordsCloseoutV3UseCase,
   ) {}
 
   @Get(':slug/product-anchor')
@@ -318,6 +342,76 @@ export class PsychologyClinicsController {
           patientId,
         },
       ),
+    );
+  }
+
+  @Get(':slug/patients/:patientId/records-hardening-workspace')
+  async getRecordsHardeningWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Param('patientId') patientId: string,
+  ): Promise<PsychologyClinicRecordsHardeningWorkspaceResponseDto> {
+    return toPsychologyClinicRecordsHardeningWorkspaceResponseDto(
+      await this.getTenantPsychologyClinicRecordsHardeningWorkspaceUseCase.execute(
+        { tenantSlug, patientId },
+      ),
+    );
+  }
+
+  @Get(':slug/patients/:patientId/clinical-evidence-registry')
+  async getClinicalEvidenceRegistry(
+    @Param('slug') tenantSlug: string,
+    @Param('patientId') patientId: string,
+  ): Promise<PsychologyClinicClinicalEvidenceRegistryResponseDto> {
+    return toPsychologyClinicClinicalEvidenceRegistryResponseDto(
+      await this.getTenantPsychologyClinicClinicalEvidenceRegistryUseCase.execute(
+        { tenantSlug, patientId },
+      ),
+    );
+  }
+
+  @Get(':slug/patients/:patientId/risk-safety-review-workspace')
+  async getRiskSafetyReviewWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Param('patientId') patientId: string,
+  ): Promise<PsychologyClinicRiskSafetyReviewWorkspaceResponseDto> {
+    return toPsychologyClinicRiskSafetyReviewWorkspaceResponseDto(
+      await this.getTenantPsychologyClinicRiskSafetyReviewWorkspaceUseCase.execute(
+        { tenantSlug, patientId },
+      ),
+    );
+  }
+
+  @Get(':slug/privacy-consent-control-center')
+  async getPrivacyConsentControlCenter(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicPrivacyConsentControlCenterResponseDto> {
+    return toPsychologyClinicPrivacyConsentControlCenterResponseDto(
+      await this.getTenantPsychologyClinicPrivacyConsentControlCenterUseCase.execute(
+        { tenantSlug },
+      ),
+    );
+  }
+
+  @Get(':slug/sessions/:sessionId/session-note-review-loop')
+  async requestSessionNoteReviewLoop(
+    @Param('slug') tenantSlug: string,
+    @Param('sessionId') sessionId: string,
+  ): Promise<PsychologyClinicSessionNoteReviewLoopResponseDto> {
+    return toPsychologyClinicSessionNoteReviewLoopResponseDto(
+      await this.requestTenantPsychologyClinicSessionNoteReviewLoopUseCase.execute(
+        { tenantSlug, sessionId },
+      ),
+    );
+  }
+
+  @Get(':slug/records-closeout-v3')
+  async getRecordsCloseoutV3(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicRecordsCloseoutV3ResponseDto> {
+    return toPsychologyClinicRecordsCloseoutV3ResponseDto(
+      await this.getTenantPsychologyClinicRecordsCloseoutV3UseCase.execute({
+        tenantSlug,
+      }),
     );
   }
 }

@@ -20,12 +20,17 @@ import {
 } from '@saas-platform/tenancy-application';
 import {
   CreateTenantPsychologyClinicSessionUseCase,
+  GetTenantPsychologyClinicClinicalEvidenceRegistryUseCase,
   GetTenantPsychologyClinicFoundationCloseoutUseCase,
   GetTenantPsychologyClinicOperationsCloseoutUseCase,
   GetTenantPsychologyClinicPatientIntakeWorkspaceUseCase,
   GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase,
+  GetTenantPsychologyClinicPrivacyConsentControlCenterUseCase,
   GetTenantPsychologyClinicProductAnchorUseCase,
   GetTenantPsychologyClinicProfileWorkspaceUseCase,
+  GetTenantPsychologyClinicRecordsCloseoutV3UseCase,
+  GetTenantPsychologyClinicRecordsHardeningWorkspaceUseCase,
+  GetTenantPsychologyClinicRiskSafetyReviewWorkspaceUseCase,
   GetTenantPsychologyClinicSessionSchedulingWorkspaceUseCase,
   GetTenantPsychologyClinicTreatmentFollowUpReadinessUseCase,
   GetTenantPsychologyClinicTreatmentPlanWorkspaceUseCase,
@@ -35,6 +40,7 @@ import {
   RequestTenantPsychologyClinicBillingTaxBridgeUseCase,
   RequestTenantPsychologyClinicGrowthReminderBridgeUseCase,
   RequestTenantPsychologyClinicSessionNoteDraftPacketUseCase,
+  RequestTenantPsychologyClinicSessionNoteReviewLoopUseCase,
   TransitionTenantPsychologyClinicSessionUseCase,
   UpsertTenantPsychologyClinicProfileWorkspaceUseCase,
 } from '@saas-platform/psychology-clinics-application';
@@ -196,6 +202,18 @@ import { PsychologyClinicsController } from './psychology-clinics.controller';
           operationsRepository,
         ),
     },
+    ...[
+      GetTenantPsychologyClinicRecordsHardeningWorkspaceUseCase,
+      GetTenantPsychologyClinicClinicalEvidenceRegistryUseCase,
+      RequestTenantPsychologyClinicSessionNoteReviewLoopUseCase,
+      GetTenantPsychologyClinicRiskSafetyReviewWorkspaceUseCase,
+      GetTenantPsychologyClinicPrivacyConsentControlCenterUseCase,
+      GetTenantPsychologyClinicRecordsCloseoutV3UseCase,
+    ].map((useCase) => ({
+      provide: useCase,
+      inject: [PSYCHOLOGY_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) => new useCase(operationsRepository),
+    })),
     {
       provide: ResolveTenantAccessUseCase,
       inject: [TENANT_REPOSITORY, TENANT_ACCESS_REPOSITORY],

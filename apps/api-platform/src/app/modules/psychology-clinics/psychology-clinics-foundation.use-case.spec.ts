@@ -1,10 +1,15 @@
 import {
   GetTenantPsychologyClinicFoundationCloseoutUseCase,
+  GetTenantPsychologyClinicClinicalEvidenceRegistryUseCase,
   GetTenantPsychologyClinicOperationsCloseoutUseCase,
   GetTenantPsychologyClinicPatientIntakeWorkspaceUseCase,
   GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase,
+  GetTenantPsychologyClinicPrivacyConsentControlCenterUseCase,
   GetTenantPsychologyClinicProductAnchorUseCase,
   GetTenantPsychologyClinicProfileWorkspaceUseCase,
+  GetTenantPsychologyClinicRecordsCloseoutV3UseCase,
+  GetTenantPsychologyClinicRecordsHardeningWorkspaceUseCase,
+  GetTenantPsychologyClinicRiskSafetyReviewWorkspaceUseCase,
   GetTenantPsychologyClinicSessionSchedulingWorkspaceUseCase,
   GetTenantPsychologyClinicTreatmentFollowUpReadinessUseCase,
   GetTenantPsychologyClinicTreatmentPlanWorkspaceUseCase,
@@ -12,6 +17,7 @@ import {
   RequestTenantPsychologyClinicBillingTaxBridgeUseCase,
   RequestTenantPsychologyClinicGrowthReminderBridgeUseCase,
   RequestTenantPsychologyClinicSessionNoteDraftPacketUseCase,
+  RequestTenantPsychologyClinicSessionNoteReviewLoopUseCase,
   TransitionTenantPsychologyClinicSessionUseCase,
   UpsertTenantPsychologyClinicProfileWorkspaceUseCase,
   CreateTenantPsychologyClinicSessionUseCase,
@@ -273,6 +279,97 @@ describe('Psychology Clinics foundation use cases', () => {
     expect(operationsCloseout.recommendedNextProduct).toBe(
       'psychology-records-hardening',
     );
+  });
+
+  it('builds records hardening, evidence, review, safety, privacy and closeout packets', async () => {
+    const repository = createInMemoryPsychologyClinicRepository();
+    const idGenerator = {
+      generate: jest.fn(
+        () => `psychology_id_${idGenerator.generate.mock.calls.length}`,
+      ),
+    };
+    const patient =
+      await new RegisterTenantPsychologyClinicPatientIntakeUseCase(
+        repository,
+        idGenerator,
+      ).execute({
+        tenantSlug: 'psychology-demo',
+        patientDisplayName: 'Paciente Records',
+        identificationStatus: 'ready',
+        contactStatus: 'ready',
+        therapyConsentStatus: 'ready',
+        messagingOptInStatus: 'ready',
+        initialRiskReviewStatus: 'ready',
+        presentingConcern: 'Records longitudinales',
+        emergencyContact: {
+          displayName: 'Contacto Emergencia',
+          phoneE164: '+593999999999',
+        },
+      });
+    const session = await new CreateTenantPsychologyClinicSessionUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({
+      tenantSlug: 'psychology-demo',
+      patientId: patient.id,
+      serviceName: 'Terapia individual',
+      therapistId: 'therapist_001',
+      therapistName: 'Ps. Ana Morales',
+      startsAt: fixedNow,
+    });
+    await new TransitionTenantPsychologyClinicSessionUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({
+      tenantSlug: 'psychology-demo',
+      sessionId: session.id,
+      status: 'completed',
+    });
+    await new RequestTenantPsychologyClinicSessionNoteDraftPacketUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({ tenantSlug: 'psychology-demo', sessionId: session.id });
+
+    const records =
+      await new GetTenantPsychologyClinicRecordsHardeningWorkspaceUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo', patientId: patient.id });
+    const evidence =
+      await new GetTenantPsychologyClinicClinicalEvidenceRegistryUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo', patientId: patient.id });
+    const reviewLoop =
+      await new RequestTenantPsychologyClinicSessionNoteReviewLoopUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo', sessionId: session.id });
+    const safety =
+      await new GetTenantPsychologyClinicRiskSafetyReviewWorkspaceUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo', patientId: patient.id });
+    const privacy =
+      await new GetTenantPsychologyClinicPrivacyConsentControlCenterUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo' });
+    const closeout =
+      await new GetTenantPsychologyClinicRecordsCloseoutV3UseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo' });
+
+    expect(records.continuity.noteDraftCount).toBe(1);
+    expect(evidence.summary.consentEvidenceCount).toBe(1);
+    expect(reviewLoop.reviewPolicy.legalEhrRecord).toBe(false);
+    expect(safety.escalation.automationAllowed).toBe(false);
+    expect(privacy.summary.consentReadyCount).toBe(1);
+    expect(closeout.recommendedNextProduct).toBe('psychology-ehr-discovery');
   });
 });
 

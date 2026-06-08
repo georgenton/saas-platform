@@ -382,15 +382,21 @@ import {
   MedicalClinicTreatmentFollowUpReadinessResponse,
   CreatePsychologyClinicSessionRequest,
   PsychologyClinicBillingTaxBridgeResponse,
+  PsychologyClinicClinicalEvidenceRegistryResponse,
   PsychologyClinicFoundationCloseoutResponse,
   PsychologyClinicGrowthReminderBridgeResponse,
   PsychologyClinicOperationsCloseoutResponse,
   PsychologyClinicPatientIntakeWorkspaceResponse,
   PsychologyClinicPatientRecordResponse,
   PsychologyClinicPatientTimelineWorkspaceResponse,
+  PsychologyClinicPrivacyConsentControlCenterResponse,
   PsychologyClinicProductAnchorResponse,
   PsychologyClinicProfileWorkspaceResponse,
+  PsychologyClinicRecordsCloseoutV3Response,
+  PsychologyClinicRecordsHardeningWorkspaceResponse,
+  PsychologyClinicRiskSafetyReviewWorkspaceResponse,
   PsychologyClinicSessionNoteDraftPacketResponse,
+  PsychologyClinicSessionNoteReviewLoopResponse,
   PsychologyClinicSessionRecordResponse,
   PsychologyClinicSessionSchedulingWorkspaceResponse,
   PsychologyClinicTreatmentFollowUpReadinessResponse,
@@ -9137,6 +9143,100 @@ export async function fetchPsychologyClinicPatientTimelineWorkspace(
     `/psychology-clinics/tenants/${encodeURIComponent(
       tenantSlug,
     )}/patients/${encodeURIComponent(patientId)}/timeline-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicRecordsHardeningWorkspace(
+  token: string,
+  tenantSlug: string,
+  patientId: string,
+): Promise<PsychologyClinicRecordsHardeningWorkspaceResponse> {
+  return request<PsychologyClinicRecordsHardeningWorkspaceResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patients/${encodeURIComponent(patientId)}/records-hardening-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicClinicalEvidenceRegistry(
+  token: string,
+  tenantSlug: string,
+  patientId: string,
+): Promise<PsychologyClinicClinicalEvidenceRegistryResponse> {
+  return request<PsychologyClinicClinicalEvidenceRegistryResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patients/${encodeURIComponent(patientId)}/clinical-evidence-registry`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicRiskSafetyReviewWorkspace(
+  token: string,
+  tenantSlug: string,
+  patientId: string,
+): Promise<PsychologyClinicRiskSafetyReviewWorkspaceResponse> {
+  return request<PsychologyClinicRiskSafetyReviewWorkspaceResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patients/${encodeURIComponent(patientId)}/risk-safety-review-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicPrivacyConsentControlCenter(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicPrivacyConsentControlCenterResponse> {
+  return request<PsychologyClinicPrivacyConsentControlCenterResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/privacy-consent-control-center`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestPsychologyClinicSessionNoteReviewLoop(
+  token: string,
+  tenantSlug: string,
+  sessionId: string,
+): Promise<PsychologyClinicSessionNoteReviewLoopResponse> {
+  return request<PsychologyClinicSessionNoteReviewLoopResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/sessions/${encodeURIComponent(sessionId)}/session-note-review-loop`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicRecordsCloseoutV3(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicRecordsCloseoutV3Response> {
+  return request<PsychologyClinicRecordsCloseoutV3Response>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/records-closeout-v3`,
     {
       method: 'GET',
       token,

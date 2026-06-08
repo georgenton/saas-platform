@@ -1,5 +1,12 @@
 # api-platform
 
+## 0.107.11
+
+### Patch Changes
+
+- e54e478: Add the Medical Clinics foundation product anchor, operational workspaces, API surface, catalog seed, web client types, and roadmap documentation.
+- f1d499f: Add persistent Medical Clinics operations for clinic profiles, patient intake, appointment lifecycle, Growth reminders, and billing/tax handoffs.
+
 ## 0.107.10
 
 ### Patch Changes

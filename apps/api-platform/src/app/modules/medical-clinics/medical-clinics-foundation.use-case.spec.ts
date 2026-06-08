@@ -6,6 +6,7 @@ import {
   GetTenantMedicalClinicEncounterWorkspaceUseCase,
   GetTenantMedicalClinicPatientClinicalTimelineWorkspaceUseCase,
   GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
+  GetTenantMedicalClinicProductCloseoutUseCase,
   GetTenantMedicalClinicProductAnchorUseCase,
   GetTenantMedicalClinicProfileWorkspaceUseCase,
   GetTenantMedicalClinicTreatmentFollowUpReadinessUseCase,
@@ -378,6 +379,13 @@ describe('Medical Clinics foundation use cases', () => {
       tenantSlug: 'clinic-demo',
       patientId: patient.id,
     });
+    const productCloseout =
+      await new GetTenantMedicalClinicProductCloseoutUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({
+        tenantSlug: 'clinic-demo',
+      });
 
     expect(history.provenance.mayBecomeLegalRecord).toBe(false);
     expect(orders.professionalApproval.officialDocumentIssued).toBe(false);
@@ -389,6 +397,10 @@ describe('Medical Clinics foundation use cases', () => {
     expect(closeout.summary.blockedCheckCount).toBe(0);
     expect(closeout.guardrails.join(' ')).toContain(
       'no son historia clinica legal firmada',
+    );
+    expect(productCloseout.productReadiness.recordsReady).toBe(true);
+    expect(productCloseout.recommendedNextProduct).toBe(
+      'psychology-clinics-foundation',
     );
     expect(repository.recordEvent).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -10973,6 +10973,37 @@ export interface MedicalClinicProductAnchorResponse {
   nextStep: string;
 }
 
+export interface MedicalClinicProductCloseoutResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  closeoutStatus: MedicalClinicReadinessStatus;
+  closedLayers: Array<{
+    key: string;
+    label: string;
+    status: MedicalClinicReadinessStatus;
+    evidence: string;
+  }>;
+  productReadiness: {
+    foundationReady: boolean;
+    operationsReady: boolean;
+    encountersReady: boolean;
+    recordsReady: boolean;
+    uiActivationReady: boolean;
+  };
+  summary: {
+    patientCount: number;
+    appointmentCount: number;
+    operationalEventCount: number;
+    blockerCount: number;
+  };
+  remainingGaps: string[];
+  recommendedNextProduct:
+    | 'psychology-clinics-foundation'
+    | 'medical-clinics-ehr-discovery';
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface MedicalClinicProfileWorkspaceResponse {
   tenantSlug: string;
   generatedAt: string;

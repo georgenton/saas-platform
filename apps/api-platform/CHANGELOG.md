@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.15
+
+### Patch Changes
+
+- 6678230: Add Psychology Clinics foundation with product anchor, profile, intake, session scheduling, review-only note draft packets, persistence, API endpoints, web client contracts, and conceptual roadmap updates.
+
 ## 0.107.14
 
 ### Patch Changes

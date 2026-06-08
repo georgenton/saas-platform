@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.18
+
+### Patch Changes
+
+- ec3b493: Add Psychology Clinics EHR readiness workspaces for discovery, signature boundaries, outcomes review, assessment scales, external document handoff contracts and closeout v4.
+
 ## 0.107.17
 
 ### Patch Changes

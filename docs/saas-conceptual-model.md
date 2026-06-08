@@ -1286,6 +1286,38 @@ corrections and accountant review without claiming automated filing.
 Guardrail: this layer explains and prepares. It does not query SRI directly,
 submit declarations, pay obligations, or mutate party records automatically.
 
+### Tax Compliance EC party validation operations
+
+The next layer makes the Tax + Parties hardening loop operational. It still
+avoids full Parties persistence, but it introduces a ledger-style evidence
+surface from tax events so operators can prove why a third party is trusted,
+needs correction, or must go to an accountant.
+
+1. `SRI Taxpayer Evidence Import`
+   - records taxpayer evidence from SRI reports, XMLs, manual summaries or a
+     future API connector as tax events linked to parties
+2. `Party Fiscal Validation Ledger`
+   - reconstructs a party-by-party validation history with evidence status,
+     discrepancies, overrides and audit trail
+3. `Tax Declaration Recalculation From Party Corrections`
+   - compares declaration impact before/after fiscal evidence and correction
+     candidates so IVA, renta, retenciones and anexos can be recalculated
+4. `Accountant Review Execution From Party Risks`
+   - converts party risk questions into the existing accountant review
+     lifecycle while preserving party-specific evidence in the event log
+5. `Parties Persistence Decision Pack`
+   - decides whether the current facade is still acceptable or whether
+     duplicate, supplier, validation and accountant pressure justify discovery
+     for independent Parties persistence
+6. `Tax + Parties Operational Command Center`
+   - aggregates validation ledger, recalculation, accountant execution,
+     persistence decision and hardening closeout into one operator gate
+
+Guardrail: the validation ledger is event-sourced operational evidence, not the
+final Parties persistence model. A dedicated Parties store should only be opened
+after this command center repeatedly shows pressure that cannot be handled by the
+facade.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

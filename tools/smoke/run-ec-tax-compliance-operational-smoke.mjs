@@ -150,6 +150,29 @@ const sriImport = await apiRequest({
 });
 printLine('sri import', `${sriImport.summary.totalVouchers} vouchers`);
 
+const partySriEvidenceImport = await apiRequest({
+  baseUrl,
+  path: taxPath('/party-sri-evidence-import'),
+  token,
+  method: 'POST',
+  body: {
+    period,
+    year,
+    source: 'manual_summary',
+    importedByEmail: 'smoke@saas-platform.dev',
+    rows: [
+      {
+        taxpayerId: '1790012345001',
+        taxpayerName: 'Proveedor smoke tributario',
+        validationStatus: 'ready',
+        sourceReference: `smoke://tax-compliance/${period}/party-sri-evidence`,
+        observedAt: `${period}-17T00:00:00.000Z`,
+      },
+    ],
+  },
+});
+printLine('party sri evidence', partySriEvidenceImport.importStatus);
+
 const [
   purchaseWorkspace,
   supplierReadiness,
@@ -221,6 +244,11 @@ const [
   assistedFiscalCorrectionFlow,
   accountantReviewFromPartyRisks,
   complianceHardeningCloseoutV4,
+  partyFiscalValidationLedger,
+  declarationPartyRecalculationPacket,
+  accountantPartyRiskReviewExecution,
+  partiesPersistenceDecisionPack,
+  partiesOperationalCommandCenter,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -580,6 +608,38 @@ const [
     path: taxPath(`/compliance-hardening-closeout-v4?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/party-fiscal-validation-ledger?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/declaration-party-recalculation-packet?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath('/accountant-party-risk-review-execution'),
+    token,
+    method: 'POST',
+    body: {
+      period,
+      year,
+      requestedByEmail: 'smoke@saas-platform.dev',
+      executeReview: false,
+    },
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/parties-persistence-decision-pack?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/parties-operational-command-center?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus('purchase workspace', purchaseWorkspace.readinessStatus);
@@ -731,6 +791,27 @@ assertStatus(
 assertStatus(
   'compliance hardening closeout v4',
   complianceHardeningCloseoutV4.closeoutStatus,
+);
+assertStatus('party sri evidence import', partySriEvidenceImport.importStatus);
+assertStatus(
+  'party fiscal validation ledger',
+  partyFiscalValidationLedger.ledgerStatus,
+);
+assertStatus(
+  'declaration party recalculation packet',
+  declarationPartyRecalculationPacket.recalculationStatus,
+);
+assertStatus(
+  'accountant party risk review execution',
+  accountantPartyRiskReviewExecution.executionStatus,
+);
+assertStatus(
+  'parties persistence decision pack',
+  partiesPersistenceDecisionPack.decisionStatus,
+);
+assertStatus(
+  'parties operational command center',
+  partiesOperationalCommandCenter.commandStatus,
 );
 assertStatus(
   'accountant collaboration pack',
@@ -934,6 +1015,24 @@ printLine(
 printLine(
   'hardening closeout v4',
   complianceHardeningCloseoutV4.closeoutStatus,
+);
+printLine('party sri evidence import', partySriEvidenceImport.importStatus);
+printLine('party validation ledger', partyFiscalValidationLedger.ledgerStatus);
+printLine(
+  'party recalculation',
+  declarationPartyRecalculationPacket.recalculationStatus,
+);
+printLine(
+  'accountant party review execution',
+  accountantPartyRiskReviewExecution.executionStatus,
+);
+printLine(
+  'parties persistence decision',
+  partiesPersistenceDecisionPack.decisionStatus,
+);
+printLine(
+  'parties command center',
+  partiesOperationalCommandCenter.commandStatus,
 );
 printLine(
   'collaboration questions',

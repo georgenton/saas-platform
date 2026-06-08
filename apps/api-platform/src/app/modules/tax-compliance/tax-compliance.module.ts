@@ -69,6 +69,8 @@ import {
   GetTenantEcuadorTaxOperationalCloseoutUseCase,
   GetTenantEcuadorTaxOperatingDashboardV3UseCase,
   GetTenantEcuadorTaxPartyEvidenceBridgeUseCase,
+  GetTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
+  GetTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
   GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
@@ -90,8 +92,10 @@ import {
   ListTenantEcuadorTaxComplianceEventsUseCase,
   RecordTenantEcuadorTaxComplianceEventUseCase,
   RecordTenantEcuadorTaxFilingHandoffUseCase,
+  RecordTenantEcuadorTaxPartySriEvidenceImportUseCase,
   RecordTenantEcuadorTaxPurchaseExpenseEvidenceUseCase,
   RecordTenantEcuadorTaxSriFiscalEvidenceImportUseCase,
+  RequestTenantEcuadorTaxAccountantPartyRiskReviewExecutionUseCase,
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
   RequestTenantEcuadorTaxAccountantCollaborationPackUseCase,
@@ -114,6 +118,8 @@ import {
   RequestTenantEcuadorTaxComplianceCloseoutV2UseCase,
   RequestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
   RequestTenantEcuadorTaxComplianceProductCloseoutV3UseCase,
+  RequestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase,
+  RequestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase,
   RequestTenantEcuadorTaxProductCloseoutPackUseCase,
   RequestTenantEcuadorTaxPeriodPreparationPacketUseCase,
   RequestTenantEcuadorTaxReviewAssistantPacketUseCase,
@@ -2040,6 +2046,124 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
           getTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
           getTenantEcuadorTaxAccountantReviewFromPartyRisksUseCase,
           requestTenantEcuadorTaxComplianceProductCloseoutV3UseCase,
+        ),
+    },
+    {
+      provide: RecordTenantEcuadorTaxPartySriEvidenceImportUseCase,
+      inject: [
+        GetTenantEcuadorTaxSriTaxpayerValidationReadinessUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxSriTaxpayerValidationReadinessUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RecordTenantEcuadorTaxPartySriEvidenceImportUseCase(
+          getTenantEcuadorTaxSriTaxpayerValidationReadinessUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
+      inject: [
+        GetTenantEcuadorTaxSriTaxpayerValidationReadinessUseCase,
+        ListTenantEcuadorTaxComplianceEventsUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxSriTaxpayerValidationReadinessUseCase,
+        listTenantEcuadorTaxComplianceEventsUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxPartyFiscalValidationLedgerUseCase(
+          getTenantEcuadorTaxSriTaxpayerValidationReadinessUseCase,
+          listTenantEcuadorTaxComplianceEventsUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide:
+        RequestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase,
+      inject: [
+        GetTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
+        GetTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
+        GetTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
+        getTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
+        getTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase(
+          getTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
+          getTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
+          getTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxAccountantPartyRiskReviewExecutionUseCase,
+      inject: [
+        GetTenantEcuadorTaxAccountantReviewFromPartyRisksUseCase,
+        RequestTenantEcuadorTaxAccountantReviewUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxAccountantReviewFromPartyRisksUseCase,
+        requestTenantEcuadorTaxAccountantReviewUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxAccountantPartyRiskReviewExecutionUseCase(
+          getTenantEcuadorTaxAccountantReviewFromPartyRisksUseCase,
+          requestTenantEcuadorTaxAccountantReviewUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase,
+      inject: [
+        RequestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
+        GetTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
+        getTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase(
+          requestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
+          getTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
+      inject: [
+        GetTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
+        RequestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase,
+        RequestTenantEcuadorTaxAccountantPartyRiskReviewExecutionUseCase,
+        RequestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase,
+        RequestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
+        requestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase,
+        requestTenantEcuadorTaxAccountantPartyRiskReviewExecutionUseCase,
+        requestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase,
+        requestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxPartiesOperationalCommandCenterUseCase(
+          getTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
+          requestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase,
+          requestTenantEcuadorTaxAccountantPartyRiskReviewExecutionUseCase,
+          requestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase,
+          requestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
         ),
     },
     {

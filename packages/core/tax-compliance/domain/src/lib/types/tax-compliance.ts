@@ -148,7 +148,13 @@ export type EcuadorTaxComplianceEventType =
   | 'tax_filing_evidence_vault_v2_reviewed'
   | 'tax_exception_center_reviewed'
   | 'tax_annual_rollup_workspace_reviewed'
-  | 'tax_product_closeout_pack_requested';
+  | 'tax_product_closeout_pack_requested'
+  | 'tax_party_sri_evidence_import_recorded'
+  | 'tax_party_fiscal_validation_ledger_reviewed'
+  | 'tax_declaration_party_recalculation_requested'
+  | 'tax_accountant_party_risk_review_requested'
+  | 'tax_parties_persistence_decision_pack_requested'
+  | 'tax_parties_operational_command_center_reviewed';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -1877,6 +1883,174 @@ export interface EcuadorTaxComplianceHardeningCloseoutV4View {
     | 'tax_compliance_hardening'
     | 'parties_persistence'
     | 'accounting_advanced_discovery';
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPartySriEvidenceImportView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  importStatus: EcuadorTaxReadinessStatus;
+  source: 'sri_report' | 'sri_xml' | 'manual_summary' | 'future_api';
+  importedByEmail: string | null;
+  evidenceRows: Array<{
+    partyId: string | null;
+    displayName: string;
+    taxpayerId: string | null;
+    taxpayerName: string | null;
+    validationStatus: EcuadorTaxReadinessStatus;
+    sourceReference: string | null;
+    observedAt: Date | null;
+    matchedReadinessStatus: EcuadorTaxReadinessStatus;
+    discrepancies: string[];
+  }>;
+  summary: {
+    rowCount: number;
+    matchedPartyCount: number;
+    blockedRowCount: number;
+    discrepancyCount: number;
+  };
+  eventId: string;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPartyFiscalValidationLedgerView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  ledgerStatus: EcuadorTaxReadinessStatus;
+  entries: Array<{
+    partyId: string;
+    displayName: string;
+    taxpayerId: string | null;
+    currentReadinessStatus: EcuadorTaxReadinessStatus;
+    latestEvidenceStatus: EcuadorTaxReadinessStatus | null;
+    latestEvidenceSource: string | null;
+    latestEvidenceAt: Date | null;
+    discrepancyCount: number;
+    overrideRequired: boolean;
+    auditTrail: Array<{
+      eventId: string;
+      eventType: EcuadorTaxComplianceEventType;
+      source: string;
+      occurredAt: Date;
+      detail: string;
+    }>;
+  }>;
+  summary: {
+    entryCount: number;
+    evidenceBackedCount: number;
+    discrepancyCount: number;
+    overrideRequiredCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxDeclarationPartyRecalculationPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  recalculationStatus: EcuadorTaxReadinessStatus;
+  recalculationRows: Array<{
+    partyId: string;
+    displayName: string;
+    affectedDeclarations: string[];
+    previousRiskLevel: string;
+    currentValidationStatus: EcuadorTaxReadinessStatus | null;
+    correctionPending: boolean;
+    before: string;
+    after: string;
+    recommendedAction: string;
+  }>;
+  summary: {
+    rowCount: number;
+    declarationCount: number;
+    improvedPartyCount: number;
+    stillBlockedPartyCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantPartyRiskReviewExecutionView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  executionStatus: EcuadorTaxReadinessStatus;
+  review: EcuadorTaxAccountantReviewView | null;
+  suggestedReviewRequest: EcuadorTaxAccountantReviewFromPartyRisksView['suggestedReviewRequest'];
+  partyRiskSummary: EcuadorTaxAccountantReviewFromPartyRisksView['summary'];
+  executionNotes: string[];
+  eventId: string | null;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPartiesPersistenceDecisionPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  decisionStatus:
+    | 'facade_still_ok'
+    | 'parties_persistence_candidate'
+    | 'blocked';
+  decisionDrivers: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidence: string;
+  }>;
+  summary: {
+    driverCount: number;
+    blockingDriverCount: number;
+    persistenceDriverCount: number;
+    validationDiscrepancyCount: number;
+  };
+  recommendedAction: string;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPartiesOperationalCommandCenterView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  commandStatus: EcuadorTaxReadinessStatus;
+  sriEvidenceImport: EcuadorTaxPartySriEvidenceImportView | null;
+  validationLedger: EcuadorTaxPartyFiscalValidationLedgerView;
+  recalculationPacket: EcuadorTaxDeclarationPartyRecalculationPacketView;
+  accountantReviewExecution: EcuadorTaxAccountantPartyRiskReviewExecutionView;
+  persistenceDecision: EcuadorTaxPartiesPersistenceDecisionPackView;
+  hardeningCloseout: EcuadorTaxComplianceHardeningCloseoutV4View;
+  commandTiles: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    metric: string;
+    nextAction: string;
+  }>;
+  summary: {
+    tileCount: number;
+    readyTileCount: number;
+    blockerCount: number;
+    validationDiscrepancyCount: number;
+    accountantQuestionCount: number;
+  };
   blockers: string[];
   nextStep: string;
   guardrails: string[];

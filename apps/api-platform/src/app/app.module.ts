@@ -12,6 +12,7 @@ import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module
 import { GrowthModule } from './modules/growth/growth.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { InvoicingModule } from './modules/invoicing/invoicing.module';
+import { MedicalClinicsModule } from './modules/medical-clinics/medical-clinics.module';
 import { PartiesModule } from './modules/parties/parties.module';
 import { TaxComplianceModule } from './modules/tax-compliance/tax-compliance.module';
 import { TenancyModule } from './modules/tenancy/tenancy.module';
@@ -29,6 +30,7 @@ import { TenancyModule } from './modules/tenancy/tenancy.module';
     GrowthModule,
     IdentityModule,
     InvoicingModule,
+    MedicalClinicsModule,
     PartiesModule,
     TaxComplianceModule,
     TenancyModule,

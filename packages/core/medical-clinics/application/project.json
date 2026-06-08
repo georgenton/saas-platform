@@ -1,0 +1,12 @@
+{
+  "name": "medical-clinics-application",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/medical-clinics/application/src",
+  "projectType": "library",
+  "tags": [
+    "scope:core",
+    "domain:medical-clinics",
+    "type:application",
+    "layer:application"
+  ]
+}

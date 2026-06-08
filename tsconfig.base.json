@@ -66,6 +66,12 @@
       "@saas-platform/invoicing-domain": [
         "packages/core/invoicing/domain/src/index.ts"
       ],
+      "@saas-platform/medical-clinics-application": [
+        "packages/core/medical-clinics/application/src/index.ts"
+      ],
+      "@saas-platform/medical-clinics-domain": [
+        "packages/core/medical-clinics/domain/src/index.ts"
+      ],
       "@saas-platform/parties-application": [
         "packages/core/parties/application/src/index.ts"
       ],

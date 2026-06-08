@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.10
+
+### Patch Changes
+
+- 7e5e146: Add Ecuador tax post-filing operations for external filing results, payment tracking, receipt evidence vaults, post-filing exceptions, certificates, and closeout.
+
 ## 0.107.9
 
 ### Patch Changes

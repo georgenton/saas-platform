@@ -1,11 +1,17 @@
 import { Module } from '@nestjs/common';
 import {
+  CreateTenantMedicalClinicAppointmentUseCase,
   GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
   GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
   GetTenantMedicalClinicProductAnchorUseCase,
   GetTenantMedicalClinicProfileWorkspaceUseCase,
+  MEDICAL_CLINIC_ID_GENERATOR,
+  MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
+  RegisterTenantMedicalClinicPatientIntakeUseCase,
   RequestTenantMedicalClinicBillingTaxBridgeUseCase,
   RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
+  TransitionTenantMedicalClinicAppointmentUseCase,
+  UpsertTenantMedicalClinicProfileWorkspaceUseCase,
 } from '@saas-platform/medical-clinics-application';
 import { PRODUCT_REPOSITORY } from '@saas-platform/catalog-application';
 import {
@@ -18,6 +24,7 @@ import {
   CatalogPersistenceModule,
   CommercialPersistenceModule,
   FeatureFlagsPersistenceModule,
+  MedicalClinicsPersistenceModule,
   TenancyPersistenceModule,
 } from '@saas-platform/infra-prisma';
 import {
@@ -37,16 +44,106 @@ import { MedicalClinicsController } from './medical-clinics.controller';
     CatalogPersistenceModule,
     CommercialPersistenceModule,
     FeatureFlagsPersistenceModule,
+    MedicalClinicsPersistenceModule,
     TenancyPersistenceModule,
   ],
   controllers: [MedicalClinicsController],
   providers: [
     GetTenantMedicalClinicProductAnchorUseCase,
-    GetTenantMedicalClinicProfileWorkspaceUseCase,
-    GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
-    GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
-    RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
-    RequestTenantMedicalClinicBillingTaxBridgeUseCase,
+    {
+      provide: GetTenantMedicalClinicProfileWorkspaceUseCase,
+      inject: [MEDICAL_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new GetTenantMedicalClinicProfileWorkspaceUseCase(operationsRepository),
+    },
+    {
+      provide: UpsertTenantMedicalClinicProfileWorkspaceUseCase,
+      inject: [
+        MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
+        MEDICAL_CLINIC_ID_GENERATOR,
+      ],
+      useFactory: (operationsRepository, idGenerator) =>
+        new UpsertTenantMedicalClinicProfileWorkspaceUseCase(
+          operationsRepository,
+          idGenerator,
+        ),
+    },
+    {
+      provide: GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
+      inject: [MEDICAL_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new GetTenantMedicalClinicPatientIntakeWorkspaceUseCase(
+          operationsRepository,
+        ),
+    },
+    {
+      provide: RegisterTenantMedicalClinicPatientIntakeUseCase,
+      inject: [
+        MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
+        MEDICAL_CLINIC_ID_GENERATOR,
+      ],
+      useFactory: (operationsRepository, idGenerator) =>
+        new RegisterTenantMedicalClinicPatientIntakeUseCase(
+          operationsRepository,
+          idGenerator,
+        ),
+    },
+    {
+      provide: GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
+      inject: [MEDICAL_CLINIC_OPERATIONS_REPOSITORY],
+      useFactory: (operationsRepository) =>
+        new GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase(
+          operationsRepository,
+        ),
+    },
+    {
+      provide: CreateTenantMedicalClinicAppointmentUseCase,
+      inject: [
+        MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
+        MEDICAL_CLINIC_ID_GENERATOR,
+      ],
+      useFactory: (operationsRepository, idGenerator) =>
+        new CreateTenantMedicalClinicAppointmentUseCase(
+          operationsRepository,
+          idGenerator,
+        ),
+    },
+    {
+      provide: TransitionTenantMedicalClinicAppointmentUseCase,
+      inject: [
+        MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
+        MEDICAL_CLINIC_ID_GENERATOR,
+      ],
+      useFactory: (operationsRepository, idGenerator) =>
+        new TransitionTenantMedicalClinicAppointmentUseCase(
+          operationsRepository,
+          idGenerator,
+        ),
+    },
+    {
+      provide: RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
+      inject: [
+        MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
+        MEDICAL_CLINIC_ID_GENERATOR,
+      ],
+      useFactory: (operationsRepository, idGenerator) =>
+        new RequestTenantMedicalClinicGrowthReminderBridgeUseCase(
+          operationsRepository,
+          idGenerator,
+        ),
+    },
+    {
+      provide: RequestTenantMedicalClinicBillingTaxBridgeUseCase,
+      inject: [
+        MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
+        MEDICAL_CLINIC_ID_GENERATOR,
+      ],
+      useFactory: (operationsRepository, idGenerator) =>
+        new RequestTenantMedicalClinicBillingTaxBridgeUseCase(
+          operationsRepository,
+          idGenerator,
+        ),
+    },
     {
       provide: ResolveTenantAccessUseCase,
       inject: [TENANT_REPOSITORY, TENANT_ACCESS_REPOSITORY],

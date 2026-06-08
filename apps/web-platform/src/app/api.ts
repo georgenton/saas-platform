@@ -360,10 +360,16 @@ import {
   RequestEcommerceLaunchPlanActivationReadinessResponse,
   MedicalClinicAppointmentSchedulingWorkspaceResponse,
   MedicalClinicBillingTaxBridgeResponse,
+  MedicalClinicAppointmentRecordResponse,
+  CreateMedicalClinicAppointmentRequest,
   MedicalClinicGrowthReminderBridgeResponse,
+  MedicalClinicPatientRecordResponse,
   MedicalClinicPatientIntakeWorkspaceResponse,
   MedicalClinicProductAnchorResponse,
   MedicalClinicProfileWorkspaceResponse,
+  RegisterMedicalClinicPatientIntakeRequest,
+  TransitionMedicalClinicAppointmentRequest,
+  UpsertMedicalClinicProfileWorkspaceRequest,
   AiApprovalPolicyResponse,
   AiApprovalRequestResponse,
   AiApprovalRequestStatusFilter,
@@ -8517,6 +8523,23 @@ export async function fetchMedicalClinicProfileWorkspace(
   );
 }
 
+export async function upsertMedicalClinicProfileWorkspace(
+  token: string,
+  tenantSlug: string,
+  input: UpsertMedicalClinicProfileWorkspaceRequest,
+): Promise<MedicalClinicProfileWorkspaceResponse> {
+  return request<MedicalClinicProfileWorkspaceResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/profile-workspace`,
+    {
+      method: 'PUT',
+      token,
+      body: JSON.stringify(input),
+    },
+  );
+}
+
 export async function fetchMedicalClinicPatientIntakeWorkspace(
   token: string,
   tenantSlug: string,
@@ -8532,6 +8555,21 @@ export async function fetchMedicalClinicPatientIntakeWorkspace(
   );
 }
 
+export async function registerMedicalClinicPatientIntake(
+  token: string,
+  tenantSlug: string,
+  input: RegisterMedicalClinicPatientIntakeRequest,
+): Promise<MedicalClinicPatientRecordResponse> {
+  return request<MedicalClinicPatientRecordResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(tenantSlug)}/patient-intake`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(input),
+    },
+  );
+}
+
 export async function fetchMedicalClinicAppointmentSchedulingWorkspace(
   token: string,
   tenantSlug: string,
@@ -8543,6 +8581,39 @@ export async function fetchMedicalClinicAppointmentSchedulingWorkspace(
     {
       method: 'GET',
       token,
+    },
+  );
+}
+
+export async function createMedicalClinicAppointment(
+  token: string,
+  tenantSlug: string,
+  input: CreateMedicalClinicAppointmentRequest,
+): Promise<MedicalClinicAppointmentRecordResponse> {
+  return request<MedicalClinicAppointmentRecordResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(tenantSlug)}/appointments`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export async function transitionMedicalClinicAppointment(
+  token: string,
+  tenantSlug: string,
+  appointmentId: string,
+  input: TransitionMedicalClinicAppointmentRequest,
+): Promise<MedicalClinicAppointmentRecordResponse> {
+  return request<MedicalClinicAppointmentRecordResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/appointments/${encodeURIComponent(appointmentId)}/transitions`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(input),
     },
   );
 }

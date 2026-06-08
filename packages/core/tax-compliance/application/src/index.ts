@@ -14,8 +14,10 @@ export * from './lib/use-cases/execute-tenant-ecuador-tax-withholding-draft-brid
 export * from './lib/use-cases/get-tenant-ecuador-tax-calendar-review-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-workbench.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-escalation-service-boundary.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-filing-review-room-v3.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-handoff-room-v2.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-annexes-readiness.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-annexes-readiness-v2.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-annexes-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-annual-rollup-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accounting-bridge-mapping.use-case';
@@ -29,6 +31,7 @@ export * from './lib/use-cases/get-tenant-ecuador-tax-declaration-source-ledger.
 export * from './lib/use-cases/get-tenant-ecuador-tax-command-center.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-ecommerce-evidence-summary.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-evidence-quality-center.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-form-box-evidence-binder.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-form-mapping-catalog.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-exception-center.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-filing-evidence-vault-v2.use-case';
@@ -40,6 +43,7 @@ export * from './lib/use-cases/get-tenant-ecuador-tax-audit-readiness.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-due-monitor.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-obligation-settings.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-obligation-risk-monitor.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-obligation-filing-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-operational-closeout.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-operating-dashboard-v3.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-review-from-party-risks.use-case';
@@ -80,6 +84,7 @@ export * from './lib/use-cases/request-tenant-ecuador-tax-accounting-bridge-prev
 export * from './lib/use-cases/request-tenant-ecuador-tax-assisted-declaration-review-pack-v2.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-ai-filing-assistant-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-artifact-export.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-artifact-export-v2.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-form-draft-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-approval-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-draft-packet.use-case';
@@ -91,6 +96,7 @@ export * from './lib/use-cases/request-tenant-ecuador-tax-period-preparation-pac
 export * from './lib/use-cases/request-tenant-ecuador-tax-period-closeout-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-period-closeout-report.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-compliance-closeout-v2.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-compliance-declaration-closeout-v3.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-compliance-hardening-closeout-v4.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-compliance-product-closeout-v3.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-party-recalculation-packet.use-case';

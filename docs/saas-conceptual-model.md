@@ -1318,6 +1318,37 @@ final Parties persistence model. A dedicated Parties store should only be opened
 after this command center repeatedly shows pressure that cannot be handled by the
 facade.
 
+### Tax Compliance EC declaration filing operations 3.0
+
+The next layer turns the already-built evidence, form contracts, parties
+validation, annexes and accountant handoff surfaces into a declaration-ready
+operating lane. It still stops before SRI login, filing, payment or professional
+certification.
+
+1. `Tax Obligation Filing Workspace`
+   - groups IVA, income tax, withholding and annex obligations per period with
+     source-ledger coverage, form support, party risks and accountant gates
+2. `SRI Form Box Evidence Binder`
+   - explains every suggested form box with deterministic value, source rows,
+     voucher references, SRI/platform differences, party risk and confidence
+3. `Tax Annex Readiness 2.0`
+   - elevates annexes into their own readiness layer with required sources,
+     parties blockers, accountant questions and manual external filing guardrails
+4. `Accountant Filing Review Room 3.0`
+   - gives the accountant one room across obligations, form boxes, annexes,
+     existing handoff state, questions, blockers and evidence references
+5. `Declaration Artifact Export 2.0`
+   - produces operational JSON/checklists/binders and keeps official XML/XLSX
+     manual-only unless explicit SRI technical contracts are modelled
+6. `Tax Compliance Declaration Closeout 3.0`
+   - decides whether the period/form is ready for external filing handoff, needs
+     accountant review, is blocked by evidence, or should open Accounting
+     Advanced discovery
+
+Guardrail: this layer prepares declarations for human action. It does not store
+SRI credentials, bypass recaptcha, submit declarations, pay obligations, generate
+unverified official files, or certify accountant review.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

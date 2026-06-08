@@ -154,7 +154,13 @@ export type EcuadorTaxComplianceEventType =
   | 'tax_declaration_party_recalculation_requested'
   | 'tax_accountant_party_risk_review_requested'
   | 'tax_parties_persistence_decision_pack_requested'
-  | 'tax_parties_operational_command_center_reviewed';
+  | 'tax_parties_operational_command_center_reviewed'
+  | 'tax_obligation_filing_workspace_reviewed'
+  | 'tax_form_box_evidence_binder_reviewed'
+  | 'tax_annexes_readiness_v2_reviewed'
+  | 'tax_accountant_filing_review_room_v3_reviewed'
+  | 'tax_declaration_artifact_export_v2_requested'
+  | 'tax_compliance_declaration_closeout_v3_requested';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -2051,6 +2057,203 @@ export interface EcuadorTaxPartiesOperationalCommandCenterView {
     validationDiscrepancyCount: number;
     accountantQuestionCount: number;
   };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxObligationFilingWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workspaceStatus: EcuadorTaxReadinessStatus;
+  obligations: Array<{
+    key: 'iva' | 'income_tax' | 'withholding' | 'annexes';
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    dueSignal: string;
+    formCoverage: string;
+    sourceRowCount: number;
+    partyRiskCount: number;
+    accountantGate: boolean;
+    nextAction: string;
+  }>;
+  sourceLedger: EcuadorTaxDeclarationSourceLedgerView;
+  formCatalog: EcuadorTaxDeclarationFormCatalogView;
+  partyCommandCenter: EcuadorTaxPartiesOperationalCommandCenterView;
+  summary: {
+    obligationCount: number;
+    readyObligationCount: number;
+    accountantGateCount: number;
+    partyRiskCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxFormBoxEvidenceBinderView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  formKey: EcuadorTaxDeclarationFormKey;
+  binderStatus: EcuadorTaxReadinessStatus;
+  boxes: Array<{
+    boxKey: string;
+    label: string;
+    suggestedValueInCents: number;
+    currency: string;
+    readinessStatus: EcuadorTaxReadinessStatus;
+    evidenceIds: string[];
+    sourceRowCount: number;
+    partyRiskCount: number;
+    sriPlatformDifferenceCount: number;
+    confidence: 'high' | 'medium' | 'low';
+    accountantRequired: boolean;
+    explanation: string;
+  }>;
+  manualOnlyBoxes: EcuadorTaxDeclarationFormDraftPacketView['manualOnlyBoxes'];
+  sourceLedger: EcuadorTaxDeclarationSourceLedgerView;
+  partyCommandCenter: EcuadorTaxPartiesOperationalCommandCenterView;
+  summary: {
+    boxCount: number;
+    readyBoxCount: number;
+    accountantRequiredBoxCount: number;
+    manualOnlyBoxCount: number;
+    evidenceReferenceCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAnnexesReadinessV2View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  annexesWorkspace: EcuadorTaxAnnexesWorkspaceView;
+  partyCommandCenter: EcuadorTaxPartiesOperationalCommandCenterView;
+  annexes: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    requiredSources: string[];
+    sourceRowCount: number;
+    partyBlockerCount: number;
+    accountantQuestionCount: number;
+    nextAction: string;
+  }>;
+  summary: {
+    annexCount: number;
+    readyAnnexCount: number;
+    blockedAnnexCount: number;
+    partyBlockerCount: number;
+    accountantQuestionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantFilingReviewRoomV3View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  roomStatus: EcuadorTaxReadinessStatus;
+  obligationWorkspace: EcuadorTaxObligationFilingWorkspaceView;
+  formBoxBinder: EcuadorTaxFormBoxEvidenceBinderView;
+  annexesReadiness: EcuadorTaxAnnexesReadinessV2View;
+  handoffRoom: EcuadorTaxAccountantHandoffRoomV2View;
+  reviewSections: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    owner: 'operator' | 'accountant' | 'system';
+    evidenceRefs: string[];
+    questionCount: number;
+    nextAction: string;
+  }>;
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    accountantSectionCount: number;
+    questionCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxDeclarationArtifactExportV2View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  formKey: EcuadorTaxDeclarationFormKey;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  baseExport: EcuadorTaxDeclarationArtifactExportView;
+  formBoxBinder: EcuadorTaxFormBoxEvidenceBinderView;
+  annexesReadiness: EcuadorTaxAnnexesReadinessV2View;
+  accountantReviewRoom: EcuadorTaxAccountantFilingReviewRoomV3View;
+  artifacts: Array<{
+    key: string;
+    label: string;
+    format: 'json' | 'csv' | 'xlsx' | 'xml' | 'manual_checklist';
+    supportStatus: 'available' | 'manual_only' | 'blocked';
+    payload: Record<string, unknown>;
+    blockers: string[];
+  }>;
+  summary: {
+    artifactCount: number;
+    availableArtifactCount: number;
+    manualOnlyArtifactCount: number;
+    blockedArtifactCount: number;
+  };
+  blockedCapabilities: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxComplianceDeclarationCloseoutV3View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus:
+    | 'ready_for_external_filing'
+    | 'accountant_review_required'
+    | 'blocked'
+    | 'accounting_advanced_candidate';
+  obligationWorkspace: EcuadorTaxObligationFilingWorkspaceView;
+  formBoxBinder: EcuadorTaxFormBoxEvidenceBinderView;
+  annexesReadiness: EcuadorTaxAnnexesReadinessV2View;
+  accountantReviewRoom: EcuadorTaxAccountantFilingReviewRoomV3View;
+  artifactExport: EcuadorTaxDeclarationArtifactExportV2View;
+  closeoutItems: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidence: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    blockerCount: number;
+    accountantQuestionCount: number;
+    availableArtifactCount: number;
+  };
+  recommendedNextStep:
+    | 'external_filing_handoff'
+    | 'accountant_review'
+    | 'tax_evidence_cleanup'
+    | 'accounting_advanced_discovery';
   blockers: string[];
   nextStep: string;
   guardrails: string[];

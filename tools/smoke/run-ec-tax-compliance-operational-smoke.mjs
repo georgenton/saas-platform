@@ -249,6 +249,12 @@ const [
   accountantPartyRiskReviewExecution,
   partiesPersistenceDecisionPack,
   partiesOperationalCommandCenter,
+  obligationFilingWorkspace,
+  formBoxEvidenceBinder,
+  annexesReadinessV2,
+  accountantFilingReviewRoomV3,
+  declarationArtifactExportV2,
+  complianceDeclarationCloseoutV3,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -640,6 +646,42 @@ const [
     path: taxPath(`/parties-operational-command-center?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/obligation-filing-workspace?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/form-box-evidence-binder?${periodQuery()}&formKey=iva`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/annexes-readiness-v2?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(
+      `/accountant-filing-review-room-v3?${periodQuery()}&formKey=iva`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(
+      `/declaration-artifact-export-v2?${periodQuery()}&formKey=iva`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(
+      `/compliance-declaration-closeout-v3?${periodQuery()}&formKey=iva`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus('purchase workspace', purchaseWorkspace.readinessStatus);
@@ -812,6 +854,24 @@ assertStatus(
 assertStatus(
   'parties operational command center',
   partiesOperationalCommandCenter.commandStatus,
+);
+assertStatus(
+  'obligation filing workspace',
+  obligationFilingWorkspace.workspaceStatus,
+);
+assertStatus('form box evidence binder', formBoxEvidenceBinder.binderStatus);
+assertStatus('annexes readiness v2', annexesReadinessV2.readinessStatus);
+assertStatus(
+  'accountant filing review room v3',
+  accountantFilingReviewRoomV3.roomStatus,
+);
+assertStatus(
+  'declaration artifact export v2',
+  declarationArtifactExportV2.readinessStatus,
+);
+assertStatus(
+  'compliance declaration closeout v3',
+  complianceDeclarationCloseoutV3.closeoutStatus,
 );
 assertStatus(
   'accountant collaboration pack',
@@ -1033,6 +1093,30 @@ printLine(
 printLine(
   'parties command center',
   partiesOperationalCommandCenter.commandStatus,
+);
+printLine(
+  'obligation filing',
+  `${obligationFilingWorkspace.workspaceStatus} · ${obligationFilingWorkspace.summary.obligationCount} obligations`,
+);
+printLine(
+  'form box binder',
+  `${formBoxEvidenceBinder.binderStatus} · ${formBoxEvidenceBinder.summary.boxCount} boxes`,
+);
+printLine(
+  'annexes v2',
+  `${annexesReadinessV2.readinessStatus} · ${annexesReadinessV2.summary.annexCount} annexes`,
+);
+printLine(
+  'accountant filing room v3',
+  `${accountantFilingReviewRoomV3.roomStatus} · ${accountantFilingReviewRoomV3.summary.questionCount} questions`,
+);
+printLine(
+  'artifact export v2',
+  `${declarationArtifactExportV2.readinessStatus} · ${declarationArtifactExportV2.summary.artifactCount} artifacts`,
+);
+printLine(
+  'declaration closeout v3',
+  complianceDeclarationCloseoutV3.closeoutStatus,
 );
 printLine(
   'collaboration questions',

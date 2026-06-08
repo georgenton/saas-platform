@@ -62,6 +62,10 @@ model Tenant {
   medicalClinicPatients MedicalClinicPatient[]
   medicalClinicAppointments MedicalClinicAppointment[]
   medicalClinicOperationalEvents MedicalClinicOperationalEvent[]
+  psychologyClinicProfile PsychologyClinicProfile?
+  psychologyClinicPatients PsychologyClinicPatient[]
+  psychologyClinicSessions PsychologyClinicSession[]
+  psychologyClinicOperationalEvents PsychologyClinicOperationalEvent[]
   taxComplianceEvents TaxComplianceEvent[]
   taxComplianceAccountantReviews TaxComplianceAccountantReview[]
   taxCompliancePurchaseExpenseEvidence TaxCompliancePurchaseExpenseEvidence[]
@@ -890,6 +894,90 @@ model MedicalClinicOperationalEvent {
   @@index([tenantSlug, occurredAt])
   @@index([tenantId, eventType, occurredAt])
   @@index([tenantId, appointmentId, occurredAt])
+}
+
+model PsychologyClinicProfile {
+  id                 String   @id
+  tenantId           String   @unique
+  tenantSlug         String
+  readinessStatus    String
+  clinicProfileJson  String   @db.Text
+  therapistsJson     String   @db.Text
+  serviceCatalogJson String   @db.Text
+  blockersJson       String   @db.Text
+  guardrailsJson     String   @db.Text
+  tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([tenantSlug])
+}
+
+model PsychologyClinicPatient {
+  id                      String   @id
+  tenantId                String
+  tenantSlug              String
+  patientDisplayName      String
+  identificationStatus    String
+  contactStatus           String
+  therapyConsentStatus    String
+  messagingOptInStatus    String
+  initialRiskReviewStatus String
+  presentingConcern       String
+  contactJson             String   @db.Text
+  emergencyContactJson    String   @db.Text
+  blockersJson            String   @db.Text
+  tenant                  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions                PsychologyClinicSession[]
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([tenantSlug, createdAt])
+  @@index([tenantId, therapyConsentStatus, createdAt], map: "PsychologyClinicPatient_consent_idx")
+}
+
+model PsychologyClinicSession {
+  id                String   @id
+  tenantId          String
+  tenantSlug        String
+  patientId         String
+  serviceName       String
+  therapistId       String
+  therapistName     String
+  modality          String
+  startsAt          DateTime
+  status            String
+  reminderStatus    String
+  billingStatus     String
+  blockersJson      String   @db.Text
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient           PsychologyClinicPatient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  operationalEvents PsychologyClinicOperationalEvent[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([tenantSlug, startsAt])
+  @@index([tenantId, status, startsAt])
+  @@index([tenantId, patientId])
+}
+
+model PsychologyClinicOperationalEvent {
+  id          String   @id
+  tenantId    String
+  tenantSlug  String
+  sessionId   String?
+  eventType   String
+  source      String
+  status      String
+  payloadJson String   @db.Text
+  occurredAt  DateTime
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session     PsychologyClinicSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  @@index([tenantSlug, occurredAt])
+  @@index([tenantId, eventType, occurredAt])
+  @@index([tenantId, sessionId, occurredAt])
 }
 
 model TaxComplianceEvent {

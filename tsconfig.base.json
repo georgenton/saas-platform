@@ -72,6 +72,12 @@
       "@saas-platform/medical-clinics-domain": [
         "packages/core/medical-clinics/domain/src/index.ts"
       ],
+      "@saas-platform/psychology-clinics-application": [
+        "packages/core/psychology-clinics/application/src/index.ts"
+      ],
+      "@saas-platform/psychology-clinics-domain": [
+        "packages/core/psychology-clinics/domain/src/index.ts"
+      ],
       "@saas-platform/parties-application": [
         "packages/core/parties/application/src/index.ts"
       ],

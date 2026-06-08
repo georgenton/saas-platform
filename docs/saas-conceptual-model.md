@@ -549,7 +549,27 @@ official prescriptions and replacement of professional medical judgment.
 
 ### Current repository status
 
-Not implemented yet.
+Foundation implemented in the repository.
+
+The current slice introduces `Psychology Clinics` as a Stage 8 vertical service
+product with a product anchor, profile workspace, patient intake workspace,
+session scheduling workspace, review-only session note draft packet, foundation
+closeout, durable Prisma persistence, Nest API endpoints, and typed web client
+contracts.
+
+Boundaries: Psychology Clinics does not replace therapist judgment, does not
+auto-diagnose, does not automatically classify patient risk, and does not create
+a signed legal/EHR record. Session notes are draft packets that require therapist
+review and cannot be signed automatically.
+
+Recommended next slices:
+
+1. `psychology-product-activation-ui`: expose product readiness, profile,
+   intake, sessions, note draft packet, and closeout in the web console.
+2. `psychology-treatment-plans`: add therapist-reviewed goals, care plan tasks,
+   and follow-up tracking without automated diagnosis.
+3. `psychology-growth-billing-bridges`: connect reviewed reminders to Growth and
+   invoiceable session handoff to Invoicing/Tax Compliance.
 
 ## Product: Ecommerce
 

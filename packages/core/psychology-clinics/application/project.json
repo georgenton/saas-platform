@@ -1,0 +1,12 @@
+{
+  "name": "psychology-clinics-application",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/core/psychology-clinics/application/src",
+  "projectType": "library",
+  "tags": [
+    "scope:core",
+    "domain:psychology-clinics",
+    "type:application",
+    "layer:application"
+  ]
+}

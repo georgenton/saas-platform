@@ -380,6 +380,18 @@ import {
   MedicalClinicProfileWorkspaceResponse,
   MedicalClinicRecordsCloseoutResponse,
   MedicalClinicTreatmentFollowUpReadinessResponse,
+  CreatePsychologyClinicSessionRequest,
+  PsychologyClinicFoundationCloseoutResponse,
+  PsychologyClinicPatientIntakeWorkspaceResponse,
+  PsychologyClinicPatientRecordResponse,
+  PsychologyClinicProductAnchorResponse,
+  PsychologyClinicProfileWorkspaceResponse,
+  PsychologyClinicSessionNoteDraftPacketResponse,
+  PsychologyClinicSessionRecordResponse,
+  PsychologyClinicSessionSchedulingWorkspaceResponse,
+  RegisterPsychologyClinicPatientIntakeRequest,
+  TransitionPsychologyClinicSessionRequest,
+  UpsertPsychologyClinicProfileWorkspaceRequest,
   RegisterMedicalClinicPatientIntakeRequest,
   TransitionMedicalClinicAppointmentRequest,
   UpsertMedicalClinicProfileWorkspaceRequest,
@@ -8868,6 +8880,164 @@ export async function requestMedicalClinicRecordsCloseout(
     `/medical-clinics/tenants/${encodeURIComponent(
       tenantSlug,
     )}/patients/${encodeURIComponent(patientId)}/records-closeout`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicProductAnchor(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicProductAnchorResponse> {
+  return request<PsychologyClinicProductAnchorResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-anchor`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicProfileWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicProfileWorkspaceResponse> {
+  return request<PsychologyClinicProfileWorkspaceResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/profile-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function upsertPsychologyClinicProfileWorkspace(
+  token: string,
+  tenantSlug: string,
+  input: UpsertPsychologyClinicProfileWorkspaceRequest,
+): Promise<PsychologyClinicProfileWorkspaceResponse> {
+  return request<PsychologyClinicProfileWorkspaceResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/profile-workspace`,
+    {
+      method: 'PUT',
+      token,
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export async function fetchPsychologyClinicPatientIntakeWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicPatientIntakeWorkspaceResponse> {
+  return request<PsychologyClinicPatientIntakeWorkspaceResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patient-intake-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function registerPsychologyClinicPatientIntake(
+  token: string,
+  tenantSlug: string,
+  input: RegisterPsychologyClinicPatientIntakeRequest,
+): Promise<PsychologyClinicPatientRecordResponse> {
+  return request<PsychologyClinicPatientRecordResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patient-intake`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export async function fetchPsychologyClinicSessionSchedulingWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicSessionSchedulingWorkspaceResponse> {
+  return request<PsychologyClinicSessionSchedulingWorkspaceResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/session-scheduling-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function createPsychologyClinicSession(
+  token: string,
+  tenantSlug: string,
+  input: CreatePsychologyClinicSessionRequest,
+): Promise<PsychologyClinicSessionRecordResponse> {
+  return request<PsychologyClinicSessionRecordResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(tenantSlug)}/sessions`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export async function transitionPsychologyClinicSession(
+  token: string,
+  tenantSlug: string,
+  sessionId: string,
+  input: TransitionPsychologyClinicSessionRequest,
+): Promise<PsychologyClinicSessionRecordResponse> {
+  return request<PsychologyClinicSessionRecordResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/sessions/${encodeURIComponent(sessionId)}/transitions`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export async function requestPsychologyClinicSessionNoteDraftPacket(
+  token: string,
+  tenantSlug: string,
+  sessionId: string,
+): Promise<PsychologyClinicSessionNoteDraftPacketResponse> {
+  return request<PsychologyClinicSessionNoteDraftPacketResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/sessions/${encodeURIComponent(sessionId)}/session-note-draft-packet`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicFoundationCloseout(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicFoundationCloseoutResponse> {
+  return request<PsychologyClinicFoundationCloseoutResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/foundation-closeout`,
     {
       method: 'GET',
       token,

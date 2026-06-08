@@ -1486,6 +1486,30 @@ Use the common platform, growth, conversations, and AI capabilities for vertical
 1. Medical Clinics
 2. Psychology Clinics
 
+### Medical Clinics foundation
+
+`Medical Clinics` is the first Stage 8 vertical service product. It should reuse
+the common platform, tenant access, catalog, Growth, Parties, Invoicing and Tax
+Compliance EC boundaries instead of creating separate vertical foundations.
+
+The initial foundation is intentionally operational:
+
+1. product anchor, catalog entry, modules, permissions and entitlement
+2. clinic profile workspace for legal/trade identity, care locations,
+   professionals and service catalog
+3. patient intake workspace for identification, contact, consent and triage
+   reason without storing formal medical history
+4. appointment scheduling workspace for availability, reservations, status,
+   reminders and billing readiness
+5. Growth reminder bridge for WhatsApp confirmation and follow-up handoff
+6. Billing and Tax bridge for invoice draft readiness, party fiscal checks and
+   Tax Compliance EC evidence handoff
+
+Boundary: Medical Clinics does not manage official clinical history, diagnose,
+replace medical judgment, certify health permissions, emit electronic invoices,
+or declare taxes. It coordinates operational evidence and handoff packets across
+existing products.
+
 ## Practical delivery rules
 
 1. New cross-product logic should first be evaluated as `Shared Foundation`, `Growth`, or `AI Platform` before being placed inside a product.

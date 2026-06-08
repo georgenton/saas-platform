@@ -358,6 +358,12 @@ import {
   EcommerceStoreSetupWorkspaceResponse,
   EcommerceLaunchWorkspaceResponse,
   RequestEcommerceLaunchPlanActivationReadinessResponse,
+  MedicalClinicAppointmentSchedulingWorkspaceResponse,
+  MedicalClinicBillingTaxBridgeResponse,
+  MedicalClinicGrowthReminderBridgeResponse,
+  MedicalClinicPatientIntakeWorkspaceResponse,
+  MedicalClinicProductAnchorResponse,
+  MedicalClinicProfileWorkspaceResponse,
   AiApprovalPolicyResponse,
   AiApprovalRequestResponse,
   AiApprovalRequestStatusFilter,
@@ -8479,6 +8485,94 @@ export async function createInvoiceItem(
       method: 'POST',
       token,
       body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function fetchMedicalClinicProductAnchor(
+  token: string,
+  tenantSlug: string,
+): Promise<MedicalClinicProductAnchorResponse> {
+  return request<MedicalClinicProductAnchorResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(tenantSlug)}/product-anchor`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchMedicalClinicProfileWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<MedicalClinicProfileWorkspaceResponse> {
+  return request<MedicalClinicProfileWorkspaceResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/profile-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchMedicalClinicPatientIntakeWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<MedicalClinicPatientIntakeWorkspaceResponse> {
+  return request<MedicalClinicPatientIntakeWorkspaceResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patient-intake-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchMedicalClinicAppointmentSchedulingWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<MedicalClinicAppointmentSchedulingWorkspaceResponse> {
+  return request<MedicalClinicAppointmentSchedulingWorkspaceResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/appointment-scheduling-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestMedicalClinicGrowthReminderBridge(
+  token: string,
+  tenantSlug: string,
+): Promise<MedicalClinicGrowthReminderBridgeResponse> {
+  return request<MedicalClinicGrowthReminderBridgeResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/growth-reminder-bridge`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function requestMedicalClinicBillingTaxBridge(
+  token: string,
+  tenantSlug: string,
+): Promise<MedicalClinicBillingTaxBridgeResponse> {
+  return request<MedicalClinicBillingTaxBridgeResponse>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/billing-tax-bridge`,
+    {
+      method: 'GET',
+      token,
     },
   );
 }

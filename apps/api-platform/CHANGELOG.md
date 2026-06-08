@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.20
+
+### Patch Changes
+
+- d9b17cd: Add Tax Compliance EC annual and audit readiness workspaces for annual fiscal year review, income-tax reconciliation, audit binders, external accountant annual review, Accounting Advanced discovery and annual closeout v5.
+
 ## 0.107.19
 
 ### Patch Changes

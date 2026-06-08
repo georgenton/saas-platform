@@ -2,8 +2,12 @@ import {
   GetTenantPsychologyClinicFoundationCloseoutUseCase,
   GetTenantPsychologyClinicAssessmentScaleRegistryUseCase,
   GetTenantPsychologyClinicClinicalEvidenceRegistryUseCase,
+  GetTenantPsychologyClinicBoundaryComplianceCloseoutUseCase,
+  GetTenantPsychologyClinicClinicalAdminHardeningWorkspaceUseCase,
   GetTenantPsychologyClinicCloseoutV4UseCase,
+  GetTenantPsychologyClinicCloseoutV5UseCase,
   GetTenantPsychologyClinicEhrDiscoveryWorkspaceUseCase,
+  GetTenantPsychologyClinicEhrIntegrationEvaluationUseCase,
   GetTenantPsychologyClinicExternalDocumentHandoffContractsUseCase,
   GetTenantPsychologyClinicFormalRecordSignatureReadinessUseCase,
   GetTenantPsychologyClinicOperationsCloseoutUseCase,
@@ -19,6 +23,8 @@ import {
   GetTenantPsychologyClinicSessionSchedulingWorkspaceUseCase,
   GetTenantPsychologyClinicTreatmentFollowUpReadinessUseCase,
   GetTenantPsychologyClinicTreatmentPlanWorkspaceUseCase,
+  GetTenantPsychologyClinicProductReadinessReportUseCase,
+  GetTenantPsychologyClinicTherapistReviewWorkQueueUseCase,
   RegisterTenantPsychologyClinicPatientIntakeUseCase,
   RequestTenantPsychologyClinicBillingTaxBridgeUseCase,
   RequestTenantPsychologyClinicGrowthReminderBridgeUseCase,
@@ -479,6 +485,92 @@ describe('Psychology Clinics foundation use cases', () => {
     expect(closeout.recommendedNextProduct).toBe(
       'medical-clinics-ehr-integration',
     );
+  });
+
+  it('builds integration evaluation, admin hardening, review queue, readiness report and closeout v5 packets', async () => {
+    const repository = createInMemoryPsychologyClinicRepository();
+    const idGenerator = {
+      generate: jest.fn(
+        () => `psychology_id_${idGenerator.generate.mock.calls.length}`,
+      ),
+    };
+    const patient =
+      await new RegisterTenantPsychologyClinicPatientIntakeUseCase(
+        repository,
+        idGenerator,
+      ).execute({
+        tenantSlug: 'psychology-demo',
+        patientDisplayName: 'Paciente Closeout',
+        identificationStatus: 'ready',
+        contactStatus: 'ready',
+        therapyConsentStatus: 'ready',
+        messagingOptInStatus: 'ready',
+        initialRiskReviewStatus: 'ready',
+        presentingConcern: 'Cierre de producto',
+      });
+    const session = await new CreateTenantPsychologyClinicSessionUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({
+      tenantSlug: 'psychology-demo',
+      patientId: patient.id,
+      serviceName: 'Terapia individual',
+      therapistId: 'therapist_001',
+      therapistName: 'Ps. Ana Morales',
+      startsAt: fixedNow,
+    });
+    await new TransitionTenantPsychologyClinicSessionUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({
+      tenantSlug: 'psychology-demo',
+      sessionId: session.id,
+      status: 'completed',
+    });
+    await new RequestTenantPsychologyClinicSessionNoteDraftPacketUseCase(
+      repository,
+      idGenerator,
+      () => fixedNow,
+    ).execute({ tenantSlug: 'psychology-demo', sessionId: session.id });
+
+    const evaluation =
+      await new GetTenantPsychologyClinicEhrIntegrationEvaluationUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo' });
+    const admin =
+      await new GetTenantPsychologyClinicClinicalAdminHardeningWorkspaceUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo' });
+    const queue =
+      await new GetTenantPsychologyClinicTherapistReviewWorkQueueUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo' });
+    const report =
+      await new GetTenantPsychologyClinicProductReadinessReportUseCase(
+        repository,
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo' });
+    const boundary =
+      await new GetTenantPsychologyClinicBoundaryComplianceCloseoutUseCase(
+        () => fixedNow,
+      ).execute({ tenantSlug: 'psychology-demo' });
+    const closeout = await new GetTenantPsychologyClinicCloseoutV5UseCase(
+      repository,
+      () => fixedNow,
+    ).execute({ tenantSlug: 'psychology-demo' });
+
+    expect(evaluation.decision.integrationBuiltNow).toBe(false);
+    expect(admin.summary.controlCount).toBe(4);
+    expect(queue.summary.itemCount).toBeGreaterThan(0);
+    expect(report.decision.openExternalIntegrationNow).toBe(false);
+    expect(boundary.policy.autoDiagnosisAllowed).toBe(false);
+    expect(closeout.decision.status).toBe('mvp_complete');
+    expect(closeout.decision.recommendedNextProduct).toBe('tax-compliance-ec');
   });
 });
 

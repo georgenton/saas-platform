@@ -382,10 +382,14 @@ import {
   MedicalClinicTreatmentFollowUpReadinessResponse,
   CreatePsychologyClinicSessionRequest,
   PsychologyClinicAssessmentScaleRegistryResponse,
+  PsychologyClinicBoundaryComplianceCloseoutResponse,
   PsychologyClinicBillingTaxBridgeResponse,
+  PsychologyClinicClinicalAdminHardeningWorkspaceResponse,
   PsychologyClinicClinicalEvidenceRegistryResponse,
   PsychologyClinicCloseoutV4Response,
+  PsychologyClinicCloseoutV5Response,
   PsychologyClinicEhrDiscoveryWorkspaceResponse,
+  PsychologyClinicEhrIntegrationEvaluationResponse,
   PsychologyClinicExternalDocumentHandoffContractsResponse,
   PsychologyClinicFoundationCloseoutResponse,
   PsychologyClinicFormalRecordSignatureReadinessResponse,
@@ -397,6 +401,7 @@ import {
   PsychologyClinicPatientTimelineWorkspaceResponse,
   PsychologyClinicPrivacyConsentControlCenterResponse,
   PsychologyClinicProductAnchorResponse,
+  PsychologyClinicProductReadinessReportResponse,
   PsychologyClinicProfileWorkspaceResponse,
   PsychologyClinicRecordsCloseoutV3Response,
   PsychologyClinicRecordsHardeningWorkspaceResponse,
@@ -407,6 +412,7 @@ import {
   PsychologyClinicSessionSchedulingWorkspaceResponse,
   PsychologyClinicTreatmentFollowUpReadinessResponse,
   PsychologyClinicTreatmentPlanWorkspaceResponse,
+  PsychologyClinicTherapistReviewWorkQueueResponse,
   RegisterPsychologyClinicPatientIntakeRequest,
   TransitionPsychologyClinicSessionRequest,
   UpsertPsychologyClinicProfileWorkspaceRequest,
@@ -9335,6 +9341,96 @@ export async function fetchPsychologyClinicCloseoutV4(
     `/psychology-clinics/tenants/${encodeURIComponent(
       tenantSlug,
     )}/closeout-v4`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicEhrIntegrationEvaluation(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicEhrIntegrationEvaluationResponse> {
+  return request<PsychologyClinicEhrIntegrationEvaluationResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ehr-integration-evaluation`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicClinicalAdminHardeningWorkspace(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicClinicalAdminHardeningWorkspaceResponse> {
+  return request<PsychologyClinicClinicalAdminHardeningWorkspaceResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/clinical-admin-hardening-workspace`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicTherapistReviewWorkQueue(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicTherapistReviewWorkQueueResponse> {
+  return request<PsychologyClinicTherapistReviewWorkQueueResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/therapist-review-work-queue`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicProductReadinessReport(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicProductReadinessReportResponse> {
+  return request<PsychologyClinicProductReadinessReportResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/product-readiness-report`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicBoundaryComplianceCloseout(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicBoundaryComplianceCloseoutResponse> {
+  return request<PsychologyClinicBoundaryComplianceCloseoutResponse>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/boundary-compliance-closeout`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicCloseoutV5(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicCloseoutV5Response> {
+  return request<PsychologyClinicCloseoutV5Response>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/closeout-v5`,
     {
       method: 'GET',
       token,

@@ -12241,6 +12241,147 @@ export interface PsychologyClinicCloseoutV4Response {
   guardrails: string[];
 }
 
+export interface PsychologyClinicEhrIntegrationEvaluationResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  evaluationStatus: PsychologyClinicReadinessStatus;
+  options: Array<{
+    key: 'external_ehr' | 'document_management' | 'clinical_archive';
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    rationale: string;
+    nextAction: string;
+  }>;
+  decision: {
+    recommendedOption:
+      | 'pause_after_mvp'
+      | 'external_ehr_discovery'
+      | 'document_management_discovery';
+    integrationBuiltNow: false;
+    requiresLegalReview: true;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface PsychologyClinicClinicalAdminHardeningWorkspaceResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  workspaceStatus: PsychologyClinicReadinessStatus;
+  adminControls: Array<{
+    key: string;
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    owner: 'clinic_admin' | 'therapist' | 'platform_admin';
+    evidence: string;
+  }>;
+  summary: {
+    controlCount: number;
+    readyControlCount: number;
+    needsReviewControlCount: number;
+    blockedControlCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface PsychologyClinicTherapistReviewWorkQueueResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  queueStatus: PsychologyClinicReadinessStatus;
+  reviewItems: Array<{
+    id: string;
+    label: string;
+    type:
+      | 'session_note'
+      | 'outcome_summary'
+      | 'consent'
+      | 'assessment_scale'
+      | 'external_handoff';
+    status: PsychologyClinicReadinessStatus;
+    owner: 'therapist';
+    evidence: string;
+  }>;
+  summary: {
+    itemCount: number;
+    needsReviewCount: number;
+    blockedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface PsychologyClinicProductReadinessReportResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  reportStatus: PsychologyClinicReadinessStatus;
+  sections: Array<{
+    key: string;
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    evidence: string;
+  }>;
+  decision: {
+    productCanPauseAsMvp: boolean;
+    openExternalIntegrationNow: boolean;
+    recommendedNextProduct: 'tax-compliance-ec' | 'accounting' | 'medical-clinics';
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface PsychologyClinicBoundaryComplianceCloseoutResponse {
+  tenantSlug: string;
+  generatedAt: string;
+  closeoutStatus: PsychologyClinicReadinessStatus;
+  boundaries: Array<{
+    key: string;
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    enforcement: string;
+  }>;
+  policy: {
+    autoDiagnosisAllowed: false;
+    autoSignatureAllowed: false;
+    legalEhrOwnedHere: false;
+    scaleInterpretationAutomated: false;
+    replacesTherapistJudgment: false;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface PsychologyClinicCloseoutV5Response {
+  tenantSlug: string;
+  generatedAt: string;
+  closeoutStatus: PsychologyClinicReadinessStatus;
+  checklist: Array<{
+    key: string;
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    evidence: string;
+  }>;
+  decision: {
+    status: 'mvp_complete' | 'needs_hardening' | 'blocked';
+    recommendedNextProduct: 'tax-compliance-ec' | 'accounting';
+    externalEhrIntegrationDeferred: true;
+  };
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface UpsertPsychologyClinicProfileWorkspaceRequest {
   snapshot: Partial<
     Omit<PsychologyClinicProfileWorkspaceResponse, 'tenantSlug' | 'generatedAt'>

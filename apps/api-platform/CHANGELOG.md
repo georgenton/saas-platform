@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.16
+
+### Patch Changes
+
+- 68d6bc2: Add Psychology Clinics operations workspaces with product activation UI, treatment planning, follow-up readiness, Growth reminder and Billing/Tax bridges, patient timeline, and operations closeout packets.
+
 ## 0.107.15
 
 ### Patch Changes

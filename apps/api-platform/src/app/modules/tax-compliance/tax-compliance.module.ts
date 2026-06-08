@@ -32,9 +32,11 @@ import {
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
   GetTenantEcuadorTaxAccountantEscalationServiceBoundaryUseCase,
+  GetTenantEcuadorTaxAccountantFilingReviewRoomV3UseCase,
   GetTenantEcuadorTaxAccountantHandoffRoomV2UseCase,
   GetTenantEcuadorTaxAccountantReviewFromPartyRisksUseCase,
   GetTenantEcuadorTaxAnnexesReadinessUseCase,
+  GetTenantEcuadorTaxAnnexesReadinessV2UseCase,
   GetTenantEcuadorTaxAnnexesWorkspaceUseCase,
   GetTenantEcuadorTaxAnnualRollupWorkspaceUseCase,
   GetTenantEcuadorTaxAccountantWorkbenchUseCase,
@@ -56,6 +58,7 @@ import {
   GetTenantEcuadorTaxEvidenceQualityCenterUseCase,
   GetTenantEcuadorTaxFilingHandoffUseCase,
   GetTenantEcuadorTaxFilingEvidenceVaultV2UseCase,
+  GetTenantEcuadorTaxFormBoxEvidenceBinderUseCase,
   GetTenantEcuadorTaxFormMappingCatalogUseCase,
   GetTenantEcuadorTaxExceptionCenterUseCase,
   GetTenantEcuadorTaxIncomeTaxEvidenceWorkspaceUseCase,
@@ -64,6 +67,7 @@ import {
   GetTenantEcuadorTaxObligationMatrixUseCase,
   GetTenantEcuadorTaxObligationMatrixV2WorkspaceUseCase,
   GetTenantEcuadorTaxObligationCalendarUseCase,
+  GetTenantEcuadorTaxObligationFilingWorkspaceUseCase,
   GetTenantEcuadorTaxObligationSettingsUseCase,
   GetTenantEcuadorTaxObligationRiskMonitorUseCase,
   GetTenantEcuadorTaxOperationalCloseoutUseCase,
@@ -104,6 +108,7 @@ import {
   RequestTenantEcuadorTaxAssistedDeclarationReviewPackV2UseCase,
   RequestTenantEcuadorTaxAiFilingAssistantPacketUseCase,
   RequestTenantEcuadorTaxDeclarationArtifactExportUseCase,
+  RequestTenantEcuadorTaxDeclarationArtifactExportV2UseCase,
   RequestTenantEcuadorTaxGrowthReminderPacketUseCase,
   RequestTenantEcuadorTaxDeclarationApprovalPacketUseCase,
   RequestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
@@ -116,6 +121,7 @@ import {
   RequestTenantEcuadorTaxPeriodCloseoutReportUseCase,
   RequestTenantEcuadorTaxPeriodCloseoutCertificationUseCase,
   RequestTenantEcuadorTaxComplianceCloseoutV2UseCase,
+  RequestTenantEcuadorTaxComplianceDeclarationCloseoutV3UseCase,
   RequestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
   RequestTenantEcuadorTaxComplianceProductCloseoutV3UseCase,
   RequestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase,
@@ -2163,6 +2169,129 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
           requestTenantEcuadorTaxAccountantPartyRiskReviewExecutionUseCase,
           requestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase,
           requestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxObligationFilingWorkspaceUseCase,
+      inject: [
+        GetTenantEcuadorTaxDeclarationSourceLedgerUseCase,
+        GetTenantEcuadorTaxDeclarationFormCatalogUseCase,
+        GetTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxDeclarationSourceLedgerUseCase,
+        getTenantEcuadorTaxDeclarationFormCatalogUseCase,
+        getTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxObligationFilingWorkspaceUseCase(
+          getTenantEcuadorTaxDeclarationSourceLedgerUseCase,
+          getTenantEcuadorTaxDeclarationFormCatalogUseCase,
+          getTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxFormBoxEvidenceBinderUseCase,
+      inject: [
+        RequestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+        GetTenantEcuadorTaxDeclarationSourceLedgerUseCase,
+        GetTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+        getTenantEcuadorTaxDeclarationSourceLedgerUseCase,
+        getTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxFormBoxEvidenceBinderUseCase(
+          requestTenantEcuadorTaxDeclarationFormDraftPacketUseCase,
+          getTenantEcuadorTaxDeclarationSourceLedgerUseCase,
+          getTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAnnexesReadinessV2UseCase,
+      inject: [
+        GetTenantEcuadorTaxAnnexesWorkspaceUseCase,
+        GetTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxAnnexesWorkspaceUseCase,
+        getTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxAnnexesReadinessV2UseCase(
+          getTenantEcuadorTaxAnnexesWorkspaceUseCase,
+          getTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAccountantFilingReviewRoomV3UseCase,
+      inject: [
+        GetTenantEcuadorTaxObligationFilingWorkspaceUseCase,
+        GetTenantEcuadorTaxFormBoxEvidenceBinderUseCase,
+        GetTenantEcuadorTaxAnnexesReadinessV2UseCase,
+        GetTenantEcuadorTaxAccountantHandoffRoomV2UseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxObligationFilingWorkspaceUseCase,
+        getTenantEcuadorTaxFormBoxEvidenceBinderUseCase,
+        getTenantEcuadorTaxAnnexesReadinessV2UseCase,
+        getTenantEcuadorTaxAccountantHandoffRoomV2UseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new GetTenantEcuadorTaxAccountantFilingReviewRoomV3UseCase(
+          getTenantEcuadorTaxObligationFilingWorkspaceUseCase,
+          getTenantEcuadorTaxFormBoxEvidenceBinderUseCase,
+          getTenantEcuadorTaxAnnexesReadinessV2UseCase,
+          getTenantEcuadorTaxAccountantHandoffRoomV2UseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxDeclarationArtifactExportV2UseCase,
+      inject: [
+        RequestTenantEcuadorTaxDeclarationArtifactExportUseCase,
+        GetTenantEcuadorTaxFormBoxEvidenceBinderUseCase,
+        GetTenantEcuadorTaxAnnexesReadinessV2UseCase,
+        GetTenantEcuadorTaxAccountantFilingReviewRoomV3UseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxDeclarationArtifactExportUseCase,
+        getTenantEcuadorTaxFormBoxEvidenceBinderUseCase,
+        getTenantEcuadorTaxAnnexesReadinessV2UseCase,
+        getTenantEcuadorTaxAccountantFilingReviewRoomV3UseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxDeclarationArtifactExportV2UseCase(
+          requestTenantEcuadorTaxDeclarationArtifactExportUseCase,
+          getTenantEcuadorTaxFormBoxEvidenceBinderUseCase,
+          getTenantEcuadorTaxAnnexesReadinessV2UseCase,
+          getTenantEcuadorTaxAccountantFilingReviewRoomV3UseCase,
+          recordTenantEcuadorTaxComplianceEventUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxComplianceDeclarationCloseoutV3UseCase,
+      inject: [
+        RequestTenantEcuadorTaxDeclarationArtifactExportV2UseCase,
+        RecordTenantEcuadorTaxComplianceEventUseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxDeclarationArtifactExportV2UseCase,
+        recordTenantEcuadorTaxComplianceEventUseCase,
+      ) =>
+        new RequestTenantEcuadorTaxComplianceDeclarationCloseoutV3UseCase(
+          requestTenantEcuadorTaxDeclarationArtifactExportV2UseCase,
           recordTenantEcuadorTaxComplianceEventUseCase,
         ),
     },

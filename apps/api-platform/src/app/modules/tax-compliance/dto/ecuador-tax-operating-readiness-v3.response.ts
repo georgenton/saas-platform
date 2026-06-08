@@ -1,13 +1,19 @@
 import {
   EcuadorTaxAccountantHandoffRoomV2View,
+  EcuadorTaxAccountantFilingReviewRoomV3View,
   EcuadorTaxAccountantReviewFromPartyRisksView,
+  EcuadorTaxAnnexesReadinessV2View,
   EcuadorTaxAssistedFiscalCorrectionFlowView,
+  EcuadorTaxComplianceDeclarationCloseoutV3View,
   EcuadorTaxComplianceHardeningCloseoutV4View,
   EcuadorTaxComplianceProductCloseoutV3View,
+  EcuadorTaxDeclarationArtifactExportV2View,
   EcuadorTaxDeclarationPartyImpactWorkspaceView,
   EcuadorTaxDeclarationPartyRecalculationPacketView,
   EcuadorTaxEvidenceQualityCenterView,
   EcuadorTaxFilingReadinessCertificateView,
+  EcuadorTaxFormBoxEvidenceBinderView,
+  EcuadorTaxObligationFilingWorkspaceView,
   EcuadorTaxObligationRiskMonitorView,
   EcuadorTaxOperatingDashboardV3View,
   EcuadorTaxAccountantPartyRiskReviewExecutionView,
@@ -55,6 +61,18 @@ export type EcuadorTaxPartiesPersistenceDecisionPackResponseDto =
   Serialized<EcuadorTaxPartiesPersistenceDecisionPackView>;
 export type EcuadorTaxPartiesOperationalCommandCenterResponseDto =
   Serialized<EcuadorTaxPartiesOperationalCommandCenterView>;
+export type EcuadorTaxObligationFilingWorkspaceResponseDto =
+  Serialized<EcuadorTaxObligationFilingWorkspaceView>;
+export type EcuadorTaxFormBoxEvidenceBinderResponseDto =
+  Serialized<EcuadorTaxFormBoxEvidenceBinderView>;
+export type EcuadorTaxAnnexesReadinessV2ResponseDto =
+  Serialized<EcuadorTaxAnnexesReadinessV2View>;
+export type EcuadorTaxAccountantFilingReviewRoomV3ResponseDto =
+  Serialized<EcuadorTaxAccountantFilingReviewRoomV3View>;
+export type EcuadorTaxDeclarationArtifactExportV2ResponseDto =
+  Serialized<EcuadorTaxDeclarationArtifactExportV2View>;
+export type EcuadorTaxComplianceDeclarationCloseoutV3ResponseDto =
+  Serialized<EcuadorTaxComplianceDeclarationCloseoutV3View>;
 
 export function toEcuadorTaxEvidenceQualityCenterResponseDto(
   view: EcuadorTaxEvidenceQualityCenterView,
@@ -161,6 +179,42 @@ export function toEcuadorTaxPartiesPersistenceDecisionPackResponseDto(
 export function toEcuadorTaxPartiesOperationalCommandCenterResponseDto(
   view: EcuadorTaxPartiesOperationalCommandCenterView,
 ): EcuadorTaxPartiesOperationalCommandCenterResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxObligationFilingWorkspaceResponseDto(
+  view: EcuadorTaxObligationFilingWorkspaceView,
+): EcuadorTaxObligationFilingWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxFormBoxEvidenceBinderResponseDto(
+  view: EcuadorTaxFormBoxEvidenceBinderView,
+): EcuadorTaxFormBoxEvidenceBinderResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxAnnexesReadinessV2ResponseDto(
+  view: EcuadorTaxAnnexesReadinessV2View,
+): EcuadorTaxAnnexesReadinessV2ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxAccountantFilingReviewRoomV3ResponseDto(
+  view: EcuadorTaxAccountantFilingReviewRoomV3View,
+): EcuadorTaxAccountantFilingReviewRoomV3ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxDeclarationArtifactExportV2ResponseDto(
+  view: EcuadorTaxDeclarationArtifactExportV2View,
+): EcuadorTaxDeclarationArtifactExportV2ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxComplianceDeclarationCloseoutV3ResponseDto(
+  view: EcuadorTaxComplianceDeclarationCloseoutV3View,
+): EcuadorTaxComplianceDeclarationCloseoutV3ResponseDto {
   return serialize(view);
 }
 

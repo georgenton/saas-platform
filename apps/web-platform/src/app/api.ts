@@ -156,14 +156,17 @@ import {
   EcuadorTaxAccountingEvidenceFromFoundationResponse,
   EcuadorTaxAccountingReadinessPacketResponse,
   EcuadorTaxAccountantEscalationServiceBoundaryResponse,
+  EcuadorTaxAccountantFilingReviewRoomV3Response,
   EcuadorTaxAccountantHandoffRoomV2Response,
   EcuadorTaxAccountantCollaborationPackResponse,
   EcuadorTaxAnnexesReadinessResponse,
+  EcuadorTaxAnnexesReadinessV2Response,
   EcuadorTaxAnnexesWorkspaceResponse,
   EcuadorTaxAnnualRollupWorkspaceResponse,
   EcuadorTaxAssistedDeclarationReviewPackV2Response,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxComplianceCloseoutV2Response,
+  EcuadorTaxComplianceDeclarationCloseoutV3Response,
   EcuadorTaxComplianceHardeningCloseoutV4Response,
   EcuadorTaxComplianceProductCloseoutV3Response,
   EcuadorTaxPartySriEvidenceImportResponse,
@@ -171,6 +174,7 @@ import {
   EcuadorTaxCommandCenterV2Response,
   EcuadorTaxDeclarationFormCatalogResponse,
   EcuadorTaxDeclarationArtifactExportResponse,
+  EcuadorTaxDeclarationArtifactExportV2Response,
   EcuadorTaxDeclarationApprovalPacketResponse,
   EcuadorTaxDeclarationFormDraftPacketResponse,
   EcuadorTaxDeclarationPartyImpactWorkspaceResponse,
@@ -188,6 +192,7 @@ import {
   EcuadorTaxAccountantReviewFromPartyRisksResponse,
   EcuadorTaxAccountantPartyRiskReviewExecutionResponse,
   EcuadorTaxAssistedFiscalCorrectionFlowResponse,
+  EcuadorTaxFormBoxEvidenceBinderResponse,
   EcuadorTaxFormMappingCatalogResponse,
   EcuadorTaxGrowthReminderPacketResponse,
   EcuadorTaxEvidenceQualityCenterResponse,
@@ -196,6 +201,7 @@ import {
   EcuadorTaxIncomeTaxFormContractWorkspaceResponse,
   EcuadorTaxIncomeTaxEvidencePacketResponse,
   EcuadorTaxObligationSettingsResponse,
+  EcuadorTaxObligationFilingWorkspaceResponse,
   EcuadorTaxObligationRiskMonitorResponse,
   EcuadorTaxObligationMatrixV2WorkspaceResponse,
   EcuadorTaxPeriodCloseoutPacketResponse,
@@ -3745,6 +3751,114 @@ export async function fetchEcuadorTaxPartiesOperationalCommandCenter(
     )}/ec/parties-operational-command-center?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxObligationFilingWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxObligationFilingWorkspaceResponse> {
+  return request<EcuadorTaxObligationFilingWorkspaceResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/obligation-filing-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxFormBoxEvidenceBinder(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+  formKey = 'iva',
+): Promise<EcuadorTaxFormBoxEvidenceBinderResponse> {
+  return request<EcuadorTaxFormBoxEvidenceBinderResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/form-box-evidence-binder?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}&formKey=${encodeURIComponent(
+      formKey,
+    )}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAnnexesReadinessV2(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAnnexesReadinessV2Response> {
+  return request<EcuadorTaxAnnexesReadinessV2Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/annexes-readiness-v2?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAccountantFilingReviewRoomV3(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+  formKey = 'iva',
+): Promise<EcuadorTaxAccountantFilingReviewRoomV3Response> {
+  return request<EcuadorTaxAccountantFilingReviewRoomV3Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accountant-filing-review-room-v3?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}&formKey=${encodeURIComponent(
+      formKey,
+    )}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxDeclarationArtifactExportV2(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+  formKey = 'iva',
+): Promise<EcuadorTaxDeclarationArtifactExportV2Response> {
+  return request<EcuadorTaxDeclarationArtifactExportV2Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/declaration-artifact-export-v2?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}&formKey=${encodeURIComponent(
+      formKey,
+    )}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxComplianceDeclarationCloseoutV3(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+  formKey = 'iva',
+): Promise<EcuadorTaxComplianceDeclarationCloseoutV3Response> {
+  return request<EcuadorTaxComplianceDeclarationCloseoutV3Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/compliance-declaration-closeout-v3?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}&formKey=${encodeURIComponent(
+      formKey,
+    )}`,
     { method: 'GET', token },
   );
 }

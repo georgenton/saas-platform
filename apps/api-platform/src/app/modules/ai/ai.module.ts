@@ -7,6 +7,9 @@ import {
   ApplyTenantAiMemoryArchivalPolicyUseCase,
   CreateTenantAiGuardedExecutionEventUseCase,
   CreateTenantAiMemoryRecordUseCase,
+  GetAiClinicsCloseoutGrowthBridgeReviewUseCase,
+  GetAiClinicsDomainContractRegistryUseCase,
+  GetAiClinicsGuardrailApprovalPackUseCase,
   GetAiApprovalPoliciesByAgentKeyUseCase,
   GetAiAgentToolAccessByAgentKeyUseCase,
   GetAiOperatingModelManifestUseCase,
@@ -19,6 +22,8 @@ import {
   GetTenantAiSuggestionEnvelopeUseCase,
   GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
   GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
+  GetTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase,
+  GetTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase,
   ListTenantAiApprovalRequestsUseCase,
   ListTenantAiGuardedExecutionEventsUseCase,
   ListTenantAiMemoryRecordsUseCase,
@@ -113,6 +118,18 @@ import { AiController } from './ai.controller';
       useFactory: () => new GetAiOperatingModelManifestUseCase(),
     },
     {
+      provide: GetAiClinicsDomainContractRegistryUseCase,
+      useFactory: () => new GetAiClinicsDomainContractRegistryUseCase(),
+    },
+    {
+      provide: GetAiClinicsGuardrailApprovalPackUseCase,
+      useFactory: () => new GetAiClinicsGuardrailApprovalPackUseCase(),
+    },
+    {
+      provide: GetAiClinicsCloseoutGrowthBridgeReviewUseCase,
+      useFactory: () => new GetAiClinicsCloseoutGrowthBridgeReviewUseCase(),
+    },
+    {
       provide: GetTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase,
       inject: [
         GetTenantEcommerceLaunchWorkspaceUseCase,
@@ -158,21 +175,43 @@ import { AiController } from './ai.controller';
         ),
     },
     {
+      provide: GetTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase,
+      inject: [GetTenantAiMemoryRetrievalUseCase],
+      useFactory: (getTenantAiMemoryRetrievalUseCase) =>
+        new GetTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase(
+          getTenantAiMemoryRetrievalUseCase,
+        ),
+    },
+    {
+      provide: GetTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase,
+      inject: [GetTenantAiMemoryRetrievalUseCase],
+      useFactory: (getTenantAiMemoryRetrievalUseCase) =>
+        new GetTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase(
+          getTenantAiMemoryRetrievalUseCase,
+        ),
+    },
+    {
       provide: GetTenantAiSuggestionEnvelopeUseCase,
       inject: [
         GetTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase,
         GetTenantGrowthAssistAiSuggestionEnvelopeUseCase,
         GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
+        GetTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase,
+        GetTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase,
       ],
       useFactory: (
         getTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase,
         getTenantGrowthAssistAiSuggestionEnvelopeUseCase,
         getTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
+        getTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase,
+        getTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase,
       ) =>
         new GetTenantAiSuggestionEnvelopeUseCase(
           getTenantGrowthAssistAiSuggestionEnvelopeUseCase,
           getTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
           getTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase,
+          getTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase,
+          getTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase,
         ),
     },
     {

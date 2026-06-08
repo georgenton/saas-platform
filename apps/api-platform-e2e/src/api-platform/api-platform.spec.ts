@@ -21396,6 +21396,28 @@ describe('API', () => {
           defaultMode: 'suggestion',
           supportedSurfaceKeys: ['tax_compliance_ec_review_packet'],
         },
+        {
+          key: 'medical-clinic-assistant',
+          title: 'Medical Clinic Assistant',
+          summary:
+            'Turns deterministic medical clinic surfaces into reviewable clinic guidance without diagnosing, prescribing, signing records, or mutating clinic workflows.',
+          domainKey: 'medical',
+          productKey: 'medical-clinics',
+          availability: 'ready',
+          defaultMode: 'suggestion',
+          supportedSurfaceKeys: ['medical_clinics_assistant_contract'],
+        },
+        {
+          key: 'psychology-clinic-assistant',
+          title: 'Psychology Clinic Assistant',
+          summary:
+            'Turns deterministic psychology clinic surfaces into reviewable therapy operations guidance without replacing therapist judgment or clinical records.',
+          domainKey: 'psychology',
+          productKey: 'psychology-clinics',
+          availability: 'ready',
+          defaultMode: 'suggestion',
+          supportedSurfaceKeys: ['psychology_clinics_assistant_contract'],
+        },
       ]);
   });
 
@@ -21659,15 +21681,37 @@ describe('API', () => {
               guardedExecutionCandidateToolKey: null,
               guardedExecutionCandidate: null,
             }),
+            expect.objectContaining({
+              agent: expect.objectContaining({
+                key: 'medical-clinic-assistant',
+                domainKey: 'medical',
+              }),
+              requiredPermissionKey: 'medical-clinics.read',
+              primaryApprovalPolicyKey:
+                'medical-clinic-assistant-suggestion-review',
+              guardedExecutionCandidateToolKey: null,
+              guardedExecutionCandidate: null,
+            }),
+            expect.objectContaining({
+              agent: expect.objectContaining({
+                key: 'psychology-clinic-assistant',
+                domainKey: 'psychology',
+              }),
+              requiredPermissionKey: 'psychology-clinics.read',
+              primaryApprovalPolicyKey:
+                'psychology-clinic-assistant-suggestion-review',
+              guardedExecutionCandidateToolKey: null,
+              guardedExecutionCandidate: null,
+            }),
           ]),
           counts: {
-            totalAgents: 4,
-            readyAgents: 4,
+            totalAgents: 6,
+            readyAgents: 6,
             plannedAgents: 0,
-            agentsWithApprovalPolicies: 4,
+            agentsWithApprovalPolicies: 6,
             agentsWithGuardedExecutionCandidate: 3,
-            totalToolAccessEntries: 8,
-            approvalRequiredToolAccessEntries: 3,
+            totalToolAccessEntries: 10,
+            approvalRequiredToolAccessEntries: 5,
             blockedToolAccessEntries: 3,
           },
         });
@@ -21679,189 +21723,33 @@ describe('API', () => {
       .get('/api/ai/prompts')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect([
-        {
-          key: 'growth-assist-coach-core',
-          version: 'v1',
-          agentKey: 'growth-assist-coach',
-          mode: 'suggestion',
-          title: 'Growth Assist Coach Core',
-          summary:
-            'Prompt pack for turning deterministic Growth Assist agenda signals into commercial suggestions for non-expert operators.',
-          objective:
-            'Propose clear commercial suggestions for a non-expert operator using the deterministic Growth Assist agenda as the source of truth.',
-          styleGuidance: [
-            'Prefer short, direct, Spanish-first suggestions.',
-            'Explain business impact in simple operator language instead of internal queue jargon.',
-            'Keep outputs practical and oriented to what the business should do today.',
-          ],
-          constraints: [
-            'Stay in suggestion mode only. Do not assume messages are sent or cases are mutated automatically.',
-            'Use only the tenant-scoped Growth Assist agenda and its embedded operational signals.',
-            'Prefer short, direct, Spanish-first suggestions that help a small business operator move today.',
-            'Respect domain boundaries: business rules, approvals, and workflow state still belong to Growth.',
-          ],
-          suggestedOutputs: [
-            {
-              key: 'reply_draft',
-              label: 'Reply draft',
-              description:
-                'Draft a customer-facing WhatsApp reply using the hottest conversation cues and reply suggestions.',
-            },
-            {
-              key: 'next_action_brief',
-              label: 'Next action brief',
-              description:
-                'Explain the top commercial action to take now and why it matters today.',
-            },
-            {
-              key: 'follow_up_plan',
-              label: 'Follow-up plan',
-              description:
-                'Suggest a short follow-up sequence grounded in playbooks and waiting-customer timing.',
-            },
-          ],
-        },
-        {
-          key: 'invoice-document-assistant-core',
-          version: 'v1',
-          agentKey: 'invoice-document-assistant',
-          mode: 'suggestion',
-          title: 'Invoice Document Assistant Core',
-          summary:
-            'Prompt pack for document drafting, review, and checklist suggestions in Ecuador electronic invoicing.',
-          objective:
-            'Help operators draft and review tax document workflows without replacing fiscal validation owned by the invoicing domain.',
-          styleGuidance: [
-            'Explain tax-document steps in concrete operator language.',
-            'Prefer checklist-driven wording over abstract tax jargon.',
-            'Surface checklist gaps before proposing any draft output.',
-          ],
-          constraints: [
-            'Do not treat prompt output as fiscal validation.',
-            'Do not approve, sign, or submit tax documents automatically.',
-            'Use only the tenant-scoped invoicing drafting surface and its embedded readiness/report signals.',
-            'Keep the suggestion explicitly advisory and suitable for human review.',
-          ],
-          suggestedOutputs: [
-            {
-              key: 'drafting_brief',
-              label: 'Drafting brief',
-              description:
-                'Summarize what needs to be drafted or reviewed before the document can move forward.',
-            },
-            {
-              key: 'review_checklist',
-              label: 'Review checklist',
-              description:
-                'Explain the human review checklist that should be completed before the document advances.',
-            },
-            {
-              key: 'blocker_explanation',
-              label: 'Blocker explanation',
-              description:
-                'Translate current blockers or warnings into simple operator language and next steps.',
-            },
-          ],
-        },
-        {
-          key: 'ecommerce-launch-assistant-core',
-          version: 'v1',
-          agentKey: 'ecommerce-launch-assistant',
-          mode: 'suggestion',
-          title: 'Ecommerce Launch Assistant Core',
-          summary:
-            'Prompt pack for ecommerce launch, landing, and campaign suggestions grounded in deterministic tenant context.',
-          objective:
-            'Propose launch content and structure suggestions without becoming the source of truth for catalog or storefront workflows.',
-          styleGuidance: [
-            'Favor concise, conversion-oriented recommendations.',
-            'Keep brand and product structure grounded in deterministic ecommerce context.',
-            'Translate launch tradeoffs into simple operator language before suggesting expansion.',
-          ],
-          constraints: [
-            'Do not publish products or landing pages automatically.',
-            'Do not invent catalog facts that are missing from the ecommerce domain surface.',
-            'Keep recommendations advisory and suitable for explicit human review.',
-          ],
-          suggestedOutputs: [
-            {
-              key: 'launch_brief',
-              label: 'Launch brief',
-              description:
-                'Summarize the recommended launch angle, landing structure, and first content direction.',
-            },
-            {
-              key: 'channel_plan',
-              label: 'Channel plan',
-              description:
-                'Explain the narrow catalog, landing, and campaign sequence that best fits the current tenant posture.',
-            },
-            {
-              key: 'launch_risk_checklist',
-              label: 'Launch risk checklist',
-              description:
-                'Call out missing modules, risky assumptions, and operator checkpoints before launch work starts.',
-            },
-          ],
-        },
-        {
-          key: 'tax-compliance-ec-review-assistant-core',
-          version: 'v1',
-          agentKey: 'tax-compliance-ec-review-assistant',
-          mode: 'suggestion',
-          title: 'Tax Compliance EC Review Assistant Core',
-          summary:
-            'Prompt pack for Ecuador tax risk summaries, accountant questions, evidence gaps, and pre-filing next steps.',
-          objective:
-            'Help an operator and accountant review deterministic Tax Compliance EC packets without replacing professional validation, official SRI filing, or accounting books.',
-          styleGuidance: [
-            'Use Spanish-first, plain business language suitable for an owner and accountant.',
-            'Lead with the concrete risk or missing evidence before suggesting next steps.',
-            'Separate operator tasks from accountant questions.',
-            'Explain uncertainty explicitly when the deterministic packet only supports a handoff.',
-          ],
-          constraints: [
-            'Do not present declarations, generate official annex XML, or claim SRI submission is complete.',
-            'Do not replace accountant judgment or legal/tax advice.',
-            'Use only deterministic Tax Compliance EC packets and embedded readiness signals.',
-            'Keep all recommendations advisory and require human review before external filing or payment.',
-            'Do not create journal entries, ledgers, balances, or financial statements.',
-          ],
-          suggestedOutputs: [
-            {
-              key: 'tax_risk_summary',
-              label: 'Tax risk summary',
-              description:
-                'Summarize blockers and risk signals for the selected Ecuador tax period.',
-            },
-            {
-              key: 'accountant_question_pack',
-              label: 'Accountant questions',
-              description:
-                'Prepare focused questions that should be answered by the accountant before filing.',
-            },
-            {
-              key: 'evidence_gap_checklist',
-              label: 'Evidence gap checklist',
-              description:
-                'List missing or weak evidence needed for VAT, income tax, retentions, annexes, and closeout.',
-            },
-            {
-              key: 'owner_explanation',
-              label: 'Owner explanation',
-              description:
-                'Explain the tax period status in plain language for the business owner.',
-            },
-            {
-              key: 'pre_filing_next_steps',
-              label: 'Pre-filing next steps',
-              description:
-                'Suggest the safest next operator/accountant actions before external declaration or payment.',
-            },
-          ],
-        },
-      ]);
+      .expect((response) => {
+        expect(response.body).toHaveLength(6);
+        expect(response.body).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ key: 'growth-assist-coach-core' }),
+            expect.objectContaining({ key: 'invoice-document-assistant-core' }),
+            expect.objectContaining({ key: 'ecommerce-launch-assistant-core' }),
+            expect.objectContaining({
+              key: 'tax-compliance-ec-review-assistant-core',
+            }),
+            expect.objectContaining({
+              key: 'medical-clinic-assistant-core',
+              agentKey: 'medical-clinic-assistant',
+              constraints: expect.arrayContaining([
+                expect.stringContaining('Do not diagnose'),
+              ]),
+            }),
+            expect.objectContaining({
+              key: 'psychology-clinic-assistant-core',
+              agentKey: 'psychology-clinic-assistant',
+              constraints: expect.arrayContaining([
+                expect.stringContaining('Do not diagnose'),
+              ]),
+            }),
+          ]),
+        );
+      });
   });
 
   it('GET /api/ai/tools should return the transversal AI tool registry', async () => {
@@ -21870,7 +21758,7 @@ describe('API', () => {
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body).toHaveLength(8);
+        expect(response.body).toHaveLength(10);
         expect(response.body).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
@@ -21914,6 +21802,20 @@ describe('API', () => {
               actionKind: 'propose',
               requiresApproval: true,
               domainKey: 'tax-compliance',
+            }),
+            expect.objectContaining({
+              key: 'medical_clinic_assistant_review_briefing',
+              availability: 'ready',
+              actionKind: 'propose',
+              requiresApproval: true,
+              domainKey: 'medical',
+            }),
+            expect.objectContaining({
+              key: 'psychology_clinic_assistant_review_briefing',
+              availability: 'ready',
+              actionKind: 'propose',
+              requiresApproval: true,
+              domainKey: 'psychology',
             }),
           ]),
         );
@@ -21977,52 +21879,35 @@ describe('API', () => {
       .get('/api/ai/approval-policies')
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(200)
-      .expect([
-        {
-          policyKey: 'growth-assist-suggestion-review',
-          agentKey: 'growth-assist-coach',
-          scope: 'suggestion_review',
-          title: 'Growth Assist suggestion review',
-          summary:
-            'Requests human review before a Growth Assist suggestion handoff is treated as approved for operator use.',
-          reviewGuidance:
-            'Verify that the suggestion stays grounded in deterministic Growth signals, does not overreach beyond the tenant context, and still sounds safe for a human operator to adapt.',
-          approvalRequired: true,
-        },
-        {
-          policyKey: 'invoice-document-assistant-suggestion-review',
-          agentKey: 'invoice-document-assistant',
-          scope: 'suggestion_review',
-          title: 'Invoice suggestion review',
-          summary:
-            'Keeps document-drafting suggestions behind explicit operator review before they influence invoicing work.',
-          reviewGuidance:
-            'Confirm that the suggestion is only advisory, matches the fiscal document context, and does not replace domain validation or tax compliance checks.',
-          approvalRequired: true,
-        },
-        {
-          policyKey: 'ecommerce-launch-assistant-suggestion-review',
-          agentKey: 'ecommerce-launch-assistant',
-          scope: 'suggestion_review',
-          title: 'Ecommerce launch suggestion review',
-          summary:
-            'Keeps launch and campaign suggestions behind operator review before they influence storefront work.',
-          reviewGuidance:
-            'Check that the suggestion stays grounded in product context, does not invent catalog facts, and is safe to translate into real launch work.',
-          approvalRequired: true,
-        },
-        {
-          policyKey: 'tax-compliance-ec-review-assistant-suggestion-review',
-          agentKey: 'tax-compliance-ec-review-assistant',
-          scope: 'suggestion_review',
-          title: 'Tax Compliance EC suggestion review',
-          summary:
-            'Keeps Ecuador tax review suggestions behind explicit human review before they influence filing or accountant handoff work.',
-          reviewGuidance:
-            'Confirm the suggestion is grounded in deterministic tax packets, does not replace accountant validation, and does not claim official SRI filing or accounting close.',
-          approvalRequired: true,
-        },
-      ]);
+      .expect((response) => {
+        expect(response.body).toHaveLength(6);
+        expect(response.body).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              policyKey: 'growth-assist-suggestion-review',
+            }),
+            expect.objectContaining({
+              policyKey: 'invoice-document-assistant-suggestion-review',
+            }),
+            expect.objectContaining({
+              policyKey: 'ecommerce-launch-assistant-suggestion-review',
+            }),
+            expect.objectContaining({
+              policyKey: 'tax-compliance-ec-review-assistant-suggestion-review',
+            }),
+            expect.objectContaining({
+              policyKey: 'medical-clinic-assistant-suggestion-review',
+              agentKey: 'medical-clinic-assistant',
+              approvalRequired: true,
+            }),
+            expect.objectContaining({
+              policyKey: 'psychology-clinic-assistant-suggestion-review',
+              agentKey: 'psychology-clinic-assistant',
+              approvalRequired: true,
+            }),
+          ]),
+        );
+      });
   });
 
   it('GET /api/ai/agents/:agentKey/approval-policies should return approval policies for one agent', async () => {

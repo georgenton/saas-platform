@@ -2,7 +2,9 @@ export type AiDomainKey =
   | 'growth'
   | 'invoicing'
   | 'ecommerce'
-  | 'tax-compliance';
+  | 'tax-compliance'
+  | 'medical'
+  | 'psychology';
 
 export type AiAgentAvailability = 'ready' | 'planned';
 
@@ -322,6 +324,87 @@ export interface TenantAiSuggestionEnvelope {
   }[];
   contextBlocks: AiSuggestionContextBlock[];
   retrieval?: AiMemoryRetrieval;
+}
+
+export type AiClinicContractProductKey =
+  | 'medical-clinics'
+  | 'psychology-clinics';
+
+export type AiClinicContractStatus = 'ready' | 'planned' | 'blocked';
+
+export interface AiClinicSurfaceContract {
+  key: string;
+  title: string;
+  productKey: AiClinicContractProductKey;
+  status: AiClinicContractStatus;
+  sourceContractKey: string;
+  summary: string;
+  aiUse: string;
+  growthBridge: string;
+  blockedCapabilities: string[];
+}
+
+export interface AiClinicAssistantTemplateContract {
+  agentKey: string;
+  productKey: AiClinicContractProductKey;
+  domainKey: Extract<AiDomainKey, 'medical' | 'psychology'>;
+  title: string;
+  status: AiClinicContractStatus;
+  primarySurfaceKey: string;
+  surfaces: AiClinicSurfaceContract[];
+}
+
+export interface AiClinicsDomainContractRegistryView {
+  generatedAt: Date;
+  registryVersion: 'v1';
+  status: 'ready';
+  templates: AiClinicAssistantTemplateContract[];
+  summary: {
+    templateCount: number;
+    readyTemplateCount: number;
+    surfaceCount: number;
+    growthConnectedTemplateCount: number;
+  };
+  notes: string[];
+}
+
+export interface AiClinicsGuardrailApprovalPackView {
+  generatedAt: Date;
+  packVersion: 'v1';
+  status: 'ready';
+  guardrails: {
+    key: string;
+    title: string;
+    enforcement: string;
+    blockedCapabilities: string[];
+  }[];
+  approvalPolicy: {
+    required: true;
+    scope: AiApprovalScope;
+    reviewerRole: string;
+    rationale: string;
+  };
+  notes: string[];
+}
+
+export interface AiClinicsCloseoutGrowthBridgeReviewView {
+  generatedAt: Date;
+  reviewVersion: 'v1';
+  status: 'ready';
+  products: {
+    productKey: AiClinicContractProductKey;
+    aiTemplateStatus: AiClinicContractStatus;
+    growthBridgeStatus: 'connected' | 'planned';
+    evidence: string[];
+    remainingWork: string[];
+  }[];
+  decision: {
+    recommendedNextSlice: string;
+    keepAiTransversal: true;
+    growthConnected: true;
+    openClinicalAutomation: false;
+  };
+  notes: string[];
 }
 
 export type AiSuggestionRunStatus = 'prepared';

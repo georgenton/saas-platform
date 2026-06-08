@@ -6156,11 +6156,19 @@ export interface GrowthAssistDailyAgendaResponse {
   };
 }
 
+export type AiDomainKeyResponse =
+  | 'growth'
+  | 'invoicing'
+  | 'ecommerce'
+  | 'tax-compliance'
+  | 'medical'
+  | 'psychology';
+
 export interface AiAgentCatalogResponse {
   key: string;
   title: string;
   summary: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   availability: 'ready' | 'planned';
   defaultMode: 'suggestion' | 'guarded_execution';
@@ -6172,7 +6180,7 @@ export interface AiOperatingModelAgentResponse {
     key: string;
     title: string;
     summary: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: AiDomainKeyResponse;
     productKey: string;
     availability: 'ready' | 'planned';
     defaultMode: 'suggestion' | 'guarded_execution';
@@ -6208,7 +6216,7 @@ export interface AiOperatingModelAgentResponse {
       key: string;
       title: string;
       summary: string;
-      domainKey: 'growth' | 'invoicing' | 'ecommerce';
+      domainKey: AiDomainKeyResponse;
       availability: 'ready' | 'planned';
       riskLevel: 'low' | 'medium' | 'high';
       actionKind: 'read' | 'draft' | 'propose' | 'execute';
@@ -6297,7 +6305,7 @@ export interface AiToolRegistryResponse {
   key: string;
   title: string;
   summary: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   availability: 'ready' | 'planned';
   riskLevel: 'low' | 'medium' | 'high';
   actionKind: 'read' | 'draft' | 'propose' | 'execute';
@@ -6372,6 +6380,87 @@ export interface AiSuggestionEnvelopeResponse {
     bullets: string[];
   }[];
   retrieval?: AiMemoryRetrievalResponse;
+}
+
+export type AiClinicContractProductKeyResponse =
+  | 'medical-clinics'
+  | 'psychology-clinics';
+
+export type AiClinicContractStatusResponse = 'ready' | 'planned' | 'blocked';
+
+export interface AiClinicSurfaceContractResponse {
+  key: string;
+  title: string;
+  productKey: AiClinicContractProductKeyResponse;
+  status: AiClinicContractStatusResponse;
+  sourceContractKey: string;
+  summary: string;
+  aiUse: string;
+  growthBridge: string;
+  blockedCapabilities: string[];
+}
+
+export interface AiClinicAssistantTemplateContractResponse {
+  agentKey: string;
+  productKey: AiClinicContractProductKeyResponse;
+  domainKey: 'medical' | 'psychology';
+  title: string;
+  status: AiClinicContractStatusResponse;
+  primarySurfaceKey: string;
+  surfaces: AiClinicSurfaceContractResponse[];
+}
+
+export interface AiClinicsDomainContractRegistryResponse {
+  generatedAt: string;
+  registryVersion: 'v1';
+  status: 'ready';
+  templates: AiClinicAssistantTemplateContractResponse[];
+  summary: {
+    templateCount: number;
+    readyTemplateCount: number;
+    surfaceCount: number;
+    growthConnectedTemplateCount: number;
+  };
+  notes: string[];
+}
+
+export interface AiClinicsGuardrailApprovalPackResponse {
+  generatedAt: string;
+  packVersion: 'v1';
+  status: 'ready';
+  guardrails: Array<{
+    key: string;
+    title: string;
+    enforcement: string;
+    blockedCapabilities: string[];
+  }>;
+  approvalPolicy: {
+    required: true;
+    scope: 'suggestion_review';
+    reviewerRole: string;
+    rationale: string;
+  };
+  notes: string[];
+}
+
+export interface AiClinicsCloseoutGrowthBridgeReviewResponse {
+  generatedAt: string;
+  reviewVersion: 'v1';
+  status: 'ready';
+  products: Array<{
+    productKey: AiClinicContractProductKeyResponse;
+    aiTemplateStatus: AiClinicContractStatusResponse;
+    growthBridgeStatus: 'connected' | 'planned';
+    evidence: string[];
+    remainingWork: string[];
+  }>;
+  decision: {
+    recommendedNextSlice: string;
+    keepAiTransversal: true;
+    growthConnected: true;
+    openClinicalAutomation: false;
+  };
+  notes: string[];
 }
 
 export interface AiSuggestionRunResponse {
@@ -6497,7 +6586,7 @@ export interface AiMemoryRecordResponse {
   id: string;
   tenantSlug: string;
   scope: 'tenant' | 'domain' | 'agent';
-  domainKey: 'growth' | 'invoicing' | 'ecommerce' | null;
+  domainKey: AiDomainKeyResponse | null;
   agentKey: string | null;
   sourceKind: 'operator_note' | 'approval_memory' | 'guarded_execution_memory';
   freshness: 'working_memory' | 'durable_memory';
@@ -6521,7 +6610,7 @@ export interface AiMemoryRecordDetailResponse {
     agents: Array<{
       agentKey: string;
       title: string;
-      domainKey: 'growth' | 'invoicing' | 'ecommerce';
+      domainKey: AiDomainKeyResponse;
       inclusionReason: string;
     }>;
     notes: string[];
@@ -6564,7 +6653,7 @@ export interface AiMemoryRetrievalResponse {
   records: Array<{
     id: string;
     scope: 'tenant' | 'domain' | 'agent';
-    domainKey: 'growth' | 'invoicing' | 'ecommerce' | null;
+    domainKey: AiDomainKeyResponse | null;
     agentKey: string | null;
     sourceKind:
       | 'operator_note'
@@ -6593,7 +6682,7 @@ export interface AiRetrievalWorkspaceResponse {
   agents: Array<{
     agentKey: string;
     title: string;
-    domainKey: 'growth' | 'invoicing' | 'ecommerce';
+    domainKey: AiDomainKeyResponse;
     productKey: string;
     retrieval: AiMemoryRetrievalResponse;
   }>;
@@ -10054,7 +10143,7 @@ export interface EcommerceOrderPostSaleReportingSummaryResponse {
 export interface AiMemoryWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   availability: 'ready' | 'planned';
   defaultMode: 'suggestion' | 'guarded_execution';
@@ -10094,7 +10183,7 @@ export interface AiMemoryWorkspaceResponse {
 export interface AiHealthWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   status: 'healthy' | 'warning' | 'critical';
   pendingApprovalRequestsCount: number;
   reviewableSuggestionRunsCount: number;
@@ -10125,7 +10214,7 @@ export interface AiHealthWorkspaceResponse {
 export interface AiEvaluationWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   status: 'healthy' | 'warning' | 'critical';
   reviewedApprovalRequestsCount: number;
   approvedReviewedApprovalRequestsCount: number;
@@ -10153,7 +10242,7 @@ export interface AiEvaluationWorkspaceResponse {
 export interface AiGovernanceWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   defaultMode: 'suggestion' | 'guarded_execution';
   promptPack: {
@@ -10190,7 +10279,7 @@ export interface AiGovernanceWorkspaceResponse {
 export interface AiPolicySimulationWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   defaultMode: 'suggestion' | 'guarded_execution';
   approvalPolicyKeys: string[];
@@ -10225,7 +10314,7 @@ export interface AiPolicySimulationWorkspaceResponse {
 export interface AiApprovalDesignWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   approvalPolicyKeys: string[];
   currentExpectedReviewLoad: {
@@ -10261,7 +10350,7 @@ export interface AiApprovalDesignWorkspaceResponse {
 export interface AiApprovalCapacityWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   approvalPolicyKeys: string[];
   currentMinimumReviewsPerDay: number;
@@ -10290,7 +10379,7 @@ export interface AiApprovalCapacityWorkspaceResponse {
 export interface AiApprovalSlaWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   approvalPolicyKeys: string[];
   pendingApprovalRequests: number;
@@ -10321,7 +10410,7 @@ export interface AiApprovalSlaWorkspaceResponse {
 export interface AiApprovalStaffingWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   approvalPolicyKeys: string[];
   currentRequiredReviewerEquivalents: number;
@@ -10350,7 +10439,7 @@ export interface AiApprovalStaffingWorkspaceResponse {
 export interface AiApprovalStaffingPlanWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   approvalPolicyKeys: string[];
   currentRequiredReviewerEquivalents: number;
@@ -10381,7 +10470,7 @@ export interface AiApprovalStaffingPlanWorkspaceResponse {
 export interface AiApprovalRolloutWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   approvalPolicyKeys: string[];
   currentRequiredReviewerEquivalents: number;
@@ -10412,7 +10501,7 @@ export interface AiApprovalRolloutWorkspaceResponse {
 export interface AiApprovalReadinessWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   approvalPolicyKeys: string[];
   currentRequiredReviewerEquivalents: number;
@@ -10442,7 +10531,7 @@ export interface AiApprovalReadinessWorkspaceResponse {
 export interface AiApprovalLaunchWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   approvalPolicyKeys: string[];
   currentRequiredReviewerEquivalents: number;
@@ -10473,7 +10562,7 @@ export interface AiApprovalLaunchWorkspaceResponse {
 export interface AiGuardedExecutionWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   currentMode: 'suggestion' | 'guarded_execution';
   approvalPolicyKeys: string[];
@@ -10507,7 +10596,7 @@ export interface AiGuardedExecutionWorkspaceResponse {
 export interface AiGuardedExecutionPilotWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   currentMode: 'suggestion' | 'guarded_execution';
   approvalPolicyKeys: string[];
@@ -10540,7 +10629,7 @@ export interface AiGuardedExecutionPilotWorkspaceResponse {
 export interface AiGuardedExecutionRunbookWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   currentMode: 'suggestion' | 'guarded_execution';
   approvalPolicyKeys: string[];
@@ -10576,7 +10665,7 @@ export interface AiGuardedExecutionRunbookWorkspaceResponse {
 export interface AiGuardedExecutionRollbackWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   currentMode: 'suggestion' | 'guarded_execution';
   approvalPolicyKeys: string[];
@@ -10615,7 +10704,7 @@ export interface AiGuardedExecutionRollbackWorkspaceResponse {
 export interface AiGuardedExecutionAuditWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   currentMode: 'suggestion' | 'guarded_execution';
   approvalPolicyKeys: string[];
@@ -10655,7 +10744,7 @@ export interface AiGuardedExecutionAuditWorkspaceResponse {
 export interface AiGuardedExecutionLaunchWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   currentMode: 'suggestion' | 'guarded_execution';
   approvalPolicyKeys: string[];
@@ -10696,7 +10785,7 @@ export interface AiGuardedExecutionLaunchWorkspaceResponse {
 export interface AiGuardedExecutionMonitorWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   currentMode: 'suggestion' | 'guarded_execution';
   approvalPolicyKeys: string[];
@@ -10730,7 +10819,7 @@ export interface AiGuardedExecutionMonitorWorkspaceResponse {
 export interface AiGuardedExecutionControlWorkspaceAgentResponse {
   agentKey: string;
   title: string;
-  domainKey: 'growth' | 'invoicing' | 'ecommerce';
+  domainKey: AiDomainKeyResponse;
   productKey: string;
   currentMode: 'suggestion' | 'guarded_execution';
   approvalPolicyKeys: string[];

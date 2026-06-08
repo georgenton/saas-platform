@@ -1483,13 +1483,18 @@ replace a contador.
 
 Growth is connected to both clinic products through reviewed reminder/handoff
 bridges: Medical Clinics has appointment confirmation/follow-up handoff
-contracts and Psychology Clinics has reminder/follow-up bridge packets. AI is
-conceptually transversal for both products through assistant opportunities and
-review-first note/summary packets, but it is not yet exposed as explicit
-Medical/Psychology AI agent templates in the AI platform. The recommended
-future hardening is an `ai-clinics-assistant-template` slice that consumes the
-deterministic clinic contracts without diagnosing, signing, classifying risk, or
-replacing professional judgment.
+contracts and Psychology Clinics has reminder/follow-up bridge packets.
+
+AI is now transversal for both clinic products through explicit
+`medical-clinic-assistant` and `psychology-clinic-assistant` templates in the
+AI platform. These agents consume deterministic clinic contracts, expose
+suggestion envelopes, and stay behind approval-required review. They do not
+diagnose, prescribe, sign records, interpret clinical risk, send emergency
+messages, mutate clinic state, or replace professional judgment.
+
+The next hardening should be UI-specific: richer clinic assistant briefing
+panels and, later, a separate guarded-execution discovery only for non-clinical
+administrative tasks.
 
 ### Future accounting graduation
 

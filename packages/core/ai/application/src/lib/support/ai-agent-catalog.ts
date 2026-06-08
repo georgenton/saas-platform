@@ -59,6 +59,28 @@ export const AI_AGENT_CATALOG: AiAgentCatalogEntry[] = [
     defaultMode: 'suggestion',
     supportedSurfaceKeys: ['tax_compliance_ec_review_packet'],
   },
+  {
+    key: 'medical-clinic-assistant',
+    title: 'Medical Clinic Assistant',
+    summary:
+      'Turns deterministic medical clinic surfaces into reviewable clinic guidance without diagnosing, prescribing, signing records, or mutating clinic workflows.',
+    domainKey: 'medical',
+    productKey: 'medical-clinics',
+    availability: 'ready',
+    defaultMode: 'suggestion',
+    supportedSurfaceKeys: ['medical_clinics_assistant_contract'],
+  },
+  {
+    key: 'psychology-clinic-assistant',
+    title: 'Psychology Clinic Assistant',
+    summary:
+      'Turns deterministic psychology clinic surfaces into reviewable therapy operations guidance without replacing therapist judgment or clinical records.',
+    domainKey: 'psychology',
+    productKey: 'psychology-clinics',
+    availability: 'ready',
+    defaultMode: 'suggestion',
+    supportedSurfaceKeys: ['psychology_clinics_assistant_contract'],
+  },
 ];
 
 const AI_AGENT_OPERATING_MODEL_METADATA: Record<
@@ -137,6 +159,42 @@ const AI_AGENT_OPERATING_MODEL_METADATA: Record<
       key: 'tax_compliance_ec_review_packet',
       title: 'Tax Compliance EC review packet',
       sourceContractKey: 'tax_compliance.ec.review_assistant_packet',
+    },
+  },
+  'medical-clinic-assistant': {
+    requiredPermissionKey: 'medical-clinics.read',
+    handoffContract: {
+      requestApprovalRationale:
+        'Solicitar revision humana antes de usar una sugerencia del asistente medico.',
+      reviewNotes: {
+        approved:
+          'Aprobado desde la consola transversal de AI para Medical Clinic Assistant.',
+        rejected:
+          'Rechazado desde la consola transversal de AI para Medical Clinic Assistant.',
+      },
+    },
+    primarySurface: {
+      key: 'medical_clinics_assistant_contract',
+      title: 'Medical clinics assistant contract',
+      sourceContractKey: 'medical_clinics.ai.assistant_contract',
+    },
+  },
+  'psychology-clinic-assistant': {
+    requiredPermissionKey: 'psychology-clinics.read',
+    handoffContract: {
+      requestApprovalRationale:
+        'Solicitar revision humana antes de usar una sugerencia del asistente de psicologia.',
+      reviewNotes: {
+        approved:
+          'Aprobado desde la consola transversal de AI para Psychology Clinic Assistant.',
+        rejected:
+          'Rechazado desde la consola transversal de AI para Psychology Clinic Assistant.',
+      },
+    },
+    primarySurface: {
+      key: 'psychology_clinics_assistant_contract',
+      title: 'Psychology clinics assistant contract',
+      sourceContractKey: 'psychology_clinics.ai.assistant_contract',
     },
   },
 };
@@ -589,6 +647,110 @@ export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
       ],
     },
   },
+  {
+    key: 'medical_clinic_assistant_review_briefing',
+    title: 'Medical clinic assistant review briefing',
+    summary:
+      'Prepares reviewable medical clinic guidance from deterministic clinic surfaces without clinical diagnosis, prescription, record signature, or state mutation.',
+    domainKey: 'medical',
+    availability: 'ready',
+    riskLevel: 'high',
+    actionKind: 'propose',
+    requiresApproval: true,
+    inputContract: {
+      sourceSurfaceKeys: ['medical_clinics_assistant_contract'],
+      primaryPayload:
+        'Tenant-scoped medical clinic assistant contract with profile, appointment, encounter, billing/tax, and Growth bridge context.',
+      requiredContext: [
+        'clinic profile',
+        'appointment scheduling posture',
+        'encounter note draft boundaries',
+        'billing tax bridge',
+        'Growth reminder consent',
+      ],
+    },
+    outputContract: {
+      primaryArtifact:
+        'Medical clinic review brief with operational checklist, safety boundaries, and Growth handoff notes.',
+      suggestedOutputKeys: [
+        'clinic_review_brief',
+        'operator_checklist',
+        'growth_handoff_notes',
+        'clinical_boundary_checklist',
+      ],
+      humanReviewFocus: [
+        'Confirm the suggestion does not diagnose, prescribe, or sign clinical records.',
+        'Verify Growth handoffs are administrative and consent-aware.',
+      ],
+    },
+    executionBoundary: {
+      executionMode: 'suggestion_only',
+      stateMutation: 'none',
+      externalSideEffects: 'none',
+      reviewRequirement:
+        'A clinic operator or licensed professional must review the brief before any operational or clinical use.',
+      blockedCapabilities: [
+        'diagnose_patient',
+        'prescribe_medication',
+        'classify_clinical_risk',
+        'sign_clinical_record',
+        'send_emergency_message',
+        'mutate_clinic_state',
+      ],
+    },
+  },
+  {
+    key: 'psychology_clinic_assistant_review_briefing',
+    title: 'Psychology clinic assistant review briefing',
+    summary:
+      'Prepares reviewable psychology clinic guidance from deterministic therapy surfaces without therapist replacement, risk automation, or record signature.',
+    domainKey: 'psychology',
+    availability: 'ready',
+    riskLevel: 'high',
+    actionKind: 'propose',
+    requiresApproval: true,
+    inputContract: {
+      sourceSurfaceKeys: ['psychology_clinics_assistant_contract'],
+      primaryPayload:
+        'Tenant-scoped psychology clinic assistant contract with profile, consent, session note, outcomes, privacy, and Growth bridge context.',
+      requiredContext: [
+        'therapy consent posture',
+        'session note review loop',
+        'privacy controls',
+        'outcomes evidence posture',
+        'Growth reminder consent',
+      ],
+    },
+    outputContract: {
+      primaryArtifact:
+        'Psychology clinic review brief with therapist review checklist, consent boundaries, and Growth handoff notes.',
+      suggestedOutputKeys: [
+        'therapy_operations_brief',
+        'therapist_review_checklist',
+        'privacy_consent_checklist',
+        'growth_handoff_notes',
+      ],
+      humanReviewFocus: [
+        'Confirm the suggestion does not replace therapist judgment or interpret clinical scales.',
+        'Verify consent and messaging opt-in before any administrative Growth handoff.',
+      ],
+    },
+    executionBoundary: {
+      executionMode: 'suggestion_only',
+      stateMutation: 'none',
+      externalSideEffects: 'none',
+      reviewRequirement:
+        'A clinic operator or licensed therapist must review the brief before any operational or clinical use.',
+      blockedCapabilities: [
+        'diagnose_patient',
+        'classify_clinical_risk',
+        'interpret_assessment_scale',
+        'sign_clinical_record',
+        'send_emergency_message',
+        'mutate_clinic_state',
+      ],
+    },
+  },
 ];
 
 function cloneAiToolDefinition(entry: AiToolDefinition): AiToolDefinition {
@@ -793,6 +955,102 @@ export const AI_PROMPT_REGISTRY: AiPromptRegistryEntry[] = [
       },
     ],
   },
+  {
+    key: 'medical-clinic-assistant-core',
+    version: 'v1',
+    agentKey: 'medical-clinic-assistant',
+    mode: 'suggestion',
+    title: 'Medical Clinic Assistant Core',
+    summary:
+      'Prompt pack for medical clinic operational briefs, safety boundaries, and Growth handoff notes.',
+    objective:
+      'Help a clinic operator review deterministic medical clinic surfaces without replacing licensed clinical judgment or mutating clinic workflows.',
+    styleGuidance: [
+      'Use Spanish-first, plain operator language.',
+      'Separate administrative next steps from clinical review requirements.',
+      'Lead with blockers, consent posture, and human review needs before suggestions.',
+    ],
+    constraints: [
+      'Do not diagnose, prescribe, classify risk, sign records, or send emergency messages.',
+      'Use only deterministic medical clinic surfaces and explicit AI memory records.',
+      'Keep Growth handoffs administrative, consent-aware, and suggestion-only.',
+      'Do not create appointments, patient records, invoices, messages, or tax filings.',
+    ],
+    suggestedOutputs: [
+      {
+        key: 'clinic_review_brief',
+        label: 'Clinic review brief',
+        description:
+          'Summarize the clinic operating context and what a human should review next.',
+      },
+      {
+        key: 'operator_checklist',
+        label: 'Operator checklist',
+        description:
+          'List administrative steps that can be reviewed without touching clinical judgment.',
+      },
+      {
+        key: 'growth_handoff_notes',
+        label: 'Growth handoff notes',
+        description:
+          'Explain safe reminder or follow-up handoffs that respect consent and opt-in posture.',
+      },
+      {
+        key: 'clinical_boundary_checklist',
+        label: 'Clinical boundary checklist',
+        description:
+          'Call out any diagnosis, prescription, record, emergency, or risk boundary that must remain human-owned.',
+      },
+    ],
+  },
+  {
+    key: 'psychology-clinic-assistant-core',
+    version: 'v1',
+    agentKey: 'psychology-clinic-assistant',
+    mode: 'suggestion',
+    title: 'Psychology Clinic Assistant Core',
+    summary:
+      'Prompt pack for psychology clinic review briefs, consent boundaries, therapist review, and Growth handoff notes.',
+    objective:
+      'Help clinic operators and therapists review deterministic psychology clinic surfaces without replacing therapist judgment or clinical records.',
+    styleGuidance: [
+      'Use Spanish-first, careful, privacy-aware language.',
+      'Keep consent and therapist review requirements visible.',
+      'Avoid clinical interpretation; explain administrative readiness and review questions.',
+    ],
+    constraints: [
+      'Do not diagnose, classify clinical risk, interpret scales, sign records, or send emergency messages.',
+      'Use only deterministic psychology clinic surfaces and explicit AI memory records.',
+      'Keep Growth handoffs administrative, consent-aware, and suggestion-only.',
+      'Do not create sessions, notes, patient records, messages, billing artifacts, or tax filings.',
+    ],
+    suggestedOutputs: [
+      {
+        key: 'therapy_operations_brief',
+        label: 'Therapy operations brief',
+        description:
+          'Summarize operational therapy context and review needs without clinical interpretation.',
+      },
+      {
+        key: 'therapist_review_checklist',
+        label: 'Therapist review checklist',
+        description:
+          'List therapist-owned review points for notes, records, outcomes, or evidence.',
+      },
+      {
+        key: 'privacy_consent_checklist',
+        label: 'Privacy consent checklist',
+        description:
+          'Surface consent, privacy, messaging opt-in, and blocked handoff constraints.',
+      },
+      {
+        key: 'growth_handoff_notes',
+        label: 'Growth handoff notes',
+        description:
+          'Explain safe administrative reminders or follow-ups that can be handed to Growth.',
+      },
+    ],
+  },
 ];
 
 export function findAiPromptRegistryEntryByAgentKey(
@@ -857,6 +1115,20 @@ export const AI_AGENT_TOOL_ACCESS: AiAgentToolAccessEntry[] = [
     accessLevel: 'approval_required',
     rationale:
       'Tax review suggestions can help operators and accountants, but they must stay behind explicit human review before influencing external filing decisions.',
+  },
+  {
+    agentKey: 'medical-clinic-assistant',
+    toolKey: 'medical_clinic_assistant_review_briefing',
+    accessLevel: 'approval_required',
+    rationale:
+      'Medical clinic suggestions can help operators, but must stay behind human review and cannot perform clinical or workflow actions.',
+  },
+  {
+    agentKey: 'psychology-clinic-assistant',
+    toolKey: 'psychology_clinic_assistant_review_briefing',
+    accessLevel: 'approval_required',
+    rationale:
+      'Psychology clinic suggestions can help operators and therapists, but must stay behind human review and cannot replace therapist judgment.',
   },
 ];
 
@@ -935,6 +1207,28 @@ export const AI_APPROVAL_POLICY_REGISTRY: AiApprovalPolicyEntry[] = [
       'Keeps Ecuador tax review suggestions behind explicit human review before they influence filing or accountant handoff work.',
     reviewGuidance:
       'Confirm the suggestion is grounded in deterministic tax packets, does not replace accountant validation, and does not claim official SRI filing or accounting close.',
+    approvalRequired: true,
+  },
+  {
+    policyKey: 'medical-clinic-assistant-suggestion-review',
+    agentKey: 'medical-clinic-assistant',
+    scope: 'suggestion_review',
+    title: 'Medical clinic suggestion review',
+    summary:
+      'Keeps medical clinic suggestions behind explicit human review before they influence clinic operations.',
+    reviewGuidance:
+      'Confirm the suggestion is grounded in deterministic medical clinic surfaces, does not diagnose, prescribe, sign records, classify risk, mutate workflow state, or bypass consent-aware Growth handoffs.',
+    approvalRequired: true,
+  },
+  {
+    policyKey: 'psychology-clinic-assistant-suggestion-review',
+    agentKey: 'psychology-clinic-assistant',
+    scope: 'suggestion_review',
+    title: 'Psychology clinic suggestion review',
+    summary:
+      'Keeps psychology clinic suggestions behind explicit human review before they influence therapy operations.',
+    reviewGuidance:
+      'Confirm the suggestion is grounded in deterministic psychology clinic surfaces, does not replace therapist judgment, interpret scales, classify risk, sign records, mutate workflow state, or bypass privacy and consent constraints.',
     approvalRequired: true,
   },
 ];

@@ -28,6 +28,9 @@ import {
   AiToolNotFoundError,
   CreateTenantAiGuardedExecutionEventUseCase,
   CreateTenantAiMemoryRecordUseCase,
+  GetAiClinicsCloseoutGrowthBridgeReviewUseCase,
+  GetAiClinicsDomainContractRegistryUseCase,
+  GetAiClinicsGuardrailApprovalPackUseCase,
   GetAiOperatingModelManifestUseCase,
   GetAiPromptRegistryEntryByAgentKeyUseCase,
   GetAiApprovalPoliciesByAgentKeyUseCase,
@@ -142,6 +145,14 @@ import {
 import { CreateAiApprovalRequestRequestDto } from './dto/create-ai-approval-request.request';
 import { CreateAiMemoryRecordRequestDto } from './dto/create-ai-memory-record.request';
 import { UpdateAiMemoryRecordRequestDto } from './dto/update-ai-memory-record.request';
+import {
+  AiClinicsCloseoutGrowthBridgeReviewResponseDto,
+  AiClinicsDomainContractRegistryResponseDto,
+  AiClinicsGuardrailApprovalPackResponseDto,
+  toAiClinicsCloseoutGrowthBridgeReviewResponseDto,
+  toAiClinicsDomainContractRegistryResponseDto,
+  toAiClinicsGuardrailApprovalPackResponseDto,
+} from './dto/ai-clinics-assistant.response';
 import {
   AiPromptRegistryResponseDto,
   toAiPromptRegistryResponseDto,
@@ -279,6 +290,9 @@ export class AiController {
     private readonly listAiApprovalPoliciesUseCase: ListAiApprovalPoliciesUseCase,
     private readonly listAiPromptRegistryUseCase: ListAiPromptRegistryUseCase,
     private readonly listAiToolRegistryUseCase: ListAiToolRegistryUseCase,
+    private readonly getAiClinicsDomainContractRegistryUseCase: GetAiClinicsDomainContractRegistryUseCase,
+    private readonly getAiClinicsGuardrailApprovalPackUseCase: GetAiClinicsGuardrailApprovalPackUseCase,
+    private readonly getAiClinicsCloseoutGrowthBridgeReviewUseCase: GetAiClinicsCloseoutGrowthBridgeReviewUseCase,
     private readonly getAiApprovalPoliciesByAgentKeyUseCase: GetAiApprovalPoliciesByAgentKeyUseCase,
     private readonly getAiPromptRegistryEntryByAgentKeyUseCase: GetAiPromptRegistryEntryByAgentKeyUseCase,
     private readonly getAiToolRegistryEntryByKeyUseCase: GetAiToolRegistryEntryByKeyUseCase,
@@ -319,6 +333,30 @@ export class AiController {
   getAiOperatingModel(): AiOperatingModelResponseDto {
     return toAiOperatingModelResponseDto(
       this.getAiOperatingModelManifestUseCase.execute(),
+    );
+  }
+
+  @Get('clinics/domain-contract-registry')
+  @UseGuards(JwtAuthenticationGuard)
+  getAiClinicsDomainContractRegistry(): AiClinicsDomainContractRegistryResponseDto {
+    return toAiClinicsDomainContractRegistryResponseDto(
+      this.getAiClinicsDomainContractRegistryUseCase.execute(),
+    );
+  }
+
+  @Get('clinics/guardrail-approval-pack')
+  @UseGuards(JwtAuthenticationGuard)
+  getAiClinicsGuardrailApprovalPack(): AiClinicsGuardrailApprovalPackResponseDto {
+    return toAiClinicsGuardrailApprovalPackResponseDto(
+      this.getAiClinicsGuardrailApprovalPackUseCase.execute(),
+    );
+  }
+
+  @Get('clinics/closeout-growth-bridge-review')
+  @UseGuards(JwtAuthenticationGuard)
+  getAiClinicsCloseoutGrowthBridgeReview(): AiClinicsCloseoutGrowthBridgeReviewResponseDto {
+    return toAiClinicsCloseoutGrowthBridgeReviewResponseDto(
+      this.getAiClinicsCloseoutGrowthBridgeReviewUseCase.execute(),
     );
   }
 

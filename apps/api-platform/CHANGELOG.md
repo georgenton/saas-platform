@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.13
+
+### Patch Changes
+
+- f8ace49: Add Medical Clinics patient records workspaces for clinical timelines, medical history drafts, evidence registries, orders/referrals, care plan tasks, and records closeout guardrails.
+
 ## 0.107.12
 
 ### Patch Changes

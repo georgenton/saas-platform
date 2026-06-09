@@ -54,6 +54,7 @@ import {
   GetTenantEcuadorTaxAssistedFiscalCorrectionFlowUseCase,
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
   GetTenantEcuadorTaxDeclarationFormCatalogUseCase,
+  GetTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase,
   GetTenantEcuadorTaxDeclarationReviewLoopWorkspaceUseCase,
   GetTenantEcuadorTaxDeclarationSourceLedgerUseCase,
   GetTenantEcuadorTaxCommandCenterUseCase,
@@ -2521,6 +2522,27 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
         new GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase(
           getProfessionalHandoffUseCase,
           getAccountingAdvancedGateV2UseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase,
+      inject: [
+        RequestTenantEcuadorTaxComplianceCloseoutV2UseCase,
+        GetTenantEcuadorTaxProfessionalHandoffV6UseCase,
+        GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
+        GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase,
+      ],
+      useFactory: (
+        requestTaxComplianceCloseoutV2UseCase,
+        getProfessionalHandoffUseCase,
+        getAccountingAdvancedGateV2UseCase,
+        getAccountingBoundaryAiReviewUseCase,
+      ) =>
+        new GetTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase(
+          requestTaxComplianceCloseoutV2UseCase,
+          getProfessionalHandoffUseCase,
+          getAccountingAdvancedGateV2UseCase,
+          getAccountingBoundaryAiReviewUseCase,
         ),
     },
     {

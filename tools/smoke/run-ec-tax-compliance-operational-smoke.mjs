@@ -529,6 +529,11 @@ const [
   }),
   apiRequest({
     baseUrl,
+    path: taxPath(`/declaration-handoff-closeout-v6?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
     path: taxPath(`/compliance-closeout-v2?${periodQuery()}`),
     token,
   }),

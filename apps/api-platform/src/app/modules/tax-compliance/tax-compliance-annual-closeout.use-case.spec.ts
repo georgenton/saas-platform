@@ -2,6 +2,7 @@ import {
   GetTenantEcuadorTaxAccountingAdvancedDiscoveryGateUseCase,
   GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
   GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase,
+  GetTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase,
   GetTenantEcuadorTaxAnnualFiscalYearWorkspaceUseCase,
   GetTenantEcuadorTaxAnnualIncomeTaxReconciliationV2UseCase,
   GetTenantEcuadorTaxAuditReadinessBinderUseCase,
@@ -232,6 +233,67 @@ describe('Tax Compliance annual closeout use cases', () => {
     expect(boundaryReview.assistantInstructions.blockedOutputs).toContain(
       'journal_entry_creation',
     );
+
+    const declarationCloseout = {
+      execute: jest.fn(async () => ({
+        tenantSlug: 'tax-demo',
+        period: '2026-06',
+        year: 2026,
+        generatedAt: fixedNow,
+        closeoutStatus: 'needs_review',
+        sriSourceImportCenter: { centerStatus: 'ready' },
+        vatDeclarationWorkspace: { readinessStatus: 'ready' },
+        incomeTaxEvidenceWorkspace: { readinessStatus: 'needs_review' },
+        filingAssistant: { assistantStatus: 'ready' },
+        escalationBoundary: {
+          escalationStatus: 'accountant_review_required',
+          summary: { accountingAdvancedRuleCount: 1 },
+        },
+        commandCenter: {} as any,
+        checklist: [],
+        summary: {
+          checklistCount: 6,
+          readyChecklistCount: 4,
+          blockerCount: 0,
+          taxComplianceSurfaceCount: 6,
+          accountingAdvancedEscalationCount: 1,
+        },
+        recommendedNextStep: 'accounting_advanced_discovery',
+        blockers: [],
+        nextStep: 'Resolver items pendientes.',
+        guardrails: ['No declara.'],
+      })),
+    };
+    const closeoutV6 =
+      await new GetTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase(
+        declarationCloseout as any,
+        professionalHandoffUseCase,
+        gateV2UseCase,
+        new GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase(
+          professionalHandoffUseCase,
+          gateV2UseCase,
+          () => fixedNow,
+        ),
+        () => fixedNow,
+      ).execute({
+        tenantSlug: 'tax-demo',
+        period: '2026-06',
+        year: 2026,
+      });
+
+    expect(closeoutV6.handoffLanes.map((lane) => lane.key)).toEqual([
+      'sri_import_reconciliation',
+      'iva_declaration_draft',
+      'income_tax_evidence',
+      'manual_sri_walkthrough',
+      'professional_handoff',
+      'accounting_advanced_gate',
+    ]);
+    expect(closeoutV6.decision.nextStep).toBe(
+      'open_accounting_advanced_discovery',
+    );
+    expect(closeoutV6.summary.accountantOwnedLaneCount).toBe(3);
+    expect(closeoutV6.guardrails.join(' ')).toContain('no declara');
   });
 });
 

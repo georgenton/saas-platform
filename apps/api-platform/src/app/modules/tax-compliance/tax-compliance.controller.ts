@@ -35,6 +35,7 @@ import {
   GetTenantEcuadorTaxCalendarReviewWorkspaceUseCase,
   GetTenantEcuadorTaxDeclarationPartyImpactWorkspaceUseCase,
   GetTenantEcuadorTaxDeclarationFormCatalogUseCase,
+  GetTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase,
   GetTenantEcuadorTaxDeclarationReviewLoopWorkspaceUseCase,
   GetTenantEcuadorTaxDeclarationSourceLedgerUseCase,
   GetTenantEcuadorTaxCommandCenterUseCase,
@@ -145,6 +146,7 @@ import {
   EcuadorTaxAnnualIncomeTaxReconciliationV2ResponseDto,
   EcuadorTaxAuditReadinessBinderResponseDto,
   EcuadorTaxComplianceAnnualCloseoutV5ResponseDto,
+  EcuadorTaxDeclarationHandoffCloseoutV6ResponseDto,
   EcuadorTaxExternalAccountantAnnualReviewRoomResponseDto,
   EcuadorTaxProfessionalHandoffV6ResponseDto,
   toEcuadorTaxAccountingAdvancedGateV2ResponseDto,
@@ -154,6 +156,7 @@ import {
   toEcuadorTaxAnnualIncomeTaxReconciliationV2ResponseDto,
   toEcuadorTaxAuditReadinessBinderResponseDto,
   toEcuadorTaxComplianceAnnualCloseoutV5ResponseDto,
+  toEcuadorTaxDeclarationHandoffCloseoutV6ResponseDto,
   toEcuadorTaxExternalAccountantAnnualReviewRoomResponseDto,
   toEcuadorTaxProfessionalHandoffV6ResponseDto,
 } from './dto/ecuador-tax-annual-closeout-v5.response';
@@ -721,6 +724,7 @@ export class TaxComplianceController {
     private readonly getTenantEcuadorTaxProfessionalHandoffV6UseCase: GetTenantEcuadorTaxProfessionalHandoffV6UseCase,
     private readonly getTenantEcuadorTaxAccountingAdvancedGateV2UseCase: GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
     private readonly getTenantEcuadorTaxAccountingBoundaryAiReviewUseCase: GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase,
+    private readonly getTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase: GetTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase,
   ) {}
 
   @Get(':slug/ec/taxpayer-profile')
@@ -4151,6 +4155,34 @@ export class TaxComplianceController {
         });
 
       return toEcuadorTaxAccountingBoundaryAiReviewResponseDto(review);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/declaration-handoff-closeout-v6')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getDeclarationHandoffCloseoutV6(
+    @Param('slug') slug: string,
+    @Query('period') period?: string,
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxDeclarationHandoffCloseoutV6ResponseDto> {
+    try {
+      const closeout =
+        await this.getTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period: resolvePeriod(period),
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxDeclarationHandoffCloseoutV6ResponseDto(closeout);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

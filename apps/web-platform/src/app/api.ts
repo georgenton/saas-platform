@@ -175,6 +175,7 @@ import {
   EcuadorTaxAssistedDeclarationReviewPackV2Response,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxComplianceCloseoutV2Response,
+  EcuadorTaxDeclarationHandoffCloseoutV6Response,
   EcuadorTaxComplianceDeclarationCloseoutV3Response,
   EcuadorTaxComplianceHardeningCloseoutV4Response,
   EcuadorTaxCompliancePostFilingCloseoutV4Response,
@@ -3519,6 +3520,22 @@ export async function fetchEcuadorTaxComplianceCloseoutV2(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/compliance-closeout-v2?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxDeclarationHandoffCloseoutV6(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxDeclarationHandoffCloseoutV6Response> {
+  return request<EcuadorTaxDeclarationHandoffCloseoutV6Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/declaration-handoff-closeout-v6?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

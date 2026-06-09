@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.22
+
+### Patch Changes
+
+- d65a841: Add AI clinics smoke coverage and Tax/Accounting professional boundary review surfaces.
+
 ## 0.107.21
 
 ### Patch Changes

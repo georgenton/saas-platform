@@ -4522,6 +4522,170 @@ export interface EcuadorTaxDeclarationHandoffCloseoutV6Response {
   guardrails: string[];
 }
 
+export interface EcuadorTaxSriEvidenceImportPersistenceLedgerV62Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  ledgerStatus: string;
+  importBatches: Array<{
+    importId: string;
+    source: string;
+    status: string;
+    issuedVoucherCount: number;
+    receivedVoucherCount: number;
+    duplicateAccessKeys: number;
+    hashControl: string;
+    nextAction: string;
+  }>;
+  summary: {
+    batchCount: number;
+    persistedBatchCount: number;
+    totalVoucherCount: number;
+    duplicateAccessKeys: number;
+    reconciliationIssueCount: number;
+    blockingIssueCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxSriReconciliationExceptionQueueV62Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  queueStatus: string;
+  exceptions: Array<{
+    key: string;
+    label: string;
+    source: string;
+    severity: string;
+    status: string;
+    owner: string;
+    recommendedAction: string;
+  }>;
+  summary: {
+    exceptionCount: number;
+    criticalCount: number;
+    accountantOwnedCount: number;
+    operatorOwnedCount: number;
+    blockedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxFormBoxEvidenceBinderV2Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  formKey: string;
+  binderStatus: string;
+  boxEvidenceContracts: Array<{
+    boxKey: string;
+    label: string;
+    suggestedValueInCents: number;
+    currency: string;
+    readinessStatus: string;
+    confidence: string;
+    exceptionRefs: string[];
+    accountantQuestion: string;
+    reviewRequired: boolean;
+  }>;
+  summary: {
+    boxCount: number;
+    readyBoxCount: number;
+    reviewRequiredCount: number;
+    lowConfidenceCount: number;
+    exceptionLinkedBoxCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantPacketExportV62Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  packetStatus: string;
+  packetId: string;
+  packetSections: Array<{
+    key: string;
+    label: string;
+    status: string;
+    questions: string[];
+    owner: string;
+  }>;
+  summary: {
+    sectionCount: number;
+    questionCount: number;
+    blockerCount: number;
+    artifactCount: number;
+    accountantOwnedSectionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxOperatorActionCenterV62Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  actionCenterStatus: string;
+  actions: Array<{
+    key: string;
+    label: string;
+    lane: string;
+    priority: string;
+    status: string;
+    owner: string;
+    nextAction: string;
+  }>;
+  summary: {
+    actionCount: number;
+    blockedActionCount: number;
+    accountantActionCount: number;
+    operatorActionCount: number;
+    readyActionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxOperationalHardeningCloseoutV62Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    actionCount: number;
+    accountantQuestionCount: number;
+  };
+  recommendedNextProduct: string;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxEvidenceQualityCenterResponse {
   tenantSlug: string;
   period: string;
@@ -12686,7 +12850,10 @@ export interface PsychologyClinicProductReadinessReportResponse {
   decision: {
     productCanPauseAsMvp: boolean;
     openExternalIntegrationNow: boolean;
-    recommendedNextProduct: 'tax-compliance-ec' | 'accounting' | 'medical-clinics';
+    recommendedNextProduct:
+      | 'tax-compliance-ec'
+      | 'accounting'
+      | 'medical-clinics';
   };
   blockers: string[];
   nextStep: string;

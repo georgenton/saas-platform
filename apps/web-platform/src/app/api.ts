@@ -176,6 +176,12 @@ import {
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxComplianceCloseoutV2Response,
   EcuadorTaxDeclarationHandoffCloseoutV6Response,
+  EcuadorTaxAccountantPacketExportV62Response,
+  EcuadorTaxFormBoxEvidenceBinderV2Response,
+  EcuadorTaxOperationalHardeningCloseoutV62Response,
+  EcuadorTaxOperatorActionCenterV62Response,
+  EcuadorTaxSriEvidenceImportPersistenceLedgerV62Response,
+  EcuadorTaxSriReconciliationExceptionQueueV62Response,
   EcuadorTaxComplianceDeclarationCloseoutV3Response,
   EcuadorTaxComplianceHardeningCloseoutV4Response,
   EcuadorTaxCompliancePostFilingCloseoutV4Response,
@@ -3536,6 +3542,102 @@ export async function fetchEcuadorTaxDeclarationHandoffCloseoutV6(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/declaration-handoff-closeout-v6?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxSriEvidenceImportPersistenceLedgerV62(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxSriEvidenceImportPersistenceLedgerV62Response> {
+  return request<EcuadorTaxSriEvidenceImportPersistenceLedgerV62Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/sri-evidence-import-persistence-ledger-v62?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxSriReconciliationExceptionQueueV62(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxSriReconciliationExceptionQueueV62Response> {
+  return request<EcuadorTaxSriReconciliationExceptionQueueV62Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/sri-reconciliation-exception-queue-v62?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxFormBoxEvidenceBinderV2(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxFormBoxEvidenceBinderV2Response> {
+  return request<EcuadorTaxFormBoxEvidenceBinderV2Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/form-box-evidence-binder-v2?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}&formKey=iva`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAccountantPacketExportV62(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountantPacketExportV62Response> {
+  return request<EcuadorTaxAccountantPacketExportV62Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accountant-packet-export-v62?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxOperatorActionCenterV62(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxOperatorActionCenterV62Response> {
+  return request<EcuadorTaxOperatorActionCenterV62Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/operator-action-center-v62?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxOperationalHardeningCloseoutV62(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxOperationalHardeningCloseoutV62Response> {
+  return request<EcuadorTaxOperationalHardeningCloseoutV62Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/operational-hardening-closeout-v62?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },
@@ -9537,9 +9639,7 @@ export async function fetchPsychologyClinicCloseoutV4(
   tenantSlug: string,
 ): Promise<PsychologyClinicCloseoutV4Response> {
   return request<PsychologyClinicCloseoutV4Response>(
-    `/psychology-clinics/tenants/${encodeURIComponent(
-      tenantSlug,
-    )}/closeout-v4`,
+    `/psychology-clinics/tenants/${encodeURIComponent(tenantSlug)}/closeout-v4`,
     {
       method: 'GET',
       token,
@@ -9627,9 +9727,7 @@ export async function fetchPsychologyClinicCloseoutV5(
   tenantSlug: string,
 ): Promise<PsychologyClinicCloseoutV5Response> {
   return request<PsychologyClinicCloseoutV5Response>(
-    `/psychology-clinics/tenants/${encodeURIComponent(
-      tenantSlug,
-    )}/closeout-v5`,
+    `/psychology-clinics/tenants/${encodeURIComponent(tenantSlug)}/closeout-v5`,
     {
       method: 'GET',
       token,

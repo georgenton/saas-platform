@@ -79,6 +79,12 @@ const [
   accountantEscalationBoundary,
   accountingBoundaryAiReview,
   declarationHandoffCloseout,
+  sriImportLedgerV62,
+  sriExceptionQueueV62,
+  formBoxBinderV2,
+  accountantPacketV62,
+  operatorActionCenterV62,
+  operationalHardeningCloseoutV62,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -113,6 +119,38 @@ const [
   apiRequest({
     baseUrl,
     path: taxPath(`/declaration-handoff-closeout-v6?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(
+      `/sri-evidence-import-persistence-ledger-v62?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/sri-reconciliation-exception-queue-v62?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/form-box-evidence-binder-v2?${periodQuery()}&formKey=iva`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accountant-packet-export-v62?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/operator-action-center-v62?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/operational-hardening-closeout-v62?${periodQuery()}`),
     token,
   }),
 ]);
@@ -155,6 +193,26 @@ assertNonEmpty(
   'declaration handoff guardrails',
   declarationHandoffCloseout.guardrails,
 );
+assertValue('sri import ledger 6.2', sriImportLedgerV62.ledgerStatus);
+assertValue('sri exception queue 6.2', sriExceptionQueueV62.queueStatus);
+assertValue('form box binder v2', formBoxBinderV2.binderStatus);
+assertValue('accountant packet 6.2', accountantPacketV62.packetStatus);
+assertValue(
+  'operator action center 6.2',
+  operatorActionCenterV62.actionCenterStatus,
+);
+assertValue(
+  'operational hardening closeout 6.2',
+  operationalHardeningCloseoutV62.closeoutStatus,
+);
+assertNonEmpty(
+  'operator action center actions',
+  operatorActionCenterV62.actions,
+);
+assertNonEmpty(
+  'operational hardening checklist',
+  operationalHardeningCloseoutV62.closeoutChecklist,
+);
 
 printLine('sri import center', sriSourceImportCenter.centerStatus);
 printLine('iva workspace', vatDeclarationWorkspace.readinessStatus);
@@ -166,5 +224,12 @@ printLine('closeout 6.0', declarationHandoffCloseout.closeoutStatus);
 printLine('next step', declarationHandoffCloseout.decision.nextStep);
 printLine('handoff lanes', declarationHandoffCloseout.handoffLanes.length);
 printLine('guardrails', declarationHandoffCloseout.guardrails.length);
+printLine('import ledger 6.2', sriImportLedgerV62.ledgerStatus);
+printLine('exception queue 6.2', sriExceptionQueueV62.queueStatus);
+printLine('form binder 2.0', formBoxBinderV2.binderStatus);
+printLine('accountant packet 6.2', accountantPacketV62.packetStatus);
+printLine('action center 6.2', operatorActionCenterV62.actionCenterStatus);
+printLine('closeout 6.2', operationalHardeningCloseoutV62.closeoutStatus);
+printLine('actions', operatorActionCenterV62.actions.length);
 
-printSection('EC tax compliance closeout 6 smoke passed');
+printSection('EC tax compliance closeout 6/6.2 smoke passed');

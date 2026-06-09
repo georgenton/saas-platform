@@ -2136,6 +2136,205 @@ export interface EcuadorTaxFormBoxEvidenceBinderView {
   guardrails: string[];
 }
 
+export interface EcuadorTaxSriEvidenceImportPersistenceLedgerV62View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  ledgerStatus: EcuadorTaxReadinessStatus;
+  importBatches: Array<{
+    importId: string;
+    source: string;
+    importedByEmail: string | null;
+    recordedAt: Date;
+    status: EcuadorTaxReadinessStatus;
+    issuedVoucherCount: number;
+    receivedVoucherCount: number;
+    duplicateAccessKeys: number;
+    hashControl: string;
+    reconciliationStatus: EcuadorTaxReadinessStatus;
+    nextAction: string;
+  }>;
+  sourceChannels: EcuadorTaxSriSourceImportCenterV2View['sourceChannels'];
+  summary: {
+    batchCount: number;
+    persistedBatchCount: number;
+    totalVoucherCount: number;
+    duplicateAccessKeys: number;
+    reconciliationIssueCount: number;
+    blockingIssueCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxSriReconciliationExceptionQueueV62View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  queueStatus: EcuadorTaxReadinessStatus;
+  exceptions: Array<{
+    key: string;
+    label: string;
+    source: string;
+    severity: 'critical' | 'high' | 'medium' | 'low';
+    status: EcuadorTaxReadinessStatus;
+    owner: 'operator' | 'accountant' | 'tax_compliance';
+    evidenceRefs: string[];
+    recommendedAction: string;
+  }>;
+  summary: {
+    exceptionCount: number;
+    criticalCount: number;
+    accountantOwnedCount: number;
+    operatorOwnedCount: number;
+    blockedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxFormBoxEvidenceBinderV2View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  formKey: EcuadorTaxDeclarationFormKey;
+  binderStatus: EcuadorTaxReadinessStatus;
+  baseBinder: EcuadorTaxFormBoxEvidenceBinderView;
+  exceptionQueue: EcuadorTaxSriReconciliationExceptionQueueV62View;
+  boxEvidenceContracts: Array<{
+    boxKey: string;
+    label: string;
+    suggestedValueInCents: number;
+    currency: string;
+    readinessStatus: EcuadorTaxReadinessStatus;
+    confidence: 'high' | 'medium' | 'low';
+    evidenceRefs: string[];
+    exceptionRefs: string[];
+    accountantQuestion: string;
+    reviewRequired: boolean;
+    copyGuidance: string;
+  }>;
+  summary: {
+    boxCount: number;
+    readyBoxCount: number;
+    reviewRequiredCount: number;
+    lowConfidenceCount: number;
+    exceptionLinkedBoxCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantPacketExportV62View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packetStatus: EcuadorTaxReadinessStatus;
+  packetId: string;
+  closeout: EcuadorTaxDeclarationHandoffCloseoutV6View;
+  formBinder: EcuadorTaxFormBoxEvidenceBinderV2View;
+  exceptionQueue: EcuadorTaxSriReconciliationExceptionQueueV62View;
+  packetSections: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidenceRefs: string[];
+    questions: string[];
+    owner: 'operator' | 'accountant' | 'tax_compliance';
+  }>;
+  exportArtifacts: Array<{
+    key: string;
+    label: string;
+    format: 'json' | 'checklist' | 'evidence_index';
+    status: EcuadorTaxReadinessStatus;
+    manualOnly: boolean;
+  }>;
+  summary: {
+    sectionCount: number;
+    questionCount: number;
+    blockerCount: number;
+    artifactCount: number;
+    accountantOwnedSectionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxOperatorActionCenterV62View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  actionCenterStatus: EcuadorTaxReadinessStatus;
+  actions: Array<{
+    key: string;
+    label: string;
+    lane:
+      | 'sri_import'
+      | 'reconciliation'
+      | 'form_binder'
+      | 'accountant_packet'
+      | 'filing'
+      | 'closeout';
+    priority: 'critical' | 'high' | 'normal';
+    status: EcuadorTaxReadinessStatus;
+    owner: 'operator' | 'accountant' | 'tax_compliance';
+    evidenceRefs: string[];
+    nextAction: string;
+  }>;
+  summary: {
+    actionCount: number;
+    blockedActionCount: number;
+    accountantActionCount: number;
+    operatorActionCount: number;
+    readyActionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxOperationalHardeningCloseoutV62View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: EcuadorTaxReadinessStatus;
+  importLedger: EcuadorTaxSriEvidenceImportPersistenceLedgerV62View;
+  exceptionQueue: EcuadorTaxSriReconciliationExceptionQueueV62View;
+  formBinder: EcuadorTaxFormBoxEvidenceBinderV2View;
+  accountantPacket: EcuadorTaxAccountantPacketExportV62View;
+  actionCenter: EcuadorTaxOperatorActionCenterV62View;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    actionCount: number;
+    accountantQuestionCount: number;
+  };
+  recommendedNextProduct:
+    | 'tax_compliance_operational_pilot'
+    | 'medical_clinics_activation'
+    | 'accounting_advanced_discovery';
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxAnnexesReadinessV2View {
   tenantSlug: string;
   period: string;
@@ -3555,7 +3754,11 @@ export interface EcuadorTaxAccountingBoundaryAiReviewView {
   boundaryLanes: Array<{
     key: string;
     label: string;
-    owner: 'tax_compliance' | 'accounting_foundation' | 'accounting_advanced' | 'external_accountant';
+    owner:
+      | 'tax_compliance'
+      | 'accounting_foundation'
+      | 'accounting_advanced'
+      | 'external_accountant';
     status: EcuadorTaxReadinessStatus;
     explanation: string;
     blockedAutomation: string[];

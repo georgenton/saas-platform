@@ -173,12 +173,16 @@ import {
   fetchEcuadorTaxAnnexesWorkspace,
   fetchEcuadorTaxAnnualRollupWorkspace,
   fetchEcuadorTaxAssistedDeclarationReviewPackV2,
+  fetchEcuadorTaxAccountantPacketExportV62,
   fetchEcuadorTaxComplianceCloseoutV2,
   fetchEcuadorTaxComplianceProductCloseoutV3,
   fetchEcuadorTaxCommandCenter,
   fetchEcuadorTaxCommandCenterV2,
   fetchEcuadorTaxDeclarationArtifactExport,
   fetchEcuadorTaxDeclarationHandoffCloseoutV6,
+  fetchEcuadorTaxFormBoxEvidenceBinderV2,
+  fetchEcuadorTaxOperationalHardeningCloseoutV62,
+  fetchEcuadorTaxOperatorActionCenterV62,
   fetchEcuadorTaxDeclarationReviewLoopWorkspace,
   fetchEcuadorTaxDeclarationSourceLedger,
   fetchEcuadorTaxDeclarationFormDraftPacket,
@@ -217,7 +221,9 @@ import {
   fetchEcuadorTaxSalesBook,
   fetchEcuadorTaxSriFiscalEvidenceWorkspace,
   fetchEcuadorTaxSriEvidenceIntakeV2Workspace,
+  fetchEcuadorTaxSriEvidenceImportPersistenceLedgerV62,
   fetchEcuadorTaxSriPlatformReconciliationWorkspace,
+  fetchEcuadorTaxSriReconciliationExceptionQueueV62,
   fetchEcuadorTaxSriSourceImportCenterV2,
   fetchEcuadorTaxSupplierFiscalReadinessWorkspace,
   fetchEcuadorTaxAiFilingAssistantPacket,
@@ -682,8 +688,14 @@ import {
   EcuadorTaxAnnexesWorkspaceResponse,
   EcuadorTaxAnnualRollupWorkspaceResponse,
   EcuadorTaxAssistedDeclarationReviewPackV2Response,
+  EcuadorTaxAccountantPacketExportV62Response,
   EcuadorTaxComplianceCloseoutV2Response,
   EcuadorTaxDeclarationHandoffCloseoutV6Response,
+  EcuadorTaxFormBoxEvidenceBinderV2Response,
+  EcuadorTaxOperationalHardeningCloseoutV62Response,
+  EcuadorTaxOperatorActionCenterV62Response,
+  EcuadorTaxSriEvidenceImportPersistenceLedgerV62Response,
+  EcuadorTaxSriReconciliationExceptionQueueV62Response,
   EcuadorTaxComplianceProductCloseoutV3Response,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxCommandCenterResponse,
@@ -2594,6 +2606,35 @@ export function App() {
     taxComplianceDeclarationHandoffCloseoutV6,
     setTaxComplianceDeclarationHandoffCloseoutV6,
   ] = useState<EcuadorTaxDeclarationHandoffCloseoutV6Response | null>(null);
+  const [
+    taxComplianceSriImportLedgerV62,
+    setTaxComplianceSriImportLedgerV62,
+  ] =
+    useState<EcuadorTaxSriEvidenceImportPersistenceLedgerV62Response | null>(
+      null,
+    );
+  const [
+    taxComplianceSriExceptionQueueV62,
+    setTaxComplianceSriExceptionQueueV62,
+  ] = useState<EcuadorTaxSriReconciliationExceptionQueueV62Response | null>(
+    null,
+  );
+  const [
+    taxComplianceFormBoxBinderV2,
+    setTaxComplianceFormBoxBinderV2,
+  ] = useState<EcuadorTaxFormBoxEvidenceBinderV2Response | null>(null);
+  const [
+    taxComplianceAccountantPacketV62,
+    setTaxComplianceAccountantPacketV62,
+  ] = useState<EcuadorTaxAccountantPacketExportV62Response | null>(null);
+  const [
+    taxComplianceOperatorActionCenterV62,
+    setTaxComplianceOperatorActionCenterV62,
+  ] = useState<EcuadorTaxOperatorActionCenterV62Response | null>(null);
+  const [
+    taxComplianceOperationalHardeningCloseoutV62,
+    setTaxComplianceOperationalHardeningCloseoutV62,
+  ] = useState<EcuadorTaxOperationalHardeningCloseoutV62Response | null>(null);
   const [
     taxComplianceEvidenceQualityCenter,
     setTaxComplianceEvidenceQualityCenter,
@@ -19840,6 +19881,12 @@ export function App() {
         nextAccountantEscalationBoundary,
         nextCloseoutV2,
         nextDeclarationHandoffCloseoutV6,
+        nextSriImportLedgerV62,
+        nextSriExceptionQueueV62,
+        nextFormBoxBinderV2,
+        nextAccountantPacketV62,
+        nextOperatorActionCenterV62,
+        nextOperationalHardeningCloseoutV62,
         nextEvidenceQualityCenter,
         nextObligationRiskMonitor,
         nextAccountantHandoffRoomV2,
@@ -20165,6 +20212,42 @@ export function App() {
           year,
         ),
         fetchEcuadorTaxDeclarationHandoffCloseoutV6(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxSriEvidenceImportPersistenceLedgerV62(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxSriReconciliationExceptionQueueV62(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxFormBoxEvidenceBinderV2(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAccountantPacketExportV62(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxOperatorActionCenterV62(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxOperationalHardeningCloseoutV62(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -20640,6 +20723,14 @@ export function App() {
         setTaxComplianceCloseoutV2(nextCloseoutV2);
         setTaxComplianceDeclarationHandoffCloseoutV6(
           nextDeclarationHandoffCloseoutV6,
+        );
+        setTaxComplianceSriImportLedgerV62(nextSriImportLedgerV62);
+        setTaxComplianceSriExceptionQueueV62(nextSriExceptionQueueV62);
+        setTaxComplianceFormBoxBinderV2(nextFormBoxBinderV2);
+        setTaxComplianceAccountantPacketV62(nextAccountantPacketV62);
+        setTaxComplianceOperatorActionCenterV62(nextOperatorActionCenterV62);
+        setTaxComplianceOperationalHardeningCloseoutV62(
+          nextOperationalHardeningCloseoutV62,
         );
         setTaxComplianceEvidenceQualityCenter(nextEvidenceQualityCenter);
         setTaxComplianceObligationRiskMonitor(nextObligationRiskMonitor);
@@ -32596,6 +32687,97 @@ export function App() {
                         </ul>
                       </div>
                     ) : null}
+                    {taxComplianceOperationalHardeningCloseoutV62 &&
+                    taxComplianceOperatorActionCenterV62 &&
+                    taxComplianceSriImportLedgerV62 &&
+                    taxComplianceSriExceptionQueueV62 &&
+                    taxComplianceFormBoxBinderV2 &&
+                    taxComplianceAccountantPacketV62 ? (
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <div>
+                            <strong>Operational hardening 6.2</strong>
+                            <p className={styles.muted}>
+                              {taxComplianceOperationalHardeningCloseoutV62.nextStep}
+                            </p>
+                          </div>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              taxComplianceOperationalHardeningCloseoutV62.closeoutStatus,
+                            )}`}
+                          >
+                            {humanizeKey(
+                              taxComplianceOperationalHardeningCloseoutV62.recommendedNextProduct,
+                            )}
+                          </span>
+                        </div>
+                        <div className={styles.invoiceInlineGrid}>
+                          <div>
+                            <span className={styles.muted}>SRI batches</span>
+                            <strong>
+                              {
+                                taxComplianceSriImportLedgerV62.summary
+                                  .persistedBatchCount
+                              }
+                              /
+                              {taxComplianceSriImportLedgerV62.summary.batchCount}
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Exceptions</span>
+                            <strong>
+                              {
+                                taxComplianceSriExceptionQueueV62.summary
+                                  .blockedCount
+                              }{' '}
+                              bloqueantes
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Binder IVA</span>
+                            <strong>
+                              {taxComplianceFormBoxBinderV2.summary.readyBoxCount}
+                              /{taxComplianceFormBoxBinderV2.summary.boxCount}
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Packet contador</span>
+                            <strong>
+                              {
+                                taxComplianceAccountantPacketV62.summary
+                                  .questionCount
+                              }{' '}
+                              preguntas
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Action center</span>
+                            <strong>
+                              {
+                                taxComplianceOperatorActionCenterV62.summary
+                                  .readyActionCount
+                              }
+                              /
+                              {
+                                taxComplianceOperatorActionCenterV62.summary
+                                  .actionCount
+                              }
+                            </strong>
+                          </div>
+                        </div>
+                        <ul className={styles.compactList}>
+                          {taxComplianceOperatorActionCenterV62.actions.map(
+                            (action) => (
+                              <li key={action.key}>
+                                <strong>{action.label}</strong> ·{' '}
+                                {humanizeKey(action.status)} ·{' '}
+                                {humanizeKey(action.owner)} · {action.nextAction}
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                      </div>
+                    ) : null}
                     {taxComplianceEvidenceQualityCenter &&
                     taxComplianceObligationRiskMonitor &&
                     taxComplianceAccountantHandoffRoomV2 &&
@@ -40551,6 +40733,16 @@ export function App() {
                       ? humanizeKey(
                           taxComplianceDeclarationHandoffCloseoutV6.decision
                             .nextStep,
+                        )
+                      : 'Sin cargar'}
+                  </strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Hardening 6.2</span>
+                  <strong>
+                    {taxComplianceOperationalHardeningCloseoutV62
+                      ? humanizeKey(
+                          taxComplianceOperationalHardeningCloseoutV62.closeoutStatus,
                         )
                       : 'Sin cargar'}
                   </strong>

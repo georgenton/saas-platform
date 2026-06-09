@@ -115,6 +115,11 @@ const [
   growthBridge,
   billingBridge,
   productCloseout,
+  commandCenter,
+  patientQueue,
+  appointmentQueue,
+  handoffCenter,
+  operatingCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -204,6 +209,23 @@ const [
   apiRequest({ baseUrl, path: clinicsPath('/growth-reminder-bridge'), token }),
   apiRequest({ baseUrl, path: clinicsPath('/billing-tax-bridge'), token }),
   apiRequest({ baseUrl, path: clinicsPath('/product-closeout'), token }),
+  apiRequest({ baseUrl, path: clinicsPath('/command-center-v60'), token }),
+  apiRequest({
+    baseUrl,
+    path: clinicsPath('/patient-identity-consent-queue-v60'),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: clinicsPath('/appointment-encounter-queue-v60'),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: clinicsPath('/cross-product-handoff-center-v60'),
+    token,
+  }),
+  apiRequest({ baseUrl, path: clinicsPath('/operating-closeout-v60'), token }),
 ]);
 
 assertStatus('encounter workspace', encounter.workspaceStatus);
@@ -220,9 +242,19 @@ assertStatus('records closeout', recordsCloseout.closeoutStatus);
 assertStatus('growth bridge', growthBridge.bridgeStatus);
 assertStatus('billing bridge', billingBridge.bridgeStatus);
 assertStatus('product closeout', productCloseout.closeoutStatus);
+assertStatus('command center 6.0', commandCenter.commandStatus);
+assertStatus('patient queue 6.0', patientQueue.queueStatus);
+assertStatus('appointment queue 6.0', appointmentQueue.queueStatus);
+assertStatus('handoff center 6.0', handoffCenter.handoffStatus);
+assertStatus('operating closeout 6.0', operatingCloseout.closeoutStatus);
 
 printLine('encounter', encounter.workspaceStatus);
 printLine('records', recordsCloseout.closeoutStatus);
 printLine('product closeout', productCloseout.closeoutStatus);
 printLine('next product', productCloseout.recommendedNextProduct);
+printLine('command center 6.0', commandCenter.commandStatus);
+printLine('patient queue 6.0', patientQueue.queueStatus);
+printLine('appointment queue 6.0', appointmentQueue.queueStatus);
+printLine('handoff center 6.0', handoffCenter.handoffStatus);
+printLine('operating closeout 6.0', operatingCloseout.closeoutStatus);
 printLine('status', 'ok');

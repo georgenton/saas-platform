@@ -10,12 +10,16 @@ import {
 } from '@nestjs/common';
 import {
   CreateTenantMedicalClinicAppointmentUseCase,
+  GetTenantMedicalClinicAppointmentEncounterQueueV60UseCase,
   GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
   GetTenantMedicalClinicCarePlanTaskWorkspaceUseCase,
   GetTenantMedicalClinicClinicalEvidenceRegistryUseCase,
+  GetTenantMedicalClinicCommandCenterV60UseCase,
+  GetTenantMedicalClinicCrossProductHandoffCenterV60UseCase,
   GetTenantMedicalClinicEncounterWorkspaceUseCase,
   GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
   GetTenantMedicalClinicPatientClinicalTimelineWorkspaceUseCase,
+  GetTenantMedicalClinicPatientIdentityConsentQueueV60UseCase,
   GetTenantMedicalClinicProductAnchorUseCase,
   GetTenantMedicalClinicProductCloseoutUseCase,
   GetTenantMedicalClinicProfileWorkspaceUseCase,
@@ -29,6 +33,7 @@ import {
   RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
   RequestTenantMedicalClinicMedicalHistoryDraftRecordUseCase,
   RequestTenantMedicalClinicOrdersReferralReadinessPacketUseCase,
+  RequestTenantMedicalClinicOperatingCloseoutV60UseCase,
   RequestTenantMedicalClinicPrescriptionReadinessPacketUseCase,
   RequestTenantMedicalClinicRecordsCloseoutUseCase,
   TransitionTenantMedicalClinicAppointmentUseCase,
@@ -43,21 +48,26 @@ import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard
 import {
   CreateMedicalClinicAppointmentRequestDto,
   MedicalClinicAppointmentRecordResponseDto,
+  MedicalClinicAppointmentEncounterQueueV60ResponseDto,
   MedicalClinicAppointmentSchedulingWorkspaceResponseDto,
   MedicalClinicBillingTaxBridgeResponseDto,
   MedicalClinicCarePlanTaskWorkspaceResponseDto,
   MedicalClinicClinicalBoundaryCloseoutResponseDto,
   MedicalClinicClinicalEvidenceRegistryResponseDto,
   MedicalClinicClinicalNoteDraftPacketResponseDto,
+  MedicalClinicCommandCenterV60ResponseDto,
+  MedicalClinicCrossProductHandoffCenterV60ResponseDto,
   MedicalClinicEncounterCloseoutResponseDto,
   MedicalClinicEncounterWorkspaceResponseDto,
   MedicalClinicGrowthReminderBridgeResponseDto,
   MedicalClinicMedicalHistoryDraftRecordResponseDto,
   MedicalClinicOrdersReferralReadinessPacketResponseDto,
   MedicalClinicPatientClinicalTimelineWorkspaceResponseDto,
+  MedicalClinicPatientIdentityConsentQueueV60ResponseDto,
   MedicalClinicPatientRecordResponseDto,
   MedicalClinicPatientIntakeWorkspaceResponseDto,
   MedicalClinicPrescriptionReadinessPacketResponseDto,
+  MedicalClinicOperatingCloseoutV60ResponseDto,
   MedicalClinicProductAnchorResponseDto,
   MedicalClinicProductCloseoutResponseDto,
   MedicalClinicProfileWorkspaceResponseDto,
@@ -67,21 +77,26 @@ import {
   TransitionMedicalClinicAppointmentRequestDto,
   UpsertMedicalClinicProfileWorkspaceRequestDto,
   toMedicalClinicAppointmentRecordResponseDto,
+  toMedicalClinicAppointmentEncounterQueueV60ResponseDto,
   toMedicalClinicAppointmentSchedulingWorkspaceResponseDto,
   toMedicalClinicBillingTaxBridgeResponseDto,
   toMedicalClinicCarePlanTaskWorkspaceResponseDto,
   toMedicalClinicClinicalBoundaryCloseoutResponseDto,
   toMedicalClinicClinicalEvidenceRegistryResponseDto,
   toMedicalClinicClinicalNoteDraftPacketResponseDto,
+  toMedicalClinicCommandCenterV60ResponseDto,
+  toMedicalClinicCrossProductHandoffCenterV60ResponseDto,
   toMedicalClinicEncounterCloseoutResponseDto,
   toMedicalClinicEncounterWorkspaceResponseDto,
   toMedicalClinicGrowthReminderBridgeResponseDto,
   toMedicalClinicMedicalHistoryDraftRecordResponseDto,
   toMedicalClinicOrdersReferralReadinessPacketResponseDto,
   toMedicalClinicPatientClinicalTimelineWorkspaceResponseDto,
+  toMedicalClinicPatientIdentityConsentQueueV60ResponseDto,
   toMedicalClinicPatientRecordResponseDto,
   toMedicalClinicPatientIntakeWorkspaceResponseDto,
   toMedicalClinicPrescriptionReadinessPacketResponseDto,
+  toMedicalClinicOperatingCloseoutV60ResponseDto,
   toMedicalClinicProductAnchorResponseDto,
   toMedicalClinicProductCloseoutResponseDto,
   toMedicalClinicProfileWorkspaceResponseDto,
@@ -123,6 +138,11 @@ export class MedicalClinicsController {
     private readonly getTenantMedicalClinicCarePlanTaskWorkspaceUseCase: GetTenantMedicalClinicCarePlanTaskWorkspaceUseCase,
     private readonly requestTenantMedicalClinicRecordsCloseoutUseCase: RequestTenantMedicalClinicRecordsCloseoutUseCase,
     private readonly getTenantMedicalClinicProductCloseoutUseCase: GetTenantMedicalClinicProductCloseoutUseCase,
+    private readonly getTenantMedicalClinicCommandCenterV60UseCase: GetTenantMedicalClinicCommandCenterV60UseCase,
+    private readonly getTenantMedicalClinicPatientIdentityConsentQueueV60UseCase: GetTenantMedicalClinicPatientIdentityConsentQueueV60UseCase,
+    private readonly getTenantMedicalClinicAppointmentEncounterQueueV60UseCase: GetTenantMedicalClinicAppointmentEncounterQueueV60UseCase,
+    private readonly getTenantMedicalClinicCrossProductHandoffCenterV60UseCase: GetTenantMedicalClinicCrossProductHandoffCenterV60UseCase,
+    private readonly requestTenantMedicalClinicOperatingCloseoutV60UseCase: RequestTenantMedicalClinicOperatingCloseoutV60UseCase,
   ) {}
 
   @Get(':slug/product-anchor')
@@ -142,6 +162,67 @@ export class MedicalClinicsController {
   ): Promise<MedicalClinicProductCloseoutResponseDto> {
     return toMedicalClinicProductCloseoutResponseDto(
       await this.getTenantMedicalClinicProductCloseoutUseCase.execute({
+        tenantSlug,
+      }),
+    );
+  }
+
+  @Get(':slug/command-center-v60')
+  async getCommandCenterV60(
+    @Param('slug') tenantSlug: string,
+  ): Promise<MedicalClinicCommandCenterV60ResponseDto> {
+    return toMedicalClinicCommandCenterV60ResponseDto(
+      await this.getTenantMedicalClinicCommandCenterV60UseCase.execute({
+        tenantSlug,
+      }),
+    );
+  }
+
+  @Get(':slug/patient-identity-consent-queue-v60')
+  async getPatientIdentityConsentQueueV60(
+    @Param('slug') tenantSlug: string,
+  ): Promise<MedicalClinicPatientIdentityConsentQueueV60ResponseDto> {
+    return toMedicalClinicPatientIdentityConsentQueueV60ResponseDto(
+      await this.getTenantMedicalClinicPatientIdentityConsentQueueV60UseCase.execute(
+        {
+          tenantSlug,
+        },
+      ),
+    );
+  }
+
+  @Get(':slug/appointment-encounter-queue-v60')
+  async getAppointmentEncounterQueueV60(
+    @Param('slug') tenantSlug: string,
+  ): Promise<MedicalClinicAppointmentEncounterQueueV60ResponseDto> {
+    return toMedicalClinicAppointmentEncounterQueueV60ResponseDto(
+      await this.getTenantMedicalClinicAppointmentEncounterQueueV60UseCase.execute(
+        {
+          tenantSlug,
+        },
+      ),
+    );
+  }
+
+  @Get(':slug/cross-product-handoff-center-v60')
+  async getCrossProductHandoffCenterV60(
+    @Param('slug') tenantSlug: string,
+  ): Promise<MedicalClinicCrossProductHandoffCenterV60ResponseDto> {
+    return toMedicalClinicCrossProductHandoffCenterV60ResponseDto(
+      await this.getTenantMedicalClinicCrossProductHandoffCenterV60UseCase.execute(
+        {
+          tenantSlug,
+        },
+      ),
+    );
+  }
+
+  @Get(':slug/operating-closeout-v60')
+  async getOperatingCloseoutV60(
+    @Param('slug') tenantSlug: string,
+  ): Promise<MedicalClinicOperatingCloseoutV60ResponseDto> {
+    return toMedicalClinicOperatingCloseoutV60ResponseDto(
+      await this.requestTenantMedicalClinicOperatingCloseoutV60UseCase.execute({
         tenantSlug,
       }),
     );

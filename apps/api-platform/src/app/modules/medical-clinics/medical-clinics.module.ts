@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
 import {
   CreateTenantMedicalClinicAppointmentUseCase,
+  GetTenantMedicalClinicAppointmentEncounterQueueV60UseCase,
   GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
   GetTenantMedicalClinicCarePlanTaskWorkspaceUseCase,
   GetTenantMedicalClinicClinicalEvidenceRegistryUseCase,
+  GetTenantMedicalClinicCommandCenterV60UseCase,
+  GetTenantMedicalClinicCrossProductHandoffCenterV60UseCase,
   GetTenantMedicalClinicEncounterWorkspaceUseCase,
   GetTenantMedicalClinicPatientClinicalTimelineWorkspaceUseCase,
+  GetTenantMedicalClinicPatientIdentityConsentQueueV60UseCase,
   GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
   GetTenantMedicalClinicProductAnchorUseCase,
   GetTenantMedicalClinicProductCloseoutUseCase,
@@ -22,6 +26,7 @@ import {
   RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
   RequestTenantMedicalClinicMedicalHistoryDraftRecordUseCase,
   RequestTenantMedicalClinicOrdersReferralReadinessPacketUseCase,
+  RequestTenantMedicalClinicOperatingCloseoutV60UseCase,
   RequestTenantMedicalClinicRecordsCloseoutUseCase,
   TransitionTenantMedicalClinicAppointmentUseCase,
   UpsertTenantMedicalClinicProfileWorkspaceUseCase,
@@ -70,6 +75,33 @@ import { MedicalClinicsController } from './medical-clinics.controller';
         new GetTenantMedicalClinicProductCloseoutUseCase(operationsRepository),
     },
     {
+      provide: GetTenantMedicalClinicCommandCenterV60UseCase,
+      inject: [
+        GetTenantMedicalClinicProductAnchorUseCase,
+        GetTenantMedicalClinicProductCloseoutUseCase,
+        GetTenantMedicalClinicProfileWorkspaceUseCase,
+        GetTenantMedicalClinicPatientIntakeWorkspaceUseCase,
+        GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
+        RequestTenantMedicalClinicClinicalBoundaryCloseoutUseCase,
+      ],
+      useFactory: (
+        getTenantMedicalClinicProductAnchorUseCase,
+        getTenantMedicalClinicProductCloseoutUseCase,
+        getTenantMedicalClinicProfileWorkspaceUseCase,
+        getTenantMedicalClinicPatientIntakeWorkspaceUseCase,
+        getTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
+        requestTenantMedicalClinicClinicalBoundaryCloseoutUseCase,
+      ) =>
+        new GetTenantMedicalClinicCommandCenterV60UseCase(
+          getTenantMedicalClinicProductAnchorUseCase,
+          getTenantMedicalClinicProductCloseoutUseCase,
+          getTenantMedicalClinicProfileWorkspaceUseCase,
+          getTenantMedicalClinicPatientIntakeWorkspaceUseCase,
+          getTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
+          requestTenantMedicalClinicClinicalBoundaryCloseoutUseCase,
+        ),
+    },
+    {
       provide: GetTenantMedicalClinicProfileWorkspaceUseCase,
       inject: [MEDICAL_CLINIC_OPERATIONS_REPOSITORY],
       useFactory: (operationsRepository) =>
@@ -96,6 +128,14 @@ import { MedicalClinicsController } from './medical-clinics.controller';
         ),
     },
     {
+      provide: GetTenantMedicalClinicPatientIdentityConsentQueueV60UseCase,
+      inject: [GetTenantMedicalClinicPatientIntakeWorkspaceUseCase],
+      useFactory: (getTenantMedicalClinicPatientIntakeWorkspaceUseCase) =>
+        new GetTenantMedicalClinicPatientIdentityConsentQueueV60UseCase(
+          getTenantMedicalClinicPatientIntakeWorkspaceUseCase,
+        ),
+    },
+    {
       provide: RegisterTenantMedicalClinicPatientIntakeUseCase,
       inject: [
         MEDICAL_CLINIC_OPERATIONS_REPOSITORY,
@@ -113,6 +153,16 @@ import { MedicalClinicsController } from './medical-clinics.controller';
       useFactory: (operationsRepository) =>
         new GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase(
           operationsRepository,
+        ),
+    },
+    {
+      provide: GetTenantMedicalClinicAppointmentEncounterQueueV60UseCase,
+      inject: [GetTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase],
+      useFactory: (
+        getTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
+      ) =>
+        new GetTenantMedicalClinicAppointmentEncounterQueueV60UseCase(
+          getTenantMedicalClinicAppointmentSchedulingWorkspaceUseCase,
         ),
     },
     {
@@ -161,6 +211,21 @@ import { MedicalClinicsController } from './medical-clinics.controller';
         new RequestTenantMedicalClinicBillingTaxBridgeUseCase(
           operationsRepository,
           idGenerator,
+        ),
+    },
+    {
+      provide: GetTenantMedicalClinicCrossProductHandoffCenterV60UseCase,
+      inject: [
+        RequestTenantMedicalClinicGrowthReminderBridgeUseCase,
+        RequestTenantMedicalClinicBillingTaxBridgeUseCase,
+      ],
+      useFactory: (
+        requestTenantMedicalClinicGrowthReminderBridgeUseCase,
+        requestTenantMedicalClinicBillingTaxBridgeUseCase,
+      ) =>
+        new GetTenantMedicalClinicCrossProductHandoffCenterV60UseCase(
+          requestTenantMedicalClinicGrowthReminderBridgeUseCase,
+          requestTenantMedicalClinicBillingTaxBridgeUseCase,
         ),
     },
     {
@@ -274,6 +339,30 @@ import { MedicalClinicsController } from './medical-clinics.controller';
         new RequestTenantMedicalClinicRecordsCloseoutUseCase(
           operationsRepository,
           idGenerator,
+        ),
+    },
+    {
+      provide: RequestTenantMedicalClinicOperatingCloseoutV60UseCase,
+      inject: [
+        GetTenantMedicalClinicCommandCenterV60UseCase,
+        GetTenantMedicalClinicPatientIdentityConsentQueueV60UseCase,
+        GetTenantMedicalClinicAppointmentEncounterQueueV60UseCase,
+        GetTenantMedicalClinicCrossProductHandoffCenterV60UseCase,
+        GetTenantMedicalClinicProductCloseoutUseCase,
+      ],
+      useFactory: (
+        getTenantMedicalClinicCommandCenterV60UseCase,
+        getTenantMedicalClinicPatientIdentityConsentQueueV60UseCase,
+        getTenantMedicalClinicAppointmentEncounterQueueV60UseCase,
+        getTenantMedicalClinicCrossProductHandoffCenterV60UseCase,
+        getTenantMedicalClinicProductCloseoutUseCase,
+      ) =>
+        new RequestTenantMedicalClinicOperatingCloseoutV60UseCase(
+          getTenantMedicalClinicCommandCenterV60UseCase,
+          getTenantMedicalClinicPatientIdentityConsentQueueV60UseCase,
+          getTenantMedicalClinicAppointmentEncounterQueueV60UseCase,
+          getTenantMedicalClinicCrossProductHandoffCenterV60UseCase,
+          getTenantMedicalClinicProductCloseoutUseCase,
         ),
     },
     {

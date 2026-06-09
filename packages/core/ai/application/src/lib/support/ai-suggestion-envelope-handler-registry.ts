@@ -4,6 +4,7 @@ import { GetTenantGrowthAssistAiSuggestionEnvelopeUseCase } from '../use-cases/g
 import { GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase } from '../use-cases/get-tenant-invoice-document-assistant-ai-suggestion-envelope.use-case';
 import { GetTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase } from '../use-cases/get-tenant-medical-clinic-assistant-ai-suggestion-envelope.use-case';
 import { GetTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase } from '../use-cases/get-tenant-psychology-clinic-assistant-ai-suggestion-envelope.use-case';
+import { GetTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase } from '../use-cases/get-tenant-tax-accounting-boundary-assistant-ai-suggestion-envelope.use-case';
 
 export interface TenantAiSuggestionEnvelopeHandler {
   execute(
@@ -18,6 +19,7 @@ export interface AiSuggestionEnvelopeHandlerRegistryInput {
   ecommerceLaunchAssistant: GetTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase;
   medicalClinicAssistant: GetTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase;
   psychologyClinicAssistant: GetTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase;
+  taxAccountingBoundaryAssistant: GetTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase;
 }
 
 export function createAiSuggestionEnvelopeHandlerRegistry(
@@ -29,5 +31,6 @@ export function createAiSuggestionEnvelopeHandlerRegistry(
     'ecommerce-launch-assistant': input.ecommerceLaunchAssistant,
     'medical-clinic-assistant': input.medicalClinicAssistant,
     'psychology-clinic-assistant': input.psychologyClinicAssistant,
+    'tax-accounting-boundary-assistant': input.taxAccountingBoundaryAssistant,
   };
 }

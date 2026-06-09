@@ -19,6 +19,9 @@ describe('AI suggestion envelope router use case', () => {
   const psychologyHandler = {
     execute: jest.fn(),
   };
+  const taxAccountingBoundaryHandler = {
+    execute: jest.fn(),
+  };
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -40,6 +43,7 @@ describe('AI suggestion envelope router use case', () => {
       ecommerceHandler as any,
       medicalHandler as any,
       psychologyHandler as any,
+      taxAccountingBoundaryHandler as any,
     );
 
     const result = await useCase.execute('saas-platform', 'growth-assist-coach');
@@ -73,6 +77,7 @@ describe('AI suggestion envelope router use case', () => {
       ecommerceHandler as any,
       medicalHandler as any,
       psychologyHandler as any,
+      taxAccountingBoundaryHandler as any,
     );
 
     await useCase.execute('saas-platform', 'invoice-document-assistant');
@@ -101,6 +106,7 @@ describe('AI suggestion envelope router use case', () => {
       ecommerceHandler as any,
       medicalHandler as any,
       psychologyHandler as any,
+      taxAccountingBoundaryHandler as any,
     );
 
     await useCase.execute('saas-platform', 'ecommerce-launch-assistant');
@@ -129,6 +135,7 @@ describe('AI suggestion envelope router use case', () => {
       ecommerceHandler as any,
       medicalHandler as any,
       psychologyHandler as any,
+      taxAccountingBoundaryHandler as any,
     );
 
     await useCase.execute('saas-platform', 'medical-clinic-assistant');
@@ -159,6 +166,7 @@ describe('AI suggestion envelope router use case', () => {
       ecommerceHandler as any,
       medicalHandler as any,
       psychologyHandler as any,
+      taxAccountingBoundaryHandler as any,
     );
 
     await useCase.execute('saas-platform', 'psychology-clinic-assistant');
@@ -173,6 +181,38 @@ describe('AI suggestion envelope router use case', () => {
     expect(medicalHandler.execute).not.toHaveBeenCalled();
   });
 
+  it('routes tax accounting boundary envelopes through the tax accounting boundary handler', async () => {
+    taxAccountingBoundaryHandler.execute.mockResolvedValue({
+      tenantSlug: 'saas-platform',
+      mode: 'suggestion',
+      generatedAt: new Date('2026-06-08T10:00:00.000Z'),
+      agent: {
+        key: 'tax-accounting-boundary-assistant',
+      },
+    });
+
+    const useCase = new GetTenantAiSuggestionEnvelopeUseCase(
+      growthHandler as any,
+      invoiceHandler as any,
+      ecommerceHandler as any,
+      medicalHandler as any,
+      psychologyHandler as any,
+      taxAccountingBoundaryHandler as any,
+    );
+
+    await useCase.execute('saas-platform', 'tax-accounting-boundary-assistant');
+
+    expect(taxAccountingBoundaryHandler.execute).toHaveBeenCalledWith(
+      'saas-platform',
+      'tax-accounting-boundary-assistant',
+    );
+    expect(growthHandler.execute).not.toHaveBeenCalled();
+    expect(invoiceHandler.execute).not.toHaveBeenCalled();
+    expect(ecommerceHandler.execute).not.toHaveBeenCalled();
+    expect(medicalHandler.execute).not.toHaveBeenCalled();
+    expect(psychologyHandler.execute).not.toHaveBeenCalled();
+  });
+
   it('rejects unknown agents before routing', async () => {
     const useCase = new GetTenantAiSuggestionEnvelopeUseCase(
       growthHandler as any,
@@ -180,6 +220,7 @@ describe('AI suggestion envelope router use case', () => {
       ecommerceHandler as any,
       medicalHandler as any,
       psychologyHandler as any,
+      taxAccountingBoundaryHandler as any,
     );
 
     await expect(

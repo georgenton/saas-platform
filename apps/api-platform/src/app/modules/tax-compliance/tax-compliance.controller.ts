@@ -10,7 +10,9 @@ import {
 } from '@nestjs/common';
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
+  GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
   GetTenantEcuadorTaxAccountingAdvancedDiscoveryGateUseCase,
+  GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase,
   GetTenantEcuadorTaxAccountantEscalationServiceBoundaryUseCase,
   GetTenantEcuadorTaxAccountantFilingReviewRoomV3UseCase,
   GetTenantEcuadorTaxAccountantHandoffRoomV2UseCase,
@@ -62,6 +64,7 @@ import {
   GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxPostFilingExceptionCenterUseCase,
+  GetTenantEcuadorTaxProfessionalHandoffV6UseCase,
   GetTenantEcuadorTaxExternalAccountantAnnualReviewRoomUseCase,
   GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
   GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
@@ -136,17 +139,23 @@ import {
 } from '@saas-platform/tax-compliance-application';
 import {
   EcuadorTaxAccountingAdvancedDiscoveryGateResponseDto,
+  EcuadorTaxAccountingAdvancedGateV2ResponseDto,
+  EcuadorTaxAccountingBoundaryAiReviewResponseDto,
   EcuadorTaxAnnualFiscalYearWorkspaceResponseDto,
   EcuadorTaxAnnualIncomeTaxReconciliationV2ResponseDto,
   EcuadorTaxAuditReadinessBinderResponseDto,
   EcuadorTaxComplianceAnnualCloseoutV5ResponseDto,
   EcuadorTaxExternalAccountantAnnualReviewRoomResponseDto,
+  EcuadorTaxProfessionalHandoffV6ResponseDto,
+  toEcuadorTaxAccountingAdvancedGateV2ResponseDto,
   toEcuadorTaxAccountingAdvancedDiscoveryGateResponseDto,
+  toEcuadorTaxAccountingBoundaryAiReviewResponseDto,
   toEcuadorTaxAnnualFiscalYearWorkspaceResponseDto,
   toEcuadorTaxAnnualIncomeTaxReconciliationV2ResponseDto,
   toEcuadorTaxAuditReadinessBinderResponseDto,
   toEcuadorTaxComplianceAnnualCloseoutV5ResponseDto,
   toEcuadorTaxExternalAccountantAnnualReviewRoomResponseDto,
+  toEcuadorTaxProfessionalHandoffV6ResponseDto,
 } from './dto/ecuador-tax-annual-closeout-v5.response';
 import { TenantNotFoundError } from '@saas-platform/tenancy-application';
 import { EcuadorTaxDeclarationFormKey } from '@saas-platform/tax-compliance-domain';
@@ -709,6 +718,9 @@ export class TaxComplianceController {
     private readonly getTenantEcuadorTaxExternalAccountantAnnualReviewRoomUseCase: GetTenantEcuadorTaxExternalAccountantAnnualReviewRoomUseCase,
     private readonly getTenantEcuadorTaxAccountingAdvancedDiscoveryGateUseCase: GetTenantEcuadorTaxAccountingAdvancedDiscoveryGateUseCase,
     private readonly requestTenantEcuadorTaxComplianceAnnualCloseoutV5UseCase: RequestTenantEcuadorTaxComplianceAnnualCloseoutV5UseCase,
+    private readonly getTenantEcuadorTaxProfessionalHandoffV6UseCase: GetTenantEcuadorTaxProfessionalHandoffV6UseCase,
+    private readonly getTenantEcuadorTaxAccountingAdvancedGateV2UseCase: GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
+    private readonly getTenantEcuadorTaxAccountingBoundaryAiReviewUseCase: GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase,
   ) {}
 
   @Get(':slug/ec/taxpayer-profile')
@@ -4069,12 +4081,94 @@ export class TaxComplianceController {
       throw error;
     }
   }
+
+  @Get(':slug/ec/professional-handoff-v6')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getProfessionalHandoffV6(
+    @Param('slug') slug: string,
+    @Query('period') period?: string,
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxProfessionalHandoffV6ResponseDto> {
+    try {
+      const handoff =
+        await this.getTenantEcuadorTaxProfessionalHandoffV6UseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period: resolvePeriod(period),
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxProfessionalHandoffV6ResponseDto(handoff);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/accounting-advanced-gate-v2')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getAccountingAdvancedGateV2(
+    @Param('slug') slug: string,
+    @Query('period') period?: string,
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountingAdvancedGateV2ResponseDto> {
+    try {
+      const gate =
+        await this.getTenantEcuadorTaxAccountingAdvancedGateV2UseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period: resolvePeriod(period),
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxAccountingAdvancedGateV2ResponseDto(gate);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/accounting-boundary-ai-review')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getAccountingBoundaryAiReview(
+    @Param('slug') slug: string,
+    @Query('period') period?: string,
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountingBoundaryAiReviewResponseDto> {
+    try {
+      const review =
+        await this.getTenantEcuadorTaxAccountingBoundaryAiReviewUseCase.execute({
+          tenantSlug: tenantAccess?.tenantSlug ?? slug,
+          period: resolvePeriod(period),
+          year: resolveCalendarYear(year),
+        });
+
+      return toEcuadorTaxAccountingBoundaryAiReviewResponseDto(review);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
 }
 
 function resolveCalendarYear(year?: string): number {
   const parsed = year ? Number.parseInt(year, 10) : new Date().getUTCFullYear();
 
   return Number.isFinite(parsed) ? parsed : new Date().getUTCFullYear();
+}
+
+function resolvePeriod(period?: string): string {
+  return period?.trim() || new Date().toISOString().slice(0, 7);
 }
 
 function resolveWindowDays(windowDays?: string): number | undefined {

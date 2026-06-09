@@ -31,6 +31,7 @@ export * from './lib/use-cases/get-tenant-growth-assist-ai-suggestion-envelope.u
 export * from './lib/use-cases/get-tenant-invoice-document-assistant-ai-suggestion-envelope.use-case';
 export * from './lib/use-cases/get-tenant-medical-clinic-assistant-ai-suggestion-envelope.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-assistant-ai-suggestion-envelope.use-case';
+export * from './lib/use-cases/get-tenant-tax-accounting-boundary-assistant-ai-suggestion-envelope.use-case';
 export * from './lib/use-cases/list-tenant-ai-approval-requests.use-case';
 export * from './lib/use-cases/list-tenant-ai-guarded-execution-events.use-case';
 export * from './lib/use-cases/list-tenant-ai-memory-records.use-case';

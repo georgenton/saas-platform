@@ -5597,6 +5597,104 @@ export interface EcuadorTaxComplianceAnnualCloseoutV5Response {
   guardrails: string[];
 }
 
+export interface EcuadorTaxProfessionalHandoffV6Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  handoffStatus: string;
+  accountantHandoffRoom: EcuadorTaxAccountantHandoffRoomV2Response;
+  annualCloseout: EcuadorTaxComplianceAnnualCloseoutV5Response;
+  professionalReviewSections: Array<{
+    key: string;
+    label: string;
+    status: string;
+    owner: 'operator' | 'accountant' | 'external_professional';
+    evidenceRefs: string[];
+    question: string;
+  }>;
+  decision: {
+    serviceMode:
+      | 'self_service_assisted'
+      | 'external_accountant_review'
+      | 'accounting_advanced_discovery';
+    reason: string;
+    accountantRequired: boolean;
+  };
+  summary: {
+    sectionCount: number;
+    accountantOwnedSectionCount: number;
+    readySectionCount: number;
+    needsReviewSectionCount: number;
+    blockedSectionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingAdvancedGateV2Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  gateStatus: string;
+  baseGate: EcuadorTaxAccountingAdvancedDiscoveryGateResponse;
+  professionalHandoff: EcuadorTaxProfessionalHandoffV6Response;
+  decisionSignals: Array<{
+    key: string;
+    label: string;
+    severity: string;
+    source: 'tax_compliance' | 'accountant_handoff' | 'annual_closeout';
+    rationale: string;
+  }>;
+  recommendation: {
+    nextProduct: 'tax-compliance-ec' | 'accounting-advanced';
+    openAdvancedAccountingNow: boolean;
+    reason: string;
+    minimumEvidenceBeforeOpening: string[];
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingBoundaryAiReviewResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  reviewStatus: string;
+  professionalHandoff: EcuadorTaxProfessionalHandoffV6Response;
+  accountingAdvancedGate: EcuadorTaxAccountingAdvancedGateV2Response;
+  boundaryLanes: Array<{
+    key: string;
+    label: string;
+    owner:
+      | 'tax_compliance'
+      | 'accounting_foundation'
+      | 'accounting_advanced'
+      | 'external_accountant';
+    status: string;
+    explanation: string;
+    blockedAutomation: string[];
+  }>;
+  assistantInstructions: {
+    allowedOutputs: string[];
+    blockedOutputs: string[];
+    requiredReview: string;
+  };
+  summary: {
+    laneCount: number;
+    blockedLaneCount: number;
+    accountantRequired: boolean;
+    openAdvancedAccountingNow: boolean;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxProductCloseoutPackResponse {
   tenantSlug: string;
   period: string;

@@ -249,15 +249,26 @@ describe('AI operating model use case', () => {
           guardedExecutionCandidateToolKey: null,
           guardedExecutionCandidate: null,
         }),
+        expect.objectContaining({
+          agent: expect.objectContaining({
+            key: 'tax-accounting-boundary-assistant',
+            domainKey: 'tax-compliance',
+          }),
+          requiredPermissionKey: 'tax-compliance.ec.read',
+          primaryApprovalPolicyKey:
+            'tax-accounting-boundary-assistant-suggestion-review',
+          guardedExecutionCandidateToolKey: null,
+          guardedExecutionCandidate: null,
+        }),
       ]),
       counts: {
-        totalAgents: 6,
-        readyAgents: 6,
+        totalAgents: 7,
+        readyAgents: 7,
         plannedAgents: 0,
-        agentsWithApprovalPolicies: 6,
+        agentsWithApprovalPolicies: 7,
         agentsWithGuardedExecutionCandidate: 3,
-        totalToolAccessEntries: 10,
-        approvalRequiredToolAccessEntries: 5,
+        totalToolAccessEntries: 11,
+        approvalRequiredToolAccessEntries: 6,
         blockedToolAccessEntries: 3,
       },
     });

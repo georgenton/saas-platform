@@ -1,10 +1,13 @@
 import {
   EcuadorTaxAccountingAdvancedDiscoveryGateView,
+  EcuadorTaxAccountingAdvancedGateV2View,
+  EcuadorTaxAccountingBoundaryAiReviewView,
   EcuadorTaxAnnualFiscalYearWorkspaceView,
   EcuadorTaxAnnualIncomeTaxReconciliationV2View,
   EcuadorTaxAuditReadinessBinderView,
   EcuadorTaxComplianceAnnualCloseoutV5View,
   EcuadorTaxExternalAccountantAnnualReviewRoomView,
+  EcuadorTaxProfessionalHandoffV6View,
 } from '@saas-platform/tax-compliance-domain';
 
 export type EcuadorTaxAnnualFiscalYearWorkspaceResponseDto =
@@ -19,6 +22,12 @@ export type EcuadorTaxAccountingAdvancedDiscoveryGateResponseDto =
   Serialized<EcuadorTaxAccountingAdvancedDiscoveryGateView>;
 export type EcuadorTaxComplianceAnnualCloseoutV5ResponseDto =
   Serialized<EcuadorTaxComplianceAnnualCloseoutV5View>;
+export type EcuadorTaxProfessionalHandoffV6ResponseDto =
+  Serialized<EcuadorTaxProfessionalHandoffV6View>;
+export type EcuadorTaxAccountingAdvancedGateV2ResponseDto =
+  Serialized<EcuadorTaxAccountingAdvancedGateV2View>;
+export type EcuadorTaxAccountingBoundaryAiReviewResponseDto =
+  Serialized<EcuadorTaxAccountingBoundaryAiReviewView>;
 
 export function toEcuadorTaxAnnualFiscalYearWorkspaceResponseDto(
   view: EcuadorTaxAnnualFiscalYearWorkspaceView,
@@ -53,6 +62,24 @@ export function toEcuadorTaxAccountingAdvancedDiscoveryGateResponseDto(
 export function toEcuadorTaxComplianceAnnualCloseoutV5ResponseDto(
   view: EcuadorTaxComplianceAnnualCloseoutV5View,
 ): EcuadorTaxComplianceAnnualCloseoutV5ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxProfessionalHandoffV6ResponseDto(
+  view: EcuadorTaxProfessionalHandoffV6View,
+): EcuadorTaxProfessionalHandoffV6ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxAccountingAdvancedGateV2ResponseDto(
+  view: EcuadorTaxAccountingAdvancedGateV2View,
+): EcuadorTaxAccountingAdvancedGateV2ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxAccountingBoundaryAiReviewResponseDto(
+  view: EcuadorTaxAccountingBoundaryAiReviewView,
+): EcuadorTaxAccountingBoundaryAiReviewResponseDto {
   return serialize(view);
 }
 

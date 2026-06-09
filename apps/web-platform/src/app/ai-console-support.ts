@@ -67,6 +67,15 @@ export const AI_AGENT_WEB_REGISTRY = {
       loadDetail: 'load-psychology-clinic-ai-run-detail',
     },
   },
+  'tax-accounting-boundary-assistant': {
+    fallbackTitle: 'Tax Accounting Boundary Assistant',
+    dedicatedActionKeyPrefixes: {
+      prepare: 'prepare-tax-accounting-boundary-ai-suggestion-run',
+      requestApproval: 'request-tax-accounting-boundary-ai-approval',
+      reviewApproval: 'review-tax-accounting-boundary-ai-approval',
+      loadDetail: 'load-tax-accounting-boundary-ai-run-detail',
+    },
+  },
 } as const satisfies Record<
   string,
   {

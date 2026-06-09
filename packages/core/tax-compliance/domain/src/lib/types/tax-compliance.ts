@@ -3575,3 +3575,47 @@ export interface EcuadorTaxAccountingBoundaryAiReviewView {
   nextStep: string;
   guardrails: string[];
 }
+
+export interface EcuadorTaxDeclarationHandoffCloseoutV6View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: EcuadorTaxReadinessStatus;
+  declarationCloseout: EcuadorTaxComplianceCloseoutV2View;
+  professionalHandoff: EcuadorTaxProfessionalHandoffV6View;
+  accountingAdvancedGate: EcuadorTaxAccountingAdvancedGateV2View;
+  accountingBoundaryAiReview: EcuadorTaxAccountingBoundaryAiReviewView;
+  handoffLanes: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    owner:
+      | 'operator'
+      | 'tax_compliance'
+      | 'external_accountant'
+      | 'accounting_advanced';
+    evidenceRefs: string[];
+    action: string;
+  }>;
+  decision: {
+    nextStep:
+      | 'continue_assisted_tax'
+      | 'send_to_external_accountant'
+      | 'open_accounting_advanced_discovery';
+    reason: string;
+    accountantRequired: boolean;
+    openAdvancedAccountingNow: boolean;
+  };
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+    blockerCount: number;
+    accountantOwnedLaneCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}

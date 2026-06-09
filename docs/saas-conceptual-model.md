@@ -1534,6 +1534,12 @@ The 6.0 layer adds:
    - AI template that explains the boundary and prepares accountant questions
      without filing, paying, posting journals, certifying books, signing
      financial statements or replacing accountant judgment
+5. `Declaration Handoff Closeout 6.0`
+   - composes SRI source import, platform reconciliation, IVA draft workspace,
+     income-tax evidence, assisted filing walkthrough, professional handoff,
+     Accounting Advanced gate and AI boundary review into one period decision
+   - decides whether the tenant should continue assisted Tax Compliance, send
+     the packet to an external accountant, or open Accounting Advanced discovery
 
 Guardrail: this layer helps explain and route professional work. It does not
 turn Tax Compliance into full accounting and does not make AI a contador.

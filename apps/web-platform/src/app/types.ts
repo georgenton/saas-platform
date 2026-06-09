@@ -4489,6 +4489,39 @@ export interface EcuadorTaxComplianceCloseoutV2Response {
   guardrails: string[];
 }
 
+export interface EcuadorTaxDeclarationHandoffCloseoutV6Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  handoffLanes: Array<{
+    key: string;
+    label: string;
+    status: string;
+    owner: string;
+    evidenceRefs: string[];
+    action: string;
+  }>;
+  decision: {
+    nextStep: string;
+    reason: string;
+    accountantRequired: boolean;
+    openAdvancedAccountingNow: boolean;
+  };
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+    blockerCount: number;
+    accountantOwnedLaneCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxEvidenceQualityCenterResponse {
   tenantSlug: string;
   period: string;

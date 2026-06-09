@@ -33,6 +33,7 @@ export * from './lib/use-cases/get-tenant-ecuador-tax-command-center-v2.use-case
 export * from './lib/use-cases/get-tenant-ecuador-tax-declaration-form-catalog.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-declaration-review-loop-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-declaration-source-ledger.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-declaration-handoff-closeout-v6.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-command-center.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-ecommerce-evidence-summary.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-evidence-quality-center.use-case';

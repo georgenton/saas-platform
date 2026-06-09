@@ -6,6 +6,7 @@ import {
   EcuadorTaxAnnualIncomeTaxReconciliationV2View,
   EcuadorTaxAuditReadinessBinderView,
   EcuadorTaxComplianceAnnualCloseoutV5View,
+  EcuadorTaxDeclarationHandoffCloseoutV6View,
   EcuadorTaxExternalAccountantAnnualReviewRoomView,
   EcuadorTaxProfessionalHandoffV6View,
 } from '@saas-platform/tax-compliance-domain';
@@ -28,6 +29,8 @@ export type EcuadorTaxAccountingAdvancedGateV2ResponseDto =
   Serialized<EcuadorTaxAccountingAdvancedGateV2View>;
 export type EcuadorTaxAccountingBoundaryAiReviewResponseDto =
   Serialized<EcuadorTaxAccountingBoundaryAiReviewView>;
+export type EcuadorTaxDeclarationHandoffCloseoutV6ResponseDto =
+  Serialized<EcuadorTaxDeclarationHandoffCloseoutV6View>;
 
 export function toEcuadorTaxAnnualFiscalYearWorkspaceResponseDto(
   view: EcuadorTaxAnnualFiscalYearWorkspaceView,
@@ -80,6 +83,12 @@ export function toEcuadorTaxAccountingAdvancedGateV2ResponseDto(
 export function toEcuadorTaxAccountingBoundaryAiReviewResponseDto(
   view: EcuadorTaxAccountingBoundaryAiReviewView,
 ): EcuadorTaxAccountingBoundaryAiReviewResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxDeclarationHandoffCloseoutV6ResponseDto(
+  view: EcuadorTaxDeclarationHandoffCloseoutV6View,
+): EcuadorTaxDeclarationHandoffCloseoutV6ResponseDto {
   return serialize(view);
 }
 

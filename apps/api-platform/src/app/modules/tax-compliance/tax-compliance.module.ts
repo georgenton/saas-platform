@@ -32,6 +32,7 @@ import {
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
   GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
+  GetTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
   GetTenantEcuadorTaxAccountantEscalationServiceBoundaryUseCase,
   GetTenantEcuadorTaxAccountantFilingReviewRoomV3UseCase,
   GetTenantEcuadorTaxAccountantHandoffRoomV2UseCase,
@@ -63,6 +64,7 @@ import {
   GetTenantEcuadorTaxDueMonitorUseCase,
   GetTenantEcuadorTaxEcommerceEvidenceSummaryUseCase,
   GetTenantEcuadorTaxEvidenceQualityCenterUseCase,
+  GetTenantEcuadorTaxEvidenceCorrectionWorkbenchV70UseCase,
   GetTenantEcuadorTaxFilingHandoffUseCase,
   GetTenantEcuadorTaxFilingEvidenceVaultV2UseCase,
   GetTenantEcuadorTaxFormBoxEvidenceBinderUseCase,
@@ -88,6 +90,7 @@ import {
   GetTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
   GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
+  GetTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase,
   GetTenantEcuadorTaxPostFilingExceptionCenterUseCase,
   GetTenantEcuadorTaxProfessionalHandoffV6UseCase,
   GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
@@ -146,6 +149,8 @@ import {
   RequestTenantEcuadorTaxCompliancePostFilingCloseoutV4UseCase,
   RequestTenantEcuadorTaxComplianceAnnualCloseoutV5UseCase,
   RequestTenantEcuadorTaxOperationalHardeningCloseoutV62UseCase,
+  RequestTenantEcuadorTaxPilotCloseoutDecisionPacketV70UseCase,
+  RequestTenantEcuadorTaxPilotFeedbackCloseoutV70UseCase,
   RequestTenantEcuadorTaxComplianceProductCloseoutV3UseCase,
   RequestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase,
   RequestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase,
@@ -2349,6 +2354,87 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
           getTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
           requestTenantEcuadorTaxAccountantPacketExportV62UseCase,
           getTenantEcuadorTaxOperatorActionCenterV62UseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase,
+      inject: [RequestTenantEcuadorTaxOperationalHardeningCloseoutV62UseCase],
+      useFactory: (requestTenantEcuadorTaxOperationalHardeningCloseoutV62UseCase) =>
+        new GetTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase(
+          requestTenantEcuadorTaxOperationalHardeningCloseoutV62UseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
+      inject: [
+        GetTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase,
+        RequestTenantEcuadorTaxAccountantPacketExportV62UseCase,
+        GetTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
+        GetTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase,
+        requestTenantEcuadorTaxAccountantPacketExportV62UseCase,
+        getTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
+        getTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+      ) =>
+        new GetTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase(
+          getTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase,
+          requestTenantEcuadorTaxAccountantPacketExportV62UseCase,
+          getTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
+          getTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxEvidenceCorrectionWorkbenchV70UseCase,
+      inject: [GetTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase],
+      useFactory: (
+        getTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
+      ) =>
+        new GetTenantEcuadorTaxEvidenceCorrectionWorkbenchV70UseCase(
+          getTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxPilotCloseoutDecisionPacketV70UseCase,
+      inject: [
+        GetTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase,
+        GetTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
+        GetTenantEcuadorTaxEvidenceCorrectionWorkbenchV70UseCase,
+        GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase,
+        getTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
+        getTenantEcuadorTaxEvidenceCorrectionWorkbenchV70UseCase,
+        getTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
+      ) =>
+        new RequestTenantEcuadorTaxPilotCloseoutDecisionPacketV70UseCase(
+          getTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase,
+          getTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
+          getTenantEcuadorTaxEvidenceCorrectionWorkbenchV70UseCase,
+          getTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxPilotFeedbackCloseoutV70UseCase,
+      inject: [
+        GetTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase,
+        GetTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
+        GetTenantEcuadorTaxEvidenceCorrectionWorkbenchV70UseCase,
+        RequestTenantEcuadorTaxPilotCloseoutDecisionPacketV70UseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase,
+        getTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
+        getTenantEcuadorTaxEvidenceCorrectionWorkbenchV70UseCase,
+        requestTenantEcuadorTaxPilotCloseoutDecisionPacketV70UseCase,
+      ) =>
+        new RequestTenantEcuadorTaxPilotFeedbackCloseoutV70UseCase(
+          getTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase,
+          getTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
+          getTenantEcuadorTaxEvidenceCorrectionWorkbenchV70UseCase,
+          requestTenantEcuadorTaxPilotCloseoutDecisionPacketV70UseCase,
         ),
     },
     {

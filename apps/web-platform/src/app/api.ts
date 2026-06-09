@@ -177,9 +177,14 @@ import {
   EcuadorTaxComplianceCloseoutV2Response,
   EcuadorTaxDeclarationHandoffCloseoutV6Response,
   EcuadorTaxAccountantPacketExportV62Response,
+  EcuadorTaxAccountantFeedbackIntakeQueueV70Response,
+  EcuadorTaxEvidenceCorrectionWorkbenchV70Response,
   EcuadorTaxFormBoxEvidenceBinderV2Response,
   EcuadorTaxOperationalHardeningCloseoutV62Response,
   EcuadorTaxOperatorActionCenterV62Response,
+  EcuadorTaxPilotCloseoutDecisionPacketV70Response,
+  EcuadorTaxPilotFeedbackCloseoutV70Response,
+  EcuadorTaxPilotTenantReadinessRoomV70Response,
   EcuadorTaxSriEvidenceImportPersistenceLedgerV62Response,
   EcuadorTaxSriReconciliationExceptionQueueV62Response,
   EcuadorTaxComplianceDeclarationCloseoutV3Response,
@@ -3648,6 +3653,86 @@ export async function fetchEcuadorTaxOperationalHardeningCloseoutV62(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/operational-hardening-closeout-v62?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPilotTenantReadinessRoomV70(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPilotTenantReadinessRoomV70Response> {
+  return request<EcuadorTaxPilotTenantReadinessRoomV70Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/pilot-tenant-readiness-room-v70?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAccountantFeedbackIntakeQueueV70(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountantFeedbackIntakeQueueV70Response> {
+  return request<EcuadorTaxAccountantFeedbackIntakeQueueV70Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accountant-feedback-intake-queue-v70?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxEvidenceCorrectionWorkbenchV70(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxEvidenceCorrectionWorkbenchV70Response> {
+  return request<EcuadorTaxEvidenceCorrectionWorkbenchV70Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/evidence-correction-workbench-v70?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPilotCloseoutDecisionPacketV70(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPilotCloseoutDecisionPacketV70Response> {
+  return request<EcuadorTaxPilotCloseoutDecisionPacketV70Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/pilot-closeout-decision-packet-v70?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPilotFeedbackCloseoutV70(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPilotFeedbackCloseoutV70Response> {
+  return request<EcuadorTaxPilotFeedbackCloseoutV70Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/pilot-feedback-closeout-v70?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

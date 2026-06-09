@@ -430,18 +430,17 @@ permissions, Ecuador tax period workspaces, obligation settings, due monitors,
 VAT/income tax/withholding readiness, purchase evidence, evidence vault,
 annexes readiness, accountant review packets, operational closeout, external
 filing/payment handoff, accounting bridge mapping, Growth reminder packets, and
-a transversal AI review assistant template.
+a transversal AI review assistant template. The SRI source import, assisted IVA
+and income-tax declaration workspaces, filing assistant, professional escalation
+boundary and declaration handoff closeout 6.0 are now part of the implemented
+Tax Compliance path.
 
-Backlog: extend this product with a taxpayer-controlled SRI fiscal evidence
-intake and assisted declaration preparation lane. The first version should allow
-operators to import SRI reports/XML for issued and received electronic vouchers,
-normalize that evidence into a fiscal evidence store, reconcile it against
-Invoicing, Ecommerce, purchases, withholdings, and Parties, and then prepare
-declaration draft packets for supported SRI forms. The product may suggest form
-box values, show the evidence behind each value, explain the step-by-step SRI
-online filing path, and generate XML/JSON/Excel artifacts only where the SRI
-publishes compatible formats. It must not store SRI credentials, bypass
-recaptcha, submit declarations, sign forms, or pay taxes automatically.
+Current backlog: harden the operator UI, accountant packet, smoke coverage and
+evidence import depth around that path. The product may suggest form box values,
+show the evidence behind each value, explain the step-by-step SRI online filing
+path, and generate XML/JSON/Excel artifacts only where the SRI publishes
+compatible formats. It must not store SRI credentials, bypass recaptcha, submit
+declarations, sign forms, or pay taxes automatically.
 
 ### Relationship to invoicing
 
@@ -1543,6 +1542,28 @@ The 6.0 layer adds:
 
 Guardrail: this layer helps explain and route professional work. It does not
 turn Tax Compliance into full accounting and does not make AI a contador.
+
+The 6.1 operating layer makes the 6.0 boundary visible and testable:
+
+1. `Tax Compliance Roadmap Refresh 6.1`
+   - updates the conceptual model so SRI import, assisted declaration workspaces
+     and professional handoff are treated as implemented capability, not open
+     discovery
+2. `SRI Import & Reconciliation UI`
+   - exposes SRI source import and platform reconciliation state in the web tax
+     command center
+3. `IVA/Renta Declaration Workbench UI`
+   - surfaces IVA declaration workspace and income-tax evidence workspace as
+     operator panels
+4. `Assisted Filing Walkthrough UI`
+   - shows filing assistant status, steps, evidence references and non-automation
+     guardrails
+5. `Declaration Handoff Closeout 6.0 UI + Accountant Packet`
+   - displays the final service-mode decision, accountant packet reason, handoff
+     lanes and blockers in the web product surface
+6. `Tax Compliance 6.0 Smoke Narrative`
+   - validates the narrative from SRI source intake through declaration
+     workspaces, AI boundary review and closeout 6.0
 
 ### Future accounting graduation
 

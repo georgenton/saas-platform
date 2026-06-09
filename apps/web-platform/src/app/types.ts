@@ -4686,6 +4686,147 @@ export interface EcuadorTaxOperationalHardeningCloseoutV62Response {
   guardrails: string[];
 }
 
+export interface EcuadorTaxPilotTenantReadinessRoomV70Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  readinessSections: Array<{
+    key: string;
+    label: string;
+    status: string;
+    owner: string;
+    evidenceRefs: string[];
+    nextAction: string;
+  }>;
+  pilotDecision: {
+    canStartPilot: boolean;
+    requiresAccountant: boolean;
+    mode: string;
+    reason: string;
+  };
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    accountantOwnedSectionCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantFeedbackIntakeQueueV70Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  queueStatus: string;
+  feedbackItems: Array<{
+    key: string;
+    label: string;
+    source: string;
+    severity: string;
+    status: string;
+    owner: string;
+    question: string;
+    recommendedAction: string;
+  }>;
+  summary: {
+    feedbackCount: number;
+    criticalCount: number;
+    accountantOwnedCount: number;
+    operatorOwnedCount: number;
+    blockedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxEvidenceCorrectionWorkbenchV70Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  workbenchStatus: string;
+  correctionActions: Array<{
+    key: string;
+    label: string;
+    sourceFeedbackKey: string;
+    status: string;
+    correctionType: string;
+    owner: string;
+    nextAction: string;
+  }>;
+  summary: {
+    actionCount: number;
+    readyActionCount: number;
+    accountantActionCount: number;
+    blockedActionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPilotCloseoutDecisionPacketV70Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  packetStatus: string;
+  decisionLanes: Array<{
+    key: string;
+    label: string;
+    status: string;
+    owner: string;
+    action: string;
+  }>;
+  decision: {
+    nextStep: string;
+    reason: string;
+    accountantRequired: boolean;
+    openAdvancedAccountingNow: boolean;
+  };
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+    blockerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPilotFeedbackCloseoutV70Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    feedbackCount: number;
+    correctionActionCount: number;
+  };
+  recommendedNextProduct: string;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxEvidenceQualityCenterResponse {
   tenantSlug: string;
   period: string;

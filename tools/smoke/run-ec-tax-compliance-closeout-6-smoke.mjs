@@ -85,6 +85,11 @@ const [
   accountantPacketV62,
   operatorActionCenterV62,
   operationalHardeningCloseoutV62,
+  pilotReadinessRoomV70,
+  accountantFeedbackQueueV70,
+  evidenceCorrectionWorkbenchV70,
+  pilotDecisionPacketV70,
+  pilotFeedbackCloseoutV70,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -153,6 +158,31 @@ const [
     path: taxPath(`/operational-hardening-closeout-v62?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-tenant-readiness-room-v70?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accountant-feedback-intake-queue-v70?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/evidence-correction-workbench-v70?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-closeout-decision-packet-v70?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-feedback-closeout-v70?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertValue('sri source import center', sriSourceImportCenter.centerStatus);
@@ -213,6 +243,24 @@ assertNonEmpty(
   'operational hardening checklist',
   operationalHardeningCloseoutV62.closeoutChecklist,
 );
+assertValue('pilot readiness room 7.0', pilotReadinessRoomV70.readinessStatus);
+assertValue(
+  'accountant feedback queue 7.0',
+  accountantFeedbackQueueV70.queueStatus,
+);
+assertValue(
+  'evidence correction workbench 7.0',
+  evidenceCorrectionWorkbenchV70.workbenchStatus,
+);
+assertValue('pilot decision packet 7.0', pilotDecisionPacketV70.packetStatus);
+assertValue(
+  'pilot feedback closeout 7.0',
+  pilotFeedbackCloseoutV70.closeoutStatus,
+);
+assertNonEmpty(
+  'pilot feedback checklist',
+  pilotFeedbackCloseoutV70.closeoutChecklist,
+);
 
 printLine('sri import center', sriSourceImportCenter.centerStatus);
 printLine('iva workspace', vatDeclarationWorkspace.readinessStatus);
@@ -231,5 +279,11 @@ printLine('accountant packet 6.2', accountantPacketV62.packetStatus);
 printLine('action center 6.2', operatorActionCenterV62.actionCenterStatus);
 printLine('closeout 6.2', operationalHardeningCloseoutV62.closeoutStatus);
 printLine('actions', operatorActionCenterV62.actions.length);
+printLine('pilot readiness 7.0', pilotReadinessRoomV70.readinessStatus);
+printLine('feedback queue 7.0', accountantFeedbackQueueV70.queueStatus);
+printLine('correction workbench 7.0', evidenceCorrectionWorkbenchV70.workbenchStatus);
+printLine('decision packet 7.0', pilotDecisionPacketV70.packetStatus);
+printLine('pilot closeout 7.0', pilotFeedbackCloseoutV70.closeoutStatus);
+printLine('pilot next product', pilotFeedbackCloseoutV70.recommendedNextProduct);
 
-printSection('EC tax compliance closeout 6/6.2 smoke passed');
+printSection('EC tax compliance closeout 6/6.2/7.0 smoke passed');

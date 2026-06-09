@@ -1621,6 +1621,41 @@ contador in the loop. Further work should be evaluated as either operational
 pilot feedback, `Accounting Advanced` discovery, or a return to vertical product
 activation such as Medical Clinics.
 
+### Tax Compliance EC pilot feedback 7.0
+
+After Medical Clinics and Psychology Clinics reached operating hardening 6.0,
+Tax Compliance EC should validate its Ecuador workflow through a pilot loop
+instead of opening `Accounting Advanced` by default. The 7.0 layer captures
+pilot readiness, accountant feedback, evidence correction actions and a final
+product decision while keeping official filing, payment, certification and
+professional judgment outside automation.
+
+The 7.0 layer adds:
+
+1. `Tax Pilot Roadmap Refresh 7.0`
+   - marks Tax 6.2, Accounting Foundation, Parties, AI and Clinics as available
+     context for an Ecuador pilot
+2. `Pilot Tenant Readiness Room`
+   - decides whether a tenant can enter assisted self-service, must operate
+     with contador in the loop, or is blocked until hardening
+3. `Accountant Feedback Intake Queue`
+   - collects accountant packet questions, form binder review items,
+     SRI/platform exceptions and readiness blockers into one queue
+4. `Tax Evidence Correction Workbench`
+   - turns feedback into manual correction actions such as missing evidence,
+     SRI reconciliation, form-box hints, not-applicable marks or accountant
+     routing
+5. `Pilot Closeout Decision Packet`
+   - decides whether to continue assisted tax, continue with external
+     accountant, return to tax hardening, or open Accounting Advanced discovery
+6. `Tax Pilot Smoke + Model Refresh`
+   - validates readiness, feedback, corrections, decision packet and closeout
+     7.0 as one operating narrative
+
+Guardrail: pilot feedback improves the product loop; it does not submit tax
+returns, pay obligations, certify books, sign financial statements or replace a
+contador.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

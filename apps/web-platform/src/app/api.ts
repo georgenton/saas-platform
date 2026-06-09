@@ -166,6 +166,8 @@ import {
   EcuadorTaxAnnexesReadinessV2Response,
   EcuadorTaxAnnexesWorkspaceResponse,
   EcuadorTaxAccountingAdvancedDiscoveryGateResponse,
+  EcuadorTaxAccountingAdvancedGateV2Response,
+  EcuadorTaxAccountingBoundaryAiReviewResponse,
   EcuadorTaxAnnualFiscalYearWorkspaceResponse,
   EcuadorTaxAnnualIncomeTaxReconciliationV2Response,
   EcuadorTaxAnnualRollupWorkspaceResponse,
@@ -177,6 +179,7 @@ import {
   EcuadorTaxComplianceHardeningCloseoutV4Response,
   EcuadorTaxCompliancePostFilingCloseoutV4Response,
   EcuadorTaxComplianceAnnualCloseoutV5Response,
+  EcuadorTaxProfessionalHandoffV6Response,
   EcuadorTaxComplianceProductCloseoutV3Response,
   EcuadorTaxPartySriEvidenceImportResponse,
   EcuadorTaxCommandCenterResponse,
@@ -4219,6 +4222,54 @@ export async function fetchEcuadorTaxComplianceAnnualCloseoutV5(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/annual-closeout-v5?year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxProfessionalHandoffV6(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxProfessionalHandoffV6Response> {
+  return request<EcuadorTaxProfessionalHandoffV6Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/professional-handoff-v6?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAccountingAdvancedGateV2(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountingAdvancedGateV2Response> {
+  return request<EcuadorTaxAccountingAdvancedGateV2Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accounting-advanced-gate-v2?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAccountingBoundaryAiReview(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountingBoundaryAiReviewResponse> {
+  return request<EcuadorTaxAccountingBoundaryAiReviewResponse>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accounting-boundary-ai-review?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },
   );
 }

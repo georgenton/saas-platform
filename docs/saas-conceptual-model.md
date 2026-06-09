@@ -1496,6 +1496,48 @@ The next hardening should be UI-specific: richer clinic assistant briefing
 panels and, later, a separate guarded-execution discovery only for non-clinical
 administrative tasks.
 
+The follow-up closeout adds typed web/API support and a smoke narrative for the
+clinic AI assistants:
+
+1. `Clinics Assistant UI Briefing Panels`
+   - the AI console recognizes both clinic agents and can use the shared
+     prepare/approval/detail flow
+2. `AI Clinics Contract Registry Surface`
+   - registry, guardrail approval pack and closeout Growth bridge endpoints are
+     typed for web consumption
+3. `Clinics AI Smoke Narrative`
+   - validates medical and psychology envelopes, guardrails, Growth bridge
+     connectivity and absence of guarded execution
+
+This keeps clinic AI closed as a transversal suggestion layer, not a clinical
+automation product.
+
+### Tax/Accounting professional boundary 6.0
+
+After annual and audit readiness 5.0, Tax Compliance EC now needs a clearer
+professional boundary for businesses that are too large for pure self-service
+but not automatically ready for full Accounting Advanced.
+
+The 6.0 layer adds:
+
+1. `Tax Compliance Professional Handoff 6.0`
+   - composes period accountant handoff and annual closeout into one service-mode
+     decision: assisted self-service, external accountant review, or Accounting
+     Advanced discovery
+2. `Accounting Advanced Gate 2.0`
+   - enriches the existing gate with professional handoff pressure, annual
+     closeout pressure and minimum evidence before opening advanced accounting
+3. `Tax/Accounting Boundary AI Review`
+   - exposes deterministic lanes for Tax Compliance, Accounting Foundation,
+     Accounting Advanced and external accountant ownership
+4. `Tax Accounting Boundary Assistant`
+   - AI template that explains the boundary and prepares accountant questions
+     without filing, paying, posting journals, certifying books, signing
+     financial statements or replacing accountant judgment
+
+Guardrail: this layer helps explain and route professional work. It does not
+turn Tax Compliance into full accounting and does not make AI a contador.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

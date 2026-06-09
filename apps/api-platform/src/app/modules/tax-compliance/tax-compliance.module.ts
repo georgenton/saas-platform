@@ -31,6 +31,7 @@ import {
 } from '@saas-platform/parties-application';
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
+  GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
   GetTenantEcuadorTaxAccountantEscalationServiceBoundaryUseCase,
   GetTenantEcuadorTaxAccountantFilingReviewRoomV3UseCase,
   GetTenantEcuadorTaxAccountantHandoffRoomV2UseCase,
@@ -45,6 +46,7 @@ import {
   GetTenantEcuadorTaxAccountantWorkbenchUseCase,
   GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
   GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
+  GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase,
   GetTenantEcuadorTaxAccountingBoundaryCloseoutUseCase,
   GetTenantEcuadorTaxAccountingEvidenceFromFoundationUseCase,
   GetTenantEcuadorTaxAuditReadinessUseCase,
@@ -84,6 +86,7 @@ import {
   GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxPostFilingExceptionCenterUseCase,
+  GetTenantEcuadorTaxProfessionalHandoffV6UseCase,
   GetTenantEcuadorTaxPurchaseExpenseEvidenceWorkspaceUseCase,
   GetTenantEcuadorTaxReconciliationWorkspaceUseCase,
   GetTenantEcuadorTaxRuleCatalogUseCase,
@@ -2476,6 +2479,51 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
         ),
     },
     {
+      provide: GetTenantEcuadorTaxProfessionalHandoffV6UseCase,
+      inject: [
+        GetTenantEcuadorTaxAccountantHandoffRoomV2UseCase,
+        RequestTenantEcuadorTaxComplianceAnnualCloseoutV5UseCase,
+      ],
+      useFactory: (
+        getAccountantHandoffRoomUseCase,
+        getAnnualCloseoutUseCase,
+      ) =>
+        new GetTenantEcuadorTaxProfessionalHandoffV6UseCase(
+          getAccountantHandoffRoomUseCase,
+          getAnnualCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
+      inject: [
+        GetTenantEcuadorTaxAccountingAdvancedDiscoveryGateUseCase,
+        GetTenantEcuadorTaxProfessionalHandoffV6UseCase,
+      ],
+      useFactory: (
+        getAccountingAdvancedDiscoveryGateUseCase,
+        getProfessionalHandoffUseCase,
+      ) =>
+        new GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase(
+          getAccountingAdvancedDiscoveryGateUseCase,
+          getProfessionalHandoffUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase,
+      inject: [
+        GetTenantEcuadorTaxProfessionalHandoffV6UseCase,
+        GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
+      ],
+      useFactory: (
+        getProfessionalHandoffUseCase,
+        getAccountingAdvancedGateV2UseCase,
+      ) =>
+        new GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase(
+          getProfessionalHandoffUseCase,
+          getAccountingAdvancedGateV2UseCase,
+        ),
+    },
+    {
       provide: ListTenantEnabledProductsUseCase,
       inject: [
         TENANT_REPOSITORY,
@@ -2521,6 +2569,7 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
   exports: [
     GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
     GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
+    GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase,
     GetTenantEcuadorTaxOperationalCloseoutUseCase,
     RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
     RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,

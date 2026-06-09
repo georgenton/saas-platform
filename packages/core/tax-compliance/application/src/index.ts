@@ -12,7 +12,9 @@ export * from './lib/ports/tokens';
 export * from './lib/permissions/tax-compliance-permissions';
 export * from './lib/use-cases/execute-tenant-ecuador-tax-withholding-draft-bridge.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-calendar-review-workspace.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-accounting-advanced-gate-v2.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accounting-advanced-discovery-gate.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-accounting-boundary-ai-review.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-workbench.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-escalation-service-boundary.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-filing-review-room-v3.use-case';
@@ -53,6 +55,7 @@ export * from './lib/use-cases/get-tenant-ecuador-tax-operational-closeout.use-c
 export * from './lib/use-cases/get-tenant-ecuador-tax-operating-dashboard-v3.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-payment-obligation-tracker.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-post-filing-exception-center.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-professional-handoff-v6.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-review-from-party-risks.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-assisted-fiscal-correction-flow.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-declaration-party-impact-workspace.use-case';

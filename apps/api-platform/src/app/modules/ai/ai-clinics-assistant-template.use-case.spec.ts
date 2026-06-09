@@ -4,6 +4,7 @@ import {
   GetAiClinicsGuardrailApprovalPackUseCase,
   GetTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase,
   GetTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase,
+  GetTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase,
 } from '@saas-platform/ai-application';
 
 describe('AI clinics assistant templates', () => {
@@ -131,6 +132,83 @@ describe('AI clinics assistant templates', () => {
     expect(view.decision.openClinicalAutomation).toBe(false);
     expect(view.products.every((entry) => entry.growthBridgeStatus === 'connected')).toBe(
       true,
+    );
+  });
+
+  it('builds a Tax Accounting boundary suggestion envelope from boundary review context', async () => {
+    const boundaryReviewUseCase = {
+      execute: jest.fn(async () => ({
+        tenantSlug: 'saas-platform-local',
+        period: '2026-06',
+        year: 2026,
+        generatedAt: fixedNow,
+        reviewStatus: 'needs_review',
+        professionalHandoff: {
+          handoffStatus: 'needs_review',
+          decision: {
+            serviceMode: 'external_accountant_review',
+            reason: 'Requiere contador externo.',
+            accountantRequired: true,
+          },
+          nextStep: 'Enviar paquete profesional al contador.',
+        },
+        accountingAdvancedGate: {
+          gateStatus: 'needs_review',
+          recommendation: {
+            nextProduct: 'accounting-advanced',
+            openAdvancedAccountingNow: true,
+            reason: 'Hay presion contable formal.',
+            minimumEvidenceBeforeOpening: [
+              'Preguntas del contador respondidas y trazables.',
+            ],
+          },
+        },
+        boundaryLanes: [
+          {
+            key: 'tax_declaration_preparation',
+            label: 'Preparacion tributaria asistida',
+            owner: 'tax_compliance',
+            status: 'needs_review',
+            explanation: 'Tax Compliance prepara evidencia.',
+            blockedAutomation: ['file_sri_declaration'],
+          },
+        ],
+        assistantInstructions: {
+          allowedOutputs: ['boundary_summary'],
+          blockedOutputs: ['journal_entry_creation'],
+          requiredReview: 'Requiere revision.',
+        },
+        summary: {
+          laneCount: 1,
+          blockedLaneCount: 0,
+          accountantRequired: true,
+          openAdvancedAccountingNow: true,
+        },
+        blockers: [],
+        nextStep: 'Preparar preguntas.',
+        guardrails: ['No reemplaza contador.'],
+      })),
+    };
+    const envelope =
+      await new GetTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase(
+        boundaryReviewUseCase as any,
+        emptyMemoryRetrievalUseCase as any,
+        () => fixedNow,
+      ).execute('saas-platform-local');
+
+    expect(envelope.agent.key).toBe('tax-accounting-boundary-assistant');
+    expect(envelope.surface.key).toBe('tax_accounting_boundary_ai_review');
+    expect(envelope.contextBlocks.map((entry) => entry.key)).toEqual(
+      expect.arrayContaining([
+        'boundary_review_summary',
+        'boundary_lanes',
+        'professional_handoff',
+        'accounting_advanced_gate',
+        'blocked_outputs',
+      ]),
+    );
+    expect(envelope.toolAccess[0]).toEqual(
+      expect.objectContaining({ accessLevel: 'approval_required' }),
     );
   });
 });

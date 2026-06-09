@@ -60,6 +60,17 @@ export const AI_AGENT_CATALOG: AiAgentCatalogEntry[] = [
     supportedSurfaceKeys: ['tax_compliance_ec_review_packet'],
   },
   {
+    key: 'tax-accounting-boundary-assistant',
+    title: 'Tax Accounting Boundary Assistant',
+    summary:
+      'Explains the boundary between Tax Compliance EC, Accounting Foundation, Accounting Advanced and external accountant review without filing or posting accounting records.',
+    domainKey: 'tax-compliance',
+    productKey: 'tax-compliance-ec',
+    availability: 'ready',
+    defaultMode: 'suggestion',
+    supportedSurfaceKeys: ['tax_accounting_boundary_ai_review'],
+  },
+  {
     key: 'medical-clinic-assistant',
     title: 'Medical Clinic Assistant',
     summary:
@@ -159,6 +170,24 @@ const AI_AGENT_OPERATING_MODEL_METADATA: Record<
       key: 'tax_compliance_ec_review_packet',
       title: 'Tax Compliance EC review packet',
       sourceContractKey: 'tax_compliance.ec.review_assistant_packet',
+    },
+  },
+  'tax-accounting-boundary-assistant': {
+    requiredPermissionKey: 'tax-compliance.ec.read',
+    handoffContract: {
+      requestApprovalRationale:
+        'Solicitar revision humana antes de usar la explicacion de frontera Tax/Accounting.',
+      reviewNotes: {
+        approved:
+          'Aprobado desde la consola transversal de AI para Tax Accounting Boundary Assistant.',
+        rejected:
+          'Rechazado desde la consola transversal de AI para Tax Accounting Boundary Assistant.',
+      },
+    },
+    primarySurface: {
+      key: 'tax_accounting_boundary_ai_review',
+      title: 'Tax accounting boundary AI review',
+      sourceContractKey: 'tax_compliance.ec.accounting_boundary_ai_review',
     },
   },
   'medical-clinic-assistant': {
@@ -648,6 +677,57 @@ export const AI_TOOL_REGISTRY: AiToolDefinition[] = [
     },
   },
   {
+    key: 'tax_accounting_boundary_review_briefing',
+    title: 'Tax accounting boundary review briefing',
+    summary:
+      'Prepares advisory explanations and accountant questions about the Tax Compliance versus Accounting boundary.',
+    domainKey: 'tax-compliance',
+    availability: 'ready',
+    riskLevel: 'high',
+    actionKind: 'propose',
+    requiresApproval: true,
+    inputContract: {
+      sourceSurfaceKeys: ['tax_accounting_boundary_ai_review'],
+      primaryPayload:
+        'Tenant-scoped Tax Compliance professional handoff, Accounting Advanced gate, and boundary lane review.',
+      requiredContext: [
+        'professional handoff status',
+        'accountant questions',
+        'accounting advanced gate',
+        'tax/accounting boundary lanes',
+      ],
+    },
+    outputContract: {
+      primaryArtifact:
+        'Boundary brief with owner explanation, accountant questions, and Accounting Advanced gate rationale.',
+      suggestedOutputKeys: [
+        'boundary_summary',
+        'accountant_question_pack',
+        'owner_explanation',
+        'advanced_accounting_gate_explanation',
+      ],
+      humanReviewFocus: [
+        'Confirm it does not file declarations, post journals, certify books, or replace accountant judgment.',
+        'Validate the recommendation stays grounded in deterministic Tax Compliance and Accounting Foundation evidence.',
+      ],
+    },
+    executionBoundary: {
+      executionMode: 'suggestion_only',
+      stateMutation: 'none',
+      externalSideEffects: 'none',
+      reviewRequirement:
+        'A tax operator or accountant must review the boundary brief before external use.',
+      blockedCapabilities: [
+        'file_sri_declaration',
+        'pay_tax_obligation',
+        'post_accounting_journal',
+        'certify_legal_books',
+        'sign_financial_statements',
+        'replace_accountant_judgment',
+      ],
+    },
+  },
+  {
     key: 'medical_clinic_assistant_review_briefing',
     title: 'Medical clinic assistant review briefing',
     summary:
@@ -956,6 +1036,55 @@ export const AI_PROMPT_REGISTRY: AiPromptRegistryEntry[] = [
     ],
   },
   {
+    key: 'tax-accounting-boundary-assistant-core',
+    version: 'v1',
+    agentKey: 'tax-accounting-boundary-assistant',
+    mode: 'suggestion',
+    title: 'Tax Accounting Boundary Assistant Core',
+    summary:
+      'Prompt pack for explaining Tax Compliance, Accounting Foundation, Accounting Advanced and external accountant boundaries.',
+    objective:
+      'Help operators understand whether a case stays in Tax Compliance EC, needs external accountant review, or justifies Accounting Advanced discovery.',
+    styleGuidance: [
+      'Use Spanish-first language suitable for an owner and accountant.',
+      'Separate tax preparation, accounting evidence, advanced accounting, and professional judgment.',
+      'Explain why the gate recommends staying in Tax Compliance or opening Accounting Advanced.',
+    ],
+    constraints: [
+      'Do not file SRI declarations, create official annexes, pay obligations, or claim compliance is certified.',
+      'Do not post journals, certify books, sign financial statements, or create legal accounting records.',
+      'Do not replace accountant judgment or legal/tax advice.',
+      'Use only deterministic Tax Compliance and Accounting Foundation boundary review context.',
+      'Keep all outputs advisory and approval-required.',
+    ],
+    suggestedOutputs: [
+      {
+        key: 'boundary_summary',
+        label: 'Boundary summary',
+        description:
+          'Explain which work belongs to Tax Compliance, Accounting Foundation, Accounting Advanced, or the accountant.',
+      },
+      {
+        key: 'accountant_question_pack',
+        label: 'Accountant questions',
+        description:
+          'Prepare questions needed before filing, certification, or Accounting Advanced discovery.',
+      },
+      {
+        key: 'owner_explanation',
+        label: 'Owner explanation',
+        description:
+          'Explain the decision in simple language for the business owner.',
+      },
+      {
+        key: 'advanced_accounting_gate_explanation',
+        label: 'Advanced accounting gate',
+        description:
+          'Explain why Accounting Advanced should remain deferred or move into discovery.',
+      },
+    ],
+  },
+  {
     key: 'medical-clinic-assistant-core',
     version: 'v1',
     agentKey: 'medical-clinic-assistant',
@@ -1117,6 +1246,13 @@ export const AI_AGENT_TOOL_ACCESS: AiAgentToolAccessEntry[] = [
       'Tax review suggestions can help operators and accountants, but they must stay behind explicit human review before influencing external filing decisions.',
   },
   {
+    agentKey: 'tax-accounting-boundary-assistant',
+    toolKey: 'tax_accounting_boundary_review_briefing',
+    accessLevel: 'approval_required',
+    rationale:
+      'Boundary suggestions can explain Tax/Accounting decisions, but they must stay behind human review before influencing accountant handoff or Accounting Advanced discovery.',
+  },
+  {
     agentKey: 'medical-clinic-assistant',
     toolKey: 'medical_clinic_assistant_review_briefing',
     accessLevel: 'approval_required',
@@ -1207,6 +1343,17 @@ export const AI_APPROVAL_POLICY_REGISTRY: AiApprovalPolicyEntry[] = [
       'Keeps Ecuador tax review suggestions behind explicit human review before they influence filing or accountant handoff work.',
     reviewGuidance:
       'Confirm the suggestion is grounded in deterministic tax packets, does not replace accountant validation, and does not claim official SRI filing or accounting close.',
+    approvalRequired: true,
+  },
+  {
+    policyKey: 'tax-accounting-boundary-assistant-suggestion-review',
+    agentKey: 'tax-accounting-boundary-assistant',
+    scope: 'suggestion_review',
+    title: 'Tax Accounting boundary suggestion review',
+    summary:
+      'Keeps Tax/Accounting boundary explanations behind human review before they influence accountant handoff or Accounting Advanced decisions.',
+    reviewGuidance:
+      'Confirm the suggestion stays grounded in deterministic boundary review context, does not file, pay, post journals, certify books, sign statements, or replace accountant judgment.',
     approvalRequired: true,
   },
   {

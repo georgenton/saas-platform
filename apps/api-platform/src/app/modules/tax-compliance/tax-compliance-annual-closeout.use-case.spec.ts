@@ -1,9 +1,12 @@
 import {
   GetTenantEcuadorTaxAccountingAdvancedDiscoveryGateUseCase,
+  GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
+  GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase,
   GetTenantEcuadorTaxAnnualFiscalYearWorkspaceUseCase,
   GetTenantEcuadorTaxAnnualIncomeTaxReconciliationV2UseCase,
   GetTenantEcuadorTaxAuditReadinessBinderUseCase,
   GetTenantEcuadorTaxExternalAccountantAnnualReviewRoomUseCase,
+  GetTenantEcuadorTaxProfessionalHandoffV6UseCase,
   RequestTenantEcuadorTaxComplianceAnnualCloseoutV5UseCase,
 } from '@saas-platform/tax-compliance-application';
 
@@ -92,6 +95,143 @@ describe('Tax Compliance annual closeout use cases', () => {
       'accounting-advanced',
     );
     expect(closeout.guardrails.join(' ')).toContain('No inicia sesion en SRI');
+  });
+
+  it('builds professional handoff, gate v2 and AI boundary review surfaces', async () => {
+    const accountantRoom = {
+      execute: jest.fn(async () => ({
+        tenantSlug: 'tax-demo',
+        period: '2026-06',
+        year: 2026,
+        generatedAt: fixedNow,
+        roomStatus: 'needs_review',
+        riskMonitor: {} as any,
+        filingHandoff: {} as any,
+        handoffSections: [
+          {
+            key: 'vat',
+            label: 'IVA',
+            status: 'needs_review',
+            owner: 'accountant',
+            questionCount: 2,
+            evidenceRefs: ['vat_declaration_workspace_v2'],
+          },
+        ],
+        summary: {
+          sectionCount: 1,
+          readySectionCount: 0,
+          accountantSectionCount: 1,
+          questionCount: 2,
+          blockerCount: 0,
+        },
+        blockers: [],
+        nextStep: 'Resolver secciones pendientes.',
+        guardrails: ['No filing automatico.'],
+      })),
+    };
+    const annualCloseout = {
+      execute: jest.fn(async () => ({
+        tenantSlug: 'tax-demo',
+        year: 2026,
+        generatedAt: fixedNow,
+        closeoutStatus: 'needs_review',
+        checklist: [
+          {
+            key: 'accounting_gate',
+            label: 'Gate Accounting Advanced',
+            status: 'needs_review',
+            evidence: 'Hay senales contables.',
+          },
+        ],
+        decision: {
+          status: 'ready_for_external_accountant_review',
+          recommendedNextProduct: 'accounting-advanced',
+        },
+        summary: {
+          checkCount: 1,
+          readyCheckCount: 0,
+          needsReviewCheckCount: 1,
+          blockedCheckCount: 0,
+        },
+        blockers: [],
+        nextStep: 'Cerrar con contador externo.',
+        guardrails: ['No reemplaza contador.'],
+      })),
+    };
+    const professionalHandoffUseCase =
+      new GetTenantEcuadorTaxProfessionalHandoffV6UseCase(
+        accountantRoom as any,
+        annualCloseout as any,
+        () => fixedNow,
+      );
+    const professionalHandoff = await professionalHandoffUseCase.execute({
+      tenantSlug: 'tax-demo',
+      period: '2026-06',
+      year: 2026,
+    });
+    const baseGate = {
+      execute: jest.fn(async () => ({
+        tenantSlug: 'tax-demo',
+        year: 2026,
+        generatedAt: fixedNow,
+        gateStatus: 'needs_review',
+        decisionSignals: [
+          {
+            key: 'official_books',
+            label: 'Libros oficiales',
+            severity: 'high',
+            rationale: '1 evento.',
+          },
+        ],
+        recommendation: {
+          nextProduct: 'accounting-advanced',
+          reason: 'Hay senales suficientes.',
+          openAdvancedAccountingNow: true,
+        },
+        blockers: [],
+        nextStep: 'Evaluar Accounting Advanced.',
+        guardrails: ['No crea libros.'],
+      })),
+    };
+    const gateV2UseCase = new GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase(
+      baseGate as any,
+      professionalHandoffUseCase,
+      () => fixedNow,
+    );
+    const gateV2 = await gateV2UseCase.execute({
+      tenantSlug: 'tax-demo',
+      period: '2026-06',
+      year: 2026,
+    });
+    const boundaryReview =
+      await new GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase(
+        professionalHandoffUseCase,
+        gateV2UseCase,
+        () => fixedNow,
+      ).execute({
+        tenantSlug: 'tax-demo',
+        period: '2026-06',
+        year: 2026,
+      });
+
+    expect(professionalHandoff.decision.serviceMode).toBe(
+      'accounting_advanced_discovery',
+    );
+    expect(gateV2.recommendation.openAdvancedAccountingNow).toBe(true);
+    expect(gateV2.recommendation.minimumEvidenceBeforeOpening).toContain(
+      'Preguntas del contador respondidas y trazables.',
+    );
+    expect(boundaryReview.boundaryLanes.map((lane) => lane.owner)).toEqual(
+      expect.arrayContaining([
+        'tax_compliance',
+        'accounting_foundation',
+        'accounting_advanced',
+        'external_accountant',
+      ]),
+    );
+    expect(boundaryReview.assistantInstructions.blockedOutputs).toContain(
+      'journal_entry_creation',
+    );
   });
 });
 

@@ -24,6 +24,7 @@ import {
   GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
   GetTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase,
   GetTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase,
+  GetTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase,
   ListTenantAiApprovalRequestsUseCase,
   ListTenantAiGuardedExecutionEventsUseCase,
   ListTenantAiMemoryRecordsUseCase,
@@ -47,6 +48,7 @@ import {
 import {
   GetTenantInvoiceDocumentDraftingAssistUseCase,
 } from '@saas-platform/invoicing-application';
+import { GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase } from '@saas-platform/tax-compliance-application';
 import {
   AiPersistenceModule,
   GrowthPersistenceModule,
@@ -63,6 +65,7 @@ import { AuthModule } from '../auth/auth.module';
 import { EcommerceModule } from '../ecommerce/ecommerce.module';
 import { GrowthModule } from '../growth/growth.module';
 import { InvoicingModule } from '../invoicing/invoicing.module';
+import { TaxComplianceModule } from '../tax-compliance/tax-compliance.module';
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { AiController } from './ai.controller';
@@ -77,6 +80,7 @@ import { AiController } from './ai.controller';
     IdentityPersistenceModule,
     InvoicingModule,
     InvoicingPersistenceModule,
+    TaxComplianceModule,
     TenancyPersistenceModule,
   ],
   controllers: [AiController],
@@ -191,6 +195,21 @@ import { AiController } from './ai.controller';
         ),
     },
     {
+      provide: GetTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase,
+      inject: [
+        GetTenantEcuadorTaxAccountingBoundaryAiReviewUseCase,
+        GetTenantAiMemoryRetrievalUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxAccountingBoundaryAiReviewUseCase,
+        getTenantAiMemoryRetrievalUseCase,
+      ) =>
+        new GetTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase(
+          getTenantEcuadorTaxAccountingBoundaryAiReviewUseCase,
+          getTenantAiMemoryRetrievalUseCase,
+        ),
+    },
+    {
       provide: GetTenantAiSuggestionEnvelopeUseCase,
       inject: [
         GetTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase,
@@ -198,6 +217,7 @@ import { AiController } from './ai.controller';
         GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
         GetTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase,
         GetTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase,
+        GetTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase,
       ],
       useFactory: (
         getTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase,
@@ -205,6 +225,7 @@ import { AiController } from './ai.controller';
         getTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase,
         getTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase,
         getTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase,
+        getTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase,
       ) =>
         new GetTenantAiSuggestionEnvelopeUseCase(
           getTenantGrowthAssistAiSuggestionEnvelopeUseCase,
@@ -212,6 +233,7 @@ import { AiController } from './ai.controller';
           getTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase,
           getTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase,
           getTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase,
+          getTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase,
         ),
     },
     {

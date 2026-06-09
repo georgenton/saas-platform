@@ -10,6 +10,7 @@ import { GetTenantGrowthAssistAiSuggestionEnvelopeUseCase } from './get-tenant-g
 import { GetTenantInvoiceDocumentAssistantAiSuggestionEnvelopeUseCase } from './get-tenant-invoice-document-assistant-ai-suggestion-envelope.use-case';
 import { GetTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase } from './get-tenant-medical-clinic-assistant-ai-suggestion-envelope.use-case';
 import { GetTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase } from './get-tenant-psychology-clinic-assistant-ai-suggestion-envelope.use-case';
+import { GetTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase } from './get-tenant-tax-accounting-boundary-assistant-ai-suggestion-envelope.use-case';
 
 export class GetTenantAiSuggestionEnvelopeUseCase {
   private readonly handlers: Record<string, TenantAiSuggestionEnvelopeHandler>;
@@ -20,6 +21,7 @@ export class GetTenantAiSuggestionEnvelopeUseCase {
     private readonly getTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase: GetTenantEcommerceLaunchAssistantAiSuggestionEnvelopeUseCase,
     private readonly getTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase: GetTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase,
     private readonly getTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase: GetTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase,
+    private readonly getTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase: GetTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase,
   ) {
     this.handlers = createAiSuggestionEnvelopeHandlerRegistry({
       growthAssist: this.getTenantGrowthAssistAiSuggestionEnvelopeUseCase,
@@ -31,6 +33,8 @@ export class GetTenantAiSuggestionEnvelopeUseCase {
         this.getTenantMedicalClinicAssistantAiSuggestionEnvelopeUseCase,
       psychologyClinicAssistant:
         this.getTenantPsychologyClinicAssistantAiSuggestionEnvelopeUseCase,
+      taxAccountingBoundaryAssistant:
+        this.getTenantTaxAccountingBoundaryAssistantAiSuggestionEnvelopeUseCase,
     });
   }
 

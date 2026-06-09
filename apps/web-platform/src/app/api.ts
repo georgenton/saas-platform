@@ -412,6 +412,8 @@ import {
   PsychologyClinicClinicalEvidenceRegistryResponse,
   PsychologyClinicCloseoutV4Response,
   PsychologyClinicCloseoutV5Response,
+  PsychologyClinicCommandCenterV60Response,
+  PsychologyClinicCrossProductHandoffCenterV60Response,
   PsychologyClinicEhrDiscoveryWorkspaceResponse,
   PsychologyClinicEhrIntegrationEvaluationResponse,
   PsychologyClinicExternalDocumentHandoffContractsResponse,
@@ -421,6 +423,7 @@ import {
   PsychologyClinicOperationsCloseoutResponse,
   PsychologyClinicOutcomesReviewWorkspaceResponse,
   PsychologyClinicPatientIntakeWorkspaceResponse,
+  PsychologyClinicPatientPrivacyRiskQueueV60Response,
   PsychologyClinicPatientRecordResponse,
   PsychologyClinicPatientTimelineWorkspaceResponse,
   PsychologyClinicPrivacyConsentControlCenterResponse,
@@ -434,9 +437,11 @@ import {
   PsychologyClinicSessionNoteReviewLoopResponse,
   PsychologyClinicSessionRecordResponse,
   PsychologyClinicSessionSchedulingWorkspaceResponse,
+  PsychologyClinicSessionTreatmentQueueV60Response,
   PsychologyClinicTreatmentFollowUpReadinessResponse,
   PsychologyClinicTreatmentPlanWorkspaceResponse,
   PsychologyClinicTherapistReviewWorkQueueResponse,
+  PsychologyClinicOperatingCloseoutV60Response,
   RegisterPsychologyClinicPatientIntakeRequest,
   TransitionPsychologyClinicSessionRequest,
   UpsertPsychologyClinicProfileWorkspaceRequest,
@@ -9793,6 +9798,81 @@ export async function fetchPsychologyClinicCloseoutV5(
 ): Promise<PsychologyClinicCloseoutV5Response> {
   return request<PsychologyClinicCloseoutV5Response>(
     `/psychology-clinics/tenants/${encodeURIComponent(tenantSlug)}/closeout-v5`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicCommandCenterV60(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicCommandCenterV60Response> {
+  return request<PsychologyClinicCommandCenterV60Response>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/command-center-v60`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicPatientPrivacyRiskQueueV60(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicPatientPrivacyRiskQueueV60Response> {
+  return request<PsychologyClinicPatientPrivacyRiskQueueV60Response>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patient-privacy-risk-queue-v60`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicSessionTreatmentQueueV60(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicSessionTreatmentQueueV60Response> {
+  return request<PsychologyClinicSessionTreatmentQueueV60Response>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/session-treatment-queue-v60`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicCrossProductHandoffCenterV60(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicCrossProductHandoffCenterV60Response> {
+  return request<PsychologyClinicCrossProductHandoffCenterV60Response>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/cross-product-handoff-center-v60`,
+    {
+      method: 'GET',
+      token,
+    },
+  );
+}
+
+export async function fetchPsychologyClinicOperatingCloseoutV60(
+  token: string,
+  tenantSlug: string,
+): Promise<PsychologyClinicOperatingCloseoutV60Response> {
+  return request<PsychologyClinicOperatingCloseoutV60Response>(
+    `/psychology-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/operating-closeout-v60`,
     {
       method: 'GET',
       token,

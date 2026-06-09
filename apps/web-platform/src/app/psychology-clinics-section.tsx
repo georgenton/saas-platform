@@ -7,6 +7,8 @@ import {
   fetchPsychologyClinicClinicalEvidenceRegistry,
   fetchPsychologyClinicCloseoutV4,
   fetchPsychologyClinicCloseoutV5,
+  fetchPsychologyClinicCommandCenterV60,
+  fetchPsychologyClinicCrossProductHandoffCenterV60,
   fetchPsychologyClinicEhrDiscoveryWorkspace,
   fetchPsychologyClinicEhrIntegrationEvaluation,
   fetchPsychologyClinicExternalDocumentHandoffContracts,
@@ -15,6 +17,7 @@ import {
   fetchPsychologyClinicOperationsCloseout,
   fetchPsychologyClinicOutcomesReviewWorkspace,
   fetchPsychologyClinicPatientIntakeWorkspace,
+  fetchPsychologyClinicPatientPrivacyRiskQueueV60,
   fetchPsychologyClinicPatientTimelineWorkspace,
   fetchPsychologyClinicPrivacyConsentControlCenter,
   fetchPsychologyClinicProductAnchor,
@@ -24,9 +27,11 @@ import {
   fetchPsychologyClinicRecordsHardeningWorkspace,
   fetchPsychologyClinicRiskSafetyReviewWorkspace,
   fetchPsychologyClinicSessionSchedulingWorkspace,
+  fetchPsychologyClinicSessionTreatmentQueueV60,
   fetchPsychologyClinicTreatmentFollowUpReadiness,
   fetchPsychologyClinicTreatmentPlanWorkspace,
   fetchPsychologyClinicTherapistReviewWorkQueue,
+  fetchPsychologyClinicOperatingCloseoutV60,
   registerPsychologyClinicPatientIntake,
   requestPsychologyClinicBillingTaxBridge,
   requestPsychologyClinicGrowthReminderBridge,
@@ -43,6 +48,8 @@ import {
   PsychologyClinicClinicalEvidenceRegistryResponse,
   PsychologyClinicCloseoutV4Response,
   PsychologyClinicCloseoutV5Response,
+  PsychologyClinicCommandCenterV60Response,
+  PsychologyClinicCrossProductHandoffCenterV60Response,
   PsychologyClinicEhrDiscoveryWorkspaceResponse,
   PsychologyClinicEhrIntegrationEvaluationResponse,
   PsychologyClinicExternalDocumentHandoffContractsResponse,
@@ -52,6 +59,7 @@ import {
   PsychologyClinicOperationsCloseoutResponse,
   PsychologyClinicOutcomesReviewWorkspaceResponse,
   PsychologyClinicPatientIntakeWorkspaceResponse,
+  PsychologyClinicPatientPrivacyRiskQueueV60Response,
   PsychologyClinicPatientTimelineWorkspaceResponse,
   PsychologyClinicPrivacyConsentControlCenterResponse,
   PsychologyClinicProductAnchorResponse,
@@ -64,9 +72,11 @@ import {
   PsychologyClinicSessionNoteReviewLoopResponse,
   PsychologyClinicSessionRecordResponse,
   PsychologyClinicSessionSchedulingWorkspaceResponse,
+  PsychologyClinicSessionTreatmentQueueV60Response,
   PsychologyClinicTreatmentFollowUpReadinessResponse,
   PsychologyClinicTreatmentPlanWorkspaceResponse,
   PsychologyClinicTherapistReviewWorkQueueResponse,
+  PsychologyClinicOperatingCloseoutV60Response,
 } from './types';
 
 type PsychologyClinicsSectionProps = {
@@ -124,6 +134,14 @@ type ProductCloseoutSurface = {
   closeout: PsychologyClinicCloseoutV5Response | null;
 };
 
+type OperatingSurfaceV60 = {
+  commandCenter: PsychologyClinicCommandCenterV60Response | null;
+  privacyRiskQueue: PsychologyClinicPatientPrivacyRiskQueueV60Response | null;
+  sessionTreatmentQueue: PsychologyClinicSessionTreatmentQueueV60Response | null;
+  handoffCenter: PsychologyClinicCrossProductHandoffCenterV60Response | null;
+  closeout: PsychologyClinicOperatingCloseoutV60Response | null;
+};
+
 const emptySurface: PsychologySurface = {
   anchor: null,
   foundationCloseout: null,
@@ -133,6 +151,14 @@ const emptySurface: PsychologySurface = {
   scheduling: null,
   growthBridge: null,
   billingBridge: null,
+};
+
+const emptyOperatingSurfaceV60: OperatingSurfaceV60 = {
+  commandCenter: null,
+  privacyRiskQueue: null,
+  sessionTreatmentQueue: null,
+  handoffCenter: null,
+  closeout: null,
 };
 
 export function PsychologyClinicsSection({
@@ -175,6 +201,8 @@ export function PsychologyClinicsSection({
       boundary: null,
       closeout: null,
     });
+  const [operatingSurfaceV60, setOperatingSurfaceV60] =
+    useState<OperatingSurfaceV60>(emptyOperatingSurfaceV60);
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState('');
   const [patientName, setPatientName] = useState('Paciente Psicologia');
@@ -212,13 +240,27 @@ export function PsychologyClinicsSection({
         label: 'Blockers',
         value: surface.operationsCloseout?.summary.blockerCount ?? 0,
       },
+      {
+        label: 'Operating 6.0',
+        value:
+          operatingSurfaceV60.closeout?.summary.readyChecklistCount ??
+          operatingSurfaceV60.commandCenter?.summary.readyTileCount ??
+          0,
+      },
     ],
-    [patients.length, sessions.length, surface.operationsCloseout],
+    [
+      operatingSurfaceV60.closeout,
+      operatingSurfaceV60.commandCenter,
+      patients.length,
+      sessions.length,
+      surface.operationsCloseout,
+    ],
   );
 
   useEffect(() => {
     if (!token || !tenantSlug) {
       setSurface(emptySurface);
+      setOperatingSurfaceV60(emptyOperatingSurfaceV60);
       return;
     }
 
@@ -240,6 +282,11 @@ export function PsychologyClinicsSection({
         profile,
         intake,
         scheduling,
+        commandCenter,
+        privacyRiskQueue,
+        sessionTreatmentQueue,
+        handoffCenter,
+        operatingCloseout,
       ] = await Promise.all([
         fetchPsychologyClinicProductAnchor(token, tenantSlug),
         fetchPsychologyClinicFoundationCloseout(token, tenantSlug),
@@ -247,6 +294,11 @@ export function PsychologyClinicsSection({
         fetchPsychologyClinicProfileWorkspace(token, tenantSlug),
         fetchPsychologyClinicPatientIntakeWorkspace(token, tenantSlug),
         fetchPsychologyClinicSessionSchedulingWorkspace(token, tenantSlug),
+        fetchPsychologyClinicCommandCenterV60(token, tenantSlug),
+        fetchPsychologyClinicPatientPrivacyRiskQueueV60(token, tenantSlug),
+        fetchPsychologyClinicSessionTreatmentQueueV60(token, tenantSlug),
+        fetchPsychologyClinicCrossProductHandoffCenterV60(token, tenantSlug),
+        fetchPsychologyClinicOperatingCloseoutV60(token, tenantSlug),
       ]);
 
       setSurface((current) => ({
@@ -258,6 +310,13 @@ export function PsychologyClinicsSection({
         intake,
         scheduling,
       }));
+      setOperatingSurfaceV60({
+        commandCenter,
+        privacyRiskQueue,
+        sessionTreatmentQueue,
+        handoffCenter,
+        closeout: operatingCloseout,
+      });
       setSelectedPatientId(
         (current) => current || intake.intakeQueue[0]?.id || '',
       );
@@ -651,6 +710,82 @@ export function PsychologyClinicsSection({
             <strong>{metric.value}</strong>
           </div>
         ))}
+      </div>
+
+      <div className={styles.panel}>
+        <div className={styles.sectionHeading}>
+          <div>
+            <span className={styles.label}>Operating hardening 6.0</span>
+            <h3>
+              {humanizeKey(
+                operatingSurfaceV60.closeout?.recommendedNextProduct ??
+                  'psychology_clinics_operational_pilot',
+              )}
+            </h3>
+          </div>
+          <StatusPill
+            status={operatingSurfaceV60.closeout?.closeoutStatus ?? 'blocked'}
+          />
+        </div>
+        <div className={styles.commercialMetricsGrid}>
+          <div className={styles.commercialCard}>
+            <span className={styles.muted}>Command tiles</span>
+            <strong>
+              {operatingSurfaceV60.commandCenter?.summary.readyTileCount ?? 0}/
+              {operatingSurfaceV60.commandCenter?.summary.tileCount ?? 0}
+            </strong>
+          </div>
+          <div className={styles.commercialCard}>
+            <span className={styles.muted}>Privacy/risk actions</span>
+            <strong>
+              {operatingSurfaceV60.closeout?.summary.patientActionCount ?? 0}
+            </strong>
+          </div>
+          <div className={styles.commercialCard}>
+            <span className={styles.muted}>Session actions</span>
+            <strong>
+              {operatingSurfaceV60.closeout?.summary.sessionActionCount ?? 0}
+            </strong>
+          </div>
+          <div className={styles.commercialCard}>
+            <span className={styles.muted}>Handoff lanes</span>
+            <strong>
+              {operatingSurfaceV60.handoffCenter?.summary.laneCount ?? 0}
+            </strong>
+          </div>
+        </div>
+        <div className={styles.contentGrid}>
+          <div className={styles.stack}>
+            {(operatingSurfaceV60.closeout?.closeoutChecklist ?? []).map(
+              (item) => (
+                <div className={styles.assistCueCard} key={item.key}>
+                  <div className={styles.invoiceCardHeader}>
+                    <strong>{item.label}</strong>
+                    <StatusPill status={item.status} />
+                  </div>
+                  <small>{item.evidenceRefs.join(', ')}</small>
+                </div>
+              ),
+            )}
+          </div>
+          <div className={styles.stack}>
+            {(operatingSurfaceV60.handoffCenter?.lanes ?? []).map((lane) => (
+              <div className={styles.assistCueCard} key={lane.key}>
+                <div className={styles.invoiceCardHeader}>
+                  <strong>{lane.label}</strong>
+                  <StatusPill status={lane.status} />
+                </div>
+                <small>
+                  {humanizeKey(lane.targetProduct)} · {lane.nextAction}
+                </small>
+              </div>
+            ))}
+            <small className={styles.muted}>
+              {operatingSurfaceV60.closeout?.nextStep ??
+                'Cargando closeout operativo 6.0.'}
+            </small>
+          </div>
+        </div>
       </div>
 
       <div className={styles.contentGrid}>

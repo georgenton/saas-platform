@@ -178,6 +178,7 @@ import {
   fetchEcuadorTaxCommandCenter,
   fetchEcuadorTaxCommandCenterV2,
   fetchEcuadorTaxDeclarationArtifactExport,
+  fetchEcuadorTaxDeclarationHandoffCloseoutV6,
   fetchEcuadorTaxDeclarationReviewLoopWorkspace,
   fetchEcuadorTaxDeclarationSourceLedger,
   fetchEcuadorTaxDeclarationFormDraftPacket,
@@ -682,6 +683,7 @@ import {
   EcuadorTaxAnnualRollupWorkspaceResponse,
   EcuadorTaxAssistedDeclarationReviewPackV2Response,
   EcuadorTaxComplianceCloseoutV2Response,
+  EcuadorTaxDeclarationHandoffCloseoutV6Response,
   EcuadorTaxComplianceProductCloseoutV3Response,
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxCommandCenterResponse,
@@ -2588,6 +2590,10 @@ export function App() {
     taxComplianceCloseoutV2,
     setTaxComplianceCloseoutV2,
   ] = useState<EcuadorTaxComplianceCloseoutV2Response | null>(null);
+  const [
+    taxComplianceDeclarationHandoffCloseoutV6,
+    setTaxComplianceDeclarationHandoffCloseoutV6,
+  ] = useState<EcuadorTaxDeclarationHandoffCloseoutV6Response | null>(null);
   const [
     taxComplianceEvidenceQualityCenter,
     setTaxComplianceEvidenceQualityCenter,
@@ -19833,6 +19839,7 @@ export function App() {
         nextFilingAssistantV2,
         nextAccountantEscalationBoundary,
         nextCloseoutV2,
+        nextDeclarationHandoffCloseoutV6,
         nextEvidenceQualityCenter,
         nextObligationRiskMonitor,
         nextAccountantHandoffRoomV2,
@@ -20152,6 +20159,12 @@ export function App() {
           year,
         ),
         fetchEcuadorTaxComplianceCloseoutV2(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxDeclarationHandoffCloseoutV6(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -20625,6 +20638,9 @@ export function App() {
           nextAccountantEscalationBoundary,
         );
         setTaxComplianceCloseoutV2(nextCloseoutV2);
+        setTaxComplianceDeclarationHandoffCloseoutV6(
+          nextDeclarationHandoffCloseoutV6,
+        );
         setTaxComplianceEvidenceQualityCenter(nextEvidenceQualityCenter);
         setTaxComplianceObligationRiskMonitor(nextObligationRiskMonitor);
         setTaxComplianceAccountantHandoffRoomV2(nextAccountantHandoffRoomV2);
@@ -32483,6 +32499,103 @@ export function App() {
                         </div>
                       </div>
                     ) : null}
+                    {taxComplianceDeclarationHandoffCloseoutV6 ? (
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <div>
+                            <strong>Declaration handoff closeout 6.0</strong>
+                            <p className={styles.muted}>
+                              {humanizeKey(
+                                taxComplianceDeclarationHandoffCloseoutV6
+                                  .decision.nextStep,
+                              )}
+                            </p>
+                          </div>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              taxComplianceDeclarationHandoffCloseoutV6.closeoutStatus,
+                            )}`}
+                          >
+                            {humanizeKey(
+                              taxComplianceDeclarationHandoffCloseoutV6.decision
+                                .nextStep,
+                            )}
+                          </span>
+                        </div>
+                        <div className={styles.invoiceInlineGrid}>
+                          <div>
+                            <span className={styles.muted}>Lanes</span>
+                            <strong>
+                              {
+                                taxComplianceDeclarationHandoffCloseoutV6.summary
+                                  .readyLaneCount
+                              }
+                              /
+                              {
+                                taxComplianceDeclarationHandoffCloseoutV6.summary
+                                  .laneCount
+                              }{' '}
+                              listos
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Contador</span>
+                            <strong>
+                              {
+                                taxComplianceDeclarationHandoffCloseoutV6.summary
+                                  .accountantOwnedLaneCount
+                              }{' '}
+                              lanes
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>
+                              Accounting Advanced
+                            </span>
+                            <strong>
+                              {taxComplianceDeclarationHandoffCloseoutV6.decision
+                                .openAdvancedAccountingNow
+                                ? 'Abrir discovery'
+                                : 'Diferido'}
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Blockers</span>
+                            <strong>
+                              {
+                                taxComplianceDeclarationHandoffCloseoutV6.summary
+                                  .blockerCount
+                              }
+                            </strong>
+                          </div>
+                        </div>
+                        <ul className={styles.compactList}>
+                          {taxComplianceDeclarationHandoffCloseoutV6.handoffLanes.map(
+                            (lane) => (
+                              <li key={lane.key}>
+                                <strong>{lane.label}</strong> ·{' '}
+                                {humanizeKey(lane.status)} ·{' '}
+                                {humanizeKey(lane.owner)} · {lane.action}
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                        <p className={styles.muted}>
+                          Packet contador:{' '}
+                          {
+                            taxComplianceDeclarationHandoffCloseoutV6.decision
+                              .reason
+                          }
+                        </p>
+                        <ul className={styles.compactList}>
+                          {taxComplianceDeclarationHandoffCloseoutV6.guardrails.map(
+                            (guardrail) => (
+                              <li key={guardrail}>{guardrail}</li>
+                            ),
+                          )}
+                        </ul>
+                      </div>
+                    ) : null}
                     {taxComplianceEvidenceQualityCenter &&
                     taxComplianceObligationRiskMonitor &&
                     taxComplianceAccountantHandoffRoomV2 &&
@@ -40428,6 +40541,17 @@ export function App() {
                   <strong>
                     {taxComplianceCloseoutPacket
                       ? humanizeKey(taxComplianceCloseoutPacket.closeoutStatus)
+                      : 'Sin cargar'}
+                  </strong>
+                </div>
+                <div className={styles.commercialCard}>
+                  <span className={styles.muted}>Handoff 6.0</span>
+                  <strong>
+                    {taxComplianceDeclarationHandoffCloseoutV6
+                      ? humanizeKey(
+                          taxComplianceDeclarationHandoffCloseoutV6.decision
+                            .nextStep,
+                        )
                       : 'Sin cargar'}
                   </strong>
                 </div>

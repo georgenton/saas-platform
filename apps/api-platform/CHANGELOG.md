@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.23
+
+### Patch Changes
+
+- 7ea00c4: Add the Ecuador tax declaration handoff closeout 6.0 surface across SRI evidence, IVA, renta, assisted filing, professional handoff and accounting boundary review.
+
 ## 0.107.22
 
 ### Patch Changes

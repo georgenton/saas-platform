@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.28
+
+### Patch Changes
+
+- 55ba38c: Add Tax Compliance EC pilot feedback 7.0 with pilot tenant readiness, accountant feedback intake, evidence correction workbench, pilot decision packet, closeout, web dashboard wiring, model refresh, and smoke coverage.
+
 ## 0.107.27
 
 ### Patch Changes

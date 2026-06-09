@@ -1,5 +1,14 @@
 # api-platform
 
+## 0.107.25
+
+### Patch Changes
+
+- 1cba1a2: Add Tax Compliance EC operational hardening 6.2 with SRI import ledger,
+  reconciliation exception queue, form-box binder 2.0, accountant packet export,
+  operator action center, closeout endpoint, web dashboard wiring and smoke
+  coverage.
+
 ## 0.107.24
 
 ### Patch Changes

@@ -592,6 +592,34 @@ closeout and final product closeout. The result is that Psychology Clinics can
 pause as an MVP while external EHR integration is intentionally deferred. The
 recommended next product focus returns to `Tax Compliance EC`.
 
+Operating Hardening 6.0 brings Psychology Clinics to the same operator-grade
+level as Medical Clinics: command center, patient privacy/risk queue, session
+and treatment queue, cross-product handoff center, and operating closeout. This
+does not reopen the EHR boundary. It makes the MVP safer to pilot by separating
+patient consent/risk work, therapist review work, Growth/AI/Billing/Tax/Parties
+handoffs, and final closeout evidence into explicit reviewed surfaces.
+
+The 6.0 layer adds:
+
+1. `Psychology Clinics Roadmap Refresh 6.0`
+   - marks foundation, operations, records, EHR readiness, product closeout,
+     AI/Growth bridges and smoke as implemented capability
+2. `Psychology Clinics Command Center 6.0`
+   - consolidates product anchor, operations closeout, product readiness,
+     closeout v5, patient privacy and sessions into one operator surface
+3. `Patient Privacy, Consent & Risk Review Queue`
+   - prioritizes identity, contact, therapy consent, messaging opt-in and
+     initial risk review before session operation
+4. `Session & Treatment Operations Queue`
+   - tracks reminders, billing readiness, treatment review and therapist review
+     across active sessions
+5. `Psychology Cross-Product Handoff Center`
+   - packages Growth reminders, AI boundary, Billing/Invoicing, Tax Compliance
+     EC and Parties handoffs without moving ownership into Psychology
+6. `Psychology Clinics Operating Closeout 6.0 + Smoke`
+   - validates command center, privacy/risk queue, session/treatment queue,
+     cross-product handoffs, closeout v5 and guardrails as one narrative
+
 Records 3.0 adds records hardening, clinical evidence registry, session note
 review loop, risk/safety review workspace, privacy/consent control center and
 records closeout. It still does not create a signed legal EHR record, store

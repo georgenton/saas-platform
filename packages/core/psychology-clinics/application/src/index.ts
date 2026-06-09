@@ -9,6 +9,8 @@ export * from './lib/use-cases/get-tenant-psychology-clinic-clinical-evidence-re
 export * from './lib/use-cases/get-tenant-psychology-clinic-clinical-admin-hardening-workspace.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-closeout-v4.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-closeout-v5.use-case';
+export * from './lib/use-cases/get-tenant-psychology-clinic-command-center-v60.use-case';
+export * from './lib/use-cases/get-tenant-psychology-clinic-cross-product-handoff-center-v60.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-ehr-discovery-workspace.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-ehr-integration-evaluation.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-external-document-handoff-contracts.use-case';
@@ -17,6 +19,7 @@ export * from './lib/use-cases/get-tenant-psychology-clinic-formal-record-signat
 export * from './lib/use-cases/get-tenant-psychology-clinic-operations-closeout.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-outcomes-review-workspace.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-patient-intake-workspace.use-case';
+export * from './lib/use-cases/get-tenant-psychology-clinic-patient-privacy-risk-queue-v60.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-patient-timeline-workspace.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-privacy-consent-control-center.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-product-anchor.use-case';
@@ -25,6 +28,7 @@ export * from './lib/use-cases/get-tenant-psychology-clinic-records-closeout-v3.
 export * from './lib/use-cases/get-tenant-psychology-clinic-records-hardening-workspace.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-risk-safety-review-workspace.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-session-scheduling-workspace.use-case';
+export * from './lib/use-cases/get-tenant-psychology-clinic-session-treatment-queue-v60.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-treatment-follow-up-readiness.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-treatment-plan-workspace.use-case';
 export * from './lib/use-cases/get-tenant-psychology-clinic-product-readiness-report.use-case';
@@ -32,6 +36,7 @@ export * from './lib/use-cases/get-tenant-psychology-clinic-therapist-review-wor
 export * from './lib/use-cases/register-tenant-psychology-clinic-patient-intake.use-case';
 export * from './lib/use-cases/request-tenant-psychology-clinic-billing-tax-bridge.use-case';
 export * from './lib/use-cases/request-tenant-psychology-clinic-growth-reminder-bridge.use-case';
+export * from './lib/use-cases/request-tenant-psychology-clinic-operating-closeout-v60.use-case';
 export * from './lib/use-cases/request-tenant-psychology-clinic-session-note-draft-packet.use-case';
 export * from './lib/use-cases/request-tenant-psychology-clinic-session-note-review-loop.use-case';
 export * from './lib/use-cases/transition-tenant-psychology-clinic-session.use-case';

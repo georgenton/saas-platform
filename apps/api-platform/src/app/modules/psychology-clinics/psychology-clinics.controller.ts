@@ -16,6 +16,8 @@ import {
   GetTenantPsychologyClinicClinicalEvidenceRegistryUseCase,
   GetTenantPsychologyClinicCloseoutV4UseCase,
   GetTenantPsychologyClinicCloseoutV5UseCase,
+  GetTenantPsychologyClinicCommandCenterV60UseCase,
+  GetTenantPsychologyClinicCrossProductHandoffCenterV60UseCase,
   GetTenantPsychologyClinicEhrDiscoveryWorkspaceUseCase,
   GetTenantPsychologyClinicEhrIntegrationEvaluationUseCase,
   GetTenantPsychologyClinicExternalDocumentHandoffContractsUseCase,
@@ -24,6 +26,7 @@ import {
   GetTenantPsychologyClinicFormalRecordSignatureReadinessUseCase,
   GetTenantPsychologyClinicOutcomesReviewWorkspaceUseCase,
   GetTenantPsychologyClinicPatientIntakeWorkspaceUseCase,
+  GetTenantPsychologyClinicPatientPrivacyRiskQueueV60UseCase,
   GetTenantPsychologyClinicPatientTimelineWorkspaceUseCase,
   GetTenantPsychologyClinicPrivacyConsentControlCenterUseCase,
   GetTenantPsychologyClinicProductAnchorUseCase,
@@ -32,6 +35,7 @@ import {
   GetTenantPsychologyClinicRecordsHardeningWorkspaceUseCase,
   GetTenantPsychologyClinicRiskSafetyReviewWorkspaceUseCase,
   GetTenantPsychologyClinicSessionSchedulingWorkspaceUseCase,
+  GetTenantPsychologyClinicSessionTreatmentQueueV60UseCase,
   GetTenantPsychologyClinicTreatmentFollowUpReadinessUseCase,
   GetTenantPsychologyClinicTreatmentPlanWorkspaceUseCase,
   GetTenantPsychologyClinicProductReadinessReportUseCase,
@@ -40,6 +44,7 @@ import {
   RegisterTenantPsychologyClinicPatientIntakeUseCase,
   RequestTenantPsychologyClinicBillingTaxBridgeUseCase,
   RequestTenantPsychologyClinicGrowthReminderBridgeUseCase,
+  RequestTenantPsychologyClinicOperatingCloseoutV60UseCase,
   RequestTenantPsychologyClinicSessionNoteDraftPacketUseCase,
   RequestTenantPsychologyClinicSessionNoteReviewLoopUseCase,
   TransitionTenantPsychologyClinicSessionUseCase,
@@ -60,6 +65,8 @@ import {
   PsychologyClinicClinicalEvidenceRegistryResponseDto,
   PsychologyClinicCloseoutV4ResponseDto,
   PsychologyClinicCloseoutV5ResponseDto,
+  PsychologyClinicCommandCenterV60ResponseDto,
+  PsychologyClinicCrossProductHandoffCenterV60ResponseDto,
   PsychologyClinicEhrDiscoveryWorkspaceResponseDto,
   PsychologyClinicEhrIntegrationEvaluationResponseDto,
   PsychologyClinicExternalDocumentHandoffContractsResponseDto,
@@ -69,6 +76,7 @@ import {
   PsychologyClinicOperationsCloseoutResponseDto,
   PsychologyClinicOutcomesReviewWorkspaceResponseDto,
   PsychologyClinicPatientIntakeWorkspaceResponseDto,
+  PsychologyClinicPatientPrivacyRiskQueueV60ResponseDto,
   PsychologyClinicPatientRecordResponseDto,
   PsychologyClinicPatientTimelineWorkspaceResponseDto,
   PsychologyClinicPrivacyConsentControlCenterResponseDto,
@@ -82,9 +90,11 @@ import {
   PsychologyClinicSessionNoteReviewLoopResponseDto,
   PsychologyClinicSessionRecordResponseDto,
   PsychologyClinicSessionSchedulingWorkspaceResponseDto,
+  PsychologyClinicSessionTreatmentQueueV60ResponseDto,
   PsychologyClinicTreatmentFollowUpReadinessResponseDto,
   PsychologyClinicTreatmentPlanWorkspaceResponseDto,
   PsychologyClinicTherapistReviewWorkQueueResponseDto,
+  PsychologyClinicOperatingCloseoutV60ResponseDto,
   RegisterPsychologyClinicPatientIntakeRequestDto,
   TransitionPsychologyClinicSessionRequestDto,
   UpsertPsychologyClinicProfileWorkspaceRequestDto,
@@ -95,6 +105,8 @@ import {
   toPsychologyClinicClinicalEvidenceRegistryResponseDto,
   toPsychologyClinicCloseoutV4ResponseDto,
   toPsychologyClinicCloseoutV5ResponseDto,
+  toPsychologyClinicCommandCenterV60ResponseDto,
+  toPsychologyClinicCrossProductHandoffCenterV60ResponseDto,
   toPsychologyClinicEhrDiscoveryWorkspaceResponseDto,
   toPsychologyClinicEhrIntegrationEvaluationResponseDto,
   toPsychologyClinicExternalDocumentHandoffContractsResponseDto,
@@ -104,6 +116,7 @@ import {
   toPsychologyClinicOperationsCloseoutResponseDto,
   toPsychologyClinicOutcomesReviewWorkspaceResponseDto,
   toPsychologyClinicPatientIntakeWorkspaceResponseDto,
+  toPsychologyClinicPatientPrivacyRiskQueueV60ResponseDto,
   toPsychologyClinicPatientRecordResponseDto,
   toPsychologyClinicPatientTimelineWorkspaceResponseDto,
   toPsychologyClinicPrivacyConsentControlCenterResponseDto,
@@ -117,9 +130,11 @@ import {
   toPsychologyClinicSessionNoteReviewLoopResponseDto,
   toPsychologyClinicSessionRecordResponseDto,
   toPsychologyClinicSessionSchedulingWorkspaceResponseDto,
+  toPsychologyClinicSessionTreatmentQueueV60ResponseDto,
   toPsychologyClinicTreatmentFollowUpReadinessResponseDto,
   toPsychologyClinicTreatmentPlanWorkspaceResponseDto,
   toPsychologyClinicTherapistReviewWorkQueueResponseDto,
+  toPsychologyClinicOperatingCloseoutV60ResponseDto,
 } from './dto/psychology-clinics.response';
 
 @Controller('psychology-clinics/tenants')
@@ -167,6 +182,11 @@ export class PsychologyClinicsController {
     private readonly getTenantPsychologyClinicProductReadinessReportUseCase: GetTenantPsychologyClinicProductReadinessReportUseCase,
     private readonly getTenantPsychologyClinicBoundaryComplianceCloseoutUseCase: GetTenantPsychologyClinicBoundaryComplianceCloseoutUseCase,
     private readonly getTenantPsychologyClinicCloseoutV5UseCase: GetTenantPsychologyClinicCloseoutV5UseCase,
+    private readonly getTenantPsychologyClinicCommandCenterV60UseCase: GetTenantPsychologyClinicCommandCenterV60UseCase,
+    private readonly getTenantPsychologyClinicPatientPrivacyRiskQueueV60UseCase: GetTenantPsychologyClinicPatientPrivacyRiskQueueV60UseCase,
+    private readonly getTenantPsychologyClinicSessionTreatmentQueueV60UseCase: GetTenantPsychologyClinicSessionTreatmentQueueV60UseCase,
+    private readonly getTenantPsychologyClinicCrossProductHandoffCenterV60UseCase: GetTenantPsychologyClinicCrossProductHandoffCenterV60UseCase,
+    private readonly requestTenantPsychologyClinicOperatingCloseoutV60UseCase: RequestTenantPsychologyClinicOperatingCloseoutV60UseCase,
   ) {}
 
   @Get(':slug/product-anchor')
@@ -604,6 +624,61 @@ export class PsychologyClinicsController {
       await this.getTenantPsychologyClinicCloseoutV5UseCase.execute({
         tenantSlug,
       }),
+    );
+  }
+
+  @Get(':slug/command-center-v60')
+  async getCommandCenterV60(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicCommandCenterV60ResponseDto> {
+    return toPsychologyClinicCommandCenterV60ResponseDto(
+      await this.getTenantPsychologyClinicCommandCenterV60UseCase.execute({
+        tenantSlug,
+      }),
+    );
+  }
+
+  @Get(':slug/patient-privacy-risk-queue-v60')
+  async getPatientPrivacyRiskQueueV60(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicPatientPrivacyRiskQueueV60ResponseDto> {
+    return toPsychologyClinicPatientPrivacyRiskQueueV60ResponseDto(
+      await this.getTenantPsychologyClinicPatientPrivacyRiskQueueV60UseCase.execute(
+        { tenantSlug },
+      ),
+    );
+  }
+
+  @Get(':slug/session-treatment-queue-v60')
+  async getSessionTreatmentQueueV60(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicSessionTreatmentQueueV60ResponseDto> {
+    return toPsychologyClinicSessionTreatmentQueueV60ResponseDto(
+      await this.getTenantPsychologyClinicSessionTreatmentQueueV60UseCase.execute(
+        { tenantSlug },
+      ),
+    );
+  }
+
+  @Get(':slug/cross-product-handoff-center-v60')
+  async getCrossProductHandoffCenterV60(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicCrossProductHandoffCenterV60ResponseDto> {
+    return toPsychologyClinicCrossProductHandoffCenterV60ResponseDto(
+      await this.getTenantPsychologyClinicCrossProductHandoffCenterV60UseCase.execute(
+        { tenantSlug },
+      ),
+    );
+  }
+
+  @Get(':slug/operating-closeout-v60')
+  async requestOperatingCloseoutV60(
+    @Param('slug') tenantSlug: string,
+  ): Promise<PsychologyClinicOperatingCloseoutV60ResponseDto> {
+    return toPsychologyClinicOperatingCloseoutV60ResponseDto(
+      await this.requestTenantPsychologyClinicOperatingCloseoutV60UseCase.execute(
+        { tenantSlug },
+      ),
     );
   }
 }

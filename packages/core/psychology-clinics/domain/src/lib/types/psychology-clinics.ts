@@ -868,3 +868,134 @@ export interface TenantPsychologyClinicCloseoutV5 {
   nextStep: string;
   guardrails: string[];
 }
+
+export interface TenantPsychologyClinicCommandCenterV60 {
+  tenantSlug: string;
+  generatedAt: Date;
+  commandStatus: PsychologyClinicReadinessStatus;
+  commandTiles: Array<{
+    key: string;
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    metric: string;
+    nextAction: string;
+  }>;
+  summary: {
+    tileCount: number;
+    readyTileCount: number;
+    blockerCount: number;
+    patientCount: number;
+    sessionCount: number;
+  };
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicPatientPrivacyRiskQueueV60 {
+  tenantSlug: string;
+  generatedAt: Date;
+  queueStatus: PsychologyClinicReadinessStatus;
+  patients: Array<{
+    id: string;
+    patientDisplayName: string;
+    identificationStatus: PsychologyClinicReadinessStatus;
+    contactStatus: PsychologyClinicReadinessStatus;
+    therapyConsentStatus: PsychologyClinicReadinessStatus;
+    messagingOptInStatus: PsychologyClinicReadinessStatus;
+    initialRiskReviewStatus: PsychologyClinicReadinessStatus;
+    priority: 'high' | 'medium' | 'low';
+    nextAction: string;
+  }>;
+  summary: {
+    patientCount: number;
+    highPriorityCount: number;
+    pendingConsentCount: number;
+    pendingRiskReviewCount: number;
+    blockedPatientCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicSessionTreatmentQueueV60 {
+  tenantSlug: string;
+  generatedAt: Date;
+  queueStatus: PsychologyClinicReadinessStatus;
+  sessions: Array<{
+    id: string;
+    patientDisplayName: string;
+    serviceName: string;
+    therapistName: string;
+    status: PsychologyClinicSessionStatus;
+    reminderStatus: PsychologyClinicReadinessStatus;
+    billingStatus: PsychologyClinicReadinessStatus;
+    treatmentPlanStatus: PsychologyClinicReadinessStatus;
+    therapistReviewStatus: PsychologyClinicReadinessStatus;
+    nextAction: string;
+  }>;
+  summary: {
+    sessionCount: number;
+    reminderReviewCount: number;
+    billingReviewCount: number;
+    treatmentReviewCount: number;
+    therapistReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicCrossProductHandoffCenterV60 {
+  tenantSlug: string;
+  generatedAt: Date;
+  handoffStatus: PsychologyClinicReadinessStatus;
+  lanes: Array<{
+    key: string;
+    targetProduct: 'growth' | 'ai' | 'invoicing' | 'tax-compliance-ec' | 'parties';
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    evidenceRefs: string[];
+    nextAction: string;
+  }>;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantPsychologyClinicOperatingCloseoutV60 {
+  tenantSlug: string;
+  generatedAt: Date;
+  closeoutStatus: PsychologyClinicReadinessStatus;
+  commandCenter: TenantPsychologyClinicCommandCenterV60;
+  privacyRiskQueue: TenantPsychologyClinicPatientPrivacyRiskQueueV60;
+  sessionTreatmentQueue: TenantPsychologyClinicSessionTreatmentQueueV60;
+  handoffCenter: TenantPsychologyClinicCrossProductHandoffCenterV60;
+  productCloseout: TenantPsychologyClinicCloseoutV5;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: PsychologyClinicReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    patientActionCount: number;
+    sessionActionCount: number;
+    handoffLaneCount: number;
+  };
+  recommendedNextProduct:
+    | 'psychology_clinics_operational_pilot'
+    | 'psychology_external_ehr_discovery'
+    | 'tax_compliance_ec_followup';
+  nextStep: string;
+  guardrails: string[];
+}

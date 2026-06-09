@@ -66,6 +66,7 @@ import {
   GetTenantEcuadorTaxFilingHandoffUseCase,
   GetTenantEcuadorTaxFilingEvidenceVaultV2UseCase,
   GetTenantEcuadorTaxFormBoxEvidenceBinderUseCase,
+  GetTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
   GetTenantEcuadorTaxFormMappingCatalogUseCase,
   GetTenantEcuadorTaxExceptionCenterUseCase,
   GetTenantEcuadorTaxExternalAccountantAnnualReviewRoomUseCase,
@@ -80,6 +81,7 @@ import {
   GetTenantEcuadorTaxObligationRiskMonitorUseCase,
   GetTenantEcuadorTaxOperationalCloseoutUseCase,
   GetTenantEcuadorTaxOperatingDashboardV3UseCase,
+  GetTenantEcuadorTaxOperatorActionCenterV62UseCase,
   GetTenantEcuadorTaxPaymentObligationTrackerUseCase,
   GetTenantEcuadorTaxPartyEvidenceBridgeUseCase,
   GetTenantEcuadorTaxPartyFiscalValidationLedgerUseCase,
@@ -93,9 +95,11 @@ import {
   GetTenantEcuadorTaxRuleCatalogUseCase,
   GetTenantEcuadorTaxSupplierFiscalReadinessWorkspaceUseCase,
   GetTenantEcuadorTaxSriFiscalEvidenceWorkspaceUseCase,
+  GetTenantEcuadorTaxSriEvidenceImportPersistenceLedgerV62UseCase,
   GetTenantEcuadorTaxSriFilingReceiptEvidenceVaultUseCase,
   GetTenantEcuadorTaxSriEvidenceIntakeV2WorkspaceUseCase,
   GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
+  GetTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
   GetTenantEcuadorTaxSriSourceImportCenterV2UseCase,
   GetTenantEcuadorTaxSriTaxpayerValidationReadinessUseCase,
   GetTenantEcuadorTaxVatDeclarationApprovalUseCase,
@@ -117,6 +121,7 @@ import {
   RequestTenantEcuadorTaxAccountantReviewPacketUseCase,
   RequestTenantEcuadorTaxAccountantReviewUseCase,
   RequestTenantEcuadorTaxAccountantCollaborationPackUseCase,
+  RequestTenantEcuadorTaxAccountantPacketExportV62UseCase,
   RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
   RequestTenantEcuadorTaxAssistedDeclarationReviewPackV2UseCase,
@@ -140,6 +145,7 @@ import {
   RequestTenantEcuadorTaxComplianceHardeningCloseoutV4UseCase,
   RequestTenantEcuadorTaxCompliancePostFilingCloseoutV4UseCase,
   RequestTenantEcuadorTaxComplianceAnnualCloseoutV5UseCase,
+  RequestTenantEcuadorTaxOperationalHardeningCloseoutV62UseCase,
   RequestTenantEcuadorTaxComplianceProductCloseoutV3UseCase,
   RequestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase,
   RequestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase,
@@ -2232,6 +2238,120 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
         ),
     },
     {
+      provide: GetTenantEcuadorTaxSriEvidenceImportPersistenceLedgerV62UseCase,
+      inject: [
+        GetTenantEcuadorTaxSriSourceImportCenterV2UseCase,
+        ListTenantEcuadorTaxComplianceEventsUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxSriSourceImportCenterV2UseCase,
+        listTenantEcuadorTaxComplianceEventsUseCase,
+      ) =>
+        new GetTenantEcuadorTaxSriEvidenceImportPersistenceLedgerV62UseCase(
+          getTenantEcuadorTaxSriSourceImportCenterV2UseCase,
+          listTenantEcuadorTaxComplianceEventsUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+      inject: [
+        GetTenantEcuadorTaxSriEvidenceImportPersistenceLedgerV62UseCase,
+        GetTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
+        GetTenantEcuadorTaxExceptionCenterUseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxSriEvidenceImportPersistenceLedgerV62UseCase,
+        getTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
+        getTenantEcuadorTaxExceptionCenterUseCase,
+      ) =>
+        new GetTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase(
+          getTenantEcuadorTaxSriEvidenceImportPersistenceLedgerV62UseCase,
+          getTenantEcuadorTaxSriPlatformReconciliationWorkspaceUseCase,
+          getTenantEcuadorTaxExceptionCenterUseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
+      inject: [
+        GetTenantEcuadorTaxFormBoxEvidenceBinderUseCase,
+        GetTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxFormBoxEvidenceBinderUseCase,
+        getTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+      ) =>
+        new GetTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase(
+          getTenantEcuadorTaxFormBoxEvidenceBinderUseCase,
+          getTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxAccountantPacketExportV62UseCase,
+      inject: [
+        GetTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase,
+        GetTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
+        GetTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase,
+        getTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
+        getTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+      ) =>
+        new RequestTenantEcuadorTaxAccountantPacketExportV62UseCase(
+          getTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase,
+          getTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
+          getTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxOperatorActionCenterV62UseCase,
+      inject: [
+        GetTenantEcuadorTaxSriEvidenceImportPersistenceLedgerV62UseCase,
+        GetTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+        GetTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
+        RequestTenantEcuadorTaxAccountantPacketExportV62UseCase,
+        GetTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxSriEvidenceImportPersistenceLedgerV62UseCase,
+        getTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+        getTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
+        requestTenantEcuadorTaxAccountantPacketExportV62UseCase,
+        getTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase,
+      ) =>
+        new GetTenantEcuadorTaxOperatorActionCenterV62UseCase(
+          getTenantEcuadorTaxSriEvidenceImportPersistenceLedgerV62UseCase,
+          getTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+          getTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
+          requestTenantEcuadorTaxAccountantPacketExportV62UseCase,
+          getTenantEcuadorTaxDeclarationHandoffCloseoutV6UseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxOperationalHardeningCloseoutV62UseCase,
+      inject: [
+        GetTenantEcuadorTaxSriEvidenceImportPersistenceLedgerV62UseCase,
+        GetTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+        GetTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
+        RequestTenantEcuadorTaxAccountantPacketExportV62UseCase,
+        GetTenantEcuadorTaxOperatorActionCenterV62UseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxSriEvidenceImportPersistenceLedgerV62UseCase,
+        getTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+        getTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
+        requestTenantEcuadorTaxAccountantPacketExportV62UseCase,
+        getTenantEcuadorTaxOperatorActionCenterV62UseCase,
+      ) =>
+        new RequestTenantEcuadorTaxOperationalHardeningCloseoutV62UseCase(
+          getTenantEcuadorTaxSriEvidenceImportPersistenceLedgerV62UseCase,
+          getTenantEcuadorTaxSriReconciliationExceptionQueueV62UseCase,
+          getTenantEcuadorTaxFormBoxEvidenceBinderV2UseCase,
+          requestTenantEcuadorTaxAccountantPacketExportV62UseCase,
+          getTenantEcuadorTaxOperatorActionCenterV62UseCase,
+        ),
+    },
+    {
       provide: GetTenantEcuadorTaxAnnexesReadinessV2UseCase,
       inject: [
         GetTenantEcuadorTaxAnnexesWorkspaceUseCase,
@@ -2485,10 +2605,7 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
         GetTenantEcuadorTaxAccountantHandoffRoomV2UseCase,
         RequestTenantEcuadorTaxComplianceAnnualCloseoutV5UseCase,
       ],
-      useFactory: (
-        getAccountantHandoffRoomUseCase,
-        getAnnualCloseoutUseCase,
-      ) =>
+      useFactory: (getAccountantHandoffRoomUseCase, getAnnualCloseoutUseCase) =>
         new GetTenantEcuadorTaxProfessionalHandoffV6UseCase(
           getAccountantHandoffRoomUseCase,
           getAnnualCloseoutUseCase,

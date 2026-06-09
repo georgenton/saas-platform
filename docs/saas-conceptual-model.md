@@ -1565,6 +1565,34 @@ The 6.1 operating layer makes the 6.0 boundary visible and testable:
    - validates the narrative from SRI source intake through declaration
      workspaces, AI boundary review and closeout 6.0
 
+The 6.2 hardening layer turns the 6.0/6.1 surfaces into period operations:
+
+1. `Tax Compliance Evidence Import Persistence 6.2`
+   - exposes a period import ledger for SRI batches, source, hash control,
+     voucher totals, duplicate access keys, importer signal and reconciliation
+     status
+2. `SRI Reconciliation Exception Queue`
+   - converts SRI/platform mismatches, incomplete imports and inherited
+     exception-center blockers into an owner/priority queue
+3. `Declaration Form Box Evidence Binder 2.0`
+   - links supported form boxes to evidence, exception refs, confidence,
+     accountant questions and manual copy guidance
+4. `Accountant Packet Export & Review Handoff`
+   - packages closeout decision, exceptions, form-box questions and operational
+     artifacts for contador review without claiming official filing or
+     certification
+5. `Tax Compliance Operator Action Center`
+   - consolidates import, reconciliation, form binder, accountant packet and
+     closeout actions into one period work queue
+6. `Tax Compliance Closeout 6.2 Smoke + Model Refresh`
+   - validates import ledger, exception queue, binder 2.0, accountant packet,
+     action center and closeout 6.2 as a single operating narrative
+
+After 6.2, Tax Compliance EC is ready for an operational Ecuador pilot with a
+contador in the loop. Further work should be evaluated as either operational
+pilot feedback, `Accounting Advanced` discovery, or a return to vertical product
+activation such as Medical Clinics.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

@@ -1,5 +1,13 @@
 # api-platform
 
+## 0.107.24
+
+### Patch Changes
+
+- 6296d87: Expose the Tax Compliance EC operating UI for declaration closeout 6.0 and add
+  a focused smoke narrative for SRI source intake, assisted declaration
+  workspaces, professional handoff, AI boundary review and closeout routing.
+
 ## 0.107.23
 
 ### Patch Changes

@@ -1,20 +1,25 @@
 import {
   TenantMedicalClinicAppointmentSchedulingWorkspace,
+  TenantMedicalClinicAppointmentEncounterQueueV60,
   TenantMedicalClinicAppointmentRecord,
   TenantMedicalClinicBillingTaxBridge,
   TenantMedicalClinicCarePlanTaskWorkspace,
   TenantMedicalClinicClinicalBoundaryCloseout,
   TenantMedicalClinicClinicalEvidenceRegistry,
   TenantMedicalClinicClinicalNoteDraftPacket,
+  TenantMedicalClinicCommandCenterV60,
+  TenantMedicalClinicCrossProductHandoffCenterV60,
   TenantMedicalClinicEncounterCloseout,
   TenantMedicalClinicEncounterWorkspace,
   TenantMedicalClinicGrowthReminderBridge,
   TenantMedicalClinicMedicalHistoryDraftRecord,
   TenantMedicalClinicOrdersReferralReadinessPacket,
   TenantMedicalClinicPatientClinicalTimelineWorkspace,
+  TenantMedicalClinicPatientIdentityConsentQueueV60,
   TenantMedicalClinicPatientIntakeWorkspace,
   TenantMedicalClinicPatientRecord,
   TenantMedicalClinicPrescriptionReadinessPacket,
+  TenantMedicalClinicOperatingCloseoutV60,
   TenantMedicalClinicProductAnchorView,
   TenantMedicalClinicProductCloseout,
   TenantMedicalClinicProfileWorkspace,
@@ -26,6 +31,16 @@ export type MedicalClinicProductAnchorResponseDto =
   TenantMedicalClinicProductAnchorView;
 export type MedicalClinicProductCloseoutResponseDto =
   TenantMedicalClinicProductCloseout;
+export type MedicalClinicCommandCenterV60ResponseDto =
+  TenantMedicalClinicCommandCenterV60;
+export type MedicalClinicPatientIdentityConsentQueueV60ResponseDto =
+  TenantMedicalClinicPatientIdentityConsentQueueV60;
+export type MedicalClinicAppointmentEncounterQueueV60ResponseDto =
+  TenantMedicalClinicAppointmentEncounterQueueV60;
+export type MedicalClinicCrossProductHandoffCenterV60ResponseDto =
+  TenantMedicalClinicCrossProductHandoffCenterV60;
+export type MedicalClinicOperatingCloseoutV60ResponseDto =
+  TenantMedicalClinicOperatingCloseoutV60;
 export type MedicalClinicProfileWorkspaceResponseDto =
   TenantMedicalClinicProfileWorkspace;
 export type MedicalClinicPatientIntakeWorkspaceResponseDto =
@@ -106,6 +121,26 @@ export const toMedicalClinicProductAnchorResponseDto = (
 export const toMedicalClinicProductCloseoutResponseDto = (
   view: TenantMedicalClinicProductCloseout,
 ): MedicalClinicProductCloseoutResponseDto => view;
+
+export const toMedicalClinicCommandCenterV60ResponseDto = (
+  view: TenantMedicalClinicCommandCenterV60,
+): MedicalClinicCommandCenterV60ResponseDto => view;
+
+export const toMedicalClinicPatientIdentityConsentQueueV60ResponseDto = (
+  view: TenantMedicalClinicPatientIdentityConsentQueueV60,
+): MedicalClinicPatientIdentityConsentQueueV60ResponseDto => view;
+
+export const toMedicalClinicAppointmentEncounterQueueV60ResponseDto = (
+  view: TenantMedicalClinicAppointmentEncounterQueueV60,
+): MedicalClinicAppointmentEncounterQueueV60ResponseDto => view;
+
+export const toMedicalClinicCrossProductHandoffCenterV60ResponseDto = (
+  view: TenantMedicalClinicCrossProductHandoffCenterV60,
+): MedicalClinicCrossProductHandoffCenterV60ResponseDto => view;
+
+export const toMedicalClinicOperatingCloseoutV60ResponseDto = (
+  view: TenantMedicalClinicOperatingCloseoutV60,
+): MedicalClinicOperatingCloseoutV60ResponseDto => view;
 
 export const toMedicalClinicProfileWorkspaceResponseDto = (
   view: TenantMedicalClinicProfileWorkspace,

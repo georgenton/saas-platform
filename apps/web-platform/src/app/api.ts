@@ -378,6 +378,7 @@ import {
   EcommerceLaunchWorkspaceResponse,
   RequestEcommerceLaunchPlanActivationReadinessResponse,
   MedicalClinicAppointmentSchedulingWorkspaceResponse,
+  MedicalClinicAppointmentEncounterQueueV60Response,
   MedicalClinicBillingTaxBridgeResponse,
   MedicalClinicAppointmentRecordResponse,
   MedicalClinicCarePlanTaskWorkspaceResponse,
@@ -385,16 +386,20 @@ import {
   MedicalClinicClinicalBoundaryCloseoutResponse,
   MedicalClinicClinicalEvidenceRegistryResponse,
   MedicalClinicClinicalNoteDraftPacketResponse,
+  MedicalClinicCommandCenterV60Response,
+  MedicalClinicCrossProductHandoffCenterV60Response,
   MedicalClinicEncounterCloseoutResponse,
   MedicalClinicEncounterWorkspaceResponse,
   MedicalClinicGrowthReminderBridgeResponse,
   MedicalClinicMedicalHistoryDraftRecordResponse,
   MedicalClinicOrdersReferralReadinessPacketResponse,
   MedicalClinicPatientClinicalTimelineWorkspaceResponse,
+  MedicalClinicPatientIdentityConsentQueueV60Response,
   MedicalClinicPatientRecordResponse,
   MedicalClinicPatientIntakeWorkspaceResponse,
   MedicalClinicProductAnchorResponse,
   MedicalClinicProductCloseoutResponse,
+  MedicalClinicOperatingCloseoutV60Response,
   MedicalClinicPrescriptionReadinessPacketResponse,
   MedicalClinicProfileWorkspaceResponse,
   MedicalClinicRecordsCloseoutResponse,
@@ -8870,6 +8875,66 @@ export async function fetchMedicalClinicProductCloseout(
       method: 'GET',
       token,
     },
+  );
+}
+
+export async function fetchMedicalClinicCommandCenterV60(
+  token: string,
+  tenantSlug: string,
+): Promise<MedicalClinicCommandCenterV60Response> {
+  return request<MedicalClinicCommandCenterV60Response>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/command-center-v60`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchMedicalClinicPatientIdentityConsentQueueV60(
+  token: string,
+  tenantSlug: string,
+): Promise<MedicalClinicPatientIdentityConsentQueueV60Response> {
+  return request<MedicalClinicPatientIdentityConsentQueueV60Response>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/patient-identity-consent-queue-v60`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchMedicalClinicAppointmentEncounterQueueV60(
+  token: string,
+  tenantSlug: string,
+): Promise<MedicalClinicAppointmentEncounterQueueV60Response> {
+  return request<MedicalClinicAppointmentEncounterQueueV60Response>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/appointment-encounter-queue-v60`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchMedicalClinicCrossProductHandoffCenterV60(
+  token: string,
+  tenantSlug: string,
+): Promise<MedicalClinicCrossProductHandoffCenterV60Response> {
+  return request<MedicalClinicCrossProductHandoffCenterV60Response>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/cross-product-handoff-center-v60`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchMedicalClinicOperatingCloseoutV60(
+  token: string,
+  tenantSlug: string,
+): Promise<MedicalClinicOperatingCloseoutV60Response> {
+  return request<MedicalClinicOperatingCloseoutV60Response>(
+    `/medical-clinics/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/operating-closeout-v60`,
+    { method: 'GET', token },
   );
 }
 

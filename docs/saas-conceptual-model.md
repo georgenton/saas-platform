@@ -1806,6 +1806,36 @@ Boundary: this layer activates the existing operational product; it does not add
 legal EHR storage, binary document vaulting, automated clinical decisions or
 official prescription issuance.
 
+### Medical Clinics operating hardening 6.0
+
+After product activation 5.0, Medical Clinics needs an operator-grade layer
+similar to Tax Compliance 6.2: command surfaces, queues, handoffs and a final
+operating closeout. This layer adds:
+
+1. `Medical Clinics Roadmap Refresh 6.0`
+   - marks foundation, operations, encounters, records, product activation,
+     base UI and smoke as implemented capability
+2. `Medical Clinics Command Center 6.0`
+   - consolidates product anchor, profile, intake, scheduling, boundary and
+     product closeout into one operator surface
+3. `Patient Identity & Consent Review Queue`
+   - prioritizes incomplete identity, contact, consent, WhatsApp opt-in and
+     triage readiness before scheduling
+4. `Appointment & Encounter Operations Queue`
+   - tracks reminder readiness, billing readiness and encounter review actions
+     across active appointments
+5. `Clinic Cross-Product Handoff Center`
+   - packages Growth reminders, Billing/Invoicing readiness, Party fiscal checks
+     and Tax Compliance evidence as reviewed handoffs
+6. `Medical Clinics Operating Closeout 6.0 + Smoke`
+   - validates command center, patient queue, appointment queue, cross-product
+     handoffs, product closeout and guardrails as a single operating narrative
+
+Boundary: this hardening layer still does not create a legal EHR, diagnose,
+issue official prescriptions, sign clinical records, store binary clinical
+documents, send clinical messages automatically, emit invoices or declare taxes.
+It prepares operational packets and handoffs with human review.
+
 ## Practical delivery rules
 
 1. New cross-product logic should first be evaluated as `Shared Foundation`, `Growth`, or `AI Platform` before being placed inside a product.

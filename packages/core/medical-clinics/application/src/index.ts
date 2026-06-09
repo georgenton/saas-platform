@@ -25,3 +25,8 @@ export * from './lib/use-cases/request-tenant-medical-clinic-orders-referral-rea
 export * from './lib/use-cases/get-tenant-medical-clinic-care-plan-task-workspace.use-case';
 export * from './lib/use-cases/request-tenant-medical-clinic-records-closeout.use-case';
 export * from './lib/use-cases/get-tenant-medical-clinic-product-closeout.use-case';
+export * from './lib/use-cases/get-tenant-medical-clinic-command-center-v60.use-case';
+export * from './lib/use-cases/get-tenant-medical-clinic-patient-identity-consent-queue-v60.use-case';
+export * from './lib/use-cases/get-tenant-medical-clinic-appointment-encounter-queue-v60.use-case';
+export * from './lib/use-cases/get-tenant-medical-clinic-cross-product-handoff-center-v60.use-case';
+export * from './lib/use-cases/request-tenant-medical-clinic-operating-closeout-v60.use-case';

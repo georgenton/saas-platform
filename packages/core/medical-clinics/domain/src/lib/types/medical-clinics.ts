@@ -537,6 +537,148 @@ export interface TenantMedicalClinicRecordsCloseout {
   guardrails: string[];
 }
 
+export interface TenantMedicalClinicCommandCenterV60 {
+  tenantSlug: string;
+  generatedAt: Date;
+  commandStatus: MedicalClinicReadinessStatus;
+  anchor: TenantMedicalClinicProductAnchorView;
+  productCloseout: TenantMedicalClinicProductCloseout;
+  profile: TenantMedicalClinicProfileWorkspace;
+  intake: TenantMedicalClinicPatientIntakeWorkspace;
+  scheduling: TenantMedicalClinicAppointmentSchedulingWorkspace;
+  boundary: TenantMedicalClinicClinicalBoundaryCloseout;
+  commandTiles: Array<{
+    key: string;
+    label: string;
+    status: MedicalClinicReadinessStatus;
+    metric: string;
+    nextAction: string;
+  }>;
+  summary: {
+    tileCount: number;
+    readyTileCount: number;
+    blockerCount: number;
+    patientCount: number;
+    appointmentCount: number;
+  };
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantMedicalClinicPatientIdentityConsentQueueV60 {
+  tenantSlug: string;
+  generatedAt: Date;
+  queueStatus: MedicalClinicReadinessStatus;
+  patients: Array<{
+    patientId: string;
+    patientDisplayName: string;
+    identificationStatus: MedicalClinicReadinessStatus;
+    contactStatus: MedicalClinicReadinessStatus;
+    consentStatus: MedicalClinicReadinessStatus;
+    messagingOptInStatus: MedicalClinicReadinessStatus;
+    triageStatus: MedicalClinicReadinessStatus;
+    priority: 'critical' | 'high' | 'normal';
+    blockers: string[];
+    nextAction: string;
+  }>;
+  summary: {
+    patientCount: number;
+    readyPatientCount: number;
+    blockedPatientCount: number;
+    consentReviewCount: number;
+    whatsappOptInReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantMedicalClinicAppointmentEncounterQueueV60 {
+  tenantSlug: string;
+  generatedAt: Date;
+  queueStatus: MedicalClinicReadinessStatus;
+  appointmentItems: Array<{
+    appointmentId: string;
+    patientDisplayName: string;
+    serviceName: string;
+    professionalName: string;
+    startsAt: string;
+    appointmentStatus: MedicalClinicAppointmentStatus;
+    reminderStatus: MedicalClinicReadinessStatus;
+    billingStatus: MedicalClinicReadinessStatus;
+    encounterStatus: MedicalClinicReadinessStatus;
+    priority: 'critical' | 'high' | 'normal';
+    nextAction: string;
+  }>;
+  summary: {
+    appointmentCount: number;
+    readyAppointmentCount: number;
+    reminderReviewCount: number;
+    billingReviewCount: number;
+    encounterReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantMedicalClinicCrossProductHandoffCenterV60 {
+  tenantSlug: string;
+  generatedAt: Date;
+  handoffStatus: MedicalClinicReadinessStatus;
+  growthBridge: TenantMedicalClinicGrowthReminderBridge;
+  billingTaxBridge: TenantMedicalClinicBillingTaxBridge;
+  handoffLanes: Array<{
+    key: string;
+    label: string;
+    targetProduct: 'growth' | 'invoicing' | 'tax-compliance-ec' | 'parties';
+    status: MedicalClinicReadinessStatus;
+    evidenceRefs: string[];
+    nextAction: string;
+  }>;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    blockerCount: number;
+    invoiceableItemCount: number;
+    reminderCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantMedicalClinicOperatingCloseoutV60 {
+  tenantSlug: string;
+  generatedAt: Date;
+  closeoutStatus: MedicalClinicReadinessStatus;
+  commandCenter: TenantMedicalClinicCommandCenterV60;
+  patientQueue: TenantMedicalClinicPatientIdentityConsentQueueV60;
+  appointmentQueue: TenantMedicalClinicAppointmentEncounterQueueV60;
+  handoffCenter: TenantMedicalClinicCrossProductHandoffCenterV60;
+  productCloseout: TenantMedicalClinicProductCloseout;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: MedicalClinicReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    patientActionCount: number;
+    appointmentActionCount: number;
+    handoffLaneCount: number;
+  };
+  recommendedNextProduct:
+    | 'medical_clinics_operational_pilot'
+    | 'psychology_clinics_followup'
+    | 'medical_clinics_ehr_discovery';
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface TenantMedicalClinicProductCloseout {
   tenantSlug: string;
   generatedAt: Date;

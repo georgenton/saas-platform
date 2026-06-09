@@ -1,14 +1,19 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   createMedicalClinicAppointment,
+  fetchMedicalClinicAppointmentEncounterQueueV60,
   fetchMedicalClinicAppointmentSchedulingWorkspace,
   fetchMedicalClinicCarePlanTaskWorkspace,
   fetchMedicalClinicClinicalEvidenceRegistry,
+  fetchMedicalClinicCommandCenterV60,
+  fetchMedicalClinicCrossProductHandoffCenterV60,
   fetchMedicalClinicEncounterWorkspace,
   fetchMedicalClinicPatientClinicalTimelineWorkspace,
   fetchMedicalClinicPatientIntakeWorkspace,
   fetchMedicalClinicProductAnchor,
   fetchMedicalClinicProductCloseout,
+  fetchMedicalClinicOperatingCloseoutV60,
+  fetchMedicalClinicPatientIdentityConsentQueueV60,
   fetchMedicalClinicProfileWorkspace,
   registerMedicalClinicPatientIntake,
   requestMedicalClinicBillingTaxBridge,
@@ -26,23 +31,28 @@ import {
 import styles from './app.module.css';
 import {
   MedicalClinicAppointmentRecordResponse,
+  MedicalClinicAppointmentEncounterQueueV60Response,
   MedicalClinicAppointmentSchedulingWorkspaceResponse,
   MedicalClinicBillingTaxBridgeResponse,
   MedicalClinicCarePlanTaskWorkspaceResponse,
   MedicalClinicClinicalBoundaryCloseoutResponse,
   MedicalClinicClinicalEvidenceRegistryResponse,
   MedicalClinicClinicalNoteDraftPacketResponse,
+  MedicalClinicCommandCenterV60Response,
+  MedicalClinicCrossProductHandoffCenterV60Response,
   MedicalClinicEncounterCloseoutResponse,
   MedicalClinicEncounterWorkspaceResponse,
   MedicalClinicGrowthReminderBridgeResponse,
   MedicalClinicMedicalHistoryDraftRecordResponse,
   MedicalClinicOrdersReferralReadinessPacketResponse,
   MedicalClinicPatientClinicalTimelineWorkspaceResponse,
+  MedicalClinicPatientIdentityConsentQueueV60Response,
   MedicalClinicPatientIntakeWorkspaceResponse,
   MedicalClinicPatientRecordResponse,
   MedicalClinicPrescriptionReadinessPacketResponse,
   MedicalClinicProductAnchorResponse,
   MedicalClinicProductCloseoutResponse,
+  MedicalClinicOperatingCloseoutV60Response,
   MedicalClinicProfileWorkspaceResponse,
   MedicalClinicRecordsCloseoutResponse,
   MedicalClinicTreatmentFollowUpReadinessResponse,
@@ -83,6 +93,14 @@ type RecordsSurface = {
   closeout: MedicalClinicRecordsCloseoutResponse | null;
 };
 
+type OperatingSurface = {
+  commandCenter: MedicalClinicCommandCenterV60Response | null;
+  patientQueue: MedicalClinicPatientIdentityConsentQueueV60Response | null;
+  appointmentQueue: MedicalClinicAppointmentEncounterQueueV60Response | null;
+  handoffCenter: MedicalClinicCrossProductHandoffCenterV60Response | null;
+  closeout: MedicalClinicOperatingCloseoutV60Response | null;
+};
+
 const emptySurface: MedicalClinicsSurface = {
   anchor: null,
   closeout: null,
@@ -92,6 +110,14 @@ const emptySurface: MedicalClinicsSurface = {
   growthBridge: null,
   billingBridge: null,
   boundary: null,
+};
+
+const emptyOperatingSurface: OperatingSurface = {
+  commandCenter: null,
+  patientQueue: null,
+  appointmentQueue: null,
+  handoffCenter: null,
+  closeout: null,
 };
 
 export function MedicalClinicsSection({
@@ -118,6 +144,9 @@ export function MedicalClinicsSection({
     carePlan: null,
     closeout: null,
   });
+  const [operatingSurface, setOperatingSurface] = useState<OperatingSurface>(
+    emptyOperatingSurface,
+  );
   const [patientName, setPatientName] = useState('Paciente Demo');
   const [triageReason, setTriageReason] = useState('Consulta general');
   const [serviceName, setServiceName] = useState('Consulta general');
@@ -159,6 +188,7 @@ export function MedicalClinicsSection({
   useEffect(() => {
     if (!token || !tenantSlug) {
       setSurface(emptySurface);
+      setOperatingSurface(emptyOperatingSurface);
       return;
     }
 
@@ -173,15 +203,31 @@ export function MedicalClinicsSection({
     setLoading(true);
     setError(null);
     try {
-      const [anchor, closeout, profile, intake, scheduling, boundary] =
-        await Promise.all([
-          fetchMedicalClinicProductAnchor(token, tenantSlug),
-          fetchMedicalClinicProductCloseout(token, tenantSlug),
-          fetchMedicalClinicProfileWorkspace(token, tenantSlug),
-          fetchMedicalClinicPatientIntakeWorkspace(token, tenantSlug),
-          fetchMedicalClinicAppointmentSchedulingWorkspace(token, tenantSlug),
-          requestMedicalClinicClinicalBoundaryCloseout(token, tenantSlug),
-        ]);
+      const [
+        anchor,
+        closeout,
+        profile,
+        intake,
+        scheduling,
+        boundary,
+        commandCenter,
+        patientQueue,
+        appointmentQueue,
+        handoffCenter,
+        operatingCloseout,
+      ] = await Promise.all([
+        fetchMedicalClinicProductAnchor(token, tenantSlug),
+        fetchMedicalClinicProductCloseout(token, tenantSlug),
+        fetchMedicalClinicProfileWorkspace(token, tenantSlug),
+        fetchMedicalClinicPatientIntakeWorkspace(token, tenantSlug),
+        fetchMedicalClinicAppointmentSchedulingWorkspace(token, tenantSlug),
+        requestMedicalClinicClinicalBoundaryCloseout(token, tenantSlug),
+        fetchMedicalClinicCommandCenterV60(token, tenantSlug),
+        fetchMedicalClinicPatientIdentityConsentQueueV60(token, tenantSlug),
+        fetchMedicalClinicAppointmentEncounterQueueV60(token, tenantSlug),
+        fetchMedicalClinicCrossProductHandoffCenterV60(token, tenantSlug),
+        fetchMedicalClinicOperatingCloseoutV60(token, tenantSlug),
+      ]);
 
       setSurface({
         anchor,
@@ -192,6 +238,13 @@ export function MedicalClinicsSection({
         growthBridge: surface.growthBridge,
         billingBridge: surface.billingBridge,
         boundary,
+      });
+      setOperatingSurface({
+        commandCenter,
+        patientQueue,
+        appointmentQueue,
+        handoffCenter,
+        closeout: operatingCloseout,
       });
       setSelectedPatientId(
         (current) => current || intake.intakeQueue[0]?.id || '',
@@ -498,7 +551,75 @@ export function MedicalClinicsSection({
             <strong>{metric.value}</strong>
           </div>
         ))}
+        <div className={styles.commercialCard}>
+          <span className={styles.muted}>Operating 6.0</span>
+          <strong>
+            {humanizeKey(
+              operatingSurface.closeout?.closeoutStatus ?? 'needs_review',
+            )}
+          </strong>
+        </div>
       </div>
+
+      {operatingSurface.closeout &&
+      operatingSurface.commandCenter &&
+      operatingSurface.patientQueue &&
+      operatingSurface.appointmentQueue &&
+      operatingSurface.handoffCenter ? (
+        <div className={styles.panel}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.label}>Operating hardening 6.0</span>
+              <h3>
+                {humanizeKey(operatingSurface.closeout.recommendedNextProduct)}
+              </h3>
+            </div>
+            <StatusPill status={operatingSurface.closeout.closeoutStatus} />
+          </div>
+          <div className={styles.commercialGrid}>
+            <div className={styles.commercialCard}>
+              <span className={styles.muted}>Command</span>
+              <strong>
+                {operatingSurface.commandCenter.summary.readyTileCount}/
+                {operatingSurface.commandCenter.summary.tileCount}
+              </strong>
+            </div>
+            <div className={styles.commercialCard}>
+              <span className={styles.muted}>Consent</span>
+              <strong>
+                {operatingSurface.patientQueue.summary.consentReviewCount}
+              </strong>
+            </div>
+            <div className={styles.commercialCard}>
+              <span className={styles.muted}>Encounter ops</span>
+              <strong>
+                {operatingSurface.appointmentQueue.summary.encounterReviewCount}
+              </strong>
+            </div>
+            <div className={styles.commercialCard}>
+              <span className={styles.muted}>Handoffs</span>
+              <strong>
+                {operatingSurface.handoffCenter.summary.readyLaneCount}/
+                {operatingSurface.handoffCenter.summary.laneCount}
+              </strong>
+            </div>
+          </div>
+          <div className={styles.stack}>
+            {operatingSurface.closeout.closeoutChecklist.map((item) => (
+              <div className={styles.assistCueCard} key={item.key}>
+                <div className={styles.invoiceCardHeader}>
+                  <strong>{item.label}</strong>
+                  <StatusPill status={item.status} />
+                </div>
+                <small>{item.evidenceRefs.join(', ')}</small>
+              </div>
+            ))}
+            <small className={styles.muted}>
+              {operatingSurface.closeout.nextStep}
+            </small>
+          </div>
+        </div>
+      ) : null}
 
       <div className={styles.contentGrid}>
         <div className={styles.panel}>

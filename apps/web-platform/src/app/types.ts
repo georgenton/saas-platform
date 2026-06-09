@@ -11527,6 +11527,124 @@ export interface MedicalClinicProductCloseoutResponse {
   guardrails: string[];
 }
 
+export interface MedicalClinicCommandCenterV60Response {
+  tenantSlug: string;
+  generatedAt: string;
+  commandStatus: MedicalClinicReadinessStatus;
+  commandTiles: Array<{
+    key: string;
+    label: string;
+    status: MedicalClinicReadinessStatus;
+    metric: string;
+    nextAction: string;
+  }>;
+  summary: {
+    tileCount: number;
+    readyTileCount: number;
+    blockerCount: number;
+    patientCount: number;
+    appointmentCount: number;
+  };
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface MedicalClinicPatientIdentityConsentQueueV60Response {
+  tenantSlug: string;
+  generatedAt: string;
+  queueStatus: MedicalClinicReadinessStatus;
+  patients: Array<{
+    patientId: string;
+    patientDisplayName: string;
+    consentStatus: MedicalClinicReadinessStatus;
+    messagingOptInStatus: MedicalClinicReadinessStatus;
+    priority: string;
+    nextAction: string;
+  }>;
+  summary: {
+    patientCount: number;
+    readyPatientCount: number;
+    blockedPatientCount: number;
+    consentReviewCount: number;
+    whatsappOptInReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface MedicalClinicAppointmentEncounterQueueV60Response {
+  tenantSlug: string;
+  generatedAt: string;
+  queueStatus: MedicalClinicReadinessStatus;
+  appointmentItems: Array<{
+    appointmentId: string;
+    patientDisplayName: string;
+    appointmentStatus: string;
+    reminderStatus: MedicalClinicReadinessStatus;
+    billingStatus: MedicalClinicReadinessStatus;
+    encounterStatus: MedicalClinicReadinessStatus;
+    priority: string;
+    nextAction: string;
+  }>;
+  summary: {
+    appointmentCount: number;
+    readyAppointmentCount: number;
+    reminderReviewCount: number;
+    billingReviewCount: number;
+    encounterReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface MedicalClinicCrossProductHandoffCenterV60Response {
+  tenantSlug: string;
+  generatedAt: string;
+  handoffStatus: MedicalClinicReadinessStatus;
+  handoffLanes: Array<{
+    key: string;
+    label: string;
+    targetProduct: string;
+    status: MedicalClinicReadinessStatus;
+    nextAction: string;
+  }>;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    blockerCount: number;
+    invoiceableItemCount: number;
+    reminderCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface MedicalClinicOperatingCloseoutV60Response {
+  tenantSlug: string;
+  generatedAt: string;
+  closeoutStatus: MedicalClinicReadinessStatus;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: MedicalClinicReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    patientActionCount: number;
+    appointmentActionCount: number;
+    handoffLaneCount: number;
+  };
+  recommendedNextProduct: string;
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface MedicalClinicProfileWorkspaceResponse {
   tenantSlug: string;
   generatedAt: string;

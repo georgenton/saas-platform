@@ -1721,6 +1721,38 @@ Guardrail: pilot memory 7.2 records and explains operational evidence; it does
 not automate filing, payment, signatures, books, audit certification or the
 decision to open Accounting Advanced.
 
+### Tax Compliance EC pilot decision 7.3
+
+The 7.3 layer converts pilot memory into a product decision. It does not open
+Accounting Advanced yet; it prepares the evidence, accountant criteria,
+expansion readiness and AI explanation needed to decide whether to continue the
+Tax pilot, return to hardening or prepare Accounting Advanced discovery.
+
+The 7.3 layer adds:
+
+1. `Tax Pilot Period-over-Period Memory`
+   - compares repeated, stable, resolved and worsened pilot signals across the
+     decision surface
+2. `Accounting Advanced Discovery Dossier`
+   - packages formal-accounting signals, minimum scope, accountant questions
+     and risk into a discovery-ready dossier
+3. `Accountant Decision Record`
+   - records whether each signal should stay in Tax Compliance, needs more
+     evidence, or needs formal accounting
+4. `Pilot Cohort Expansion Readiness`
+   - decides whether to hold the current pilot, expand assisted self-service or
+     expand only with accountant-in-loop
+5. `AI Pilot Decision Explainer`
+   - explains the recommendation to operator, accountant and founder audiences
+     in suggestion mode only
+6. `Tax Pilot Decision Closeout 7.3 + Smoke`
+   - closes period memory, discovery dossier, accountant decision record,
+     expansion readiness and AI explanation as one decision narrative
+
+Guardrail: pilot decision 7.3 chooses the next product direction; it does not
+submit declarations, certify accounting, sign statements or create Accounting
+Advanced automatically.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

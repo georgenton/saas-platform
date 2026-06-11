@@ -12,6 +12,8 @@ import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
   GetTenantEcuadorTaxAccountantCollaborationWorkbenchV72UseCase,
   GetTenantEcuadorTaxAccountantCollaborationSlaTrackerV71UseCase,
+  GetTenantEcuadorTaxAccountantDecisionRecordV73UseCase,
+  GetTenantEcuadorTaxAccountingAdvancedDiscoveryDossierV73UseCase,
   GetTenantEcuadorTaxAccountingAdvancedEvidenceGateV71UseCase,
   GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
   GetTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
@@ -72,10 +74,12 @@ import {
   GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
   GetTenantEcuadorTaxPilotCohortRegistryV71UseCase,
+  GetTenantEcuadorTaxPilotCohortExpansionReadinessV73UseCase,
   GetTenantEcuadorTaxPilotEvidencePersistenceLedgerV72UseCase,
   GetTenantEcuadorTaxPilotFeedbackAnalyticsDashboardV71UseCase,
   GetTenantEcuadorTaxPilotLearningBacklogV71UseCase,
   GetTenantEcuadorTaxPilotMultiTenantCohortV72UseCase,
+  GetTenantEcuadorTaxPilotPeriodOverPeriodMemoryV73UseCase,
   GetTenantEcuadorTaxPilotRepeatedSignalDetectorV72UseCase,
   GetTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase,
   GetTenantEcuadorTaxPostFilingExceptionCenterUseCase,
@@ -137,7 +141,9 @@ import {
   RequestTenantEcuadorTaxComplianceAnnualCloseoutV5UseCase,
   RequestTenantEcuadorTaxOperationalHardeningCloseoutV62UseCase,
   RequestTenantEcuadorTaxAiPilotAssistantPacketV72UseCase,
+  RequestTenantEcuadorTaxAiPilotDecisionExplainerV73UseCase,
   RequestTenantEcuadorTaxPilotCloseoutV72UseCase,
+  RequestTenantEcuadorTaxPilotDecisionCloseoutV73UseCase,
   RequestTenantEcuadorTaxPilotCloseoutDecisionPacketV70UseCase,
   RequestTenantEcuadorTaxPilotFeedbackCloseoutV70UseCase,
   RequestTenantEcuadorTaxPilotOperationsCloseoutV71UseCase,
@@ -420,9 +426,12 @@ import {
   EcuadorTaxAccountantPacketExportV62ResponseDto,
   EcuadorTaxAccountantCollaborationWorkbenchV72ResponseDto,
   EcuadorTaxAccountantCollaborationSlaTrackerV71ResponseDto,
+  EcuadorTaxAccountantDecisionRecordV73ResponseDto,
+  EcuadorTaxAccountingAdvancedDiscoveryDossierV73ResponseDto,
   EcuadorTaxAccountantFeedbackIntakeQueueV70ResponseDto,
   EcuadorTaxAccountingAdvancedEvidenceGateV71ResponseDto,
   EcuadorTaxAiPilotAssistantPacketV72ResponseDto,
+  EcuadorTaxAiPilotDecisionExplainerV73ResponseDto,
   EcuadorTaxEvidenceCorrectionWorkbenchV70ResponseDto,
   EcuadorTaxFormBoxEvidenceBinderV2ResponseDto,
   EcuadorTaxOperationalHardeningCloseoutV62ResponseDto,
@@ -430,12 +439,15 @@ import {
   EcuadorTaxPilotCloseoutDecisionPacketV70ResponseDto,
   EcuadorTaxPilotCloseoutV72ResponseDto,
   EcuadorTaxPilotCohortRegistryV71ResponseDto,
+  EcuadorTaxPilotCohortExpansionReadinessV73ResponseDto,
+  EcuadorTaxPilotDecisionCloseoutV73ResponseDto,
   EcuadorTaxPilotEvidencePersistenceLedgerV72ResponseDto,
   EcuadorTaxPilotFeedbackCloseoutV70ResponseDto,
   EcuadorTaxPilotFeedbackAnalyticsDashboardV71ResponseDto,
   EcuadorTaxPilotLearningBacklogV71ResponseDto,
   EcuadorTaxPilotMultiTenantCohortV72ResponseDto,
   EcuadorTaxPilotOperationsCloseoutV71ResponseDto,
+  EcuadorTaxPilotPeriodOverPeriodMemoryV73ResponseDto,
   EcuadorTaxPilotRepeatedSignalDetectorV72ResponseDto,
   EcuadorTaxPilotTenantReadinessRoomV70ResponseDto,
   EcuadorTaxSriEvidenceImportPersistenceLedgerV62ResponseDto,
@@ -443,9 +455,12 @@ import {
   toEcuadorTaxAccountantPacketExportV62ResponseDto,
   toEcuadorTaxAccountantCollaborationWorkbenchV72ResponseDto,
   toEcuadorTaxAccountantCollaborationSlaTrackerV71ResponseDto,
+  toEcuadorTaxAccountantDecisionRecordV73ResponseDto,
+  toEcuadorTaxAccountingAdvancedDiscoveryDossierV73ResponseDto,
   toEcuadorTaxAccountantFeedbackIntakeQueueV70ResponseDto,
   toEcuadorTaxAccountingAdvancedEvidenceGateV71ResponseDto,
   toEcuadorTaxAiPilotAssistantPacketV72ResponseDto,
+  toEcuadorTaxAiPilotDecisionExplainerV73ResponseDto,
   toEcuadorTaxEvidenceCorrectionWorkbenchV70ResponseDto,
   toEcuadorTaxFormBoxEvidenceBinderV2ResponseDto,
   toEcuadorTaxOperationalHardeningCloseoutV62ResponseDto,
@@ -453,12 +468,15 @@ import {
   toEcuadorTaxPilotCloseoutDecisionPacketV70ResponseDto,
   toEcuadorTaxPilotCloseoutV72ResponseDto,
   toEcuadorTaxPilotCohortRegistryV71ResponseDto,
+  toEcuadorTaxPilotCohortExpansionReadinessV73ResponseDto,
+  toEcuadorTaxPilotDecisionCloseoutV73ResponseDto,
   toEcuadorTaxPilotEvidencePersistenceLedgerV72ResponseDto,
   toEcuadorTaxPilotFeedbackCloseoutV70ResponseDto,
   toEcuadorTaxPilotFeedbackAnalyticsDashboardV71ResponseDto,
   toEcuadorTaxPilotLearningBacklogV71ResponseDto,
   toEcuadorTaxPilotMultiTenantCohortV72ResponseDto,
   toEcuadorTaxPilotOperationsCloseoutV71ResponseDto,
+  toEcuadorTaxPilotPeriodOverPeriodMemoryV73ResponseDto,
   toEcuadorTaxPilotRepeatedSignalDetectorV72ResponseDto,
   toEcuadorTaxPilotTenantReadinessRoomV70ResponseDto,
   toEcuadorTaxSriEvidenceImportPersistenceLedgerV62ResponseDto,
@@ -819,6 +837,12 @@ export class TaxComplianceController {
     private readonly getTenantEcuadorTaxAccountantCollaborationWorkbenchV72UseCase: GetTenantEcuadorTaxAccountantCollaborationWorkbenchV72UseCase,
     private readonly requestTenantEcuadorTaxAiPilotAssistantPacketV72UseCase: RequestTenantEcuadorTaxAiPilotAssistantPacketV72UseCase,
     private readonly requestTenantEcuadorTaxPilotCloseoutV72UseCase: RequestTenantEcuadorTaxPilotCloseoutV72UseCase,
+    private readonly getTenantEcuadorTaxPilotPeriodOverPeriodMemoryV73UseCase: GetTenantEcuadorTaxPilotPeriodOverPeriodMemoryV73UseCase,
+    private readonly getTenantEcuadorTaxAccountingAdvancedDiscoveryDossierV73UseCase: GetTenantEcuadorTaxAccountingAdvancedDiscoveryDossierV73UseCase,
+    private readonly getTenantEcuadorTaxAccountantDecisionRecordV73UseCase: GetTenantEcuadorTaxAccountantDecisionRecordV73UseCase,
+    private readonly getTenantEcuadorTaxPilotCohortExpansionReadinessV73UseCase: GetTenantEcuadorTaxPilotCohortExpansionReadinessV73UseCase,
+    private readonly requestTenantEcuadorTaxAiPilotDecisionExplainerV73UseCase: RequestTenantEcuadorTaxAiPilotDecisionExplainerV73UseCase,
+    private readonly requestTenantEcuadorTaxPilotDecisionCloseoutV73UseCase: RequestTenantEcuadorTaxPilotDecisionCloseoutV73UseCase,
   ) {}
 
   @Get(':slug/ec/taxpayer-profile')
@@ -4927,6 +4951,171 @@ export class TaxComplianceController {
         throw new NotFoundException(error.message);
       }
 
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/pilot-period-over-period-memory-v73')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getPilotPeriodOverPeriodMemoryV73(
+    @Param('slug') slug: string,
+    @Query('period') period?: string,
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxPilotPeriodOverPeriodMemoryV73ResponseDto> {
+    try {
+      const memory =
+        await this.getTenantEcuadorTaxPilotPeriodOverPeriodMemoryV73UseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period: resolvePeriod(period),
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxPilotPeriodOverPeriodMemoryV73ResponseDto(memory);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/accounting-advanced-discovery-dossier-v73')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getAccountingAdvancedDiscoveryDossierV73(
+    @Param('slug') slug: string,
+    @Query('period') period?: string,
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountingAdvancedDiscoveryDossierV73ResponseDto> {
+    try {
+      const dossier =
+        await this.getTenantEcuadorTaxAccountingAdvancedDiscoveryDossierV73UseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period: resolvePeriod(period),
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxAccountingAdvancedDiscoveryDossierV73ResponseDto(
+        dossier,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/accountant-decision-record-v73')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getAccountantDecisionRecordV73(
+    @Param('slug') slug: string,
+    @Query('period') period?: string,
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAccountantDecisionRecordV73ResponseDto> {
+    try {
+      const record =
+        await this.getTenantEcuadorTaxAccountantDecisionRecordV73UseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period: resolvePeriod(period),
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxAccountantDecisionRecordV73ResponseDto(record);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/pilot-cohort-expansion-readiness-v73')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getPilotCohortExpansionReadinessV73(
+    @Param('slug') slug: string,
+    @Query('period') period?: string,
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxPilotCohortExpansionReadinessV73ResponseDto> {
+    try {
+      const readiness =
+        await this.getTenantEcuadorTaxPilotCohortExpansionReadinessV73UseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period: resolvePeriod(period),
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxPilotCohortExpansionReadinessV73ResponseDto(readiness);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/ai-pilot-decision-explainer-v73')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getAiPilotDecisionExplainerV73(
+    @Param('slug') slug: string,
+    @Query('period') period?: string,
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxAiPilotDecisionExplainerV73ResponseDto> {
+    try {
+      const explainer =
+        await this.requestTenantEcuadorTaxAiPilotDecisionExplainerV73UseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period: resolvePeriod(period),
+            year: resolveCalendarYear(year),
+          },
+        );
+
+      return toEcuadorTaxAiPilotDecisionExplainerV73ResponseDto(explainer);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/ec/pilot-decision-closeout-v73')
+  @RequireTenantPermission(TAX_COMPLIANCE_PERMISSIONS.EC_READ)
+  async getPilotDecisionCloseoutV73(
+    @Param('slug') slug: string,
+    @Query('period') period?: string,
+    @Query('year') year?: string,
+    @TenantAccess() tenantAccess?: TenantAccessContext,
+  ): Promise<EcuadorTaxPilotDecisionCloseoutV73ResponseDto> {
+    try {
+      const closeout =
+        await this.requestTenantEcuadorTaxPilotDecisionCloseoutV73UseCase.execute(
+          {
+            tenantSlug: tenantAccess?.tenantSlug ?? slug,
+            period: resolvePeriod(period),
+            year: resolveCalendarYear(year),
+            recordEvent: false,
+          },
+        );
+
+      return toEcuadorTaxPilotDecisionCloseoutV73ResponseDto(closeout);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
       throw error;
     }
   }

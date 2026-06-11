@@ -177,17 +177,22 @@ import {
   EcuadorTaxComplianceCloseoutV2Response,
   EcuadorTaxDeclarationHandoffCloseoutV6Response,
   EcuadorTaxAccountantCollaborationWorkbenchV72Response,
+  EcuadorTaxAccountantDecisionRecordV73Response,
+  EcuadorTaxAccountingAdvancedDiscoveryDossierV73Response,
   EcuadorTaxAccountantCollaborationSlaTrackerV71Response,
   EcuadorTaxAccountantPacketExportV62Response,
   EcuadorTaxAccountantFeedbackIntakeQueueV70Response,
   EcuadorTaxAccountingAdvancedEvidenceGateV71Response,
   EcuadorTaxAiPilotAssistantPacketV72Response,
+  EcuadorTaxAiPilotDecisionExplainerV73Response,
   EcuadorTaxEvidenceCorrectionWorkbenchV70Response,
   EcuadorTaxFormBoxEvidenceBinderV2Response,
   EcuadorTaxOperationalHardeningCloseoutV62Response,
   EcuadorTaxOperatorActionCenterV62Response,
   EcuadorTaxPilotCloseoutDecisionPacketV70Response,
   EcuadorTaxPilotCloseoutV72Response,
+  EcuadorTaxPilotDecisionCloseoutV73Response,
+  EcuadorTaxPilotCohortExpansionReadinessV73Response,
   EcuadorTaxPilotCohortRegistryV71Response,
   EcuadorTaxPilotEvidencePersistenceLedgerV72Response,
   EcuadorTaxPilotFeedbackCloseoutV70Response,
@@ -195,6 +200,7 @@ import {
   EcuadorTaxPilotLearningBacklogV71Response,
   EcuadorTaxPilotMultiTenantCohortV72Response,
   EcuadorTaxPilotOperationsCloseoutV71Response,
+  EcuadorTaxPilotPeriodOverPeriodMemoryV73Response,
   EcuadorTaxPilotRepeatedSignalDetectorV72Response,
   EcuadorTaxPilotTenantReadinessRoomV70Response,
   EcuadorTaxSriEvidenceImportPersistenceLedgerV62Response,
@@ -3937,6 +3943,102 @@ export async function fetchEcuadorTaxPilotCloseoutV72(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/pilot-closeout-v72?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPilotPeriodOverPeriodMemoryV73(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPilotPeriodOverPeriodMemoryV73Response> {
+  return request<EcuadorTaxPilotPeriodOverPeriodMemoryV73Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/pilot-period-over-period-memory-v73?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAccountingAdvancedDiscoveryDossierV73(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountingAdvancedDiscoveryDossierV73Response> {
+  return request<EcuadorTaxAccountingAdvancedDiscoveryDossierV73Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accounting-advanced-discovery-dossier-v73?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAccountantDecisionRecordV73(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountantDecisionRecordV73Response> {
+  return request<EcuadorTaxAccountantDecisionRecordV73Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accountant-decision-record-v73?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPilotCohortExpansionReadinessV73(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPilotCohortExpansionReadinessV73Response> {
+  return request<EcuadorTaxPilotCohortExpansionReadinessV73Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/pilot-cohort-expansion-readiness-v73?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAiPilotDecisionExplainerV73(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAiPilotDecisionExplainerV73Response> {
+  return request<EcuadorTaxAiPilotDecisionExplainerV73Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/ai-pilot-decision-explainer-v73?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPilotDecisionCloseoutV73(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPilotDecisionCloseoutV73Response> {
+  return request<EcuadorTaxPilotDecisionCloseoutV73Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/pilot-decision-closeout-v73?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

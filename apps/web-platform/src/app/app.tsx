@@ -174,11 +174,14 @@ import {
   fetchEcuadorTaxAnnualRollupWorkspace,
   fetchEcuadorTaxAssistedDeclarationReviewPackV2,
   fetchEcuadorTaxAccountantCollaborationWorkbenchV72,
+  fetchEcuadorTaxAccountantDecisionRecordV73,
+  fetchEcuadorTaxAccountingAdvancedDiscoveryDossierV73,
   fetchEcuadorTaxAccountantCollaborationSlaTrackerV71,
   fetchEcuadorTaxAccountantPacketExportV62,
   fetchEcuadorTaxAccountantFeedbackIntakeQueueV70,
   fetchEcuadorTaxAccountingAdvancedEvidenceGateV71,
   fetchEcuadorTaxAiPilotAssistantPacketV72,
+  fetchEcuadorTaxAiPilotDecisionExplainerV73,
   fetchEcuadorTaxComplianceCloseoutV2,
   fetchEcuadorTaxComplianceProductCloseoutV3,
   fetchEcuadorTaxCommandCenter,
@@ -191,6 +194,8 @@ import {
   fetchEcuadorTaxOperatorActionCenterV62,
   fetchEcuadorTaxPilotCloseoutDecisionPacketV70,
   fetchEcuadorTaxPilotCloseoutV72,
+  fetchEcuadorTaxPilotDecisionCloseoutV73,
+  fetchEcuadorTaxPilotCohortExpansionReadinessV73,
   fetchEcuadorTaxPilotCohortRegistryV71,
   fetchEcuadorTaxPilotEvidencePersistenceLedgerV72,
   fetchEcuadorTaxPilotFeedbackCloseoutV70,
@@ -198,6 +203,7 @@ import {
   fetchEcuadorTaxPilotLearningBacklogV71,
   fetchEcuadorTaxPilotMultiTenantCohortV72,
   fetchEcuadorTaxPilotOperationsCloseoutV71,
+  fetchEcuadorTaxPilotPeriodOverPeriodMemoryV73,
   fetchEcuadorTaxPilotRepeatedSignalDetectorV72,
   fetchEcuadorTaxPilotTenantReadinessRoomV70,
   fetchEcuadorTaxDeclarationReviewLoopWorkspace,
@@ -706,11 +712,14 @@ import {
   EcuadorTaxAnnualRollupWorkspaceResponse,
   EcuadorTaxAssistedDeclarationReviewPackV2Response,
   EcuadorTaxAccountantCollaborationWorkbenchV72Response,
+  EcuadorTaxAccountantDecisionRecordV73Response,
+  EcuadorTaxAccountingAdvancedDiscoveryDossierV73Response,
   EcuadorTaxAccountantCollaborationSlaTrackerV71Response,
   EcuadorTaxAccountantPacketExportV62Response,
   EcuadorTaxAccountantFeedbackIntakeQueueV70Response,
   EcuadorTaxAccountingAdvancedEvidenceGateV71Response,
   EcuadorTaxAiPilotAssistantPacketV72Response,
+  EcuadorTaxAiPilotDecisionExplainerV73Response,
   EcuadorTaxComplianceCloseoutV2Response,
   EcuadorTaxDeclarationHandoffCloseoutV6Response,
   EcuadorTaxFormBoxEvidenceBinderV2Response,
@@ -719,6 +728,8 @@ import {
   EcuadorTaxOperatorActionCenterV62Response,
   EcuadorTaxPilotCloseoutDecisionPacketV70Response,
   EcuadorTaxPilotCloseoutV72Response,
+  EcuadorTaxPilotDecisionCloseoutV73Response,
+  EcuadorTaxPilotCohortExpansionReadinessV73Response,
   EcuadorTaxPilotCohortRegistryV71Response,
   EcuadorTaxPilotEvidencePersistenceLedgerV72Response,
   EcuadorTaxPilotFeedbackCloseoutV70Response,
@@ -726,6 +737,7 @@ import {
   EcuadorTaxPilotLearningBacklogV71Response,
   EcuadorTaxPilotMultiTenantCohortV72Response,
   EcuadorTaxPilotOperationsCloseoutV71Response,
+  EcuadorTaxPilotPeriodOverPeriodMemoryV73Response,
   EcuadorTaxPilotRepeatedSignalDetectorV72Response,
   EcuadorTaxPilotTenantReadinessRoomV70Response,
   EcuadorTaxSriEvidenceImportPersistenceLedgerV62Response,
@@ -2749,6 +2761,34 @@ export function App() {
     taxCompliancePilotCloseoutV72,
     setTaxCompliancePilotCloseoutV72,
   ] = useState<EcuadorTaxPilotCloseoutV72Response | null>(null);
+  const [
+    taxCompliancePilotPeriodMemoryV73,
+    setTaxCompliancePilotPeriodMemoryV73,
+  ] = useState<EcuadorTaxPilotPeriodOverPeriodMemoryV73Response | null>(null);
+  const [
+    taxComplianceDiscoveryDossierV73,
+    setTaxComplianceDiscoveryDossierV73,
+  ] = useState<EcuadorTaxAccountingAdvancedDiscoveryDossierV73Response | null>(
+    null,
+  );
+  const [
+    taxComplianceAccountantDecisionRecordV73,
+    setTaxComplianceAccountantDecisionRecordV73,
+  ] = useState<EcuadorTaxAccountantDecisionRecordV73Response | null>(null);
+  const [
+    taxComplianceCohortExpansionReadinessV73,
+    setTaxComplianceCohortExpansionReadinessV73,
+  ] = useState<EcuadorTaxPilotCohortExpansionReadinessV73Response | null>(
+    null,
+  );
+  const [
+    taxComplianceAiPilotDecisionExplainerV73,
+    setTaxComplianceAiPilotDecisionExplainerV73,
+  ] = useState<EcuadorTaxAiPilotDecisionExplainerV73Response | null>(null);
+  const [
+    taxCompliancePilotDecisionCloseoutV73,
+    setTaxCompliancePilotDecisionCloseoutV73,
+  ] = useState<EcuadorTaxPilotDecisionCloseoutV73Response | null>(null);
   const [
     taxComplianceEvidenceQualityCenter,
     setTaxComplianceEvidenceQualityCenter,
@@ -20018,6 +20058,12 @@ export function App() {
         nextAccountantWorkbenchV72,
         nextAiPilotAssistantPacketV72,
         nextPilotCloseoutV72,
+        nextPilotPeriodMemoryV73,
+        nextDiscoveryDossierV73,
+        nextAccountantDecisionRecordV73,
+        nextCohortExpansionReadinessV73,
+        nextAiPilotDecisionExplainerV73,
+        nextPilotDecisionCloseoutV73,
         nextEvidenceQualityCenter,
         nextObligationRiskMonitor,
         nextAccountantHandoffRoomV2,
@@ -20481,6 +20527,42 @@ export function App() {
           year,
         ),
         fetchEcuadorTaxPilotCloseoutV72(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxPilotPeriodOverPeriodMemoryV73(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAccountingAdvancedDiscoveryDossierV73(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAccountantDecisionRecordV73(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxPilotCohortExpansionReadinessV73(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAiPilotDecisionExplainerV73(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxPilotDecisionCloseoutV73(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -21000,6 +21082,20 @@ export function App() {
           nextAiPilotAssistantPacketV72,
         );
         setTaxCompliancePilotCloseoutV72(nextPilotCloseoutV72);
+        setTaxCompliancePilotPeriodMemoryV73(nextPilotPeriodMemoryV73);
+        setTaxComplianceDiscoveryDossierV73(nextDiscoveryDossierV73);
+        setTaxComplianceAccountantDecisionRecordV73(
+          nextAccountantDecisionRecordV73,
+        );
+        setTaxComplianceCohortExpansionReadinessV73(
+          nextCohortExpansionReadinessV73,
+        );
+        setTaxComplianceAiPilotDecisionExplainerV73(
+          nextAiPilotDecisionExplainerV73,
+        );
+        setTaxCompliancePilotDecisionCloseoutV73(
+          nextPilotDecisionCloseoutV73,
+        );
         setTaxComplianceEvidenceQualityCenter(nextEvidenceQualityCenter);
         setTaxComplianceObligationRiskMonitor(nextObligationRiskMonitor);
         setTaxComplianceAccountantHandoffRoomV2(nextAccountantHandoffRoomV2);
@@ -33308,6 +33404,97 @@ export function App() {
                             taxCompliancePilotRepeatedSignalDetectorV72
                               .recommendation.reason
                           }
+                        </p>
+                      </div>
+                    ) : null}
+                    {taxCompliancePilotDecisionCloseoutV73 &&
+                    taxCompliancePilotPeriodMemoryV73 &&
+                    taxComplianceDiscoveryDossierV73 &&
+                    taxComplianceAccountantDecisionRecordV73 &&
+                    taxComplianceCohortExpansionReadinessV73 &&
+                    taxComplianceAiPilotDecisionExplainerV73 ? (
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <div>
+                            <strong>Pilot decision 7.3</strong>
+                            <p className={styles.muted}>
+                              {taxCompliancePilotDecisionCloseoutV73.nextStep}
+                            </p>
+                          </div>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              taxCompliancePilotDecisionCloseoutV73.closeoutStatus,
+                            )}`}
+                          >
+                            {humanizeKey(
+                              taxCompliancePilotDecisionCloseoutV73.finalDecision,
+                            )}
+                          </span>
+                        </div>
+                        <div className={styles.invoiceInlineGrid}>
+                          <div>
+                            <span className={styles.muted}>Memory</span>
+                            <strong>
+                              {
+                                taxCompliancePilotPeriodMemoryV73.summary
+                                  .repeatedCount
+                              }{' '}
+                              repeated
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Dossier</span>
+                            <strong>
+                              {
+                                taxComplianceDiscoveryDossierV73.summary
+                                  .accountingSignalCount
+                              }{' '}
+                              signals
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Contador</span>
+                            <strong>
+                              {
+                                taxComplianceAccountantDecisionRecordV73.summary
+                                  .formalAccountingCount
+                              }{' '}
+                              formal
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Expansion</span>
+                            <strong>
+                              {
+                                taxComplianceCohortExpansionReadinessV73.summary
+                                  .averageScore
+                              }
+                              %
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Explainer</span>
+                            <strong>
+                              {
+                                taxComplianceAiPilotDecisionExplainerV73.summary
+                                  .cardCount
+                              }{' '}
+                              cards
+                            </strong>
+                          </div>
+                        </div>
+                        <ul className={styles.compactList}>
+                          {taxCompliancePilotDecisionCloseoutV73.closeoutChecklist.map(
+                            (item) => (
+                              <li key={item.key}>
+                                <strong>{item.label}</strong> ·{' '}
+                                {humanizeKey(item.status)}
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                        <p className={styles.muted}>
+                          {taxComplianceDiscoveryDossierV73.recommendation.reason}
                         </p>
                       </div>
                     ) : null}

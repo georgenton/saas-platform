@@ -167,7 +167,8 @@ export type EcuadorTaxComplianceEventType =
   | 'tax_post_filing_exception_center_reviewed'
   | 'tax_period_post_filing_certificate_requested'
   | 'tax_compliance_post_filing_closeout_v4_requested'
-  | 'tax_pilot_operations_closeout_v72_requested';
+  | 'tax_pilot_operations_closeout_v72_requested'
+  | 'tax_pilot_decision_closeout_v73_requested';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -2889,6 +2890,199 @@ export interface EcuadorTaxPilotCloseoutV72View {
     | 'tax_compliance_pilot_iteration'
     | 'tax_compliance_hardening'
     | 'accounting_advanced_discovery';
+  recordedEventId: string | null;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPilotPeriodOverPeriodMemoryV73View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  memoryStatus: EcuadorTaxReadinessStatus;
+  pilotCloseout: EcuadorTaxPilotCloseoutV72View;
+  memoryRows: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    previousPeriodStatus: EcuadorTaxReadinessStatus | null;
+    movement: 'new' | 'resolved' | 'repeated' | 'worsened' | 'stable';
+    owner: 'operator' | 'accountant' | 'tax_compliance' | 'ai';
+    evidenceRefs: string[];
+    recommendation: string;
+  }>;
+  summary: {
+    rowCount: number;
+    repeatedCount: number;
+    resolvedCount: number;
+    worsenedCount: number;
+    accountantOwnedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingAdvancedDiscoveryDossierV73View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  dossierStatus: EcuadorTaxReadinessStatus;
+  periodMemory: EcuadorTaxPilotPeriodOverPeriodMemoryV73View;
+  dossierSections: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidenceRefs: string[];
+    accountantQuestion: string;
+    minimumScope: string;
+    risk: string;
+  }>;
+  recommendation: {
+    shouldPrepareDiscovery: boolean;
+    discoveryScope:
+      | 'none'
+      | 'accounting_boundary_review'
+      | 'bank_reconciliation_discovery'
+      | 'ledger_closeout_discovery';
+    reason: string;
+  };
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    blockedSectionCount: number;
+    accountingSignalCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantDecisionRecordV73View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  recordStatus: EcuadorTaxReadinessStatus;
+  discoveryDossier: EcuadorTaxAccountingAdvancedDiscoveryDossierV73View;
+  decisions: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    decision:
+      | 'resolve_in_tax'
+      | 'needs_formal_accounting'
+      | 'needs_more_evidence';
+    decidedBy: 'external_accountant' | 'tax_operator';
+    rationale: string;
+    evidenceRefs: string[];
+    nextAction: string;
+  }>;
+  summary: {
+    decisionCount: number;
+    formalAccountingCount: number;
+    resolveInTaxCount: number;
+    needsMoreEvidenceCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPilotCohortExpansionReadinessV73View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: EcuadorTaxReadinessStatus;
+  accountantDecisionRecord: EcuadorTaxAccountantDecisionRecordV73View;
+  expansionChecks: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    score: number;
+    evidenceRefs: string[];
+    recommendation: string;
+  }>;
+  recommendation: {
+    canExpandCohort: boolean;
+    expansionMode:
+      | 'hold_current_pilot'
+      | 'expand_assisted_self_service'
+      | 'expand_accountant_in_loop';
+    reason: string;
+  };
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    blockedCheckCount: number;
+    averageScore: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAiPilotDecisionExplainerV73View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  explainerStatus: EcuadorTaxReadinessStatus;
+  expansionReadiness: EcuadorTaxPilotCohortExpansionReadinessV73View;
+  explanationCards: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    audience: 'operator' | 'accountant' | 'founder';
+    promptPackVersion: string;
+    contextRefs: string[];
+    explanation: string;
+    guardrail: string;
+  }>;
+  summary: {
+    cardCount: number;
+    accountantCardCount: number;
+    blockedCardCount: number;
+    guardrailCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPilotDecisionCloseoutV73View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: EcuadorTaxReadinessStatus;
+  periodMemory: EcuadorTaxPilotPeriodOverPeriodMemoryV73View;
+  discoveryDossier: EcuadorTaxAccountingAdvancedDiscoveryDossierV73View;
+  accountantDecisionRecord: EcuadorTaxAccountantDecisionRecordV73View;
+  expansionReadiness: EcuadorTaxPilotCohortExpansionReadinessV73View;
+  aiDecisionExplainer: EcuadorTaxAiPilotDecisionExplainerV73View;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision:
+    | 'continue_tax_pilot'
+    | 'return_to_tax_hardening'
+    | 'prepare_accounting_advanced_discovery';
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    repeatedSignalCount: number;
+    formalAccountingDecisionCount: number;
+    explainerCardCount: number;
+  };
   recordedEventId: string | null;
   blockers: string[];
   nextStep: string;

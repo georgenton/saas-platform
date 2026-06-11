@@ -2,7 +2,10 @@ import {
   EcuadorTaxAccountantPacketExportV62View,
   EcuadorTaxAccountantCollaborationWorkbenchV72View,
   EcuadorTaxAccountantCollaborationSlaTrackerV71View,
+  EcuadorTaxAccountantDecisionRecordV73View,
+  EcuadorTaxAccountingAdvancedDiscoveryDossierV73View,
   EcuadorTaxAccountingAdvancedEvidenceGateV71View,
+  EcuadorTaxAiPilotDecisionExplainerV73View,
   EcuadorTaxAiPilotAssistantPacketV72View,
   EcuadorTaxAccountantFeedbackIntakeQueueV70View,
   EcuadorTaxEvidenceCorrectionWorkbenchV70View,
@@ -12,12 +15,15 @@ import {
   EcuadorTaxPilotCloseoutDecisionPacketV70View,
   EcuadorTaxPilotCloseoutV72View,
   EcuadorTaxPilotCohortRegistryV71View,
+  EcuadorTaxPilotCohortExpansionReadinessV73View,
+  EcuadorTaxPilotDecisionCloseoutV73View,
   EcuadorTaxPilotEvidencePersistenceLedgerV72View,
   EcuadorTaxPilotFeedbackCloseoutV70View,
   EcuadorTaxPilotFeedbackAnalyticsDashboardV71View,
   EcuadorTaxPilotLearningBacklogV71View,
   EcuadorTaxPilotMultiTenantCohortV72View,
   EcuadorTaxPilotOperationsCloseoutV71View,
+  EcuadorTaxPilotPeriodOverPeriodMemoryV73View,
   EcuadorTaxPilotRepeatedSignalDetectorV72View,
   EcuadorTaxPilotTenantReadinessRoomV70View,
   EcuadorTaxSriEvidenceImportPersistenceLedgerV62View,
@@ -70,6 +76,18 @@ export type EcuadorTaxAiPilotAssistantPacketV72ResponseDto =
   Serialized<EcuadorTaxAiPilotAssistantPacketV72View>;
 export type EcuadorTaxPilotCloseoutV72ResponseDto =
   Serialized<EcuadorTaxPilotCloseoutV72View>;
+export type EcuadorTaxPilotPeriodOverPeriodMemoryV73ResponseDto =
+  Serialized<EcuadorTaxPilotPeriodOverPeriodMemoryV73View>;
+export type EcuadorTaxAccountingAdvancedDiscoveryDossierV73ResponseDto =
+  Serialized<EcuadorTaxAccountingAdvancedDiscoveryDossierV73View>;
+export type EcuadorTaxAccountantDecisionRecordV73ResponseDto =
+  Serialized<EcuadorTaxAccountantDecisionRecordV73View>;
+export type EcuadorTaxPilotCohortExpansionReadinessV73ResponseDto =
+  Serialized<EcuadorTaxPilotCohortExpansionReadinessV73View>;
+export type EcuadorTaxAiPilotDecisionExplainerV73ResponseDto =
+  Serialized<EcuadorTaxAiPilotDecisionExplainerV73View>;
+export type EcuadorTaxPilotDecisionCloseoutV73ResponseDto =
+  Serialized<EcuadorTaxPilotDecisionCloseoutV73View>;
 
 export function toEcuadorTaxSriEvidenceImportPersistenceLedgerV62ResponseDto(
   view: EcuadorTaxSriEvidenceImportPersistenceLedgerV62View,
@@ -206,6 +224,42 @@ export function toEcuadorTaxAiPilotAssistantPacketV72ResponseDto(
 export function toEcuadorTaxPilotCloseoutV72ResponseDto(
   view: EcuadorTaxPilotCloseoutV72View,
 ): EcuadorTaxPilotCloseoutV72ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxPilotPeriodOverPeriodMemoryV73ResponseDto(
+  view: EcuadorTaxPilotPeriodOverPeriodMemoryV73View,
+): EcuadorTaxPilotPeriodOverPeriodMemoryV73ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxAccountingAdvancedDiscoveryDossierV73ResponseDto(
+  view: EcuadorTaxAccountingAdvancedDiscoveryDossierV73View,
+): EcuadorTaxAccountingAdvancedDiscoveryDossierV73ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxAccountantDecisionRecordV73ResponseDto(
+  view: EcuadorTaxAccountantDecisionRecordV73View,
+): EcuadorTaxAccountantDecisionRecordV73ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxPilotCohortExpansionReadinessV73ResponseDto(
+  view: EcuadorTaxPilotCohortExpansionReadinessV73View,
+): EcuadorTaxPilotCohortExpansionReadinessV73ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxAiPilotDecisionExplainerV73ResponseDto(
+  view: EcuadorTaxAiPilotDecisionExplainerV73View,
+): EcuadorTaxAiPilotDecisionExplainerV73ResponseDto {
+  return serialize(view);
+}
+
+export function toEcuadorTaxPilotDecisionCloseoutV73ResponseDto(
+  view: EcuadorTaxPilotDecisionCloseoutV73View,
+): EcuadorTaxPilotDecisionCloseoutV73ResponseDto {
   return serialize(view);
 }
 

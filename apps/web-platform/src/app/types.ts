@@ -5168,6 +5168,176 @@ export interface EcuadorTaxPilotCloseoutV72Response {
   guardrails: string[];
 }
 
+export interface EcuadorTaxPilotPeriodOverPeriodMemoryV73Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  memoryStatus: string;
+  memoryRows: Array<{
+    key: string;
+    label: string;
+    status: string;
+    previousPeriodStatus: string | null;
+    movement: string;
+    owner: string;
+    evidenceRefs: string[];
+    recommendation: string;
+  }>;
+  summary: {
+    rowCount: number;
+    repeatedCount: number;
+    resolvedCount: number;
+    worsenedCount: number;
+    accountantOwnedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountingAdvancedDiscoveryDossierV73Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  dossierStatus: string;
+  dossierSections: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+    accountantQuestion: string;
+    minimumScope: string;
+    risk: string;
+  }>;
+  recommendation: {
+    shouldPrepareDiscovery: boolean;
+    discoveryScope: string;
+    reason: string;
+  };
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    blockedSectionCount: number;
+    accountingSignalCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantDecisionRecordV73Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  recordStatus: string;
+  decisions: Array<{
+    key: string;
+    label: string;
+    status: string;
+    decision: string;
+    decidedBy: string;
+    rationale: string;
+    evidenceRefs: string[];
+    nextAction: string;
+  }>;
+  summary: {
+    decisionCount: number;
+    formalAccountingCount: number;
+    resolveInTaxCount: number;
+    needsMoreEvidenceCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPilotCohortExpansionReadinessV73Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  readinessStatus: string;
+  expansionChecks: Array<{
+    key: string;
+    label: string;
+    status: string;
+    score: number;
+    evidenceRefs: string[];
+    recommendation: string;
+  }>;
+  recommendation: {
+    canExpandCohort: boolean;
+    expansionMode: string;
+    reason: string;
+  };
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    blockedCheckCount: number;
+    averageScore: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAiPilotDecisionExplainerV73Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  explainerStatus: string;
+  explanationCards: Array<{
+    key: string;
+    label: string;
+    status: string;
+    audience: string;
+    promptPackVersion: string;
+    contextRefs: string[];
+    explanation: string;
+    guardrail: string;
+  }>;
+  summary: {
+    cardCount: number;
+    accountantCardCount: number;
+    blockedCardCount: number;
+    guardrailCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPilotDecisionCloseoutV73Response {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    repeatedSignalCount: number;
+    formalAccountingDecisionCount: number;
+    explainerCardCount: number;
+  };
+  recordedEventId: string | null;
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface EcuadorTaxEvidenceQualityCenterResponse {
   tenantSlug: string;
   period: string;

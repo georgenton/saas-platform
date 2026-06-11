@@ -102,6 +102,12 @@ const [
   accountantWorkbenchV72,
   aiPilotAssistantPacketV72,
   pilotCloseoutV72,
+  pilotPeriodMemoryV73,
+  accountingDiscoveryDossierV73,
+  accountantDecisionRecordV73,
+  cohortExpansionReadinessV73,
+  aiPilotDecisionExplainerV73,
+  pilotDecisionCloseoutV73,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -255,6 +261,36 @@ const [
     path: taxPath(`/pilot-closeout-v72?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-period-over-period-memory-v73?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accounting-advanced-discovery-dossier-v73?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accountant-decision-record-v73?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-cohort-expansion-readiness-v73?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/ai-pilot-decision-explainer-v73?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-decision-closeout-v73?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertValue('sri source import center', sriSourceImportCenter.centerStatus);
@@ -370,6 +406,35 @@ assertNonEmpty('pilot evidence records 7.2', pilotEvidenceLedgerV72.persistedRec
 assertNonEmpty('pilot cohort rows 7.2', pilotMultiTenantCohortV72.cohortRows);
 assertNonEmpty('pilot assistant actions 7.2', aiPilotAssistantPacketV72.suggestedActions);
 assertNonEmpty('pilot closeout checklist 7.2', pilotCloseoutV72.closeoutChecklist);
+assertValue('pilot period memory 7.3', pilotPeriodMemoryV73.memoryStatus);
+assertValue(
+  'accounting discovery dossier 7.3',
+  accountingDiscoveryDossierV73.dossierStatus,
+);
+assertValue(
+  'accountant decision record 7.3',
+  accountantDecisionRecordV73.recordStatus,
+);
+assertValue(
+  'cohort expansion readiness 7.3',
+  cohortExpansionReadinessV73.readinessStatus,
+);
+assertValue(
+  'ai pilot decision explainer 7.3',
+  aiPilotDecisionExplainerV73.explainerStatus,
+);
+assertValue('pilot decision closeout 7.3', pilotDecisionCloseoutV73.closeoutStatus);
+assertNonEmpty('pilot memory rows 7.3', pilotPeriodMemoryV73.memoryRows);
+assertNonEmpty(
+  'accounting discovery dossier sections 7.3',
+  accountingDiscoveryDossierV73.dossierSections,
+);
+assertNonEmpty('accountant decisions 7.3', accountantDecisionRecordV73.decisions);
+assertNonEmpty('ai decision cards 7.3', aiPilotDecisionExplainerV73.explanationCards);
+assertNonEmpty(
+  'pilot decision closeout checklist 7.3',
+  pilotDecisionCloseoutV73.closeoutChecklist,
+);
 
 printLine('sri import center', sriSourceImportCenter.centerStatus);
 printLine('iva workspace', vatDeclarationWorkspace.readinessStatus);
@@ -414,5 +479,11 @@ printLine('accountant workbench 7.2', accountantWorkbenchV72.workbenchStatus);
 printLine('ai pilot packet 7.2', aiPilotAssistantPacketV72.assistantStatus);
 printLine('pilot closeout 7.2', pilotCloseoutV72.closeoutStatus);
 printLine('pilot next product 7.2', pilotCloseoutV72.recommendedNextProduct);
+printLine('pilot memory 7.3', pilotPeriodMemoryV73.memoryStatus);
+printLine('discovery dossier 7.3', accountingDiscoveryDossierV73.dossierStatus);
+printLine('accountant record 7.3', accountantDecisionRecordV73.recordStatus);
+printLine('cohort expansion 7.3', cohortExpansionReadinessV73.readinessStatus);
+printLine('ai decision explainer 7.3', aiPilotDecisionExplainerV73.explainerStatus);
+printLine('pilot decision 7.3', pilotDecisionCloseoutV73.finalDecision);
 
-printSection('EC tax compliance closeout 6/6.2/7.0/7.1/7.2 smoke passed');
+printSection('EC tax compliance closeout 6/6.2/7.0/7.1/7.2/7.3 smoke passed');

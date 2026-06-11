@@ -1,5 +1,13 @@
 # api-platform
 
+## 0.107.41
+
+### Patch Changes
+
+- 0ab1925: Add Accounting Advanced Formal Approval Workflow 1.0 with approval anchor,
+  authority matrix, evidence pack, decision workspace, command center, closeout
+  API, dashboard wiring, conceptual model updates, and smoke coverage.
+
 ## 0.107.40
 
 ### Patch Changes

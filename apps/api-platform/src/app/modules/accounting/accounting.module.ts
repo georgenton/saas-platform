@@ -20,7 +20,10 @@ import {
   CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   CreateTenantAccountingOpeningBalanceJournalEntryUseCase,
+  GetTenantAccountingAccountantDiscoveryWorkspaceUseCase,
   GetTenantAccountingAccountantHandoffWorkspaceUseCase,
+  GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
+  GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
   GetTenantAccountingBankAccountRegistryWorkspaceUseCase,
   GetTenantAccountingBankReconciliationWorkspaceUseCase,
@@ -29,6 +32,7 @@ import {
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingCloseoutCertificationReadinessUseCase,
   GetTenantAccountingFoundationCloseoutSummaryUseCase,
+  GetTenantAccountingFormalNeedsClassifierUseCase,
   GetTenantAccountingLegalBooksReadinessPacketUseCase,
   GetTenantAccountingPeriodCloseoutTimelineUseCase,
   GetTenantAccountingPeriodNarrativeReportUseCase,
@@ -63,6 +67,8 @@ import {
   RequestTenantAccountingOpeningBalanceApprovalPacketUseCase,
   RequestTenantAccountingAccountantReviewUseCase,
   RequestTenantAccountingAdjustmentRecommendationPacketUseCase,
+  RequestTenantAccountingAdvancedDiscoveryCloseoutUseCase,
+  RequestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -100,6 +106,7 @@ import {
   GetTenantEcuadorTaxAccountingBridgeMappingUseCase,
   GetTenantEcuadorTaxAccountingBridgeSuggestedAccountsUseCase,
   GetTenantEcuadorTaxOperationalCloseoutUseCase,
+  RequestTenantEcuadorTaxPilotDecisionCloseoutV73UseCase,
   RequestTenantEcuadorTaxAccountingBridgePreviewUseCase,
   RequestTenantEcuadorTaxAccountingReadinessPacketUseCase,
   UpsertTenantEcuadorTaxAccountingBridgeMappingUseCase,
@@ -128,6 +135,77 @@ import { AccountingController } from './accounting.controller';
   ],
   controllers: [AccountingController],
   providers: [
+    {
+      provide: GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
+      inject: [RequestTenantEcuadorTaxPilotDecisionCloseoutV73UseCase],
+      useFactory: (requestTenantEcuadorTaxPilotDecisionCloseoutV73UseCase) =>
+        new GetTenantAccountingAdvancedDiscoveryAnchorUseCase(
+          requestTenantEcuadorTaxPilotDecisionCloseoutV73UseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
+      inject: [
+        GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
+        RequestTenantEcuadorTaxPilotDecisionCloseoutV73UseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedDiscoveryAnchorUseCase,
+        requestTenantEcuadorTaxPilotDecisionCloseoutV73UseCase,
+      ) =>
+        new GetTenantAccountingAdvancedDiscoveryIntakeUseCase(
+          getTenantAccountingAdvancedDiscoveryAnchorUseCase,
+          requestTenantEcuadorTaxPilotDecisionCloseoutV73UseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingFormalNeedsClassifierUseCase,
+      inject: [GetTenantAccountingAdvancedDiscoveryIntakeUseCase],
+      useFactory: (getTenantAccountingAdvancedDiscoveryIntakeUseCase) =>
+        new GetTenantAccountingFormalNeedsClassifierUseCase(
+          getTenantAccountingAdvancedDiscoveryIntakeUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAccountantDiscoveryWorkspaceUseCase,
+      inject: [GetTenantAccountingFormalNeedsClassifierUseCase],
+      useFactory: (getTenantAccountingFormalNeedsClassifierUseCase) =>
+        new GetTenantAccountingAccountantDiscoveryWorkspaceUseCase(
+          getTenantAccountingFormalNeedsClassifierUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase,
+      inject: [GetTenantAccountingAccountantDiscoveryWorkspaceUseCase],
+      useFactory: (getTenantAccountingAccountantDiscoveryWorkspaceUseCase) =>
+        new RequestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase(
+          getTenantAccountingAccountantDiscoveryWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedDiscoveryCloseoutUseCase,
+      inject: [
+        GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
+        GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
+        GetTenantAccountingFormalNeedsClassifierUseCase,
+        GetTenantAccountingAccountantDiscoveryWorkspaceUseCase,
+        RequestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedDiscoveryAnchorUseCase,
+        getTenantAccountingAdvancedDiscoveryIntakeUseCase,
+        getTenantAccountingFormalNeedsClassifierUseCase,
+        getTenantAccountingAccountantDiscoveryWorkspaceUseCase,
+        requestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedDiscoveryCloseoutUseCase(
+          getTenantAccountingAdvancedDiscoveryAnchorUseCase,
+          getTenantAccountingAdvancedDiscoveryIntakeUseCase,
+          getTenantAccountingFormalNeedsClassifierUseCase,
+          getTenantAccountingAccountantDiscoveryWorkspaceUseCase,
+          requestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase,
+        ),
+    },
     {
       provide: GetTenantAccountingIntakeWorkspaceUseCase,
       inject: [RequestTenantEcuadorTaxAccountingReadinessPacketUseCase],

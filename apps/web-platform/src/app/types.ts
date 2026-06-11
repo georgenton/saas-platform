@@ -3598,6 +3598,177 @@ export interface AccountingFoundationCloseoutSummaryResponse {
   guardrails: string[];
 }
 
+export interface AccountingAdvancedDiscoveryAnchorResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  anchorStatus: string;
+  source: string;
+  boundaries: Array<{
+    key: string;
+    label: string;
+    status: string;
+    guardrail: string;
+  }>;
+  triggers: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+    rationale: string;
+  }>;
+  summary: {
+    boundaryCount: number;
+    triggerCount: number;
+    blockedTriggerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingAdvancedDiscoveryIntakeResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  intakeStatus: string;
+  anchor: AccountingAdvancedDiscoveryAnchorResponse;
+  intakeItems: Array<{
+    key: string;
+    label: string;
+    status: string;
+    source: string;
+    evidenceRefs: string[];
+    question: string;
+    owner: string;
+  }>;
+  summary: {
+    itemCount: number;
+    accountantOwnedCount: number;
+    taxBacklogCount: number;
+    blockedItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingFormalNeedsClassifierResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  classifierStatus: string;
+  intake: AccountingAdvancedDiscoveryIntakeResponse;
+  classifications: Array<{
+    key: string;
+    label: string;
+    needType: string;
+    status: string;
+    evidenceRefs: string[];
+    recommendation: string;
+  }>;
+  summary: {
+    classificationCount: number;
+    formalAccountingCount: number;
+    taxOnlyCount: number;
+    blockedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingAccountantDiscoveryWorkspaceResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  workspaceStatus: string;
+  classifier: AccountingFormalNeedsClassifierResponse;
+  questions: Array<{
+    key: string;
+    label: string;
+    status: string;
+    priority: string;
+    question: string;
+    expectedEvidence: string;
+    owner: string;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    questionCount: number;
+    accountantQuestionCount: number;
+    criticalQuestionCount: number;
+    blockedQuestionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingAdvancedDiscoveryReadinessPacketResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  packetStatus: string;
+  workspace: AccountingAccountantDiscoveryWorkspaceResponse;
+  scopeRecommendation: {
+    recommendedAction: string;
+    minimumScope: string;
+    reason: string;
+  };
+  readinessChecks: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+    recommendation: string;
+  }>;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    blockedCheckCount: number;
+    formalNeedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface AccountingAdvancedDiscoveryCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  anchor: AccountingAdvancedDiscoveryAnchorResponse;
+  intake: AccountingAdvancedDiscoveryIntakeResponse;
+  classifier: AccountingFormalNeedsClassifierResponse;
+  workspace: AccountingAccountantDiscoveryWorkspaceResponse;
+  readinessPacket: AccountingAdvancedDiscoveryReadinessPacketResponse;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    formalNeedCount: number;
+    accountantQuestionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

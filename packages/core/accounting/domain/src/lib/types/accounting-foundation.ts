@@ -162,3 +162,202 @@ export interface TenantAccountingLedgerPreviewWorkspaceView {
   nextStep: string;
   guardrails: string[];
 }
+
+export type AccountingAdvancedDiscoverySource =
+  | 'tax_pilot_decision_v73'
+  | 'accounting_foundation';
+export type AccountingAdvancedDiscoveryIntakeSource =
+  | 'tax_decision_closeout'
+  | 'accountant_decision_record'
+  | 'discovery_dossier';
+export type AccountingAdvancedNeedType =
+  | 'formal_books'
+  | 'bank_reconciliation'
+  | 'journal_adjustments'
+  | 'period_closeout'
+  | 'audit_trail'
+  | 'tax_only';
+export type AccountingAdvancedDiscoveryRecommendation =
+  | 'do_not_open'
+  | 'prepare_mvp'
+  | 'return_to_tax_hardening';
+export type AccountingAdvancedDiscoveryMinimumScope =
+  | 'none'
+  | 'bank_reconciliation'
+  | 'ledger_closeout'
+  | 'audit_trail';
+export type AccountingAdvancedDiscoveryFinalDecision =
+  | 'stay_in_tax_compliance'
+  | 'prepare_accounting_advanced_mvp'
+  | 'return_to_tax_hardening';
+
+export interface TenantAccountingAdvancedDiscoveryAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  source: AccountingAdvancedDiscoverySource;
+  boundaries: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    guardrail: string;
+  }>;
+  triggers: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+    rationale: string;
+  }>;
+  summary: {
+    boundaryCount: number;
+    triggerCount: number;
+    blockedTriggerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedDiscoveryIntakeView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  intakeStatus: AccountingReadinessStatus;
+  anchor: TenantAccountingAdvancedDiscoveryAnchorView;
+  intakeItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    source: AccountingAdvancedDiscoveryIntakeSource;
+    evidenceRefs: string[];
+    question: string;
+    owner: 'accountant' | 'tax_operator' | 'platform';
+  }>;
+  summary: {
+    itemCount: number;
+    accountantOwnedCount: number;
+    taxBacklogCount: number;
+    blockedItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingFormalNeedsClassifierView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  classifierStatus: AccountingReadinessStatus;
+  intake: TenantAccountingAdvancedDiscoveryIntakeView;
+  classifications: Array<{
+    key: string;
+    label: string;
+    needType: AccountingAdvancedNeedType;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+    recommendation: string;
+  }>;
+  summary: {
+    classificationCount: number;
+    formalAccountingCount: number;
+    taxOnlyCount: number;
+    blockedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAccountantDiscoveryWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workspaceStatus: AccountingReadinessStatus;
+  classifier: TenantAccountingFormalNeedsClassifierView;
+  questions: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    priority: 'critical' | 'high' | 'normal';
+    question: string;
+    expectedEvidence: string;
+    owner: 'external_accountant' | 'tax_operator' | 'platform';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    questionCount: number;
+    accountantQuestionCount: number;
+    criticalQuestionCount: number;
+    blockedQuestionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedDiscoveryReadinessPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packetStatus: AccountingReadinessStatus;
+  workspace: TenantAccountingAccountantDiscoveryWorkspaceView;
+  scopeRecommendation: {
+    recommendedAction: AccountingAdvancedDiscoveryRecommendation;
+    minimumScope: AccountingAdvancedDiscoveryMinimumScope;
+    reason: string;
+  };
+  readinessChecks: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+    recommendation: string;
+  }>;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    blockedCheckCount: number;
+    formalNeedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedDiscoveryCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  anchor: TenantAccountingAdvancedDiscoveryAnchorView;
+  intake: TenantAccountingAdvancedDiscoveryIntakeView;
+  classifier: TenantAccountingFormalNeedsClassifierView;
+  workspace: TenantAccountingAccountantDiscoveryWorkspaceView;
+  readinessPacket: TenantAccountingAdvancedDiscoveryReadinessPacketView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: AccountingAdvancedDiscoveryFinalDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    formalNeedCount: number;
+    accountantQuestionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}

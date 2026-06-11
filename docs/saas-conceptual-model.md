@@ -2126,6 +2126,38 @@ Guardrail: handoff 1.2 prepares delivery and intake contracts only. It does not
 send packets, sign, certify, legalize, file, officialize returned artifacts or
 replace the external professional or authority.
 
+### Accounting Advanced external execution tracking 1.3
+
+After external execution handoff 1.2, Accounting Advanced can track what happens
+outside the platform without performing the external act. This layer is the
+control tower: it watches each signature, certification and legalization lane,
+records conceptual status events, validates returned evidence and routes
+observations before any internal acceptance occurs.
+
+1. `External Execution Tracking Anchor`
+   - converts the 1.2 handoff closeout into tracking lanes for signature,
+     certification and legalization
+2. `External Execution Status Ledger`
+   - records the conceptual event history for each external act, expected actor,
+     required evidence and received evidence
+3. `Returned Evidence Validation Workspace`
+   - validates whether returned external evidence is complete, observed,
+     rejected or insufficient
+4. `External Observation Resolution Queue`
+   - routes observations back to drafting, professional review, formal approval,
+     signature boundary or handoff
+5. `External Execution Tracking Command Center`
+   - consolidates in-progress, returned, observed, rejected and blocked external
+     execution states into one operating surface
+6. `External Execution Tracking Closeout`
+   - decides whether the tenant-period is ready for external result intake,
+     waiting on external execution, needs observation resolution, must return to
+     handoff or should not accept external results
+
+Guardrail: tracking 1.3 observes and validates external progress only. It does
+not send packets, sign, certify, legalize, accept returned artifacts as official
+or replace the internal acceptance step.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2238,6 +2270,10 @@ product. Its current scope is intentionally operational and review-oriented:
     courier layer. It prepares executor assignments, evidence bundles,
     instructions and return evidence intake without sending, signing,
     certifying, legalizing or officializing external results.
+31. Accounting Advanced external execution tracking 1.3 as the external control
+    tower. It tracks lanes, status events, returned evidence and observations
+    without accepting external results as official or replacing internal
+    acceptance.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

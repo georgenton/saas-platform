@@ -11,6 +11,7 @@ import {
   AccountingAdvancedFormalApprovalWorkflowDecision,
   AccountingAdvancedSignatureCertificationBoundaryDecision,
   AccountingAdvancedExternalExecutionHandoffDecision,
+  AccountingAdvancedExternalExecutionTrackingDecision,
   AccountingAdvancedFormalModuleKey,
   AccountingAdvancedProfessionalOwner,
   AccountingAdvancedPilotEnrollmentStatus,
@@ -82,9 +83,15 @@ import {
   TenantAccountingAdvancedExternalExecutionHandoffAnchorView,
   TenantAccountingAdvancedExternalExecutionHandoffCloseoutView,
   TenantAccountingAdvancedExternalExecutionInstructionPackView,
+  TenantAccountingAdvancedExternalExecutionStatusLedgerView,
+  TenantAccountingAdvancedExternalExecutionTrackingAnchorView,
+  TenantAccountingAdvancedExternalExecutionTrackingCloseoutView,
+  TenantAccountingAdvancedExternalExecutionTrackingCommandCenterView,
   TenantAccountingAdvancedExternalExecutorAssignmentMatrixView,
+  TenantAccountingAdvancedExternalObservationResolutionQueueView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
+  TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
   TenantAccountingFormalNeedsClassifierView,
   TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView,
@@ -5883,6 +5890,480 @@ export class RequestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseC
   }
 }
 
+export class GetTenantAccountingAdvancedExternalExecutionTrackingAnchorUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase: RequestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedExternalExecutionTrackingAnchorView> {
+    const handoffCloseout =
+      await this.requestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase.execute(
+        input,
+      );
+    const trackingLanes: TenantAccountingAdvancedExternalExecutionTrackingAnchorView['trackingLanes'] =
+      [
+        externalTrackingLane(
+          'signature_tracking',
+          'Signature execution tracking',
+          handoffCloseout.handoffAnchor.anchorStatus,
+          'signature',
+          'in_external_review',
+          ['advanced_signature_handoff_gate'],
+        ),
+        externalTrackingLane(
+          'certification_tracking',
+          'Certification execution tracking',
+          handoffCloseout.evidenceBundle.bundleStatus,
+          'certification',
+          'sent_outside_platform',
+          ['advanced_certification_handoff_bundle'],
+        ),
+        externalTrackingLane(
+          'legalization_tracking',
+          'Legalization execution tracking',
+          handoffCloseout.instructionPack.packStatus,
+          'legalization',
+          'not_started',
+          ['advanced_legalization_instruction_pack'],
+        ),
+      ];
+    const blockers =
+      handoffCloseout.finalDecision ===
+      'ready_for_external_execution_tracking'
+        ? [...handoffCloseout.blockers]
+        : unique([
+            ...handoffCloseout.blockers,
+            `External handoff decision is ${handoffCloseout.finalDecision}.`,
+          ]);
+    const trackingStatus = resolveStatus(
+      trackingLanes.map((lane) => lane.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      trackingStatus,
+      handoffCloseout,
+      trackingLanes,
+      summary: {
+        laneCount: trackingLanes.length,
+        readyLaneCount: trackingLanes.filter((lane) => lane.status === 'ready')
+          .length,
+        needsReviewLaneCount: trackingLanes.filter(
+          (lane) => lane.status === 'needs_review',
+        ).length,
+        blockedLaneCount: trackingLanes.filter(
+          (lane) => lane.status === 'blocked',
+        ).length,
+        handoffChecklistCount: handoffCloseout.summary.checklistCount,
+      },
+      blockers,
+      nextStep:
+        trackingStatus === 'blocked'
+          ? 'Volver a handoff 1.2 antes de iniciar tracking externo.'
+          : 'Registrar ledger de estados por acto externo.',
+      guardrails: [
+        'External Execution Tracking 1.3 observa estados; no ejecuta actos externos.',
+        'Los estados externos no oficializan resultados sin intake y validacion.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedExternalExecutionStatusLedgerUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedExternalExecutionTrackingAnchorUseCase: GetTenantAccountingAdvancedExternalExecutionTrackingAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedExternalExecutionStatusLedgerView> {
+    const trackingAnchor =
+      await this.getTenantAccountingAdvancedExternalExecutionTrackingAnchorUseCase.execute(
+        input,
+      );
+    const events = trackingAnchor.trackingLanes.map((lane) =>
+      externalTrackingEvent(
+        `event_${lane.key}`,
+        `${lane.label} ledger event`,
+        lane.status,
+        lane.key,
+        lane.externalAct,
+        externalActorForAct(lane.externalAct),
+        lane.trackingState === 'in_external_review'
+          ? 'external_actor_reviewing'
+          : lane.trackingState === 'returned_with_observation'
+            ? 'external_observation_returned'
+            : lane.trackingState === 'rejected'
+              ? 'external_rejection_returned'
+              : lane.trackingState === 'returned_with_evidence'
+                ? 'external_result_returned'
+                : 'queued_for_external_actor',
+        expectedEvidenceForAct(lane.externalAct),
+        lane.trackingState === 'returned_with_evidence'
+          ? expectedEvidenceForAct(lane.externalAct)
+          : [],
+        lane.status === 'ready' ? [] : [`${lane.key}_pending_external_update`],
+      ),
+    );
+    const blockers = [...trackingAnchor.blockers];
+    const ledgerStatus = resolveStatus(
+      events.map((event) => event.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      ledgerStatus,
+      trackingAnchor,
+      events,
+      summary: {
+        eventCount: events.length,
+        readyEventCount: events.filter((event) => event.status === 'ready')
+          .length,
+        needsReviewEventCount: events.filter(
+          (event) => event.status === 'needs_review',
+        ).length,
+        blockedEventCount: events.filter((event) => event.status === 'blocked')
+          .length,
+        evidenceRequiredCount: events.flatMap(
+          (event) => event.evidenceRequired,
+        ).length,
+        evidenceReceivedCount: events.flatMap(
+          (event) => event.evidenceReceived,
+        ).length,
+      },
+      blockers,
+      nextStep: 'Validar evidencia retornada por ejecutores externos.',
+      guardrails: [
+        'El ledger registra estado conceptual; no sustituye evidencia externa.',
+        'Los eventos no cambian artifacts aprobados ni estados oficiales.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedReturnedEvidenceValidationWorkspaceUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedExternalExecutionStatusLedgerUseCase: GetTenantAccountingAdvancedExternalExecutionStatusLedgerUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView> {
+    const statusLedger =
+      await this.getTenantAccountingAdvancedExternalExecutionStatusLedgerUseCase.execute(
+        input,
+      );
+    const validations = statusLedger.events.map((event) =>
+      returnedEvidenceValidation(
+        `validation_${event.key}`,
+        `${event.label} validation`,
+        event.evidenceReceived.length >= event.evidenceRequired.length
+          ? 'ready'
+          : 'needs_review',
+        event.key,
+        event.evidenceReceived.length >= event.evidenceRequired.length
+          ? 'valid_return'
+          : event.eventState === 'external_observation_returned'
+            ? 'observed_return'
+            : event.eventState === 'external_rejection_returned'
+              ? 'rejected_return'
+              : 'insufficient_evidence',
+        event.evidenceRequired,
+        event.evidenceReceived,
+        event.evidenceReceived.length >= event.evidenceRequired.length
+          ? []
+          : [`${event.key}_missing_return_evidence`],
+      ),
+    );
+    const blockers = [...statusLedger.blockers];
+    const validationStatus = resolveStatus(
+      validations.map((validation) => validation.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      validationStatus,
+      statusLedger,
+      validations,
+      summary: {
+        validationCount: validations.length,
+        validReturnCount: validations.filter(
+          (validation) => validation.validationResult === 'valid_return',
+        ).length,
+        observedReturnCount: validations.filter(
+          (validation) => validation.validationResult === 'observed_return',
+        ).length,
+        rejectedReturnCount: validations.filter(
+          (validation) => validation.validationResult === 'rejected_return',
+        ).length,
+        insufficientEvidenceCount: validations.filter(
+          (validation) =>
+            validation.validationResult === 'insufficient_evidence',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Clasificar observaciones externas y rutas de resolucion.',
+      guardrails: [
+        'Validation workspace revisa retornos; no acepta resultados como oficiales.',
+        'La evidencia insuficiente debe resolverse antes de intake interno.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedExternalObservationResolutionQueueUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedReturnedEvidenceValidationWorkspaceUseCase: GetTenantAccountingAdvancedReturnedEvidenceValidationWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedExternalObservationResolutionQueueView> {
+    const validationWorkspace =
+      await this.getTenantAccountingAdvancedReturnedEvidenceValidationWorkspaceUseCase.execute(
+        input,
+      );
+    const observations = validationWorkspace.validations.map((validation) =>
+      externalObservation(
+        `observation_${validation.key}`,
+        `${validation.label} observation route`,
+        validation.status,
+        validation.key,
+        resolutionRouteForValidation(validation.validationResult),
+        validation.validationResult === 'valid_return'
+          ? 'No external observation requires routing.'
+          : `${validation.validationResult} requires reviewed resolution before intake.`,
+      ),
+    );
+    const blockers = [...validationWorkspace.blockers];
+    const queueStatus = resolveStatus(
+      observations.map((observation) => observation.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      queueStatus,
+      validationWorkspace,
+      observations,
+      summary: {
+        observationCount: observations.length,
+        readyObservationCount: observations.filter(
+          (observation) => observation.status === 'ready',
+        ).length,
+        needsReviewObservationCount: observations.filter(
+          (observation) => observation.status === 'needs_review',
+        ).length,
+        blockedObservationCount: observations.filter(
+          (observation) => observation.status === 'blocked',
+        ).length,
+        routedObservationCount: observations.filter(
+          (observation) =>
+            observation.resolutionRoute !== 'no_resolution_required',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Consolidar tracking externo en command center operativo.',
+      guardrails: [
+        'Observation queue enruta correcciones; no corrige artifacts automaticamente.',
+        'Todo rechazo u observacion conserva revision humana antes de avanzar.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedExternalExecutionTrackingCommandCenterUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedExternalObservationResolutionQueueUseCase: GetTenantAccountingAdvancedExternalObservationResolutionQueueUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedExternalExecutionTrackingCommandCenterView> {
+    const observationQueue =
+      await this.getTenantAccountingAdvancedExternalObservationResolutionQueueUseCase.execute(
+        input,
+      );
+    const { validationWorkspace } = observationQueue;
+    const { statusLedger } = validationWorkspace;
+    const commandLanes: TenantAccountingAdvancedExternalExecutionTrackingCommandCenterView['commandLanes'] =
+      [
+        trackingCommandLane(
+          'external_events',
+          'External events',
+          statusLedger.ledgerStatus,
+          'ledger_events',
+          statusLedger.summary.eventCount,
+        ),
+        trackingCommandLane(
+          'returned_results',
+          'Returned results',
+          validationWorkspace.validationStatus,
+          'valid_returns',
+          validationWorkspace.summary.validReturnCount,
+        ),
+        trackingCommandLane(
+          'external_observations',
+          'External observations',
+          observationQueue.queueStatus,
+          'routed_observations',
+          observationQueue.summary.routedObservationCount,
+        ),
+      ];
+    const blockers = unique([
+      ...statusLedger.blockers,
+      ...validationWorkspace.blockers,
+      ...observationQueue.blockers,
+    ]);
+    const commandStatus = resolveStatus(
+      commandLanes.map((lane) => lane.status),
+      blockers,
+    );
+    const suggestedDecision = externalExecutionTrackingDecisionFromStatus(
+      commandStatus,
+      validationWorkspace,
+      observationQueue,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      commandStatus,
+      observationQueue,
+      commandLanes,
+      suggestedDecision,
+      summary: {
+        laneCount: commandLanes.length,
+        readyLaneCount: commandLanes.filter((lane) => lane.status === 'ready')
+          .length,
+        needsReviewLaneCount: commandLanes.filter(
+          (lane) => lane.status === 'needs_review',
+        ).length,
+        blockedLaneCount: commandLanes.filter(
+          (lane) => lane.status === 'blocked',
+        ).length,
+        returnedCount: validationWorkspace.summary.validReturnCount,
+        observedCount: validationWorkspace.summary.observedReturnCount,
+        rejectedCount: validationWorkspace.summary.rejectedReturnCount,
+      },
+      blockers,
+      nextStep:
+        suggestedDecision === 'ready_for_external_result_intake'
+          ? 'Preparar 1.4 External Result Intake & Internal Acceptance.'
+          : suggestedDecision === 'resolve_external_observations'
+            ? 'Resolver observaciones externas antes del intake interno.'
+            : suggestedDecision === 'return_to_external_handoff'
+              ? 'Volver a 1.2 para corregir handoff externo.'
+              : 'Continuar seguimiento hasta recibir evidencia externa suficiente.',
+      guardrails: [
+        'Command center prioriza tracking; no oficializa evidencia retornada.',
+        'La decision sugerida no reemplaza aceptacion interna formal.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedExternalExecutionTrackingCloseoutUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedExternalExecutionTrackingCommandCenterUseCase: GetTenantAccountingAdvancedExternalExecutionTrackingCommandCenterUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedExternalExecutionTrackingCloseoutView> {
+    const commandCenter =
+      await this.getTenantAccountingAdvancedExternalExecutionTrackingCommandCenterUseCase.execute(
+        input,
+      );
+    const { observationQueue } = commandCenter;
+    const { validationWorkspace } = observationQueue;
+    const { statusLedger } = validationWorkspace;
+    const { trackingAnchor } = statusLedger;
+    const closeoutChecklist: TenantAccountingAdvancedExternalExecutionTrackingCloseoutView['closeoutChecklist'] =
+      [
+        externalTrackingCloseoutCheck('tracking_anchor', 'External execution tracking anchor', trackingAnchor.trackingStatus, ['advanced_external_execution_tracking_anchor']),
+        externalTrackingCloseoutCheck('status_ledger', 'External execution status ledger', statusLedger.ledgerStatus, ['advanced_external_execution_status_ledger']),
+        externalTrackingCloseoutCheck('returned_evidence_validation', 'Returned evidence validation workspace', validationWorkspace.validationStatus, ['advanced_returned_evidence_validation_workspace']),
+        externalTrackingCloseoutCheck('observation_queue', 'External observation resolution queue', observationQueue.queueStatus, ['advanced_external_observation_resolution_queue']),
+        externalTrackingCloseoutCheck('tracking_command_center', 'External execution tracking command center', commandCenter.commandStatus, ['advanced_external_execution_tracking_command_center']),
+      ];
+    const blockers = unique([
+      ...trackingAnchor.blockers,
+      ...statusLedger.blockers,
+      ...validationWorkspace.blockers,
+      ...observationQueue.blockers,
+      ...commandCenter.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(
+      closeoutChecklist.map((item) => item.status),
+      blockers,
+    );
+    const finalDecision = externalExecutionTrackingDecisionFromStatus(
+      closeoutStatus,
+      validationWorkspace,
+      observationQueue,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      trackingAnchor,
+      statusLedger,
+      validationWorkspace,
+      observationQueue,
+      commandCenter,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        blockedChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+        trackingLaneCount: trackingAnchor.summary.laneCount,
+        ledgerEventCount: statusLedger.summary.eventCount,
+        validationCount: validationWorkspace.summary.validationCount,
+        observationCount: observationQueue.summary.observationCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'ready_for_external_result_intake'
+          ? 'Iniciar 1.4 External Result Intake & Internal Acceptance.'
+          : finalDecision === 'resolve_external_observations'
+            ? 'Resolver observaciones externas antes de aceptar resultados.'
+            : finalDecision === 'return_to_external_handoff'
+              ? 'Volver a handoff 1.2 para corregir paquetes o instrucciones.'
+              : finalDecision === 'waiting_for_external_execution'
+                ? 'Continuar tracking hasta recibir resultados externos.'
+                : 'No aceptar resultados externos para este periodo.',
+      guardrails: [
+        'Tracking closeout no acepta resultados externos como oficiales.',
+        'La aceptacion interna debe ocurrir en una capa posterior con evidencia validada.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -6882,6 +7363,158 @@ function externalExecutionHandoffDecisionFromStatus(
     return 'needs_executor_assignment';
   }
   return 'ready_for_external_execution_tracking';
+}
+
+function externalTrackingLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  externalAct: TenantAccountingAdvancedExternalExecutionTrackingAnchorView['trackingLanes'][number]['externalAct'],
+  trackingState: TenantAccountingAdvancedExternalExecutionTrackingAnchorView['trackingLanes'][number]['trackingState'],
+  evidenceRefs: string[],
+): TenantAccountingAdvancedExternalExecutionTrackingAnchorView['trackingLanes'][number] {
+  return { key, label, status, externalAct, trackingState, evidenceRefs };
+}
+
+function externalTrackingEvent(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  laneKey: string,
+  externalAct: TenantAccountingAdvancedExternalExecutionStatusLedgerView['events'][number]['externalAct'],
+  expectedActor: string,
+  eventState: TenantAccountingAdvancedExternalExecutionStatusLedgerView['events'][number]['eventState'],
+  evidenceRequired: string[],
+  evidenceReceived: string[],
+  blockerRefs: string[],
+): TenantAccountingAdvancedExternalExecutionStatusLedgerView['events'][number] {
+  return {
+    key,
+    label,
+    status,
+    laneKey,
+    externalAct,
+    expectedActor,
+    eventState,
+    evidenceRequired,
+    evidenceReceived,
+    blockerRefs,
+  };
+}
+
+function returnedEvidenceValidation(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  eventKey: string,
+  validationResult: TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView['validations'][number]['validationResult'],
+  requiredEvidence: string[],
+  receivedEvidence: string[],
+  blockerRefs: string[],
+): TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView['validations'][number] {
+  return {
+    key,
+    label,
+    status,
+    eventKey,
+    validationResult,
+    requiredEvidence,
+    receivedEvidence,
+    blockerRefs,
+  };
+}
+
+function externalObservation(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  validationKey: string,
+  resolutionRoute: TenantAccountingAdvancedExternalObservationResolutionQueueView['observations'][number]['resolutionRoute'],
+  reason: string,
+): TenantAccountingAdvancedExternalObservationResolutionQueueView['observations'][number] {
+  return { key, label, status, validationKey, resolutionRoute, reason };
+}
+
+function trackingCommandLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  metric: string,
+  count: number,
+): TenantAccountingAdvancedExternalExecutionTrackingCommandCenterView['commandLanes'][number] {
+  return { key, label, status, metric, count };
+}
+
+function externalTrackingCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantAccountingAdvancedExternalExecutionTrackingCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function externalActorForAct(
+  externalAct: TenantAccountingAdvancedExternalExecutionTrackingAnchorView['trackingLanes'][number]['externalAct'],
+): string {
+  if (externalAct === 'signature') {
+    return 'external_signatory';
+  }
+  if (externalAct === 'certification') {
+    return 'external_certifier';
+  }
+  return 'legalization_authority';
+}
+
+function expectedEvidenceForAct(
+  externalAct: TenantAccountingAdvancedExternalExecutionTrackingAnchorView['trackingLanes'][number]['externalAct'],
+): string[] {
+  if (externalAct === 'signature') {
+    return ['signed_artifact_reference', 'signatory_identity'];
+  }
+  if (externalAct === 'certification') {
+    return ['certification_reference', 'certifier_identity'];
+  }
+  return ['legalization_reference', 'legalization_authority'];
+}
+
+function resolutionRouteForValidation(
+  validationResult: TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView['validations'][number]['validationResult'],
+): TenantAccountingAdvancedExternalObservationResolutionQueueView['observations'][number]['resolutionRoute'] {
+  if (validationResult === 'valid_return') {
+    return 'no_resolution_required';
+  }
+  if (validationResult === 'observed_return') {
+    return 'return_to_professional_review';
+  }
+  if (validationResult === 'rejected_return') {
+    return 'return_to_external_handoff';
+  }
+  return 'return_to_signature_boundary';
+}
+
+function externalExecutionTrackingDecisionFromStatus(
+  status: AccountingReadinessStatus,
+  validationWorkspace: TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
+  observationQueue: TenantAccountingAdvancedExternalObservationResolutionQueueView,
+  blockers: string[],
+): AccountingAdvancedExternalExecutionTrackingDecision {
+  if (blockers.length > 0 || status === 'blocked') {
+    return 'return_to_external_handoff';
+  }
+  if (
+    validationWorkspace.summary.rejectedReturnCount > 0 ||
+    observationQueue.summary.routedObservationCount > 0
+  ) {
+    return 'resolve_external_observations';
+  }
+  if (validationWorkspace.summary.validReturnCount > 0) {
+    return 'ready_for_external_result_intake';
+  }
+  if (validationWorkspace.summary.insufficientEvidenceCount > 0) {
+    return 'waiting_for_external_execution';
+  }
+  return 'do_not_accept_external_results';
 }
 
 function formalProductDesignDecisionFromStatus(

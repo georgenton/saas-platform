@@ -1194,6 +1194,12 @@ const [
   advancedExternalExecutionInstructionPack,
   advancedExecutionReturnEvidenceIntake,
   advancedExternalExecutionHandoffCloseout,
+  advancedExternalExecutionTrackingAnchor,
+  advancedExternalExecutionStatusLedger,
+  advancedReturnedEvidenceValidationWorkspace,
+  advancedExternalObservationResolutionQueue,
+  advancedExternalExecutionTrackingCommandCenter,
+  advancedExternalExecutionTrackingCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1682,6 +1688,48 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-external-execution-tracking/anchor?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-external-execution-tracking/status-ledger?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-external-execution-tracking/returned-evidence-validation?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-external-execution-tracking/observation-resolution-queue?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-external-execution-tracking/command-center?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-external-execution-tracking/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -1984,6 +2032,30 @@ assertStatus(
   'accounting advanced external execution handoff closeout',
   advancedExternalExecutionHandoffCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced external execution tracking anchor',
+  advancedExternalExecutionTrackingAnchor.trackingStatus,
+);
+assertStatus(
+  'accounting advanced external execution status ledger',
+  advancedExternalExecutionStatusLedger.ledgerStatus,
+);
+assertStatus(
+  'accounting advanced returned evidence validation workspace',
+  advancedReturnedEvidenceValidationWorkspace.validationStatus,
+);
+assertStatus(
+  'accounting advanced external observation resolution queue',
+  advancedExternalObservationResolutionQueue.queueStatus,
+);
+assertStatus(
+  'accounting advanced external execution tracking command center',
+  advancedExternalExecutionTrackingCommandCenter.commandStatus,
+);
+assertStatus(
+  'accounting advanced external execution tracking closeout',
+  advancedExternalExecutionTrackingCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2021,6 +2093,13 @@ if (!Array.isArray(advancedSignatureCertificationCloseout.closeoutChecklist)) {
 if (!Array.isArray(advancedExternalExecutionHandoffCloseout.closeoutChecklist)) {
   throw new Error(
     'advanced-external-execution-handoff/closeout no devolvio checklist[].',
+  );
+}
+if (
+  !Array.isArray(advancedExternalExecutionTrackingCloseout.closeoutChecklist)
+) {
+  throw new Error(
+    'advanced-external-execution-tracking/closeout no devolvio checklist[].',
   );
 }
 printLine(

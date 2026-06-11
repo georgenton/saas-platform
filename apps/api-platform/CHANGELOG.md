@@ -1,5 +1,14 @@
 # api-platform
 
+## 0.107.40
+
+### Patch Changes
+
+- b3da0c9: Add Accounting Advanced Professional Review Execution 0.9 with review anchor,
+  accountant draft review room, change request pack, approval recommendation pack,
+  review command center, closeout API, dashboard wiring, conceptual model updates,
+  and smoke coverage.
+
 ## 0.107.39
 
 ### Patch Changes

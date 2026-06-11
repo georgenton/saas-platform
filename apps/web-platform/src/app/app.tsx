@@ -130,6 +130,7 @@ import {
   fetchAccountingOpeningBalanceWorkspace,
   fetchAccountingOperationalCommandCenter,
   fetchAccountingAdvancedDiscoveryCloseout,
+  fetchAccountingAdvancedMvpOperatingCloseout,
   fetchAccountingAdvancedMvpReadinessCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
@@ -483,6 +484,7 @@ import {
   AccountingFinancialStatementFinalReviewPacketResponse,
   AccountingFoundationCloseoutSummaryResponse,
   AccountingAdvancedDiscoveryCloseoutResponse,
+  AccountingAdvancedMvpOperatingCloseoutResponse,
   AccountingAdvancedMvpReadinessCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
@@ -2551,6 +2553,10 @@ export function App() {
     accountingAdvancedMvpReadinessCloseout,
     setAccountingAdvancedMvpReadinessCloseout,
   ] = useState<AccountingAdvancedMvpReadinessCloseoutResponse | null>(null);
+  const [
+    accountingAdvancedMvpOperatingCloseout,
+    setAccountingAdvancedMvpOperatingCloseout,
+  ] = useState<AccountingAdvancedMvpOperatingCloseoutResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20700,6 +20706,7 @@ export function App() {
         nextAccountingFoundationCloseoutSummary,
         nextAccountingAdvancedDiscoveryCloseout,
         nextAccountingAdvancedMvpReadinessCloseout,
+        nextAccountingAdvancedMvpOperatingCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -20927,6 +20934,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedMvpOperatingCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -20962,6 +20975,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21224,6 +21238,9 @@ export function App() {
         );
         setAccountingAdvancedMvpReadinessCloseout(
           nextAccountingAdvancedMvpReadinessCloseout,
+        );
+        setAccountingAdvancedMvpOperatingCloseout(
+          nextAccountingAdvancedMvpOperatingCloseout,
         );
       });
     } catch (error) {
@@ -35445,6 +35462,23 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      MVP operations
+                                    </span>
+                                    <strong>
+                                      {accountingAdvancedMvpOperatingCloseout
+                                        ? humanizeKey(
+                                            accountingAdvancedMvpOperatingCloseout.finalDecision,
+                                          )
+                                        : 'sin closeout'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingAdvancedMvpOperatingCloseout
+                                        ?.summary.readyLaneCount ?? 0}{' '}
+                                      ready
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Ultimo ajuste
                                     </span>
                                     <strong>
@@ -35678,8 +35712,108 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedMvpOperatingCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced MVP Operations 0.3
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedMvpOperatingCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Modo
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedMvpOperatingCloseout
+                                              .commandCenter.executionAnchor
+                                              .operatingMode,
+                                          )}
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Banco
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedMvpOperatingCloseout
+                                              .commandCenter.bankWorkbench
+                                              .summary
+                                              .unresolvedDifferenceCount
+                                          }{' '}
+                                          diff
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Ledger
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedMvpOperatingCloseout
+                                              .commandCenter.ledgerWorkbench
+                                              .summary
+                                              .needsEvidenceCheckCount
+                                          }{' '}
+                                          pending
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Contador
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedMvpOperatingCloseout
+                                              .commandCenter.summary
+                                              .accountantPendingItemCount
+                                          }{' '}
+                                          pending
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Lanes
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedMvpOperatingCloseout
+                                              .commandCenter.summary
+                                              .readyLaneCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedMvpOperatingCloseout
+                                              .commandCenter.summary.laneCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedMvpOperatingCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedMvpOperatingCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedMvpReadinessCloseout?.nextStep ??
+                                  {accountingAdvancedMvpOperatingCloseout?.nextStep ??
+                                    accountingAdvancedMvpReadinessCloseout?.nextStep ??
                                     accountingAdvancedDiscoveryCloseout?.nextStep ??
                                     accountingFoundationCloseoutSummary?.nextStep ??
                                     lastAccountingFinancialStatementFinalReviewPacket?.nextStep ??

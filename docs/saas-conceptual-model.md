@@ -1813,6 +1813,36 @@ Guardrail: MVP readiness 0.2 still does not implement Accounting Advanced. It
 only decides whether the next slice should build a very narrow MVP with
 contador-in-the-loop and explicit bank/audit boundaries.
 
+### Accounting Advanced MVP operations 0.3
+
+After MVP readiness 0.2, Accounting can operate a very narrow MVP surface while
+still avoiding full advanced accounting. This layer is the first controlled taxi
+test: it lets the MVP move, but only inside a fenced runway with accountant,
+bank and audit guardrails.
+
+1. `Accounting Advanced MVP Execution Anchor`
+   - converts readiness closeout into an operating mode and first executable
+     lane without posting official journals or certified reconciliations
+2. `Bank Reconciliation MVP Workbench`
+   - organizes statement evidence, internal matches, unresolved differences and
+     external proof requirements as assisted evidence only
+3. `Ledger Closeout MVP Workbench`
+   - packages period, foundation evidence, journal-boundary and accountant gate
+     checks before any ledger-grade pilot
+4. `Accountant MVP Review Packet`
+   - asks the contador to approve operational MVP, request more evidence or
+     reject formal use
+5. `Accounting Advanced MVP Command Center`
+   - summarizes anchor, bank workbench, ledger workbench and accountant review
+     as one operating cockpit
+6. `Accounting Advanced MVP Operating Closeout`
+   - decides whether the MVP is ready for a controlled pilot, needs accountant
+     review, must return to Foundation hardening or should not operate
+
+Guardrail: MVP operations 0.3 still does not create official books, certified
+bank reconciliations, signed financial statements or statutory closeout. It
+only operates assisted evidence workflows for a future controlled pilot.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -1882,6 +1912,10 @@ product. Its current scope is intentionally operational and review-oriented:
     accountant-owned decisions, minimum ledger design, bank evidence boundary,
     audit trail readiness and a closeout decision before any advanced accounting
     product is built.
+21. Accounting Advanced MVP operations 0.3 as the first assisted operating
+    layer. It anchors operating mode, exposes bank and ledger MVP workbenches,
+    packages accountant review, summarizes the cockpit and closes whether a
+    controlled pilot is ready without crossing into statutory accounting.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

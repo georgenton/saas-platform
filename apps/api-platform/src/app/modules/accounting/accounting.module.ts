@@ -24,6 +24,10 @@ import {
   GetTenantAccountingAccountantHandoffWorkspaceUseCase,
   GetTenantAccountingAdvancedMvpScopeDecisionRecordUseCase,
   GetTenantAccountingAdvancedMvpScopeRegistryUseCase,
+  GetTenantAccountingAdvancedMvpCommandCenterUseCase,
+  GetTenantAccountingAdvancedMvpExecutionAnchorUseCase,
+  GetTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase,
+  GetTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase,
   GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
   GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
@@ -74,6 +78,8 @@ import {
   RequestTenantAccountingAdvancedDiscoveryCloseoutUseCase,
   RequestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase,
   RequestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase,
+  RequestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase,
+  RequestTenantAccountingAdvancedMvpOperatingCloseoutUseCase,
   RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
@@ -278,6 +284,74 @@ import { AccountingController } from './accounting.controller';
           getTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase,
           getTenantAccountingCertifiedBankEvidenceBoundaryUseCase,
           requestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedMvpExecutionAnchorUseCase,
+      inject: [RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase],
+      useFactory: (requestTenantAccountingAdvancedMvpReadinessCloseoutUseCase) =>
+        new GetTenantAccountingAdvancedMvpExecutionAnchorUseCase(
+          requestTenantAccountingAdvancedMvpReadinessCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase,
+      inject: [GetTenantAccountingAdvancedMvpExecutionAnchorUseCase],
+      useFactory: (getTenantAccountingAdvancedMvpExecutionAnchorUseCase) =>
+        new GetTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase(
+          getTenantAccountingAdvancedMvpExecutionAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase,
+      inject: [GetTenantAccountingAdvancedMvpExecutionAnchorUseCase],
+      useFactory: (getTenantAccountingAdvancedMvpExecutionAnchorUseCase) =>
+        new GetTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase(
+          getTenantAccountingAdvancedMvpExecutionAnchorUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase,
+      inject: [
+        GetTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase,
+        GetTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase,
+        getTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase(
+          getTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase,
+          getTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedMvpCommandCenterUseCase,
+      inject: [
+        GetTenantAccountingAdvancedMvpExecutionAnchorUseCase,
+        GetTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase,
+        GetTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase,
+        RequestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedMvpExecutionAnchorUseCase,
+        getTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase,
+        getTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase,
+        requestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedMvpCommandCenterUseCase(
+          getTenantAccountingAdvancedMvpExecutionAnchorUseCase,
+          getTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase,
+          getTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase,
+          requestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedMvpOperatingCloseoutUseCase,
+      inject: [GetTenantAccountingAdvancedMvpCommandCenterUseCase],
+      useFactory: (getTenantAccountingAdvancedMvpCommandCenterUseCase) =>
+        new RequestTenantAccountingAdvancedMvpOperatingCloseoutUseCase(
+          getTenantAccountingAdvancedMvpCommandCenterUseCase,
         ),
     },
     {

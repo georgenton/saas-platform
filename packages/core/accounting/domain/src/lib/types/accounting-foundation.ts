@@ -210,6 +210,20 @@ export type AccountingAdvancedMvpCloseoutDecision =
   | 'prepare_bank_reconciliation_mvp'
   | 'prepare_ledger_closeout_mvp'
   | 'return_to_tax_or_foundation_hardening';
+export type AccountingAdvancedMvpOperatingMode =
+  | 'no_mvp'
+  | 'bank_reconciliation_mvp'
+  | 'ledger_closeout_mvp'
+  | 'hardening_required';
+export type AccountingAdvancedMvpReviewDecision =
+  | 'approve_operational_mvp'
+  | 'request_more_evidence'
+  | 'reject_formal_use';
+export type AccountingAdvancedMvpOperatingCloseoutDecision =
+  | 'mvp_ready_for_pilot'
+  | 'needs_accountant_review'
+  | 'return_to_foundation_hardening'
+  | 'do_not_operate';
 
 export interface TenantAccountingAdvancedDiscoveryAnchorView {
   tenantSlug: string;
@@ -537,6 +551,178 @@ export interface TenantAccountingAdvancedMvpReadinessCloseoutView {
     blockedChecklistCount: number;
     approvedLaneCount: number;
     auditEvidenceRefCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedMvpExecutionAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  readinessCloseout: TenantAccountingAdvancedMvpReadinessCloseoutView;
+  operatingMode: AccountingAdvancedMvpOperatingMode;
+  firstLane: AccountingAdvancedMvpLaneKey | null;
+  executionLanes: Array<{
+    key: AccountingAdvancedMvpLaneKey;
+    label: string;
+    status: AccountingReadinessStatus;
+    canOperate: boolean;
+    guardrail: string;
+  }>;
+  summary: {
+    laneCount: number;
+    operableLaneCount: number;
+    blockedLaneCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedBankReconciliationMvpWorkbenchView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workbenchStatus: AccountingReadinessStatus;
+  executionAnchor: TenantAccountingAdvancedMvpExecutionAnchorView;
+  statementRows: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    amountInCents: number;
+    evidenceRef: string;
+  }>;
+  internalMatches: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    matchConfidence: 'high' | 'medium' | 'low';
+    guardrail: string;
+  }>;
+  unresolvedDifferences: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    requiredAction: string;
+  }>;
+  summary: {
+    statementRowCount: number;
+    internalMatchCount: number;
+    unresolvedDifferenceCount: number;
+    externalProofRequiredCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedLedgerCloseoutMvpWorkbenchView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workbenchStatus: AccountingReadinessStatus;
+  executionAnchor: TenantAccountingAdvancedMvpExecutionAnchorView;
+  closeoutChecks: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    source: string;
+    action: string;
+  }>;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsEvidenceCheckCount: number;
+    blockedCheckCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedMvpAccountantReviewPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packetStatus: AccountingReadinessStatus;
+  bankWorkbench: TenantAccountingAdvancedBankReconciliationMvpWorkbenchView;
+  ledgerWorkbench: TenantAccountingAdvancedLedgerCloseoutMvpWorkbenchView;
+  reviewItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    decision: AccountingAdvancedMvpReviewDecision;
+    rationale: string;
+    evidenceRefs: string[];
+    risk: string;
+  }>;
+  summary: {
+    itemCount: number;
+    approvedItemCount: number;
+    needsEvidenceItemCount: number;
+    rejectedItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedMvpCommandCenterView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  commandStatus: AccountingReadinessStatus;
+  executionAnchor: TenantAccountingAdvancedMvpExecutionAnchorView;
+  bankWorkbench: TenantAccountingAdvancedBankReconciliationMvpWorkbenchView;
+  ledgerWorkbench: TenantAccountingAdvancedLedgerCloseoutMvpWorkbenchView;
+  accountantReviewPacket: TenantAccountingAdvancedMvpAccountantReviewPacketView;
+  lanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    primaryMetric: string;
+    nextAction: string;
+  }>;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    blockedLaneCount: number;
+    evidenceRefCount: number;
+    accountantPendingItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedMvpOperatingCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  commandCenter: TenantAccountingAdvancedMvpCommandCenterView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: AccountingAdvancedMvpOperatingCloseoutDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    readyLaneCount: number;
+    accountantPendingItemCount: number;
   };
   blockers: string[];
   nextStep: string;

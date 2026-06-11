@@ -2,13 +2,20 @@ import {
   AccountingAdvancedNeedType,
   AccountingAdvancedMvpLaneKey,
   AccountingAdvancedMvpLaneStatus,
+  AccountingAdvancedMvpOperatingMode,
   AccountingReadinessStatus,
   TenantAccountingAccountantDiscoveryWorkspaceView,
+  TenantAccountingAdvancedBankReconciliationMvpWorkbenchView,
   TenantAccountingAdvancedAuditTrailReadinessPacketView,
   TenantAccountingAdvancedDiscoveryAnchorView,
   TenantAccountingAdvancedDiscoveryCloseoutView,
   TenantAccountingAdvancedDiscoveryIntakeView,
   TenantAccountingAdvancedDiscoveryReadinessPacketView,
+  TenantAccountingAdvancedLedgerCloseoutMvpWorkbenchView,
+  TenantAccountingAdvancedMvpAccountantReviewPacketView,
+  TenantAccountingAdvancedMvpCommandCenterView,
+  TenantAccountingAdvancedMvpExecutionAnchorView,
+  TenantAccountingAdvancedMvpOperatingCloseoutView,
   TenantAccountingAdvancedMvpReadinessCloseoutView,
   TenantAccountingAdvancedMvpScopeDecisionRecordView,
   TenantAccountingAdvancedMvpScopeRegistryView,
@@ -1056,6 +1063,505 @@ export class RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase {
   }
 }
 
+export class GetTenantAccountingAdvancedMvpExecutionAnchorUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedMvpReadinessCloseoutUseCase: RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedMvpExecutionAnchorView> {
+    const readinessCloseout =
+      await this.requestTenantAccountingAdvancedMvpReadinessCloseoutUseCase.execute(
+        input,
+      );
+    const operatingMode = operatingModeFromReadiness(readinessCloseout);
+    const firstLane = firstLaneFromMode(operatingMode);
+    const executionLanes =
+      readinessCloseout.scopeDecisionRecord.decisions.map((decision) => ({
+        key: decision.laneKey,
+        label: decision.label,
+        status:
+          decision.decision === 'approve_for_mvp'
+            ? ('ready' as const)
+            : decision.status,
+        canOperate:
+          decision.decision === 'approve_for_mvp' &&
+          operatingMode !== 'hardening_required',
+        guardrail: mvpLaneGuardrail(decision.laneKey),
+      }));
+    const blockers = [...readinessCloseout.blockers];
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus: resolveStatus(
+        executionLanes.map((lane) => lane.status),
+        blockers,
+      ),
+      readinessCloseout,
+      operatingMode,
+      firstLane,
+      executionLanes,
+      summary: {
+        laneCount: executionLanes.length,
+        operableLaneCount: executionLanes.filter((lane) => lane.canOperate)
+          .length,
+        blockedLaneCount: executionLanes.filter(
+          (lane) => lane.status === 'blocked',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        operatingMode === 'bank_reconciliation_mvp'
+          ? 'Operar primero el workbench bancario MVP con boundary de certificacion.'
+          : operatingMode === 'ledger_closeout_mvp'
+            ? 'Operar primero el workbench ledger closeout MVP con contador-in-the-loop.'
+            : operatingMode === 'hardening_required'
+              ? 'Volver a hardening antes de operar Accounting Advanced.'
+              : 'No operar MVP hasta que readiness recomiende una lane concreta.',
+      guardrails: [
+        'Execution anchor habilita operacion minima; no postea asientos oficiales.',
+        'Toda lane operable conserva contador-in-the-loop y boundary explicito.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedMvpExecutionAnchorUseCase: GetTenantAccountingAdvancedMvpExecutionAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedBankReconciliationMvpWorkbenchView> {
+    const executionAnchor =
+      await this.getTenantAccountingAdvancedMvpExecutionAnchorUseCase.execute(
+        input,
+      );
+    const bankMode =
+      executionAnchor.operatingMode === 'bank_reconciliation_mvp';
+    const statementRows = [
+      {
+        key: 'statement_uploaded_evidence',
+        label: 'Uploaded bank statement evidence',
+        status: 'ready' as const,
+        amountInCents: 0,
+        evidenceRef: 'accounting_bank_statement_registry',
+      },
+      {
+        key: 'statement_external_proof',
+        label: 'External bank proof',
+        status: bankMode ? ('needs_review' as const) : ('ready' as const),
+        amountInCents: 0,
+        evidenceRef: 'certified_bank_evidence_boundary',
+      },
+    ];
+    const internalMatches = [
+      {
+        key: 'internal_match_candidates',
+        label: 'Internal match candidates',
+        status: bankMode ? ('needs_review' as const) : ('ready' as const),
+        matchConfidence: bankMode ? ('medium' as const) : ('low' as const),
+        guardrail: 'Match interno no certifica conciliacion bancaria legal.',
+      },
+    ];
+    const unresolvedDifferences = bankMode
+      ? [
+          {
+            key: 'external_proof_required',
+            label: 'External proof required',
+            status: 'needs_review' as const,
+            requiredAction:
+              'Adjuntar soporte externo o criterio del contador antes de piloto bancario.',
+          },
+        ]
+      : [];
+    const blockers = [...executionAnchor.blockers];
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      workbenchStatus: resolveStatus(
+        [
+          ...statementRows.map((row) => row.status),
+          ...internalMatches.map((match) => match.status),
+          ...unresolvedDifferences.map((difference) => difference.status),
+        ],
+        blockers,
+      ),
+      executionAnchor,
+      statementRows,
+      internalMatches,
+      unresolvedDifferences,
+      summary: {
+        statementRowCount: statementRows.length,
+        internalMatchCount: internalMatches.length,
+        unresolvedDifferenceCount: unresolvedDifferences.length,
+        externalProofRequiredCount: unresolvedDifferences.filter(
+          (difference) => difference.key.includes('external'),
+        ).length,
+      },
+      blockers,
+      nextStep: bankMode
+        ? 'Enviar diferencias y prueba externa al contador antes de piloto.'
+        : 'Mantener workbench bancario como evidencia no operativa por ahora.',
+      guardrails: [
+        'Workbench bancario MVP solo asiste evidencia; no certifica conciliacion.',
+        'Toda diferencia material requiere criterio profesional o prueba externa.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedMvpExecutionAnchorUseCase: GetTenantAccountingAdvancedMvpExecutionAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedLedgerCloseoutMvpWorkbenchView> {
+    const executionAnchor =
+      await this.getTenantAccountingAdvancedMvpExecutionAnchorUseCase.execute(
+        input,
+      );
+    const ledgerMode =
+      executionAnchor.operatingMode === 'ledger_closeout_mvp' ||
+      executionAnchor.operatingMode === 'bank_reconciliation_mvp';
+    const closeoutChecks = [
+      {
+        key: 'period_defined',
+        label: 'Period defined',
+        status: 'ready' as const,
+        source: 'minimum_ledger_closeout_design_workspace',
+        action: 'Usar periodo y year del closeout readiness.',
+      },
+      {
+        key: 'foundation_evidence_available',
+        label: 'Foundation evidence available',
+        status: 'ready' as const,
+        source: 'accounting_foundation',
+        action: 'Consumir journal registry, trial balance y evidence vault.',
+      },
+      {
+        key: 'journal_adjustments_boundary',
+        label: 'Journal adjustments boundary',
+        status: ledgerMode ? ('needs_review' as const) : ('ready' as const),
+        source: 'accounting_advanced_mvp_scope_decision_record',
+        action:
+          'Separar ajustes sugeridos de asientos oficiales revisados por contador.',
+      },
+      {
+        key: 'accountant_required',
+        label: 'Accountant required',
+        status: ledgerMode ? ('needs_review' as const) : ('ready' as const),
+        source: 'accountant_scope_decision_record',
+        action: 'Solicitar review profesional antes de piloto ledger-grade.',
+      },
+    ];
+    const blockers = [...executionAnchor.blockers];
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      workbenchStatus: resolveStatus(
+        closeoutChecks.map((check) => check.status),
+        blockers,
+      ),
+      executionAnchor,
+      closeoutChecks,
+      summary: {
+        checkCount: closeoutChecks.length,
+        readyCheckCount: closeoutChecks.filter(
+          (check) => check.status === 'ready',
+        ).length,
+        needsEvidenceCheckCount: closeoutChecks.filter(
+          (check) => check.status === 'needs_review',
+        ).length,
+        blockedCheckCount: 0,
+      },
+      blockers,
+      nextStep: ledgerMode
+        ? 'Preparar packet de review del contador para validar cierre MVP.'
+        : 'Mantener ledger closeout como diseno no operativo por ahora.',
+      guardrails: [
+        'Ledger closeout MVP no cierra periodo estatutario.',
+        'Foundation evidence es comparativa y operativa, no libro oficial.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase: GetTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase,
+    private readonly getTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase: GetTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedMvpAccountantReviewPacketView> {
+    const [bankWorkbench, ledgerWorkbench] = await Promise.all([
+      this.getTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase.execute(
+        input,
+      ),
+      this.getTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase.execute(
+        input,
+      ),
+    ]);
+    const reviewItems = [
+      {
+        key: 'bank_workbench_review',
+        label: 'Bank workbench review',
+        status: bankWorkbench.workbenchStatus,
+        decision:
+          bankWorkbench.summary.externalProofRequiredCount > 0
+            ? ('request_more_evidence' as const)
+            : ('approve_operational_mvp' as const),
+        rationale: bankWorkbench.nextStep,
+        evidenceRefs: ['advanced_bank_reconciliation_mvp_workbench'],
+        risk: 'No confundir match interno con certificacion bancaria.',
+      },
+      {
+        key: 'ledger_workbench_review',
+        label: 'Ledger workbench review',
+        status: ledgerWorkbench.workbenchStatus,
+        decision:
+          ledgerWorkbench.summary.needsEvidenceCheckCount > 0
+            ? ('request_more_evidence' as const)
+            : ('approve_operational_mvp' as const),
+        rationale: ledgerWorkbench.nextStep,
+        evidenceRefs: ['advanced_ledger_closeout_mvp_workbench'],
+        risk: 'No convertir cierre operativo en cierre estatutario.',
+      },
+    ];
+    const blockers = unique([
+      ...bankWorkbench.blockers,
+      ...ledgerWorkbench.blockers,
+    ]);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packetStatus: resolveStatus(
+        reviewItems.map((item) => item.status),
+        blockers,
+      ),
+      bankWorkbench,
+      ledgerWorkbench,
+      reviewItems,
+      summary: {
+        itemCount: reviewItems.length,
+        approvedItemCount: reviewItems.filter(
+          (item) => item.decision === 'approve_operational_mvp',
+        ).length,
+        needsEvidenceItemCount: reviewItems.filter(
+          (item) => item.decision === 'request_more_evidence',
+        ).length,
+        rejectedItemCount: 0,
+      },
+      blockers,
+      nextStep:
+        reviewItems.some((item) => item.decision === 'request_more_evidence')
+          ? 'Recolectar evidencia pendiente antes de operar piloto MVP.'
+          : 'MVP operativo puede pasar a command center para piloto controlado.',
+      guardrails: [
+        'Review packet no certifica; prepara decision profesional.',
+        'El contador puede aprobar operacion MVP sin aprobar uso formal/legal.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedMvpCommandCenterUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedMvpExecutionAnchorUseCase: GetTenantAccountingAdvancedMvpExecutionAnchorUseCase,
+    private readonly getTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase: GetTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase,
+    private readonly getTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase: GetTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase,
+    private readonly requestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase: RequestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedMvpCommandCenterView> {
+    const accountantReviewPacket =
+      await this.requestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase.execute(
+        input,
+      );
+    const { bankWorkbench, ledgerWorkbench } = accountantReviewPacket;
+    const { executionAnchor } = bankWorkbench;
+    const lanes = [
+      commandLane(
+        'execution_anchor',
+        'Execution anchor',
+        executionAnchor.anchorStatus,
+        `${executionAnchor.summary.operableLaneCount} operable`,
+        executionAnchor.nextStep,
+      ),
+      commandLane(
+        'bank_workbench',
+        'Bank reconciliation MVP',
+        bankWorkbench.workbenchStatus,
+        `${bankWorkbench.summary.unresolvedDifferenceCount} differences`,
+        bankWorkbench.nextStep,
+      ),
+      commandLane(
+        'ledger_workbench',
+        'Ledger closeout MVP',
+        ledgerWorkbench.workbenchStatus,
+        `${ledgerWorkbench.summary.needsEvidenceCheckCount} pending`,
+        ledgerWorkbench.nextStep,
+      ),
+      commandLane(
+        'accountant_review',
+        'Accountant review',
+        accountantReviewPacket.packetStatus,
+        `${accountantReviewPacket.summary.needsEvidenceItemCount} pending`,
+        accountantReviewPacket.nextStep,
+      ),
+    ];
+    const blockers = unique([
+      ...executionAnchor.blockers,
+      ...bankWorkbench.blockers,
+      ...ledgerWorkbench.blockers,
+      ...accountantReviewPacket.blockers,
+    ]);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      commandStatus: resolveStatus(
+        lanes.map((lane) => lane.status),
+        blockers,
+      ),
+      executionAnchor,
+      bankWorkbench,
+      ledgerWorkbench,
+      accountantReviewPacket,
+      lanes,
+      summary: {
+        laneCount: lanes.length,
+        readyLaneCount: lanes.filter((lane) => lane.status === 'ready').length,
+        blockedLaneCount: lanes.filter((lane) => lane.status === 'blocked')
+          .length,
+        evidenceRefCount:
+          accountantReviewPacket.reviewItems.flatMap((item) => item.evidenceRefs)
+            .length,
+        accountantPendingItemCount:
+          accountantReviewPacket.summary.needsEvidenceItemCount,
+      },
+      blockers,
+      nextStep:
+        accountantReviewPacket.summary.needsEvidenceItemCount > 0
+          ? 'Resolver pendientes del contador antes de piloto MVP.'
+          : 'Cerrar operacion MVP como ready-for-pilot controlado.',
+      guardrails: [
+        'Command center opera estado; no ejecuta acciones contables formales.',
+        'MVP piloto conserva boundaries de banco, ledger y contador.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedMvpOperatingCloseoutUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedMvpCommandCenterUseCase: GetTenantAccountingAdvancedMvpCommandCenterUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedMvpOperatingCloseoutView> {
+    const commandCenter =
+      await this.getTenantAccountingAdvancedMvpCommandCenterUseCase.execute(
+        input,
+      );
+    const closeoutChecklist = [
+      mvpOperatingCheck(
+        'execution_anchor',
+        'Execution anchor',
+        commandCenter.executionAnchor.anchorStatus,
+        ['accounting_advanced_mvp_execution_anchor'],
+      ),
+      mvpOperatingCheck(
+        'bank_workbench',
+        'Bank reconciliation MVP workbench',
+        commandCenter.bankWorkbench.workbenchStatus,
+        ['advanced_bank_reconciliation_mvp_workbench'],
+      ),
+      mvpOperatingCheck(
+        'ledger_workbench',
+        'Ledger closeout MVP workbench',
+        commandCenter.ledgerWorkbench.workbenchStatus,
+        ['advanced_ledger_closeout_mvp_workbench'],
+      ),
+      mvpOperatingCheck(
+        'accountant_review',
+        'Accountant MVP review packet',
+        commandCenter.accountantReviewPacket.packetStatus,
+        ['advanced_mvp_accountant_review_packet'],
+      ),
+      mvpOperatingCheck('command_center', 'MVP command center', commandCenter.commandStatus, [
+        'advanced_mvp_command_center',
+      ]),
+    ];
+    const blockers = [...commandCenter.blockers];
+    const closeoutStatus = resolveStatus(
+      closeoutChecklist.map((item) => item.status),
+      blockers,
+    );
+    const finalDecision =
+      closeoutStatus === 'blocked'
+        ? 'return_to_foundation_hardening'
+        : commandCenter.executionAnchor.operatingMode === 'no_mvp'
+          ? 'do_not_operate'
+          : commandCenter.summary.accountantPendingItemCount > 0
+            ? 'needs_accountant_review'
+            : 'mvp_ready_for_pilot';
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      commandCenter,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        blockedChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+        readyLaneCount: commandCenter.summary.readyLaneCount,
+        accountantPendingItemCount:
+          commandCenter.summary.accountantPendingItemCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'mvp_ready_for_pilot'
+          ? 'Preparar piloto real de Accounting Advanced con scope limitado.'
+          : finalDecision === 'needs_accountant_review'
+            ? 'Resolver pendientes del contador antes de piloto.'
+            : finalDecision === 'return_to_foundation_hardening'
+              ? 'Volver a Foundation hardening antes de operar.'
+              : 'Mantener Accounting Advanced sin operacion MVP por ahora.',
+      guardrails: [
+        'Operating closeout decide piloto; no certifica contabilidad formal.',
+        'No hay libros oficiales, conciliacion certificada ni estados firmados.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -1072,6 +1578,52 @@ function mvpCheck(
   evidenceRefs: string[],
 ): TenantAccountingAdvancedMvpReadinessCloseoutView['closeoutChecklist'][number] {
   return { key, label, status, evidenceRefs };
+}
+
+function mvpOperatingCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantAccountingAdvancedMvpOperatingCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function commandLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  primaryMetric: string,
+  nextAction: string,
+): TenantAccountingAdvancedMvpCommandCenterView['lanes'][number] {
+  return { key, label, status, primaryMetric, nextAction };
+}
+
+function operatingModeFromReadiness(
+  closeout: TenantAccountingAdvancedMvpReadinessCloseoutView,
+): AccountingAdvancedMvpOperatingMode {
+  if (closeout.finalDecision === 'prepare_bank_reconciliation_mvp') {
+    return 'bank_reconciliation_mvp';
+  }
+  if (closeout.finalDecision === 'prepare_ledger_closeout_mvp') {
+    return 'ledger_closeout_mvp';
+  }
+  if (closeout.finalDecision === 'return_to_tax_or_foundation_hardening') {
+    return 'hardening_required';
+  }
+  return 'no_mvp';
+}
+
+function firstLaneFromMode(
+  mode: AccountingAdvancedMvpOperatingMode,
+): AccountingAdvancedMvpLaneKey | null {
+  if (mode === 'bank_reconciliation_mvp') {
+    return 'bank_reconciliation';
+  }
+  if (mode === 'ledger_closeout_mvp') {
+    return 'ledger_closeout';
+  }
+  return null;
 }
 
 function mvpLaneKeys(): AccountingAdvancedMvpLaneKey[] {

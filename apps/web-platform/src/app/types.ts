@@ -3895,6 +3895,92 @@ export interface AccountingAdvancedMvpReadinessCloseoutResponse {
   guardrails: string[];
 }
 
+export interface AccountingAdvancedMvpOperatingCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  commandCenter: {
+    commandStatus: string;
+    executionAnchor: {
+      anchorStatus: string;
+      operatingMode: string;
+      firstLane: string | null;
+      summary: {
+        laneCount: number;
+        operableLaneCount: number;
+        blockedLaneCount: number;
+      };
+      nextStep: string;
+    };
+    bankWorkbench: {
+      workbenchStatus: string;
+      summary: {
+        statementRowCount: number;
+        internalMatchCount: number;
+        unresolvedDifferenceCount: number;
+        externalProofRequiredCount: number;
+      };
+      nextStep: string;
+    };
+    ledgerWorkbench: {
+      workbenchStatus: string;
+      summary: {
+        checkCount: number;
+        readyCheckCount: number;
+        needsEvidenceCheckCount: number;
+        blockedCheckCount: number;
+      };
+      nextStep: string;
+    };
+    accountantReviewPacket: {
+      packetStatus: string;
+      summary: {
+        itemCount: number;
+        approvedItemCount: number;
+        needsEvidenceItemCount: number;
+        rejectedItemCount: number;
+      };
+      nextStep: string;
+    };
+    lanes: Array<{
+      key: string;
+      label: string;
+      status: string;
+      primaryMetric: string;
+      nextAction: string;
+    }>;
+    summary: {
+      laneCount: number;
+      readyLaneCount: number;
+      blockedLaneCount: number;
+      evidenceRefCount: number;
+      accountantPendingItemCount: number;
+    };
+    blockers: string[];
+    nextStep: string;
+    guardrails: string[];
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    readyLaneCount: number;
+    accountantPendingItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

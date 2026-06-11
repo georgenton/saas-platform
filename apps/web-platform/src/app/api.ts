@@ -176,14 +176,20 @@ import {
   EcuadorTaxComplianceEventResponse,
   EcuadorTaxComplianceCloseoutV2Response,
   EcuadorTaxDeclarationHandoffCloseoutV6Response,
+  EcuadorTaxAccountantCollaborationSlaTrackerV71Response,
   EcuadorTaxAccountantPacketExportV62Response,
   EcuadorTaxAccountantFeedbackIntakeQueueV70Response,
+  EcuadorTaxAccountingAdvancedEvidenceGateV71Response,
   EcuadorTaxEvidenceCorrectionWorkbenchV70Response,
   EcuadorTaxFormBoxEvidenceBinderV2Response,
   EcuadorTaxOperationalHardeningCloseoutV62Response,
   EcuadorTaxOperatorActionCenterV62Response,
   EcuadorTaxPilotCloseoutDecisionPacketV70Response,
+  EcuadorTaxPilotCohortRegistryV71Response,
   EcuadorTaxPilotFeedbackCloseoutV70Response,
+  EcuadorTaxPilotFeedbackAnalyticsDashboardV71Response,
+  EcuadorTaxPilotLearningBacklogV71Response,
+  EcuadorTaxPilotOperationsCloseoutV71Response,
   EcuadorTaxPilotTenantReadinessRoomV70Response,
   EcuadorTaxSriEvidenceImportPersistenceLedgerV62Response,
   EcuadorTaxSriReconciliationExceptionQueueV62Response,
@@ -3733,6 +3739,102 @@ export async function fetchEcuadorTaxPilotFeedbackCloseoutV70(
     `/tax-compliance/tenants/${encodeURIComponent(
       tenantSlug,
     )}/ec/pilot-feedback-closeout-v70?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPilotCohortRegistryV71(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPilotCohortRegistryV71Response> {
+  return request<EcuadorTaxPilotCohortRegistryV71Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/pilot-cohort-registry-v71?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPilotFeedbackAnalyticsDashboardV71(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPilotFeedbackAnalyticsDashboardV71Response> {
+  return request<EcuadorTaxPilotFeedbackAnalyticsDashboardV71Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/pilot-feedback-analytics-dashboard-v71?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAccountantCollaborationSlaTrackerV71(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountantCollaborationSlaTrackerV71Response> {
+  return request<EcuadorTaxAccountantCollaborationSlaTrackerV71Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accountant-collaboration-sla-tracker-v71?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPilotLearningBacklogV71(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPilotLearningBacklogV71Response> {
+  return request<EcuadorTaxPilotLearningBacklogV71Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/pilot-learning-backlog-v71?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxAccountingAdvancedEvidenceGateV71(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxAccountingAdvancedEvidenceGateV71Response> {
+  return request<EcuadorTaxAccountingAdvancedEvidenceGateV71Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/accounting-advanced-evidence-gate-v71?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchEcuadorTaxPilotOperationsCloseoutV71(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<EcuadorTaxPilotOperationsCloseoutV71Response> {
+  return request<EcuadorTaxPilotOperationsCloseoutV71Response>(
+    `/tax-compliance/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/ec/pilot-operations-closeout-v71?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

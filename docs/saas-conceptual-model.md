@@ -1656,6 +1656,38 @@ Guardrail: pilot feedback improves the product loop; it does not submit tax
 returns, pay obligations, certify books, sign financial statements or replace a
 contador.
 
+### Tax Compliance EC pilot operations 7.1
+
+The 7.1 layer turns pilot feedback into an operating system for the next pilot
+iteration. It keeps the cohort intentionally small, measures feedback, tracks
+contador collaboration, converts findings into a learning backlog and protects
+the boundary with Accounting Advanced through an evidence gate.
+
+The 7.1 layer adds:
+
+1. `Tax Pilot Cohort Registry`
+   - records the active pilot tenant/period, service mode, accountant-in-loop
+     ownership, blockers and objective
+2. `Pilot Feedback Analytics Dashboard`
+   - summarizes feedback volume, critical feedback, correction actions, blocked
+     tenants and Accounting Advanced signals
+3. `Accountant Collaboration SLA Tracker`
+   - converts accountant/operator feedback into an SLA-style queue with
+     priority, age bucket, owner and expected response
+4. `Tax Pilot Learning Backlog`
+   - routes pilot learnings to Tax Compliance, Parties, AI, tenant data or
+     Accounting Advanced without losing the product discussion
+5. `Accounting Advanced Evidence Gate 7.1`
+   - requires repeated formal accounting signals before recommending
+     Accounting Advanced discovery
+6. `Pilot Operations Closeout 7.1 + Smoke`
+   - closes cohort registry, analytics, SLA, learning backlog and accounting
+     gate as one operating narrative
+
+Guardrail: pilot operations 7.1 runs the pilot loop; it still does not submit
+declarations, pay obligations, certify books or open Accounting Advanced unless
+the evidence gate and accountant context justify discovery.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

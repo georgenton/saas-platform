@@ -22,6 +22,10 @@ import {
   GetTenantAccountingAdvancedMvpExecutionAnchorUseCase,
   GetTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase,
   GetTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase,
+  GetTenantAccountingAdvancedPilotAccountantReviewRoomUseCase,
+  GetTenantAccountingAdvancedPilotEnrollmentUseCase,
+  GetTenantAccountingAdvancedPilotEvidenceSnapshotUseCase,
+  GetTenantAccountingAdvancedPilotRunbookUseCase,
   GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
   GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
@@ -75,6 +79,8 @@ import {
   RequestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase,
   RequestTenantAccountingAdvancedMvpOperatingCloseoutUseCase,
   RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase,
+  RequestTenantAccountingAdvancedPilotCloseoutUseCase,
+  RequestTenantAccountingAdvancedPilotOutcomePacketUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -117,6 +123,12 @@ import {
   AccountingAdvancedMvpReadinessCloseoutResponseDto,
   AccountingAdvancedMvpScopeDecisionRecordResponseDto,
   AccountingAdvancedMvpScopeRegistryResponseDto,
+  AccountingAdvancedPilotAccountantReviewRoomResponseDto,
+  AccountingAdvancedPilotCloseoutResponseDto,
+  AccountingAdvancedPilotEnrollmentResponseDto,
+  AccountingAdvancedPilotEvidenceSnapshotResponseDto,
+  AccountingAdvancedPilotOutcomePacketResponseDto,
+  AccountingAdvancedPilotRunbookResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
   AccountingFormalNeedsClassifierResponseDto,
   AccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto,
@@ -135,6 +147,12 @@ import {
   toAccountingAdvancedMvpReadinessCloseoutResponseDto,
   toAccountingAdvancedMvpScopeDecisionRecordResponseDto,
   toAccountingAdvancedMvpScopeRegistryResponseDto,
+  toAccountingAdvancedPilotAccountantReviewRoomResponseDto,
+  toAccountingAdvancedPilotCloseoutResponseDto,
+  toAccountingAdvancedPilotEnrollmentResponseDto,
+  toAccountingAdvancedPilotEvidenceSnapshotResponseDto,
+  toAccountingAdvancedPilotOutcomePacketResponseDto,
+  toAccountingAdvancedPilotRunbookResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
   toAccountingFormalNeedsClassifierResponseDto,
   toAccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto,
@@ -423,6 +441,12 @@ export class AccountingController {
     private readonly requestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase: RequestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase,
     private readonly getTenantAccountingAdvancedMvpCommandCenterUseCase: GetTenantAccountingAdvancedMvpCommandCenterUseCase,
     private readonly requestTenantAccountingAdvancedMvpOperatingCloseoutUseCase: RequestTenantAccountingAdvancedMvpOperatingCloseoutUseCase,
+    private readonly getTenantAccountingAdvancedPilotEnrollmentUseCase: GetTenantAccountingAdvancedPilotEnrollmentUseCase,
+    private readonly getTenantAccountingAdvancedPilotEvidenceSnapshotUseCase: GetTenantAccountingAdvancedPilotEvidenceSnapshotUseCase,
+    private readonly getTenantAccountingAdvancedPilotAccountantReviewRoomUseCase: GetTenantAccountingAdvancedPilotAccountantReviewRoomUseCase,
+    private readonly getTenantAccountingAdvancedPilotRunbookUseCase: GetTenantAccountingAdvancedPilotRunbookUseCase,
+    private readonly requestTenantAccountingAdvancedPilotOutcomePacketUseCase: RequestTenantAccountingAdvancedPilotOutcomePacketUseCase,
+    private readonly requestTenantAccountingAdvancedPilotCloseoutUseCase: RequestTenantAccountingAdvancedPilotCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -872,6 +896,162 @@ export class AccountingController {
         );
 
       return toAccountingAdvancedMvpOperatingCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-pilot/enrollment')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedPilotEnrollment(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedPilotEnrollmentResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedPilotEnrollmentUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingAdvancedPilotEnrollmentResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-pilot/evidence-snapshot')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedPilotEvidenceSnapshot(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedPilotEvidenceSnapshotResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedPilotEvidenceSnapshotUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedPilotEvidenceSnapshotResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-pilot/accountant-review-room')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedPilotAccountantReviewRoom(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedPilotAccountantReviewRoomResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedPilotAccountantReviewRoomUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedPilotAccountantReviewRoomResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-pilot/runbook')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedPilotRunbook(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedPilotRunbookResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedPilotRunbookUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingAdvancedPilotRunbookResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-pilot/outcome-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedPilotOutcomePacket(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedPilotOutcomePacketResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedPilotOutcomePacketUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedPilotOutcomePacketResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-pilot/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedPilotCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedPilotCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedPilotCloseoutUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingAdvancedPilotCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

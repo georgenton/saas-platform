@@ -224,6 +224,20 @@ export type AccountingAdvancedMvpOperatingCloseoutDecision =
   | 'needs_accountant_review'
   | 'return_to_foundation_hardening'
   | 'do_not_operate';
+export type AccountingAdvancedPilotEnrollmentStatus =
+  | 'eligible'
+  | 'needs_accountant_review'
+  | 'blocked'
+  | 'not_recommended';
+export type AccountingAdvancedPilotReviewDecision =
+  | 'approve_pilot_run'
+  | 'request_more_evidence'
+  | 'reject_pilot_scope';
+export type AccountingAdvancedPilotOutcome =
+  | 'pilot_passed'
+  | 'pilot_needs_hardening'
+  | 'pilot_blocked'
+  | 'pilot_not_recommended';
 
 export interface TenantAccountingAdvancedDiscoveryAnchorView {
   tenantSlug: string;
@@ -722,6 +736,167 @@ export interface TenantAccountingAdvancedMvpOperatingCloseoutView {
     readyChecklistCount: number;
     blockedChecklistCount: number;
     readyLaneCount: number;
+    accountantPendingItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedPilotEnrollmentView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  enrollmentStatus: AccountingAdvancedPilotEnrollmentStatus;
+  readinessStatus: AccountingReadinessStatus;
+  operatingCloseout: TenantAccountingAdvancedMvpOperatingCloseoutView;
+  criteria: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+    guardrail: string;
+  }>;
+  summary: {
+    criteriaCount: number;
+    readyCriteriaCount: number;
+    blockedCriteriaCount: number;
+    accountantPendingItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedPilotEvidenceSnapshotView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  snapshotStatus: AccountingReadinessStatus;
+  enrollment: TenantAccountingAdvancedPilotEnrollmentView;
+  evidenceSections: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+    risk: string;
+    guardrail: string;
+  }>;
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    blockedSectionCount: number;
+    evidenceRefCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedPilotAccountantReviewRoomView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  roomStatus: AccountingReadinessStatus;
+  evidenceSnapshot: TenantAccountingAdvancedPilotEvidenceSnapshotView;
+  reviewRows: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    decision: AccountingAdvancedPilotReviewDecision;
+    pendingEvidence: string[];
+    risk: string;
+    nextAction: string;
+  }>;
+  summary: {
+    rowCount: number;
+    approvedRowCount: number;
+    needsEvidenceRowCount: number;
+    rejectedRowCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedPilotRunbookView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  runbookStatus: AccountingReadinessStatus;
+  reviewRoom: TenantAccountingAdvancedPilotAccountantReviewRoomView;
+  steps: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    owner: 'platform' | 'operator' | 'external_accountant';
+    expectedEvidence: string;
+    guardrail: string;
+  }>;
+  summary: {
+    stepCount: number;
+    readyStepCount: number;
+    needsReviewStepCount: number;
+    blockedStepCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedPilotOutcomePacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packetStatus: AccountingReadinessStatus;
+  runbook: TenantAccountingAdvancedPilotRunbookView;
+  outcome: AccountingAdvancedPilotOutcome;
+  findings: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    finding: string;
+    recommendation: string;
+  }>;
+  summary: {
+    findingCount: number;
+    readyFindingCount: number;
+    needsHardeningFindingCount: number;
+    blockedFindingCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedPilotCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  enrollment: TenantAccountingAdvancedPilotEnrollmentView;
+  evidenceSnapshot: TenantAccountingAdvancedPilotEvidenceSnapshotView;
+  reviewRoom: TenantAccountingAdvancedPilotAccountantReviewRoomView;
+  runbook: TenantAccountingAdvancedPilotRunbookView;
+  outcomePacket: TenantAccountingAdvancedPilotOutcomePacketView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalOutcome: AccountingAdvancedPilotOutcome;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    evidenceRefCount: number;
     accountantPendingItemCount: number;
   };
   blockers: string[];

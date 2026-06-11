@@ -28,6 +28,10 @@ import {
   GetTenantAccountingAdvancedMvpExecutionAnchorUseCase,
   GetTenantAccountingAdvancedBankReconciliationMvpWorkbenchUseCase,
   GetTenantAccountingAdvancedLedgerCloseoutMvpWorkbenchUseCase,
+  GetTenantAccountingAdvancedPilotAccountantReviewRoomUseCase,
+  GetTenantAccountingAdvancedPilotEnrollmentUseCase,
+  GetTenantAccountingAdvancedPilotEvidenceSnapshotUseCase,
+  GetTenantAccountingAdvancedPilotRunbookUseCase,
   GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
   GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
@@ -81,6 +85,8 @@ import {
   RequestTenantAccountingAdvancedMvpAccountantReviewPacketUseCase,
   RequestTenantAccountingAdvancedMvpOperatingCloseoutUseCase,
   RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase,
+  RequestTenantAccountingAdvancedPilotCloseoutUseCase,
+  RequestTenantAccountingAdvancedPilotOutcomePacketUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -352,6 +358,62 @@ import { AccountingController } from './accounting.controller';
       useFactory: (getTenantAccountingAdvancedMvpCommandCenterUseCase) =>
         new RequestTenantAccountingAdvancedMvpOperatingCloseoutUseCase(
           getTenantAccountingAdvancedMvpCommandCenterUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedPilotEnrollmentUseCase,
+      inject: [RequestTenantAccountingAdvancedMvpOperatingCloseoutUseCase],
+      useFactory: (
+        requestTenantAccountingAdvancedMvpOperatingCloseoutUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedPilotEnrollmentUseCase(
+          requestTenantAccountingAdvancedMvpOperatingCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedPilotEvidenceSnapshotUseCase,
+      inject: [GetTenantAccountingAdvancedPilotEnrollmentUseCase],
+      useFactory: (getTenantAccountingAdvancedPilotEnrollmentUseCase) =>
+        new GetTenantAccountingAdvancedPilotEvidenceSnapshotUseCase(
+          getTenantAccountingAdvancedPilotEnrollmentUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedPilotAccountantReviewRoomUseCase,
+      inject: [GetTenantAccountingAdvancedPilotEvidenceSnapshotUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedPilotEvidenceSnapshotUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedPilotAccountantReviewRoomUseCase(
+          getTenantAccountingAdvancedPilotEvidenceSnapshotUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedPilotRunbookUseCase,
+      inject: [GetTenantAccountingAdvancedPilotAccountantReviewRoomUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedPilotAccountantReviewRoomUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedPilotRunbookUseCase(
+          getTenantAccountingAdvancedPilotAccountantReviewRoomUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedPilotOutcomePacketUseCase,
+      inject: [GetTenantAccountingAdvancedPilotRunbookUseCase],
+      useFactory: (getTenantAccountingAdvancedPilotRunbookUseCase) =>
+        new RequestTenantAccountingAdvancedPilotOutcomePacketUseCase(
+          getTenantAccountingAdvancedPilotRunbookUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedPilotCloseoutUseCase,
+      inject: [RequestTenantAccountingAdvancedPilotOutcomePacketUseCase],
+      useFactory: (
+        requestTenantAccountingAdvancedPilotOutcomePacketUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedPilotCloseoutUseCase(
+          requestTenantAccountingAdvancedPilotOutcomePacketUseCase,
         ),
     },
     {

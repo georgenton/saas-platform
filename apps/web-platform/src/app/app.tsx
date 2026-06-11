@@ -132,6 +132,7 @@ import {
   fetchAccountingAdvancedDiscoveryCloseout,
   fetchAccountingAdvancedMvpOperatingCloseout,
   fetchAccountingAdvancedMvpReadinessCloseout,
+  fetchAccountingAdvancedPilotCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -486,6 +487,7 @@ import {
   AccountingAdvancedDiscoveryCloseoutResponse,
   AccountingAdvancedMvpOperatingCloseoutResponse,
   AccountingAdvancedMvpReadinessCloseoutResponse,
+  AccountingAdvancedPilotCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2557,6 +2559,10 @@ export function App() {
     accountingAdvancedMvpOperatingCloseout,
     setAccountingAdvancedMvpOperatingCloseout,
   ] = useState<AccountingAdvancedMvpOperatingCloseoutResponse | null>(null);
+  const [
+    accountingAdvancedPilotCloseout,
+    setAccountingAdvancedPilotCloseout,
+  ] = useState<AccountingAdvancedPilotCloseoutResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20707,6 +20713,7 @@ export function App() {
         nextAccountingAdvancedDiscoveryCloseout,
         nextAccountingAdvancedMvpReadinessCloseout,
         nextAccountingAdvancedMvpOperatingCloseout,
+        nextAccountingAdvancedPilotCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -20940,6 +20947,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedPilotCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -20975,6 +20988,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21242,6 +21256,7 @@ export function App() {
         setAccountingAdvancedMvpOperatingCloseout(
           nextAccountingAdvancedMvpOperatingCloseout,
         );
+        setAccountingAdvancedPilotCloseout(nextAccountingAdvancedPilotCloseout);
       });
     } catch (error) {
       setTaxComplianceError(
@@ -35479,6 +35494,23 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      Advanced pilot
+                                    </span>
+                                    <strong>
+                                      {accountingAdvancedPilotCloseout
+                                        ? humanizeKey(
+                                            accountingAdvancedPilotCloseout.finalOutcome,
+                                          )
+                                        : 'sin piloto'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingAdvancedPilotCloseout?.summary
+                                        .accountantPendingItemCount ?? 0}{' '}
+                                      pending
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Ultimo ajuste
                                     </span>
                                     <strong>
@@ -35811,8 +35843,109 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedPilotCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced Controlled Pilot 0.4
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedPilotCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Enrollment
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedPilotCloseout
+                                              .enrollment.enrollmentStatus,
+                                          )}
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Evidencia
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedPilotCloseout
+                                              .evidenceSnapshot.summary
+                                              .readySectionCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedPilotCloseout
+                                              .evidenceSnapshot.summary
+                                              .sectionCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Contador
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedPilotCloseout
+                                              .reviewRoom.summary
+                                              .needsEvidenceRowCount
+                                          }{' '}
+                                          pending
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Runbook
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedPilotCloseout
+                                              .runbook.summary.readyStepCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedPilotCloseout
+                                              .runbook.summary.stepCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Findings
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedPilotCloseout
+                                              .outcomePacket.summary
+                                              .needsHardeningFindingCount
+                                          }{' '}
+                                          hardening
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Outcome
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedPilotCloseout.finalOutcome,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedPilotCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedMvpOperatingCloseout?.nextStep ??
+                                  {accountingAdvancedPilotCloseout?.nextStep ??
+                                    accountingAdvancedMvpOperatingCloseout?.nextStep ??
                                     accountingAdvancedMvpReadinessCloseout?.nextStep ??
                                     accountingAdvancedDiscoveryCloseout?.nextStep ??
                                     accountingFoundationCloseoutSummary?.nextStep ??

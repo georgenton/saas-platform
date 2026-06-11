@@ -1843,6 +1843,37 @@ Guardrail: MVP operations 0.3 still does not create official books, certified
 bank reconciliations, signed financial statements or statutory closeout. It
 only operates assisted evidence workflows for a future controlled pilot.
 
+### Accounting Advanced controlled pilot 0.4
+
+After MVP operations 0.3, Accounting can run a controlled pilot without
+pretending to be full statutory accounting. This layer is the driving test after
+the fenced runway: the car can move with a real route, but the instructor still
+has a brake pedal and the route is short, observed and documented.
+
+1. `Accounting Advanced Pilot Enrollment`
+   - decides whether the tenant-period is eligible, needs accountant review, is
+     blocked, or should not be recommended for pilot
+2. `Pilot Evidence Snapshot`
+   - freezes Tax, MVP readiness, MVP operations, bank/ledger workbench and
+     accountant review references before the pilot is discussed
+3. `Pilot Accountant Review Room`
+   - turns the frozen evidence into accountant-facing review rows for scope,
+     bank evidence and ledger evidence
+4. `Pilot Runbook`
+   - sequences enrollment validation, evidence freeze, assisted bank/ledger
+     review, accountant decision and outcome packet production
+5. `Pilot Outcome Packet`
+   - summarizes whether the pilot passed, needs hardening, is blocked or is not
+     recommended
+6. `Accounting Advanced Pilot Closeout`
+   - closes the pilot learning loop and decides whether product graduation can
+     be evaluated next
+
+Guardrail: controlled pilot 0.4 still does not create official books, certified
+bank reconciliations, signed financial statements, statutory closeout or filing.
+It proves whether the assisted Accounting Advanced workflow is ready to become a
+product decision with contador-in-the-loop and bounded evidence.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -1916,6 +1947,10 @@ product. Its current scope is intentionally operational and review-oriented:
     layer. It anchors operating mode, exposes bank and ledger MVP workbenches,
     packages accountant review, summarizes the cockpit and closes whether a
     controlled pilot is ready without crossing into statutory accounting.
+22. Accounting Advanced controlled pilot 0.4 as the first real pilot loop. It
+    enrolls eligible tenant-periods, freezes evidence, opens an accountant
+    review room, builds a runbook, emits an outcome packet and closes the pilot
+    without crossing into statutory accounting or automatic filing.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

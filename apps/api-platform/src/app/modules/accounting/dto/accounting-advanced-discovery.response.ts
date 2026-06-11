@@ -14,6 +14,12 @@ import {
   TenantAccountingAdvancedMvpReadinessCloseoutView,
   TenantAccountingAdvancedMvpScopeDecisionRecordView,
   TenantAccountingAdvancedMvpScopeRegistryView,
+  TenantAccountingAdvancedPilotAccountantReviewRoomView,
+  TenantAccountingAdvancedPilotCloseoutView,
+  TenantAccountingAdvancedPilotEnrollmentView,
+  TenantAccountingAdvancedPilotEvidenceSnapshotView,
+  TenantAccountingAdvancedPilotOutcomePacketView,
+  TenantAccountingAdvancedPilotRunbookView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
   TenantAccountingFormalNeedsClassifierView,
   TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView,
@@ -55,6 +61,18 @@ export type AccountingAdvancedMvpCommandCenterResponseDto =
   Serialized<TenantAccountingAdvancedMvpCommandCenterView>;
 export type AccountingAdvancedMvpOperatingCloseoutResponseDto =
   Serialized<TenantAccountingAdvancedMvpOperatingCloseoutView>;
+export type AccountingAdvancedPilotEnrollmentResponseDto =
+  Serialized<TenantAccountingAdvancedPilotEnrollmentView>;
+export type AccountingAdvancedPilotEvidenceSnapshotResponseDto =
+  Serialized<TenantAccountingAdvancedPilotEvidenceSnapshotView>;
+export type AccountingAdvancedPilotAccountantReviewRoomResponseDto =
+  Serialized<TenantAccountingAdvancedPilotAccountantReviewRoomView>;
+export type AccountingAdvancedPilotRunbookResponseDto =
+  Serialized<TenantAccountingAdvancedPilotRunbookView>;
+export type AccountingAdvancedPilotOutcomePacketResponseDto =
+  Serialized<TenantAccountingAdvancedPilotOutcomePacketView>;
+export type AccountingAdvancedPilotCloseoutResponseDto =
+  Serialized<TenantAccountingAdvancedPilotCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -161,6 +179,42 @@ export function toAccountingAdvancedMvpCommandCenterResponseDto(
 export function toAccountingAdvancedMvpOperatingCloseoutResponseDto(
   view: TenantAccountingAdvancedMvpOperatingCloseoutView,
 ): AccountingAdvancedMvpOperatingCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedPilotEnrollmentResponseDto(
+  view: TenantAccountingAdvancedPilotEnrollmentView,
+): AccountingAdvancedPilotEnrollmentResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedPilotEvidenceSnapshotResponseDto(
+  view: TenantAccountingAdvancedPilotEvidenceSnapshotView,
+): AccountingAdvancedPilotEvidenceSnapshotResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedPilotAccountantReviewRoomResponseDto(
+  view: TenantAccountingAdvancedPilotAccountantReviewRoomView,
+): AccountingAdvancedPilotAccountantReviewRoomResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedPilotRunbookResponseDto(
+  view: TenantAccountingAdvancedPilotRunbookView,
+): AccountingAdvancedPilotRunbookResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedPilotOutcomePacketResponseDto(
+  view: TenantAccountingAdvancedPilotOutcomePacketView,
+): AccountingAdvancedPilotOutcomePacketResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedPilotCloseoutResponseDto(
+  view: TenantAccountingAdvancedPilotCloseoutView,
+): AccountingAdvancedPilotCloseoutResponseDto {
   return serialize(view);
 }
 

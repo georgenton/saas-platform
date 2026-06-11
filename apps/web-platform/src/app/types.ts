@@ -3981,6 +3981,83 @@ export interface AccountingAdvancedMvpOperatingCloseoutResponse {
   guardrails: string[];
 }
 
+export interface AccountingAdvancedPilotCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  enrollment: {
+    enrollmentStatus: string;
+    readinessStatus: string;
+    summary: {
+      criteriaCount: number;
+      readyCriteriaCount: number;
+      blockedCriteriaCount: number;
+      accountantPendingItemCount: number;
+    };
+    nextStep: string;
+  };
+  evidenceSnapshot: {
+    snapshotStatus: string;
+    summary: {
+      sectionCount: number;
+      readySectionCount: number;
+      blockedSectionCount: number;
+      evidenceRefCount: number;
+    };
+    nextStep: string;
+  };
+  reviewRoom: {
+    roomStatus: string;
+    summary: {
+      rowCount: number;
+      approvedRowCount: number;
+      needsEvidenceRowCount: number;
+      rejectedRowCount: number;
+    };
+    nextStep: string;
+  };
+  runbook: {
+    runbookStatus: string;
+    summary: {
+      stepCount: number;
+      readyStepCount: number;
+      needsReviewStepCount: number;
+      blockedStepCount: number;
+    };
+    nextStep: string;
+  };
+  outcomePacket: {
+    packetStatus: string;
+    outcome: string;
+    summary: {
+      findingCount: number;
+      readyFindingCount: number;
+      needsHardeningFindingCount: number;
+      blockedFindingCount: number;
+    };
+    nextStep: string;
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalOutcome: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    evidenceRefCount: number;
+    accountantPendingItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

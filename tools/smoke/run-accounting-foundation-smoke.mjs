@@ -1140,6 +1140,12 @@ const [
   advancedMvpAccountantReviewPacket,
   advancedMvpCommandCenter,
   advancedMvpOperatingCloseout,
+  advancedPilotEnrollment,
+  advancedPilotEvidenceSnapshot,
+  advancedPilotAccountantReviewRoom,
+  advancedPilotRunbook,
+  advancedPilotOutcomePacket,
+  advancedPilotCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1272,6 +1278,38 @@ const [
     path: accountingPath(`/advanced-mvp-operations/closeout?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-pilot/enrollment?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-pilot/evidence-snapshot?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-pilot/accountant-review-room?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-pilot/runbook?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-pilot/outcome-packet?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-pilot/closeout?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -1358,6 +1396,30 @@ assertStatus(
   'accounting advanced mvp operating closeout',
   advancedMvpOperatingCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced pilot enrollment',
+  advancedPilotEnrollment.readinessStatus,
+);
+assertStatus(
+  'accounting advanced pilot evidence snapshot',
+  advancedPilotEvidenceSnapshot.snapshotStatus,
+);
+assertStatus(
+  'accounting advanced pilot accountant review room',
+  advancedPilotAccountantReviewRoom.roomStatus,
+);
+assertStatus(
+  'accounting advanced pilot runbook',
+  advancedPilotRunbook.runbookStatus,
+);
+assertStatus(
+  'accounting advanced pilot outcome packet',
+  advancedPilotOutcomePacket.packetStatus,
+);
+assertStatus(
+  'accounting advanced pilot closeout',
+  advancedPilotCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -1366,6 +1428,9 @@ if (!Array.isArray(advancedMvpReadinessCloseout.closeoutChecklist)) {
 }
 if (!Array.isArray(advancedMvpOperatingCloseout.closeoutChecklist)) {
   throw new Error('advanced-mvp-operations/closeout no devolvio checklist[].');
+}
+if (!Array.isArray(advancedPilotCloseout.closeoutChecklist)) {
+  throw new Error('advanced-pilot/closeout no devolvio checklist[].');
 }
 printLine(
   'foundation pack v2',
@@ -1402,6 +1467,10 @@ printLine(
 printLine(
   'advanced command',
   `${advancedMvpCommandCenter.summary.readyLaneCount}/${advancedMvpCommandCenter.summary.laneCount} lanes, ${advancedMvpCommandCenter.commandStatus}`,
+);
+printLine(
+  'advanced pilot',
+  `${advancedPilotCloseout.finalOutcome}, ${advancedPilotCloseout.closeoutStatus}`,
 );
 
 printSection('Accounting foundation smoke OK');

@@ -4,6 +4,7 @@ import {
   AccountingAdvancedMvpLaneStatus,
   AccountingAdvancedMvpOperatingMode,
   AccountingAdvancedGraduationDecision,
+  AccountingAdvancedFormalReadinessDecision,
   AccountingAdvancedPilotEnrollmentStatus,
   AccountingAdvancedPilotOutcome,
   AccountingReadinessStatus,
@@ -34,6 +35,12 @@ import {
   TenantAccountingAdvancedGraduationCloseoutView,
   TenantAccountingAdvancedPilotLearningRegistryView,
   TenantAccountingAdvancedProductGraduationMatrixView,
+  TenantAccountingAdvancedAdjustmentAutomationWorkbenchView,
+  TenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutView,
+  TenantAccountingAdvancedExternalAccountantPortalShellView,
+  TenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketView,
+  TenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceView,
+  TenantAccountingAdvancedPoliciesClosingTemplateRegistryView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
   TenantAccountingFormalNeedsClassifierView,
   TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView,
@@ -2667,6 +2674,483 @@ export class RequestTenantAccountingAdvancedGraduationCloseoutUseCase {
   }
 }
 
+export class GetTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedGraduationCloseoutUseCase: RequestTenantAccountingAdvancedGraduationCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedPoliciesClosingTemplateRegistryView> {
+    const graduationCloseout =
+      await this.requestTenantAccountingAdvancedGraduationCloseoutUseCase.execute(
+        input,
+      );
+    const canDesign =
+      graduationCloseout.finalDecision === 'graduate_to_advanced_product' ||
+      graduationCloseout.finalDecision === 'extend_pilot';
+    const policies: TenantAccountingAdvancedPoliciesClosingTemplateRegistryView['policies'] =
+      [
+        formalPolicy(
+          'closing_basis',
+          'Closing basis template',
+          canDesign ? 'ready' : 'needs_review',
+          'platform',
+          'advanced_closing_basis_template',
+        ),
+        formalPolicy(
+          'adjustment_policy',
+          'Adjustment review policy',
+          'needs_review',
+          'external_accountant',
+          'advanced_adjustment_policy_template',
+        ),
+        formalPolicy(
+          'formal_books_policy',
+          'Formal books boundary policy',
+          graduationCloseout.formalBooksBoundary.blueprintStatus,
+          'external_accountant',
+          'advanced_formal_books_boundary_blueprint',
+        ),
+        formalPolicy(
+          'certified_bank_policy',
+          'Certified bank evidence policy',
+          graduationCloseout.certifiedBankFeedBoundary.blueprintStatus,
+          'external_accountant',
+          'advanced_certified_bank_feed_boundary_blueprint',
+        ),
+      ];
+    const blockers = [...graduationCloseout.blockers];
+    const registryStatus = resolveStatus(
+      policies.map((policy) => policy.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      registryStatus,
+      graduationCloseout,
+      policies,
+      summary: {
+        policyCount: policies.length,
+        readyPolicyCount: policies.filter((policy) => policy.status === 'ready')
+          .length,
+        accountantOwnedPolicyCount: policies.filter(
+          (policy) => policy.owner === 'external_accountant',
+        ).length,
+        blockedPolicyCount: policies.filter(
+          (policy) => policy.status === 'blocked',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        registryStatus === 'ready'
+          ? 'Abrir portal externo con politicas de cierre listas.'
+          : 'Solicitar revision de politicas y templates antes de formal readiness.',
+      guardrails: [
+        'Policy registry define reglas de revision; no firma ni certifica cierres.',
+        'Templates formales quedan sujetos a aceptacion del contador externo.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedExternalAccountantPortalShellUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase: GetTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedExternalAccountantPortalShellView> {
+    const policyRegistry =
+      await this.getTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase.execute(
+        input,
+      );
+    const reviewPanels: TenantAccountingAdvancedExternalAccountantPortalShellView['reviewPanels'] =
+      [
+        accountantPortalPanel(
+          'graduation_decision',
+          'Graduation decision',
+          policyRegistry.graduationCloseout.closeoutStatus,
+          ['advanced_graduation_closeout'],
+          'Revisar si la decision habilita formal readiness o requiere hardening.',
+        ),
+        accountantPortalPanel(
+          'policy_templates',
+          'Policies and templates',
+          policyRegistry.registryStatus,
+          ['advanced_policies_closing_template_registry'],
+          'Aceptar, comentar o bloquear politicas de cierre.',
+        ),
+        accountantPortalPanel(
+          'formal_books_boundary',
+          'Formal books boundary',
+          policyRegistry.graduationCloseout.formalBooksBoundary.blueprintStatus,
+          ['advanced_formal_books_boundary_blueprint'],
+          'Confirmar actos reservados a firma profesional.',
+        ),
+        accountantPortalPanel(
+          'bank_certification_boundary',
+          'Bank certification boundary',
+          policyRegistry.graduationCloseout.certifiedBankFeedBoundary
+            .blueprintStatus,
+          ['advanced_certified_bank_feed_boundary_blueprint'],
+          'Confirmar prueba externa y signoff requerido.',
+        ),
+      ];
+    const blockers = [...policyRegistry.blockers];
+    const portalStatus = resolveStatus(
+      reviewPanels.map((panel) => panel.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      portalStatus,
+      policyRegistry,
+      reviewPanels,
+      summary: {
+        panelCount: reviewPanels.length,
+        readyPanelCount: reviewPanels.filter((panel) => panel.status === 'ready')
+          .length,
+        needsReviewPanelCount: reviewPanels.filter(
+          (panel) => panel.status === 'needs_review',
+        ).length,
+        blockedPanelCount: reviewPanels.filter(
+          (panel) => panel.status === 'blocked',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        portalStatus === 'ready'
+          ? 'Usar portal externo para revisar ajustes sugeridos.'
+          : 'Completar paneles del contador antes de automatizar recomendaciones.',
+      guardrails: [
+        'Portal shell organiza revision; no delega juicio profesional a la plataforma.',
+        'El contador puede bloquear cualquier avance formal.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedExternalAccountantPortalShellUseCase: GetTenantAccountingAdvancedExternalAccountantPortalShellUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedAdjustmentAutomationWorkbenchView> {
+    const accountantPortal =
+      await this.getTenantAccountingAdvancedExternalAccountantPortalShellUseCase.execute(
+        input,
+      );
+    const recommendations: TenantAccountingAdvancedAdjustmentAutomationWorkbenchView['recommendations'] =
+      [
+        adjustmentRecommendation(
+          'period_accrual_review',
+          'Period accrual review',
+          'needs_review',
+          'accrual',
+          ['advanced_adjustment_policy_template'],
+        ),
+        adjustmentRecommendation(
+          'ledger_reclassification_review',
+          'Ledger reclassification review',
+          accountantPortal.portalStatus,
+          'reclassification',
+          ['advanced_pilot_accountant_review_room'],
+        ),
+        adjustmentRecommendation(
+          'bank_difference_review',
+          'Bank difference review',
+          accountantPortal.policyRegistry.graduationCloseout
+            .certifiedBankFeedBoundary.blueprintStatus,
+          'difference',
+          ['advanced_certified_bank_feed_boundary_blueprint'],
+        ),
+        adjustmentRecommendation(
+          'closing_reversal_review',
+          'Closing reversal review',
+          'needs_review',
+          'reversal',
+          ['advanced_closing_basis_template'],
+        ),
+      ];
+    const blockers = [...accountantPortal.blockers];
+    const workbenchStatus = resolveStatus(
+      recommendations.map((recommendation) => recommendation.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      workbenchStatus,
+      accountantPortal,
+      recommendations,
+      summary: {
+        recommendationCount: recommendations.length,
+        readyRecommendationCount: recommendations.filter(
+          (recommendation) => recommendation.status === 'ready',
+        ).length,
+        needsApprovalRecommendationCount: recommendations.filter(
+          (recommendation) => recommendation.status === 'needs_review',
+        ).length,
+        blockedRecommendationCount: recommendations.filter(
+          (recommendation) => recommendation.status === 'blocked',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        'Preparar workspace multi-periodo con ajustes como recomendaciones revisables.',
+      guardrails: [
+        'Adjustment automation sugiere; no postea asientos oficiales automaticamente.',
+        'Todo ajuste formal requiere aprobacion profesional y evidencia.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase: GetTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceView> {
+    const adjustmentWorkbench =
+      await this.getTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase.execute(
+        input,
+      );
+    const statementSections: TenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceView['statementSections'] =
+      [
+        statementSection(
+          'balance_sheet_preview',
+          'Balance sheet preview',
+          adjustmentWorkbench.workbenchStatus,
+          `${input.year - 1}-${input.year}`,
+          ['accounting_financial_statement_preview'],
+          'Variaciones de balance requieren explicacion y soporte.',
+        ),
+        statementSection(
+          'income_statement_preview',
+          'Income statement preview',
+          'needs_review',
+          `${input.year - 1}-${input.year}`,
+          ['accounting_period_closeout_report'],
+          'Variaciones de ingresos/gastos requieren revision externa.',
+        ),
+        statementSection(
+          'cash_and_bank_variation',
+          'Cash and bank variation',
+          adjustmentWorkbench.accountantPortal.policyRegistry.graduationCloseout
+            .certifiedBankFeedBoundary.blueprintStatus,
+          `${input.period}`,
+          ['advanced_certified_bank_feed_boundary_blueprint'],
+          'Variacion bancaria no es certificada sin prueba externa.',
+        ),
+      ];
+    const blockers = [...adjustmentWorkbench.blockers];
+    const workspaceStatus = resolveStatus(
+      statementSections.map((section) => section.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      workspaceStatus,
+      adjustmentWorkbench,
+      statementSections,
+      summary: {
+        sectionCount: statementSections.length,
+        readySectionCount: statementSections.filter(
+          (section) => section.status === 'ready',
+        ).length,
+        needsReviewSectionCount: statementSections.filter(
+          (section) => section.status === 'needs_review',
+        ).length,
+        blockedSectionCount: statementSections.filter(
+          (section) => section.status === 'blocked',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        'Usar estados multi-periodo como preview revisable antes de libros formales.',
+      guardrails: [
+        'Multi-period statements son preview; no estados financieros firmados.',
+        'Variaciones materiales requieren soporte y contador externo.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase: GetTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketView> {
+    const financialStatementWorkspace =
+      await this.getTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase.execute(
+        input,
+      );
+    const boundaryRows: TenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketView['boundaryRows'] =
+      [
+        formalBookBoundaryPacketRow(
+          'draft_journal_book',
+          'Draft journal book',
+          financialStatementWorkspace.workspaceStatus,
+          'Borrador de libro diario con referencias a evidencia.',
+          'Firma y legalizacion quedan fuera de plataforma.',
+        ),
+        formalBookBoundaryPacketRow(
+          'draft_ledger_book',
+          'Draft ledger book',
+          'needs_review',
+          'Borrador de mayor y saldos comparativos.',
+          'Emision oficial requiere contador o representante autorizado.',
+        ),
+        formalBookBoundaryPacketRow(
+          'financial_statement_signing',
+          'Financial statement signing',
+          'needs_review',
+          'Preview multi-periodo y variaciones explicadas.',
+          'Firma de estados financieros es acto profesional externo.',
+        ),
+      ];
+    const blockers = [...financialStatementWorkspace.blockers];
+    const packetStatus = resolveStatus(
+      boundaryRows.map((row) => row.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packetStatus,
+      financialStatementWorkspace,
+      boundaryRows,
+      summary: {
+        rowCount: boundaryRows.length,
+        readyRowCount: boundaryRows.filter((row) => row.status === 'ready')
+          .length,
+        needsSigningRowCount: boundaryRows.filter(
+          (row) => row.status === 'needs_review',
+        ).length,
+        blockedRowCount: boundaryRows.filter((row) => row.status === 'blocked')
+          .length,
+      },
+      blockers,
+      nextStep:
+        'Preparar readiness bancario certificado antes de considerar producto formal.',
+      guardrails: [
+        'Formal books packet prepara carpeta de firma; no firma ni legaliza libros.',
+        'Los borradores requieren aceptacion profesional antes de uso oficial.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase: RequestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutView> {
+    const formalBooksPacket =
+      await this.requestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase.execute(
+        input,
+      );
+    const reconciliationChecks: TenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutView['reconciliationChecks'] =
+      [
+        bankReconciliationReadinessCheck(
+          'source_bank_evidence',
+          'Source bank evidence',
+          formalBooksPacket.financialStatementWorkspace.adjustmentWorkbench
+            .accountantPortal.policyRegistry.graduationCloseout
+            .certifiedBankFeedBoundary.blueprintStatus,
+          'Extractos cargados, diferencias y trazabilidad operativa.',
+          'Confirmacion externa del banco o proveedor certificado.',
+        ),
+        bankReconciliationReadinessCheck(
+          'exception_resolution',
+          'Exception resolution',
+          formalBooksPacket.packetStatus,
+          'Packets de excepcion y soporte de diferencias.',
+          'Signoff profesional sobre diferencias materiales.',
+        ),
+        bankReconciliationReadinessCheck(
+          'certified_signoff',
+          'Certified signoff',
+          'needs_review',
+          'Resumen de conciliacion asistida y evidencia.',
+          'Certificacion bancaria/legal externa requerida.',
+        ),
+      ];
+    const blockers = [...formalBooksPacket.blockers];
+    const closeoutStatus = resolveStatus(
+      reconciliationChecks.map((check) => check.status),
+      blockers,
+    );
+    const finalDecision = formalReadinessDecisionFromStatus(
+      closeoutStatus,
+      reconciliationChecks,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      formalBooksPacket,
+      reconciliationChecks,
+      finalDecision,
+      summary: {
+        checkCount: reconciliationChecks.length,
+        readyCheckCount: reconciliationChecks.filter(
+          (check) => check.status === 'ready',
+        ).length,
+        needsExternalProofCount: reconciliationChecks.filter(
+          (check) => check.status === 'needs_review',
+        ).length,
+        blockedCheckCount: reconciliationChecks.filter(
+          (check) => check.status === 'blocked',
+        ).length,
+        formalBookBoundaryCount: formalBooksPacket.summary.rowCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'ready_for_formal_product_design'
+          ? 'Preparar producto formal Accounting Advanced con firma y certificacion externas.'
+          : finalDecision === 'needs_professional_boundary_review'
+            ? 'Resolver boundaries profesionales antes de disenar producto formal.'
+            : finalDecision === 'return_to_advanced_hardening'
+              ? 'Volver a hardening avanzado antes de formal readiness.'
+              : 'No abrir producto formal Accounting Advanced por ahora.',
+      guardrails: [
+        'Certified reconciliation closeout no certifica bancos ni conciliaciones.',
+        'Producto formal posterior requiere integraciones, signoff y responsabilidad externa.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -2855,6 +3339,120 @@ function boundaryRowSummary(
     blockedRowCount: boundaryRows.filter((row) => row.status === 'blocked')
       .length,
   };
+}
+
+function formalPolicy(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  owner: TenantAccountingAdvancedPoliciesClosingTemplateRegistryView['policies'][number]['owner'],
+  templateRef: string,
+): TenantAccountingAdvancedPoliciesClosingTemplateRegistryView['policies'][number] {
+  return {
+    key,
+    label,
+    status,
+    owner,
+    templateRef,
+    guardrail: 'La politica guia revision; no ejecuta actos contables formales.',
+  };
+}
+
+function accountantPortalPanel(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+  accountantAction: string,
+): TenantAccountingAdvancedExternalAccountantPortalShellView['reviewPanels'][number] {
+  return { key, label, status, evidenceRefs, accountantAction };
+}
+
+function adjustmentRecommendation(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  adjustmentType: TenantAccountingAdvancedAdjustmentAutomationWorkbenchView['recommendations'][number]['adjustmentType'],
+  evidenceRefs: string[],
+): TenantAccountingAdvancedAdjustmentAutomationWorkbenchView['recommendations'][number] {
+  return {
+    key,
+    label,
+    status,
+    adjustmentType,
+    evidenceRefs,
+    requiredApproval: 'Aprobacion del contador externo antes de materializar.',
+  };
+}
+
+function statementSection(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  periodRange: string,
+  evidenceRefs: string[],
+  variationSignal: string,
+): TenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceView['statementSections'][number] {
+  return {
+    key,
+    label,
+    status,
+    periodRange,
+    evidenceRefs,
+    variationSignal,
+  };
+}
+
+function formalBookBoundaryPacketRow(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  draftArtifact: string,
+  signingBoundary: string,
+): TenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketView['boundaryRows'][number] {
+  return {
+    key,
+    label,
+    status,
+    draftArtifact,
+    signingBoundary,
+    professionalActRequired:
+      'Requiere contador, auditor o representante autorizado segun aplique.',
+  };
+}
+
+function bankReconciliationReadinessCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  platformEvidence: string,
+  externalProofRequired: string,
+): TenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutView['reconciliationChecks'][number] {
+  return {
+    key,
+    label,
+    status,
+    platformEvidence,
+    externalProofRequired,
+    signoffBoundary: 'Signoff externo requerido antes de certificacion.',
+  };
+}
+
+function formalReadinessDecisionFromStatus(
+  closeoutStatus: AccountingReadinessStatus,
+  reconciliationChecks: TenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutView['reconciliationChecks'],
+  blockers: string[],
+): AccountingAdvancedFormalReadinessDecision {
+  if (blockers.length > 0 || closeoutStatus === 'blocked') {
+    return 'return_to_advanced_hardening';
+  }
+  if (reconciliationChecks.every((check) => check.status === 'ready')) {
+    return 'ready_for_formal_product_design';
+  }
+  if (reconciliationChecks.some((check) => check.status === 'needs_review')) {
+    return 'needs_professional_boundary_review';
+  }
+  return 'do_not_open_formal_product';
 }
 
 function commandLane(

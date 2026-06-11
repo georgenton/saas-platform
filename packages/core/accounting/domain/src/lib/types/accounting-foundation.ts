@@ -246,6 +246,11 @@ export type AccountingAdvancedGraduationDecision =
 export type AccountingAdvancedBoundaryType =
   | 'formal_books'
   | 'certified_bank_feed';
+export type AccountingAdvancedFormalReadinessDecision =
+  | 'ready_for_formal_product_design'
+  | 'needs_professional_boundary_review'
+  | 'return_to_advanced_hardening'
+  | 'do_not_open_formal_product';
 
 export interface TenantAccountingAdvancedDiscoveryAnchorView {
   tenantSlug: string;
@@ -1071,6 +1076,163 @@ export interface TenantAccountingAdvancedGraduationCloseoutView {
     blockedChecklistCount: number;
     acceptanceCriteriaCount: number;
     boundaryRowCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedPoliciesClosingTemplateRegistryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  registryStatus: AccountingReadinessStatus;
+  graduationCloseout: TenantAccountingAdvancedGraduationCloseoutView;
+  policies: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    owner: 'platform' | 'external_accountant';
+    templateRef: string;
+    guardrail: string;
+  }>;
+  summary: {
+    policyCount: number;
+    readyPolicyCount: number;
+    accountantOwnedPolicyCount: number;
+    blockedPolicyCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedExternalAccountantPortalShellView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  portalStatus: AccountingReadinessStatus;
+  policyRegistry: TenantAccountingAdvancedPoliciesClosingTemplateRegistryView;
+  reviewPanels: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+    accountantAction: string;
+  }>;
+  summary: {
+    panelCount: number;
+    readyPanelCount: number;
+    needsReviewPanelCount: number;
+    blockedPanelCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedAdjustmentAutomationWorkbenchView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workbenchStatus: AccountingReadinessStatus;
+  accountantPortal: TenantAccountingAdvancedExternalAccountantPortalShellView;
+  recommendations: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    adjustmentType: 'accrual' | 'reclassification' | 'difference' | 'reversal';
+    evidenceRefs: string[];
+    requiredApproval: string;
+  }>;
+  summary: {
+    recommendationCount: number;
+    readyRecommendationCount: number;
+    needsApprovalRecommendationCount: number;
+    blockedRecommendationCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workspaceStatus: AccountingReadinessStatus;
+  adjustmentWorkbench: TenantAccountingAdvancedAdjustmentAutomationWorkbenchView;
+  statementSections: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    periodRange: string;
+    evidenceRefs: string[];
+    variationSignal: string;
+  }>;
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    needsReviewSectionCount: number;
+    blockedSectionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packetStatus: AccountingReadinessStatus;
+  financialStatementWorkspace: TenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceView;
+  boundaryRows: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    draftArtifact: string;
+    signingBoundary: string;
+    professionalActRequired: string;
+  }>;
+  summary: {
+    rowCount: number;
+    readyRowCount: number;
+    needsSigningRowCount: number;
+    blockedRowCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  formalBooksPacket: TenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketView;
+  reconciliationChecks: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    platformEvidence: string;
+    externalProofRequired: string;
+    signoffBoundary: string;
+  }>;
+  finalDecision: AccountingAdvancedFormalReadinessDecision;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsExternalProofCount: number;
+    blockedCheckCount: number;
+    formalBookBoundaryCount: number;
   };
   blockers: string[];
   nextStep: string;

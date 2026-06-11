@@ -1905,6 +1905,38 @@ bank feeds, signed financial statements or statutory closeout. It decides the
 next product direction and documents the boundaries that must exist before any
 formal Accounting Advanced product is opened.
 
+### Accounting Advanced formal readiness 0.6
+
+After product graduation 0.5, Accounting Advanced can begin formal readiness
+without yet becoming statutory accounting. This layer is the professional
+pre-flight checklist: the route is known, but the pilot, maintenance signoff and
+control tower still decide whether the aircraft can enter regular service.
+
+1. `Accounting Policies & Closing Template Registry`
+   - captures tenant-period policies, closing templates, ownership and guardrails
+     before formal work is reviewed
+2. `External Accountant/Auditor Portal Shell`
+   - gives the external professional one review surface for graduation decision,
+     policies, formal books boundary and bank certification boundary
+3. `Advanced Adjustment Automation Workbench`
+   - prepares accrual, reclassification, difference and reversal recommendations
+     without posting official adjustments automatically
+4. `Multi-Period Financial Statement Workspace`
+   - prepares comparative balance, income and cash/bank previews across periods
+     without issuing signed financial statements
+5. `Formal Books Draft & Signing Boundary Packet`
+   - packages draft journal/ledger books and financial statement signing
+     boundaries without legalizing or signing official books
+6. `Certified Bank Reconciliation Readiness + Closeout`
+   - closes whether certified bank reconciliation can move to product design,
+     needs professional boundary review, must return to hardening or should not
+     open as a formal product
+
+Guardrail: formal readiness 0.6 still does not post official adjustments,
+legalize books, certify bank feeds, sign financial statements or replace a
+contador/auditor. It prepares the professional boundaries that a later formal
+Accounting Advanced product would need.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -1987,6 +2019,12 @@ product. Its current scope is intentionally operational and review-oriented:
     graduation matrix, formal books boundary and certified bank-feed boundary
     before deciding whether to graduate, extend pilot, return to hardening or
     not graduate.
+24. Accounting Advanced formal readiness 0.6 as the first professional-readiness
+    layer after graduation. It defines policies/templates, opens an external
+    accountant portal shell, prepares advanced adjustment recommendations,
+    previews multi-period statements, packages formal books signing boundaries
+    and closes certified bank reconciliation readiness without performing
+    statutory accounting.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

@@ -31,6 +31,10 @@ import {
   GetTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase,
   GetTenantAccountingAdvancedPilotLearningRegistryUseCase,
   GetTenantAccountingAdvancedProductGraduationMatrixUseCase,
+  GetTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase,
+  GetTenantAccountingAdvancedExternalAccountantPortalShellUseCase,
+  GetTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase,
+  GetTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase,
   GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
   GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
@@ -87,6 +91,8 @@ import {
   RequestTenantAccountingAdvancedPilotCloseoutUseCase,
   RequestTenantAccountingAdvancedPilotOutcomePacketUseCase,
   RequestTenantAccountingAdvancedGraduationCloseoutUseCase,
+  RequestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase,
+  RequestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -141,6 +147,12 @@ import {
   AccountingAdvancedGraduationCloseoutResponseDto,
   AccountingAdvancedPilotLearningRegistryResponseDto,
   AccountingAdvancedProductGraduationMatrixResponseDto,
+  AccountingAdvancedAdjustmentAutomationWorkbenchResponseDto,
+  AccountingAdvancedCertifiedBankReconciliationReadinessCloseoutResponseDto,
+  AccountingAdvancedExternalAccountantPortalShellResponseDto,
+  AccountingAdvancedFormalBooksDraftSigningBoundaryPacketResponseDto,
+  AccountingAdvancedMultiPeriodFinancialStatementWorkspaceResponseDto,
+  AccountingAdvancedPoliciesClosingTemplateRegistryResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
   AccountingFormalNeedsClassifierResponseDto,
   AccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto,
@@ -171,6 +183,12 @@ import {
   toAccountingAdvancedGraduationCloseoutResponseDto,
   toAccountingAdvancedPilotLearningRegistryResponseDto,
   toAccountingAdvancedProductGraduationMatrixResponseDto,
+  toAccountingAdvancedAdjustmentAutomationWorkbenchResponseDto,
+  toAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutResponseDto,
+  toAccountingAdvancedExternalAccountantPortalShellResponseDto,
+  toAccountingAdvancedFormalBooksDraftSigningBoundaryPacketResponseDto,
+  toAccountingAdvancedMultiPeriodFinancialStatementWorkspaceResponseDto,
+  toAccountingAdvancedPoliciesClosingTemplateRegistryResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
   toAccountingFormalNeedsClassifierResponseDto,
   toAccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto,
@@ -471,6 +489,12 @@ export class AccountingController {
     private readonly getTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase: GetTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase,
     private readonly getTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase: GetTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase,
     private readonly requestTenantAccountingAdvancedGraduationCloseoutUseCase: RequestTenantAccountingAdvancedGraduationCloseoutUseCase,
+    private readonly getTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase: GetTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase,
+    private readonly getTenantAccountingAdvancedExternalAccountantPortalShellUseCase: GetTenantAccountingAdvancedExternalAccountantPortalShellUseCase,
+    private readonly getTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase: GetTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase,
+    private readonly getTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase: GetTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase,
+    private readonly requestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase: RequestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase,
+    private readonly requestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase: RequestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -1242,6 +1266,152 @@ export class AccountingController {
         );
 
       return toAccountingAdvancedGraduationCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-readiness/policies-closing-templates')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalReadinessPoliciesClosingTemplates(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedPoliciesClosingTemplateRegistryResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedPoliciesClosingTemplateRegistryResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-readiness/accountant-portal-shell')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalReadinessAccountantPortalShell(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedExternalAccountantPortalShellResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedExternalAccountantPortalShellUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedExternalAccountantPortalShellResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-readiness/adjustment-workbench')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalReadinessAdjustmentWorkbench(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedAdjustmentAutomationWorkbenchResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedAdjustmentAutomationWorkbenchResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-readiness/multi-period-statements')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalReadinessMultiPeriodStatements(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedMultiPeriodFinancialStatementWorkspaceResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedMultiPeriodFinancialStatementWorkspaceResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-readiness/formal-books-boundary-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalReadinessFormalBooksBoundaryPacket(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalBooksDraftSigningBoundaryPacketResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalBooksDraftSigningBoundaryPacketResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-readiness/certified-bank-reconciliation-closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalReadinessCertifiedBankReconciliationCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedCertifiedBankReconciliationReadinessCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutResponseDto(
+        view,
+      );
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

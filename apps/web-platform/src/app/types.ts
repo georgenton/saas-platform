@@ -4136,6 +4136,78 @@ export interface AccountingAdvancedGraduationCloseoutResponse {
   guardrails: string[];
 }
 
+export interface AccountingAdvancedFormalReadinessCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  formalBooksPacket: {
+    packetStatus: string;
+    summary: {
+      rowCount: number;
+      readyRowCount: number;
+      needsSigningRowCount: number;
+      blockedRowCount: number;
+    };
+    financialStatementWorkspace: {
+      workspaceStatus: string;
+      summary: {
+        sectionCount: number;
+        readySectionCount: number;
+        needsReviewSectionCount: number;
+        blockedSectionCount: number;
+      };
+      adjustmentWorkbench: {
+        workbenchStatus: string;
+        summary: {
+          recommendationCount: number;
+          readyRecommendationCount: number;
+          needsApprovalRecommendationCount: number;
+          blockedRecommendationCount: number;
+        };
+        accountantPortal: {
+          portalStatus: string;
+          summary: {
+            panelCount: number;
+            readyPanelCount: number;
+            needsReviewPanelCount: number;
+            blockedPanelCount: number;
+          };
+          policyRegistry: {
+            registryStatus: string;
+            summary: {
+              policyCount: number;
+              readyPolicyCount: number;
+              accountantOwnedPolicyCount: number;
+              blockedPolicyCount: number;
+            };
+          };
+        };
+      };
+    };
+  };
+  reconciliationChecks: Array<{
+    key: string;
+    label: string;
+    status: string;
+    platformEvidence: string;
+    externalProofRequired: string;
+    signoffBoundary: string;
+  }>;
+  finalDecision: string;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsExternalProofCount: number;
+    blockedCheckCount: number;
+    formalBookBoundaryCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

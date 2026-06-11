@@ -1152,6 +1152,12 @@ const [
   advancedGraduationFormalBooksBoundary,
   advancedGraduationCertifiedBankFeedBoundary,
   advancedGraduationCloseout,
+  advancedFormalReadinessPolicies,
+  advancedFormalReadinessAccountantPortal,
+  advancedFormalReadinessAdjustmentWorkbench,
+  advancedFormalReadinessMultiPeriodStatements,
+  advancedFormalReadinessFormalBooksPacket,
+  advancedFormalReadinessCertifiedBankCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1356,6 +1362,48 @@ const [
     path: accountingPath(`/advanced-graduation/closeout?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-readiness/policies-closing-templates?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-readiness/accountant-portal-shell?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-readiness/adjustment-workbench?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-readiness/multi-period-statements?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-readiness/formal-books-boundary-packet?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-readiness/certified-bank-reconciliation-closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -1490,6 +1538,30 @@ assertStatus(
   'accounting advanced graduation closeout',
   advancedGraduationCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced formal readiness policies',
+  advancedFormalReadinessPolicies.registryStatus,
+);
+assertStatus(
+  'accounting advanced formal readiness accountant portal',
+  advancedFormalReadinessAccountantPortal.portalStatus,
+);
+assertStatus(
+  'accounting advanced formal readiness adjustment workbench',
+  advancedFormalReadinessAdjustmentWorkbench.workbenchStatus,
+);
+assertStatus(
+  'accounting advanced formal readiness multi-period statements',
+  advancedFormalReadinessMultiPeriodStatements.workspaceStatus,
+);
+assertStatus(
+  'accounting advanced formal readiness formal books packet',
+  advancedFormalReadinessFormalBooksPacket.packetStatus,
+);
+assertStatus(
+  'accounting advanced formal readiness certified bank closeout',
+  advancedFormalReadinessCertifiedBankCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -1548,6 +1620,10 @@ printLine(
 printLine(
   'advanced graduation',
   `${advancedGraduationCloseout.finalDecision}, ${advancedGraduationCloseout.closeoutStatus}`,
+);
+printLine(
+  'advanced formal readiness',
+  `${advancedFormalReadinessCertifiedBankCloseout.finalDecision}, ${advancedFormalReadinessCertifiedBankCloseout.closeoutStatus}`,
 );
 
 printSection('Accounting foundation smoke OK');

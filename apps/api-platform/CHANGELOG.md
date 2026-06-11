@@ -1,5 +1,13 @@
 # api-platform
 
+## 0.107.32
+
+### Patch Changes
+
+- c838f96: Add Accounting Advanced Discovery 0.1 with Tax 7.3 anchored discovery, formal
+  needs classification, accountant workspace, readiness packet, closeout API,
+  dashboard wiring, conceptual model updates, and smoke coverage.
+
 ## 0.107.31
 
 ### Patch Changes

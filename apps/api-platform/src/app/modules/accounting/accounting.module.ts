@@ -37,6 +37,10 @@ import {
   GetTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase,
   GetTenantAccountingAdvancedPilotLearningRegistryUseCase,
   GetTenantAccountingAdvancedProductGraduationMatrixUseCase,
+  GetTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase,
+  GetTenantAccountingAdvancedExternalAccountantPortalShellUseCase,
+  GetTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase,
+  GetTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase,
   GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
   GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
@@ -93,6 +97,8 @@ import {
   RequestTenantAccountingAdvancedPilotCloseoutUseCase,
   RequestTenantAccountingAdvancedPilotOutcomePacketUseCase,
   RequestTenantAccountingAdvancedGraduationCloseoutUseCase,
+  RequestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase,
+  RequestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -482,6 +488,71 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantAccountingAdvancedGraduationCloseoutUseCase(
           getTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase,
+      inject: [RequestTenantAccountingAdvancedGraduationCloseoutUseCase],
+      useFactory: (requestTenantAccountingAdvancedGraduationCloseoutUseCase) =>
+        new GetTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase(
+          requestTenantAccountingAdvancedGraduationCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedExternalAccountantPortalShellUseCase,
+      inject: [GetTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedExternalAccountantPortalShellUseCase(
+          getTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase,
+      inject: [GetTenantAccountingAdvancedExternalAccountantPortalShellUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedExternalAccountantPortalShellUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase(
+          getTenantAccountingAdvancedExternalAccountantPortalShellUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase,
+      inject: [GetTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase(
+          getTenantAccountingAdvancedAdjustmentAutomationWorkbenchUseCase,
+        ),
+    },
+    {
+      provide:
+        RequestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase,
+      inject: [
+        GetTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase(
+          getTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase,
+        ),
+    },
+    {
+      provide:
+        RequestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase,
+      inject: [
+        RequestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase(
+          requestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase,
         ),
     },
     {

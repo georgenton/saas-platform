@@ -134,6 +134,7 @@ import {
   fetchAccountingAdvancedMvpReadinessCloseout,
   fetchAccountingAdvancedPilotCloseout,
   fetchAccountingAdvancedGraduationCloseout,
+  fetchAccountingAdvancedFormalReadinessCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -490,6 +491,7 @@ import {
   AccountingAdvancedMvpReadinessCloseoutResponse,
   AccountingAdvancedPilotCloseoutResponse,
   AccountingAdvancedGraduationCloseoutResponse,
+  AccountingAdvancedFormalReadinessCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2569,6 +2571,10 @@ export function App() {
     accountingAdvancedGraduationCloseout,
     setAccountingAdvancedGraduationCloseout,
   ] = useState<AccountingAdvancedGraduationCloseoutResponse | null>(null);
+  const [
+    accountingAdvancedFormalReadinessCloseout,
+    setAccountingAdvancedFormalReadinessCloseout,
+  ] = useState<AccountingAdvancedFormalReadinessCloseoutResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20721,6 +20727,7 @@ export function App() {
         nextAccountingAdvancedMvpOperatingCloseout,
         nextAccountingAdvancedPilotCloseout,
         nextAccountingAdvancedGraduationCloseout,
+        nextAccountingAdvancedFormalReadinessCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -20966,6 +20973,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedFormalReadinessCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21001,6 +21014,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21273,6 +21287,9 @@ export function App() {
         setAccountingAdvancedPilotCloseout(nextAccountingAdvancedPilotCloseout);
         setAccountingAdvancedGraduationCloseout(
           nextAccountingAdvancedGraduationCloseout,
+        );
+        setAccountingAdvancedFormalReadinessCloseout(
+          nextAccountingAdvancedFormalReadinessCloseout,
         );
       });
     } catch (error) {
@@ -35545,6 +35562,23 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      Formal readiness
+                                    </span>
+                                    <strong>
+                                      {accountingAdvancedFormalReadinessCloseout
+                                        ? humanizeKey(
+                                            accountingAdvancedFormalReadinessCloseout.finalDecision,
+                                          )
+                                        : 'sin readiness'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingAdvancedFormalReadinessCloseout
+                                        ?.summary.needsExternalProofCount ?? 0}{' '}
+                                      proofs
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Ultimo ajuste
                                     </span>
                                     <strong>
@@ -36075,8 +36109,128 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedFormalReadinessCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced Formal Readiness 0.6
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedFormalReadinessCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Policies
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalReadinessCloseout
+                                              .formalBooksPacket
+                                              .financialStatementWorkspace
+                                              .adjustmentWorkbench
+                                              .accountantPortal.policyRegistry
+                                              .summary.readyPolicyCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedFormalReadinessCloseout
+                                              .formalBooksPacket
+                                              .financialStatementWorkspace
+                                              .adjustmentWorkbench
+                                              .accountantPortal.policyRegistry
+                                              .summary.policyCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Portal
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalReadinessCloseout
+                                              .formalBooksPacket
+                                              .financialStatementWorkspace
+                                              .adjustmentWorkbench
+                                              .accountantPortal.summary
+                                              .needsReviewPanelCount
+                                          }{' '}
+                                          review
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Ajustes
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalReadinessCloseout
+                                              .formalBooksPacket
+                                              .financialStatementWorkspace
+                                              .adjustmentWorkbench.summary
+                                              .needsApprovalRecommendationCount
+                                          }{' '}
+                                          approval
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Estados
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalReadinessCloseout
+                                              .formalBooksPacket
+                                              .financialStatementWorkspace
+                                              .summary.readySectionCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedFormalReadinessCloseout
+                                              .formalBooksPacket
+                                              .financialStatementWorkspace
+                                              .summary.sectionCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Libros
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalReadinessCloseout
+                                              .formalBooksPacket.summary
+                                              .needsSigningRowCount
+                                          }{' '}
+                                          signing
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Banco
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalReadinessCloseout
+                                              .summary.needsExternalProofCount
+                                          }{' '}
+                                          proof
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedFormalReadinessCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedGraduationCloseout?.nextStep ??
+                                  {accountingAdvancedFormalReadinessCloseout?.nextStep ??
+                                    accountingAdvancedGraduationCloseout?.nextStep ??
                                     accountingAdvancedPilotCloseout?.nextStep ??
                                     accountingAdvancedMvpOperatingCloseout?.nextStep ??
                                     accountingAdvancedMvpReadinessCloseout?.nextStep ??

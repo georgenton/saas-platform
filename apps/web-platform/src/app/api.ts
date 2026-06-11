@@ -49,6 +49,7 @@ import {
   AccountingAdvancedMvpReadinessCloseoutResponse,
   AccountingAdvancedPilotCloseoutResponse,
   AccountingAdvancedGraduationCloseoutResponse,
+  AccountingAdvancedFormalReadinessCloseoutResponse,
   AccountingFormalNeedsClassifierResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingPeriodEvidenceVaultResponse,
@@ -3246,6 +3247,22 @@ export async function fetchAccountingAdvancedGraduationCloseout(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/advanced-graduation/closeout?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchAccountingAdvancedFormalReadinessCloseout(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingAdvancedFormalReadinessCloseoutResponse> {
+  return request<AccountingAdvancedFormalReadinessCloseoutResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/advanced-formal-readiness/certified-bank-reconciliation-closeout?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

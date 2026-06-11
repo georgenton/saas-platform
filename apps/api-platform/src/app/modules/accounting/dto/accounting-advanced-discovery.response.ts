@@ -20,6 +20,12 @@ import {
   TenantAccountingAdvancedPilotEvidenceSnapshotView,
   TenantAccountingAdvancedPilotOutcomePacketView,
   TenantAccountingAdvancedPilotRunbookView,
+  TenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintView,
+  TenantAccountingAdvancedExternalAccountantAcceptanceCriteriaView,
+  TenantAccountingAdvancedFormalBooksBoundaryBlueprintView,
+  TenantAccountingAdvancedGraduationCloseoutView,
+  TenantAccountingAdvancedPilotLearningRegistryView,
+  TenantAccountingAdvancedProductGraduationMatrixView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
   TenantAccountingFormalNeedsClassifierView,
   TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView,
@@ -73,6 +79,18 @@ export type AccountingAdvancedPilotOutcomePacketResponseDto =
   Serialized<TenantAccountingAdvancedPilotOutcomePacketView>;
 export type AccountingAdvancedPilotCloseoutResponseDto =
   Serialized<TenantAccountingAdvancedPilotCloseoutView>;
+export type AccountingAdvancedPilotLearningRegistryResponseDto =
+  Serialized<TenantAccountingAdvancedPilotLearningRegistryView>;
+export type AccountingAdvancedExternalAccountantAcceptanceCriteriaResponseDto =
+  Serialized<TenantAccountingAdvancedExternalAccountantAcceptanceCriteriaView>;
+export type AccountingAdvancedProductGraduationMatrixResponseDto =
+  Serialized<TenantAccountingAdvancedProductGraduationMatrixView>;
+export type AccountingAdvancedFormalBooksBoundaryBlueprintResponseDto =
+  Serialized<TenantAccountingAdvancedFormalBooksBoundaryBlueprintView>;
+export type AccountingAdvancedCertifiedBankFeedBoundaryBlueprintResponseDto =
+  Serialized<TenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintView>;
+export type AccountingAdvancedGraduationCloseoutResponseDto =
+  Serialized<TenantAccountingAdvancedGraduationCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -215,6 +233,42 @@ export function toAccountingAdvancedPilotOutcomePacketResponseDto(
 export function toAccountingAdvancedPilotCloseoutResponseDto(
   view: TenantAccountingAdvancedPilotCloseoutView,
 ): AccountingAdvancedPilotCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedPilotLearningRegistryResponseDto(
+  view: TenantAccountingAdvancedPilotLearningRegistryView,
+): AccountingAdvancedPilotLearningRegistryResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedExternalAccountantAcceptanceCriteriaResponseDto(
+  view: TenantAccountingAdvancedExternalAccountantAcceptanceCriteriaView,
+): AccountingAdvancedExternalAccountantAcceptanceCriteriaResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedProductGraduationMatrixResponseDto(
+  view: TenantAccountingAdvancedProductGraduationMatrixView,
+): AccountingAdvancedProductGraduationMatrixResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalBooksBoundaryBlueprintResponseDto(
+  view: TenantAccountingAdvancedFormalBooksBoundaryBlueprintView,
+): AccountingAdvancedFormalBooksBoundaryBlueprintResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedCertifiedBankFeedBoundaryBlueprintResponseDto(
+  view: TenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintView,
+): AccountingAdvancedCertifiedBankFeedBoundaryBlueprintResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedGraduationCloseoutResponseDto(
+  view: TenantAccountingAdvancedGraduationCloseoutView,
+): AccountingAdvancedGraduationCloseoutResponseDto {
   return serialize(view);
 }
 

@@ -238,6 +238,14 @@ export type AccountingAdvancedPilotOutcome =
   | 'pilot_needs_hardening'
   | 'pilot_blocked'
   | 'pilot_not_recommended';
+export type AccountingAdvancedGraduationDecision =
+  | 'graduate_to_advanced_product'
+  | 'extend_pilot'
+  | 'return_to_foundation_hardening'
+  | 'do_not_graduate';
+export type AccountingAdvancedBoundaryType =
+  | 'formal_books'
+  | 'certified_bank_feed';
 
 export interface TenantAccountingAdvancedDiscoveryAnchorView {
   tenantSlug: string;
@@ -898,6 +906,171 @@ export interface TenantAccountingAdvancedPilotCloseoutView {
     blockedChecklistCount: number;
     evidenceRefCount: number;
     accountantPendingItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedPilotLearningRegistryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  registryStatus: AccountingReadinessStatus;
+  pilotCloseout: TenantAccountingAdvancedPilotCloseoutView;
+  learnings: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+    signal: string;
+    graduationImpact: string;
+  }>;
+  summary: {
+    learningCount: number;
+    readyLearningCount: number;
+    hardeningLearningCount: number;
+    blockedLearningCount: number;
+    evidenceRefCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedExternalAccountantAcceptanceCriteriaView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  criteriaStatus: AccountingReadinessStatus;
+  learningRegistry: TenantAccountingAdvancedPilotLearningRegistryView;
+  criteria: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    requiredEvidence: string;
+    accountantQuestion: string;
+    risk: string;
+  }>;
+  summary: {
+    criteriaCount: number;
+    acceptedCriteriaCount: number;
+    needsReviewCriteriaCount: number;
+    blockedCriteriaCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedProductGraduationMatrixView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  matrixStatus: AccountingReadinessStatus;
+  acceptanceCriteria: TenantAccountingAdvancedExternalAccountantAcceptanceCriteriaView;
+  rows: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    score: number;
+    recommendation: AccountingAdvancedGraduationDecision;
+    rationale: string;
+  }>;
+  finalDecision: AccountingAdvancedGraduationDecision;
+  summary: {
+    rowCount: number;
+    graduateRowCount: number;
+    extendPilotRowCount: number;
+    hardeningRowCount: number;
+    doNotGraduateRowCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalBooksBoundaryBlueprintView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  blueprintStatus: AccountingReadinessStatus;
+  graduationMatrix: TenantAccountingAdvancedProductGraduationMatrixView;
+  boundaryType: AccountingAdvancedBoundaryType;
+  boundaryRows: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    platformCanPrepare: string;
+    requiresProfessionalAct: string;
+    guardrail: string;
+  }>;
+  summary: {
+    rowCount: number;
+    readyRowCount: number;
+    needsReviewRowCount: number;
+    blockedRowCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  blueprintStatus: AccountingReadinessStatus;
+  formalBooksBoundary: TenantAccountingAdvancedFormalBooksBoundaryBlueprintView;
+  boundaryType: AccountingAdvancedBoundaryType;
+  boundaryRows: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    platformCanPrepare: string;
+    requiresExternalProof: string;
+    certificationRisk: string;
+  }>;
+  summary: {
+    rowCount: number;
+    readyRowCount: number;
+    needsExternalProofCount: number;
+    blockedRowCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedGraduationCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  learningRegistry: TenantAccountingAdvancedPilotLearningRegistryView;
+  acceptanceCriteria: TenantAccountingAdvancedExternalAccountantAcceptanceCriteriaView;
+  graduationMatrix: TenantAccountingAdvancedProductGraduationMatrixView;
+  formalBooksBoundary: TenantAccountingAdvancedFormalBooksBoundaryBlueprintView;
+  certifiedBankFeedBoundary: TenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: AccountingAdvancedGraduationDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    acceptanceCriteriaCount: number;
+    boundaryRowCount: number;
   };
   blockers: string[];
   nextStep: string;

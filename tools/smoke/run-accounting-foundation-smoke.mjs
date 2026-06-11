@@ -1146,6 +1146,12 @@ const [
   advancedPilotRunbook,
   advancedPilotOutcomePacket,
   advancedPilotCloseout,
+  advancedGraduationLearningRegistry,
+  advancedGraduationAccountantAcceptanceCriteria,
+  advancedGraduationProductMatrix,
+  advancedGraduationFormalBooksBoundary,
+  advancedGraduationCertifiedBankFeedBoundary,
+  advancedGraduationCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1310,6 +1316,46 @@ const [
     path: accountingPath(`/advanced-pilot/closeout?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-graduation/learning-registry?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-graduation/accountant-acceptance-criteria?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-graduation/product-matrix?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-graduation/formal-books-boundary?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-graduation/certified-bank-feed-boundary?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-graduation/closeout?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -1420,6 +1466,30 @@ assertStatus(
   'accounting advanced pilot closeout',
   advancedPilotCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced graduation learning registry',
+  advancedGraduationLearningRegistry.registryStatus,
+);
+assertStatus(
+  'accounting advanced graduation accountant acceptance criteria',
+  advancedGraduationAccountantAcceptanceCriteria.criteriaStatus,
+);
+assertStatus(
+  'accounting advanced graduation product matrix',
+  advancedGraduationProductMatrix.matrixStatus,
+);
+assertStatus(
+  'accounting advanced graduation formal books boundary',
+  advancedGraduationFormalBooksBoundary.blueprintStatus,
+);
+assertStatus(
+  'accounting advanced graduation certified bank feed boundary',
+  advancedGraduationCertifiedBankFeedBoundary.blueprintStatus,
+);
+assertStatus(
+  'accounting advanced graduation closeout',
+  advancedGraduationCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -1431,6 +1501,9 @@ if (!Array.isArray(advancedMvpOperatingCloseout.closeoutChecklist)) {
 }
 if (!Array.isArray(advancedPilotCloseout.closeoutChecklist)) {
   throw new Error('advanced-pilot/closeout no devolvio checklist[].');
+}
+if (!Array.isArray(advancedGraduationCloseout.closeoutChecklist)) {
+  throw new Error('advanced-graduation/closeout no devolvio checklist[].');
 }
 printLine(
   'foundation pack v2',
@@ -1471,6 +1544,10 @@ printLine(
 printLine(
   'advanced pilot',
   `${advancedPilotCloseout.finalOutcome}, ${advancedPilotCloseout.closeoutStatus}`,
+);
+printLine(
+  'advanced graduation',
+  `${advancedGraduationCloseout.finalDecision}, ${advancedGraduationCloseout.closeoutStatus}`,
 );
 
 printSection('Accounting foundation smoke OK');

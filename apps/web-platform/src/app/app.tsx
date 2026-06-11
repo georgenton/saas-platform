@@ -133,6 +133,7 @@ import {
   fetchAccountingAdvancedMvpOperatingCloseout,
   fetchAccountingAdvancedMvpReadinessCloseout,
   fetchAccountingAdvancedPilotCloseout,
+  fetchAccountingAdvancedGraduationCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -488,6 +489,7 @@ import {
   AccountingAdvancedMvpOperatingCloseoutResponse,
   AccountingAdvancedMvpReadinessCloseoutResponse,
   AccountingAdvancedPilotCloseoutResponse,
+  AccountingAdvancedGraduationCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2563,6 +2565,10 @@ export function App() {
     accountingAdvancedPilotCloseout,
     setAccountingAdvancedPilotCloseout,
   ] = useState<AccountingAdvancedPilotCloseoutResponse | null>(null);
+  const [
+    accountingAdvancedGraduationCloseout,
+    setAccountingAdvancedGraduationCloseout,
+  ] = useState<AccountingAdvancedGraduationCloseoutResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20714,6 +20720,7 @@ export function App() {
         nextAccountingAdvancedMvpReadinessCloseout,
         nextAccountingAdvancedMvpOperatingCloseout,
         nextAccountingAdvancedPilotCloseout,
+        nextAccountingAdvancedGraduationCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -20953,6 +20960,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedGraduationCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -20988,6 +21001,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21257,6 +21271,9 @@ export function App() {
           nextAccountingAdvancedMvpOperatingCloseout,
         );
         setAccountingAdvancedPilotCloseout(nextAccountingAdvancedPilotCloseout);
+        setAccountingAdvancedGraduationCloseout(
+          nextAccountingAdvancedGraduationCloseout,
+        );
       });
     } catch (error) {
       setTaxComplianceError(
@@ -35511,6 +35528,23 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      Advanced graduation
+                                    </span>
+                                    <strong>
+                                      {accountingAdvancedGraduationCloseout
+                                        ? humanizeKey(
+                                            accountingAdvancedGraduationCloseout.finalDecision,
+                                          )
+                                        : 'sin decision'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingAdvancedGraduationCloseout
+                                        ?.summary.boundaryRowCount ?? 0}{' '}
+                                      boundaries
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Ultimo ajuste
                                     </span>
                                     <strong>
@@ -35943,8 +35977,107 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedGraduationCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced Product Graduation
+                                        0.5
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedGraduationCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Learnings
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedGraduationCloseout
+                                              .learningRegistry.summary
+                                              .readyLearningCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedGraduationCloseout
+                                              .learningRegistry.summary
+                                              .learningCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Contador
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedGraduationCloseout
+                                              .acceptanceCriteria.summary
+                                              .needsReviewCriteriaCount
+                                          }{' '}
+                                          review
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Matrix
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedGraduationCloseout
+                                              .graduationMatrix.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Libros
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedGraduationCloseout
+                                              .formalBooksBoundary.summary
+                                              .needsReviewRowCount
+                                          }{' '}
+                                          review
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Banco
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedGraduationCloseout
+                                              .certifiedBankFeedBoundary.summary
+                                              .needsExternalProofCount
+                                          }{' '}
+                                          proof
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedGraduationCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedGraduationCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedPilotCloseout?.nextStep ??
+                                  {accountingAdvancedGraduationCloseout?.nextStep ??
+                                    accountingAdvancedPilotCloseout?.nextStep ??
                                     accountingAdvancedMvpOperatingCloseout?.nextStep ??
                                     accountingAdvancedMvpReadinessCloseout?.nextStep ??
                                     accountingAdvancedDiscoveryCloseout?.nextStep ??

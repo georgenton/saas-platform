@@ -3,6 +3,7 @@ import {
   AccountingAdvancedMvpLaneKey,
   AccountingAdvancedMvpLaneStatus,
   AccountingAdvancedMvpOperatingMode,
+  AccountingAdvancedGraduationDecision,
   AccountingAdvancedPilotEnrollmentStatus,
   AccountingAdvancedPilotOutcome,
   AccountingReadinessStatus,
@@ -27,6 +28,12 @@ import {
   TenantAccountingAdvancedPilotEvidenceSnapshotView,
   TenantAccountingAdvancedPilotOutcomePacketView,
   TenantAccountingAdvancedPilotRunbookView,
+  TenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintView,
+  TenantAccountingAdvancedExternalAccountantAcceptanceCriteriaView,
+  TenantAccountingAdvancedFormalBooksBoundaryBlueprintView,
+  TenantAccountingAdvancedGraduationCloseoutView,
+  TenantAccountingAdvancedPilotLearningRegistryView,
+  TenantAccountingAdvancedProductGraduationMatrixView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
   TenantAccountingFormalNeedsClassifierView,
   TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView,
@@ -2140,6 +2147,526 @@ export class RequestTenantAccountingAdvancedPilotCloseoutUseCase {
   }
 }
 
+export class GetTenantAccountingAdvancedPilotLearningRegistryUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedPilotCloseoutUseCase: RequestTenantAccountingAdvancedPilotCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedPilotLearningRegistryView> {
+    const pilotCloseout =
+      await this.requestTenantAccountingAdvancedPilotCloseoutUseCase.execute(
+        input,
+      );
+    const learnings: TenantAccountingAdvancedPilotLearningRegistryView['learnings'] =
+      [
+        graduationLearning(
+          'pilot_outcome',
+          'Pilot outcome',
+          pilotCloseout.closeoutStatus,
+          ['advanced_pilot_closeout'],
+          `Pilot closed as ${pilotCloseout.finalOutcome}.`,
+          'Determina si la graduacion puede evaluarse o debe volver a hardening.',
+        ),
+        graduationLearning(
+          'accountant_pending',
+          'Accountant pending evidence',
+          pilotCloseout.summary.accountantPendingItemCount > 0
+            ? 'needs_review'
+            : 'ready',
+          ['advanced_pilot_accountant_review_room'],
+          `${pilotCloseout.summary.accountantPendingItemCount} accountant pending items.`,
+          'Pendientes del contador bloquean graduacion formal.',
+        ),
+        graduationLearning(
+          'evidence_snapshot',
+          'Evidence snapshot quality',
+          pilotCloseout.evidenceSnapshot.snapshotStatus,
+          ['advanced_pilot_evidence_snapshot'],
+          `${pilotCloseout.evidenceSnapshot.summary.readySectionCount}/${pilotCloseout.evidenceSnapshot.summary.sectionCount} evidence sections ready.`,
+          'La evidencia congelada define el alcance aceptable del producto.',
+        ),
+        graduationLearning(
+          'runbook_readiness',
+          'Runbook readiness',
+          pilotCloseout.runbook.runbookStatus,
+          ['advanced_pilot_runbook'],
+          `${pilotCloseout.runbook.summary.readyStepCount}/${pilotCloseout.runbook.summary.stepCount} runbook steps ready.`,
+          'Un runbook incompleto indica piloto extendido, no graduacion.',
+        ),
+      ];
+    const blockers = [...pilotCloseout.blockers];
+    const registryStatus = resolveStatus(
+      learnings.map((learning) => learning.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      registryStatus,
+      pilotCloseout,
+      learnings,
+      summary: {
+        learningCount: learnings.length,
+        readyLearningCount: learnings.filter(
+          (learning) => learning.status === 'ready',
+        ).length,
+        hardeningLearningCount: learnings.filter(
+          (learning) => learning.status === 'needs_review',
+        ).length,
+        blockedLearningCount: learnings.filter(
+          (learning) => learning.status === 'blocked',
+        ).length,
+        evidenceRefCount: learnings.flatMap((learning) => learning.evidenceRefs)
+          .length,
+      },
+      blockers,
+      nextStep:
+        registryStatus === 'ready'
+          ? 'Evaluar criterios de aceptacion del contador para graduacion.'
+          : 'Resolver aprendizajes pendientes antes de decidir producto formal.',
+      guardrails: [
+        'Learning registry observa el piloto; no gradúa producto por si solo.',
+        'Las senales se usan para decidir producto, no para certificar periodo.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedPilotLearningRegistryUseCase: GetTenantAccountingAdvancedPilotLearningRegistryUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedExternalAccountantAcceptanceCriteriaView> {
+    const learningRegistry =
+      await this.getTenantAccountingAdvancedPilotLearningRegistryUseCase.execute(
+        input,
+      );
+    const pilotCloseout = learningRegistry.pilotCloseout;
+    const criteria: TenantAccountingAdvancedExternalAccountantAcceptanceCriteriaView['criteria'] =
+      [
+        accountantAcceptanceCriterion(
+          'formal_scope',
+          'Formal scope acceptance',
+          pilotCloseout.finalOutcome === 'pilot_passed' ? 'ready' : 'needs_review',
+          'advanced_pilot_outcome_packet',
+          'El contador acepta que el scope puede convertirse en producto formal?',
+          'Riesgo de graduar un piloto que aun requiere hardening.',
+        ),
+        accountantAcceptanceCriterion(
+          'bank_evidence',
+          'Bank evidence acceptance',
+          pilotCloseout.reviewRoom.reviewRows.some(
+            (row) =>
+              row.key === 'bank_evidence_review' &&
+              row.decision === 'approve_pilot_run',
+          )
+            ? 'ready'
+            : 'needs_review',
+          'advanced_pilot_accountant_review_room',
+          'La evidencia bancaria permite avanzar a boundary certificado?',
+          'Riesgo de confundir evidencia operativa con certificacion bancaria.',
+        ),
+        accountantAcceptanceCriterion(
+          'ledger_evidence',
+          'Ledger evidence acceptance',
+          pilotCloseout.reviewRoom.reviewRows.some(
+            (row) =>
+              row.key === 'ledger_evidence_review' &&
+              row.decision === 'approve_pilot_run',
+          )
+            ? 'ready'
+            : 'needs_review',
+          'advanced_pilot_accountant_review_room',
+          'El ledger operativo es suficiente para disenar producto formal?',
+          'Riesgo de convertir cierre operativo en cierre estatutario.',
+        ),
+        accountantAcceptanceCriterion(
+          'professional_responsibility',
+          'Professional responsibility boundary',
+          'needs_review',
+          'external_accountant_acceptance_criteria',
+          'Que actos quedan reservados a contador, auditor o firma externa?',
+          'Riesgo de prometer firma, certificacion o libros oficiales desde plataforma.',
+        ),
+      ];
+    const blockers = [...learningRegistry.blockers];
+    const criteriaStatus = resolveStatus(
+      criteria.map((criterion) => criterion.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      criteriaStatus,
+      learningRegistry,
+      criteria,
+      summary: {
+        criteriaCount: criteria.length,
+        acceptedCriteriaCount: criteria.filter(
+          (criterion) => criterion.status === 'ready',
+        ).length,
+        needsReviewCriteriaCount: criteria.filter(
+          (criterion) => criterion.status === 'needs_review',
+        ).length,
+        blockedCriteriaCount: criteria.filter(
+          (criterion) => criterion.status === 'blocked',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        criteriaStatus === 'ready'
+          ? 'Construir matriz de graduacion de producto.'
+          : 'Solicitar aceptacion profesional antes de graduar Accounting Advanced.',
+      guardrails: [
+        'Los criterios organizan aceptacion; no sustituyen al contador.',
+        'Responsabilidad profesional debe quedar fuera de automatizacion del producto.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedProductGraduationMatrixUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase: GetTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedProductGraduationMatrixView> {
+    const acceptanceCriteria =
+      await this.getTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase.execute(
+        input,
+      );
+    const rows: TenantAccountingAdvancedProductGraduationMatrixView['rows'] = [
+      graduationMatrixRow(
+        'pilot_result',
+        'Pilot result',
+        acceptanceCriteria.learningRegistry.pilotCloseout.closeoutStatus,
+        acceptanceCriteria.learningRegistry.pilotCloseout.finalOutcome ===
+          'pilot_passed'
+          ? 3
+          : 1,
+        acceptanceCriteria.learningRegistry.pilotCloseout.finalOutcome ===
+          'pilot_passed'
+          ? 'extend_pilot'
+          : 'return_to_foundation_hardening',
+        'El piloto debe pasar antes de considerar producto formal.',
+      ),
+      graduationMatrixRow(
+        'accountant_acceptance',
+        'Accountant acceptance',
+        acceptanceCriteria.criteriaStatus,
+        acceptanceCriteria.summary.needsReviewCriteriaCount === 0 ? 3 : 1,
+        acceptanceCriteria.summary.needsReviewCriteriaCount === 0
+          ? 'graduate_to_advanced_product'
+          : 'extend_pilot',
+        'La graduacion necesita aceptacion profesional explicita.',
+      ),
+      graduationMatrixRow(
+        'formal_books_boundary',
+        'Formal books boundary pressure',
+        'needs_review',
+        1,
+        'extend_pilot',
+        'Libros oficiales requieren boundary separado antes de implementacion.',
+      ),
+      graduationMatrixRow(
+        'certified_bank_boundary',
+        'Certified bank boundary pressure',
+        'needs_review',
+        1,
+        'extend_pilot',
+        'Conciliacion certificada requiere prueba externa y responsabilidad definida.',
+      ),
+    ];
+    const blockers = [...acceptanceCriteria.blockers];
+    const matrixStatus = resolveStatus(
+      rows.map((row) => row.status),
+      blockers,
+    );
+    const finalDecision = graduationDecisionFromRows(rows, blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      matrixStatus,
+      acceptanceCriteria,
+      rows,
+      finalDecision,
+      summary: {
+        rowCount: rows.length,
+        graduateRowCount: rows.filter(
+          (row) => row.recommendation === 'graduate_to_advanced_product',
+        ).length,
+        extendPilotRowCount: rows.filter(
+          (row) => row.recommendation === 'extend_pilot',
+        ).length,
+        hardeningRowCount: rows.filter(
+          (row) => row.recommendation === 'return_to_foundation_hardening',
+        ).length,
+        doNotGraduateRowCount: rows.filter(
+          (row) => row.recommendation === 'do_not_graduate',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'graduate_to_advanced_product'
+          ? 'Preparar discovery de producto formal Accounting Advanced.'
+          : finalDecision === 'extend_pilot'
+            ? 'Extender piloto y cerrar boundaries formales antes de graduar.'
+            : finalDecision === 'return_to_foundation_hardening'
+              ? 'Volver a Foundation hardening antes de otro piloto.'
+              : 'No graduar Accounting Advanced por ahora.',
+      guardrails: [
+        'La matriz decide direccion de producto; no implementa producto formal.',
+        'Graduar requiere boundaries de libros y banco antes de uso estatutario.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedProductGraduationMatrixUseCase: GetTenantAccountingAdvancedProductGraduationMatrixUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalBooksBoundaryBlueprintView> {
+    const graduationMatrix =
+      await this.getTenantAccountingAdvancedProductGraduationMatrixUseCase.execute(
+        input,
+      );
+    const boundaryRows: TenantAccountingAdvancedFormalBooksBoundaryBlueprintView['boundaryRows'] =
+      [
+        formalBooksBoundaryRow(
+          'draft_ledger_exports',
+          'Draft ledger exports',
+          'ready',
+          'Preparar exportables y evidencia de soporte.',
+          'Validar formato, responsabilidad y aceptacion profesional.',
+        ),
+        formalBooksBoundaryRow(
+          'official_book_generation',
+          'Official book generation',
+          'needs_review',
+          'Preparar datos y checklist.',
+          'Generar, firmar o presentar libros oficiales.',
+        ),
+        formalBooksBoundaryRow(
+          'signed_financial_statements',
+          'Signed financial statements',
+          'needs_review',
+          'Preparar preview y evidencia comparativa.',
+          'Firmar estados financieros o asumir opinion profesional.',
+        ),
+      ];
+    const blockers = [...graduationMatrix.blockers];
+    const blueprintStatus = resolveStatus(
+      boundaryRows.map((row) => row.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      blueprintStatus,
+      graduationMatrix,
+      boundaryType: 'formal_books',
+      boundaryRows,
+      summary: boundaryRowSummary(boundaryRows),
+      blockers,
+      nextStep:
+        'Usar blueprint de libros formales para estimar producto sin cruzar firma profesional.',
+      guardrails: [
+        'Formal books blueprint no genera libros oficiales.',
+        'Firma, certificacion y presentacion quedan reservadas a profesionales habilitados.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase: GetTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintView> {
+    const formalBooksBoundary =
+      await this.getTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase.execute(
+        input,
+      );
+    const boundaryRows: TenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintView['boundaryRows'] =
+      [
+        certifiedBankBoundaryRow(
+          'uploaded_statement_evidence',
+          'Uploaded statement evidence',
+          'ready',
+          'Organizar extractos cargados y diferencias operativas.',
+          'Confirmacion externa de fuente bancaria.',
+        ),
+        certifiedBankBoundaryRow(
+          'bank_feed_certification',
+          'Bank feed certification',
+          'needs_review',
+          'Preparar reconciliacion asistida y trazabilidad.',
+          'Certificar feed, origen, integridad y fecha de corte.',
+        ),
+        certifiedBankBoundaryRow(
+          'reconciliation_signoff',
+          'Reconciliation signoff',
+          'needs_review',
+          'Preparar exception packet y resumen comparativo.',
+          'Firmar o certificar conciliacion legal.',
+        ),
+      ];
+    const blockers = [...formalBooksBoundary.blockers];
+    const blueprintStatus = resolveStatus(
+      boundaryRows.map((row) => row.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      blueprintStatus,
+      formalBooksBoundary,
+      boundaryType: 'certified_bank_feed',
+      boundaryRows,
+      summary: {
+        rowCount: boundaryRows.length,
+        readyRowCount: boundaryRows.filter((row) => row.status === 'ready')
+          .length,
+        needsExternalProofCount: boundaryRows.filter(
+          (row) => row.status === 'needs_review',
+        ).length,
+        blockedRowCount: boundaryRows.filter((row) => row.status === 'blocked')
+          .length,
+      },
+      blockers,
+      nextStep:
+        'Usar blueprint bancario para separar evidencia operativa de certificacion externa.',
+      guardrails: [
+        'Certified bank feed blueprint no certifica bancos ni conciliaciones.',
+        'Toda certificacion bancaria requiere prueba externa y responsabilidad definida.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedGraduationCloseoutUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase: GetTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedGraduationCloseoutView> {
+    const certifiedBankFeedBoundary =
+      await this.getTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase.execute(
+        input,
+      );
+    const { formalBooksBoundary } = certifiedBankFeedBoundary;
+    const { graduationMatrix } = formalBooksBoundary;
+    const { acceptanceCriteria } = graduationMatrix;
+    const { learningRegistry } = acceptanceCriteria;
+    const closeoutChecklist: TenantAccountingAdvancedGraduationCloseoutView['closeoutChecklist'] =
+      [
+        graduationCloseoutCheck(
+          'learning_registry',
+          'Pilot learning registry',
+          learningRegistry.registryStatus,
+          ['advanced_pilot_learning_registry'],
+        ),
+        graduationCloseoutCheck(
+          'acceptance_criteria',
+          'External accountant acceptance criteria',
+          acceptanceCriteria.criteriaStatus,
+          ['advanced_external_accountant_acceptance_criteria'],
+        ),
+        graduationCloseoutCheck(
+          'graduation_matrix',
+          'Product graduation matrix',
+          graduationMatrix.matrixStatus,
+          ['advanced_product_graduation_matrix'],
+        ),
+        graduationCloseoutCheck(
+          'formal_books_boundary',
+          'Formal books boundary blueprint',
+          formalBooksBoundary.blueprintStatus,
+          ['advanced_formal_books_boundary_blueprint'],
+        ),
+        graduationCloseoutCheck(
+          'certified_bank_feed_boundary',
+          'Certified bank feed boundary blueprint',
+          certifiedBankFeedBoundary.blueprintStatus,
+          ['advanced_certified_bank_feed_boundary_blueprint'],
+        ),
+      ];
+    const blockers = unique([
+      ...learningRegistry.blockers,
+      ...acceptanceCriteria.blockers,
+      ...graduationMatrix.blockers,
+      ...formalBooksBoundary.blockers,
+      ...certifiedBankFeedBoundary.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(
+      closeoutChecklist.map((item) => item.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      learningRegistry,
+      acceptanceCriteria,
+      graduationMatrix,
+      formalBooksBoundary,
+      certifiedBankFeedBoundary,
+      closeoutChecklist,
+      finalDecision: graduationMatrix.finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        blockedChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+        acceptanceCriteriaCount: acceptanceCriteria.summary.criteriaCount,
+        boundaryRowCount:
+          formalBooksBoundary.summary.rowCount +
+          certifiedBankFeedBoundary.summary.rowCount,
+      },
+      blockers,
+      nextStep:
+        graduationMatrix.finalDecision === 'graduate_to_advanced_product'
+          ? 'Abrir producto formal Accounting Advanced con boundaries explicitos.'
+          : graduationMatrix.nextStep,
+      guardrails: [
+        'Graduation closeout decide roadmap; no implementa libros oficiales ni certificacion bancaria.',
+        'Todo paso formal posterior requiere responsabilidad profesional explicita.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -2232,6 +2759,104 @@ function pilotFinding(
   return { key, label, status, finding, recommendation };
 }
 
+function graduationLearning(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+  signal: string,
+  graduationImpact: string,
+): TenantAccountingAdvancedPilotLearningRegistryView['learnings'][number] {
+  return { key, label, status, evidenceRefs, signal, graduationImpact };
+}
+
+function accountantAcceptanceCriterion(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  requiredEvidence: string,
+  accountantQuestion: string,
+  risk: string,
+): TenantAccountingAdvancedExternalAccountantAcceptanceCriteriaView['criteria'][number] {
+  return {
+    key,
+    label,
+    status,
+    requiredEvidence,
+    accountantQuestion,
+    risk,
+  };
+}
+
+function graduationMatrixRow(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  score: number,
+  recommendation: AccountingAdvancedGraduationDecision,
+  rationale: string,
+): TenantAccountingAdvancedProductGraduationMatrixView['rows'][number] {
+  return { key, label, status, score, recommendation, rationale };
+}
+
+function formalBooksBoundaryRow(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  platformCanPrepare: string,
+  requiresProfessionalAct: string,
+): TenantAccountingAdvancedFormalBooksBoundaryBlueprintView['boundaryRows'][number] {
+  return {
+    key,
+    label,
+    status,
+    platformCanPrepare,
+    requiresProfessionalAct,
+    guardrail: 'La plataforma prepara evidencia; el acto profesional queda fuera.',
+  };
+}
+
+function certifiedBankBoundaryRow(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  platformCanPrepare: string,
+  requiresExternalProof: string,
+): TenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintView['boundaryRows'][number] {
+  return {
+    key,
+    label,
+    status,
+    platformCanPrepare,
+    requiresExternalProof,
+    certificationRisk:
+      'Riesgo de vender conciliacion operativa como certificacion bancaria.',
+  };
+}
+
+function graduationCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantAccountingAdvancedGraduationCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function boundaryRowSummary(
+  boundaryRows: TenantAccountingAdvancedFormalBooksBoundaryBlueprintView['boundaryRows'],
+): TenantAccountingAdvancedFormalBooksBoundaryBlueprintView['summary'] {
+  return {
+    rowCount: boundaryRows.length,
+    readyRowCount: boundaryRows.filter((row) => row.status === 'ready').length,
+    needsReviewRowCount: boundaryRows.filter(
+      (row) => row.status === 'needs_review',
+    ).length,
+    blockedRowCount: boundaryRows.filter((row) => row.status === 'blocked')
+      .length,
+  };
+}
+
 function commandLane(
   key: string,
   label: string,
@@ -2309,6 +2934,29 @@ function pilotOutcomeFromRunbook(
     'eligible'
     ? 'pilot_passed'
     : 'pilot_not_recommended';
+}
+
+function graduationDecisionFromRows(
+  rows: TenantAccountingAdvancedProductGraduationMatrixView['rows'],
+  blockers: string[],
+): AccountingAdvancedGraduationDecision {
+  if (blockers.length > 0 || rows.some((row) => row.status === 'blocked')) {
+    return 'return_to_foundation_hardening';
+  }
+  if (
+    rows.every((row) => row.recommendation === 'graduate_to_advanced_product')
+  ) {
+    return 'graduate_to_advanced_product';
+  }
+  if (
+    rows.some((row) => row.recommendation === 'return_to_foundation_hardening')
+  ) {
+    return 'return_to_foundation_hardening';
+  }
+  if (rows.some((row) => row.recommendation === 'extend_pilot')) {
+    return 'extend_pilot';
+  }
+  return 'do_not_graduate';
 }
 
 function mvpLaneKeys(): AccountingAdvancedMvpLaneKey[] {

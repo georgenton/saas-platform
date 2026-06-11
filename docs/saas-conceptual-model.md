@@ -1874,6 +1874,37 @@ bank reconciliations, signed financial statements, statutory closeout or filing.
 It proves whether the assisted Accounting Advanced workflow is ready to become a
 product decision with contador-in-the-loop and bounded evidence.
 
+### Accounting Advanced product graduation 0.5
+
+After controlled pilot 0.4, Accounting Advanced needs a graduation gate before
+becoming a formal product. This layer is the post-flight review: the pilot landed
+or revealed issues, but the platform still needs the instructor, maintenance log
+and runway rules before opening regular service.
+
+1. `Advanced Pilot Learning Registry`
+   - consolidates pilot outcome, accountant pending evidence, snapshot quality
+     and runbook readiness as product-learning signals
+2. `External Accountant Acceptance Criteria`
+   - separates platform readiness from what an external accountant would accept
+     before formal use
+3. `Advanced Product Graduation Matrix`
+   - decides whether to graduate to product, extend pilot, return to foundation
+     hardening or not graduate
+4. `Formal Books Boundary Blueprint`
+   - defines what the platform can prepare versus what requires official
+     professional action for legal books and signed statements
+5. `Certified Bank Feed Boundary Blueprint`
+   - defines the line between assisted bank evidence and certified bank-feed or
+     legal reconciliation responsibility
+6. `Accounting Advanced Graduation Closeout`
+   - packages learning registry, accountant criteria, graduation matrix and both
+     boundaries into one roadmap decision
+
+Guardrail: graduation 0.5 still does not implement official books, certified
+bank feeds, signed financial statements or statutory closeout. It decides the
+next product direction and documents the boundaries that must exist before any
+formal Accounting Advanced product is opened.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -1951,6 +1982,11 @@ product. Its current scope is intentionally operational and review-oriented:
     enrolls eligible tenant-periods, freezes evidence, opens an accountant
     review room, builds a runbook, emits an outcome packet and closes the pilot
     without crossing into statutory accounting or automatic filing.
+23. Accounting Advanced product graduation 0.5 as the post-pilot decision gate.
+    It captures pilot learnings, external accountant acceptance criteria,
+    graduation matrix, formal books boundary and certified bank-feed boundary
+    before deciding whether to graduate, extend pilot, return to hardening or
+    not graduate.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

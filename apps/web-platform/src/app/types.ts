@@ -4741,6 +4741,89 @@ export interface AccountingAdvancedExternalExecutionTrackingCloseoutResponse {
   guardrails: string[];
 }
 
+export interface AccountingAdvancedExternalResultIntakeCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  intakeAnchor: {
+    intakeStatus: string;
+    summary: {
+      gateCount: number;
+      readyGateCount: number;
+      needsReviewGateCount: number;
+      blockedGateCount: number;
+      trackingChecklistCount: number;
+    };
+  };
+  artifactRegistry: {
+    registryStatus: string;
+    summary: {
+      artifactCount: number;
+      signedArtifactCount: number;
+      certifiedArtifactCount: number;
+      legalizedArtifactCount: number;
+      observedArtifactCount: number;
+      rejectedArtifactCount: number;
+    };
+  };
+  criteriaWorkspace: {
+    criteriaStatus: string;
+    summary: {
+      criteriaCount: number;
+      readyCriteriaCount: number;
+      needsReviewCriteriaCount: number;
+      blockedCriteriaCount: number;
+      blockerRefCount: number;
+    };
+  };
+  decisionWorkspace: {
+    decisionStatus: string;
+    summary: {
+      decisionCount: number;
+      acceptedDecisionCount: number;
+      needsReviewDecisionCount: number;
+      returnToTrackingDecisionCount: number;
+      returnToHandoffDecisionCount: number;
+      rejectedDecisionCount: number;
+    };
+  };
+  commandCenter: {
+    commandStatus: string;
+    suggestedDecision: string;
+    summary: {
+      laneCount: number;
+      readyLaneCount: number;
+      needsReviewLaneCount: number;
+      blockedLaneCount: number;
+      receivedArtifactCount: number;
+      acceptedArtifactCount: number;
+      observedArtifactCount: number;
+      rejectedArtifactCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    intakeGateCount: number;
+    returnedArtifactCount: number;
+    criteriaCount: number;
+    decisionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

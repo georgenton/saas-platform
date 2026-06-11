@@ -66,6 +66,11 @@ import {
   GetTenantAccountingAdvancedExecutionHandoffEvidenceBundleUseCase,
   GetTenantAccountingAdvancedExternalExecutionInstructionPackUseCase,
   GetTenantAccountingAdvancedExecutionReturnEvidenceIntakeUseCase,
+  GetTenantAccountingAdvancedExternalExecutionTrackingAnchorUseCase,
+  GetTenantAccountingAdvancedExternalExecutionStatusLedgerUseCase,
+  GetTenantAccountingAdvancedReturnedEvidenceValidationWorkspaceUseCase,
+  GetTenantAccountingAdvancedExternalObservationResolutionQueueUseCase,
+  GetTenantAccountingAdvancedExternalExecutionTrackingCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -135,6 +140,7 @@ import {
   RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase,
   RequestTenantAccountingAdvancedSignatureCertificationBoundaryCloseoutUseCase,
   RequestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase,
+  RequestTenantAccountingAdvancedExternalExecutionTrackingCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -998,6 +1004,84 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase(
           getTenantAccountingAdvancedExecutionReturnEvidenceIntakeUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedExternalExecutionTrackingAnchorUseCase,
+      inject: [
+        RequestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedExternalExecutionTrackingAnchorUseCase(
+          requestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedExternalExecutionStatusLedgerUseCase,
+      inject: [
+        GetTenantAccountingAdvancedExternalExecutionTrackingAnchorUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedExternalExecutionTrackingAnchorUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedExternalExecutionStatusLedgerUseCase(
+          getTenantAccountingAdvancedExternalExecutionTrackingAnchorUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedReturnedEvidenceValidationWorkspaceUseCase,
+      inject: [
+        GetTenantAccountingAdvancedExternalExecutionStatusLedgerUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedExternalExecutionStatusLedgerUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedReturnedEvidenceValidationWorkspaceUseCase(
+          getTenantAccountingAdvancedExternalExecutionStatusLedgerUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedExternalObservationResolutionQueueUseCase,
+      inject: [
+        GetTenantAccountingAdvancedReturnedEvidenceValidationWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedReturnedEvidenceValidationWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedExternalObservationResolutionQueueUseCase(
+          getTenantAccountingAdvancedReturnedEvidenceValidationWorkspaceUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedExternalExecutionTrackingCommandCenterUseCase,
+      inject: [
+        GetTenantAccountingAdvancedExternalObservationResolutionQueueUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedExternalObservationResolutionQueueUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedExternalExecutionTrackingCommandCenterUseCase(
+          getTenantAccountingAdvancedExternalObservationResolutionQueueUseCase,
+        ),
+    },
+    {
+      provide:
+        RequestTenantAccountingAdvancedExternalExecutionTrackingCloseoutUseCase,
+      inject: [
+        GetTenantAccountingAdvancedExternalExecutionTrackingCommandCenterUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedExternalExecutionTrackingCommandCenterUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedExternalExecutionTrackingCloseoutUseCase(
+          getTenantAccountingAdvancedExternalExecutionTrackingCommandCenterUseCase,
         ),
     },
     {

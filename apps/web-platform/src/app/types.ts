@@ -4660,6 +4660,87 @@ export interface AccountingAdvancedExternalExecutionHandoffCloseoutResponse {
   guardrails: string[];
 }
 
+export interface AccountingAdvancedExternalExecutionTrackingCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  trackingAnchor: {
+    trackingStatus: string;
+    summary: {
+      laneCount: number;
+      readyLaneCount: number;
+      needsReviewLaneCount: number;
+      blockedLaneCount: number;
+      handoffChecklistCount: number;
+    };
+  };
+  statusLedger: {
+    ledgerStatus: string;
+    summary: {
+      eventCount: number;
+      readyEventCount: number;
+      needsReviewEventCount: number;
+      blockedEventCount: number;
+      evidenceRequiredCount: number;
+      evidenceReceivedCount: number;
+    };
+  };
+  validationWorkspace: {
+    validationStatus: string;
+    summary: {
+      validationCount: number;
+      validReturnCount: number;
+      observedReturnCount: number;
+      rejectedReturnCount: number;
+      insufficientEvidenceCount: number;
+    };
+  };
+  observationQueue: {
+    queueStatus: string;
+    summary: {
+      observationCount: number;
+      readyObservationCount: number;
+      needsReviewObservationCount: number;
+      blockedObservationCount: number;
+      routedObservationCount: number;
+    };
+  };
+  commandCenter: {
+    commandStatus: string;
+    suggestedDecision: string;
+    summary: {
+      laneCount: number;
+      readyLaneCount: number;
+      needsReviewLaneCount: number;
+      blockedLaneCount: number;
+      returnedCount: number;
+      observedCount: number;
+      rejectedCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    trackingLaneCount: number;
+    ledgerEventCount: number;
+    validationCount: number;
+    observationCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

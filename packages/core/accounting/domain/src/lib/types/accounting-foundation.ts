@@ -281,6 +281,12 @@ export type AccountingAdvancedExternalExecutionHandoffDecision =
   | 'needs_executor_assignment'
   | 'return_to_signature_boundary'
   | 'do_not_handoff_formal_acts';
+export type AccountingAdvancedExternalExecutionTrackingDecision =
+  | 'ready_for_external_result_intake'
+  | 'waiting_for_external_execution'
+  | 'resolve_external_observations'
+  | 'return_to_external_handoff'
+  | 'do_not_accept_external_results';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -2342,6 +2348,204 @@ export interface TenantAccountingAdvancedExternalExecutionHandoffCloseoutView {
     bundleCount: number;
     instructionCount: number;
     returnChannelCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedExternalExecutionTrackingAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  trackingStatus: AccountingReadinessStatus;
+  handoffCloseout: TenantAccountingAdvancedExternalExecutionHandoffCloseoutView;
+  trackingLanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    externalAct: 'signature' | 'certification' | 'legalization';
+    trackingState:
+      | 'not_started'
+      | 'sent_outside_platform'
+      | 'in_external_review'
+      | 'returned_with_evidence'
+      | 'returned_with_observation'
+      | 'rejected'
+      | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+    handoffChecklistCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedExternalExecutionStatusLedgerView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  ledgerStatus: AccountingReadinessStatus;
+  trackingAnchor: TenantAccountingAdvancedExternalExecutionTrackingAnchorView;
+  events: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    laneKey: string;
+    externalAct: 'signature' | 'certification' | 'legalization';
+    expectedActor: string;
+    eventState:
+      | 'queued_for_external_actor'
+      | 'external_actor_reviewing'
+      | 'external_result_returned'
+      | 'external_observation_returned'
+      | 'external_rejection_returned';
+    evidenceRequired: string[];
+    evidenceReceived: string[];
+    blockerRefs: string[];
+  }>;
+  summary: {
+    eventCount: number;
+    readyEventCount: number;
+    needsReviewEventCount: number;
+    blockedEventCount: number;
+    evidenceRequiredCount: number;
+    evidenceReceivedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  validationStatus: AccountingReadinessStatus;
+  statusLedger: TenantAccountingAdvancedExternalExecutionStatusLedgerView;
+  validations: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    eventKey: string;
+    validationResult:
+      | 'valid_return'
+      | 'observed_return'
+      | 'rejected_return'
+      | 'insufficient_evidence';
+    requiredEvidence: string[];
+    receivedEvidence: string[];
+    blockerRefs: string[];
+  }>;
+  summary: {
+    validationCount: number;
+    validReturnCount: number;
+    observedReturnCount: number;
+    rejectedReturnCount: number;
+    insufficientEvidenceCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedExternalObservationResolutionQueueView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  queueStatus: AccountingReadinessStatus;
+  validationWorkspace: TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView;
+  observations: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    validationKey: string;
+    resolutionRoute:
+      | 'return_to_artifact_drafting'
+      | 'return_to_professional_review'
+      | 'return_to_formal_approval'
+      | 'return_to_signature_boundary'
+      | 'return_to_external_handoff'
+      | 'no_resolution_required';
+    reason: string;
+  }>;
+  summary: {
+    observationCount: number;
+    readyObservationCount: number;
+    needsReviewObservationCount: number;
+    blockedObservationCount: number;
+    routedObservationCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedExternalExecutionTrackingCommandCenterView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  commandStatus: AccountingReadinessStatus;
+  observationQueue: TenantAccountingAdvancedExternalObservationResolutionQueueView;
+  commandLanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    metric: string;
+    count: number;
+  }>;
+  suggestedDecision: AccountingAdvancedExternalExecutionTrackingDecision;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+    returnedCount: number;
+    observedCount: number;
+    rejectedCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedExternalExecutionTrackingCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  trackingAnchor: TenantAccountingAdvancedExternalExecutionTrackingAnchorView;
+  statusLedger: TenantAccountingAdvancedExternalExecutionStatusLedgerView;
+  validationWorkspace: TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView;
+  observationQueue: TenantAccountingAdvancedExternalObservationResolutionQueueView;
+  commandCenter: TenantAccountingAdvancedExternalExecutionTrackingCommandCenterView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: AccountingAdvancedExternalExecutionTrackingDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    trackingLaneCount: number;
+    ledgerEventCount: number;
+    validationCount: number;
+    observationCount: number;
   };
   blockers: string[];
   nextStep: string;

@@ -141,6 +141,7 @@ import {
   fetchAccountingAdvancedFormalApprovalWorkflowCloseout,
   fetchAccountingAdvancedSignatureCertificationBoundaryCloseout,
   fetchAccountingAdvancedExternalExecutionHandoffCloseout,
+  fetchAccountingAdvancedExternalExecutionTrackingCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -504,6 +505,7 @@ import {
   AccountingAdvancedFormalApprovalWorkflowCloseoutResponse,
   AccountingAdvancedSignatureCertificationBoundaryCloseoutResponse,
   AccountingAdvancedExternalExecutionHandoffCloseoutResponse,
+  AccountingAdvancedExternalExecutionTrackingCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2626,6 +2628,13 @@ export function App() {
     setAccountingAdvancedExternalExecutionHandoffCloseout,
   ] =
     useState<AccountingAdvancedExternalExecutionHandoffCloseoutResponse | null>(
+      null,
+    );
+  const [
+    accountingAdvancedExternalExecutionTrackingCloseout,
+    setAccountingAdvancedExternalExecutionTrackingCloseout,
+  ] =
+    useState<AccountingAdvancedExternalExecutionTrackingCloseoutResponse | null>(
       null,
     );
   const [
@@ -20787,6 +20796,7 @@ export function App() {
         nextAccountingAdvancedFormalApprovalWorkflowCloseout,
         nextAccountingAdvancedSignatureCertificationBoundaryCloseout,
         nextAccountingAdvancedExternalExecutionHandoffCloseout,
+        nextAccountingAdvancedExternalExecutionTrackingCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21074,6 +21084,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedExternalExecutionTrackingCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21109,6 +21125,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21409,6 +21426,9 @@ export function App() {
         );
         setAccountingAdvancedExternalExecutionHandoffCloseout(
           nextAccountingAdvancedExternalExecutionHandoffCloseout,
+        );
+        setAccountingAdvancedExternalExecutionTrackingCloseout(
+          nextAccountingAdvancedExternalExecutionTrackingCloseout,
         );
       });
     } catch (error) {
@@ -36970,8 +36990,111 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedExternalExecutionTrackingCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced External Execution
+                                        Tracking 1.3
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedExternalExecutionTrackingCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Tracking lanes
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedExternalExecutionTrackingCloseout
+                                              .trackingAnchor.summary
+                                              .readyLaneCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedExternalExecutionTrackingCloseout
+                                              .trackingAnchor.summary.laneCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Ledger
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedExternalExecutionTrackingCloseout
+                                              .statusLedger.summary.eventCount
+                                          }{' '}
+                                          eventos
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Evidencia
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedExternalExecutionTrackingCloseout
+                                              .validationWorkspace.summary
+                                              .validReturnCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedExternalExecutionTrackingCloseout
+                                              .validationWorkspace.summary
+                                              .validationCount
+                                          }{' '}
+                                          valid
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Observaciones
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedExternalExecutionTrackingCloseout
+                                              .observationQueue.summary
+                                              .routedObservationCount
+                                          }{' '}
+                                          routed
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Command
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedExternalExecutionTrackingCloseout
+                                              .commandCenter.suggestedDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedExternalExecutionTrackingCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedExternalExecutionTrackingCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedExternalExecutionHandoffCloseout?.nextStep ??
+                                  {accountingAdvancedExternalExecutionTrackingCloseout?.nextStep ??
+                                    accountingAdvancedExternalExecutionHandoffCloseout?.nextStep ??
                                     accountingAdvancedSignatureCertificationBoundaryCloseout?.nextStep ??
                                     accountingAdvancedFormalApprovalWorkflowCloseout?.nextStep ??
                                     accountingAdvancedProfessionalReviewExecutionCloseout?.nextStep ??

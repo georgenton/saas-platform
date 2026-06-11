@@ -1,10 +1,16 @@
 import {
   TenantAccountingAccountantDiscoveryWorkspaceView,
+  TenantAccountingAdvancedBankReconciliationMvpWorkbenchView,
   TenantAccountingAdvancedAuditTrailReadinessPacketView,
   TenantAccountingAdvancedDiscoveryAnchorView,
   TenantAccountingAdvancedDiscoveryCloseoutView,
   TenantAccountingAdvancedDiscoveryIntakeView,
   TenantAccountingAdvancedDiscoveryReadinessPacketView,
+  TenantAccountingAdvancedLedgerCloseoutMvpWorkbenchView,
+  TenantAccountingAdvancedMvpAccountantReviewPacketView,
+  TenantAccountingAdvancedMvpCommandCenterView,
+  TenantAccountingAdvancedMvpExecutionAnchorView,
+  TenantAccountingAdvancedMvpOperatingCloseoutView,
   TenantAccountingAdvancedMvpReadinessCloseoutView,
   TenantAccountingAdvancedMvpScopeDecisionRecordView,
   TenantAccountingAdvancedMvpScopeRegistryView,
@@ -37,6 +43,18 @@ export type AccountingAdvancedAuditTrailReadinessPacketResponseDto =
   Serialized<TenantAccountingAdvancedAuditTrailReadinessPacketView>;
 export type AccountingAdvancedMvpReadinessCloseoutResponseDto =
   Serialized<TenantAccountingAdvancedMvpReadinessCloseoutView>;
+export type AccountingAdvancedMvpExecutionAnchorResponseDto =
+  Serialized<TenantAccountingAdvancedMvpExecutionAnchorView>;
+export type AccountingAdvancedBankReconciliationMvpWorkbenchResponseDto =
+  Serialized<TenantAccountingAdvancedBankReconciliationMvpWorkbenchView>;
+export type AccountingAdvancedLedgerCloseoutMvpWorkbenchResponseDto =
+  Serialized<TenantAccountingAdvancedLedgerCloseoutMvpWorkbenchView>;
+export type AccountingAdvancedMvpAccountantReviewPacketResponseDto =
+  Serialized<TenantAccountingAdvancedMvpAccountantReviewPacketView>;
+export type AccountingAdvancedMvpCommandCenterResponseDto =
+  Serialized<TenantAccountingAdvancedMvpCommandCenterView>;
+export type AccountingAdvancedMvpOperatingCloseoutResponseDto =
+  Serialized<TenantAccountingAdvancedMvpOperatingCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -107,6 +125,42 @@ export function toAccountingAdvancedAuditTrailReadinessPacketResponseDto(
 export function toAccountingAdvancedMvpReadinessCloseoutResponseDto(
   view: TenantAccountingAdvancedMvpReadinessCloseoutView,
 ): AccountingAdvancedMvpReadinessCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedMvpExecutionAnchorResponseDto(
+  view: TenantAccountingAdvancedMvpExecutionAnchorView,
+): AccountingAdvancedMvpExecutionAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedBankReconciliationMvpWorkbenchResponseDto(
+  view: TenantAccountingAdvancedBankReconciliationMvpWorkbenchView,
+): AccountingAdvancedBankReconciliationMvpWorkbenchResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedLedgerCloseoutMvpWorkbenchResponseDto(
+  view: TenantAccountingAdvancedLedgerCloseoutMvpWorkbenchView,
+): AccountingAdvancedLedgerCloseoutMvpWorkbenchResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedMvpAccountantReviewPacketResponseDto(
+  view: TenantAccountingAdvancedMvpAccountantReviewPacketView,
+): AccountingAdvancedMvpAccountantReviewPacketResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedMvpCommandCenterResponseDto(
+  view: TenantAccountingAdvancedMvpCommandCenterView,
+): AccountingAdvancedMvpCommandCenterResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedMvpOperatingCloseoutResponseDto(
+  view: TenantAccountingAdvancedMvpOperatingCloseoutView,
+): AccountingAdvancedMvpOperatingCloseoutResponseDto {
   return serialize(view);
 }
 

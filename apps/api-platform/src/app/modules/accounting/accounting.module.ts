@@ -42,6 +42,11 @@ import {
   GetTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase,
   GetTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase,
   GetTenantAccountingAdvancedFormalArtifactDraftRegistryUseCase,
+  GetTenantAccountingAdvancedFormalArtifactDraftingAnchorUseCase,
+  GetTenantAccountingAdvancedAdjustmentDraftPackUseCase,
+  GetTenantAccountingAdvancedCertifiedReconciliationDraftPackUseCase,
+  GetTenantAccountingAdvancedFinancialStatementsDraftPackUseCase,
+  GetTenantAccountingAdvancedFormalBooksDraftWorkspaceUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -105,6 +110,7 @@ import {
   RequestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase,
   RequestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalProductRiskGuardrailPackUseCase,
+  RequestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -628,6 +634,69 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase(
           requestTenantAccountingAdvancedFormalProductRiskGuardrailPackUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedFormalArtifactDraftingAnchorUseCase,
+      inject: [
+        RequestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedFormalArtifactDraftingAnchorUseCase(
+          requestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedAdjustmentDraftPackUseCase,
+      inject: [GetTenantAccountingAdvancedFormalArtifactDraftingAnchorUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedFormalArtifactDraftingAnchorUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedAdjustmentDraftPackUseCase(
+          getTenantAccountingAdvancedFormalArtifactDraftingAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedFormalBooksDraftWorkspaceUseCase,
+      inject: [GetTenantAccountingAdvancedAdjustmentDraftPackUseCase],
+      useFactory: (getTenantAccountingAdvancedAdjustmentDraftPackUseCase) =>
+        new GetTenantAccountingAdvancedFormalBooksDraftWorkspaceUseCase(
+          getTenantAccountingAdvancedAdjustmentDraftPackUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedFinancialStatementsDraftPackUseCase,
+      inject: [GetTenantAccountingAdvancedFormalBooksDraftWorkspaceUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedFormalBooksDraftWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedFinancialStatementsDraftPackUseCase(
+          getTenantAccountingAdvancedFormalBooksDraftWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedCertifiedReconciliationDraftPackUseCase,
+      inject: [GetTenantAccountingAdvancedFinancialStatementsDraftPackUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedFinancialStatementsDraftPackUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedCertifiedReconciliationDraftPackUseCase(
+          getTenantAccountingAdvancedFinancialStatementsDraftPackUseCase,
+        ),
+    },
+    {
+      provide:
+        RequestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase,
+      inject: [
+        GetTenantAccountingAdvancedCertifiedReconciliationDraftPackUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedCertifiedReconciliationDraftPackUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase(
+          getTenantAccountingAdvancedCertifiedReconciliationDraftPackUseCase,
         ),
     },
     {

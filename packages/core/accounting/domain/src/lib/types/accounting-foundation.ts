@@ -256,6 +256,11 @@ export type AccountingAdvancedFormalProductDesignDecision =
   | 'needs_scope_review'
   | 'return_to_formal_readiness_hardening'
   | 'do_not_design_formal_product';
+export type AccountingAdvancedFormalArtifactDraftingDecision =
+  | 'ready_for_professional_review_execution'
+  | 'needs_draft_evidence'
+  | 'return_to_formal_product_design'
+  | 'do_not_draft_formal_artifacts';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -1425,6 +1430,173 @@ export interface TenantAccountingAdvancedFormalProductDesignCloseoutView {
     includedModuleCount: number;
     artifactCount: number;
     externalOwnerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalArtifactDraftingAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  productDesignCloseout: TenantAccountingAdvancedFormalProductDesignCloseoutView;
+  draftingGates: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+    gate: string;
+  }>;
+  summary: {
+    gateCount: number;
+    readyGateCount: number;
+    needsReviewGateCount: number;
+    blockedGateCount: number;
+    designArtifactCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedAdjustmentDraftPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  draftingAnchor: TenantAccountingAdvancedFormalArtifactDraftingAnchorView;
+  draftAdjustments: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    adjustmentType: 'accrual' | 'reclassification' | 'estimation' | 'cleanup';
+    evidenceRefs: string[];
+    professionalQuestion: string;
+  }>;
+  summary: {
+    draftCount: number;
+    readyDraftCount: number;
+    needsReviewDraftCount: number;
+    blockedDraftCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalBooksDraftWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workspaceStatus: AccountingReadinessStatus;
+  adjustmentDraftPack: TenantAccountingAdvancedAdjustmentDraftPackView;
+  bookDrafts: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    bookType: 'journal' | 'ledger';
+    sourceRefs: string[];
+    reviewBoundary: string;
+  }>;
+  summary: {
+    bookDraftCount: number;
+    readyBookDraftCount: number;
+    needsReviewBookDraftCount: number;
+    blockedBookDraftCount: number;
+    adjustmentDraftCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFinancialStatementsDraftPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  formalBooksWorkspace: TenantAccountingAdvancedFormalBooksDraftWorkspaceView;
+  statementDrafts: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    statementType:
+      | 'financial_position'
+      | 'income_statement'
+      | 'cash_movement'
+      | 'period_comparison';
+    periodRange: string;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    statementDraftCount: number;
+    readyStatementDraftCount: number;
+    needsReviewStatementDraftCount: number;
+    blockedStatementDraftCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedCertifiedReconciliationDraftPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  financialStatementsDraftPack: TenantAccountingAdvancedFinancialStatementsDraftPackView;
+  reconciliationDrafts: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+    externalProofRequired: string;
+    certificationBoundary: string;
+  }>;
+  summary: {
+    reconciliationDraftCount: number;
+    readyReconciliationDraftCount: number;
+    needsExternalProofDraftCount: number;
+    blockedReconciliationDraftCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalArtifactDraftingCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  draftingAnchor: TenantAccountingAdvancedFormalArtifactDraftingAnchorView;
+  adjustmentDraftPack: TenantAccountingAdvancedAdjustmentDraftPackView;
+  formalBooksWorkspace: TenantAccountingAdvancedFormalBooksDraftWorkspaceView;
+  financialStatementsDraftPack: TenantAccountingAdvancedFinancialStatementsDraftPackView;
+  certifiedReconciliationDraftPack: TenantAccountingAdvancedCertifiedReconciliationDraftPackView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: AccountingAdvancedFormalArtifactDraftingDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    adjustmentDraftCount: number;
+    bookDraftCount: number;
+    statementDraftCount: number;
+    reconciliationDraftCount: number;
   };
   blockers: string[];
   nextStep: string;

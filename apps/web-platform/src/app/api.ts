@@ -51,6 +51,7 @@ import {
   AccountingAdvancedGraduationCloseoutResponse,
   AccountingAdvancedFormalReadinessCloseoutResponse,
   AccountingAdvancedFormalProductDesignCloseoutResponse,
+  AccountingAdvancedFormalArtifactDraftingCloseoutResponse,
   AccountingFormalNeedsClassifierResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingPeriodEvidenceVaultResponse,
@@ -3280,6 +3281,22 @@ export async function fetchAccountingAdvancedFormalProductDesignCloseout(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/advanced-formal-design/closeout?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchAccountingAdvancedFormalArtifactDraftingCloseout(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingAdvancedFormalArtifactDraftingCloseoutResponse> {
+  return request<AccountingAdvancedFormalArtifactDraftingCloseoutResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/advanced-formal-drafting/closeout?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

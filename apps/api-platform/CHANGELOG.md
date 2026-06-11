@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.30
+
+### Patch Changes
+
+- f75d37e: Add Tax Compliance EC pilot memory 7.2 with evidence persistence ledger, multi-tenant cohort, repeated signal detector, accountant collaboration workbench, AI pilot assistant packet, closeout, web dashboard wiring, model refresh, and smoke coverage.
+
 ## 0.107.29
 
 ### Patch Changes

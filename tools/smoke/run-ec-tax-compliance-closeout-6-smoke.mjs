@@ -96,6 +96,12 @@ const [
   pilotLearningBacklogV71,
   accountingAdvancedEvidenceGateV71,
   pilotOperationsCloseoutV71,
+  pilotEvidenceLedgerV72,
+  pilotMultiTenantCohortV72,
+  pilotRepeatedSignalDetectorV72,
+  accountantWorkbenchV72,
+  aiPilotAssistantPacketV72,
+  pilotCloseoutV72,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -219,6 +225,36 @@ const [
     path: taxPath(`/pilot-operations-closeout-v71?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-evidence-persistence-ledger-v72?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-multi-tenant-cohort-v72?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-repeated-signal-detector-v72?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accountant-collaboration-workbench-v72?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/ai-pilot-assistant-packet-v72?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-closeout-v72?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertValue('sri source import center', sriSourceImportCenter.centerStatus);
@@ -318,6 +354,22 @@ assertNonEmpty(
   'pilot operations checklist 7.1',
   pilotOperationsCloseoutV71.closeoutChecklist,
 );
+assertValue('pilot evidence ledger 7.2', pilotEvidenceLedgerV72.ledgerStatus);
+assertValue('pilot multi tenant cohort 7.2', pilotMultiTenantCohortV72.cohortStatus);
+assertValue(
+  'pilot repeated signal detector 7.2',
+  pilotRepeatedSignalDetectorV72.detectorStatus,
+);
+assertValue(
+  'accountant collaboration workbench 7.2',
+  accountantWorkbenchV72.workbenchStatus,
+);
+assertValue('ai pilot assistant packet 7.2', aiPilotAssistantPacketV72.assistantStatus);
+assertValue('pilot closeout 7.2', pilotCloseoutV72.closeoutStatus);
+assertNonEmpty('pilot evidence records 7.2', pilotEvidenceLedgerV72.persistedRecords);
+assertNonEmpty('pilot cohort rows 7.2', pilotMultiTenantCohortV72.cohortRows);
+assertNonEmpty('pilot assistant actions 7.2', aiPilotAssistantPacketV72.suggestedActions);
+assertNonEmpty('pilot closeout checklist 7.2', pilotCloseoutV72.closeoutChecklist);
 
 printLine('sri import center', sriSourceImportCenter.centerStatus);
 printLine('iva workspace', vatDeclarationWorkspace.readinessStatus);
@@ -355,5 +407,12 @@ printLine(
   'pilot operations next product',
   pilotOperationsCloseoutV71.recommendedNextProduct,
 );
+printLine('pilot ledger 7.2', pilotEvidenceLedgerV72.ledgerStatus);
+printLine('pilot cohort 7.2', pilotMultiTenantCohortV72.cohortStatus);
+printLine('repeated signals 7.2', pilotRepeatedSignalDetectorV72.detectorStatus);
+printLine('accountant workbench 7.2', accountantWorkbenchV72.workbenchStatus);
+printLine('ai pilot packet 7.2', aiPilotAssistantPacketV72.assistantStatus);
+printLine('pilot closeout 7.2', pilotCloseoutV72.closeoutStatus);
+printLine('pilot next product 7.2', pilotCloseoutV72.recommendedNextProduct);
 
-printSection('EC tax compliance closeout 6/6.2/7.0/7.1 smoke passed');
+printSection('EC tax compliance closeout 6/6.2/7.0/7.1/7.2 smoke passed');

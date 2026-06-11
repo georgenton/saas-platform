@@ -1,8 +1,5 @@
 ---
 'api-platform': patch
-'web-platform': patch
-'@saas-platform/accounting-application': patch
-'@saas-platform/accounting-domain': patch
 ---
 
 Add Accounting Advanced Discovery 0.1 with Tax 7.3 anchored discovery, formal

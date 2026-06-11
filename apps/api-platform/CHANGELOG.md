@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.38
+
+### Patch Changes
+
+- 063a90e: Add Accounting Advanced Formal Product Design 0.7 with formal scope contract, professional responsibility matrix, formal artifact draft registry, professional review workflow design, risk guardrail pack, design closeout API, dashboard wiring, conceptual model updates, and smoke coverage.
+
 ## 0.107.37
 
 ### Patch Changes

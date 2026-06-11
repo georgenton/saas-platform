@@ -137,6 +137,7 @@ import {
   fetchAccountingAdvancedFormalReadinessCloseout,
   fetchAccountingAdvancedFormalProductDesignCloseout,
   fetchAccountingAdvancedFormalArtifactDraftingCloseout,
+  fetchAccountingAdvancedProfessionalReviewExecutionCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -496,6 +497,7 @@ import {
   AccountingAdvancedFormalReadinessCloseoutResponse,
   AccountingAdvancedFormalProductDesignCloseoutResponse,
   AccountingAdvancedFormalArtifactDraftingCloseoutResponse,
+  AccountingAdvancedProfessionalReviewExecutionCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2590,6 +2592,13 @@ export function App() {
     setAccountingAdvancedFormalArtifactDraftingCloseout,
   ] =
     useState<AccountingAdvancedFormalArtifactDraftingCloseoutResponse | null>(
+      null,
+    );
+  const [
+    accountingAdvancedProfessionalReviewExecutionCloseout,
+    setAccountingAdvancedProfessionalReviewExecutionCloseout,
+  ] =
+    useState<AccountingAdvancedProfessionalReviewExecutionCloseoutResponse | null>(
       null,
     );
   const [
@@ -20747,6 +20756,7 @@ export function App() {
         nextAccountingAdvancedFormalReadinessCloseout,
         nextAccountingAdvancedFormalProductDesignCloseout,
         nextAccountingAdvancedFormalArtifactDraftingCloseout,
+        nextAccountingAdvancedProfessionalReviewExecutionCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21010,6 +21020,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedProfessionalReviewExecutionCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21045,6 +21061,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21329,6 +21346,9 @@ export function App() {
         );
         setAccountingAdvancedFormalArtifactDraftingCloseout(
           nextAccountingAdvancedFormalArtifactDraftingCloseout,
+        );
+        setAccountingAdvancedProfessionalReviewExecutionCloseout(
+          nextAccountingAdvancedProfessionalReviewExecutionCloseout,
         );
       });
     } catch (error) {
@@ -36484,8 +36504,112 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedProfessionalReviewExecutionCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced Professional Review
+                                        Execution 0.9
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedProfessionalReviewExecutionCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedProfessionalReviewExecutionCloseout
+                                              .reviewAnchor.summary
+                                              .readyGateCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedProfessionalReviewExecutionCloseout
+                                              .reviewAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Reviews
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedProfessionalReviewExecutionCloseout
+                                              .reviewRoom.summary
+                                              .reviewRowCount
+                                          }{' '}
+                                          rows
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Cambios
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedProfessionalReviewExecutionCloseout
+                                              .changeRequestPack.summary
+                                              .changeRequestCount
+                                          }{' '}
+                                          requests
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Recomendadas
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedProfessionalReviewExecutionCloseout
+                                              .approvalRecommendationPack
+                                              .summary.recommendApprovalCount
+                                          }{' '}
+                                          approval
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Command
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedProfessionalReviewExecutionCloseout
+                                              .commandCenter.summary
+                                              .readyLaneCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedProfessionalReviewExecutionCloseout
+                                              .commandCenter.summary.laneCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedProfessionalReviewExecutionCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedProfessionalReviewExecutionCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedFormalArtifactDraftingCloseout?.nextStep ??
+                                  {accountingAdvancedProfessionalReviewExecutionCloseout?.nextStep ??
+                                    accountingAdvancedFormalArtifactDraftingCloseout?.nextStep ??
                                     accountingAdvancedFormalProductDesignCloseout?.nextStep ??
                                     accountingAdvancedFormalReadinessCloseout?.nextStep ??
                                     accountingAdvancedGraduationCloseout?.nextStep ??

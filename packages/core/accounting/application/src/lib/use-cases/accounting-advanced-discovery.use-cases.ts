@@ -7,6 +7,7 @@ import {
   AccountingAdvancedFormalReadinessDecision,
   AccountingAdvancedFormalProductDesignDecision,
   AccountingAdvancedFormalArtifactDraftingDecision,
+  AccountingAdvancedProfessionalReviewExecutionDecision,
   AccountingAdvancedFormalModuleKey,
   AccountingAdvancedProfessionalOwner,
   AccountingAdvancedPilotEnrollmentStatus,
@@ -55,6 +56,12 @@ import {
   TenantAccountingAdvancedFormalArtifactDraftingAnchorView,
   TenantAccountingAdvancedFormalArtifactDraftingCloseoutView,
   TenantAccountingAdvancedFormalBooksDraftWorkspaceView,
+  TenantAccountingAdvancedAccountantDraftReviewRoomView,
+  TenantAccountingAdvancedProfessionalApprovalRecommendationPackView,
+  TenantAccountingAdvancedProfessionalReviewExecutionAnchorView,
+  TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView,
+  TenantAccountingAdvancedReviewChangeRequestPackView,
+  TenantAccountingAdvancedReviewExecutionCommandCenterView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
@@ -4199,6 +4206,514 @@ export class RequestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCas
   }
 }
 
+export class GetTenantAccountingAdvancedProfessionalReviewExecutionAnchorUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase: RequestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedProfessionalReviewExecutionAnchorView> {
+    const draftingCloseout =
+      await this.requestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase.execute(
+        input,
+      );
+    const reviewGates: TenantAccountingAdvancedProfessionalReviewExecutionAnchorView['reviewGates'] =
+      [
+        professionalReviewGate(
+          'drafting_closeout',
+          'Formal drafting closeout complete',
+          draftingCloseout.closeoutStatus,
+          ['advanced_formal_artifact_drafting_closeout'],
+          'external_accountant',
+          'Professional review starts only from traceable drafts.',
+        ),
+        professionalReviewGate(
+          'changeable_drafts',
+          'Drafts remain changeable',
+          'ready',
+          ['advanced_adjustment_draft_pack', 'advanced_formal_books_draft_workspace'],
+          'operator',
+          'Review can request changes before approval workflow.',
+        ),
+        professionalReviewGate(
+          'external_reviewers',
+          'External reviewers visible',
+          draftingCloseout.draftingAnchor.productDesignCloseout
+            .responsibilityMatrix.matrixStatus,
+          ['advanced_professional_responsibility_assignment_matrix'],
+          'external_accountant',
+          'The platform never becomes the professional reviewer.',
+        ),
+        professionalReviewGate(
+          'certification_boundary',
+          'Certification boundary preserved',
+          draftingCloseout.certifiedReconciliationDraftPack.packStatus,
+          ['advanced_certified_reconciliation_draft_pack'],
+          'auditor',
+          'Certified reconciliation still requires external proof and signoff.',
+        ),
+      ];
+    const blockers =
+      draftingCloseout.finalDecision ===
+      'ready_for_professional_review_execution'
+        ? [...draftingCloseout.blockers]
+        : unique([
+            ...draftingCloseout.blockers,
+            `Formal drafting decision is ${draftingCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(
+      reviewGates.map((gate) => gate.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      draftingCloseout,
+      reviewGates,
+      summary: {
+        gateCount: reviewGates.length,
+        readyGateCount: reviewGates.filter((gate) => gate.status === 'ready')
+          .length,
+        needsReviewGateCount: reviewGates.filter(
+          (gate) => gate.status === 'needs_review',
+        ).length,
+        blockedGateCount: reviewGates.filter(
+          (gate) => gate.status === 'blocked',
+        ).length,
+        draftArtifactCount:
+          draftingCloseout.summary.adjustmentDraftCount +
+          draftingCloseout.summary.bookDraftCount +
+          draftingCloseout.summary.statementDraftCount +
+          draftingCloseout.summary.reconciliationDraftCount,
+      },
+      blockers,
+      nextStep:
+        anchorStatus === 'blocked'
+          ? 'Volver a drafting 0.8 antes de ejecutar review profesional.'
+          : 'Abrir sala de review para contador y revisores externos.',
+      guardrails: [
+        'Review Execution 0.9 revisa drafts; no firma, certifica ni legaliza.',
+        'Toda decision profesional queda trazada como recomendacion o cambio solicitado.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedAccountantDraftReviewRoomUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedProfessionalReviewExecutionAnchorUseCase: GetTenantAccountingAdvancedProfessionalReviewExecutionAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedAccountantDraftReviewRoomView> {
+    const reviewAnchor =
+      await this.getTenantAccountingAdvancedProfessionalReviewExecutionAnchorUseCase.execute(
+        input,
+      );
+    const reviewRows: TenantAccountingAdvancedAccountantDraftReviewRoomView['reviewRows'] =
+      [
+        draftReviewRow(
+          'adjustment_pack_review',
+          'Advanced adjustment draft review',
+          reviewAnchor.draftingCloseout.adjustmentDraftPack.packStatus,
+          'adjustment_pack',
+          'external_accountant',
+          'Ajustes requieren confirmacion antes de afectar borradores formales.',
+          'request_changes',
+        ),
+        draftReviewRow(
+          'journal_book_review',
+          'Journal book draft review',
+          reviewAnchor.draftingCloseout.formalBooksWorkspace.workspaceStatus,
+          'journal_book',
+          'external_accountant',
+          'Diario preliminar listo para revision de secuencia y soporte.',
+          'approve_for_recommendation',
+        ),
+        draftReviewRow(
+          'ledger_book_review',
+          'Ledger book draft review',
+          'needs_review',
+          'ledger_book',
+          'external_accountant',
+          'Mayor necesita validar saldos y politicas de cierre.',
+          'request_changes',
+        ),
+        draftReviewRow(
+          'financial_statement_review',
+          'Financial statement draft review',
+          reviewAnchor.draftingCloseout.financialStatementsDraftPack.packStatus,
+          'financial_statement',
+          'legal_representative',
+          'Estados financieros necesitan validacion profesional antes de aprobacion.',
+          'needs_external_signoff',
+        ),
+        draftReviewRow(
+          'certified_reconciliation_review',
+          'Certified reconciliation draft review',
+          reviewAnchor.draftingCloseout.certifiedReconciliationDraftPack
+            .packStatus,
+          'certified_reconciliation',
+          'auditor',
+          'Conciliacion certificable requiere prueba externa antes de avanzar.',
+          'needs_external_signoff',
+        ),
+      ];
+    const blockers = [...reviewAnchor.blockers];
+    const roomStatus = resolveStatus(
+      reviewRows.map((row) => row.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      roomStatus,
+      reviewAnchor,
+      reviewRows,
+      summary: {
+        reviewRowCount: reviewRows.length,
+        approveForRecommendationCount: reviewRows.filter(
+          (row) => row.preliminaryDecision === 'approve_for_recommendation',
+        ).length,
+        changeRequestCount: reviewRows.filter(
+          (row) => row.preliminaryDecision === 'request_changes',
+        ).length,
+        externalSignoffCount: reviewRows.filter(
+          (row) => row.preliminaryDecision === 'needs_external_signoff',
+        ).length,
+        rejectedDraftCount: reviewRows.filter(
+          (row) => row.preliminaryDecision === 'reject_draft',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        'Convertir observaciones profesionales en change requests trazables.',
+      guardrails: [
+        'La sala de review organiza hallazgos; no aprueba formalmente.',
+        'Los revisores externos conservan criterio y veto sobre cada draft.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedReviewChangeRequestPackUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedAccountantDraftReviewRoomUseCase: GetTenantAccountingAdvancedAccountantDraftReviewRoomUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedReviewChangeRequestPackView> {
+    const reviewRoom =
+      await this.getTenantAccountingAdvancedAccountantDraftReviewRoomUseCase.execute(
+        input,
+      );
+    const changeRequests: TenantAccountingAdvancedReviewChangeRequestPackView['changeRequests'] =
+      reviewRoom.reviewRows
+        .filter((row) => row.preliminaryDecision !== 'approve_for_recommendation')
+        .map((row) =>
+          reviewChangeRequest(
+            `change_${row.key}`,
+            `${row.label} change request`,
+            row.status,
+            row.key,
+            row.reviewer,
+            changeActionFromReviewRow(row),
+            ['advanced_accountant_draft_review_room'],
+          ),
+        );
+    const blockers = [...reviewRoom.blockers];
+    const packStatus = resolveStatus(
+      changeRequests.map((request) => request.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      reviewRoom,
+      changeRequests,
+      summary: {
+        changeRequestCount: changeRequests.length,
+        readyChangeRequestCount: changeRequests.filter(
+          (request) => request.status === 'ready',
+        ).length,
+        needsReviewChangeRequestCount: changeRequests.filter(
+          (request) => request.status === 'needs_review',
+        ).length,
+        blockedChangeRequestCount: changeRequests.filter(
+          (request) => request.status === 'blocked',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        'Preparar recomendaciones de aprobacion para drafts sin cambios criticos.',
+      guardrails: [
+        'Change requests son backlog de revision, no modificaciones automaticas.',
+        'Cada solicitud conserva reviewer, accion requerida y evidencia fuente.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedReviewChangeRequestPackUseCase: GetTenantAccountingAdvancedReviewChangeRequestPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedProfessionalApprovalRecommendationPackView> {
+    const changeRequestPack =
+      await this.getTenantAccountingAdvancedReviewChangeRequestPackUseCase.execute(
+        input,
+      );
+    const recommendations: TenantAccountingAdvancedProfessionalApprovalRecommendationPackView['recommendations'] =
+      changeRequestPack.reviewRoom.reviewRows.map((row) =>
+        approvalRecommendation(
+          `recommendation_${row.key}`,
+          `${row.label} recommendation`,
+          row.status,
+          row.artifactType,
+          recommendationFromReviewRow(row),
+          row.reviewer,
+          recommendationRationaleFromReviewRow(row),
+        ),
+      );
+    const blockers = [...changeRequestPack.blockers];
+    const packStatus = resolveStatus(
+      recommendations.map((recommendation) => recommendation.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      changeRequestPack,
+      recommendations,
+      summary: {
+        recommendationCount: recommendations.length,
+        recommendApprovalCount: recommendations.filter(
+          (item) => item.recommendation === 'recommend_approval',
+        ).length,
+        requireChangesCount: recommendations.filter(
+          (item) => item.recommendation === 'require_changes_first',
+        ).length,
+        requireAuditorReviewCount: recommendations.filter(
+          (item) => item.recommendation === 'require_auditor_review',
+        ).length,
+        doNotApproveCount: recommendations.filter(
+          (item) => item.recommendation === 'do_not_approve',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        'Consolidar command center de review profesional antes del closeout 0.9.',
+      guardrails: [
+        'Approval recommendation no firma ni aprueba formalmente.',
+        'Recomendaciones solo habilitan el siguiente workflow controlado.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedReviewExecutionCommandCenterUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase: RequestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedReviewExecutionCommandCenterView> {
+    const approvalRecommendationPack =
+      await this.requestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase.execute(
+        input,
+      );
+    const { changeRequestPack } = approvalRecommendationPack;
+    const { reviewRoom } = changeRequestPack;
+    const { reviewAnchor } = reviewRoom;
+    const lanes: TenantAccountingAdvancedReviewExecutionCommandCenterView['lanes'] =
+      [
+        reviewCommandLane(
+          'review_anchor',
+          'Review execution anchor',
+          reviewAnchor.anchorStatus,
+          'external_accountant',
+          `${reviewAnchor.summary.readyGateCount}/${reviewAnchor.summary.gateCount} gates`,
+          reviewAnchor.nextStep,
+        ),
+        reviewCommandLane(
+          'review_room',
+          'Accountant draft review room',
+          reviewRoom.roomStatus,
+          'external_accountant',
+          `${reviewRoom.summary.reviewRowCount} reviews`,
+          reviewRoom.nextStep,
+        ),
+        reviewCommandLane(
+          'change_requests',
+          'Review change requests',
+          changeRequestPack.packStatus,
+          'operator',
+          `${changeRequestPack.summary.changeRequestCount} requests`,
+          changeRequestPack.nextStep,
+        ),
+        reviewCommandLane(
+          'approval_recommendations',
+          'Approval recommendations',
+          approvalRecommendationPack.packStatus,
+          'external_accountant',
+          `${approvalRecommendationPack.summary.recommendApprovalCount} recommended`,
+          approvalRecommendationPack.nextStep,
+        ),
+      ];
+    const blockers = unique([
+      ...reviewAnchor.blockers,
+      ...reviewRoom.blockers,
+      ...changeRequestPack.blockers,
+      ...approvalRecommendationPack.blockers,
+    ]);
+    const commandStatus = resolveStatus(
+      lanes.map((lane) => lane.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      commandStatus,
+      approvalRecommendationPack,
+      lanes,
+      summary: {
+        laneCount: lanes.length,
+        readyLaneCount: lanes.filter((lane) => lane.status === 'ready').length,
+        needsReviewLaneCount: lanes.filter(
+          (lane) => lane.status === 'needs_review',
+        ).length,
+        blockedLaneCount: lanes.filter((lane) => lane.status === 'blocked')
+          .length,
+        recommendationCount:
+          approvalRecommendationPack.summary.recommendationCount,
+        changeRequestCount: changeRequestPack.summary.changeRequestCount,
+      },
+      blockers,
+      nextStep:
+        'Cerrar ejecucion de review profesional y decidir si avanza a approval workflow.',
+      guardrails: [
+        'Command center consolida estado; no ejecuta signoff formal.',
+        'Aprobacion, firma, certificacion y legalizacion siguen en capas posteriores.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedReviewExecutionCommandCenterUseCase: GetTenantAccountingAdvancedReviewExecutionCommandCenterUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView> {
+    const commandCenter =
+      await this.getTenantAccountingAdvancedReviewExecutionCommandCenterUseCase.execute(
+        input,
+      );
+    const { approvalRecommendationPack } = commandCenter;
+    const { changeRequestPack } = approvalRecommendationPack;
+    const { reviewRoom } = changeRequestPack;
+    const { reviewAnchor } = reviewRoom;
+    const closeoutChecklist: TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView['closeoutChecklist'] =
+      [
+        professionalReviewCloseoutCheck('review_anchor', 'Professional review anchor', reviewAnchor.anchorStatus, [
+          'advanced_professional_review_execution_anchor',
+        ]),
+        professionalReviewCloseoutCheck('review_room', 'Accountant draft review room', reviewRoom.roomStatus, [
+          'advanced_accountant_draft_review_room',
+        ]),
+        professionalReviewCloseoutCheck('change_requests', 'Review change request pack', changeRequestPack.packStatus, [
+          'advanced_review_change_request_pack',
+        ]),
+        professionalReviewCloseoutCheck('approval_recommendations', 'Professional approval recommendation pack', approvalRecommendationPack.packStatus, [
+          'advanced_professional_approval_recommendation_pack',
+        ]),
+        professionalReviewCloseoutCheck('command_center', 'Review execution command center', commandCenter.commandStatus, [
+          'advanced_review_execution_command_center',
+        ]),
+      ];
+    const blockers = unique([
+      ...reviewAnchor.blockers,
+      ...reviewRoom.blockers,
+      ...changeRequestPack.blockers,
+      ...approvalRecommendationPack.blockers,
+      ...commandCenter.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(
+      closeoutChecklist.map((item) => item.status),
+      blockers,
+    );
+    const finalDecision = professionalReviewExecutionDecisionFromStatus(
+      closeoutStatus,
+      approvalRecommendationPack,
+      commandCenter,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      reviewAnchor,
+      reviewRoom,
+      changeRequestPack,
+      approvalRecommendationPack,
+      commandCenter,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        blockedChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+        reviewRowCount: reviewRoom.summary.reviewRowCount,
+        changeRequestCount: changeRequestPack.summary.changeRequestCount,
+        recommendationCount:
+          approvalRecommendationPack.summary.recommendationCount,
+        readyLaneCount: commandCenter.summary.readyLaneCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'ready_for_formal_approval_workflow'
+          ? 'Iniciar 1.0 Formal Approval Workflow con recomendaciones trazables.'
+          : finalDecision === 'needs_more_changes'
+            ? 'Resolver cambios solicitados antes del approval workflow.'
+            : finalDecision === 'return_to_artifact_drafting'
+              ? 'Volver a drafting 0.8 para corregir borradores.'
+              : 'No avanzar artefactos formales para este periodo.',
+      guardrails: [
+        'Professional review execution closeout no firma ni legaliza artefactos.',
+        'La siguiente capa debe modelar aprobaciones formales con owners externos explicitos.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -4687,6 +5202,161 @@ function formalArtifactDraftingDecisionFromStatus(
     return 'ready_for_professional_review_execution';
   }
   return 'needs_draft_evidence';
+}
+
+function professionalReviewGate(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+  professionalOwner: AccountingAdvancedProfessionalOwner,
+  gate: string,
+): TenantAccountingAdvancedProfessionalReviewExecutionAnchorView['reviewGates'][number] {
+  return { key, label, status, evidenceRefs, professionalOwner, gate };
+}
+
+function draftReviewRow(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  artifactType: TenantAccountingAdvancedAccountantDraftReviewRoomView['reviewRows'][number]['artifactType'],
+  reviewer: AccountingAdvancedProfessionalOwner,
+  finding: string,
+  preliminaryDecision: TenantAccountingAdvancedAccountantDraftReviewRoomView['reviewRows'][number]['preliminaryDecision'],
+): TenantAccountingAdvancedAccountantDraftReviewRoomView['reviewRows'][number] {
+  return {
+    key,
+    label,
+    status,
+    artifactType,
+    reviewer,
+    finding,
+    preliminaryDecision,
+  };
+}
+
+function reviewChangeRequest(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  sourceReviewKey: string,
+  requestedBy: AccountingAdvancedProfessionalOwner,
+  requiredAction: string,
+  evidenceRefs: string[],
+): TenantAccountingAdvancedReviewChangeRequestPackView['changeRequests'][number] {
+  return {
+    key,
+    label,
+    status,
+    sourceReviewKey,
+    requestedBy,
+    requiredAction,
+    evidenceRefs,
+  };
+}
+
+function changeActionFromReviewRow(
+  row: TenantAccountingAdvancedAccountantDraftReviewRoomView['reviewRows'][number],
+): string {
+  if (row.preliminaryDecision === 'needs_external_signoff') {
+    return 'Adjuntar evidencia externa y registrar signoff requerido antes de aprobacion.';
+  }
+  if (row.preliminaryDecision === 'reject_draft') {
+    return 'Rehacer el draft antes de cualquier recomendacion profesional.';
+  }
+  return 'Resolver observaciones profesionales y actualizar evidencia del draft.';
+}
+
+function approvalRecommendation(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  artifactType: TenantAccountingAdvancedProfessionalApprovalRecommendationPackView['recommendations'][number]['artifactType'],
+  recommendation: TenantAccountingAdvancedProfessionalApprovalRecommendationPackView['recommendations'][number]['recommendation'],
+  requiredOwner: AccountingAdvancedProfessionalOwner,
+  rationale: string,
+): TenantAccountingAdvancedProfessionalApprovalRecommendationPackView['recommendations'][number] {
+  return {
+    key,
+    label,
+    status,
+    artifactType,
+    recommendation,
+    requiredOwner,
+    rationale,
+  };
+}
+
+function recommendationFromReviewRow(
+  row: TenantAccountingAdvancedAccountantDraftReviewRoomView['reviewRows'][number],
+): TenantAccountingAdvancedProfessionalApprovalRecommendationPackView['recommendations'][number]['recommendation'] {
+  if (row.preliminaryDecision === 'approve_for_recommendation') {
+    return 'recommend_approval';
+  }
+  if (row.preliminaryDecision === 'needs_external_signoff') {
+    return 'require_auditor_review';
+  }
+  if (row.preliminaryDecision === 'reject_draft') {
+    return 'do_not_approve';
+  }
+  return 'require_changes_first';
+}
+
+function recommendationRationaleFromReviewRow(
+  row: TenantAccountingAdvancedAccountantDraftReviewRoomView['reviewRows'][number],
+): string {
+  if (row.preliminaryDecision === 'approve_for_recommendation') {
+    return 'Draft revisado sin cambios criticos antes del approval workflow.';
+  }
+  if (row.preliminaryDecision === 'needs_external_signoff') {
+    return 'Requiere signoff externo antes de cualquier aprobacion formal.';
+  }
+  if (row.preliminaryDecision === 'reject_draft') {
+    return 'Draft no debe avanzar sin re-trabajo profesional.';
+  }
+  return 'Debe resolver cambios solicitados antes de recomendar aprobacion.';
+}
+
+function reviewCommandLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  owner: AccountingAdvancedProfessionalOwner,
+  primaryMetric: string,
+  nextAction: string,
+): TenantAccountingAdvancedReviewExecutionCommandCenterView['lanes'][number] {
+  return { key, label, status, owner, primaryMetric, nextAction };
+}
+
+function professionalReviewCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function professionalReviewExecutionDecisionFromStatus(
+  closeoutStatus: AccountingReadinessStatus,
+  approvalRecommendationPack: TenantAccountingAdvancedProfessionalApprovalRecommendationPackView,
+  commandCenter: TenantAccountingAdvancedReviewExecutionCommandCenterView,
+  blockers: string[],
+): AccountingAdvancedProfessionalReviewExecutionDecision {
+  if (blockers.length > 0 || closeoutStatus === 'blocked') {
+    return 'return_to_artifact_drafting';
+  }
+  if (approvalRecommendationPack.summary.doNotApproveCount > 0) {
+    return 'do_not_advance_formal_artifacts';
+  }
+  if (
+    approvalRecommendationPack.summary.requireChangesCount > 0 ||
+    approvalRecommendationPack.summary.requireAuditorReviewCount > 0 ||
+    commandCenter.summary.needsReviewLaneCount > 0
+  ) {
+    return 'needs_more_changes';
+  }
+  return 'ready_for_formal_approval_workflow';
 }
 
 function formalProductDesignDecisionFromStatus(

@@ -1218,6 +1218,12 @@ const [
   advancedProfessionalCloseoutAttestationBoundary,
   advancedFormalRecordCloseoutCommandCenter,
   advancedFormalRecordCloseoutCloseout,
+  advancedGraduationArchiveHandoffAnchor,
+  advancedArchiveHandoffPackage,
+  advancedGraduationSignalMatrix,
+  advancedProductScopeDecisionWorkspace,
+  advancedGraduationArchiveHandoffCommandCenter,
+  advancedGraduationArchiveHandoffCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1874,6 +1880,48 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-graduation-archive-handoff/anchor?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-graduation-archive-handoff/package?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-graduation-archive-handoff/graduation-signals?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-graduation-archive-handoff/scope-decision?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-graduation-archive-handoff/command-center?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-graduation-archive-handoff/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2272,6 +2320,30 @@ assertStatus(
   'accounting advanced formal record closeout closeout',
   advancedFormalRecordCloseoutCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced graduation archive handoff anchor',
+  advancedGraduationArchiveHandoffAnchor.anchorStatus,
+);
+assertStatus(
+  'accounting advanced archive handoff package',
+  advancedArchiveHandoffPackage.packageStatus,
+);
+assertStatus(
+  'accounting advanced graduation signal matrix',
+  advancedGraduationSignalMatrix.matrixStatus,
+);
+assertStatus(
+  'accounting advanced product scope decision workspace',
+  advancedProductScopeDecisionWorkspace.decisionStatus,
+);
+assertStatus(
+  'accounting advanced graduation archive handoff command center',
+  advancedGraduationArchiveHandoffCommandCenter.commandStatus,
+);
+assertStatus(
+  'accounting advanced graduation archive handoff closeout',
+  advancedGraduationArchiveHandoffCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2331,6 +2403,11 @@ if (!Array.isArray(advancedFormalRecordAssemblyCloseout.closeoutChecklist)) {
 if (!Array.isArray(advancedFormalRecordCloseoutCloseout.closeoutChecklist)) {
   throw new Error(
     'advanced-formal-record-closeout/closeout no devolvio checklist[].',
+  );
+}
+if (!Array.isArray(advancedGraduationArchiveHandoffCloseout.closeoutChecklist)) {
+  throw new Error(
+    'advanced-graduation-archive-handoff/closeout no devolvio checklist[].',
   );
 }
 printLine(

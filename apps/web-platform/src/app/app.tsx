@@ -145,6 +145,7 @@ import {
   fetchAccountingAdvancedExternalResultIntakeCloseout,
   fetchAccountingAdvancedFormalRecordAssemblyCloseout,
   fetchAccountingAdvancedFormalRecordCloseoutCloseout,
+  fetchAccountingAdvancedGraduationArchiveHandoffCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -512,6 +513,7 @@ import {
   AccountingAdvancedExternalResultIntakeCloseoutResponse,
   AccountingAdvancedFormalRecordAssemblyCloseoutResponse,
   AccountingAdvancedFormalRecordCloseoutCloseoutResponse,
+  AccountingAdvancedGraduationArchiveHandoffCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2661,6 +2663,13 @@ export function App() {
     setAccountingAdvancedFormalRecordCloseoutCloseout,
   ] =
     useState<AccountingAdvancedFormalRecordCloseoutCloseoutResponse | null>(
+      null,
+    );
+  const [
+    accountingAdvancedGraduationArchiveHandoffCloseout,
+    setAccountingAdvancedGraduationArchiveHandoffCloseout,
+  ] =
+    useState<AccountingAdvancedGraduationArchiveHandoffCloseoutResponse | null>(
       null,
     );
   const [
@@ -20826,6 +20835,7 @@ export function App() {
         nextAccountingAdvancedExternalResultIntakeCloseout,
         nextAccountingAdvancedFormalRecordAssemblyCloseout,
         nextAccountingAdvancedFormalRecordCloseoutCloseout,
+        nextAccountingAdvancedGraduationArchiveHandoffCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21137,6 +21147,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedGraduationArchiveHandoffCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21172,6 +21188,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21488,6 +21505,9 @@ export function App() {
         );
         setAccountingAdvancedFormalRecordCloseoutCloseout(
           nextAccountingAdvancedFormalRecordCloseoutCloseout,
+        );
+        setAccountingAdvancedGraduationArchiveHandoffCloseout(
+          nextAccountingAdvancedGraduationArchiveHandoffCloseout,
         );
       });
     } catch (error) {
@@ -37456,8 +37476,106 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedGraduationArchiveHandoffCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced Graduation /
+                                        Archive Handoff
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedGraduationArchiveHandoffCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Handoff gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedGraduationArchiveHandoffCloseout
+                                              .handoffAnchor.summary
+                                              .readyGateCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedGraduationArchiveHandoffCloseout
+                                              .handoffAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Handoff items
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedGraduationArchiveHandoffCloseout
+                                              .archiveHandoffPackage.summary
+                                              .externalReadyItemCount
+                                          }{' '}
+                                          ready
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Graduation signals
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedGraduationArchiveHandoffCloseout
+                                              .graduationSignalMatrix.summary
+                                              .candidateSignalCount
+                                          }{' '}
+                                          candidate
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Scope
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedGraduationArchiveHandoffCloseout
+                                              .productScopeDecision.summary
+                                              .fullAccountingCandidateCount
+                                          }{' '}
+                                          full
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Command
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedGraduationArchiveHandoffCloseout
+                                              .commandCenter.suggestedDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedGraduationArchiveHandoffCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedGraduationArchiveHandoffCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedFormalRecordCloseoutCloseout?.nextStep ??
+                                  {accountingAdvancedGraduationArchiveHandoffCloseout?.nextStep ??
+                                    accountingAdvancedFormalRecordCloseoutCloseout?.nextStep ??
                                     accountingAdvancedFormalRecordAssemblyCloseout?.nextStep ??
                                     accountingAdvancedExternalResultIntakeCloseout?.nextStep ??
                                     accountingAdvancedExternalExecutionTrackingCloseout?.nextStep ??

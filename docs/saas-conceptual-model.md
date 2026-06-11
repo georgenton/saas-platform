@@ -2252,6 +2252,38 @@ Guardrail: closeout 1.6 is an internal readiness layer. It does not archive
 officially, emit legal books, issue financial statements, certify balances or
 replace professional accounting judgment.
 
+### Accounting Advanced graduation and archive handoff check
+
+After formal record closeout 1.6, Accounting Advanced needs a roadmap decision
+before opening a larger product. This layer is the customs desk: it checks
+whether the sealed formal record can leave as an archive handoff, whether the
+signals justify a future full Accounting product, or whether Accounting Advanced
+should keep hardening.
+
+1. `Graduation Archive Handoff Anchor`
+   - converts formal record closeout into handoff gates for closeout, archive
+     readiness, evidence, professional boundary and graduation signals
+2. `Archive Handoff Package`
+   - packages archive manifest, evidence bundle, professional boundary,
+     operator decision and exception register
+3. `Graduation Signal Matrix`
+   - evaluates ledger, bank reconciliation, formal books, financial statement,
+     professional workload and operating signals
+4. `Product Scope Decision Workspace`
+   - decides whether to open full Accounting as a candidate, hand off archive
+     only, continue Accounting Advanced hardening or preserve the professional
+     services boundary
+5. `Graduation Archive Handoff Command Center`
+   - consolidates handoff gates, archive package, graduation signals and scope
+     decisions into one roadmap decision surface
+6. `Graduation Archive Handoff Closeout`
+   - decides whether to graduate to full Accounting candidate, hand off archive
+     only, continue hardening, return to closeout or stop
+
+Guardrail: this is a roadmap decision layer. It does not archive records,
+perform statutory accounting, open full Accounting automatically, issue books or
+replace professional judgment.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2379,6 +2411,9 @@ product. Its current scope is intentionally operational and review-oriented:
     It validates closeout gates, archive readiness, evidence packets and the
     professional attestation boundary without archiving officially or replacing
     professional judgment.
+35. Accounting Advanced graduation and archive handoff check as the roadmap
+    customs desk. It separates archive handoff from full Accounting graduation,
+    using signals and scope decisions before opening any larger product.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

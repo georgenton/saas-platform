@@ -80,6 +80,11 @@ import {
   GetTenantAccountingAdvancedFormalCloseoutEvidencePacketUseCase,
   GetTenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryUseCase,
   GetTenantAccountingAdvancedFormalRecordCloseoutCommandCenterUseCase,
+  GetTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase,
+  GetTenantAccountingAdvancedArchiveHandoffPackageUseCase,
+  GetTenantAccountingAdvancedGraduationSignalMatrixUseCase,
+  GetTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase,
+  GetTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -153,6 +158,7 @@ import {
   RequestTenantAccountingAdvancedExternalResultIntakeCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase,
+  RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -271,6 +277,12 @@ import {
   AccountingAdvancedProfessionalCloseoutAttestationBoundaryResponseDto,
   AccountingAdvancedFormalRecordCloseoutCommandCenterResponseDto,
   AccountingAdvancedFormalRecordCloseoutCloseoutResponseDto,
+  AccountingAdvancedGraduationArchiveHandoffAnchorResponseDto,
+  AccountingAdvancedArchiveHandoffPackageResponseDto,
+  AccountingAdvancedGraduationSignalMatrixResponseDto,
+  AccountingAdvancedProductScopeDecisionWorkspaceResponseDto,
+  AccountingAdvancedGraduationArchiveHandoffCommandCenterResponseDto,
+  AccountingAdvancedGraduationArchiveHandoffCloseoutResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -367,6 +379,12 @@ import {
   toAccountingAdvancedProfessionalCloseoutAttestationBoundaryResponseDto,
   toAccountingAdvancedFormalRecordCloseoutCommandCenterResponseDto,
   toAccountingAdvancedFormalRecordCloseoutCloseoutResponseDto,
+  toAccountingAdvancedGraduationArchiveHandoffAnchorResponseDto,
+  toAccountingAdvancedArchiveHandoffPackageResponseDto,
+  toAccountingAdvancedGraduationSignalMatrixResponseDto,
+  toAccountingAdvancedProductScopeDecisionWorkspaceResponseDto,
+  toAccountingAdvancedGraduationArchiveHandoffCommandCenterResponseDto,
+  toAccountingAdvancedGraduationArchiveHandoffCloseoutResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -735,6 +753,12 @@ export class AccountingController {
     private readonly getTenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryUseCase: GetTenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryUseCase,
     private readonly getTenantAccountingAdvancedFormalRecordCloseoutCommandCenterUseCase: GetTenantAccountingAdvancedFormalRecordCloseoutCommandCenterUseCase,
     private readonly requestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase: RequestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase,
+    private readonly getTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase: GetTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase,
+    private readonly getTenantAccountingAdvancedArchiveHandoffPackageUseCase: GetTenantAccountingAdvancedArchiveHandoffPackageUseCase,
+    private readonly getTenantAccountingAdvancedGraduationSignalMatrixUseCase: GetTenantAccountingAdvancedGraduationSignalMatrixUseCase,
+    private readonly getTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase: GetTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase,
+    private readonly getTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase: GetTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase,
+    private readonly requestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase: RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -3080,6 +3104,150 @@ export class AccountingController {
         );
 
       return toAccountingAdvancedFormalRecordCloseoutCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-graduation-archive-handoff/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedGraduationArchiveHandoffAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedGraduationArchiveHandoffAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedGraduationArchiveHandoffAnchorResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-graduation-archive-handoff/package')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedArchiveHandoffPackage(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedArchiveHandoffPackageResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedArchiveHandoffPackageUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedArchiveHandoffPackageResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-graduation-archive-handoff/graduation-signals')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedGraduationSignalMatrix(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedGraduationSignalMatrixResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedGraduationSignalMatrixUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedGraduationSignalMatrixResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-graduation-archive-handoff/scope-decision')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedProductScopeDecisionWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedProductScopeDecisionWorkspaceResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedProductScopeDecisionWorkspaceResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-graduation-archive-handoff/command-center')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedGraduationArchiveHandoffCommandCenter(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedGraduationArchiveHandoffCommandCenterResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedGraduationArchiveHandoffCommandCenterResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-graduation-archive-handoff/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedGraduationArchiveHandoffCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedGraduationArchiveHandoffCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedGraduationArchiveHandoffCloseoutResponseDto(
+        view,
+      );
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

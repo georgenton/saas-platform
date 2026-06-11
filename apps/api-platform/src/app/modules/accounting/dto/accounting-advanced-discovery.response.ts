@@ -75,6 +75,7 @@ import {
   TenantAccountingAdvancedExternalResultIntakeAnchorView,
   TenantAccountingAdvancedExternalResultIntakeCloseoutView,
   TenantAccountingAdvancedAcceptedArtifactBinderView,
+  TenantAccountingAdvancedArchiveHandoffPackageView,
   TenantAccountingAdvancedArchiveReadinessWorkspaceView,
   TenantAccountingAdvancedFormalCloseoutEvidencePacketView,
   TenantAccountingAdvancedFormalRecordAssemblyAnchorView,
@@ -84,11 +85,16 @@ import {
   TenantAccountingAdvancedFormalRecordCloseoutCloseoutView,
   TenantAccountingAdvancedFormalRecordCloseoutCommandCenterView,
   TenantAccountingAdvancedFormalRecordIndexWorkspaceView,
+  TenantAccountingAdvancedGraduationArchiveHandoffAnchorView,
+  TenantAccountingAdvancedGraduationArchiveHandoffCloseoutView,
+  TenantAccountingAdvancedGraduationArchiveHandoffCommandCenterView,
+  TenantAccountingAdvancedGraduationSignalMatrixView,
   TenantAccountingAdvancedInternalAcceptanceCommandCenterView,
   TenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryView,
+  TenantAccountingAdvancedProductScopeDecisionWorkspaceView,
   TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
   TenantAccountingAdvancedReturnedArtifactRegistryView,
   TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView,
@@ -289,6 +295,18 @@ export type AccountingAdvancedFormalRecordCloseoutCommandCenterResponseDto =
   Serialized<TenantAccountingAdvancedFormalRecordCloseoutCommandCenterView>;
 export type AccountingAdvancedFormalRecordCloseoutCloseoutResponseDto =
   Serialized<TenantAccountingAdvancedFormalRecordCloseoutCloseoutView>;
+export type AccountingAdvancedGraduationArchiveHandoffAnchorResponseDto =
+  Serialized<TenantAccountingAdvancedGraduationArchiveHandoffAnchorView>;
+export type AccountingAdvancedArchiveHandoffPackageResponseDto =
+  Serialized<TenantAccountingAdvancedArchiveHandoffPackageView>;
+export type AccountingAdvancedGraduationSignalMatrixResponseDto =
+  Serialized<TenantAccountingAdvancedGraduationSignalMatrixView>;
+export type AccountingAdvancedProductScopeDecisionWorkspaceResponseDto =
+  Serialized<TenantAccountingAdvancedProductScopeDecisionWorkspaceView>;
+export type AccountingAdvancedGraduationArchiveHandoffCommandCenterResponseDto =
+  Serialized<TenantAccountingAdvancedGraduationArchiveHandoffCommandCenterView>;
+export type AccountingAdvancedGraduationArchiveHandoffCloseoutResponseDto =
+  Serialized<TenantAccountingAdvancedGraduationArchiveHandoffCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -863,6 +881,42 @@ export function toAccountingAdvancedFormalRecordCloseoutCommandCenterResponseDto
 export function toAccountingAdvancedFormalRecordCloseoutCloseoutResponseDto(
   view: TenantAccountingAdvancedFormalRecordCloseoutCloseoutView,
 ): AccountingAdvancedFormalRecordCloseoutCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedGraduationArchiveHandoffAnchorResponseDto(
+  view: TenantAccountingAdvancedGraduationArchiveHandoffAnchorView,
+): AccountingAdvancedGraduationArchiveHandoffAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedArchiveHandoffPackageResponseDto(
+  view: TenantAccountingAdvancedArchiveHandoffPackageView,
+): AccountingAdvancedArchiveHandoffPackageResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedGraduationSignalMatrixResponseDto(
+  view: TenantAccountingAdvancedGraduationSignalMatrixView,
+): AccountingAdvancedGraduationSignalMatrixResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedProductScopeDecisionWorkspaceResponseDto(
+  view: TenantAccountingAdvancedProductScopeDecisionWorkspaceView,
+): AccountingAdvancedProductScopeDecisionWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedGraduationArchiveHandoffCommandCenterResponseDto(
+  view: TenantAccountingAdvancedGraduationArchiveHandoffCommandCenterView,
+): AccountingAdvancedGraduationArchiveHandoffCommandCenterResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedGraduationArchiveHandoffCloseoutResponseDto(
+  view: TenantAccountingAdvancedGraduationArchiveHandoffCloseoutView,
+): AccountingAdvancedGraduationArchiveHandoffCloseoutResponseDto {
   return serialize(view);
 }
 

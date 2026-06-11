@@ -15,6 +15,7 @@ import {
   AccountingAdvancedExternalResultIntakeDecision,
   AccountingAdvancedFormalRecordAssemblyDecision,
   AccountingAdvancedFormalRecordCloseoutDecision,
+  AccountingAdvancedGraduationArchiveHandoffDecision,
   AccountingAdvancedFormalModuleKey,
   AccountingAdvancedProfessionalOwner,
   AccountingAdvancedPilotEnrollmentStatus,
@@ -97,6 +98,7 @@ import {
   TenantAccountingAdvancedExternalResultIntakeCloseoutView,
   TenantAccountingAdvancedAcceptedArtifactBinderView,
   TenantAccountingAdvancedArchiveReadinessWorkspaceView,
+  TenantAccountingAdvancedArchiveHandoffPackageView,
   TenantAccountingAdvancedFormalCloseoutEvidencePacketView,
   TenantAccountingAdvancedFormalRecordAssemblyAnchorView,
   TenantAccountingAdvancedFormalRecordAssemblyCloseoutView,
@@ -104,12 +106,17 @@ import {
   TenantAccountingAdvancedFormalRecordCloseoutAnchorView,
   TenantAccountingAdvancedFormalRecordCloseoutCloseoutView,
   TenantAccountingAdvancedFormalRecordCloseoutCommandCenterView,
+  TenantAccountingAdvancedGraduationArchiveHandoffAnchorView,
+  TenantAccountingAdvancedGraduationArchiveHandoffCloseoutView,
+  TenantAccountingAdvancedGraduationArchiveHandoffCommandCenterView,
+  TenantAccountingAdvancedGraduationSignalMatrixView,
   TenantAccountingAdvancedFormalRecordIndexWorkspaceView,
   TenantAccountingAdvancedInternalAcceptanceCommandCenterView,
   TenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryView,
+  TenantAccountingAdvancedProductScopeDecisionWorkspaceView,
   TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
   TenantAccountingAdvancedReturnedArtifactRegistryView,
   TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView,
@@ -7790,6 +7797,584 @@ export class RequestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase 
   }
 }
 
+export class GetTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase: RequestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedGraduationArchiveHandoffAnchorView> {
+    const formalRecordCloseout =
+      await this.requestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase.execute(
+        input,
+      );
+    const handoffGates: TenantAccountingAdvancedGraduationArchiveHandoffAnchorView['handoffGates'] =
+      [
+        graduationArchiveHandoffGate(
+          'formal_closeout',
+          'Formal record closeout accepted',
+          formalRecordCloseout.closeoutStatus,
+          'formal_closeout',
+          formalRecordCloseout.finalDecision === 'ready_for_archive_handoff'
+            ? 'ready_for_archive_handoff'
+            : 'returned_to_closeout',
+          ['advanced_formal_record_closeout_closeout'],
+        ),
+        graduationArchiveHandoffGate(
+          'archive_readiness',
+          'Archive readiness accepted',
+          formalRecordCloseout.archiveReadiness.archiveStatus,
+          'archive_readiness',
+          formalRecordCloseout.archiveReadiness.archiveStatus === 'ready'
+            ? 'ready_for_archive_handoff'
+            : 'needs_hardening',
+          ['advanced_archive_readiness_workspace'],
+        ),
+        graduationArchiveHandoffGate(
+          'evidence_packet',
+          'Evidence packet accepted',
+          formalRecordCloseout.evidencePacket.packetStatus,
+          'evidence_packet',
+          formalRecordCloseout.evidencePacket.packetStatus === 'ready'
+            ? 'ready_for_archive_handoff'
+            : 'needs_hardening',
+          ['advanced_formal_closeout_evidence_packet'],
+        ),
+        graduationArchiveHandoffGate(
+          'professional_boundary',
+          'Professional boundary preserved',
+          formalRecordCloseout.attestationBoundary.boundaryStatus,
+          'professional_boundary',
+          formalRecordCloseout.attestationBoundary.boundaryStatus === 'ready'
+            ? 'ready_for_graduation_assessment'
+            : 'needs_hardening',
+          ['advanced_professional_closeout_boundary'],
+        ),
+      ];
+    const blockers =
+      formalRecordCloseout.finalDecision === 'ready_for_archive_handoff'
+        ? [...formalRecordCloseout.blockers]
+        : unique([
+            ...formalRecordCloseout.blockers,
+            `Formal record closeout decision is ${formalRecordCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(
+      handoffGates.map((gate) => gate.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      formalRecordCloseout,
+      handoffGates,
+      summary: {
+        gateCount: handoffGates.length,
+        readyGateCount: handoffGates.filter((gate) => gate.status === 'ready')
+          .length,
+        needsReviewGateCount: handoffGates.filter(
+          (gate) => gate.status === 'needs_review',
+        ).length,
+        blockedGateCount: handoffGates.filter(
+          (gate) => gate.status === 'blocked',
+        ).length,
+        formalCloseoutChecklistCount:
+          formalRecordCloseout.summary.checklistCount,
+      },
+      blockers,
+      nextStep:
+        anchorStatus === 'blocked'
+          ? 'Volver a Formal Record Closeout 1.6 antes del handoff.'
+          : 'Preparar paquete de archive handoff y graduation check.',
+      guardrails: [
+        'Graduation/archive handoff check decide siguiente producto; no archiva ni abre full Accounting automaticamente.',
+        'La frontera profesional de 1.6 sigue siendo obligatoria.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedArchiveHandoffPackageUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase: GetTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedArchiveHandoffPackageView> {
+    const handoffAnchor =
+      await this.getTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase.execute(
+        input,
+      );
+    const handoffItems: TenantAccountingAdvancedArchiveHandoffPackageView['handoffItems'] =
+      [
+        archiveHandoffItem(
+          'archive_manifest',
+          'Archive manifest',
+          handoffAnchor.anchorStatus,
+          'archive_manifest',
+          handoffAnchor.anchorStatus === 'ready'
+            ? 'external_handoff_ready'
+            : 'hold_for_hardening',
+          ['advanced_graduation_archive_handoff_anchor'],
+          handoffAnchor.blockers,
+        ),
+        archiveHandoffItem(
+          'evidence_bundle',
+          'Closeout evidence bundle',
+          handoffAnchor.formalRecordCloseout.evidencePacket.packetStatus,
+          'evidence_bundle',
+          'external_handoff_ready',
+          ['advanced_formal_closeout_evidence_packet'],
+          [],
+        ),
+        archiveHandoffItem(
+          'professional_boundary',
+          'Professional boundary note',
+          handoffAnchor.formalRecordCloseout.attestationBoundary.boundaryStatus,
+          'professional_boundary',
+          'needs_professional_review',
+          ['advanced_professional_closeout_boundary'],
+          [],
+        ),
+        archiveHandoffItem(
+          'operator_decision',
+          'Operator graduation decision record',
+          handoffAnchor.anchorStatus,
+          'operator_decision',
+          'internal_ready',
+          ['advanced_formal_record_closeout_command_center'],
+          [],
+        ),
+      ];
+    const blockers = [...handoffAnchor.blockers];
+    const packageStatus = resolveStatus(
+      handoffItems.map((item) => item.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packageStatus,
+      handoffAnchor,
+      handoffItems,
+      summary: {
+        itemCount: handoffItems.length,
+        readyItemCount: handoffItems.filter((item) => item.status === 'ready')
+          .length,
+        needsReviewItemCount: handoffItems.filter(
+          (item) => item.status === 'needs_review',
+        ).length,
+        blockedItemCount: handoffItems.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+        externalReadyItemCount: handoffItems.filter(
+          (item) => item.custodyMode === 'external_handoff_ready',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Evaluar senales de graduacion a full Accounting.',
+      guardrails: [
+        'Archive handoff package prepara custodia; no ejecuta archivo oficial.',
+        'La decision de full Accounting se evalua por senales, no por una sola carpeta lista.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedGraduationSignalMatrixUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedArchiveHandoffPackageUseCase: GetTenantAccountingAdvancedArchiveHandoffPackageUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedGraduationSignalMatrixView> {
+    const archiveHandoffPackage =
+      await this.getTenantAccountingAdvancedArchiveHandoffPackageUseCase.execute(
+        input,
+      );
+    const { formalRecordCloseout } = archiveHandoffPackage.handoffAnchor;
+    const graduationSignals: TenantAccountingAdvancedGraduationSignalMatrixView['graduationSignals'] =
+      [
+        graduationSignal(
+          'ledger_need',
+          'Formal ledger need',
+          formalRecordCloseout.closeoutStatus,
+          'ledger_need',
+          'candidate_for_full_accounting',
+          ['advanced_formal_record_closeout_closeout'],
+        ),
+        graduationSignal(
+          'bank_reconciliation_need',
+          'Certified bank reconciliation need',
+          formalRecordCloseout.archiveReadiness.archiveStatus,
+          'bank_reconciliation_need',
+          'candidate_for_full_accounting',
+          ['advanced_archive_readiness_workspace'],
+        ),
+        graduationSignal(
+          'formal_books_need',
+          'Formal books need',
+          formalRecordCloseout.commandCenter.commandStatus,
+          'formal_books_need',
+          'candidate_for_full_accounting',
+          ['advanced_formal_record_closeout_command_center'],
+        ),
+        graduationSignal(
+          'archive_only_need',
+          'Archive handoff can stand alone',
+          archiveHandoffPackage.packageStatus,
+          'tenant_operating_need',
+          'handoff_archive_only',
+          ['advanced_archive_handoff_package'],
+        ),
+      ];
+    const blockers = [...archiveHandoffPackage.blockers];
+    const matrixStatus = resolveStatus(
+      graduationSignals.map((signal) => signal.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      matrixStatus,
+      archiveHandoffPackage,
+      graduationSignals,
+      summary: {
+        signalCount: graduationSignals.length,
+        readySignalCount: graduationSignals.filter(
+          (signal) => signal.status === 'ready',
+        ).length,
+        candidateSignalCount: graduationSignals.filter(
+          (signal) =>
+            signal.recommendation === 'candidate_for_full_accounting',
+        ).length,
+        hardeningSignalCount: graduationSignals.filter(
+          (signal) => signal.recommendation === 'keep_in_accounting_advanced',
+        ).length,
+        archiveOnlySignalCount: graduationSignals.filter(
+          (signal) => signal.recommendation === 'handoff_archive_only',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Convertir senales en decision de scope de producto.',
+      guardrails: [
+        'Graduation signal matrix no abre full Accounting; solo documenta presion real.',
+        'Archive-only sigue siendo una salida valida si no hay suficiente senal contable.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedGraduationSignalMatrixUseCase: GetTenantAccountingAdvancedGraduationSignalMatrixUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedProductScopeDecisionWorkspaceView> {
+    const graduationSignalMatrix =
+      await this.getTenantAccountingAdvancedGraduationSignalMatrixUseCase.execute(
+        input,
+      );
+    const scopeDecisions: TenantAccountingAdvancedProductScopeDecisionWorkspaceView['scopeDecisions'] =
+      [
+        productScopeDecision(
+          'full_accounting_candidate',
+          'Open full Accounting candidate',
+          graduationSignalMatrix.matrixStatus,
+          'full_accounting',
+          graduationSignalMatrix.summary.candidateSignalCount >= 3
+            ? 'open_full_accounting_candidate'
+            : 'continue_advanced_hardening',
+          ['advanced_graduation_signal_matrix'],
+        ),
+        productScopeDecision(
+          'archive_handoff_only',
+          'Archive handoff only path',
+          graduationSignalMatrix.archiveHandoffPackage.packageStatus,
+          'archive_handoff',
+          'handoff_archive_only',
+          ['advanced_archive_handoff_package'],
+        ),
+        productScopeDecision(
+          'advanced_hardening',
+          'Continue Accounting Advanced hardening',
+          graduationSignalMatrix.matrixStatus,
+          'advanced_hardening',
+          graduationSignalMatrix.summary.candidateSignalCount >= 3
+            ? 'open_full_accounting_candidate'
+            : 'continue_advanced_hardening',
+          ['advanced_formal_record_closeout_closeout'],
+        ),
+        productScopeDecision(
+          'professional_boundary',
+          'Keep professional services boundary',
+          'ready',
+          'professional_services_boundary',
+          'keep_professional_boundary',
+          ['advanced_professional_closeout_boundary'],
+        ),
+      ];
+    const blockers = [...graduationSignalMatrix.blockers];
+    const decisionStatus = resolveStatus(
+      scopeDecisions.map((decision) => decision.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      decisionStatus,
+      graduationSignalMatrix,
+      scopeDecisions,
+      summary: {
+        decisionCount: scopeDecisions.length,
+        readyDecisionCount: scopeDecisions.filter(
+          (decision) => decision.status === 'ready',
+        ).length,
+        fullAccountingCandidateCount: scopeDecisions.filter(
+          (decision) =>
+            decision.decision === 'open_full_accounting_candidate',
+        ).length,
+        archiveOnlyDecisionCount: scopeDecisions.filter(
+          (decision) => decision.decision === 'handoff_archive_only',
+        ).length,
+        hardeningDecisionCount: scopeDecisions.filter(
+          (decision) => decision.decision === 'continue_advanced_hardening',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Consolidar command center de graduation/archive handoff.',
+      guardrails: [
+        'Product scope decision propone camino; no crea un nuevo producto por si sola.',
+        'Full Accounting requiere decision posterior y alcance propio.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase: GetTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedGraduationArchiveHandoffCommandCenterView> {
+    const productScopeDecision =
+      await this.getTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase.execute(
+        input,
+      );
+    const { graduationSignalMatrix } = productScopeDecision;
+    const { archiveHandoffPackage } = graduationSignalMatrix;
+    const { handoffAnchor } = archiveHandoffPackage;
+    const commandLanes: TenantAccountingAdvancedGraduationArchiveHandoffCommandCenterView['commandLanes'] =
+      [
+        graduationArchiveHandoffCommandLane(
+          'handoff_anchor',
+          'Graduation archive handoff anchor',
+          handoffAnchor.anchorStatus,
+          'gates',
+          handoffAnchor.summary.gateCount,
+        ),
+        graduationArchiveHandoffCommandLane(
+          'archive_handoff_package',
+          'Archive handoff package',
+          archiveHandoffPackage.packageStatus,
+          'items',
+          archiveHandoffPackage.summary.itemCount,
+        ),
+        graduationArchiveHandoffCommandLane(
+          'graduation_signals',
+          'Graduation signal matrix',
+          graduationSignalMatrix.matrixStatus,
+          'signals',
+          graduationSignalMatrix.summary.signalCount,
+        ),
+        graduationArchiveHandoffCommandLane(
+          'scope_decisions',
+          'Product scope decisions',
+          productScopeDecision.decisionStatus,
+          'decisions',
+          productScopeDecision.summary.decisionCount,
+        ),
+      ];
+    const blockers = unique([
+      ...handoffAnchor.blockers,
+      ...archiveHandoffPackage.blockers,
+      ...graduationSignalMatrix.blockers,
+      ...productScopeDecision.blockers,
+    ]);
+    const commandStatus = resolveStatus(
+      commandLanes.map((lane) => lane.status),
+      blockers,
+    );
+    const suggestedDecision = graduationArchiveHandoffDecisionFromStatus(
+      commandStatus,
+      productScopeDecision,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      commandStatus,
+      productScopeDecision,
+      commandLanes,
+      suggestedDecision,
+      summary: {
+        laneCount: commandLanes.length,
+        readyLaneCount: commandLanes.filter((lane) => lane.status === 'ready')
+          .length,
+        needsReviewLaneCount: commandLanes.filter(
+          (lane) => lane.status === 'needs_review',
+        ).length,
+        blockedLaneCount: commandLanes.filter(
+          (lane) => lane.status === 'blocked',
+        ).length,
+        fullAccountingCandidateCount:
+          productScopeDecision.summary.fullAccountingCandidateCount,
+        archiveHandoffReadyCount:
+          archiveHandoffPackage.summary.externalReadyItemCount,
+      },
+      blockers,
+      nextStep:
+        suggestedDecision === 'graduate_to_full_accounting_candidate'
+          ? 'Preparar roadmap de full Accounting como producto candidato.'
+          : suggestedDecision === 'ready_for_archive_handoff_only'
+            ? 'Cerrar Accounting Advanced con archive handoff como salida.'
+            : suggestedDecision === 'continue_accounting_advanced_hardening'
+              ? 'Continuar hardening de Accounting Advanced antes de graduar.'
+              : 'Volver a Formal Record Closeout 1.6.',
+      guardrails: [
+        'Command center decide camino de roadmap; no crea full Accounting automaticamente.',
+        'Archive handoff y graduacion son salidas separadas.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase: GetTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedGraduationArchiveHandoffCloseoutView> {
+    const commandCenter =
+      await this.getTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase.execute(
+        input,
+      );
+    const { productScopeDecision } = commandCenter;
+    const { graduationSignalMatrix } = productScopeDecision;
+    const { archiveHandoffPackage } = graduationSignalMatrix;
+    const { handoffAnchor } = archiveHandoffPackage;
+    const closeoutChecklist: TenantAccountingAdvancedGraduationArchiveHandoffCloseoutView['closeoutChecklist'] =
+      [
+        graduationArchiveHandoffCloseoutCheck(
+          'handoff_anchor',
+          'Graduation archive handoff anchor',
+          handoffAnchor.anchorStatus,
+          ['advanced_graduation_archive_handoff_anchor'],
+        ),
+        graduationArchiveHandoffCloseoutCheck(
+          'archive_handoff_package',
+          'Archive handoff package',
+          archiveHandoffPackage.packageStatus,
+          ['advanced_archive_handoff_package'],
+        ),
+        graduationArchiveHandoffCloseoutCheck(
+          'graduation_signal_matrix',
+          'Graduation signal matrix',
+          graduationSignalMatrix.matrixStatus,
+          ['advanced_graduation_signal_matrix'],
+        ),
+        graduationArchiveHandoffCloseoutCheck(
+          'product_scope_decision',
+          'Product scope decision workspace',
+          productScopeDecision.decisionStatus,
+          ['advanced_product_scope_decision_workspace'],
+        ),
+        graduationArchiveHandoffCloseoutCheck(
+          'command_center',
+          'Graduation archive handoff command center',
+          commandCenter.commandStatus,
+          ['advanced_graduation_archive_handoff_command_center'],
+        ),
+      ];
+    const blockers = unique([
+      ...handoffAnchor.blockers,
+      ...archiveHandoffPackage.blockers,
+      ...graduationSignalMatrix.blockers,
+      ...productScopeDecision.blockers,
+      ...commandCenter.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(
+      closeoutChecklist.map((item) => item.status),
+      blockers,
+    );
+    const finalDecision = graduationArchiveHandoffDecisionFromStatus(
+      closeoutStatus,
+      productScopeDecision,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      handoffAnchor,
+      archiveHandoffPackage,
+      graduationSignalMatrix,
+      productScopeDecision,
+      commandCenter,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        blockedChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+        handoffItemCount: archiveHandoffPackage.summary.itemCount,
+        graduationSignalCount: graduationSignalMatrix.summary.signalCount,
+        scopeDecisionCount: productScopeDecision.summary.decisionCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'graduate_to_full_accounting_candidate'
+          ? 'Definir primer roadmap de full Accounting candidato.'
+          : finalDecision === 'ready_for_archive_handoff_only'
+            ? 'Ejecutar salida de archive handoff sin abrir full Accounting.'
+            : finalDecision === 'continue_accounting_advanced_hardening'
+              ? 'Planificar siguiente hardening de Accounting Advanced.'
+              : finalDecision === 'return_to_formal_record_closeout'
+                ? 'Volver a 1.6 para cerrar readiness faltante.'
+                : 'No graduar ni handoff para este periodo.',
+      guardrails: [
+        'Graduation/archive handoff closeout es decision de roadmap, no operacion legal.',
+        'Full Accounting debe abrirse como producto candidato separado con alcance propio.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -9320,6 +9905,98 @@ function formalRecordCloseoutDecisionFromStatus(
     return 'ready_for_archive_handoff';
   }
   return 'do_not_close_formal_record';
+}
+
+function graduationArchiveHandoffGate(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  gateType: TenantAccountingAdvancedGraduationArchiveHandoffAnchorView['handoffGates'][number]['gateType'],
+  handoffState: TenantAccountingAdvancedGraduationArchiveHandoffAnchorView['handoffGates'][number]['handoffState'],
+  evidenceRefs: string[],
+): TenantAccountingAdvancedGraduationArchiveHandoffAnchorView['handoffGates'][number] {
+  return { key, label, status, gateType, handoffState, evidenceRefs };
+}
+
+function archiveHandoffItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  itemType: TenantAccountingAdvancedArchiveHandoffPackageView['handoffItems'][number]['itemType'],
+  custodyMode: TenantAccountingAdvancedArchiveHandoffPackageView['handoffItems'][number]['custodyMode'],
+  evidenceRefs: string[],
+  blockerRefs: string[],
+): TenantAccountingAdvancedArchiveHandoffPackageView['handoffItems'][number] {
+  return {
+    key,
+    label,
+    status,
+    itemType,
+    custodyMode,
+    evidenceRefs,
+    blockerRefs,
+  };
+}
+
+function graduationSignal(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  signalType: TenantAccountingAdvancedGraduationSignalMatrixView['graduationSignals'][number]['signalType'],
+  recommendation: TenantAccountingAdvancedGraduationSignalMatrixView['graduationSignals'][number]['recommendation'],
+  evidenceRefs: string[],
+): TenantAccountingAdvancedGraduationSignalMatrixView['graduationSignals'][number] {
+  return { key, label, status, signalType, recommendation, evidenceRefs };
+}
+
+function productScopeDecision(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  scopeArea: TenantAccountingAdvancedProductScopeDecisionWorkspaceView['scopeDecisions'][number]['scopeArea'],
+  decision: TenantAccountingAdvancedProductScopeDecisionWorkspaceView['scopeDecisions'][number]['decision'],
+  evidenceRefs: string[],
+): TenantAccountingAdvancedProductScopeDecisionWorkspaceView['scopeDecisions'][number] {
+  return { key, label, status, scopeArea, decision, evidenceRefs };
+}
+
+function graduationArchiveHandoffCommandLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  metric: string,
+  count: number,
+): TenantAccountingAdvancedGraduationArchiveHandoffCommandCenterView['commandLanes'][number] {
+  return { key, label, status, metric, count };
+}
+
+function graduationArchiveHandoffCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantAccountingAdvancedGraduationArchiveHandoffCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function graduationArchiveHandoffDecisionFromStatus(
+  status: AccountingReadinessStatus,
+  productScopeDecisionView: TenantAccountingAdvancedProductScopeDecisionWorkspaceView,
+  blockers: string[],
+): AccountingAdvancedGraduationArchiveHandoffDecision {
+  if (blockers.length > 0 || status === 'blocked') {
+    return 'return_to_formal_record_closeout';
+  }
+  if (productScopeDecisionView.summary.fullAccountingCandidateCount > 0) {
+    return 'graduate_to_full_accounting_candidate';
+  }
+  if (productScopeDecisionView.summary.archiveOnlyDecisionCount > 0) {
+    return 'ready_for_archive_handoff_only';
+  }
+  if (productScopeDecisionView.summary.hardeningDecisionCount > 0) {
+    return 'continue_accounting_advanced_hardening';
+  }
+  return 'do_not_graduate_or_handoff';
 }
 
 function formalProductDesignDecisionFromStatus(

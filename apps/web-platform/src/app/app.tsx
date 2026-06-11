@@ -144,6 +144,7 @@ import {
   fetchAccountingAdvancedExternalExecutionTrackingCloseout,
   fetchAccountingAdvancedExternalResultIntakeCloseout,
   fetchAccountingAdvancedFormalRecordAssemblyCloseout,
+  fetchAccountingAdvancedFormalRecordCloseoutCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -510,6 +511,7 @@ import {
   AccountingAdvancedExternalExecutionTrackingCloseoutResponse,
   AccountingAdvancedExternalResultIntakeCloseoutResponse,
   AccountingAdvancedFormalRecordAssemblyCloseoutResponse,
+  AccountingAdvancedFormalRecordCloseoutCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2652,6 +2654,13 @@ export function App() {
     setAccountingAdvancedFormalRecordAssemblyCloseout,
   ] =
     useState<AccountingAdvancedFormalRecordAssemblyCloseoutResponse | null>(
+      null,
+    );
+  const [
+    accountingAdvancedFormalRecordCloseoutCloseout,
+    setAccountingAdvancedFormalRecordCloseoutCloseout,
+  ] =
+    useState<AccountingAdvancedFormalRecordCloseoutCloseoutResponse | null>(
       null,
     );
   const [
@@ -20816,6 +20825,7 @@ export function App() {
         nextAccountingAdvancedExternalExecutionTrackingCloseout,
         nextAccountingAdvancedExternalResultIntakeCloseout,
         nextAccountingAdvancedFormalRecordAssemblyCloseout,
+        nextAccountingAdvancedFormalRecordCloseoutCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21121,6 +21131,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedFormalRecordCloseoutCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21156,6 +21172,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21468,6 +21485,9 @@ export function App() {
         );
         setAccountingAdvancedFormalRecordAssemblyCloseout(
           nextAccountingAdvancedFormalRecordAssemblyCloseout,
+        );
+        setAccountingAdvancedFormalRecordCloseoutCloseout(
+          nextAccountingAdvancedFormalRecordCloseoutCloseout,
         );
       });
     } catch (error) {
@@ -37334,8 +37354,111 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedFormalRecordCloseoutCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced Formal Record
+                                        Closeout 1.6
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedFormalRecordCloseoutCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Closeout gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalRecordCloseoutCloseout
+                                              .closeoutAnchor.summary
+                                              .readyGateCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedFormalRecordCloseoutCloseout
+                                              .closeoutAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Archive folders
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalRecordCloseoutCloseout
+                                              .archiveReadiness.summary
+                                              .readyFolderCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedFormalRecordCloseoutCloseout
+                                              .archiveReadiness.summary
+                                              .folderCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Evidence packets
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalRecordCloseoutCloseout
+                                              .evidencePacket.summary
+                                              .packetCount
+                                          }{' '}
+                                          packs
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Boundary
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalRecordCloseoutCloseout
+                                              .attestationBoundary.summary
+                                              .professionalOwnedItemCount
+                                          }{' '}
+                                          professional
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Command
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedFormalRecordCloseoutCloseout
+                                              .commandCenter.suggestedDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedFormalRecordCloseoutCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedFormalRecordCloseoutCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedFormalRecordAssemblyCloseout?.nextStep ??
+                                  {accountingAdvancedFormalRecordCloseoutCloseout?.nextStep ??
+                                    accountingAdvancedFormalRecordAssemblyCloseout?.nextStep ??
                                     accountingAdvancedExternalResultIntakeCloseout?.nextStep ??
                                     accountingAdvancedExternalExecutionTrackingCloseout?.nextStep ??
                                     accountingAdvancedExternalExecutionHandoffCloseout?.nextStep ??

@@ -1212,6 +1212,12 @@ const [
   advancedRecordConsistencyReviewWorkspace,
   advancedFormalRecordAssemblyCommandCenter,
   advancedFormalRecordAssemblyCloseout,
+  advancedFormalRecordCloseoutAnchor,
+  advancedArchiveReadinessWorkspace,
+  advancedFormalCloseoutEvidencePacket,
+  advancedProfessionalCloseoutAttestationBoundary,
+  advancedFormalRecordCloseoutCommandCenter,
+  advancedFormalRecordCloseoutCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1826,6 +1832,48 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-record-closeout/anchor?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-record-closeout/archive-readiness?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-record-closeout/evidence-packet?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-record-closeout/professional-boundary?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-record-closeout/command-center?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-record-closeout/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2200,6 +2248,30 @@ assertStatus(
   'accounting advanced formal record assembly closeout',
   advancedFormalRecordAssemblyCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced formal record closeout anchor',
+  advancedFormalRecordCloseoutAnchor.anchorStatus,
+);
+assertStatus(
+  'accounting advanced archive readiness workspace',
+  advancedArchiveReadinessWorkspace.archiveStatus,
+);
+assertStatus(
+  'accounting advanced formal closeout evidence packet',
+  advancedFormalCloseoutEvidencePacket.packetStatus,
+);
+assertStatus(
+  'accounting advanced professional closeout attestation boundary',
+  advancedProfessionalCloseoutAttestationBoundary.boundaryStatus,
+);
+assertStatus(
+  'accounting advanced formal record closeout command center',
+  advancedFormalRecordCloseoutCommandCenter.commandStatus,
+);
+assertStatus(
+  'accounting advanced formal record closeout closeout',
+  advancedFormalRecordCloseoutCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2254,6 +2326,11 @@ if (!Array.isArray(advancedExternalResultIntakeCloseout.closeoutChecklist)) {
 if (!Array.isArray(advancedFormalRecordAssemblyCloseout.closeoutChecklist)) {
   throw new Error(
     'advanced-formal-record-assembly/closeout no devolvio checklist[].',
+  );
+}
+if (!Array.isArray(advancedFormalRecordCloseoutCloseout.closeoutChecklist)) {
+  throw new Error(
+    'advanced-formal-record-closeout/closeout no devolvio checklist[].',
   );
 }
 printLine(

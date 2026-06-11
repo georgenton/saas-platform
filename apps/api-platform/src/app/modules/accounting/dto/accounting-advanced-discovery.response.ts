@@ -54,6 +54,12 @@ import {
   TenantAccountingAdvancedFormalApprovalEvidencePackView,
   TenantAccountingAdvancedFormalApprovalWorkflowAnchorView,
   TenantAccountingAdvancedFormalApprovalWorkflowCloseoutView,
+  TenantAccountingAdvancedCertificationRequirementWorkspaceView,
+  TenantAccountingAdvancedFormalSignatoryRegistryView,
+  TenantAccountingAdvancedLegalizationBoundaryPacketView,
+  TenantAccountingAdvancedSignatureCertificationBoundaryAnchorView,
+  TenantAccountingAdvancedSignatureCertificationBoundaryCloseoutView,
+  TenantAccountingAdvancedSignatureEvidenceReadinessPackView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
@@ -181,6 +187,18 @@ export type AccountingAdvancedFormalApprovalCommandCenterResponseDto =
   Serialized<TenantAccountingAdvancedFormalApprovalCommandCenterView>;
 export type AccountingAdvancedFormalApprovalWorkflowCloseoutResponseDto =
   Serialized<TenantAccountingAdvancedFormalApprovalWorkflowCloseoutView>;
+export type AccountingAdvancedSignatureCertificationBoundaryAnchorResponseDto =
+  Serialized<TenantAccountingAdvancedSignatureCertificationBoundaryAnchorView>;
+export type AccountingAdvancedFormalSignatoryRegistryResponseDto =
+  Serialized<TenantAccountingAdvancedFormalSignatoryRegistryView>;
+export type AccountingAdvancedSignatureEvidenceReadinessPackResponseDto =
+  Serialized<TenantAccountingAdvancedSignatureEvidenceReadinessPackView>;
+export type AccountingAdvancedCertificationRequirementWorkspaceResponseDto =
+  Serialized<TenantAccountingAdvancedCertificationRequirementWorkspaceView>;
+export type AccountingAdvancedLegalizationBoundaryPacketResponseDto =
+  Serialized<TenantAccountingAdvancedLegalizationBoundaryPacketView>;
+export type AccountingAdvancedSignatureCertificationBoundaryCloseoutResponseDto =
+  Serialized<TenantAccountingAdvancedSignatureCertificationBoundaryCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -539,6 +557,42 @@ export function toAccountingAdvancedFormalApprovalCommandCenterResponseDto(
 export function toAccountingAdvancedFormalApprovalWorkflowCloseoutResponseDto(
   view: TenantAccountingAdvancedFormalApprovalWorkflowCloseoutView,
 ): AccountingAdvancedFormalApprovalWorkflowCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedSignatureCertificationBoundaryAnchorResponseDto(
+  view: TenantAccountingAdvancedSignatureCertificationBoundaryAnchorView,
+): AccountingAdvancedSignatureCertificationBoundaryAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalSignatoryRegistryResponseDto(
+  view: TenantAccountingAdvancedFormalSignatoryRegistryView,
+): AccountingAdvancedFormalSignatoryRegistryResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedSignatureEvidenceReadinessPackResponseDto(
+  view: TenantAccountingAdvancedSignatureEvidenceReadinessPackView,
+): AccountingAdvancedSignatureEvidenceReadinessPackResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedCertificationRequirementWorkspaceResponseDto(
+  view: TenantAccountingAdvancedCertificationRequirementWorkspaceView,
+): AccountingAdvancedCertificationRequirementWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedLegalizationBoundaryPacketResponseDto(
+  view: TenantAccountingAdvancedLegalizationBoundaryPacketView,
+): AccountingAdvancedLegalizationBoundaryPacketResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedSignatureCertificationBoundaryCloseoutResponseDto(
+  view: TenantAccountingAdvancedSignatureCertificationBoundaryCloseoutView,
+): AccountingAdvancedSignatureCertificationBoundaryCloseoutResponseDto {
   return serialize(view);
 }
 

@@ -9,6 +9,7 @@ import {
   AccountingAdvancedFormalArtifactDraftingDecision,
   AccountingAdvancedProfessionalReviewExecutionDecision,
   AccountingAdvancedFormalApprovalWorkflowDecision,
+  AccountingAdvancedSignatureCertificationBoundaryDecision,
   AccountingAdvancedFormalModuleKey,
   AccountingAdvancedProfessionalOwner,
   AccountingAdvancedPilotEnrollmentStatus,
@@ -69,6 +70,12 @@ import {
   TenantAccountingAdvancedFormalApprovalEvidencePackView,
   TenantAccountingAdvancedFormalApprovalWorkflowAnchorView,
   TenantAccountingAdvancedFormalApprovalWorkflowCloseoutView,
+  TenantAccountingAdvancedCertificationRequirementWorkspaceView,
+  TenantAccountingAdvancedFormalSignatoryRegistryView,
+  TenantAccountingAdvancedLegalizationBoundaryPacketView,
+  TenantAccountingAdvancedSignatureCertificationBoundaryAnchorView,
+  TenantAccountingAdvancedSignatureCertificationBoundaryCloseoutView,
+  TenantAccountingAdvancedSignatureEvidenceReadinessPackView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
@@ -5110,6 +5117,383 @@ export class RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCas
   }
 }
 
+export class GetTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase: RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedSignatureCertificationBoundaryAnchorView> {
+    const formalApprovalCloseout =
+      await this.requestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase.execute(
+        input,
+      );
+    const boundaryGates: TenantAccountingAdvancedSignatureCertificationBoundaryAnchorView['boundaryGates'] =
+      [
+        signatureBoundaryGate('approved_artifacts', 'Approved pending signature artifacts', formalApprovalCloseout.closeoutStatus, ['advanced_formal_approval_workflow_closeout'], 'signature', 'Only internally approved artifacts can approach signature.'),
+        signatureBoundaryGate('financial_statement_signature', 'Financial statement signature boundary', 'needs_review', ['advanced_approval_decision_workspace'], 'signature', 'Representative signature is external and not automated.'),
+        signatureBoundaryGate('bank_certification', 'Bank certification boundary', 'needs_review', ['advanced_formal_approval_command_center'], 'certification', 'Certified reconciliation requires external proof and certifier.'),
+        signatureBoundaryGate('legal_book_legalization', 'Legal book legalization boundary', 'needs_review', ['advanced_approval_authority_matrix'], 'legalization', 'Journal and ledger legalization is an external professional/legal act.'),
+      ];
+    const blockers =
+      formalApprovalCloseout.finalDecision ===
+      'ready_for_signature_and_certification'
+        ? [...formalApprovalCloseout.blockers]
+        : unique([
+            ...formalApprovalCloseout.blockers,
+            `Formal approval decision is ${formalApprovalCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(
+      boundaryGates.map((gate) => gate.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      formalApprovalCloseout,
+      boundaryGates,
+      summary: {
+        gateCount: boundaryGates.length,
+        readyGateCount: boundaryGates.filter((gate) => gate.status === 'ready')
+          .length,
+        needsReviewGateCount: boundaryGates.filter(
+          (gate) => gate.status === 'needs_review',
+        ).length,
+        blockedGateCount: boundaryGates.filter(
+          (gate) => gate.status === 'blocked',
+        ).length,
+        approvedPendingSignatureCount:
+          formalApprovalCloseout.summary.approvedPendingSignatureCount,
+      },
+      blockers,
+      nextStep:
+        anchorStatus === 'blocked'
+          ? 'Volver a approval workflow antes de preparar fronteras formales.'
+          : 'Registrar firmantes y autoridades externas requeridas.',
+      guardrails: [
+        'Signature/certification boundary no ejecuta firmas ni certificaciones.',
+        'Cada acto formal queda clasificado antes de cualquier handoff externo.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedFormalSignatoryRegistryUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase: GetTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalSignatoryRegistryView> {
+    const boundaryAnchor =
+      await this.getTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase.execute(
+        input,
+      );
+    const signatories: TenantAccountingAdvancedFormalSignatoryRegistryView['signatories'] =
+      [
+        formalSignatory('journal_book_signatory', 'Journal book signatory', 'journal_book', 'needs_review', 'legalization', 'external_accountant', 'External accountant or authorized registry'),
+        formalSignatory('ledger_book_signatory', 'Ledger book signatory', 'ledger_book', 'needs_review', 'legalization', 'external_accountant', 'External accountant or authorized registry'),
+        formalSignatory('financial_statement_signatory', 'Financial statement signatory', 'financial_statement', 'needs_review', 'signature', 'legal_representative', 'Legal representative'),
+        formalSignatory('certified_reconciliation_certifier', 'Certified reconciliation certifier', 'certified_reconciliation', 'needs_review', 'certification', 'auditor', 'Auditor or bank-certification authority'),
+        formalSignatory('adjustment_pack_approver', 'Adjustment pack professional approver', 'adjustment_pack', 'ready', 'signature', 'external_accountant', 'External accountant approval record'),
+      ];
+    const blockers = [...boundaryAnchor.blockers];
+    const registryStatus = resolveStatus(
+      signatories.map((signatory) => signatory.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      registryStatus,
+      boundaryAnchor,
+      signatories,
+      summary: {
+        signatoryCount: signatories.length,
+        signatureCount: signatories.filter(
+          (signatory) => signatory.requiredAct === 'signature',
+        ).length,
+        certificationCount: signatories.filter(
+          (signatory) => signatory.requiredAct === 'certification',
+        ).length,
+        legalizationCount: signatories.filter(
+          (signatory) => signatory.requiredAct === 'legalization',
+        ).length,
+        needsReviewSignatoryCount: signatories.filter(
+          (signatory) => signatory.status === 'needs_review',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Preparar evidence readiness para cada firmante o certifier.',
+      guardrails: [
+        'Signatory registry define owners; no produce firmas.',
+        'Autoridades externas conservan control sobre cada acto formal.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedFormalSignatoryRegistryUseCase: GetTenantAccountingAdvancedFormalSignatoryRegistryUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedSignatureEvidenceReadinessPackView> {
+    const signatoryRegistry =
+      await this.getTenantAccountingAdvancedFormalSignatoryRegistryUseCase.execute(
+        input,
+      );
+    const evidenceItems =
+      signatoryRegistry.signatories.map((signatory) =>
+        signatureEvidenceItem(
+          `evidence_${signatory.key}`,
+          `${signatory.label} evidence`,
+          signatory.status,
+          signatory.key,
+          ['advanced_formal_approval_workflow_closeout', signatory.key],
+          missingEvidenceFromSignatory(signatory),
+        ),
+      );
+    const blockers = [...signatoryRegistry.blockers];
+    const packStatus = resolveStatus(
+      evidenceItems.map((item) => item.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      signatoryRegistry,
+      evidenceItems,
+      summary: {
+        evidenceItemCount: evidenceItems.length,
+        readyEvidenceItemCount: evidenceItems.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        needsReviewEvidenceItemCount: evidenceItems.filter(
+          (item) => item.status === 'needs_review',
+        ).length,
+        blockedEvidenceItemCount: evidenceItems.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+        missingEvidenceCount: evidenceItems.flatMap(
+          (item) => item.missingEvidence,
+        ).length,
+      },
+      blockers,
+      nextStep:
+        'Separar requisitos de certificacion antes de cualquier ejecucion externa.',
+      guardrails: [
+        'Evidence readiness prepara carpeta de firma; no firma ni envia.',
+        'Missing evidence debe resolverse fuera de automatizacion formal.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase: GetTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedCertificationRequirementWorkspaceView> {
+    const signatureEvidencePack =
+      await this.getTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase.execute(
+        input,
+      );
+    const requirements: TenantAccountingAdvancedCertificationRequirementWorkspaceView['requirements'] =
+      [
+        certificationRequirement('financial_statement_certification', 'Financial statement certification requirement', 'financial_statement', 'needs_review', 'Signed statement approval and legal representative signoff.', 'legal_representative'),
+        certificationRequirement('bank_reconciliation_certification', 'Bank reconciliation certification requirement', 'certified_reconciliation', 'needs_review', 'External bank/auditor proof of reconciled balances.', 'auditor'),
+      ];
+    const blockers = [...signatureEvidencePack.blockers];
+    const workspaceStatus = resolveStatus(
+      requirements.map((requirement) => requirement.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      workspaceStatus,
+      signatureEvidencePack,
+      requirements,
+      summary: {
+        requirementCount: requirements.length,
+        readyRequirementCount: requirements.filter(
+          (requirement) => requirement.status === 'ready',
+        ).length,
+        needsReviewRequirementCount: requirements.filter(
+          (requirement) => requirement.status === 'needs_review',
+        ).length,
+        blockedRequirementCount: requirements.filter(
+          (requirement) => requirement.status === 'blocked',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Preparar legalization boundary para libros y estados.',
+      guardrails: [
+        'Certification workspace describe requisitos; no certifica saldos ni estados.',
+        'Certificacion requiere prueba externa y autoridad asignada.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedLegalizationBoundaryPacketUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase: GetTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedLegalizationBoundaryPacketView> {
+    const certificationWorkspace =
+      await this.getTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase.execute(
+        input,
+      );
+    const legalizationItems: TenantAccountingAdvancedLegalizationBoundaryPacketView['legalizationItems'] =
+      [
+        legalizationItem('journal_book_legalization', 'Journal book legalization boundary', 'journal_book', 'needs_review', 'Libro diario requiere acto externo de legalizacion antes de oficializar.', 'external_accountant'),
+        legalizationItem('ledger_book_legalization', 'Ledger book legalization boundary', 'ledger_book', 'needs_review', 'Libro mayor requiere acto externo de legalizacion antes de oficializar.', 'external_accountant'),
+        legalizationItem('financial_statement_formalization', 'Financial statement formalization boundary', 'financial_statement', 'needs_review', 'Estados requieren firma/representacion antes de considerarse oficiales.', 'legal_representative'),
+      ];
+    const blockers = [...certificationWorkspace.blockers];
+    const packetStatus = resolveStatus(
+      legalizationItems.map((item) => item.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packetStatus,
+      certificationWorkspace,
+      legalizationItems,
+      summary: {
+        legalizationItemCount: legalizationItems.length,
+        readyLegalizationItemCount: legalizationItems.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        needsReviewLegalizationItemCount: legalizationItems.filter(
+          (item) => item.status === 'needs_review',
+        ).length,
+        blockedLegalizationItemCount: legalizationItems.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        'Cerrar boundaries y decidir si se prepara handoff de ejecucion externa.',
+      guardrails: [
+        'Legalization packet modela la frontera; no legaliza libros.',
+        'Solo un acto externo posterior puede convertir drafts en oficiales.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedSignatureCertificationBoundaryCloseoutUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedLegalizationBoundaryPacketUseCase: GetTenantAccountingAdvancedLegalizationBoundaryPacketUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedSignatureCertificationBoundaryCloseoutView> {
+    const legalizationPacket =
+      await this.getTenantAccountingAdvancedLegalizationBoundaryPacketUseCase.execute(
+        input,
+      );
+    const { certificationWorkspace } = legalizationPacket;
+    const { signatureEvidencePack } = certificationWorkspace;
+    const { signatoryRegistry } = signatureEvidencePack;
+    const { boundaryAnchor } = signatoryRegistry;
+    const closeoutChecklist: TenantAccountingAdvancedSignatureCertificationBoundaryCloseoutView['closeoutChecklist'] =
+      [
+        signatureBoundaryCloseoutCheck('boundary_anchor', 'Signature certification boundary anchor', boundaryAnchor.anchorStatus, ['advanced_signature_certification_boundary_anchor']),
+        signatureBoundaryCloseoutCheck('signatory_registry', 'Formal signatory registry', signatoryRegistry.registryStatus, ['advanced_formal_signatory_registry']),
+        signatureBoundaryCloseoutCheck('signature_evidence', 'Signature evidence readiness pack', signatureEvidencePack.packStatus, ['advanced_signature_evidence_readiness_pack']),
+        signatureBoundaryCloseoutCheck('certification_requirements', 'Certification requirement workspace', certificationWorkspace.workspaceStatus, ['advanced_certification_requirement_workspace']),
+        signatureBoundaryCloseoutCheck('legalization_boundary', 'Legalization boundary packet', legalizationPacket.packetStatus, ['advanced_legalization_boundary_packet']),
+      ];
+    const blockers = unique([
+      ...boundaryAnchor.blockers,
+      ...signatoryRegistry.blockers,
+      ...signatureEvidencePack.blockers,
+      ...certificationWorkspace.blockers,
+      ...legalizationPacket.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(
+      closeoutChecklist.map((item) => item.status),
+      blockers,
+    );
+    const finalDecision = signatureCertificationBoundaryDecisionFromStatus(
+      closeoutStatus,
+      signatureEvidencePack,
+      certificationWorkspace,
+      legalizationPacket,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      boundaryAnchor,
+      signatoryRegistry,
+      signatureEvidencePack,
+      certificationWorkspace,
+      legalizationPacket,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        blockedChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+        signatoryCount: signatoryRegistry.summary.signatoryCount,
+        missingEvidenceCount: signatureEvidencePack.summary.missingEvidenceCount,
+        certificationRequirementCount:
+          certificationWorkspace.summary.requirementCount,
+        legalizationItemCount: legalizationPacket.summary.legalizationItemCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'ready_for_external_execution'
+          ? 'Preparar 1.2 External Execution Handoff para actos formales externos.'
+          : finalDecision === 'needs_signatory_evidence'
+            ? 'Completar evidencia de firmantes/certificadores antes del handoff.'
+            : finalDecision === 'return_to_formal_approval'
+              ? 'Volver a approval workflow 1.0 antes de boundaries formales.'
+              : 'No ejecutar actos formales para este periodo.',
+      guardrails: [
+        'Closeout 1.1 decide readiness de frontera; no ejecuta firma/certificacion/legalizacion.',
+        'External execution debe ocurrir en una capa posterior con owners externos.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -5895,6 +6279,121 @@ function formalApprovalWorkflowDecisionFromStatus(
     return 'needs_external_approval';
   }
   return 'ready_for_signature_and_certification';
+}
+
+function signatureBoundaryGate(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+  requiredAct: TenantAccountingAdvancedSignatureCertificationBoundaryAnchorView['boundaryGates'][number]['requiredAct'],
+  boundary: string,
+): TenantAccountingAdvancedSignatureCertificationBoundaryAnchorView['boundaryGates'][number] {
+  return { key, label, status, evidenceRefs, requiredAct, boundary };
+}
+
+function formalSignatory(
+  key: string,
+  label: string,
+  artifactType: TenantAccountingAdvancedFormalSignatoryRegistryView['signatories'][number]['artifactType'],
+  status: AccountingReadinessStatus,
+  requiredAct: TenantAccountingAdvancedFormalSignatoryRegistryView['signatories'][number]['requiredAct'],
+  requiredOwner: AccountingAdvancedProfessionalOwner,
+  externalAuthority: string,
+): TenantAccountingAdvancedFormalSignatoryRegistryView['signatories'][number] {
+  return {
+    key,
+    label,
+    artifactType,
+    status,
+    requiredAct,
+    requiredOwner,
+    externalAuthority,
+  };
+}
+
+function signatureEvidenceItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  signatoryKey: string,
+  evidenceRefs: string[],
+  missingEvidence: string[],
+): TenantAccountingAdvancedSignatureEvidenceReadinessPackView['evidenceItems'][number] {
+  return { key, label, status, signatoryKey, evidenceRefs, missingEvidence };
+}
+
+function missingEvidenceFromSignatory(
+  signatory: TenantAccountingAdvancedFormalSignatoryRegistryView['signatories'][number],
+): string[] {
+  if (signatory.status === 'ready') {
+    return [];
+  }
+  if (signatory.requiredAct === 'certification') {
+    return ['external certification proof', 'certifier acceptance'];
+  }
+  if (signatory.requiredAct === 'legalization') {
+    return ['legalization venue confirmation', 'book format acceptance'];
+  }
+  return ['signatory identity confirmation', 'signature method confirmation'];
+}
+
+function certificationRequirement(
+  key: string,
+  label: string,
+  artifactType: TenantAccountingAdvancedCertificationRequirementWorkspaceView['requirements'][number]['artifactType'],
+  status: AccountingReadinessStatus,
+  requiredProof: string,
+  requiredOwner: AccountingAdvancedProfessionalOwner,
+): TenantAccountingAdvancedCertificationRequirementWorkspaceView['requirements'][number] {
+  return { key, label, status, artifactType, requiredProof, requiredOwner };
+}
+
+function legalizationItem(
+  key: string,
+  label: string,
+  artifactType: TenantAccountingAdvancedLegalizationBoundaryPacketView['legalizationItems'][number]['artifactType'],
+  status: AccountingReadinessStatus,
+  legalizationBoundary: string,
+  requiredOwner: AccountingAdvancedProfessionalOwner,
+): TenantAccountingAdvancedLegalizationBoundaryPacketView['legalizationItems'][number] {
+  return {
+    key,
+    label,
+    status,
+    artifactType,
+    legalizationBoundary,
+    requiredOwner,
+  };
+}
+
+function signatureBoundaryCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantAccountingAdvancedSignatureCertificationBoundaryCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function signatureCertificationBoundaryDecisionFromStatus(
+  closeoutStatus: AccountingReadinessStatus,
+  signatureEvidencePack: TenantAccountingAdvancedSignatureEvidenceReadinessPackView,
+  certificationWorkspace: TenantAccountingAdvancedCertificationRequirementWorkspaceView,
+  legalizationPacket: TenantAccountingAdvancedLegalizationBoundaryPacketView,
+  blockers: string[],
+): AccountingAdvancedSignatureCertificationBoundaryDecision {
+  if (blockers.length > 0 || closeoutStatus === 'blocked') {
+    return 'return_to_formal_approval';
+  }
+  if (
+    signatureEvidencePack.summary.missingEvidenceCount > 0 ||
+    certificationWorkspace.summary.needsReviewRequirementCount > 0 ||
+    legalizationPacket.summary.needsReviewLegalizationItemCount > 0
+  ) {
+    return 'needs_signatory_evidence';
+  }
+  return 'ready_for_external_execution';
 }
 
 function formalProductDesignDecisionFromStatus(

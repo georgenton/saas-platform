@@ -2063,6 +2063,37 @@ Guardrail: formal approval workflow 1.0 records internal approval decisions and
 authority boundaries only. It does not sign, certify, legalize, file, emit
 official artifacts or replace the external professional act.
 
+### Accounting Advanced signature, certification and legalization boundaries 1.1
+
+After formal approval workflow 1.0, Accounting Advanced can define the formal
+act boundaries before any external execution occurs. This layer is the threshold
+map: it says which approved artifacts need signatures, certifications or
+legalization, who must act, and what evidence is still missing.
+
+1. `Signature & Certification Boundary Anchor`
+   - checks approved-pending-signature artifacts and classifies whether they
+     need signature, certification or legalization
+2. `Formal Signatory Registry`
+   - maps signatories, certifiers and legalization authorities by artifact type
+     without signing anything
+3. `Signature Evidence Readiness Pack`
+   - packages approval evidence, signatory evidence and missing proof before any
+     external signature handoff
+4. `Certification Requirement Workspace`
+   - separates financial-statement and bank-reconciliation certification
+     requirements from ordinary approval
+5. `Legalization Boundary Packet`
+   - models journal, ledger and financial-statement legalization boundaries
+     without legalizing books
+6. `Signature, Certification & Legalization Closeout`
+   - decides whether the tenant-period is ready for external execution handoff,
+     needs signatory evidence, must return to approval, or should not execute
+     formal acts
+
+Guardrail: boundary 1.1 prepares the map for formal acts only. It does not sign,
+certify, legalize, file, submit, emit official books or replace the external
+contador, auditor, legal representative or certifying authority.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2167,6 +2198,10 @@ product. Its current scope is intentionally operational and review-oriented:
     approval layer over reviewed drafts. It records authority, evidence,
     approval decisions and command-center status without signing, certifying,
     legalizing, filing or emitting official artifacts.
+29. Accounting Advanced signature, certification and legalization boundaries
+    1.1 as the pre-execution boundary map. It identifies signatories,
+    certification requirements, legalization requirements and missing evidence
+    without executing external acts or issuing official artifacts.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

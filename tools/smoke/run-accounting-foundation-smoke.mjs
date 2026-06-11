@@ -1182,6 +1182,12 @@ const [
   advancedApprovalDecisionWorkspace,
   advancedFormalApprovalCommandCenter,
   advancedFormalApprovalCloseout,
+  advancedSignatureCertificationAnchor,
+  advancedFormalSignatoryRegistry,
+  advancedSignatureEvidenceReadinessPack,
+  advancedCertificationRequirementWorkspace,
+  advancedLegalizationBoundaryPacket,
+  advancedSignatureCertificationCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1586,6 +1592,48 @@ const [
     path: accountingPath(`/advanced-formal-approval/closeout?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-signature-certification/anchor?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-signature-certification/signatory-registry?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-signature-certification/evidence-readiness-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-signature-certification/certification-requirements?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-signature-certification/legalization-boundary?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-signature-certification/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -1840,6 +1888,30 @@ assertStatus(
   'accounting advanced formal approval closeout',
   advancedFormalApprovalCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced signature certification anchor',
+  advancedSignatureCertificationAnchor.anchorStatus,
+);
+assertStatus(
+  'accounting advanced formal signatory registry',
+  advancedFormalSignatoryRegistry.registryStatus,
+);
+assertStatus(
+  'accounting advanced signature evidence readiness pack',
+  advancedSignatureEvidenceReadinessPack.packStatus,
+);
+assertStatus(
+  'accounting advanced certification requirement workspace',
+  advancedCertificationRequirementWorkspace.workspaceStatus,
+);
+assertStatus(
+  'accounting advanced legalization boundary packet',
+  advancedLegalizationBoundaryPacket.packetStatus,
+);
+assertStatus(
+  'accounting advanced signature certification closeout',
+  advancedSignatureCertificationCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -1868,6 +1940,11 @@ if (!Array.isArray(advancedProfessionalReviewCloseout.closeoutChecklist)) {
 }
 if (!Array.isArray(advancedFormalApprovalCloseout.closeoutChecklist)) {
   throw new Error('advanced-formal-approval/closeout no devolvio checklist[].');
+}
+if (!Array.isArray(advancedSignatureCertificationCloseout.closeoutChecklist)) {
+  throw new Error(
+    'advanced-signature-certification/closeout no devolvio checklist[].',
+  );
 }
 printLine(
   'foundation pack v2',

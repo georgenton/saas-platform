@@ -139,6 +139,7 @@ import {
   fetchAccountingAdvancedFormalArtifactDraftingCloseout,
   fetchAccountingAdvancedProfessionalReviewExecutionCloseout,
   fetchAccountingAdvancedFormalApprovalWorkflowCloseout,
+  fetchAccountingAdvancedSignatureCertificationBoundaryCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -500,6 +501,7 @@ import {
   AccountingAdvancedFormalArtifactDraftingCloseoutResponse,
   AccountingAdvancedProfessionalReviewExecutionCloseoutResponse,
   AccountingAdvancedFormalApprovalWorkflowCloseoutResponse,
+  AccountingAdvancedSignatureCertificationBoundaryCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2608,6 +2610,13 @@ export function App() {
     setAccountingAdvancedFormalApprovalWorkflowCloseout,
   ] =
     useState<AccountingAdvancedFormalApprovalWorkflowCloseoutResponse | null>(
+      null,
+    );
+  const [
+    accountingAdvancedSignatureCertificationBoundaryCloseout,
+    setAccountingAdvancedSignatureCertificationBoundaryCloseout,
+  ] =
+    useState<AccountingAdvancedSignatureCertificationBoundaryCloseoutResponse | null>(
       null,
     );
   const [
@@ -20767,6 +20776,7 @@ export function App() {
         nextAccountingAdvancedFormalArtifactDraftingCloseout,
         nextAccountingAdvancedProfessionalReviewExecutionCloseout,
         nextAccountingAdvancedFormalApprovalWorkflowCloseout,
+        nextAccountingAdvancedSignatureCertificationBoundaryCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21042,6 +21052,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedSignatureCertificationBoundaryCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21077,6 +21093,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21369,6 +21386,9 @@ export function App() {
         );
         setAccountingAdvancedFormalApprovalWorkflowCloseout(
           nextAccountingAdvancedFormalApprovalWorkflowCloseout,
+        );
+        setAccountingAdvancedSignatureCertificationBoundaryCloseout(
+          nextAccountingAdvancedSignatureCertificationBoundaryCloseout,
         );
       });
     } catch (error) {
@@ -36731,8 +36751,109 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedSignatureCertificationBoundaryCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced Signature,
+                                        Certification & Legalization Boundaries
+                                        1.1
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedSignatureCertificationBoundaryCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedSignatureCertificationBoundaryCloseout
+                                              .boundaryAnchor.summary
+                                              .readyGateCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedSignatureCertificationBoundaryCloseout
+                                              .boundaryAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Firmantes
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedSignatureCertificationBoundaryCloseout
+                                              .signatoryRegistry.summary
+                                              .signatoryCount
+                                          }{' '}
+                                          owners
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Evidencia faltante
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedSignatureCertificationBoundaryCloseout
+                                              .signatureEvidencePack.summary
+                                              .missingEvidenceCount
+                                          }{' '}
+                                          items
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Certificacion
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedSignatureCertificationBoundaryCloseout
+                                              .certificationWorkspace.summary
+                                              .requirementCount
+                                          }{' '}
+                                          reqs
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Legalizacion
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedSignatureCertificationBoundaryCloseout
+                                              .legalizationPacket.summary
+                                              .legalizationItemCount
+                                          }{' '}
+                                          items
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedSignatureCertificationBoundaryCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedSignatureCertificationBoundaryCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedFormalApprovalWorkflowCloseout?.nextStep ??
+                                  {accountingAdvancedSignatureCertificationBoundaryCloseout?.nextStep ??
+                                    accountingAdvancedFormalApprovalWorkflowCloseout?.nextStep ??
                                     accountingAdvancedProfessionalReviewExecutionCloseout?.nextStep ??
                                     accountingAdvancedFormalArtifactDraftingCloseout?.nextStep ??
                                     accountingAdvancedFormalProductDesignCloseout?.nextStep ??

@@ -1,5 +1,14 @@
 # api-platform
 
+## 0.107.47
+
+### Patch Changes
+
+- 7716485: Add Accounting Advanced Formal Record Closeout 1.6 with closeout anchor,
+  archive readiness, evidence packets, professional attestation boundary, command
+  center, closeout API, dashboard wiring, conceptual model updates, and smoke
+  coverage.
+
 ## 0.107.46
 
 ### Patch Changes

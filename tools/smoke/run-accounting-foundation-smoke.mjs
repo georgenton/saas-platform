@@ -1206,6 +1206,12 @@ const [
   advancedAcceptanceDecisionWorkspace,
   advancedInternalAcceptanceCommandCenter,
   advancedExternalResultIntakeCloseout,
+  advancedFormalRecordAssemblyAnchor,
+  advancedAcceptedArtifactBinder,
+  advancedFormalRecordIndexWorkspace,
+  advancedRecordConsistencyReviewWorkspace,
+  advancedFormalRecordAssemblyCommandCenter,
+  advancedFormalRecordAssemblyCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1778,6 +1784,48 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-record-assembly/anchor?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-record-assembly/accepted-artifact-binder?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-record-assembly/record-index?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-record-assembly/consistency-review?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-record-assembly/command-center?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-record-assembly/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2128,6 +2176,30 @@ assertStatus(
   'accounting advanced external result intake closeout',
   advancedExternalResultIntakeCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced formal record assembly anchor',
+  advancedFormalRecordAssemblyAnchor.assemblyStatus,
+);
+assertStatus(
+  'accounting advanced accepted artifact binder',
+  advancedAcceptedArtifactBinder.binderStatus,
+);
+assertStatus(
+  'accounting advanced formal record index workspace',
+  advancedFormalRecordIndexWorkspace.indexStatus,
+);
+assertStatus(
+  'accounting advanced record consistency review workspace',
+  advancedRecordConsistencyReviewWorkspace.reviewStatus,
+);
+assertStatus(
+  'accounting advanced formal record assembly command center',
+  advancedFormalRecordAssemblyCommandCenter.commandStatus,
+);
+assertStatus(
+  'accounting advanced formal record assembly closeout',
+  advancedFormalRecordAssemblyCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2177,6 +2249,11 @@ if (
 if (!Array.isArray(advancedExternalResultIntakeCloseout.closeoutChecklist)) {
   throw new Error(
     'advanced-external-result-intake/closeout no devolvio checklist[].',
+  );
+}
+if (!Array.isArray(advancedFormalRecordAssemblyCloseout.closeoutChecklist)) {
+  throw new Error(
+    'advanced-formal-record-assembly/closeout no devolvio checklist[].',
   );
 }
 printLine(

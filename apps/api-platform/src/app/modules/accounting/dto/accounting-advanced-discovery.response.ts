@@ -74,12 +74,18 @@ import {
   TenantAccountingAdvancedExternalObservationResolutionQueueView,
   TenantAccountingAdvancedExternalResultIntakeAnchorView,
   TenantAccountingAdvancedExternalResultIntakeCloseoutView,
+  TenantAccountingAdvancedAcceptedArtifactBinderView,
+  TenantAccountingAdvancedFormalRecordAssemblyAnchorView,
+  TenantAccountingAdvancedFormalRecordAssemblyCloseoutView,
+  TenantAccountingAdvancedFormalRecordAssemblyCommandCenterView,
+  TenantAccountingAdvancedFormalRecordIndexWorkspaceView,
   TenantAccountingAdvancedInternalAcceptanceCommandCenterView,
   TenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
   TenantAccountingAdvancedReturnedArtifactRegistryView,
+  TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
   TenantAccountingFormalNeedsClassifierView,
   TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView,
@@ -253,6 +259,18 @@ export type AccountingAdvancedInternalAcceptanceCommandCenterResponseDto =
   Serialized<TenantAccountingAdvancedInternalAcceptanceCommandCenterView>;
 export type AccountingAdvancedExternalResultIntakeCloseoutResponseDto =
   Serialized<TenantAccountingAdvancedExternalResultIntakeCloseoutView>;
+export type AccountingAdvancedFormalRecordAssemblyAnchorResponseDto =
+  Serialized<TenantAccountingAdvancedFormalRecordAssemblyAnchorView>;
+export type AccountingAdvancedAcceptedArtifactBinderResponseDto =
+  Serialized<TenantAccountingAdvancedAcceptedArtifactBinderView>;
+export type AccountingAdvancedFormalRecordIndexWorkspaceResponseDto =
+  Serialized<TenantAccountingAdvancedFormalRecordIndexWorkspaceView>;
+export type AccountingAdvancedRecordConsistencyReviewWorkspaceResponseDto =
+  Serialized<TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView>;
+export type AccountingAdvancedFormalRecordAssemblyCommandCenterResponseDto =
+  Serialized<TenantAccountingAdvancedFormalRecordAssemblyCommandCenterView>;
+export type AccountingAdvancedFormalRecordAssemblyCloseoutResponseDto =
+  Serialized<TenantAccountingAdvancedFormalRecordAssemblyCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -755,6 +773,42 @@ export function toAccountingAdvancedInternalAcceptanceCommandCenterResponseDto(
 export function toAccountingAdvancedExternalResultIntakeCloseoutResponseDto(
   view: TenantAccountingAdvancedExternalResultIntakeCloseoutView,
 ): AccountingAdvancedExternalResultIntakeCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalRecordAssemblyAnchorResponseDto(
+  view: TenantAccountingAdvancedFormalRecordAssemblyAnchorView,
+): AccountingAdvancedFormalRecordAssemblyAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedAcceptedArtifactBinderResponseDto(
+  view: TenantAccountingAdvancedAcceptedArtifactBinderView,
+): AccountingAdvancedAcceptedArtifactBinderResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalRecordIndexWorkspaceResponseDto(
+  view: TenantAccountingAdvancedFormalRecordIndexWorkspaceView,
+): AccountingAdvancedFormalRecordIndexWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedRecordConsistencyReviewWorkspaceResponseDto(
+  view: TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView,
+): AccountingAdvancedRecordConsistencyReviewWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalRecordAssemblyCommandCenterResponseDto(
+  view: TenantAccountingAdvancedFormalRecordAssemblyCommandCenterView,
+): AccountingAdvancedFormalRecordAssemblyCommandCenterResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalRecordAssemblyCloseoutResponseDto(
+  view: TenantAccountingAdvancedFormalRecordAssemblyCloseoutView,
+): AccountingAdvancedFormalRecordAssemblyCloseoutResponseDto {
   return serialize(view);
 }
 

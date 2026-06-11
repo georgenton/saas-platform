@@ -1688,6 +1688,39 @@ Guardrail: pilot operations 7.1 runs the pilot loop; it still does not submit
 declarations, pay obligations, certify books or open Accounting Advanced unless
 the evidence gate and accountant context justify discovery.
 
+### Tax Compliance EC pilot memory 7.2
+
+The 7.2 layer turns the pilot operating loop into durable product memory. It
+keeps Accounting Advanced behind an evidence gate, but gives the pilot a way to
+compare periods, tenants, accountant feedback and AI suggestions without losing
+the learning each time the dashboard is regenerated.
+
+The 7.2 layer adds:
+
+1. `Tax Pilot Evidence Persistence Ledger`
+   - reads persisted pilot closeout events when available and falls back to
+     derived 7.1 records for cohort, feedback, SLA, learning, accounting gate
+     and closeout
+2. `Tax Pilot Multi-Tenant Cohort`
+   - prepares a comparable cohort table with readiness score, accountant loop,
+     blockers, critical feedback and repeated signals
+3. `Tax Pilot Repeated Signal Detector`
+   - identifies repeated formal-accounting pressure such as accountant-owned
+     closeout, books, bank feeds, ledger adjustments or audit trail needs
+4. `Accountant Collaboration Workbench 7.2`
+   - turns SLA items and repeated signals into accountant/operator questions,
+     expected answers, due buckets and resolution actions
+5. `AI Tax Pilot Assistant Packet 7.2`
+   - uses deterministic pilot contracts to suggest next actions and accountant
+     prompts in suggestion mode only
+6. `Tax Pilot 7.2 Closeout + Smoke`
+   - closes persistence, cohort comparison, repeated signals, accountant
+     workbench and AI assistant packet as a single pilot-memory narrative
+
+Guardrail: pilot memory 7.2 records and explains operational evidence; it does
+not automate filing, payment, signatures, books, audit certification or the
+decision to open Accounting Advanced.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

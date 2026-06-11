@@ -173,10 +173,12 @@ import {
   fetchEcuadorTaxAnnexesWorkspace,
   fetchEcuadorTaxAnnualRollupWorkspace,
   fetchEcuadorTaxAssistedDeclarationReviewPackV2,
+  fetchEcuadorTaxAccountantCollaborationWorkbenchV72,
   fetchEcuadorTaxAccountantCollaborationSlaTrackerV71,
   fetchEcuadorTaxAccountantPacketExportV62,
   fetchEcuadorTaxAccountantFeedbackIntakeQueueV70,
   fetchEcuadorTaxAccountingAdvancedEvidenceGateV71,
+  fetchEcuadorTaxAiPilotAssistantPacketV72,
   fetchEcuadorTaxComplianceCloseoutV2,
   fetchEcuadorTaxComplianceProductCloseoutV3,
   fetchEcuadorTaxCommandCenter,
@@ -188,11 +190,15 @@ import {
   fetchEcuadorTaxOperationalHardeningCloseoutV62,
   fetchEcuadorTaxOperatorActionCenterV62,
   fetchEcuadorTaxPilotCloseoutDecisionPacketV70,
+  fetchEcuadorTaxPilotCloseoutV72,
   fetchEcuadorTaxPilotCohortRegistryV71,
+  fetchEcuadorTaxPilotEvidencePersistenceLedgerV72,
   fetchEcuadorTaxPilotFeedbackCloseoutV70,
   fetchEcuadorTaxPilotFeedbackAnalyticsDashboardV71,
   fetchEcuadorTaxPilotLearningBacklogV71,
+  fetchEcuadorTaxPilotMultiTenantCohortV72,
   fetchEcuadorTaxPilotOperationsCloseoutV71,
+  fetchEcuadorTaxPilotRepeatedSignalDetectorV72,
   fetchEcuadorTaxPilotTenantReadinessRoomV70,
   fetchEcuadorTaxDeclarationReviewLoopWorkspace,
   fetchEcuadorTaxDeclarationSourceLedger,
@@ -699,10 +705,12 @@ import {
   EcuadorTaxAnnexesWorkspaceResponse,
   EcuadorTaxAnnualRollupWorkspaceResponse,
   EcuadorTaxAssistedDeclarationReviewPackV2Response,
+  EcuadorTaxAccountantCollaborationWorkbenchV72Response,
   EcuadorTaxAccountantCollaborationSlaTrackerV71Response,
   EcuadorTaxAccountantPacketExportV62Response,
   EcuadorTaxAccountantFeedbackIntakeQueueV70Response,
   EcuadorTaxAccountingAdvancedEvidenceGateV71Response,
+  EcuadorTaxAiPilotAssistantPacketV72Response,
   EcuadorTaxComplianceCloseoutV2Response,
   EcuadorTaxDeclarationHandoffCloseoutV6Response,
   EcuadorTaxFormBoxEvidenceBinderV2Response,
@@ -710,11 +718,15 @@ import {
   EcuadorTaxOperationalHardeningCloseoutV62Response,
   EcuadorTaxOperatorActionCenterV62Response,
   EcuadorTaxPilotCloseoutDecisionPacketV70Response,
+  EcuadorTaxPilotCloseoutV72Response,
   EcuadorTaxPilotCohortRegistryV71Response,
+  EcuadorTaxPilotEvidencePersistenceLedgerV72Response,
   EcuadorTaxPilotFeedbackCloseoutV70Response,
   EcuadorTaxPilotFeedbackAnalyticsDashboardV71Response,
   EcuadorTaxPilotLearningBacklogV71Response,
+  EcuadorTaxPilotMultiTenantCohortV72Response,
   EcuadorTaxPilotOperationsCloseoutV71Response,
+  EcuadorTaxPilotRepeatedSignalDetectorV72Response,
   EcuadorTaxPilotTenantReadinessRoomV70Response,
   EcuadorTaxSriEvidenceImportPersistenceLedgerV62Response,
   EcuadorTaxSriReconciliationExceptionQueueV62Response,
@@ -2709,6 +2721,34 @@ export function App() {
     taxCompliancePilotOperationsCloseoutV71,
     setTaxCompliancePilotOperationsCloseoutV71,
   ] = useState<EcuadorTaxPilotOperationsCloseoutV71Response | null>(null);
+  const [
+    taxCompliancePilotEvidenceLedgerV72,
+    setTaxCompliancePilotEvidenceLedgerV72,
+  ] = useState<EcuadorTaxPilotEvidencePersistenceLedgerV72Response | null>(
+    null,
+  );
+  const [
+    taxCompliancePilotMultiTenantCohortV72,
+    setTaxCompliancePilotMultiTenantCohortV72,
+  ] = useState<EcuadorTaxPilotMultiTenantCohortV72Response | null>(null);
+  const [
+    taxCompliancePilotRepeatedSignalDetectorV72,
+    setTaxCompliancePilotRepeatedSignalDetectorV72,
+  ] = useState<EcuadorTaxPilotRepeatedSignalDetectorV72Response | null>(null);
+  const [
+    taxComplianceAccountantWorkbenchV72,
+    setTaxComplianceAccountantWorkbenchV72,
+  ] = useState<EcuadorTaxAccountantCollaborationWorkbenchV72Response | null>(
+    null,
+  );
+  const [
+    taxComplianceAiPilotAssistantPacketV72,
+    setTaxComplianceAiPilotAssistantPacketV72,
+  ] = useState<EcuadorTaxAiPilotAssistantPacketV72Response | null>(null);
+  const [
+    taxCompliancePilotCloseoutV72,
+    setTaxCompliancePilotCloseoutV72,
+  ] = useState<EcuadorTaxPilotCloseoutV72Response | null>(null);
   const [
     taxComplianceEvidenceQualityCenter,
     setTaxComplianceEvidenceQualityCenter,
@@ -19972,6 +20012,12 @@ export function App() {
         nextPilotLearningBacklogV71,
         nextAccountingAdvancedEvidenceGateV71,
         nextPilotOperationsCloseoutV71,
+        nextPilotEvidenceLedgerV72,
+        nextPilotMultiTenantCohortV72,
+        nextPilotRepeatedSignalDetectorV72,
+        nextAccountantWorkbenchV72,
+        nextAiPilotAssistantPacketV72,
+        nextPilotCloseoutV72,
         nextEvidenceQualityCenter,
         nextObligationRiskMonitor,
         nextAccountantHandoffRoomV2,
@@ -20399,6 +20445,42 @@ export function App() {
           year,
         ),
         fetchEcuadorTaxPilotOperationsCloseoutV71(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxPilotEvidencePersistenceLedgerV72(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxPilotMultiTenantCohortV72(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxPilotRepeatedSignalDetectorV72(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAccountantCollaborationWorkbenchV72(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAiPilotAssistantPacketV72(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxPilotCloseoutV72(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -20906,6 +20988,18 @@ export function App() {
         setTaxCompliancePilotOperationsCloseoutV71(
           nextPilotOperationsCloseoutV71,
         );
+        setTaxCompliancePilotEvidenceLedgerV72(nextPilotEvidenceLedgerV72);
+        setTaxCompliancePilotMultiTenantCohortV72(
+          nextPilotMultiTenantCohortV72,
+        );
+        setTaxCompliancePilotRepeatedSignalDetectorV72(
+          nextPilotRepeatedSignalDetectorV72,
+        );
+        setTaxComplianceAccountantWorkbenchV72(nextAccountantWorkbenchV72);
+        setTaxComplianceAiPilotAssistantPacketV72(
+          nextAiPilotAssistantPacketV72,
+        );
+        setTaxCompliancePilotCloseoutV72(nextPilotCloseoutV72);
         setTaxComplianceEvidenceQualityCenter(nextEvidenceQualityCenter);
         setTaxComplianceObligationRiskMonitor(nextObligationRiskMonitor);
         setTaxComplianceAccountantHandoffRoomV2(nextAccountantHandoffRoomV2);
@@ -33118,6 +33212,100 @@ export function App() {
                         <p className={styles.muted}>
                           {
                             taxComplianceAccountingAdvancedEvidenceGateV71
+                              .recommendation.reason
+                          }
+                        </p>
+                      </div>
+                    ) : null}
+                    {taxCompliancePilotCloseoutV72 &&
+                    taxCompliancePilotEvidenceLedgerV72 &&
+                    taxCompliancePilotMultiTenantCohortV72 &&
+                    taxCompliancePilotRepeatedSignalDetectorV72 &&
+                    taxComplianceAccountantWorkbenchV72 &&
+                    taxComplianceAiPilotAssistantPacketV72 ? (
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <div>
+                            <strong>Pilot memory 7.2</strong>
+                            <p className={styles.muted}>
+                              {taxCompliancePilotCloseoutV72.nextStep}
+                            </p>
+                          </div>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              taxCompliancePilotCloseoutV72.closeoutStatus,
+                            )}`}
+                          >
+                            {humanizeKey(
+                              taxCompliancePilotCloseoutV72.recommendedNextProduct,
+                            )}
+                          </span>
+                        </div>
+                        <div className={styles.invoiceInlineGrid}>
+                          <div>
+                            <span className={styles.muted}>Memory</span>
+                            <strong>
+                              {
+                                taxCompliancePilotEvidenceLedgerV72.summary
+                                  .recordCount
+                              }{' '}
+                              records
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Cohort</span>
+                            <strong>
+                              {
+                                taxCompliancePilotMultiTenantCohortV72.summary
+                                  .averageReadinessScore
+                              }
+                              %
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Signals</span>
+                            <strong>
+                              {
+                                taxCompliancePilotRepeatedSignalDetectorV72
+                                  .summary.signalCount
+                              }{' '}
+                              tracked
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Contador</span>
+                            <strong>
+                              {
+                                taxComplianceAccountantWorkbenchV72.summary
+                                  .unresolvedCount
+                              }{' '}
+                              open
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>AI packet</span>
+                            <strong>
+                              {
+                                taxComplianceAiPilotAssistantPacketV72.summary
+                                  .actionCount
+                              }{' '}
+                              actions
+                            </strong>
+                          </div>
+                        </div>
+                        <ul className={styles.compactList}>
+                          {taxCompliancePilotCloseoutV72.closeoutChecklist.map(
+                            (item) => (
+                              <li key={item.key}>
+                                <strong>{item.label}</strong> ·{' '}
+                                {humanizeKey(item.status)}
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                        <p className={styles.muted}>
+                          {
+                            taxCompliancePilotRepeatedSignalDetectorV72
                               .recommendation.reason
                           }
                         </p>

@@ -166,7 +166,8 @@ export type EcuadorTaxComplianceEventType =
   | 'tax_sri_filing_receipt_evidence_vault_reviewed'
   | 'tax_post_filing_exception_center_reviewed'
   | 'tax_period_post_filing_certificate_requested'
-  | 'tax_compliance_post_filing_closeout_v4_requested';
+  | 'tax_compliance_post_filing_closeout_v4_requested'
+  | 'tax_pilot_operations_closeout_v72_requested';
 export type EcuadorTaxAccountantReviewStatus =
   | 'pending_accountant'
   | 'in_review'
@@ -2686,6 +2687,209 @@ export interface EcuadorTaxPilotOperationsCloseoutV71View {
     | 'tax_compliance_pilot_iteration'
     | 'tax_compliance_hardening'
     | 'accounting_advanced_discovery';
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPilotEvidencePersistenceLedgerV72View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  ledgerStatus: EcuadorTaxReadinessStatus;
+  operationsCloseout: EcuadorTaxPilotOperationsCloseoutV71View;
+  persistedRecords: Array<{
+    key: string;
+    recordType:
+      | 'cohort'
+      | 'feedback'
+      | 'sla'
+      | 'learning'
+      | 'accounting_gate'
+      | 'closeout';
+    status: EcuadorTaxReadinessStatus;
+    sourceEventId: string | null;
+    sourceRefs: string[];
+    summary: string;
+    persistedAt: Date;
+  }>;
+  summary: {
+    recordCount: number;
+    persistedEventCount: number;
+    derivedRecordCount: number;
+    blockedRecordCount: number;
+    accountingGateRecordCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPilotMultiTenantCohortV72View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  cohortStatus: EcuadorTaxReadinessStatus;
+  evidenceLedger: EcuadorTaxPilotEvidencePersistenceLedgerV72View;
+  cohortRows: Array<{
+    key: string;
+    tenantSlug: string;
+    period: string;
+    serviceMode: EcuadorTaxPilotTenantReadinessRoomV70View['pilotDecision']['mode'];
+    status: 'active' | 'blocked' | 'ready_for_iteration';
+    accountantInLoop: boolean;
+    blockerCount: number;
+    criticalFeedbackCount: number;
+    repeatedSignalCount: number;
+    readinessScore: number;
+  }>;
+  commonSignals: Array<{
+    key: string;
+    label: string;
+    tenantCount: number;
+    status: EcuadorTaxReadinessStatus;
+    recommendation: string;
+  }>;
+  summary: {
+    tenantCount: number;
+    blockedTenantCount: number;
+    accountantInLoopTenantCount: number;
+    averageReadinessScore: number;
+    commonSignalCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPilotRepeatedSignalDetectorV72View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  detectorStatus: EcuadorTaxReadinessStatus;
+  multiTenantCohort: EcuadorTaxPilotMultiTenantCohortV72View;
+  repeatedSignals: Array<{
+    key: string;
+    label: string;
+    category:
+      | 'formal_books'
+      | 'certified_bank_feed'
+      | 'accountant_owned_closeout'
+      | 'ledger_adjustment'
+      | 'audit_trail';
+    status: EcuadorTaxReadinessStatus;
+    repetitionCount: number;
+    severity: 'critical' | 'high' | 'medium' | 'low';
+    evidenceRefs: string[];
+    recommendation: string;
+  }>;
+  recommendation: {
+    shouldOpenAccountingAdvancedDiscovery: boolean;
+    reason: string;
+    minimumEvidenceBeforeDiscovery: string[];
+  };
+  summary: {
+    signalCount: number;
+    repeatedCriticalCount: number;
+    repeatedHighCount: number;
+    accountingAdvancedCandidateCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAccountantCollaborationWorkbenchV72View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workbenchStatus: EcuadorTaxReadinessStatus;
+  signalDetector: EcuadorTaxPilotRepeatedSignalDetectorV72View;
+  collaborationItems: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    owner: 'operator' | 'accountant' | 'tax_compliance';
+    priority: EcuadorTaxReviewPriority;
+    question: string;
+    expectedAnswer: string;
+    dueBucket: 'same_day' | 'one_to_three_days' | 'over_three_days';
+    evidenceRefs: string[];
+    resolutionAction: string;
+  }>;
+  summary: {
+    itemCount: number;
+    accountantOwnedCount: number;
+    unresolvedCount: number;
+    criticalCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxAiPilotAssistantPacketV72View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  assistantStatus: EcuadorTaxReadinessStatus;
+  collaborationWorkbench: EcuadorTaxAccountantCollaborationWorkbenchV72View;
+  suggestedActions: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    target: 'operator' | 'accountant' | 'tax_compliance' | 'ai';
+    promptPackVersion: string;
+    contextRefs: string[];
+    suggestedCopy: string;
+    guardrail: string;
+  }>;
+  summary: {
+    actionCount: number;
+    accountantPromptCount: number;
+    blockedActionCount: number;
+    aiGuardrailCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface EcuadorTaxPilotCloseoutV72View {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: EcuadorTaxReadinessStatus;
+  evidenceLedger: EcuadorTaxPilotEvidencePersistenceLedgerV72View;
+  multiTenantCohort: EcuadorTaxPilotMultiTenantCohortV72View;
+  repeatedSignalDetector: EcuadorTaxPilotRepeatedSignalDetectorV72View;
+  collaborationWorkbench: EcuadorTaxAccountantCollaborationWorkbenchV72View;
+  aiAssistantPacket: EcuadorTaxAiPilotAssistantPacketV72View;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: EcuadorTaxReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockerCount: number;
+    persistedRecordCount: number;
+    repeatedSignalCount: number;
+    assistantActionCount: number;
+  };
+  recommendedNextProduct:
+    | 'tax_compliance_pilot_iteration'
+    | 'tax_compliance_hardening'
+    | 'accounting_advanced_discovery';
+  recordedEventId: string | null;
   blockers: string[];
   nextStep: string;
   guardrails: string[];

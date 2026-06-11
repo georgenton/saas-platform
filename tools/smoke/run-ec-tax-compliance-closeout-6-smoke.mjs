@@ -90,6 +90,12 @@ const [
   evidenceCorrectionWorkbenchV70,
   pilotDecisionPacketV70,
   pilotFeedbackCloseoutV70,
+  pilotCohortRegistryV71,
+  pilotAnalyticsDashboardV71,
+  accountantSlaTrackerV71,
+  pilotLearningBacklogV71,
+  accountingAdvancedEvidenceGateV71,
+  pilotOperationsCloseoutV71,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -183,6 +189,36 @@ const [
     path: taxPath(`/pilot-feedback-closeout-v70?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-cohort-registry-v71?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-feedback-analytics-dashboard-v71?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accountant-collaboration-sla-tracker-v71?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-learning-backlog-v71?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/accounting-advanced-evidence-gate-v71?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: taxPath(`/pilot-operations-closeout-v71?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertValue('sri source import center', sriSourceImportCenter.centerStatus);
@@ -261,6 +297,27 @@ assertNonEmpty(
   'pilot feedback checklist',
   pilotFeedbackCloseoutV70.closeoutChecklist,
 );
+assertValue('pilot cohort registry 7.1', pilotCohortRegistryV71.registryStatus);
+assertValue(
+  'pilot analytics dashboard 7.1',
+  pilotAnalyticsDashboardV71.dashboardStatus,
+);
+assertValue('accountant sla tracker 7.1', accountantSlaTrackerV71.trackerStatus);
+assertValue('pilot learning backlog 7.1', pilotLearningBacklogV71.backlogStatus);
+assertValue(
+  'accounting advanced evidence gate 7.1',
+  accountingAdvancedEvidenceGateV71.gateStatus,
+);
+assertValue(
+  'pilot operations closeout 7.1',
+  pilotOperationsCloseoutV71.closeoutStatus,
+);
+assertNonEmpty('pilot cohort members 7.1', pilotCohortRegistryV71.cohortMembers);
+assertNonEmpty('pilot learning items 7.1', pilotLearningBacklogV71.learningItems);
+assertNonEmpty(
+  'pilot operations checklist 7.1',
+  pilotOperationsCloseoutV71.closeoutChecklist,
+);
 
 printLine('sri import center', sriSourceImportCenter.centerStatus);
 printLine('iva workspace', vatDeclarationWorkspace.readinessStatus);
@@ -285,5 +342,18 @@ printLine('correction workbench 7.0', evidenceCorrectionWorkbenchV70.workbenchSt
 printLine('decision packet 7.0', pilotDecisionPacketV70.packetStatus);
 printLine('pilot closeout 7.0', pilotFeedbackCloseoutV70.closeoutStatus);
 printLine('pilot next product', pilotFeedbackCloseoutV70.recommendedNextProduct);
+printLine('cohort registry 7.1', pilotCohortRegistryV71.registryStatus);
+printLine('analytics dashboard 7.1', pilotAnalyticsDashboardV71.dashboardStatus);
+printLine('accountant sla 7.1', accountantSlaTrackerV71.trackerStatus);
+printLine('learning backlog 7.1', pilotLearningBacklogV71.backlogStatus);
+printLine(
+  'accounting gate 7.1',
+  accountingAdvancedEvidenceGateV71.recommendation.nextProduct,
+);
+printLine('pilot closeout 7.1', pilotOperationsCloseoutV71.closeoutStatus);
+printLine(
+  'pilot operations next product',
+  pilotOperationsCloseoutV71.recommendedNextProduct,
+);
 
-printSection('EC tax compliance closeout 6/6.2/7.0 smoke passed');
+printSection('EC tax compliance closeout 6/6.2/7.0/7.1 smoke passed');

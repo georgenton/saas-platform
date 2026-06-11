@@ -71,6 +71,11 @@ export * from './lib/use-cases/get-tenant-ecuador-tax-sri-taxpayer-validation-re
 export * from './lib/use-cases/get-tenant-ecuador-taxpayer-profile.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-period-evidence-vault.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-period-workspace.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-accountant-collaboration-sla-tracker-v71.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-accounting-advanced-evidence-gate-v71.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-pilot-cohort-registry-v71.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-pilot-feedback-analytics-dashboard-v71.use-case';
+export * from './lib/use-cases/get-tenant-ecuador-tax-pilot-learning-backlog-v71.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-pilot-tenant-readiness-room-v70.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-purchase-expense-evidence-workspace.use-case';
 export * from './lib/use-cases/get-tenant-ecuador-tax-reconciliation-workspace.use-case';
@@ -125,6 +130,7 @@ export * from './lib/use-cases/request-tenant-ecuador-tax-compliance-annual-clos
 export * from './lib/use-cases/request-tenant-ecuador-tax-operational-hardening-closeout-v62.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-pilot-closeout-decision-packet-v70.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-pilot-feedback-closeout-v70.use-case';
+export * from './lib/use-cases/request-tenant-ecuador-tax-pilot-operations-closeout-v71.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-compliance-product-closeout-v3.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-declaration-party-recalculation-packet.use-case';
 export * from './lib/use-cases/request-tenant-ecuador-tax-parties-persistence-decision-pack.use-case';

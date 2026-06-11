@@ -31,6 +31,8 @@ import {
 } from '@saas-platform/parties-application';
 import {
   ExecuteTenantEcuadorTaxWithholdingDraftBridgeUseCase,
+  GetTenantEcuadorTaxAccountantCollaborationSlaTrackerV71UseCase,
+  GetTenantEcuadorTaxAccountingAdvancedEvidenceGateV71UseCase,
   GetTenantEcuadorTaxAccountingAdvancedGateV2UseCase,
   GetTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
   GetTenantEcuadorTaxAccountantEscalationServiceBoundaryUseCase,
@@ -90,6 +92,9 @@ import {
   GetTenantEcuadorTaxPartiesOperationalCommandCenterUseCase,
   GetTenantEcuadorTaxPeriodEvidenceVaultUseCase,
   GetTenantEcuadorTaxPeriodWorkspaceUseCase,
+  GetTenantEcuadorTaxPilotCohortRegistryV71UseCase,
+  GetTenantEcuadorTaxPilotFeedbackAnalyticsDashboardV71UseCase,
+  GetTenantEcuadorTaxPilotLearningBacklogV71UseCase,
   GetTenantEcuadorTaxPilotTenantReadinessRoomV70UseCase,
   GetTenantEcuadorTaxPostFilingExceptionCenterUseCase,
   GetTenantEcuadorTaxProfessionalHandoffV6UseCase,
@@ -151,6 +156,7 @@ import {
   RequestTenantEcuadorTaxOperationalHardeningCloseoutV62UseCase,
   RequestTenantEcuadorTaxPilotCloseoutDecisionPacketV70UseCase,
   RequestTenantEcuadorTaxPilotFeedbackCloseoutV70UseCase,
+  RequestTenantEcuadorTaxPilotOperationsCloseoutV71UseCase,
   RequestTenantEcuadorTaxComplianceProductCloseoutV3UseCase,
   RequestTenantEcuadorTaxDeclarationPartyRecalculationPacketUseCase,
   RequestTenantEcuadorTaxPartiesPersistenceDecisionPackUseCase,
@@ -2435,6 +2441,86 @@ import { InvoicingWithholdingDraftExecutor } from './invoicing-withholding-draft
           getTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
           getTenantEcuadorTaxEvidenceCorrectionWorkbenchV70UseCase,
           requestTenantEcuadorTaxPilotCloseoutDecisionPacketV70UseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxPilotCohortRegistryV71UseCase,
+      inject: [RequestTenantEcuadorTaxPilotFeedbackCloseoutV70UseCase],
+      useFactory: (requestTenantEcuadorTaxPilotFeedbackCloseoutV70UseCase) =>
+        new GetTenantEcuadorTaxPilotCohortRegistryV71UseCase(
+          requestTenantEcuadorTaxPilotFeedbackCloseoutV70UseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxPilotFeedbackAnalyticsDashboardV71UseCase,
+      inject: [GetTenantEcuadorTaxPilotCohortRegistryV71UseCase],
+      useFactory: (getTenantEcuadorTaxPilotCohortRegistryV71UseCase) =>
+        new GetTenantEcuadorTaxPilotFeedbackAnalyticsDashboardV71UseCase(
+          getTenantEcuadorTaxPilotCohortRegistryV71UseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAccountantCollaborationSlaTrackerV71UseCase,
+      inject: [GetTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase],
+      useFactory: (
+        getTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
+      ) =>
+        new GetTenantEcuadorTaxAccountantCollaborationSlaTrackerV71UseCase(
+          getTenantEcuadorTaxAccountantFeedbackIntakeQueueV70UseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxPilotLearningBacklogV71UseCase,
+      inject: [
+        GetTenantEcuadorTaxPilotFeedbackAnalyticsDashboardV71UseCase,
+        GetTenantEcuadorTaxAccountantCollaborationSlaTrackerV71UseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxPilotFeedbackAnalyticsDashboardV71UseCase,
+        getTenantEcuadorTaxAccountantCollaborationSlaTrackerV71UseCase,
+      ) =>
+        new GetTenantEcuadorTaxPilotLearningBacklogV71UseCase(
+          getTenantEcuadorTaxPilotFeedbackAnalyticsDashboardV71UseCase,
+          getTenantEcuadorTaxAccountantCollaborationSlaTrackerV71UseCase,
+        ),
+    },
+    {
+      provide: GetTenantEcuadorTaxAccountingAdvancedEvidenceGateV71UseCase,
+      inject: [
+        RequestTenantEcuadorTaxPilotCloseoutDecisionPacketV70UseCase,
+        GetTenantEcuadorTaxPilotLearningBacklogV71UseCase,
+      ],
+      useFactory: (
+        requestTenantEcuadorTaxPilotCloseoutDecisionPacketV70UseCase,
+        getTenantEcuadorTaxPilotLearningBacklogV71UseCase,
+      ) =>
+        new GetTenantEcuadorTaxAccountingAdvancedEvidenceGateV71UseCase(
+          requestTenantEcuadorTaxPilotCloseoutDecisionPacketV70UseCase,
+          getTenantEcuadorTaxPilotLearningBacklogV71UseCase,
+        ),
+    },
+    {
+      provide: RequestTenantEcuadorTaxPilotOperationsCloseoutV71UseCase,
+      inject: [
+        GetTenantEcuadorTaxPilotCohortRegistryV71UseCase,
+        GetTenantEcuadorTaxPilotFeedbackAnalyticsDashboardV71UseCase,
+        GetTenantEcuadorTaxAccountantCollaborationSlaTrackerV71UseCase,
+        GetTenantEcuadorTaxPilotLearningBacklogV71UseCase,
+        GetTenantEcuadorTaxAccountingAdvancedEvidenceGateV71UseCase,
+      ],
+      useFactory: (
+        getTenantEcuadorTaxPilotCohortRegistryV71UseCase,
+        getTenantEcuadorTaxPilotFeedbackAnalyticsDashboardV71UseCase,
+        getTenantEcuadorTaxAccountantCollaborationSlaTrackerV71UseCase,
+        getTenantEcuadorTaxPilotLearningBacklogV71UseCase,
+        getTenantEcuadorTaxAccountingAdvancedEvidenceGateV71UseCase,
+      ) =>
+        new RequestTenantEcuadorTaxPilotOperationsCloseoutV71UseCase(
+          getTenantEcuadorTaxPilotCohortRegistryV71UseCase,
+          getTenantEcuadorTaxPilotFeedbackAnalyticsDashboardV71UseCase,
+          getTenantEcuadorTaxAccountantCollaborationSlaTrackerV71UseCase,
+          getTenantEcuadorTaxPilotLearningBacklogV71UseCase,
+          getTenantEcuadorTaxAccountingAdvancedEvidenceGateV71UseCase,
         ),
     },
     {

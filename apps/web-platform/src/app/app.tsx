@@ -173,8 +173,10 @@ import {
   fetchEcuadorTaxAnnexesWorkspace,
   fetchEcuadorTaxAnnualRollupWorkspace,
   fetchEcuadorTaxAssistedDeclarationReviewPackV2,
+  fetchEcuadorTaxAccountantCollaborationSlaTrackerV71,
   fetchEcuadorTaxAccountantPacketExportV62,
   fetchEcuadorTaxAccountantFeedbackIntakeQueueV70,
+  fetchEcuadorTaxAccountingAdvancedEvidenceGateV71,
   fetchEcuadorTaxComplianceCloseoutV2,
   fetchEcuadorTaxComplianceProductCloseoutV3,
   fetchEcuadorTaxCommandCenter,
@@ -186,7 +188,11 @@ import {
   fetchEcuadorTaxOperationalHardeningCloseoutV62,
   fetchEcuadorTaxOperatorActionCenterV62,
   fetchEcuadorTaxPilotCloseoutDecisionPacketV70,
+  fetchEcuadorTaxPilotCohortRegistryV71,
   fetchEcuadorTaxPilotFeedbackCloseoutV70,
+  fetchEcuadorTaxPilotFeedbackAnalyticsDashboardV71,
+  fetchEcuadorTaxPilotLearningBacklogV71,
+  fetchEcuadorTaxPilotOperationsCloseoutV71,
   fetchEcuadorTaxPilotTenantReadinessRoomV70,
   fetchEcuadorTaxDeclarationReviewLoopWorkspace,
   fetchEcuadorTaxDeclarationSourceLedger,
@@ -693,8 +699,10 @@ import {
   EcuadorTaxAnnexesWorkspaceResponse,
   EcuadorTaxAnnualRollupWorkspaceResponse,
   EcuadorTaxAssistedDeclarationReviewPackV2Response,
+  EcuadorTaxAccountantCollaborationSlaTrackerV71Response,
   EcuadorTaxAccountantPacketExportV62Response,
   EcuadorTaxAccountantFeedbackIntakeQueueV70Response,
+  EcuadorTaxAccountingAdvancedEvidenceGateV71Response,
   EcuadorTaxComplianceCloseoutV2Response,
   EcuadorTaxDeclarationHandoffCloseoutV6Response,
   EcuadorTaxFormBoxEvidenceBinderV2Response,
@@ -702,7 +710,11 @@ import {
   EcuadorTaxOperationalHardeningCloseoutV62Response,
   EcuadorTaxOperatorActionCenterV62Response,
   EcuadorTaxPilotCloseoutDecisionPacketV70Response,
+  EcuadorTaxPilotCohortRegistryV71Response,
   EcuadorTaxPilotFeedbackCloseoutV70Response,
+  EcuadorTaxPilotFeedbackAnalyticsDashboardV71Response,
+  EcuadorTaxPilotLearningBacklogV71Response,
+  EcuadorTaxPilotOperationsCloseoutV71Response,
   EcuadorTaxPilotTenantReadinessRoomV70Response,
   EcuadorTaxSriEvidenceImportPersistenceLedgerV62Response,
   EcuadorTaxSriReconciliationExceptionQueueV62Response,
@@ -2667,6 +2679,36 @@ export function App() {
     taxCompliancePilotFeedbackCloseoutV70,
     setTaxCompliancePilotFeedbackCloseoutV70,
   ] = useState<EcuadorTaxPilotFeedbackCloseoutV70Response | null>(null);
+  const [
+    taxCompliancePilotCohortRegistryV71,
+    setTaxCompliancePilotCohortRegistryV71,
+  ] = useState<EcuadorTaxPilotCohortRegistryV71Response | null>(null);
+  const [
+    taxCompliancePilotAnalyticsDashboardV71,
+    setTaxCompliancePilotAnalyticsDashboardV71,
+  ] = useState<EcuadorTaxPilotFeedbackAnalyticsDashboardV71Response | null>(
+    null,
+  );
+  const [
+    taxComplianceAccountantSlaTrackerV71,
+    setTaxComplianceAccountantSlaTrackerV71,
+  ] = useState<EcuadorTaxAccountantCollaborationSlaTrackerV71Response | null>(
+    null,
+  );
+  const [
+    taxCompliancePilotLearningBacklogV71,
+    setTaxCompliancePilotLearningBacklogV71,
+  ] = useState<EcuadorTaxPilotLearningBacklogV71Response | null>(null);
+  const [
+    taxComplianceAccountingAdvancedEvidenceGateV71,
+    setTaxComplianceAccountingAdvancedEvidenceGateV71,
+  ] = useState<EcuadorTaxAccountingAdvancedEvidenceGateV71Response | null>(
+    null,
+  );
+  const [
+    taxCompliancePilotOperationsCloseoutV71,
+    setTaxCompliancePilotOperationsCloseoutV71,
+  ] = useState<EcuadorTaxPilotOperationsCloseoutV71Response | null>(null);
   const [
     taxComplianceEvidenceQualityCenter,
     setTaxComplianceEvidenceQualityCenter,
@@ -19924,6 +19966,12 @@ export function App() {
         nextEvidenceCorrectionWorkbenchV70,
         nextPilotDecisionPacketV70,
         nextPilotFeedbackCloseoutV70,
+        nextPilotCohortRegistryV71,
+        nextPilotAnalyticsDashboardV71,
+        nextAccountantSlaTrackerV71,
+        nextPilotLearningBacklogV71,
+        nextAccountingAdvancedEvidenceGateV71,
+        nextPilotOperationsCloseoutV71,
         nextEvidenceQualityCenter,
         nextObligationRiskMonitor,
         nextAccountantHandoffRoomV2,
@@ -20315,6 +20363,42 @@ export function App() {
           year,
         ),
         fetchEcuadorTaxPilotFeedbackCloseoutV70(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxPilotCohortRegistryV71(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxPilotFeedbackAnalyticsDashboardV71(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAccountantCollaborationSlaTrackerV71(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxPilotLearningBacklogV71(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxAccountingAdvancedEvidenceGateV71(
+          token,
+          tenantSlug,
+          taxCompliancePeriod,
+          year,
+        ),
+        fetchEcuadorTaxPilotOperationsCloseoutV71(
           token,
           tenantSlug,
           taxCompliancePeriod,
@@ -20809,6 +20893,18 @@ export function App() {
         setTaxCompliancePilotDecisionPacketV70(nextPilotDecisionPacketV70);
         setTaxCompliancePilotFeedbackCloseoutV70(
           nextPilotFeedbackCloseoutV70,
+        );
+        setTaxCompliancePilotCohortRegistryV71(nextPilotCohortRegistryV71);
+        setTaxCompliancePilotAnalyticsDashboardV71(
+          nextPilotAnalyticsDashboardV71,
+        );
+        setTaxComplianceAccountantSlaTrackerV71(nextAccountantSlaTrackerV71);
+        setTaxCompliancePilotLearningBacklogV71(nextPilotLearningBacklogV71);
+        setTaxComplianceAccountingAdvancedEvidenceGateV71(
+          nextAccountingAdvancedEvidenceGateV71,
+        );
+        setTaxCompliancePilotOperationsCloseoutV71(
+          nextPilotOperationsCloseoutV71,
         );
         setTaxComplianceEvidenceQualityCenter(nextEvidenceQualityCenter);
         setTaxComplianceObligationRiskMonitor(nextObligationRiskMonitor);
@@ -32931,6 +33027,99 @@ export function App() {
                         </ul>
                         <p className={styles.muted}>
                           {taxCompliancePilotDecisionPacketV70.decision.reason}
+                        </p>
+                      </div>
+                    ) : null}
+                    {taxCompliancePilotOperationsCloseoutV71 &&
+                    taxCompliancePilotCohortRegistryV71 &&
+                    taxCompliancePilotAnalyticsDashboardV71 &&
+                    taxComplianceAccountantSlaTrackerV71 &&
+                    taxCompliancePilotLearningBacklogV71 &&
+                    taxComplianceAccountingAdvancedEvidenceGateV71 ? (
+                      <div className={styles.invoiceItemCard}>
+                        <div className={styles.invoiceCardHeader}>
+                          <div>
+                            <strong>Pilot operations 7.1</strong>
+                            <p className={styles.muted}>
+                              {taxCompliancePilotOperationsCloseoutV71.nextStep}
+                            </p>
+                          </div>
+                          <span
+                            className={`${styles.statusPill} ${operationalStatusTone(
+                              taxCompliancePilotOperationsCloseoutV71.closeoutStatus,
+                            )}`}
+                          >
+                            {humanizeKey(
+                              taxCompliancePilotOperationsCloseoutV71.recommendedNextProduct,
+                            )}
+                          </span>
+                        </div>
+                        <div className={styles.invoiceInlineGrid}>
+                          <div>
+                            <span className={styles.muted}>Cohort</span>
+                            <strong>
+                              {
+                                taxCompliancePilotCohortRegistryV71.summary
+                                  .memberCount
+                              }{' '}
+                              tenant
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Feedback</span>
+                            <strong>
+                              {
+                                taxCompliancePilotAnalyticsDashboardV71.summary
+                                  .criticalFeedbackCount
+                              }{' '}
+                              critical
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>SLA</span>
+                            <strong>
+                              {
+                                taxComplianceAccountantSlaTrackerV71.summary
+                                  .overdueCount
+                              }{' '}
+                              overdue
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Backlog</span>
+                            <strong>
+                              {
+                                taxCompliancePilotLearningBacklogV71.summary
+                                  .itemCount
+                              }{' '}
+                              items
+                            </strong>
+                          </div>
+                          <div>
+                            <span className={styles.muted}>Accounting gate</span>
+                            <strong>
+                              {humanizeKey(
+                                taxComplianceAccountingAdvancedEvidenceGateV71
+                                  .recommendation.nextProduct,
+                              )}
+                            </strong>
+                          </div>
+                        </div>
+                        <ul className={styles.compactList}>
+                          {taxCompliancePilotOperationsCloseoutV71.closeoutChecklist.map(
+                            (item) => (
+                              <li key={item.key}>
+                                <strong>{item.label}</strong> ·{' '}
+                                {humanizeKey(item.status)}
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                        <p className={styles.muted}>
+                          {
+                            taxComplianceAccountingAdvancedEvidenceGateV71
+                              .recommendation.reason
+                          }
                         </p>
                       </div>
                     ) : null}

@@ -1,12 +1,20 @@
 import {
   AccountingAdvancedNeedType,
+  AccountingAdvancedMvpLaneKey,
+  AccountingAdvancedMvpLaneStatus,
   AccountingReadinessStatus,
   TenantAccountingAccountantDiscoveryWorkspaceView,
+  TenantAccountingAdvancedAuditTrailReadinessPacketView,
   TenantAccountingAdvancedDiscoveryAnchorView,
   TenantAccountingAdvancedDiscoveryCloseoutView,
   TenantAccountingAdvancedDiscoveryIntakeView,
   TenantAccountingAdvancedDiscoveryReadinessPacketView,
+  TenantAccountingAdvancedMvpReadinessCloseoutView,
+  TenantAccountingAdvancedMvpScopeDecisionRecordView,
+  TenantAccountingAdvancedMvpScopeRegistryView,
+  TenantAccountingCertifiedBankEvidenceBoundaryView,
   TenantAccountingFormalNeedsClassifierView,
+  TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView,
 } from '@saas-platform/accounting-domain';
 import { EcuadorTaxPilotDecisionCloseoutV73View } from '@saas-platform/tax-compliance-domain';
 import { RequestTenantEcuadorTaxPilotDecisionCloseoutV73UseCase } from '@saas-platform/tax-compliance-application';
@@ -526,6 +534,528 @@ export class RequestTenantAccountingAdvancedDiscoveryCloseoutUseCase {
   }
 }
 
+export class GetTenantAccountingAdvancedMvpScopeRegistryUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedDiscoveryCloseoutUseCase: RequestTenantAccountingAdvancedDiscoveryCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedMvpScopeRegistryView> {
+    const discoveryCloseout =
+      await this.requestTenantAccountingAdvancedDiscoveryCloseoutUseCase.execute(
+        input,
+      );
+    const lanes = mvpLaneKeys().map((key) =>
+      mvpLaneFromDiscovery(key, discoveryCloseout),
+    );
+    const blockers = [...discoveryCloseout.blockers];
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      registryStatus: resolveStatus(
+        lanes.map((lane) => lane.readinessStatus),
+        blockers,
+      ),
+      discoveryCloseout,
+      lanes,
+      summary: {
+        laneCount: lanes.length,
+        candidateLaneCount: lanes.filter(
+          (lane) => lane.status === 'candidate',
+        ).length,
+        readyForDesignLaneCount: lanes.filter(
+          (lane) => lane.status === 'ready_for_design',
+        ).length,
+        blockedLaneCount: lanes.filter((lane) => lane.status === 'blocked')
+          .length,
+        outOfScopeLaneCount: lanes.filter(
+          (lane) => lane.status === 'out_of_scope',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        discoveryCloseout.finalDecision === 'prepare_accounting_advanced_mvp'
+          ? 'Enviar lanes candidatas al contador para decidir scope MVP.'
+          : 'Mantener registry como no-apertura hasta que discovery justifique MVP.',
+      guardrails: [
+        'Scope registry no abre Accounting Advanced; solo convierte discovery en lanes candidatas.',
+        'Cada lane requiere decision profesional antes de pasar a diseno MVP.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedMvpScopeDecisionRecordUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedMvpScopeRegistryUseCase: GetTenantAccountingAdvancedMvpScopeRegistryUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedMvpScopeDecisionRecordView> {
+    const scopeRegistry =
+      await this.getTenantAccountingAdvancedMvpScopeRegistryUseCase.execute(
+        input,
+      );
+    const decisions: TenantAccountingAdvancedMvpScopeDecisionRecordView['decisions'] =
+      scopeRegistry.lanes.map((lane) => {
+        const decision =
+          lane.status === 'ready_for_design'
+            ? 'approve_for_mvp'
+            : lane.status === 'candidate' || lane.status === 'blocked'
+              ? 'needs_more_evidence'
+              : 'reject_for_now';
+
+        return {
+          laneKey: lane.key,
+          label: lane.label,
+          decision,
+          status:
+            decision === 'approve_for_mvp'
+              ? 'ready'
+              : decision === 'needs_more_evidence'
+                ? lane.readinessStatus === 'blocked'
+                  ? 'blocked'
+                  : 'needs_review'
+                : 'ready',
+          rationale: decisionRationale(lane.key, decision),
+          expectedEvidence: mvpLaneEvidence(lane.key),
+          risk: mvpLaneRisk(lane.key),
+        };
+      });
+    const blockers = [...scopeRegistry.blockers];
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      recordStatus: resolveStatus(
+        decisions.map((decision) => decision.status),
+        blockers,
+      ),
+      scopeRegistry,
+      decisions,
+      summary: {
+        decisionCount: decisions.length,
+        approvedLaneCount: decisions.filter(
+          (decision) => decision.decision === 'approve_for_mvp',
+        ).length,
+        needsEvidenceLaneCount: decisions.filter(
+          (decision) => decision.decision === 'needs_more_evidence',
+        ).length,
+        rejectedLaneCount: decisions.filter(
+          (decision) => decision.decision === 'reject_for_now',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        decisions.some((decision) => decision.decision === 'approve_for_mvp')
+          ? 'Pasar lanes aprobadas a diseno minimo ledger-grade.'
+          : 'Recolectar evidencia o cerrar MVP como no-apertura.',
+      guardrails: [
+        'Decision record simula decision accountant-owned; no certifica ni firma.',
+        'Un lane rechazado por ahora puede reabrirse con evidencia nueva.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedMvpScopeDecisionRecordUseCase: GetTenantAccountingAdvancedMvpScopeDecisionRecordUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView> {
+    const scopeDecisionRecord =
+      await this.getTenantAccountingAdvancedMvpScopeDecisionRecordUseCase.execute(
+        input,
+      );
+    const approvedLanes = scopeDecisionRecord.decisions.filter(
+      (decision) => decision.decision === 'approve_for_mvp',
+    );
+    const designChecks: TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView['designChecks'] =
+      [
+        {
+          key: 'period_boundary',
+          label: 'Period boundary',
+          status: approvedLanes.length > 0 ? 'ready' : 'needs_review',
+          source: 'accounting_advanced_mvp_scope_decision_record',
+          requirement: 'Periodo, year y cierre esperado deben quedar fijos.',
+        },
+        {
+          key: 'foundation_evidence',
+          label: 'Foundation evidence',
+          status: 'ready',
+          source: 'accounting_foundation_closeout',
+          requirement:
+            'Usar journal registry, trial balance, evidence vault y closeout summary como insumos comparativos.',
+        },
+        {
+          key: 'journal_adjustment_boundary',
+          label: 'Journal adjustment boundary',
+          status: hasApprovedLane(approvedLanes, 'journal_adjustments')
+            ? 'needs_review'
+            : 'ready',
+          source: 'accounting_foundation_journal_registry',
+          requirement:
+            'Separar recomendaciones internas de asientos oficiales revisados por contador.',
+        },
+        {
+          key: 'professional_review_gate',
+          label: 'Professional review gate',
+          status:
+            scopeDecisionRecord.summary.approvedLaneCount > 0
+              ? 'needs_review'
+              : 'ready',
+          source: 'accountant_scope_decision_record',
+          requirement:
+            'No cerrar ledger-grade sin contador externo como gate explicito.',
+        },
+      ];
+    const blockers = [...scopeDecisionRecord.blockers];
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      workspaceStatus: resolveStatus(
+        designChecks.map((check) => check.status),
+        blockers,
+      ),
+      scopeDecisionRecord,
+      designChecks,
+      summary: {
+        checkCount: designChecks.length,
+        readyCheckCount: designChecks.filter(
+          (check) => check.status === 'ready',
+        ).length,
+        needsReviewCheckCount: designChecks.filter(
+          (check) => check.status === 'needs_review',
+        ).length,
+        blockedCheckCount: designChecks.filter(
+          (check) => check.status === 'blocked',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        approvedLanes.length > 0
+          ? 'Preparar boundary bancario y audit trail antes de implementar MVP.'
+          : 'No disenar ledger closeout MVP sin lane aprobado.',
+      guardrails: [
+        'Design workspace define requisitos; no ejecuta cierre contable formal.',
+        'Los outputs de Foundation son evidencia operativa, no libros oficiales.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingCertifiedBankEvidenceBoundaryUseCase {
+  constructor(
+    private readonly getTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase: GetTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingCertifiedBankEvidenceBoundaryView> {
+    const ledgerDesignWorkspace =
+      await this.getTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase.execute(
+        input,
+      );
+    const bankApproved = ledgerDesignWorkspace.scopeDecisionRecord.decisions.some(
+      (decision) =>
+        decision.laneKey === 'bank_reconciliation' &&
+        decision.decision === 'approve_for_mvp',
+    );
+    const boundaryRows: TenantAccountingCertifiedBankEvidenceBoundaryView['boundaryRows'] =
+      [
+        {
+          key: 'uploaded_statements',
+          label: 'Uploaded statements',
+          status: 'ready',
+          platformCanDo:
+            'Registrar extractos cargados, lineas, cuentas y evidencia operativa.',
+          requiresExternalProof:
+            'Confirmacion de origen bancario o feed certificado cuando aplique.',
+          guardrail:
+            'Un archivo cargado no equivale a feed bancario certificado.',
+        },
+        {
+          key: 'internal_matches',
+          label: 'Internal matches',
+          status: bankApproved ? 'needs_review' : 'ready',
+          platformCanDo:
+            'Proponer matches internos y excepciones revisables por operador.',
+          requiresExternalProof:
+            'Criterio profesional para tratar diferencias materiales.',
+          guardrail:
+            'El match interno no certifica conciliacion bancaria legal.',
+        },
+        {
+          key: 'certified_feed_gap',
+          label: 'Certified feed gap',
+          status: bankApproved ? 'needs_review' : 'ready',
+          platformCanDo:
+            'Identificar si el MVP necesita feed certificado o solo evidencia cargada.',
+          requiresExternalProof:
+            'Contrato, autorizacion o respaldo del banco/proveedor externo.',
+          guardrail:
+            'No prometer certified bank-feed reconciliation en MVP 0.2.',
+        },
+      ];
+    const blockers = [...ledgerDesignWorkspace.blockers];
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      boundaryStatus: resolveStatus(
+        boundaryRows.map((row) => row.status),
+        blockers,
+      ),
+      ledgerDesignWorkspace,
+      boundaryRows,
+      summary: {
+        rowCount: boundaryRows.length,
+        readyRowCount: boundaryRows.filter((row) => row.status === 'ready')
+          .length,
+        needsExternalProofCount: boundaryRows.filter(
+          (row) => row.status === 'needs_review',
+        ).length,
+        blockedRowCount: boundaryRows.filter((row) => row.status === 'blocked')
+          .length,
+      },
+      blockers,
+      nextStep:
+        bankApproved
+          ? 'Resolver prueba externa requerida antes de scope bancario MVP.'
+          : 'Mantener conciliacion bancaria certificada fuera del MVP inicial.',
+      guardrails: [
+        'Boundary bancario separa evidencia operativa de certificacion bancaria.',
+        'Accounting Advanced MVP no debe vender conciliacion certificada sin prueba externa.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase {
+  constructor(
+    private readonly getTenantAccountingCertifiedBankEvidenceBoundaryUseCase: GetTenantAccountingCertifiedBankEvidenceBoundaryUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedAuditTrailReadinessPacketView> {
+    const bankEvidenceBoundary =
+      await this.getTenantAccountingCertifiedBankEvidenceBoundaryUseCase.execute(
+        input,
+      );
+    const evidenceRefs = unique([
+      'tax_pilot_decision_closeout_v73',
+      'accounting_advanced_discovery_closeout',
+      'accounting_advanced_mvp_scope_registry',
+      'accountant_scope_decision_record',
+      'minimum_ledger_closeout_design_workspace',
+      'certified_bank_evidence_boundary',
+      ...bankEvidenceBoundary.ledgerDesignWorkspace.scopeDecisionRecord.scopeRegistry.discoveryCloseout.closeoutChecklist.flatMap(
+        (item) => item.evidenceRefs,
+      ),
+    ]);
+    const auditSections: TenantAccountingAdvancedAuditTrailReadinessPacketView['auditSections'] =
+      [
+        {
+          key: 'decision_lineage',
+          label: 'Decision lineage',
+          status: 'ready',
+          evidenceRefs: [
+            'tax_pilot_decision_closeout_v73',
+            'accounting_advanced_discovery_closeout',
+          ],
+          auditUse: 'Explicar por que se considero o descarto MVP.',
+        },
+        {
+          key: 'scope_decision',
+          label: 'Scope decision',
+          status:
+            bankEvidenceBoundary.ledgerDesignWorkspace.scopeDecisionRecord
+              .recordStatus,
+          evidenceRefs: [
+            'accounting_advanced_mvp_scope_registry',
+            'accountant_scope_decision_record',
+          ],
+          auditUse: 'Trazar lanes aprobadas, rechazadas o pendientes.',
+        },
+        {
+          key: 'bank_boundary',
+          label: 'Bank boundary',
+          status: bankEvidenceBoundary.boundaryStatus,
+          evidenceRefs: ['certified_bank_evidence_boundary'],
+          auditUse:
+            'Separar evidencia bancaria operativa de certificacion externa.',
+        },
+        {
+          key: 'ledger_design',
+          label: 'Ledger design',
+          status:
+            bankEvidenceBoundary.ledgerDesignWorkspace.workspaceStatus,
+          evidenceRefs: ['minimum_ledger_closeout_design_workspace'],
+          auditUse: 'Definir requisitos antes de ejecutar un MVP ledger-grade.',
+        },
+      ];
+    const blockers = [...bankEvidenceBoundary.blockers];
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packetStatus: resolveStatus(
+        auditSections.map((section) => section.status),
+        blockers,
+      ),
+      bankEvidenceBoundary,
+      auditSections,
+      summary: {
+        sectionCount: auditSections.length,
+        readySectionCount: auditSections.filter(
+          (section) => section.status === 'ready',
+        ).length,
+        blockedSectionCount: auditSections.filter(
+          (section) => section.status === 'blocked',
+        ).length,
+        evidenceRefCount: evidenceRefs.length,
+      },
+      blockers,
+      nextStep: 'Usar audit trail readiness para cerrar decision MVP 0.2.',
+      guardrails: [
+        'Audit trail readiness organiza trazabilidad; no reemplaza auditoria externa.',
+        'Toda evidencia debe conservar referencia a Tax, Accounting Foundation o contador.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedMvpScopeRegistryUseCase: GetTenantAccountingAdvancedMvpScopeRegistryUseCase,
+    private readonly getTenantAccountingAdvancedMvpScopeDecisionRecordUseCase: GetTenantAccountingAdvancedMvpScopeDecisionRecordUseCase,
+    private readonly getTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase: GetTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase,
+    private readonly getTenantAccountingCertifiedBankEvidenceBoundaryUseCase: GetTenantAccountingCertifiedBankEvidenceBoundaryUseCase,
+    private readonly requestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase: RequestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedMvpReadinessCloseoutView> {
+    const auditTrailReadinessPacket =
+      await this.requestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase.execute(
+        input,
+      );
+    const { bankEvidenceBoundary } = auditTrailReadinessPacket;
+    const { ledgerDesignWorkspace } = bankEvidenceBoundary;
+    const { scopeDecisionRecord } = ledgerDesignWorkspace;
+    const { scopeRegistry } = scopeDecisionRecord;
+    const closeoutChecklist: TenantAccountingAdvancedMvpReadinessCloseoutView['closeoutChecklist'] =
+      [
+        mvpCheck('scope_registry', 'MVP scope registry', scopeRegistry.registryStatus, [
+          'accounting_advanced_mvp_scope_registry',
+        ]),
+        mvpCheck(
+          'scope_decision_record',
+          'Accountant scope decision record',
+          scopeDecisionRecord.recordStatus,
+          ['accountant_scope_decision_record'],
+        ),
+        mvpCheck(
+          'ledger_design',
+          'Minimum ledger closeout design',
+          ledgerDesignWorkspace.workspaceStatus,
+          ['minimum_ledger_closeout_design_workspace'],
+        ),
+        mvpCheck(
+          'bank_boundary',
+          'Certified bank evidence boundary',
+          bankEvidenceBoundary.boundaryStatus,
+          ['certified_bank_evidence_boundary'],
+        ),
+        mvpCheck(
+          'audit_trail',
+          'Advanced audit trail readiness',
+          auditTrailReadinessPacket.packetStatus,
+          ['advanced_audit_trail_readiness_packet'],
+        ),
+      ];
+    const blockers = unique([
+      ...scopeRegistry.blockers,
+      ...scopeDecisionRecord.blockers,
+      ...ledgerDesignWorkspace.blockers,
+      ...bankEvidenceBoundary.blockers,
+      ...auditTrailReadinessPacket.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(
+      closeoutChecklist.map((item) => item.status),
+      blockers,
+    );
+    const approvedLaneKeys = scopeDecisionRecord.decisions
+      .filter((decision) => decision.decision === 'approve_for_mvp')
+      .map((decision) => decision.laneKey);
+    const finalDecision =
+      closeoutStatus === 'blocked'
+        ? 'return_to_tax_or_foundation_hardening'
+        : approvedLaneKeys.includes('bank_reconciliation')
+          ? 'prepare_bank_reconciliation_mvp'
+          : approvedLaneKeys.some((key) =>
+                ['ledger_closeout', 'journal_adjustments', 'audit_trail'].includes(
+                  key,
+                ),
+            )
+            ? 'prepare_ledger_closeout_mvp'
+            : 'do_not_open_mvp';
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      scopeRegistry,
+      scopeDecisionRecord,
+      ledgerDesignWorkspace,
+      bankEvidenceBoundary,
+      auditTrailReadinessPacket,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        blockedChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+        approvedLaneCount: scopeDecisionRecord.summary.approvedLaneCount,
+        auditEvidenceRefCount:
+          auditTrailReadinessPacket.summary.evidenceRefCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'prepare_bank_reconciliation_mvp'
+          ? 'Preparar MVP bancario minimo con boundary de certificacion explicito.'
+          : finalDecision === 'prepare_ledger_closeout_mvp'
+            ? 'Preparar MVP ledger closeout minimo con contador-in-the-loop.'
+            : finalDecision === 'return_to_tax_or_foundation_hardening'
+              ? 'Volver a Tax/Foundation hardening antes de implementar Accounting Advanced.'
+              : 'Cerrar como no-apertura MVP por ahora.',
+      guardrails: [
+        'MVP readiness closeout decide backlog; no implementa producto avanzado automaticamente.',
+        'No hay libros oficiales, feed bancario certificado ni estados firmados sin contador externo.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -533,6 +1063,182 @@ function check(
   evidenceRefs: string[],
 ): TenantAccountingAdvancedDiscoveryCloseoutView['closeoutChecklist'][number] {
   return { key, label, status, evidenceRefs };
+}
+
+function mvpCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantAccountingAdvancedMvpReadinessCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function mvpLaneKeys(): AccountingAdvancedMvpLaneKey[] {
+  return [
+    'bank_reconciliation',
+    'ledger_closeout',
+    'audit_trail',
+    'journal_adjustments',
+    'formal_books_boundary',
+  ];
+}
+
+function mvpLaneFromDiscovery(
+  key: AccountingAdvancedMvpLaneKey,
+  discoveryCloseout: TenantAccountingAdvancedDiscoveryCloseoutView,
+): TenantAccountingAdvancedMvpScopeRegistryView['lanes'][number] {
+  const matchingClassifications =
+    discoveryCloseout.classifier.classifications.filter((classification) =>
+      classificationMatchesLane(classification.needType, key),
+    );
+  const hasMatch = matchingClassifications.length > 0;
+  const hasBlocked = matchingClassifications.some(
+    (classification) => classification.status === 'blocked',
+  );
+  const shouldPrepareMvp =
+    discoveryCloseout.finalDecision === 'prepare_accounting_advanced_mvp';
+  const status: AccountingAdvancedMvpLaneStatus = hasBlocked
+    ? 'blocked'
+    : shouldPrepareMvp && hasMatch
+      ? key === discoveryCloseout.readinessPacket.scopeRecommendation.minimumScope
+        ? 'ready_for_design'
+        : 'candidate'
+      : 'out_of_scope';
+  const readinessStatus: AccountingReadinessStatus =
+    status === 'blocked'
+      ? 'blocked'
+      : status === 'candidate'
+        ? 'needs_review'
+        : 'ready';
+
+  return {
+    key,
+    label: mvpLaneLabel(key),
+    status,
+    readinessStatus,
+    evidenceRefs:
+      matchingClassifications.length > 0
+        ? unique(matchingClassifications.flatMap((item) => item.evidenceRefs))
+        : ['accounting_advanced_discovery_closeout'],
+    rationale: mvpLaneRationale(key, status),
+    guardrail: mvpLaneGuardrail(key),
+  };
+}
+
+function classificationMatchesLane(
+  needType: AccountingAdvancedNeedType,
+  laneKey: AccountingAdvancedMvpLaneKey,
+): boolean {
+  const map: Record<AccountingAdvancedMvpLaneKey, AccountingAdvancedNeedType[]> =
+    {
+      audit_trail: ['audit_trail'],
+      bank_reconciliation: ['bank_reconciliation'],
+      formal_books_boundary: ['formal_books'],
+      journal_adjustments: ['journal_adjustments'],
+      ledger_closeout: ['period_closeout', 'formal_books'],
+    };
+
+  return map[laneKey].includes(needType);
+}
+
+function mvpLaneLabel(key: AccountingAdvancedMvpLaneKey): string {
+  const labels: Record<AccountingAdvancedMvpLaneKey, string> = {
+    audit_trail: 'Advanced audit trail',
+    bank_reconciliation: 'Bank reconciliation MVP',
+    formal_books_boundary: 'Formal books boundary',
+    journal_adjustments: 'Journal adjustments boundary',
+    ledger_closeout: 'Minimum ledger closeout',
+  };
+
+  return labels[key];
+}
+
+function mvpLaneRationale(
+  key: AccountingAdvancedMvpLaneKey,
+  status: AccountingAdvancedMvpLaneStatus,
+): string {
+  if (status === 'out_of_scope') {
+    return `${mvpLaneLabel(key)} no tiene suficiente senal en discovery 0.1.`;
+  }
+  if (status === 'blocked') {
+    return `${mvpLaneLabel(key)} requiere resolver blockers antes de diseno.`;
+  }
+  if (status === 'ready_for_design') {
+    return `${mvpLaneLabel(key)} coincide con el scope minimo recomendado.`;
+  }
+  return `${mvpLaneLabel(key)} tiene senal, pero necesita decision profesional.`;
+}
+
+function mvpLaneGuardrail(key: AccountingAdvancedMvpLaneKey): string {
+  const guardrails: Record<AccountingAdvancedMvpLaneKey, string> = {
+    audit_trail: 'Audit trail MVP no reemplaza auditoria externa.',
+    bank_reconciliation:
+      'Bank reconciliation MVP no certifica feed bancario ni conciliacion legal.',
+    formal_books_boundary:
+      'Formal books boundary no genera libros oficiales ni firmas.',
+    journal_adjustments:
+      'Journal adjustments boundary no postea asientos oficiales sin aprobacion.',
+    ledger_closeout:
+      'Ledger closeout MVP no cierra periodo estatutario sin contador.',
+  };
+
+  return guardrails[key];
+}
+
+function mvpLaneEvidence(key: AccountingAdvancedMvpLaneKey): string {
+  const evidence: Record<AccountingAdvancedMvpLaneKey, string> = {
+    audit_trail: 'Decision lineage, timeline, evidence refs y owner profesional.',
+    bank_reconciliation:
+      'Extractos, matches internos, excepciones y prueba externa requerida.',
+    formal_books_boundary:
+      'Criterio del contador sobre libros requeridos y alcance excluido.',
+    journal_adjustments:
+      'Borradores, soporte, aprobaciones humanas y separacion oficial/no oficial.',
+    ledger_closeout:
+      'Trial balance, journal registry, checklist de cierre y review profesional.',
+  };
+
+  return evidence[key];
+}
+
+function mvpLaneRisk(key: AccountingAdvancedMvpLaneKey): string {
+  const risks: Record<AccountingAdvancedMvpLaneKey, string> = {
+    audit_trail: 'Riesgo de vender trazabilidad como auditoria certificada.',
+    bank_reconciliation:
+      'Riesgo de confundir match interno con conciliacion bancaria certificada.',
+    formal_books_boundary:
+      'Riesgo de prometer libros oficiales antes de tener responsabilidad profesional.',
+    journal_adjustments:
+      'Riesgo de materializar ajustes sin aprobacion o soporte suficiente.',
+    ledger_closeout:
+      'Riesgo de tratar cierre operativo como cierre contable estatutario.',
+  };
+
+  return risks[key];
+}
+
+function decisionRationale(
+  key: AccountingAdvancedMvpLaneKey,
+  decision: 'approve_for_mvp' | 'needs_more_evidence' | 'reject_for_now',
+): string {
+  if (decision === 'approve_for_mvp') {
+    return `${mvpLaneLabel(key)} puede pasar a diseno MVP minimo.`;
+  }
+  if (decision === 'needs_more_evidence') {
+    return `${mvpLaneLabel(key)} necesita evidencia adicional o criterio del contador.`;
+  }
+  return `${mvpLaneLabel(key)} queda fuera del MVP inicial.`;
+}
+
+function hasApprovedLane(
+  decisions: TenantAccountingAdvancedMvpScopeDecisionRecordView['decisions'],
+  laneKey: AccountingAdvancedMvpLaneKey,
+): boolean {
+  return decisions.some(
+    (decision) =>
+      decision.laneKey === laneKey && decision.decision === 'approve_for_mvp',
+  );
 }
 
 function classifyNeed(

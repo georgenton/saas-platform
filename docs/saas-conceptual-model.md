@@ -1783,6 +1783,36 @@ Guardrail: discovery 0.1 still does not create Accounting Advanced, generate
 official legal books, certify bank feeds, sign financial statements or replace a
 contador. It only decides whether a future MVP deserves a scoped backlog.
 
+### Accounting Advanced MVP readiness 0.2
+
+After discovery 0.1, Accounting still should not jump into a full advanced
+product. The 0.2 layer is a short runway: it turns the discovery decision into a
+minimal MVP scope, asks the accountant to accept or reject each lane, and closes
+with a decision to prepare a narrow MVP or return to hardening.
+
+1. `Accounting Advanced MVP Scope Registry`
+   - converts discovery closeout into lanes for bank reconciliation, ledger
+     closeout, audit trail, journal adjustments and formal-books boundary
+2. `Accountant-Owned Scope Decision Record`
+   - records whether each lane is approved for MVP, needs more evidence or is
+     rejected for now
+3. `Minimum Ledger Closeout Design Workspace`
+   - defines period, foundation evidence, journal boundary and professional
+     review gates before any ledger-grade work is implemented
+4. `Certified Bank Evidence Boundary`
+   - separates uploaded bank evidence and internal matches from certified bank
+     feed reconciliation
+5. `Advanced Audit Trail Readiness Packet`
+   - packages Tax 7.3, discovery 0.1, scope decisions, ledger design and bank
+     boundary as an audit-ready lineage
+6. `Accounting Advanced MVP Readiness Closeout`
+   - decides whether to avoid MVP, prepare a bank reconciliation MVP, prepare a
+     ledger closeout MVP or return to Tax/Foundation hardening
+
+Guardrail: MVP readiness 0.2 still does not implement Accounting Advanced. It
+only decides whether the next slice should build a very narrow MVP with
+contador-in-the-loop and explicit bank/audit boundaries.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -1847,6 +1877,11 @@ product. Its current scope is intentionally operational and review-oriented:
     accountant questions, emits a readiness packet, and closes with a decision
     to stay in Tax Compliance, return to Tax hardening, or prepare a minimal
     Accounting Advanced MVP backlog.
+20. Accounting Advanced MVP readiness 0.2 as the runway between discovery and
+    implementation. It turns the discovery closeout into scoped MVP lanes,
+    accountant-owned decisions, minimum ledger design, bank evidence boundary,
+    audit trail readiness and a closeout decision before any advanced accounting
+    product is built.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

@@ -16,6 +16,8 @@ import {
   CreateTenantAccountingOpeningBalanceJournalEntryUseCase,
   GetTenantAccountingAccountantDiscoveryWorkspaceUseCase,
   GetTenantAccountingAccountantHandoffWorkspaceUseCase,
+  GetTenantAccountingAdvancedMvpScopeDecisionRecordUseCase,
+  GetTenantAccountingAdvancedMvpScopeRegistryUseCase,
   GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
   GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
@@ -27,6 +29,7 @@ import {
   GetTenantAccountingCloseoutCertificationReadinessUseCase,
   GetTenantAccountingFoundationCloseoutSummaryUseCase,
   GetTenantAccountingFormalNeedsClassifierUseCase,
+  GetTenantAccountingCertifiedBankEvidenceBoundaryUseCase,
   GetTenantAccountingLegalBooksReadinessPacketUseCase,
   GetTenantAccountingPeriodCloseoutTimelineUseCase,
   GetTenantAccountingPeriodNarrativeReportUseCase,
@@ -36,6 +39,7 @@ import {
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase,
   GetTenantAccountingOpeningBalanceControlRegistryUseCase,
   GetTenantAccountingOpeningBalanceWorkspaceUseCase,
   GetTenantAccountingOperationalCommandCenterUseCase,
@@ -63,6 +67,8 @@ import {
   RequestTenantAccountingAdjustmentRecommendationPacketUseCase,
   RequestTenantAccountingAdvancedDiscoveryCloseoutUseCase,
   RequestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase,
+  RequestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase,
+  RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -91,17 +97,29 @@ import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
 import {
   AccountingAccountantDiscoveryWorkspaceResponseDto,
+  AccountingAdvancedAuditTrailReadinessPacketResponseDto,
   AccountingAdvancedDiscoveryAnchorResponseDto,
   AccountingAdvancedDiscoveryCloseoutResponseDto,
   AccountingAdvancedDiscoveryIntakeResponseDto,
   AccountingAdvancedDiscoveryReadinessPacketResponseDto,
+  AccountingAdvancedMvpReadinessCloseoutResponseDto,
+  AccountingAdvancedMvpScopeDecisionRecordResponseDto,
+  AccountingAdvancedMvpScopeRegistryResponseDto,
+  AccountingCertifiedBankEvidenceBoundaryResponseDto,
   AccountingFormalNeedsClassifierResponseDto,
+  AccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto,
   toAccountingAccountantDiscoveryWorkspaceResponseDto,
+  toAccountingAdvancedAuditTrailReadinessPacketResponseDto,
   toAccountingAdvancedDiscoveryAnchorResponseDto,
   toAccountingAdvancedDiscoveryCloseoutResponseDto,
   toAccountingAdvancedDiscoveryIntakeResponseDto,
   toAccountingAdvancedDiscoveryReadinessPacketResponseDto,
+  toAccountingAdvancedMvpReadinessCloseoutResponseDto,
+  toAccountingAdvancedMvpScopeDecisionRecordResponseDto,
+  toAccountingAdvancedMvpScopeRegistryResponseDto,
+  toAccountingCertifiedBankEvidenceBoundaryResponseDto,
   toAccountingFormalNeedsClassifierResponseDto,
+  toAccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto,
 } from './dto/accounting-advanced-discovery.response';
 import {
   AccountingAccountantReviewResponseDto,
@@ -375,6 +393,12 @@ export class AccountingController {
     private readonly getTenantAccountingAccountantDiscoveryWorkspaceUseCase: GetTenantAccountingAccountantDiscoveryWorkspaceUseCase,
     private readonly requestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase: RequestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase,
     private readonly requestTenantAccountingAdvancedDiscoveryCloseoutUseCase: RequestTenantAccountingAdvancedDiscoveryCloseoutUseCase,
+    private readonly getTenantAccountingAdvancedMvpScopeRegistryUseCase: GetTenantAccountingAdvancedMvpScopeRegistryUseCase,
+    private readonly getTenantAccountingAdvancedMvpScopeDecisionRecordUseCase: GetTenantAccountingAdvancedMvpScopeDecisionRecordUseCase,
+    private readonly getTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase: GetTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase,
+    private readonly getTenantAccountingCertifiedBankEvidenceBoundaryUseCase: GetTenantAccountingCertifiedBankEvidenceBoundaryUseCase,
+    private readonly requestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase: RequestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase,
+    private readonly requestTenantAccountingAdvancedMvpReadinessCloseoutUseCase: RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -524,6 +548,166 @@ export class AccountingController {
         );
 
       return toAccountingAdvancedDiscoveryCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-mvp-readiness/scope-registry')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedMvpScopeRegistry(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedMvpScopeRegistryResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedMvpScopeRegistryUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingAdvancedMvpScopeRegistryResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-mvp-readiness/scope-decision-record')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedMvpScopeDecisionRecord(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedMvpScopeDecisionRecordResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedMvpScopeDecisionRecordUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedMvpScopeDecisionRecordResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-mvp-readiness/ledger-closeout-design')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getMinimumLedgerCloseoutDesignWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-mvp-readiness/bank-evidence-boundary')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getCertifiedBankEvidenceBoundary(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingCertifiedBankEvidenceBoundaryResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingCertifiedBankEvidenceBoundaryUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingCertifiedBankEvidenceBoundaryResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-mvp-readiness/audit-trail-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedAuditTrailReadinessPacket(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedAuditTrailReadinessPacketResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedAuditTrailReadinessPacketResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-mvp-readiness/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedMvpReadinessCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedMvpReadinessCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedMvpReadinessCloseoutUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedMvpReadinessCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

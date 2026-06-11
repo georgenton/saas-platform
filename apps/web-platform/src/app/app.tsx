@@ -140,6 +140,7 @@ import {
   fetchAccountingAdvancedProfessionalReviewExecutionCloseout,
   fetchAccountingAdvancedFormalApprovalWorkflowCloseout,
   fetchAccountingAdvancedSignatureCertificationBoundaryCloseout,
+  fetchAccountingAdvancedExternalExecutionHandoffCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -502,6 +503,7 @@ import {
   AccountingAdvancedProfessionalReviewExecutionCloseoutResponse,
   AccountingAdvancedFormalApprovalWorkflowCloseoutResponse,
   AccountingAdvancedSignatureCertificationBoundaryCloseoutResponse,
+  AccountingAdvancedExternalExecutionHandoffCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2617,6 +2619,13 @@ export function App() {
     setAccountingAdvancedSignatureCertificationBoundaryCloseout,
   ] =
     useState<AccountingAdvancedSignatureCertificationBoundaryCloseoutResponse | null>(
+      null,
+    );
+  const [
+    accountingAdvancedExternalExecutionHandoffCloseout,
+    setAccountingAdvancedExternalExecutionHandoffCloseout,
+  ] =
+    useState<AccountingAdvancedExternalExecutionHandoffCloseoutResponse | null>(
       null,
     );
   const [
@@ -20777,6 +20786,7 @@ export function App() {
         nextAccountingAdvancedProfessionalReviewExecutionCloseout,
         nextAccountingAdvancedFormalApprovalWorkflowCloseout,
         nextAccountingAdvancedSignatureCertificationBoundaryCloseout,
+        nextAccountingAdvancedExternalExecutionHandoffCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21058,6 +21068,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedExternalExecutionHandoffCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21093,6 +21109,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21389,6 +21406,9 @@ export function App() {
         );
         setAccountingAdvancedSignatureCertificationBoundaryCloseout(
           nextAccountingAdvancedSignatureCertificationBoundaryCloseout,
+        );
+        setAccountingAdvancedExternalExecutionHandoffCloseout(
+          nextAccountingAdvancedExternalExecutionHandoffCloseout,
         );
       });
     } catch (error) {
@@ -36851,8 +36871,108 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedExternalExecutionHandoffCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced External Execution
+                                        Handoff 1.2
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedExternalExecutionHandoffCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Handoff gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedExternalExecutionHandoffCloseout
+                                              .handoffAnchor.summary
+                                              .readyGateCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedExternalExecutionHandoffCloseout
+                                              .handoffAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Ejecutores
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedExternalExecutionHandoffCloseout
+                                              .executorMatrix.summary
+                                              .externalExecutorCount
+                                          }{' '}
+                                          roles
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Bundles
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedExternalExecutionHandoffCloseout
+                                              .evidenceBundle.summary
+                                              .bundleCount
+                                          }{' '}
+                                          packs
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Instrucciones
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedExternalExecutionHandoffCloseout
+                                              .instructionPack.summary
+                                              .instructionCount
+                                          }{' '}
+                                          actos
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Retornos
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedExternalExecutionHandoffCloseout
+                                              .returnEvidenceIntake.summary
+                                              .channelCount
+                                          }{' '}
+                                          canales
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedExternalExecutionHandoffCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedExternalExecutionHandoffCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedSignatureCertificationBoundaryCloseout?.nextStep ??
+                                  {accountingAdvancedExternalExecutionHandoffCloseout?.nextStep ??
+                                    accountingAdvancedSignatureCertificationBoundaryCloseout?.nextStep ??
                                     accountingAdvancedFormalApprovalWorkflowCloseout?.nextStep ??
                                     accountingAdvancedProfessionalReviewExecutionCloseout?.nextStep ??
                                     accountingAdvancedFormalArtifactDraftingCloseout?.nextStep ??

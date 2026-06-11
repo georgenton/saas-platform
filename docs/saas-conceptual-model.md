@@ -2094,6 +2094,38 @@ Guardrail: boundary 1.1 prepares the map for formal acts only. It does not sign,
 certify, legalize, file, submit, emit official books or replace the external
 contador, auditor, legal representative or certifying authority.
 
+### Accounting Advanced external execution handoff 1.2
+
+After signature, certification and legalization boundaries 1.1, Accounting
+Advanced can prepare the handoff packages for third-party execution. This layer
+is like a sealed courier envelope: it organizes who receives which formal act,
+what evidence travels with it, what instructions apply and what return evidence
+must come back, but the external act still happens outside the platform.
+
+1. `External Execution Handoff Anchor`
+   - translates the 1.1 closeout into signature, certification and legalization
+     handoff gates
+2. `External Executor Assignment Matrix`
+   - assigns each external act to accountant, auditor, legal representative,
+     bank certifier or legalization authority responsibility
+3. `Execution Handoff Evidence Bundle`
+   - packages approved artifacts, boundary evidence and visible blockers for
+     each external executor
+4. `External Execution Instruction Pack`
+   - defines execution instructions and expected return evidence without
+     sending, signing or certifying anything
+5. `Execution Return Evidence Intake`
+   - defines return channels for signed, certified, legalized, observed or
+     rejected external results
+6. `External Execution Handoff Closeout`
+   - decides whether the tenant-period is ready for external execution tracking,
+     needs executor assignment, must return to signature boundary, or should not
+     hand off formal acts
+
+Guardrail: handoff 1.2 prepares delivery and intake contracts only. It does not
+send packets, sign, certify, legalize, file, officialize returned artifacts or
+replace the external professional or authority.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2202,6 +2234,10 @@ product. Its current scope is intentionally operational and review-oriented:
     1.1 as the pre-execution boundary map. It identifies signatories,
     certification requirements, legalization requirements and missing evidence
     without executing external acts or issuing official artifacts.
+30. Accounting Advanced external execution handoff 1.2 as the pre-tracking
+    courier layer. It prepares executor assignments, evidence bundles,
+    instructions and return evidence intake without sending, signing,
+    certifying, legalizing or officializing external results.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

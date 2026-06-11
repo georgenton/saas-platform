@@ -1,7 +1,7 @@
 {
   "name": "api-platform",
   "private": true,
-  "version": "0.107.45",
+  "version": "0.107.46",
   "main": "main.js",
   "dependencies": {
     "@nestjs/common": "^11.0.0",

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.29
+
+### Patch Changes
+
+- 26bc7a1: Add Tax Compliance EC pilot operations 7.1 with cohort registry, analytics dashboard, accountant SLA tracker, learning backlog, accounting advanced evidence gate, closeout, web dashboard wiring, model refresh, and smoke coverage.
+
 ## 0.107.28
 
 ### Patch Changes

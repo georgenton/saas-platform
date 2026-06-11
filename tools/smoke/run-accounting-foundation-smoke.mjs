@@ -1164,6 +1164,12 @@ const [
   advancedFormalDesignReviewWorkflow,
   advancedFormalDesignGuardrailPack,
   advancedFormalDesignCloseout,
+  advancedFormalDraftingAnchor,
+  advancedAdjustmentDraftPack,
+  advancedFormalBooksDraftWorkspace,
+  advancedFinancialStatementsDraftPack,
+  advancedCertifiedReconciliationDraftPack,
+  advancedFormalDraftingCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1450,6 +1456,44 @@ const [
     path: accountingPath(`/advanced-formal-design/closeout?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-formal-drafting/anchor?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-drafting/adjustment-draft-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-drafting/formal-books-workspace?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-drafting/financial-statements-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-drafting/certified-reconciliation-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-formal-drafting/closeout?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -1632,6 +1676,30 @@ assertStatus(
   'accounting advanced formal design closeout',
   advancedFormalDesignCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced formal drafting anchor',
+  advancedFormalDraftingAnchor.anchorStatus,
+);
+assertStatus(
+  'accounting advanced adjustment draft pack',
+  advancedAdjustmentDraftPack.packStatus,
+);
+assertStatus(
+  'accounting advanced formal books draft workspace',
+  advancedFormalBooksDraftWorkspace.workspaceStatus,
+);
+assertStatus(
+  'accounting advanced financial statements draft pack',
+  advancedFinancialStatementsDraftPack.packStatus,
+);
+assertStatus(
+  'accounting advanced certified reconciliation draft pack',
+  advancedCertifiedReconciliationDraftPack.packStatus,
+);
+assertStatus(
+  'accounting advanced formal drafting closeout',
+  advancedFormalDraftingCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -1649,6 +1717,9 @@ if (!Array.isArray(advancedGraduationCloseout.closeoutChecklist)) {
 }
 if (!Array.isArray(advancedFormalDesignCloseout.closeoutChecklist)) {
   throw new Error('advanced-formal-design/closeout no devolvio checklist[].');
+}
+if (!Array.isArray(advancedFormalDraftingCloseout.closeoutChecklist)) {
+  throw new Error('advanced-formal-drafting/closeout no devolvio checklist[].');
 }
 printLine(
   'foundation pack v2',

@@ -4280,6 +4280,80 @@ export interface AccountingAdvancedFormalProductDesignCloseoutResponse {
   guardrails: string[];
 }
 
+export interface AccountingAdvancedFormalArtifactDraftingCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  draftingAnchor: {
+    anchorStatus: string;
+    summary: {
+      gateCount: number;
+      readyGateCount: number;
+      needsReviewGateCount: number;
+      blockedGateCount: number;
+      designArtifactCount: number;
+    };
+  };
+  adjustmentDraftPack: {
+    packStatus: string;
+    summary: {
+      draftCount: number;
+      readyDraftCount: number;
+      needsReviewDraftCount: number;
+      blockedDraftCount: number;
+    };
+  };
+  formalBooksWorkspace: {
+    workspaceStatus: string;
+    summary: {
+      bookDraftCount: number;
+      readyBookDraftCount: number;
+      needsReviewBookDraftCount: number;
+      blockedBookDraftCount: number;
+      adjustmentDraftCount: number;
+    };
+  };
+  financialStatementsDraftPack: {
+    packStatus: string;
+    summary: {
+      statementDraftCount: number;
+      readyStatementDraftCount: number;
+      needsReviewStatementDraftCount: number;
+      blockedStatementDraftCount: number;
+    };
+  };
+  certifiedReconciliationDraftPack: {
+    packStatus: string;
+    summary: {
+      reconciliationDraftCount: number;
+      readyReconciliationDraftCount: number;
+      needsExternalProofDraftCount: number;
+      blockedReconciliationDraftCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    adjustmentDraftCount: number;
+    bookDraftCount: number;
+    statementDraftCount: number;
+    reconciliationDraftCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

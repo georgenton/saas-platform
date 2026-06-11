@@ -136,6 +136,7 @@ import {
   fetchAccountingAdvancedGraduationCloseout,
   fetchAccountingAdvancedFormalReadinessCloseout,
   fetchAccountingAdvancedFormalProductDesignCloseout,
+  fetchAccountingAdvancedFormalArtifactDraftingCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -494,6 +495,7 @@ import {
   AccountingAdvancedGraduationCloseoutResponse,
   AccountingAdvancedFormalReadinessCloseoutResponse,
   AccountingAdvancedFormalProductDesignCloseoutResponse,
+  AccountingAdvancedFormalArtifactDraftingCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2583,6 +2585,13 @@ export function App() {
   ] = useState<AccountingAdvancedFormalProductDesignCloseoutResponse | null>(
     null,
   );
+  const [
+    accountingAdvancedFormalArtifactDraftingCloseout,
+    setAccountingAdvancedFormalArtifactDraftingCloseout,
+  ] =
+    useState<AccountingAdvancedFormalArtifactDraftingCloseoutResponse | null>(
+      null,
+    );
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20737,6 +20746,7 @@ export function App() {
         nextAccountingAdvancedGraduationCloseout,
         nextAccountingAdvancedFormalReadinessCloseout,
         nextAccountingAdvancedFormalProductDesignCloseout,
+        nextAccountingAdvancedFormalArtifactDraftingCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -20994,6 +21004,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedFormalArtifactDraftingCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21029,6 +21045,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21309,6 +21326,9 @@ export function App() {
         );
         setAccountingAdvancedFormalProductDesignCloseout(
           nextAccountingAdvancedFormalProductDesignCloseout,
+        );
+        setAccountingAdvancedFormalArtifactDraftingCloseout(
+          nextAccountingAdvancedFormalArtifactDraftingCloseout,
         );
       });
     } catch (error) {
@@ -36364,8 +36384,109 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedFormalArtifactDraftingCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced Formal Artifact
+                                        Drafting 0.8
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedFormalArtifactDraftingCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalArtifactDraftingCloseout
+                                              .draftingAnchor.summary
+                                              .readyGateCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedFormalArtifactDraftingCloseout
+                                              .draftingAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Ajustes
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalArtifactDraftingCloseout
+                                              .adjustmentDraftPack.summary
+                                              .needsReviewDraftCount
+                                          }{' '}
+                                          review
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Libros
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalArtifactDraftingCloseout
+                                              .formalBooksWorkspace.summary
+                                              .bookDraftCount
+                                          }{' '}
+                                          drafts
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Estados
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalArtifactDraftingCloseout
+                                              .financialStatementsDraftPack
+                                              .summary.statementDraftCount
+                                          }{' '}
+                                          drafts
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Banco
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalArtifactDraftingCloseout
+                                              .certifiedReconciliationDraftPack
+                                              .summary
+                                              .needsExternalProofDraftCount
+                                          }{' '}
+                                          proof
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedFormalArtifactDraftingCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedFormalArtifactDraftingCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedFormalProductDesignCloseout?.nextStep ??
+                                  {accountingAdvancedFormalArtifactDraftingCloseout?.nextStep ??
+                                    accountingAdvancedFormalProductDesignCloseout?.nextStep ??
                                     accountingAdvancedFormalReadinessCloseout?.nextStep ??
                                     accountingAdvancedGraduationCloseout?.nextStep ??
                                     accountingAdvancedPilotCloseout?.nextStep ??

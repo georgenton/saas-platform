@@ -1969,6 +1969,38 @@ Guardrail: formal product design 0.7 still does not create official artifacts,
 post formal adjustments, legalize books, certify bank feeds or sign statements.
 It only makes the next artifact-drafting layer structurally safe.
 
+### Accounting Advanced formal artifact drafting 0.8
+
+After formal product design 0.7, Accounting Advanced can prepare the first
+formal artifact drafts without turning them into official records yet. This
+layer is the accountant's pre-review folder: the platform assembles traceable
+drafts, evidence references and professional questions, but every official act
+remains outside automation until review, signoff, certification or legalization.
+
+1. `Formal Artifact Drafting Anchor`
+   - checks that the 0.7 design closeout, artifact registry, professional owners
+     and guardrails allow drafting to start
+2. `Advanced Adjustment Draft Pack`
+   - prepares accrual, reclassification, estimation and cleanup draft
+     adjustments with professional questions and evidence references
+3. `Draft Journal & Ledger Books Workspace`
+   - assembles preliminary journal and ledger book drafts from internal
+     registries, adjustments and closeout evidence without legalizing books
+4. `Draft Financial Statements Pack`
+   - prepares financial-position, income-statement, cash-movement and
+     period-comparison drafts without creating signed statements
+5. `Draft Certified Bank Reconciliation Pack`
+   - packages reconciliation drafts, external-proof requirements and the
+     certification boundary without certifying bank balances
+6. `Formal Artifact Drafting Closeout`
+   - decides whether the drafts can move to professional review execution, need
+     more evidence, must return to product design or should not be drafted
+
+Guardrail: formal artifact drafting 0.8 creates reviewable drafts only. It does
+not post formal adjustments, emit legal books, certify bank reconciliation,
+generate signed statements, file taxes or replace the external accountant,
+auditor or legal representative.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2061,6 +2093,10 @@ product. Its current scope is intentionally operational and review-oriented:
     for a formal product. It defines scope, professional responsibility,
     artifact registry, review workflow and risk guardrails before any official
     artifact drafting, signature, certification or legalization is implemented.
+26. Accounting Advanced formal artifact drafting 0.8 as the first draft-output
+    layer for formal artifacts. It assembles adjustment, journal/ledger,
+    financial-statement and certified-reconciliation drafts for professional
+    review without posting, signing, certifying, legalizing or filing anything.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

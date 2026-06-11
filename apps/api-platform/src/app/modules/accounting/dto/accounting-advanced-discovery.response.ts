@@ -36,6 +36,12 @@ import {
   TenantAccountingAdvancedFormalProductDesignCloseoutView,
   TenantAccountingAdvancedFormalProductRiskGuardrailPackView,
   TenantAccountingAdvancedFormalProductScopeContractView,
+  TenantAccountingAdvancedAdjustmentDraftPackView,
+  TenantAccountingAdvancedCertifiedReconciliationDraftPackView,
+  TenantAccountingAdvancedFinancialStatementsDraftPackView,
+  TenantAccountingAdvancedFormalArtifactDraftingAnchorView,
+  TenantAccountingAdvancedFormalArtifactDraftingCloseoutView,
+  TenantAccountingAdvancedFormalBooksDraftWorkspaceView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
@@ -127,6 +133,18 @@ export type AccountingAdvancedFormalProductRiskGuardrailPackResponseDto =
   Serialized<TenantAccountingAdvancedFormalProductRiskGuardrailPackView>;
 export type AccountingAdvancedFormalProductDesignCloseoutResponseDto =
   Serialized<TenantAccountingAdvancedFormalProductDesignCloseoutView>;
+export type AccountingAdvancedFormalArtifactDraftingAnchorResponseDto =
+  Serialized<TenantAccountingAdvancedFormalArtifactDraftingAnchorView>;
+export type AccountingAdvancedAdjustmentDraftPackResponseDto =
+  Serialized<TenantAccountingAdvancedAdjustmentDraftPackView>;
+export type AccountingAdvancedFormalBooksDraftWorkspaceResponseDto =
+  Serialized<TenantAccountingAdvancedFormalBooksDraftWorkspaceView>;
+export type AccountingAdvancedFinancialStatementsDraftPackResponseDto =
+  Serialized<TenantAccountingAdvancedFinancialStatementsDraftPackView>;
+export type AccountingAdvancedCertifiedReconciliationDraftPackResponseDto =
+  Serialized<TenantAccountingAdvancedCertifiedReconciliationDraftPackView>;
+export type AccountingAdvancedFormalArtifactDraftingCloseoutResponseDto =
+  Serialized<TenantAccountingAdvancedFormalArtifactDraftingCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -377,6 +395,42 @@ export function toAccountingAdvancedFormalProductRiskGuardrailPackResponseDto(
 export function toAccountingAdvancedFormalProductDesignCloseoutResponseDto(
   view: TenantAccountingAdvancedFormalProductDesignCloseoutView,
 ): AccountingAdvancedFormalProductDesignCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalArtifactDraftingAnchorResponseDto(
+  view: TenantAccountingAdvancedFormalArtifactDraftingAnchorView,
+): AccountingAdvancedFormalArtifactDraftingAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedAdjustmentDraftPackResponseDto(
+  view: TenantAccountingAdvancedAdjustmentDraftPackView,
+): AccountingAdvancedAdjustmentDraftPackResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalBooksDraftWorkspaceResponseDto(
+  view: TenantAccountingAdvancedFormalBooksDraftWorkspaceView,
+): AccountingAdvancedFormalBooksDraftWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFinancialStatementsDraftPackResponseDto(
+  view: TenantAccountingAdvancedFinancialStatementsDraftPackView,
+): AccountingAdvancedFinancialStatementsDraftPackResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedCertifiedReconciliationDraftPackResponseDto(
+  view: TenantAccountingAdvancedCertifiedReconciliationDraftPackView,
+): AccountingAdvancedCertifiedReconciliationDraftPackResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalArtifactDraftingCloseoutResponseDto(
+  view: TenantAccountingAdvancedFormalArtifactDraftingCloseoutView,
+): AccountingAdvancedFormalArtifactDraftingCloseoutResponseDto {
   return serialize(view);
 }
 

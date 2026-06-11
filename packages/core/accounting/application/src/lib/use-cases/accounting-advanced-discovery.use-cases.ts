@@ -6,6 +6,7 @@ import {
   AccountingAdvancedGraduationDecision,
   AccountingAdvancedFormalReadinessDecision,
   AccountingAdvancedFormalProductDesignDecision,
+  AccountingAdvancedFormalArtifactDraftingDecision,
   AccountingAdvancedFormalModuleKey,
   AccountingAdvancedProfessionalOwner,
   AccountingAdvancedPilotEnrollmentStatus,
@@ -48,6 +49,12 @@ import {
   TenantAccountingAdvancedFormalProductDesignCloseoutView,
   TenantAccountingAdvancedFormalProductRiskGuardrailPackView,
   TenantAccountingAdvancedFormalProductScopeContractView,
+  TenantAccountingAdvancedAdjustmentDraftPackView,
+  TenantAccountingAdvancedCertifiedReconciliationDraftPackView,
+  TenantAccountingAdvancedFinancialStatementsDraftPackView,
+  TenantAccountingAdvancedFormalArtifactDraftingAnchorView,
+  TenantAccountingAdvancedFormalArtifactDraftingCloseoutView,
+  TenantAccountingAdvancedFormalBooksDraftWorkspaceView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
@@ -3712,6 +3719,486 @@ export class RequestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase {
   }
 }
 
+export class GetTenantAccountingAdvancedFormalArtifactDraftingAnchorUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase: RequestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalArtifactDraftingAnchorView> {
+    const productDesignCloseout =
+      await this.requestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase.execute(
+        input,
+      );
+    const draftingGates: TenantAccountingAdvancedFormalArtifactDraftingAnchorView['draftingGates'] =
+      [
+        draftingGate(
+          'formal_design_closeout',
+          'Formal design closeout',
+          productDesignCloseout.closeoutStatus,
+          ['advanced_formal_product_design_closeout'],
+          '0.8 only starts from the explicit 0.7 design decision.',
+        ),
+        draftingGate(
+          'artifact_registry',
+          'Artifact registry available',
+          productDesignCloseout.artifactRegistry.registryStatus,
+          ['advanced_formal_artifact_draft_registry'],
+          'Drafting follows the registry; it does not invent new official artifacts.',
+        ),
+        draftingGate(
+          'professional_owners',
+          'Professional owners assigned',
+          productDesignCloseout.responsibilityMatrix.matrixStatus,
+          ['advanced_professional_responsibility_assignment_matrix'],
+          'Every draft keeps a visible professional owner before review.',
+        ),
+        draftingGate(
+          'guardrails',
+          'Formal guardrails active',
+          productDesignCloseout.guardrailPack.packStatus,
+          ['advanced_formal_product_risk_guardrail_pack'],
+          'Drafts remain previews until external review, signoff or certification.',
+        ),
+      ];
+    const blockers =
+      productDesignCloseout.finalDecision ===
+      'ready_for_formal_artifact_drafting'
+        ? [...productDesignCloseout.blockers]
+        : unique([
+            ...productDesignCloseout.blockers,
+            `Formal design decision is ${productDesignCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(
+      draftingGates.map((gate) => gate.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      productDesignCloseout,
+      draftingGates,
+      summary: {
+        gateCount: draftingGates.length,
+        readyGateCount: draftingGates.filter((gate) => gate.status === 'ready')
+          .length,
+        needsReviewGateCount: draftingGates.filter(
+          (gate) => gate.status === 'needs_review',
+        ).length,
+        blockedGateCount: draftingGates.filter(
+          (gate) => gate.status === 'blocked',
+        ).length,
+        designArtifactCount:
+          productDesignCloseout.artifactRegistry.summary.artifactCount,
+      },
+      blockers,
+      nextStep:
+        anchorStatus === 'blocked'
+          ? 'Volver a diseno formal antes de preparar borradores.'
+          : 'Preparar draft pack de ajustes avanzados para revision profesional.',
+      guardrails: [
+        'Formal Artifact Drafting 0.8 prepara borradores, no artefactos oficiales.',
+        'Ningun draft se firma, certifica, legaliza ni postea automaticamente.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedAdjustmentDraftPackUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedFormalArtifactDraftingAnchorUseCase: GetTenantAccountingAdvancedFormalArtifactDraftingAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedAdjustmentDraftPackView> {
+    const draftingAnchor =
+      await this.getTenantAccountingAdvancedFormalArtifactDraftingAnchorUseCase.execute(
+        input,
+      );
+    const adjustmentWorkbench =
+      draftingAnchor.productDesignCloseout.scopeContract.formalReadinessCloseout
+        .formalBooksPacket.financialStatementWorkspace.adjustmentWorkbench;
+    const draftAdjustments: TenantAccountingAdvancedAdjustmentDraftPackView['draftAdjustments'] =
+      [
+        adjustmentDraft(
+          'accrual_cutoff',
+          'Accrual cutoff draft',
+          adjustmentWorkbench.workbenchStatus,
+          'accrual',
+          ['advanced_adjustment_automation_workbench'],
+          'Confirmar devengos de cierre antes de convertirlos en asiento formal.',
+        ),
+        adjustmentDraft(
+          'tax_account_reclassification',
+          'Tax account reclassification draft',
+          'needs_review',
+          'reclassification',
+          ['tax_compliance_accounting_bridge', 'chart_mapping_management'],
+          'Validar si la reclasificacion fiscal debe afectar libros formales.',
+        ),
+        adjustmentDraft(
+          'estimation_review',
+          'Estimation review draft',
+          'needs_review',
+          'estimation',
+          ['financial_statement_preview'],
+          'Confirmar estimaciones antes de exponer estados financieros.',
+        ),
+        adjustmentDraft(
+          'cleanup_candidates',
+          'Cleanup candidates draft',
+          'ready',
+          'cleanup',
+          ['corrections_queue', 'audit_trail_workspace'],
+          'Separar limpieza operativa de ajuste profesional.',
+        ),
+      ];
+    const blockers = [...draftingAnchor.blockers];
+    const packStatus = resolveStatus(
+      draftAdjustments.map((draft) => draft.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      draftingAnchor,
+      draftAdjustments,
+      summary: draftSummary(draftAdjustments),
+      blockers,
+      nextStep:
+        'Usar ajustes en borrador para construir libro diario y mayor preliminares.',
+      guardrails: [
+        'Los ajustes son recomendaciones revisables; no se materializan como asiento oficial.',
+        'Cada ajuste conserva pregunta profesional y evidencia antes de aprobar.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedFormalBooksDraftWorkspaceUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedAdjustmentDraftPackUseCase: GetTenantAccountingAdvancedAdjustmentDraftPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalBooksDraftWorkspaceView> {
+    const adjustmentDraftPack =
+      await this.getTenantAccountingAdvancedAdjustmentDraftPackUseCase.execute(
+        input,
+      );
+    const formalBooksPacket =
+      adjustmentDraftPack.draftingAnchor.productDesignCloseout.scopeContract
+        .formalReadinessCloseout.formalBooksPacket;
+    const bookDrafts: TenantAccountingAdvancedFormalBooksDraftWorkspaceView['bookDrafts'] =
+      [
+        bookDraft(
+          'draft_journal_book',
+          'Draft journal book',
+          formalBooksPacket.packetStatus,
+          'journal',
+          ['journal_registry', 'advanced_adjustment_draft_pack'],
+          'Diario en borrador pendiente de revision y firma profesional.',
+        ),
+        bookDraft(
+          'draft_ledger_book',
+          'Draft ledger book',
+          'needs_review',
+          'ledger',
+          ['ledger_registry_workspace', 'trial_balance_workspace'],
+          'Mayor preliminar sujeto a politicas de cierre y evidencia.',
+        ),
+      ];
+    const blockers = [...adjustmentDraftPack.blockers];
+    const workspaceStatus = resolveStatus(
+      bookDrafts.map((draft) => draft.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      workspaceStatus,
+      adjustmentDraftPack,
+      bookDrafts,
+      summary: {
+        bookDraftCount: bookDrafts.length,
+        readyBookDraftCount: bookDrafts.filter(
+          (draft) => draft.status === 'ready',
+        ).length,
+        needsReviewBookDraftCount: bookDrafts.filter(
+          (draft) => draft.status === 'needs_review',
+        ).length,
+        blockedBookDraftCount: bookDrafts.filter(
+          (draft) => draft.status === 'blocked',
+        ).length,
+        adjustmentDraftCount: adjustmentDraftPack.summary.draftCount,
+      },
+      blockers,
+      nextStep:
+        'Preparar estados financieros en borrador desde libros preliminares.',
+      guardrails: [
+        'El workspace arma libros preliminares; no legaliza libros.',
+        'El mayor y diario quedan marcados como draft hasta review profesional.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedFinancialStatementsDraftPackUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedFormalBooksDraftWorkspaceUseCase: GetTenantAccountingAdvancedFormalBooksDraftWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFinancialStatementsDraftPackView> {
+    const formalBooksWorkspace =
+      await this.getTenantAccountingAdvancedFormalBooksDraftWorkspaceUseCase.execute(
+        input,
+      );
+    const multiPeriodWorkspace =
+      formalBooksWorkspace.adjustmentDraftPack.draftingAnchor.productDesignCloseout
+        .scopeContract.formalReadinessCloseout.formalBooksPacket
+        .financialStatementWorkspace;
+    const statementDrafts: TenantAccountingAdvancedFinancialStatementsDraftPackView['statementDrafts'] =
+      [
+        statementDraft(
+          'statement_of_financial_position',
+          'Statement of financial position draft',
+          multiPeriodWorkspace.workspaceStatus,
+          'financial_position',
+          `${input.year}-01..${input.period}`,
+          ['financial_statement_preview', 'trial_balance_workspace'],
+        ),
+        statementDraft(
+          'income_statement',
+          'Income statement draft',
+          'needs_review',
+          'income_statement',
+          input.period,
+          ['ledger_preview_workspace', 'advanced_adjustment_draft_pack'],
+        ),
+        statementDraft(
+          'cash_movement',
+          'Cash movement draft',
+          'needs_review',
+          'cash_movement',
+          input.period,
+          ['bank_reconciliation_workspace', 'cash_closeout_readiness'],
+        ),
+        statementDraft(
+          'period_comparison',
+          'Period comparison draft',
+          'ready',
+          'period_comparison',
+          `${input.year - 1}..${input.year}`,
+          ['multi_period_financial_statement_workspace'],
+        ),
+      ];
+    const blockers = [...formalBooksWorkspace.blockers];
+    const packStatus = resolveStatus(
+      statementDrafts.map((draft) => draft.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      formalBooksWorkspace,
+      statementDrafts,
+      summary: {
+        statementDraftCount: statementDrafts.length,
+        readyStatementDraftCount: statementDrafts.filter(
+          (draft) => draft.status === 'ready',
+        ).length,
+        needsReviewStatementDraftCount: statementDrafts.filter(
+          (draft) => draft.status === 'needs_review',
+        ).length,
+        blockedStatementDraftCount: statementDrafts.filter(
+          (draft) => draft.status === 'blocked',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        'Armar conciliacion bancaria formal en borrador con prueba externa requerida.',
+      guardrails: [
+        'Los estados financieros son borradores; no son estados firmados.',
+        'Las variaciones y comparativos requieren criterio profesional antes de emision.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedCertifiedReconciliationDraftPackUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedFinancialStatementsDraftPackUseCase: GetTenantAccountingAdvancedFinancialStatementsDraftPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedCertifiedReconciliationDraftPackView> {
+    const financialStatementsDraftPack =
+      await this.getTenantAccountingAdvancedFinancialStatementsDraftPackUseCase.execute(
+        input,
+      );
+    const certifiedCloseout =
+      financialStatementsDraftPack.formalBooksWorkspace.adjustmentDraftPack
+        .draftingAnchor.productDesignCloseout.scopeContract
+        .formalReadinessCloseout;
+    const reconciliationDrafts: TenantAccountingAdvancedCertifiedReconciliationDraftPackView['reconciliationDrafts'] =
+      certifiedCloseout.reconciliationChecks.map((check) => ({
+        key: `certified_${check.key}`,
+        label: check.label,
+        status: check.status,
+        evidenceRefs: ['certified_bank_reconciliation_readiness_closeout'],
+        externalProofRequired: check.externalProofRequired,
+        certificationBoundary:
+          'La plataforma prepara conciliacion; certificacion requiere prueba y signoff externo.',
+      }));
+    const blockers = [...financialStatementsDraftPack.blockers];
+    const packStatus = resolveStatus(
+      reconciliationDrafts.map((draft) => draft.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      financialStatementsDraftPack,
+      reconciliationDrafts,
+      summary: {
+        reconciliationDraftCount: reconciliationDrafts.length,
+        readyReconciliationDraftCount: reconciliationDrafts.filter(
+          (draft) => draft.status === 'ready',
+        ).length,
+        needsExternalProofDraftCount: reconciliationDrafts.filter(
+          (draft) => draft.status === 'needs_review',
+        ).length,
+        blockedReconciliationDraftCount: reconciliationDrafts.filter(
+          (draft) => draft.status === 'blocked',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        'Cerrar drafting formal y decidir si pasa a ejecucion de review profesional.',
+      guardrails: [
+        'Certified reconciliation draft no certifica saldos bancarios.',
+        'La prueba externa y el signoff siguen fuera de automatizacion.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedCertifiedReconciliationDraftPackUseCase: GetTenantAccountingAdvancedCertifiedReconciliationDraftPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalArtifactDraftingCloseoutView> {
+    const certifiedReconciliationDraftPack =
+      await this.getTenantAccountingAdvancedCertifiedReconciliationDraftPackUseCase.execute(
+        input,
+      );
+    const { financialStatementsDraftPack } = certifiedReconciliationDraftPack;
+    const { formalBooksWorkspace } = financialStatementsDraftPack;
+    const { adjustmentDraftPack } = formalBooksWorkspace;
+    const { draftingAnchor } = adjustmentDraftPack;
+    const closeoutChecklist: TenantAccountingAdvancedFormalArtifactDraftingCloseoutView['closeoutChecklist'] =
+      [
+        draftingCloseoutCheck('drafting_anchor', 'Formal drafting anchor', draftingAnchor.anchorStatus, [
+          'advanced_formal_artifact_drafting_anchor',
+        ]),
+        draftingCloseoutCheck('adjustment_drafts', 'Advanced adjustment drafts', adjustmentDraftPack.packStatus, [
+          'advanced_adjustment_draft_pack',
+        ]),
+        draftingCloseoutCheck('formal_books', 'Journal and ledger book drafts', formalBooksWorkspace.workspaceStatus, [
+          'advanced_formal_books_draft_workspace',
+        ]),
+        draftingCloseoutCheck('financial_statements', 'Financial statement drafts', financialStatementsDraftPack.packStatus, [
+          'advanced_financial_statements_draft_pack',
+        ]),
+        draftingCloseoutCheck('certified_reconciliation', 'Certified reconciliation draft pack', certifiedReconciliationDraftPack.packStatus, [
+          'advanced_certified_reconciliation_draft_pack',
+        ]),
+      ];
+    const blockers = unique([
+      ...draftingAnchor.blockers,
+      ...adjustmentDraftPack.blockers,
+      ...formalBooksWorkspace.blockers,
+      ...financialStatementsDraftPack.blockers,
+      ...certifiedReconciliationDraftPack.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(
+      closeoutChecklist.map((item) => item.status),
+      blockers,
+    );
+    const finalDecision = formalArtifactDraftingDecisionFromStatus(
+      closeoutStatus,
+      draftingAnchor,
+      certifiedReconciliationDraftPack,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      draftingAnchor,
+      adjustmentDraftPack,
+      formalBooksWorkspace,
+      financialStatementsDraftPack,
+      certifiedReconciliationDraftPack,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        blockedChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+        adjustmentDraftCount: adjustmentDraftPack.summary.draftCount,
+        bookDraftCount: formalBooksWorkspace.summary.bookDraftCount,
+        statementDraftCount:
+          financialStatementsDraftPack.summary.statementDraftCount,
+        reconciliationDraftCount:
+          certifiedReconciliationDraftPack.summary.reconciliationDraftCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'ready_for_professional_review_execution'
+          ? 'Iniciar 0.9 Professional Review Execution con drafts trazables.'
+          : finalDecision === 'needs_draft_evidence'
+            ? 'Completar evidencia de borradores antes de review profesional.'
+            : finalDecision === 'return_to_formal_product_design'
+              ? 'Volver a 0.7 para corregir scope, owners o guardrails.'
+              : 'No preparar artefactos formales para este periodo.',
+      guardrails: [
+        'Closeout 0.8 valida drafts; no produce documentos oficiales.',
+        'La siguiente capa debe ejecutar review profesional antes de emitir, firmar, certificar o legalizar.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -4101,6 +4588,105 @@ function designCloseoutCheck(
   evidenceRefs: string[],
 ): TenantAccountingAdvancedFormalProductDesignCloseoutView['closeoutChecklist'][number] {
   return { key, label, status, evidenceRefs };
+}
+
+function draftingGate(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+  gate: string,
+): TenantAccountingAdvancedFormalArtifactDraftingAnchorView['draftingGates'][number] {
+  return { key, label, status, evidenceRefs, gate };
+}
+
+function adjustmentDraft(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  adjustmentType: TenantAccountingAdvancedAdjustmentDraftPackView['draftAdjustments'][number]['adjustmentType'],
+  evidenceRefs: string[],
+  professionalQuestion: string,
+): TenantAccountingAdvancedAdjustmentDraftPackView['draftAdjustments'][number] {
+  return {
+    key,
+    label,
+    status,
+    adjustmentType,
+    evidenceRefs,
+    professionalQuestion,
+  };
+}
+
+function draftSummary(
+  draftAdjustments: TenantAccountingAdvancedAdjustmentDraftPackView['draftAdjustments'],
+): TenantAccountingAdvancedAdjustmentDraftPackView['summary'] {
+  return {
+    draftCount: draftAdjustments.length,
+    readyDraftCount: draftAdjustments.filter((draft) => draft.status === 'ready')
+      .length,
+    needsReviewDraftCount: draftAdjustments.filter(
+      (draft) => draft.status === 'needs_review',
+    ).length,
+    blockedDraftCount: draftAdjustments.filter(
+      (draft) => draft.status === 'blocked',
+    ).length,
+  };
+}
+
+function bookDraft(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  bookType: TenantAccountingAdvancedFormalBooksDraftWorkspaceView['bookDrafts'][number]['bookType'],
+  sourceRefs: string[],
+  reviewBoundary: string,
+): TenantAccountingAdvancedFormalBooksDraftWorkspaceView['bookDrafts'][number] {
+  return { key, label, status, bookType, sourceRefs, reviewBoundary };
+}
+
+function statementDraft(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  statementType: TenantAccountingAdvancedFinancialStatementsDraftPackView['statementDrafts'][number]['statementType'],
+  periodRange: string,
+  evidenceRefs: string[],
+): TenantAccountingAdvancedFinancialStatementsDraftPackView['statementDrafts'][number] {
+  return { key, label, status, statementType, periodRange, evidenceRefs };
+}
+
+function draftingCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantAccountingAdvancedFormalArtifactDraftingCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function formalArtifactDraftingDecisionFromStatus(
+  closeoutStatus: AccountingReadinessStatus,
+  draftingAnchor: TenantAccountingAdvancedFormalArtifactDraftingAnchorView,
+  certifiedReconciliationDraftPack: TenantAccountingAdvancedCertifiedReconciliationDraftPackView,
+  blockers: string[],
+): AccountingAdvancedFormalArtifactDraftingDecision {
+  if (blockers.length > 0 || closeoutStatus === 'blocked') {
+    return 'return_to_formal_product_design';
+  }
+  if (
+    draftingAnchor.productDesignCloseout.finalDecision !==
+    'ready_for_formal_artifact_drafting'
+  ) {
+    return 'do_not_draft_formal_artifacts';
+  }
+  if (
+    closeoutStatus === 'ready' &&
+    certifiedReconciliationDraftPack.summary.needsExternalProofDraftCount === 0
+  ) {
+    return 'ready_for_professional_review_execution';
+  }
+  return 'needs_draft_evidence';
 }
 
 function formalProductDesignDecisionFromStatus(

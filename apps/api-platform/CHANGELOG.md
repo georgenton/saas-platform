@@ -1,5 +1,14 @@
 # api-platform
 
+## 0.107.42
+
+### Patch Changes
+
+- 2ec554a: Add Accounting Advanced Signature, Certification and Legalization Boundaries 1.1
+  with boundary anchor, signatory registry, signature evidence readiness,
+  certification requirements, legalization boundary, closeout API, dashboard
+  wiring, conceptual model updates, and smoke coverage.
+
 ## 0.107.41
 
 ### Patch Changes

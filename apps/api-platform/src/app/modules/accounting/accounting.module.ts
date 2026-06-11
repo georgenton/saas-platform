@@ -56,6 +56,11 @@ import {
   GetTenantAccountingAdvancedFormalApprovalCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalApprovalEvidencePackUseCase,
   GetTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase,
+  GetTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase,
+  GetTenantAccountingAdvancedFormalSignatoryRegistryUseCase,
+  GetTenantAccountingAdvancedLegalizationBoundaryPacketUseCase,
+  GetTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase,
+  GetTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -123,6 +128,7 @@ import {
   RequestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase,
   RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase,
+  RequestTenantAccountingAdvancedSignatureCertificationBoundaryCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -838,6 +844,76 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase(
           getTenantAccountingAdvancedFormalApprovalCommandCenterUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase,
+      inject: [
+        RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase(
+          requestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedFormalSignatoryRegistryUseCase,
+      inject: [
+        GetTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedFormalSignatoryRegistryUseCase(
+          getTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase,
+      inject: [GetTenantAccountingAdvancedFormalSignatoryRegistryUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedFormalSignatoryRegistryUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase(
+          getTenantAccountingAdvancedFormalSignatoryRegistryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase,
+      inject: [
+        GetTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase(
+          getTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedLegalizationBoundaryPacketUseCase,
+      inject: [
+        GetTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedLegalizationBoundaryPacketUseCase(
+          getTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase,
+        ),
+    },
+    {
+      provide:
+        RequestTenantAccountingAdvancedSignatureCertificationBoundaryCloseoutUseCase,
+      inject: [GetTenantAccountingAdvancedLegalizationBoundaryPacketUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedLegalizationBoundaryPacketUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedSignatureCertificationBoundaryCloseoutUseCase(
+          getTenantAccountingAdvancedLegalizationBoundaryPacketUseCase,
         ),
     },
     {

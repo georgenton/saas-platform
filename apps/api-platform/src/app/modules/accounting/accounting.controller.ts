@@ -50,6 +50,11 @@ import {
   GetTenantAccountingAdvancedFormalApprovalCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalApprovalEvidencePackUseCase,
   GetTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase,
+  GetTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase,
+  GetTenantAccountingAdvancedFormalSignatoryRegistryUseCase,
+  GetTenantAccountingAdvancedLegalizationBoundaryPacketUseCase,
+  GetTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase,
+  GetTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -117,6 +122,7 @@ import {
   RequestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase,
   RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase,
+  RequestTenantAccountingAdvancedSignatureCertificationBoundaryCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -199,6 +205,12 @@ import {
   AccountingAdvancedFormalApprovalEvidencePackResponseDto,
   AccountingAdvancedFormalApprovalWorkflowAnchorResponseDto,
   AccountingAdvancedFormalApprovalWorkflowCloseoutResponseDto,
+  AccountingAdvancedCertificationRequirementWorkspaceResponseDto,
+  AccountingAdvancedFormalSignatoryRegistryResponseDto,
+  AccountingAdvancedLegalizationBoundaryPacketResponseDto,
+  AccountingAdvancedSignatureCertificationBoundaryAnchorResponseDto,
+  AccountingAdvancedSignatureCertificationBoundaryCloseoutResponseDto,
+  AccountingAdvancedSignatureEvidenceReadinessPackResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -259,6 +271,12 @@ import {
   toAccountingAdvancedFormalApprovalEvidencePackResponseDto,
   toAccountingAdvancedFormalApprovalWorkflowAnchorResponseDto,
   toAccountingAdvancedFormalApprovalWorkflowCloseoutResponseDto,
+  toAccountingAdvancedCertificationRequirementWorkspaceResponseDto,
+  toAccountingAdvancedFormalSignatoryRegistryResponseDto,
+  toAccountingAdvancedLegalizationBoundaryPacketResponseDto,
+  toAccountingAdvancedSignatureCertificationBoundaryAnchorResponseDto,
+  toAccountingAdvancedSignatureCertificationBoundaryCloseoutResponseDto,
+  toAccountingAdvancedSignatureEvidenceReadinessPackResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -591,6 +609,12 @@ export class AccountingController {
     private readonly getTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase: GetTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase,
     private readonly getTenantAccountingAdvancedFormalApprovalCommandCenterUseCase: GetTenantAccountingAdvancedFormalApprovalCommandCenterUseCase,
     private readonly requestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase: RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase,
+    private readonly getTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase: GetTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase,
+    private readonly getTenantAccountingAdvancedFormalSignatoryRegistryUseCase: GetTenantAccountingAdvancedFormalSignatoryRegistryUseCase,
+    private readonly getTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase: GetTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase,
+    private readonly getTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase: GetTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase,
+    private readonly getTenantAccountingAdvancedLegalizationBoundaryPacketUseCase: GetTenantAccountingAdvancedLegalizationBoundaryPacketUseCase,
+    private readonly requestTenantAccountingAdvancedSignatureCertificationBoundaryCloseoutUseCase: RequestTenantAccountingAdvancedSignatureCertificationBoundaryCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -2074,6 +2098,150 @@ export class AccountingController {
         );
 
       return toAccountingAdvancedFormalApprovalWorkflowCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-signature-certification/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedSignatureCertificationAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedSignatureCertificationBoundaryAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedSignatureCertificationBoundaryAnchorResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-signature-certification/signatory-registry')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalSignatoryRegistry(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalSignatoryRegistryResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedFormalSignatoryRegistryUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalSignatoryRegistryResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-signature-certification/evidence-readiness-pack')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedSignatureEvidenceReadinessPack(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedSignatureEvidenceReadinessPackResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedSignatureEvidenceReadinessPackResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-signature-certification/certification-requirements')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedCertificationRequirementWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedCertificationRequirementWorkspaceResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedCertificationRequirementWorkspaceResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-signature-certification/legalization-boundary')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedLegalizationBoundaryPacket(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedLegalizationBoundaryPacketResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedLegalizationBoundaryPacketUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedLegalizationBoundaryPacketResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-signature-certification/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedSignatureCertificationCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedSignatureCertificationBoundaryCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedSignatureCertificationBoundaryCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedSignatureCertificationBoundaryCloseoutResponseDto(
+        view,
+      );
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

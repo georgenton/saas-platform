@@ -129,6 +129,7 @@ import {
   fetchAccountingOpeningBalanceControlRegistry,
   fetchAccountingOpeningBalanceWorkspace,
   fetchAccountingOperationalCommandCenter,
+  fetchAccountingAdvancedDiscoveryCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -480,6 +481,7 @@ import {
   AccountingFinancialStatementReviewPacketResponse,
   AccountingFinancialStatementFinalReviewPacketResponse,
   AccountingFoundationCloseoutSummaryResponse,
+  AccountingAdvancedDiscoveryCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2539,6 +2541,10 @@ export function App() {
     accountingFoundationCloseoutSummary,
     setAccountingFoundationCloseoutSummary,
   ] = useState<AccountingFoundationCloseoutSummaryResponse | null>(null);
+  const [
+    accountingAdvancedDiscoveryCloseout,
+    setAccountingAdvancedDiscoveryCloseout,
+  ] = useState<AccountingAdvancedDiscoveryCloseoutResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20686,6 +20692,7 @@ export function App() {
         nextAccountingPeriodCloseoutTimeline,
         nextAccountingLegalBooksReadinessPacket,
         nextAccountingFoundationCloseoutSummary,
+        nextAccountingAdvancedDiscoveryCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -20901,6 +20908,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedDiscoveryCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -20936,6 +20949,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21190,6 +21204,9 @@ export function App() {
         );
         setAccountingFoundationCloseoutSummary(
           nextAccountingFoundationCloseoutSummary,
+        );
+        setAccountingAdvancedDiscoveryCloseout(
+          nextAccountingAdvancedDiscoveryCloseout,
         );
       });
     } catch (error) {
@@ -35377,6 +35394,23 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      Advanced discovery
+                                    </span>
+                                    <strong>
+                                      {accountingAdvancedDiscoveryCloseout
+                                        ? humanizeKey(
+                                            accountingAdvancedDiscoveryCloseout.finalDecision,
+                                          )
+                                        : 'sin closeout'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingAdvancedDiscoveryCloseout
+                                        ?.summary.formalNeedCount ?? 0}{' '}
+                                      necesidades
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Ultimo ajuste
                                     </span>
                                     <strong>
@@ -35427,8 +35461,99 @@ export function App() {
                                     </span>
                                   </div>
                                 </div>
+                                {accountingAdvancedDiscoveryCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced Discovery 0.1
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedDiscoveryCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Anchor
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedDiscoveryCloseout
+                                              .anchor.anchorStatus,
+                                          )}
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Intake
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedDiscoveryCloseout
+                                              .intake.summary.itemCount
+                                          }{' '}
+                                          items
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Classifier
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedDiscoveryCloseout
+                                              .classifier.summary
+                                              .formalAccountingCount
+                                          }{' '}
+                                          formal
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Contador
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedDiscoveryCloseout
+                                              .workspace.summary
+                                              .accountantQuestionCount
+                                          }{' '}
+                                          preguntas
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Scope
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedDiscoveryCloseout
+                                              .readinessPacket
+                                              .scopeRecommendation.minimumScope,
+                                          )}
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedDiscoveryCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedDiscoveryCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingFoundationCloseoutSummary?.nextStep ??
+                                  {accountingAdvancedDiscoveryCloseout?.nextStep ??
+                                    accountingFoundationCloseoutSummary?.nextStep ??
                                     lastAccountingFinancialStatementFinalReviewPacket?.nextStep ??
                                     accountingLegalBooksReadinessPacket?.nextStep ??
                                     accountingPeriodCloseoutTimeline?.nextStep ??

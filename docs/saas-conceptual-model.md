@@ -1753,6 +1753,36 @@ Guardrail: pilot decision 7.3 chooses the next product direction; it does not
 submit declarations, certify accounting, sign statements or create Accounting
 Advanced automatically.
 
+### Accounting Advanced discovery 0.1
+
+After Tax pilot decision 7.3, Accounting owns a bounded discovery layer before
+any new Accounting Advanced product is opened. Think of it as an airport control
+tower: Tax Compliance lands the signals, Accounting checks runway conditions,
+and the contador decides whether a formal flight can depart.
+
+1. `Accounting Advanced Discovery Anchor`
+   - anchors the decision in Tax pilot decision 7.3 and keeps statutory books,
+     filings and professional certification outside the discovery boundary
+2. `Discovery Intake from Tax Pilot Decision 7.3`
+   - translates discovery dossier sections, accountant decisions and final Tax
+     closeout into accountable intake items
+3. `Formal Accounting Needs Classifier`
+   - separates Tax-only items from bank reconciliation, formal books, journal
+     adjustments, period closeout and audit-trail needs
+4. `Accountant Discovery Workspace`
+   - turns formal needs into questions, expected evidence and priority for the
+     external accountant
+5. `Accounting Advanced Discovery Readiness Packet`
+   - recommends no-op, Tax hardening or a minimal MVP scope such as bank
+     reconciliation, ledger closeout or audit trail
+6. `Accounting Advanced Discovery Closeout + Smoke`
+   - closes the anchor, intake, classifier, accountant workspace and readiness
+     packet as one decision narrative
+
+Guardrail: discovery 0.1 still does not create Accounting Advanced, generate
+official legal books, certify bank feeds, sign financial statements or replace a
+contador. It only decides whether a future MVP deserves a scoped backlog.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -1812,6 +1842,11 @@ product. Its current scope is intentionally operational and review-oriented:
     surfaces expose Accounting Foundation outputs as comparative tax evidence
     without moving declaration ownership, fiscal source-of-truth ownership, or
     statutory accounting certification into Accounting Foundation.
+19. Accounting Advanced discovery 0.1 as the post-Tax-7.3 decision layer that
+    consumes pilot decision signals, classifies formal accounting needs, prepares
+    accountant questions, emits a readiness packet, and closes with a decision
+    to stay in Tax Compliance, return to Tax hardening, or prepare a minimal
+    Accounting Advanced MVP backlog.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

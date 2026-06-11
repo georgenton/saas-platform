@@ -1122,6 +1122,12 @@ const [
   foundationCloseoutPackV2,
   taxComplianceFeedbackBridge,
   taxDeclarationEvidenceBridge,
+  advancedDiscoveryAnchor,
+  advancedDiscoveryIntake,
+  formalNeedsClassifier,
+  accountantDiscoveryWorkspace,
+  advancedDiscoveryReadinessPacket,
+  advancedDiscoveryCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1138,6 +1144,42 @@ const [
     path: accountingPath(`/tax-declaration-evidence-bridge?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-discovery/anchor?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-discovery/intake?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-discovery/formal-needs-classifier?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-discovery/accountant-workspace?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-discovery/readiness-packet?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-discovery/closeout?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -1152,6 +1194,33 @@ assertStatus(
   'accounting tax declaration evidence bridge',
   taxDeclarationEvidenceBridge.evidenceStatus,
 );
+assertStatus(
+  'accounting advanced discovery anchor',
+  advancedDiscoveryAnchor.anchorStatus,
+);
+assertStatus(
+  'accounting advanced discovery intake',
+  advancedDiscoveryIntake.intakeStatus,
+);
+assertStatus(
+  'accounting formal needs classifier',
+  formalNeedsClassifier.classifierStatus,
+);
+assertStatus(
+  'accounting accountant discovery workspace',
+  accountantDiscoveryWorkspace.workspaceStatus,
+);
+assertStatus(
+  'accounting advanced discovery readiness packet',
+  advancedDiscoveryReadinessPacket.packetStatus,
+);
+assertStatus(
+  'accounting advanced discovery closeout',
+  advancedDiscoveryCloseout.closeoutStatus,
+);
+if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
+  throw new Error('advanced-discovery/closeout no devolvio checklist[].');
+}
 printLine(
   'foundation pack v2',
   `${foundationCloseoutPackV2.summary.completedCapabilityCount}/${foundationCloseoutPackV2.summary.capabilityCount} capabilities, ${foundationCloseoutPackV2.closeoutStatus}`,
@@ -1163,6 +1232,14 @@ printLine(
 printLine(
   'tax evidence bridge',
   `${taxDeclarationEvidenceBridge.summary.highConfidenceLineCount}/${taxDeclarationEvidenceBridge.summary.evidenceLineCount} lines, ${taxDeclarationEvidenceBridge.evidenceStatus}`,
+);
+printLine(
+  'advanced discovery',
+  `${advancedDiscoveryCloseout.summary.formalNeedCount} formal needs, ${advancedDiscoveryCloseout.finalDecision}`,
+);
+printLine(
+  'advanced scope',
+  `${advancedDiscoveryReadinessPacket.scopeRecommendation.minimumScope}, ${advancedDiscoveryReadinessPacket.scopeRecommendation.recommendedAction}`,
 );
 
 printSection('Accounting foundation smoke OK');

@@ -34,6 +34,7 @@ export * from './lib/use-cases/get-tenant-accounting-opening-balance-workspace.u
 export * from './lib/use-cases/get-tenant-accounting-opening-balance-control-registry.use-case';
 export * from './lib/use-cases/get-tenant-accounting-operational-command-center.use-case';
 export * from './lib/use-cases/get-tenant-accounting-tax-declaration-evidence-bridge.use-case';
+export * from './lib/use-cases/accounting-advanced-discovery.use-cases';
 export * from './lib/use-cases/get-tenant-accounting-period-lock-readiness.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-reconciliation-readiness.use-case';
 export * from './lib/use-cases/get-tenant-accounting-period-cash-closeout-readiness.use-case';

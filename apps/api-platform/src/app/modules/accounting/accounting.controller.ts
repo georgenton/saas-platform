@@ -14,7 +14,10 @@ import {
   CreateTenantAccountingAdjustingJournalEntryUseCase,
   CreateTenantAccountingJournalEntriesFromApprovalUseCase,
   CreateTenantAccountingOpeningBalanceJournalEntryUseCase,
+  GetTenantAccountingAccountantDiscoveryWorkspaceUseCase,
   GetTenantAccountingAccountantHandoffWorkspaceUseCase,
+  GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
+  GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
   GetTenantAccountingBankAccountRegistryWorkspaceUseCase,
   GetTenantAccountingBankReconciliationWorkspaceUseCase,
@@ -23,6 +26,7 @@ import {
   GetTenantAccountingChartOfAccountsWorkspaceUseCase,
   GetTenantAccountingCloseoutCertificationReadinessUseCase,
   GetTenantAccountingFoundationCloseoutSummaryUseCase,
+  GetTenantAccountingFormalNeedsClassifierUseCase,
   GetTenantAccountingLegalBooksReadinessPacketUseCase,
   GetTenantAccountingPeriodCloseoutTimelineUseCase,
   GetTenantAccountingPeriodNarrativeReportUseCase,
@@ -57,6 +61,8 @@ import {
   RequestTenantAccountingOpeningBalanceApprovalPacketUseCase,
   RequestTenantAccountingAccountantReviewUseCase,
   RequestTenantAccountingAdjustmentRecommendationPacketUseCase,
+  RequestTenantAccountingAdvancedDiscoveryCloseoutUseCase,
+  RequestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -83,6 +89,20 @@ import { RequireTenantProductAccess } from '../tenancy/require-tenant-product-ac
 import { TenantMembershipGuard } from '../tenancy/tenant-membership.guard';
 import { TenantPermissionGuard } from '../tenancy/tenant-permission.guard';
 import { TenantProductAccessGuard } from '../tenancy/tenant-product-access.guard';
+import {
+  AccountingAccountantDiscoveryWorkspaceResponseDto,
+  AccountingAdvancedDiscoveryAnchorResponseDto,
+  AccountingAdvancedDiscoveryCloseoutResponseDto,
+  AccountingAdvancedDiscoveryIntakeResponseDto,
+  AccountingAdvancedDiscoveryReadinessPacketResponseDto,
+  AccountingFormalNeedsClassifierResponseDto,
+  toAccountingAccountantDiscoveryWorkspaceResponseDto,
+  toAccountingAdvancedDiscoveryAnchorResponseDto,
+  toAccountingAdvancedDiscoveryCloseoutResponseDto,
+  toAccountingAdvancedDiscoveryIntakeResponseDto,
+  toAccountingAdvancedDiscoveryReadinessPacketResponseDto,
+  toAccountingFormalNeedsClassifierResponseDto,
+} from './dto/accounting-advanced-discovery.response';
 import {
   AccountingAccountantReviewResponseDto,
   AccountingCloseoutCertificationReadinessResponseDto,
@@ -349,7 +369,169 @@ export class AccountingController {
     private readonly requestTenantAccountingFoundationCloseoutPackV2UseCase: RequestTenantAccountingFoundationCloseoutPackV2UseCase,
     private readonly requestTenantAccountingTaxComplianceFeedbackBridgeUseCase: RequestTenantAccountingTaxComplianceFeedbackBridgeUseCase,
     private readonly getTenantAccountingTaxDeclarationEvidenceBridgeUseCase: GetTenantAccountingTaxDeclarationEvidenceBridgeUseCase,
+    private readonly getTenantAccountingAdvancedDiscoveryAnchorUseCase: GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
+    private readonly getTenantAccountingAdvancedDiscoveryIntakeUseCase: GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
+    private readonly getTenantAccountingFormalNeedsClassifierUseCase: GetTenantAccountingFormalNeedsClassifierUseCase,
+    private readonly getTenantAccountingAccountantDiscoveryWorkspaceUseCase: GetTenantAccountingAccountantDiscoveryWorkspaceUseCase,
+    private readonly requestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase: RequestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase,
+    private readonly requestTenantAccountingAdvancedDiscoveryCloseoutUseCase: RequestTenantAccountingAdvancedDiscoveryCloseoutUseCase,
   ) {}
+
+  @Get(':slug/advanced-discovery/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedDiscoveryAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedDiscoveryAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedDiscoveryAnchorUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingAdvancedDiscoveryAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-discovery/intake')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedDiscoveryIntake(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedDiscoveryIntakeResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedDiscoveryIntakeUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingAdvancedDiscoveryIntakeResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-discovery/formal-needs-classifier')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFormalNeedsClassifier(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingFormalNeedsClassifierResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingFormalNeedsClassifierUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toAccountingFormalNeedsClassifierResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-discovery/accountant-workspace')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAccountantDiscoveryWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAccountantDiscoveryWorkspaceResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAccountantDiscoveryWorkspaceUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAccountantDiscoveryWorkspaceResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-discovery/readiness-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedDiscoveryReadinessPacket(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedDiscoveryReadinessPacketResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedDiscoveryReadinessPacketResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-discovery/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedDiscoveryCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedDiscoveryCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedDiscoveryCloseoutUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedDiscoveryCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
 
   @Get(':slug/intake-workspace')
   @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)

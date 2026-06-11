@@ -40,6 +40,12 @@ import {
   AccountingExternalCloseoutRecordResponse,
   AccountingFinancialStatementFinalReviewPacketResponse,
   AccountingFoundationCloseoutSummaryResponse,
+  AccountingAccountantDiscoveryWorkspaceResponse,
+  AccountingAdvancedDiscoveryAnchorResponse,
+  AccountingAdvancedDiscoveryCloseoutResponse,
+  AccountingAdvancedDiscoveryIntakeResponse,
+  AccountingAdvancedDiscoveryReadinessPacketResponse,
+  AccountingFormalNeedsClassifierResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingPeriodEvidenceVaultResponse,
   AccountingPeriodCloseoutTimelineResponse,
@@ -3076,6 +3082,102 @@ export async function fetchAccountingFoundationCloseoutSummary(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/foundation-closeout-summary?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchAccountingAdvancedDiscoveryAnchor(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingAdvancedDiscoveryAnchorResponse> {
+  return request<AccountingAdvancedDiscoveryAnchorResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/advanced-discovery/anchor?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchAccountingAdvancedDiscoveryIntake(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingAdvancedDiscoveryIntakeResponse> {
+  return request<AccountingAdvancedDiscoveryIntakeResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/advanced-discovery/intake?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchAccountingFormalNeedsClassifier(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingFormalNeedsClassifierResponse> {
+  return request<AccountingFormalNeedsClassifierResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/advanced-discovery/formal-needs-classifier?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchAccountingAccountantDiscoveryWorkspace(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingAccountantDiscoveryWorkspaceResponse> {
+  return request<AccountingAccountantDiscoveryWorkspaceResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/advanced-discovery/accountant-workspace?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchAccountingAdvancedDiscoveryReadinessPacket(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingAdvancedDiscoveryReadinessPacketResponse> {
+  return request<AccountingAdvancedDiscoveryReadinessPacketResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/advanced-discovery/readiness-packet?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchAccountingAdvancedDiscoveryCloseout(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<AccountingAdvancedDiscoveryCloseoutResponse> {
+  return request<AccountingAdvancedDiscoveryCloseoutResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/advanced-discovery/closeout?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

@@ -75,14 +75,20 @@ import {
   TenantAccountingAdvancedExternalResultIntakeAnchorView,
   TenantAccountingAdvancedExternalResultIntakeCloseoutView,
   TenantAccountingAdvancedAcceptedArtifactBinderView,
+  TenantAccountingAdvancedArchiveReadinessWorkspaceView,
+  TenantAccountingAdvancedFormalCloseoutEvidencePacketView,
   TenantAccountingAdvancedFormalRecordAssemblyAnchorView,
   TenantAccountingAdvancedFormalRecordAssemblyCloseoutView,
   TenantAccountingAdvancedFormalRecordAssemblyCommandCenterView,
+  TenantAccountingAdvancedFormalRecordCloseoutAnchorView,
+  TenantAccountingAdvancedFormalRecordCloseoutCloseoutView,
+  TenantAccountingAdvancedFormalRecordCloseoutCommandCenterView,
   TenantAccountingAdvancedFormalRecordIndexWorkspaceView,
   TenantAccountingAdvancedInternalAcceptanceCommandCenterView,
   TenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
+  TenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryView,
   TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
   TenantAccountingAdvancedReturnedArtifactRegistryView,
   TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView,
@@ -271,6 +277,18 @@ export type AccountingAdvancedFormalRecordAssemblyCommandCenterResponseDto =
   Serialized<TenantAccountingAdvancedFormalRecordAssemblyCommandCenterView>;
 export type AccountingAdvancedFormalRecordAssemblyCloseoutResponseDto =
   Serialized<TenantAccountingAdvancedFormalRecordAssemblyCloseoutView>;
+export type AccountingAdvancedFormalRecordCloseoutAnchorResponseDto =
+  Serialized<TenantAccountingAdvancedFormalRecordCloseoutAnchorView>;
+export type AccountingAdvancedArchiveReadinessWorkspaceResponseDto =
+  Serialized<TenantAccountingAdvancedArchiveReadinessWorkspaceView>;
+export type AccountingAdvancedFormalCloseoutEvidencePacketResponseDto =
+  Serialized<TenantAccountingAdvancedFormalCloseoutEvidencePacketView>;
+export type AccountingAdvancedProfessionalCloseoutAttestationBoundaryResponseDto =
+  Serialized<TenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryView>;
+export type AccountingAdvancedFormalRecordCloseoutCommandCenterResponseDto =
+  Serialized<TenantAccountingAdvancedFormalRecordCloseoutCommandCenterView>;
+export type AccountingAdvancedFormalRecordCloseoutCloseoutResponseDto =
+  Serialized<TenantAccountingAdvancedFormalRecordCloseoutCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -809,6 +827,42 @@ export function toAccountingAdvancedFormalRecordAssemblyCommandCenterResponseDto
 export function toAccountingAdvancedFormalRecordAssemblyCloseoutResponseDto(
   view: TenantAccountingAdvancedFormalRecordAssemblyCloseoutView,
 ): AccountingAdvancedFormalRecordAssemblyCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalRecordCloseoutAnchorResponseDto(
+  view: TenantAccountingAdvancedFormalRecordCloseoutAnchorView,
+): AccountingAdvancedFormalRecordCloseoutAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedArchiveReadinessWorkspaceResponseDto(
+  view: TenantAccountingAdvancedArchiveReadinessWorkspaceView,
+): AccountingAdvancedArchiveReadinessWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalCloseoutEvidencePacketResponseDto(
+  view: TenantAccountingAdvancedFormalCloseoutEvidencePacketView,
+): AccountingAdvancedFormalCloseoutEvidencePacketResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedProfessionalCloseoutAttestationBoundaryResponseDto(
+  view: TenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryView,
+): AccountingAdvancedProfessionalCloseoutAttestationBoundaryResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalRecordCloseoutCommandCenterResponseDto(
+  view: TenantAccountingAdvancedFormalRecordCloseoutCommandCenterView,
+): AccountingAdvancedFormalRecordCloseoutCommandCenterResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalRecordCloseoutCloseoutResponseDto(
+  view: TenantAccountingAdvancedFormalRecordCloseoutCloseoutView,
+): AccountingAdvancedFormalRecordCloseoutCloseoutResponseDto {
   return serialize(view);
 }
 

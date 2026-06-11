@@ -299,6 +299,12 @@ export type AccountingAdvancedFormalRecordAssemblyDecision =
   | 'return_to_internal_acceptance'
   | 'return_to_external_tracking'
   | 'do_not_assemble_formal_record';
+export type AccountingAdvancedFormalRecordCloseoutDecision =
+  | 'ready_for_archive_handoff'
+  | 'needs_professional_attestation'
+  | 'needs_archive_readiness_review'
+  | 'return_to_formal_record_assembly'
+  | 'do_not_close_formal_record';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -2946,6 +2952,203 @@ export interface TenantAccountingAdvancedFormalRecordAssemblyCloseoutView {
     binderCount: number;
     indexSectionCount: number;
     consistencyCheckCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalRecordCloseoutAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  assemblyCloseout: TenantAccountingAdvancedFormalRecordAssemblyCloseoutView;
+  closeoutGates: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    gateType:
+      | 'assembly_package'
+      | 'record_index'
+      | 'consistency_review'
+      | 'command_decision'
+      | 'closeout_checklist';
+    closeoutState:
+      | 'ready_for_archive_readiness'
+      | 'needs_review'
+      | 'returned_to_assembly'
+      | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    gateCount: number;
+    readyGateCount: number;
+    needsReviewGateCount: number;
+    blockedGateCount: number;
+    assemblyChecklistCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedArchiveReadinessWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  archiveStatus: AccountingReadinessStatus;
+  closeoutAnchor: TenantAccountingAdvancedFormalRecordCloseoutAnchorView;
+  archiveFolders: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    folderType:
+      | 'formal_record_package'
+      | 'evidence_chain'
+      | 'decision_log'
+      | 'professional_review'
+      | 'exceptions';
+    retentionSignal:
+      | 'retain_for_period_closeout'
+      | 'retain_for_professional_review'
+      | 'retain_as_exception'
+      | 'do_not_archive_yet';
+    evidenceRefs: string[];
+    blockerRefs: string[];
+  }>;
+  summary: {
+    folderCount: number;
+    readyFolderCount: number;
+    needsReviewFolderCount: number;
+    blockedFolderCount: number;
+    retainedEvidenceRefCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalCloseoutEvidencePacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packetStatus: AccountingReadinessStatus;
+  archiveReadiness: TenantAccountingAdvancedArchiveReadinessWorkspaceView;
+  evidencePackets: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    archiveFolderKey: string;
+    packetType:
+      | 'source_artifacts'
+      | 'index_snapshot'
+      | 'consistency_snapshot'
+      | 'operator_decision'
+      | 'professional_boundary';
+    evidenceRefs: string[];
+    missingRefs: string[];
+  }>;
+  summary: {
+    packetCount: number;
+    readyPacketCount: number;
+    needsReviewPacketCount: number;
+    blockedPacketCount: number;
+    missingRefCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  boundaryStatus: AccountingReadinessStatus;
+  evidencePacket: TenantAccountingAdvancedFormalCloseoutEvidencePacketView;
+  attestationItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    owner: AccountingAdvancedProfessionalOwner;
+    attestationType:
+      | 'platform_preparation'
+      | 'operator_review'
+      | 'external_accountant_review'
+      | 'legal_representative_acknowledgement'
+      | 'not_certified_by_platform';
+    evidenceRefs: string[];
+    guardrail: string;
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    professionalOwnedItemCount: number;
+    platformBoundaryItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalRecordCloseoutCommandCenterView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  commandStatus: AccountingReadinessStatus;
+  attestationBoundary: TenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryView;
+  commandLanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    metric: string;
+    count: number;
+  }>;
+  suggestedDecision: AccountingAdvancedFormalRecordCloseoutDecision;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+    archiveReadyCount: number;
+    professionalBoundaryCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalRecordCloseoutCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  closeoutAnchor: TenantAccountingAdvancedFormalRecordCloseoutAnchorView;
+  archiveReadiness: TenantAccountingAdvancedArchiveReadinessWorkspaceView;
+  evidencePacket: TenantAccountingAdvancedFormalCloseoutEvidencePacketView;
+  attestationBoundary: TenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryView;
+  commandCenter: TenantAccountingAdvancedFormalRecordCloseoutCommandCenterView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: AccountingAdvancedFormalRecordCloseoutDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    archiveFolderCount: number;
+    evidencePacketCount: number;
+    attestationItemCount: number;
   };
   blockers: string[];
   nextStep: string;

@@ -81,6 +81,11 @@ import {
   GetTenantAccountingAdvancedFormalRecordIndexWorkspaceUseCase,
   GetTenantAccountingAdvancedRecordConsistencyReviewWorkspaceUseCase,
   GetTenantAccountingAdvancedFormalRecordAssemblyCommandCenterUseCase,
+  GetTenantAccountingAdvancedFormalRecordCloseoutAnchorUseCase,
+  GetTenantAccountingAdvancedArchiveReadinessWorkspaceUseCase,
+  GetTenantAccountingAdvancedFormalCloseoutEvidencePacketUseCase,
+  GetTenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryUseCase,
+  GetTenantAccountingAdvancedFormalRecordCloseoutCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -153,6 +158,7 @@ import {
   RequestTenantAccountingAdvancedExternalExecutionTrackingCloseoutUseCase,
   RequestTenantAccountingAdvancedExternalResultIntakeCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase,
+  RequestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -1227,6 +1233,73 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase(
           getTenantAccountingAdvancedFormalRecordAssemblyCommandCenterUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedFormalRecordCloseoutAnchorUseCase,
+      inject: [
+        RequestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedFormalRecordCloseoutAnchorUseCase(
+          requestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedArchiveReadinessWorkspaceUseCase,
+      inject: [GetTenantAccountingAdvancedFormalRecordCloseoutAnchorUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedFormalRecordCloseoutAnchorUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedArchiveReadinessWorkspaceUseCase(
+          getTenantAccountingAdvancedFormalRecordCloseoutAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedFormalCloseoutEvidencePacketUseCase,
+      inject: [GetTenantAccountingAdvancedArchiveReadinessWorkspaceUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedArchiveReadinessWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedFormalCloseoutEvidencePacketUseCase(
+          getTenantAccountingAdvancedArchiveReadinessWorkspaceUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryUseCase,
+      inject: [GetTenantAccountingAdvancedFormalCloseoutEvidencePacketUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedFormalCloseoutEvidencePacketUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryUseCase(
+          getTenantAccountingAdvancedFormalCloseoutEvidencePacketUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedFormalRecordCloseoutCommandCenterUseCase,
+      inject: [
+        GetTenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedFormalRecordCloseoutCommandCenterUseCase(
+          getTenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase,
+      inject: [
+        GetTenantAccountingAdvancedFormalRecordCloseoutCommandCenterUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedFormalRecordCloseoutCommandCenterUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase(
+          getTenantAccountingAdvancedFormalRecordCloseoutCommandCenterUseCase,
         ),
     },
     {

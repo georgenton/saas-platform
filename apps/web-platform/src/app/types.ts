@@ -4904,6 +4904,83 @@ export interface AccountingAdvancedFormalRecordAssemblyCloseoutResponse {
   guardrails: string[];
 }
 
+export interface AccountingAdvancedFormalRecordCloseoutCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  closeoutAnchor: {
+    anchorStatus: string;
+    summary: {
+      gateCount: number;
+      readyGateCount: number;
+      needsReviewGateCount: number;
+      blockedGateCount: number;
+      assemblyChecklistCount: number;
+    };
+  };
+  archiveReadiness: {
+    archiveStatus: string;
+    summary: {
+      folderCount: number;
+      readyFolderCount: number;
+      needsReviewFolderCount: number;
+      blockedFolderCount: number;
+      retainedEvidenceRefCount: number;
+    };
+  };
+  evidencePacket: {
+    packetStatus: string;
+    summary: {
+      packetCount: number;
+      readyPacketCount: number;
+      needsReviewPacketCount: number;
+      blockedPacketCount: number;
+      missingRefCount: number;
+    };
+  };
+  attestationBoundary: {
+    boundaryStatus: string;
+    summary: {
+      itemCount: number;
+      readyItemCount: number;
+      professionalOwnedItemCount: number;
+      platformBoundaryItemCount: number;
+    };
+  };
+  commandCenter: {
+    commandStatus: string;
+    suggestedDecision: string;
+    summary: {
+      laneCount: number;
+      readyLaneCount: number;
+      needsReviewLaneCount: number;
+      blockedLaneCount: number;
+      archiveReadyCount: number;
+      professionalBoundaryCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    archiveFolderCount: number;
+    evidencePacketCount: number;
+    attestationItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

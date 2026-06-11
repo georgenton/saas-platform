@@ -1,5 +1,14 @@
 # api-platform
 
+## 0.107.44
+
+### Patch Changes
+
+- 15c88e3: Add Accounting Advanced External Execution Tracking 1.3 with tracking anchor,
+  status ledger, returned evidence validation, observation resolution queue,
+  command center, closeout API, dashboard wiring, conceptual model updates, and
+  smoke coverage.
+
 ## 0.107.43
 
 ### Patch Changes

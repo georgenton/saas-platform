@@ -305,6 +305,12 @@ export type AccountingAdvancedFormalRecordCloseoutDecision =
   | 'needs_archive_readiness_review'
   | 'return_to_formal_record_assembly'
   | 'do_not_close_formal_record';
+export type AccountingAdvancedGraduationArchiveHandoffDecision =
+  | 'graduate_to_full_accounting_candidate'
+  | 'ready_for_archive_handoff_only'
+  | 'continue_accounting_advanced_hardening'
+  | 'return_to_formal_record_closeout'
+  | 'do_not_graduate_or_handoff';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -3149,6 +3155,211 @@ export interface TenantAccountingAdvancedFormalRecordCloseoutCloseoutView {
     archiveFolderCount: number;
     evidencePacketCount: number;
     attestationItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedGraduationArchiveHandoffAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  formalRecordCloseout: TenantAccountingAdvancedFormalRecordCloseoutCloseoutView;
+  handoffGates: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    gateType:
+      | 'formal_closeout'
+      | 'archive_readiness'
+      | 'evidence_packet'
+      | 'professional_boundary'
+      | 'graduation_signal';
+    handoffState:
+      | 'ready_for_archive_handoff'
+      | 'ready_for_graduation_assessment'
+      | 'needs_hardening'
+      | 'returned_to_closeout'
+      | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    gateCount: number;
+    readyGateCount: number;
+    needsReviewGateCount: number;
+    blockedGateCount: number;
+    formalCloseoutChecklistCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedArchiveHandoffPackageView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packageStatus: AccountingReadinessStatus;
+  handoffAnchor: TenantAccountingAdvancedGraduationArchiveHandoffAnchorView;
+  handoffItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    itemType:
+      | 'archive_manifest'
+      | 'evidence_bundle'
+      | 'professional_boundary'
+      | 'operator_decision'
+      | 'exceptions_register';
+    custodyMode:
+      | 'internal_ready'
+      | 'external_handoff_ready'
+      | 'needs_professional_review'
+      | 'hold_for_hardening';
+    evidenceRefs: string[];
+    blockerRefs: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    needsReviewItemCount: number;
+    blockedItemCount: number;
+    externalReadyItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedGraduationSignalMatrixView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  matrixStatus: AccountingReadinessStatus;
+  archiveHandoffPackage: TenantAccountingAdvancedArchiveHandoffPackageView;
+  graduationSignals: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    signalType:
+      | 'ledger_need'
+      | 'bank_reconciliation_need'
+      | 'formal_books_need'
+      | 'financial_statement_need'
+      | 'professional_workload_need'
+      | 'tenant_operating_need';
+    recommendation:
+      | 'candidate_for_full_accounting'
+      | 'keep_in_accounting_advanced'
+      | 'handoff_archive_only'
+      | 'needs_more_evidence';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    signalCount: number;
+    readySignalCount: number;
+    candidateSignalCount: number;
+    hardeningSignalCount: number;
+    archiveOnlySignalCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedProductScopeDecisionWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  decisionStatus: AccountingReadinessStatus;
+  graduationSignalMatrix: TenantAccountingAdvancedGraduationSignalMatrixView;
+  scopeDecisions: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    scopeArea:
+      | 'full_accounting'
+      | 'archive_handoff'
+      | 'advanced_hardening'
+      | 'professional_services_boundary';
+    decision:
+      | 'open_full_accounting_candidate'
+      | 'handoff_archive_only'
+      | 'continue_advanced_hardening'
+      | 'keep_professional_boundary';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    decisionCount: number;
+    readyDecisionCount: number;
+    fullAccountingCandidateCount: number;
+    archiveOnlyDecisionCount: number;
+    hardeningDecisionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedGraduationArchiveHandoffCommandCenterView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  commandStatus: AccountingReadinessStatus;
+  productScopeDecision: TenantAccountingAdvancedProductScopeDecisionWorkspaceView;
+  commandLanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    metric: string;
+    count: number;
+  }>;
+  suggestedDecision: AccountingAdvancedGraduationArchiveHandoffDecision;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+    fullAccountingCandidateCount: number;
+    archiveHandoffReadyCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedGraduationArchiveHandoffCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  handoffAnchor: TenantAccountingAdvancedGraduationArchiveHandoffAnchorView;
+  archiveHandoffPackage: TenantAccountingAdvancedArchiveHandoffPackageView;
+  graduationSignalMatrix: TenantAccountingAdvancedGraduationSignalMatrixView;
+  productScopeDecision: TenantAccountingAdvancedProductScopeDecisionWorkspaceView;
+  commandCenter: TenantAccountingAdvancedGraduationArchiveHandoffCommandCenterView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: AccountingAdvancedGraduationArchiveHandoffDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    handoffItemCount: number;
+    graduationSignalCount: number;
+    scopeDecisionCount: number;
   };
   blockers: string[];
   nextStep: string;

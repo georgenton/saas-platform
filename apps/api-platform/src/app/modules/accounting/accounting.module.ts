@@ -86,6 +86,11 @@ import {
   GetTenantAccountingAdvancedFormalCloseoutEvidencePacketUseCase,
   GetTenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryUseCase,
   GetTenantAccountingAdvancedFormalRecordCloseoutCommandCenterUseCase,
+  GetTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase,
+  GetTenantAccountingAdvancedArchiveHandoffPackageUseCase,
+  GetTenantAccountingAdvancedGraduationSignalMatrixUseCase,
+  GetTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase,
+  GetTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -159,6 +164,7 @@ import {
   RequestTenantAccountingAdvancedExternalResultIntakeCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase,
+  RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -1300,6 +1306,77 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase(
           getTenantAccountingAdvancedFormalRecordCloseoutCommandCenterUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase,
+      inject: [
+        RequestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase(
+          requestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedArchiveHandoffPackageUseCase,
+      inject: [
+        GetTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedArchiveHandoffPackageUseCase(
+          getTenantAccountingAdvancedGraduationArchiveHandoffAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedGraduationSignalMatrixUseCase,
+      inject: [GetTenantAccountingAdvancedArchiveHandoffPackageUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedArchiveHandoffPackageUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedGraduationSignalMatrixUseCase(
+          getTenantAccountingAdvancedArchiveHandoffPackageUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase,
+      inject: [GetTenantAccountingAdvancedGraduationSignalMatrixUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedGraduationSignalMatrixUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase(
+          getTenantAccountingAdvancedGraduationSignalMatrixUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase,
+      inject: [
+        GetTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase(
+          getTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase,
+        ),
+    },
+    {
+      provide:
+        RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
+      inject: [
+        GetTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase(
+          getTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase,
         ),
     },
     {

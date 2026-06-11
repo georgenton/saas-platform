@@ -1158,6 +1158,12 @@ const [
   advancedFormalReadinessMultiPeriodStatements,
   advancedFormalReadinessFormalBooksPacket,
   advancedFormalReadinessCertifiedBankCloseout,
+  advancedFormalDesignScopeContract,
+  advancedFormalDesignResponsibilityMatrix,
+  advancedFormalDesignArtifactRegistry,
+  advancedFormalDesignReviewWorkflow,
+  advancedFormalDesignGuardrailPack,
+  advancedFormalDesignCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1404,6 +1410,46 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-design/scope-contract?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-design/responsibility-matrix?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-design/artifact-registry?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-design/review-workflow?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-design/guardrail-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-formal-design/closeout?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -1562,6 +1608,30 @@ assertStatus(
   'accounting advanced formal readiness certified bank closeout',
   advancedFormalReadinessCertifiedBankCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced formal design scope contract',
+  advancedFormalDesignScopeContract.contractStatus,
+);
+assertStatus(
+  'accounting advanced formal design responsibility matrix',
+  advancedFormalDesignResponsibilityMatrix.matrixStatus,
+);
+assertStatus(
+  'accounting advanced formal design artifact registry',
+  advancedFormalDesignArtifactRegistry.registryStatus,
+);
+assertStatus(
+  'accounting advanced formal design review workflow',
+  advancedFormalDesignReviewWorkflow.workflowStatus,
+);
+assertStatus(
+  'accounting advanced formal design guardrail pack',
+  advancedFormalDesignGuardrailPack.packStatus,
+);
+assertStatus(
+  'accounting advanced formal design closeout',
+  advancedFormalDesignCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -1576,6 +1646,9 @@ if (!Array.isArray(advancedPilotCloseout.closeoutChecklist)) {
 }
 if (!Array.isArray(advancedGraduationCloseout.closeoutChecklist)) {
   throw new Error('advanced-graduation/closeout no devolvio checklist[].');
+}
+if (!Array.isArray(advancedFormalDesignCloseout.closeoutChecklist)) {
+  throw new Error('advanced-formal-design/closeout no devolvio checklist[].');
 }
 printLine(
   'foundation pack v2',
@@ -1624,6 +1697,10 @@ printLine(
 printLine(
   'advanced formal readiness',
   `${advancedFormalReadinessCertifiedBankCloseout.finalDecision}, ${advancedFormalReadinessCertifiedBankCloseout.closeoutStatus}`,
+);
+printLine(
+  'advanced formal design',
+  `${advancedFormalDesignCloseout.finalDecision}, ${advancedFormalDesignCloseout.closeoutStatus}`,
 );
 
 printSection('Accounting foundation smoke OK');

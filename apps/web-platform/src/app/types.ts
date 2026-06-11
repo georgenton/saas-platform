@@ -4208,6 +4208,78 @@ export interface AccountingAdvancedFormalReadinessCloseoutResponse {
   guardrails: string[];
 }
 
+export interface AccountingAdvancedFormalProductDesignCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  scopeContract: {
+    contractStatus: string;
+    summary: {
+      moduleCount: number;
+      includedModuleCount: number;
+      needsReviewModuleCount: number;
+      blockedModuleCount: number;
+    };
+  };
+  responsibilityMatrix: {
+    matrixStatus: string;
+    summary: {
+      assignmentCount: number;
+      externalOwnerCount: number;
+      platformOwnerCount: number;
+      needsReviewAssignmentCount: number;
+      blockedAssignmentCount: number;
+    };
+  };
+  artifactRegistry: {
+    registryStatus: string;
+    summary: {
+      artifactCount: number;
+      readyArtifactCount: number;
+      needsReviewArtifactCount: number;
+      blockedArtifactCount: number;
+    };
+  };
+  workflowDesign: {
+    workflowStatus: string;
+    summary: {
+      stepCount: number;
+      readyStepCount: number;
+      needsReviewStepCount: number;
+      blockedStepCount: number;
+    };
+  };
+  guardrailPack: {
+    packStatus: string;
+    summary: {
+      guardrailCount: number;
+      readyGuardrailCount: number;
+      needsReviewGuardrailCount: number;
+      blockedGuardrailCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    includedModuleCount: number;
+    artifactCount: number;
+    externalOwnerCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

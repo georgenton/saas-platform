@@ -35,6 +35,10 @@ import {
   GetTenantAccountingAdvancedExternalAccountantPortalShellUseCase,
   GetTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase,
   GetTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase,
+  GetTenantAccountingAdvancedFormalArtifactDraftRegistryUseCase,
+  GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
+  GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
+  GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
   GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
   GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
@@ -93,6 +97,8 @@ import {
   RequestTenantAccountingAdvancedGraduationCloseoutUseCase,
   RequestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase,
+  RequestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase,
+  RequestTenantAccountingAdvancedFormalProductRiskGuardrailPackUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -153,6 +159,12 @@ import {
   AccountingAdvancedFormalBooksDraftSigningBoundaryPacketResponseDto,
   AccountingAdvancedMultiPeriodFinancialStatementWorkspaceResponseDto,
   AccountingAdvancedPoliciesClosingTemplateRegistryResponseDto,
+  AccountingAdvancedFormalArtifactDraftRegistryResponseDto,
+  AccountingAdvancedFormalProductDesignCloseoutResponseDto,
+  AccountingAdvancedFormalProductRiskGuardrailPackResponseDto,
+  AccountingAdvancedFormalProductScopeContractResponseDto,
+  AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
+  AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
   AccountingFormalNeedsClassifierResponseDto,
   AccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto,
@@ -189,6 +201,12 @@ import {
   toAccountingAdvancedFormalBooksDraftSigningBoundaryPacketResponseDto,
   toAccountingAdvancedMultiPeriodFinancialStatementWorkspaceResponseDto,
   toAccountingAdvancedPoliciesClosingTemplateRegistryResponseDto,
+  toAccountingAdvancedFormalArtifactDraftRegistryResponseDto,
+  toAccountingAdvancedFormalProductDesignCloseoutResponseDto,
+  toAccountingAdvancedFormalProductRiskGuardrailPackResponseDto,
+  toAccountingAdvancedFormalProductScopeContractResponseDto,
+  toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
+  toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
   toAccountingFormalNeedsClassifierResponseDto,
   toAccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto,
@@ -495,6 +513,12 @@ export class AccountingController {
     private readonly getTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase: GetTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase,
     private readonly requestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase: RequestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase,
     private readonly requestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase: RequestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase,
+    private readonly getTenantAccountingAdvancedFormalProductScopeContractUseCase: GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
+    private readonly getTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase: GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
+    private readonly getTenantAccountingAdvancedFormalArtifactDraftRegistryUseCase: GetTenantAccountingAdvancedFormalArtifactDraftRegistryUseCase,
+    private readonly getTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase: GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
+    private readonly requestTenantAccountingAdvancedFormalProductRiskGuardrailPackUseCase: RequestTenantAccountingAdvancedFormalProductRiskGuardrailPackUseCase,
+    private readonly requestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase: RequestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -1412,6 +1436,148 @@ export class AccountingController {
       return toAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutResponseDto(
         view,
       );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-design/scope-contract')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalDesignScopeContract(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalProductScopeContractResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedFormalProductScopeContractUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalProductScopeContractResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-design/responsibility-matrix')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalDesignResponsibilityMatrix(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-design/artifact-registry')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalDesignArtifactRegistry(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalArtifactDraftRegistryResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedFormalArtifactDraftRegistryUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalArtifactDraftRegistryResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-design/review-workflow')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalDesignReviewWorkflow(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-design/guardrail-pack')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalDesignGuardrailPack(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalProductRiskGuardrailPackResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedFormalProductRiskGuardrailPackUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalProductRiskGuardrailPackResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-design/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalDesignCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalProductDesignCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalProductDesignCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

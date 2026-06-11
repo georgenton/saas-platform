@@ -251,6 +251,23 @@ export type AccountingAdvancedFormalReadinessDecision =
   | 'needs_professional_boundary_review'
   | 'return_to_advanced_hardening'
   | 'do_not_open_formal_product';
+export type AccountingAdvancedFormalProductDesignDecision =
+  | 'ready_for_formal_artifact_drafting'
+  | 'needs_scope_review'
+  | 'return_to_formal_readiness_hardening'
+  | 'do_not_design_formal_product';
+export type AccountingAdvancedFormalModuleKey =
+  | 'formal_books'
+  | 'certified_bank_reconciliation'
+  | 'advanced_adjustments'
+  | 'multi_period_statements'
+  | 'professional_portal';
+export type AccountingAdvancedProfessionalOwner =
+  | 'platform'
+  | 'operator'
+  | 'external_accountant'
+  | 'auditor'
+  | 'legal_representative';
 
 export interface TenantAccountingAdvancedDiscoveryAnchorView {
   tenantSlug: string;
@@ -1233,6 +1250,181 @@ export interface TenantAccountingAdvancedCertifiedBankReconciliationReadinessClo
     needsExternalProofCount: number;
     blockedCheckCount: number;
     formalBookBoundaryCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalProductScopeContractView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  contractStatus: AccountingReadinessStatus;
+  formalReadinessCloseout: TenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutView;
+  modules: Array<{
+    key: AccountingAdvancedFormalModuleKey;
+    label: string;
+    status: AccountingReadinessStatus;
+    included: boolean;
+    boundary: string;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    moduleCount: number;
+    includedModuleCount: number;
+    needsReviewModuleCount: number;
+    blockedModuleCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  matrixStatus: AccountingReadinessStatus;
+  scopeContract: TenantAccountingAdvancedFormalProductScopeContractView;
+  assignments: Array<{
+    key: string;
+    label: string;
+    moduleKey: AccountingAdvancedFormalModuleKey;
+    status: AccountingReadinessStatus;
+    owner: AccountingAdvancedProfessionalOwner;
+    responsibility: string;
+    guardrail: string;
+  }>;
+  summary: {
+    assignmentCount: number;
+    externalOwnerCount: number;
+    platformOwnerCount: number;
+    needsReviewAssignmentCount: number;
+    blockedAssignmentCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalArtifactDraftRegistryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  registryStatus: AccountingReadinessStatus;
+  responsibilityMatrix: TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView;
+  artifacts: Array<{
+    key: string;
+    label: string;
+    moduleKey: AccountingAdvancedFormalModuleKey;
+    status: AccountingReadinessStatus;
+    artifactType:
+      | 'journal_book'
+      | 'ledger_book'
+      | 'financial_statement'
+      | 'certified_reconciliation'
+      | 'adjustment_pack';
+    draftReadiness: string;
+    requiredOwner: AccountingAdvancedProfessionalOwner;
+  }>;
+  summary: {
+    artifactCount: number;
+    readyArtifactCount: number;
+    needsReviewArtifactCount: number;
+    blockedArtifactCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedProfessionalReviewWorkflowDesignView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workflowStatus: AccountingReadinessStatus;
+  artifactRegistry: TenantAccountingAdvancedFormalArtifactDraftRegistryView;
+  workflowSteps: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    actor: AccountingAdvancedProfessionalOwner;
+    transition:
+      | 'submit'
+      | 'review'
+      | 'request_changes'
+      | 'approve_draft'
+      | 'reject'
+      | 'external_signoff_required';
+    guardrail: string;
+  }>;
+  summary: {
+    stepCount: number;
+    readyStepCount: number;
+    needsReviewStepCount: number;
+    blockedStepCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalProductRiskGuardrailPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  workflowDesign: TenantAccountingAdvancedProfessionalReviewWorkflowDesignView;
+  guardrailRows: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    appliesTo: AccountingAdvancedFormalModuleKey;
+    risk: string;
+    requiredControl: string;
+  }>;
+  summary: {
+    guardrailCount: number;
+    readyGuardrailCount: number;
+    needsReviewGuardrailCount: number;
+    blockedGuardrailCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalProductDesignCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  scopeContract: TenantAccountingAdvancedFormalProductScopeContractView;
+  responsibilityMatrix: TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView;
+  artifactRegistry: TenantAccountingAdvancedFormalArtifactDraftRegistryView;
+  workflowDesign: TenantAccountingAdvancedProfessionalReviewWorkflowDesignView;
+  guardrailPack: TenantAccountingAdvancedFormalProductRiskGuardrailPackView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: AccountingAdvancedFormalProductDesignDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    includedModuleCount: number;
+    artifactCount: number;
+    externalOwnerCount: number;
   };
   blockers: string[];
   nextStep: string;

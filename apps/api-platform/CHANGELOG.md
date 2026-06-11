@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.31
+
+### Patch Changes
+
+- 7d50dc0: Add Tax Compliance EC pilot decision 7.3 with period-over-period memory, Accounting Advanced discovery dossier, accountant decision record, cohort expansion readiness, AI decision explainer, closeout, web dashboard wiring, model refresh, and smoke coverage.
+
 ## 0.107.30
 
 ### Patch Changes

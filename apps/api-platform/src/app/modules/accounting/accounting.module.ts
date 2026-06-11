@@ -51,6 +51,11 @@ import {
   GetTenantAccountingAdvancedProfessionalReviewExecutionAnchorUseCase,
   GetTenantAccountingAdvancedReviewChangeRequestPackUseCase,
   GetTenantAccountingAdvancedReviewExecutionCommandCenterUseCase,
+  GetTenantAccountingAdvancedApprovalAuthorityMatrixUseCase,
+  GetTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase,
+  GetTenantAccountingAdvancedFormalApprovalCommandCenterUseCase,
+  GetTenantAccountingAdvancedFormalApprovalEvidencePackUseCase,
+  GetTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -117,6 +122,7 @@ import {
   RequestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase,
   RequestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase,
   RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase,
+  RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -772,6 +778,66 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase(
           getTenantAccountingAdvancedReviewExecutionCommandCenterUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase,
+      inject: [
+        RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase(
+          requestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedApprovalAuthorityMatrixUseCase,
+      inject: [GetTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedApprovalAuthorityMatrixUseCase(
+          getTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedFormalApprovalEvidencePackUseCase,
+      inject: [GetTenantAccountingAdvancedApprovalAuthorityMatrixUseCase],
+      useFactory: (getTenantAccountingAdvancedApprovalAuthorityMatrixUseCase) =>
+        new GetTenantAccountingAdvancedFormalApprovalEvidencePackUseCase(
+          getTenantAccountingAdvancedApprovalAuthorityMatrixUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase,
+      inject: [GetTenantAccountingAdvancedFormalApprovalEvidencePackUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedFormalApprovalEvidencePackUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase(
+          getTenantAccountingAdvancedFormalApprovalEvidencePackUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedFormalApprovalCommandCenterUseCase,
+      inject: [GetTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedFormalApprovalCommandCenterUseCase(
+          getTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase,
+      inject: [GetTenantAccountingAdvancedFormalApprovalCommandCenterUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedFormalApprovalCommandCenterUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase(
+          getTenantAccountingAdvancedFormalApprovalCommandCenterUseCase,
         ),
     },
     {

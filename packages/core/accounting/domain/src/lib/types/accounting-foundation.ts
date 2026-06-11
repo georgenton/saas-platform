@@ -266,6 +266,11 @@ export type AccountingAdvancedProfessionalReviewExecutionDecision =
   | 'needs_more_changes'
   | 'return_to_artifact_drafting'
   | 'do_not_advance_formal_artifacts';
+export type AccountingAdvancedFormalApprovalWorkflowDecision =
+  | 'ready_for_signature_and_certification'
+  | 'needs_external_approval'
+  | 'return_to_professional_review'
+  | 'do_not_approve_formal_artifacts';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -1790,6 +1795,194 @@ export interface TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView
     changeRequestCount: number;
     recommendationCount: number;
     readyLaneCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalApprovalWorkflowAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  professionalReviewCloseout: TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView;
+  approvalGates: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+    requiredOwner: AccountingAdvancedProfessionalOwner;
+    gate: string;
+  }>;
+  summary: {
+    gateCount: number;
+    readyGateCount: number;
+    needsReviewGateCount: number;
+    blockedGateCount: number;
+    recommendationCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedApprovalAuthorityMatrixView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  matrixStatus: AccountingReadinessStatus;
+  approvalAnchor: TenantAccountingAdvancedFormalApprovalWorkflowAnchorView;
+  authorities: Array<{
+    key: string;
+    label: string;
+    artifactType:
+      | 'adjustment_pack'
+      | 'journal_book'
+      | 'ledger_book'
+      | 'financial_statement'
+      | 'certified_reconciliation';
+    status: AccountingReadinessStatus;
+    requiredOwner: AccountingAdvancedProfessionalOwner;
+    authorityBoundary: string;
+  }>;
+  summary: {
+    authorityCount: number;
+    accountantAuthorityCount: number;
+    auditorAuthorityCount: number;
+    legalRepresentativeAuthorityCount: number;
+    needsReviewAuthorityCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalApprovalEvidencePackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  authorityMatrix: TenantAccountingAdvancedApprovalAuthorityMatrixView;
+  evidenceItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    artifactType:
+      | 'adjustment_pack'
+      | 'journal_book'
+      | 'ledger_book'
+      | 'financial_statement'
+      | 'certified_reconciliation';
+    evidenceRefs: string[];
+    approvalQuestion: string;
+  }>;
+  summary: {
+    evidenceItemCount: number;
+    readyEvidenceItemCount: number;
+    needsReviewEvidenceItemCount: number;
+    blockedEvidenceItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedApprovalDecisionWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workspaceStatus: AccountingReadinessStatus;
+  evidencePack: TenantAccountingAdvancedFormalApprovalEvidencePackView;
+  decisions: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    artifactType:
+      | 'adjustment_pack'
+      | 'journal_book'
+      | 'ledger_book'
+      | 'financial_statement'
+      | 'certified_reconciliation';
+    decision:
+      | 'recommended'
+      | 'approved_pending_signature'
+      | 'requires_changes'
+      | 'rejected'
+      | 'requires_external_signoff';
+    decidedBy: AccountingAdvancedProfessionalOwner;
+    rationale: string;
+  }>;
+  summary: {
+    decisionCount: number;
+    approvedPendingSignatureCount: number;
+    requiresChangesCount: number;
+    rejectedCount: number;
+    requiresExternalSignoffCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalApprovalCommandCenterView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  commandStatus: AccountingReadinessStatus;
+  decisionWorkspace: TenantAccountingAdvancedApprovalDecisionWorkspaceView;
+  lanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    owner: AccountingAdvancedProfessionalOwner;
+    primaryMetric: string;
+    nextAction: string;
+  }>;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+    approvedPendingSignatureCount: number;
+    externalSignoffCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalApprovalWorkflowCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  approvalAnchor: TenantAccountingAdvancedFormalApprovalWorkflowAnchorView;
+  authorityMatrix: TenantAccountingAdvancedApprovalAuthorityMatrixView;
+  evidencePack: TenantAccountingAdvancedFormalApprovalEvidencePackView;
+  decisionWorkspace: TenantAccountingAdvancedApprovalDecisionWorkspaceView;
+  commandCenter: TenantAccountingAdvancedFormalApprovalCommandCenterView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: AccountingAdvancedFormalApprovalWorkflowDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    authorityCount: number;
+    evidenceItemCount: number;
+    decisionCount: number;
+    approvedPendingSignatureCount: number;
   };
   blockers: string[];
   nextStep: string;

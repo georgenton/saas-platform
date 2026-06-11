@@ -45,6 +45,11 @@ import {
   GetTenantAccountingAdvancedProfessionalReviewExecutionAnchorUseCase,
   GetTenantAccountingAdvancedReviewChangeRequestPackUseCase,
   GetTenantAccountingAdvancedReviewExecutionCommandCenterUseCase,
+  GetTenantAccountingAdvancedApprovalAuthorityMatrixUseCase,
+  GetTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase,
+  GetTenantAccountingAdvancedFormalApprovalCommandCenterUseCase,
+  GetTenantAccountingAdvancedFormalApprovalEvidencePackUseCase,
+  GetTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -111,6 +116,7 @@ import {
   RequestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase,
   RequestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase,
   RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase,
+  RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -187,6 +193,12 @@ import {
   AccountingAdvancedProfessionalReviewExecutionCloseoutResponseDto,
   AccountingAdvancedReviewChangeRequestPackResponseDto,
   AccountingAdvancedReviewExecutionCommandCenterResponseDto,
+  AccountingAdvancedApprovalAuthorityMatrixResponseDto,
+  AccountingAdvancedApprovalDecisionWorkspaceResponseDto,
+  AccountingAdvancedFormalApprovalCommandCenterResponseDto,
+  AccountingAdvancedFormalApprovalEvidencePackResponseDto,
+  AccountingAdvancedFormalApprovalWorkflowAnchorResponseDto,
+  AccountingAdvancedFormalApprovalWorkflowCloseoutResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -241,6 +253,12 @@ import {
   toAccountingAdvancedProfessionalReviewExecutionCloseoutResponseDto,
   toAccountingAdvancedReviewChangeRequestPackResponseDto,
   toAccountingAdvancedReviewExecutionCommandCenterResponseDto,
+  toAccountingAdvancedApprovalAuthorityMatrixResponseDto,
+  toAccountingAdvancedApprovalDecisionWorkspaceResponseDto,
+  toAccountingAdvancedFormalApprovalCommandCenterResponseDto,
+  toAccountingAdvancedFormalApprovalEvidencePackResponseDto,
+  toAccountingAdvancedFormalApprovalWorkflowAnchorResponseDto,
+  toAccountingAdvancedFormalApprovalWorkflowCloseoutResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -567,6 +585,12 @@ export class AccountingController {
     private readonly requestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase: RequestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase,
     private readonly getTenantAccountingAdvancedReviewExecutionCommandCenterUseCase: GetTenantAccountingAdvancedReviewExecutionCommandCenterUseCase,
     private readonly requestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase: RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase,
+    private readonly getTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase: GetTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase,
+    private readonly getTenantAccountingAdvancedApprovalAuthorityMatrixUseCase: GetTenantAccountingAdvancedApprovalAuthorityMatrixUseCase,
+    private readonly getTenantAccountingAdvancedFormalApprovalEvidencePackUseCase: GetTenantAccountingAdvancedFormalApprovalEvidencePackUseCase,
+    private readonly getTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase: GetTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase,
+    private readonly getTenantAccountingAdvancedFormalApprovalCommandCenterUseCase: GetTenantAccountingAdvancedFormalApprovalCommandCenterUseCase,
+    private readonly requestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase: RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -1912,6 +1936,144 @@ export class AccountingController {
       return toAccountingAdvancedProfessionalReviewExecutionCloseoutResponseDto(
         view,
       );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-approval/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalApprovalAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalApprovalWorkflowAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalApprovalWorkflowAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-approval/authority-matrix')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalApprovalAuthorityMatrix(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedApprovalAuthorityMatrixResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedApprovalAuthorityMatrixUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedApprovalAuthorityMatrixResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-approval/evidence-pack')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalApprovalEvidencePack(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalApprovalEvidencePackResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedFormalApprovalEvidencePackUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalApprovalEvidencePackResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-approval/decision-workspace')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalApprovalDecisionWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedApprovalDecisionWorkspaceResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedApprovalDecisionWorkspaceResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-approval/command-center')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalApprovalCommandCenter(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalApprovalCommandCenterResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedFormalApprovalCommandCenterUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalApprovalCommandCenterResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-approval/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalApprovalCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalApprovalWorkflowCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalApprovalWorkflowCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

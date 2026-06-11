@@ -138,6 +138,7 @@ import {
   fetchAccountingAdvancedFormalProductDesignCloseout,
   fetchAccountingAdvancedFormalArtifactDraftingCloseout,
   fetchAccountingAdvancedProfessionalReviewExecutionCloseout,
+  fetchAccountingAdvancedFormalApprovalWorkflowCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -498,6 +499,7 @@ import {
   AccountingAdvancedFormalProductDesignCloseoutResponse,
   AccountingAdvancedFormalArtifactDraftingCloseoutResponse,
   AccountingAdvancedProfessionalReviewExecutionCloseoutResponse,
+  AccountingAdvancedFormalApprovalWorkflowCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2599,6 +2601,13 @@ export function App() {
     setAccountingAdvancedProfessionalReviewExecutionCloseout,
   ] =
     useState<AccountingAdvancedProfessionalReviewExecutionCloseoutResponse | null>(
+      null,
+    );
+  const [
+    accountingAdvancedFormalApprovalWorkflowCloseout,
+    setAccountingAdvancedFormalApprovalWorkflowCloseout,
+  ] =
+    useState<AccountingAdvancedFormalApprovalWorkflowCloseoutResponse | null>(
       null,
     );
   const [
@@ -20757,6 +20766,7 @@ export function App() {
         nextAccountingAdvancedFormalProductDesignCloseout,
         nextAccountingAdvancedFormalArtifactDraftingCloseout,
         nextAccountingAdvancedProfessionalReviewExecutionCloseout,
+        nextAccountingAdvancedFormalApprovalWorkflowCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21026,6 +21036,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedFormalApprovalWorkflowCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21061,6 +21077,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21349,6 +21366,9 @@ export function App() {
         );
         setAccountingAdvancedProfessionalReviewExecutionCloseout(
           nextAccountingAdvancedProfessionalReviewExecutionCloseout,
+        );
+        setAccountingAdvancedFormalApprovalWorkflowCloseout(
+          nextAccountingAdvancedFormalApprovalWorkflowCloseout,
         );
       });
     } catch (error) {
@@ -36607,8 +36627,113 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedFormalApprovalWorkflowCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced Formal Approval
+                                        Workflow 1.0
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedFormalApprovalWorkflowCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalApprovalWorkflowCloseout
+                                              .approvalAnchor.summary
+                                              .readyGateCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedFormalApprovalWorkflowCloseout
+                                              .approvalAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Autoridades
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalApprovalWorkflowCloseout
+                                              .authorityMatrix.summary
+                                              .authorityCount
+                                          }{' '}
+                                          owners
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Evidencia
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalApprovalWorkflowCloseout
+                                              .evidencePack.summary
+                                              .readyEvidenceItemCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedFormalApprovalWorkflowCloseout
+                                              .evidencePack.summary
+                                              .evidenceItemCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Aprobadas
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalApprovalWorkflowCloseout
+                                              .decisionWorkspace.summary
+                                              .approvedPendingSignatureCount
+                                          }{' '}
+                                          pending signature
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Signoff
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedFormalApprovalWorkflowCloseout
+                                              .commandCenter.summary
+                                              .externalSignoffCount
+                                          }{' '}
+                                          external
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedFormalApprovalWorkflowCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedFormalApprovalWorkflowCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedProfessionalReviewExecutionCloseout?.nextStep ??
+                                  {accountingAdvancedFormalApprovalWorkflowCloseout?.nextStep ??
+                                    accountingAdvancedProfessionalReviewExecutionCloseout?.nextStep ??
                                     accountingAdvancedFormalArtifactDraftingCloseout?.nextStep ??
                                     accountingAdvancedFormalProductDesignCloseout?.nextStep ??
                                     accountingAdvancedFormalReadinessCloseout?.nextStep ??

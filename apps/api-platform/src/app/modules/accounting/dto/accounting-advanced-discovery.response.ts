@@ -1,10 +1,16 @@
 import {
   TenantAccountingAccountantDiscoveryWorkspaceView,
+  TenantAccountingAdvancedAuditTrailReadinessPacketView,
   TenantAccountingAdvancedDiscoveryAnchorView,
   TenantAccountingAdvancedDiscoveryCloseoutView,
   TenantAccountingAdvancedDiscoveryIntakeView,
   TenantAccountingAdvancedDiscoveryReadinessPacketView,
+  TenantAccountingAdvancedMvpReadinessCloseoutView,
+  TenantAccountingAdvancedMvpScopeDecisionRecordView,
+  TenantAccountingAdvancedMvpScopeRegistryView,
+  TenantAccountingCertifiedBankEvidenceBoundaryView,
   TenantAccountingFormalNeedsClassifierView,
+  TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView,
 } from '@saas-platform/accounting-domain';
 
 export type AccountingAdvancedDiscoveryAnchorResponseDto =
@@ -19,6 +25,18 @@ export type AccountingAdvancedDiscoveryReadinessPacketResponseDto =
   Serialized<TenantAccountingAdvancedDiscoveryReadinessPacketView>;
 export type AccountingAdvancedDiscoveryCloseoutResponseDto =
   Serialized<TenantAccountingAdvancedDiscoveryCloseoutView>;
+export type AccountingAdvancedMvpScopeRegistryResponseDto =
+  Serialized<TenantAccountingAdvancedMvpScopeRegistryView>;
+export type AccountingAdvancedMvpScopeDecisionRecordResponseDto =
+  Serialized<TenantAccountingAdvancedMvpScopeDecisionRecordView>;
+export type AccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto =
+  Serialized<TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView>;
+export type AccountingCertifiedBankEvidenceBoundaryResponseDto =
+  Serialized<TenantAccountingCertifiedBankEvidenceBoundaryView>;
+export type AccountingAdvancedAuditTrailReadinessPacketResponseDto =
+  Serialized<TenantAccountingAdvancedAuditTrailReadinessPacketView>;
+export type AccountingAdvancedMvpReadinessCloseoutResponseDto =
+  Serialized<TenantAccountingAdvancedMvpReadinessCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -53,6 +71,42 @@ export function toAccountingAdvancedDiscoveryReadinessPacketResponseDto(
 export function toAccountingAdvancedDiscoveryCloseoutResponseDto(
   view: TenantAccountingAdvancedDiscoveryCloseoutView,
 ): AccountingAdvancedDiscoveryCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedMvpScopeRegistryResponseDto(
+  view: TenantAccountingAdvancedMvpScopeRegistryView,
+): AccountingAdvancedMvpScopeRegistryResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedMvpScopeDecisionRecordResponseDto(
+  view: TenantAccountingAdvancedMvpScopeDecisionRecordView,
+): AccountingAdvancedMvpScopeDecisionRecordResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto(
+  view: TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView,
+): AccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingCertifiedBankEvidenceBoundaryResponseDto(
+  view: TenantAccountingCertifiedBankEvidenceBoundaryView,
+): AccountingCertifiedBankEvidenceBoundaryResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedAuditTrailReadinessPacketResponseDto(
+  view: TenantAccountingAdvancedAuditTrailReadinessPacketView,
+): AccountingAdvancedAuditTrailReadinessPacketResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedMvpReadinessCloseoutResponseDto(
+  view: TenantAccountingAdvancedMvpReadinessCloseoutView,
+): AccountingAdvancedMvpReadinessCloseoutResponseDto {
   return serialize(view);
 }
 

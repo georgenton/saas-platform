@@ -1128,6 +1128,12 @@ const [
   accountantDiscoveryWorkspace,
   advancedDiscoveryReadinessPacket,
   advancedDiscoveryCloseout,
+  advancedMvpScopeRegistry,
+  advancedMvpScopeDecisionRecord,
+  minimumLedgerCloseoutDesign,
+  certifiedBankEvidenceBoundary,
+  advancedAuditTrailReadinessPacket,
+  advancedMvpReadinessCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1180,6 +1186,46 @@ const [
     path: accountingPath(`/advanced-discovery/closeout?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-mvp-readiness/scope-registry?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-mvp-readiness/scope-decision-record?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-mvp-readiness/ledger-closeout-design?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-mvp-readiness/bank-evidence-boundary?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-mvp-readiness/audit-trail-packet?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-mvp-readiness/closeout?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -1218,8 +1264,35 @@ assertStatus(
   'accounting advanced discovery closeout',
   advancedDiscoveryCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced mvp scope registry',
+  advancedMvpScopeRegistry.registryStatus,
+);
+assertStatus(
+  'accounting advanced mvp scope decision record',
+  advancedMvpScopeDecisionRecord.recordStatus,
+);
+assertStatus(
+  'accounting minimum ledger closeout design',
+  minimumLedgerCloseoutDesign.workspaceStatus,
+);
+assertStatus(
+  'accounting certified bank evidence boundary',
+  certifiedBankEvidenceBoundary.boundaryStatus,
+);
+assertStatus(
+  'accounting advanced audit trail readiness packet',
+  advancedAuditTrailReadinessPacket.packetStatus,
+);
+assertStatus(
+  'accounting advanced mvp readiness closeout',
+  advancedMvpReadinessCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
+}
+if (!Array.isArray(advancedMvpReadinessCloseout.closeoutChecklist)) {
+  throw new Error('advanced-mvp-readiness/closeout no devolvio checklist[].');
 }
 printLine(
   'foundation pack v2',
@@ -1240,6 +1313,14 @@ printLine(
 printLine(
   'advanced scope',
   `${advancedDiscoveryReadinessPacket.scopeRecommendation.minimumScope}, ${advancedDiscoveryReadinessPacket.scopeRecommendation.recommendedAction}`,
+);
+printLine(
+  'advanced mvp',
+  `${advancedMvpReadinessCloseout.summary.approvedLaneCount} approved lanes, ${advancedMvpReadinessCloseout.finalDecision}`,
+);
+printLine(
+  'advanced audit',
+  `${advancedAuditTrailReadinessPacket.summary.evidenceRefCount} evidence refs, ${advancedAuditTrailReadinessPacket.packetStatus}`,
 );
 
 printSection('Accounting foundation smoke OK');

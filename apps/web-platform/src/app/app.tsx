@@ -130,6 +130,7 @@ import {
   fetchAccountingOpeningBalanceWorkspace,
   fetchAccountingOperationalCommandCenter,
   fetchAccountingAdvancedDiscoveryCloseout,
+  fetchAccountingAdvancedMvpReadinessCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -482,6 +483,7 @@ import {
   AccountingFinancialStatementFinalReviewPacketResponse,
   AccountingFoundationCloseoutSummaryResponse,
   AccountingAdvancedDiscoveryCloseoutResponse,
+  AccountingAdvancedMvpReadinessCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2545,6 +2547,10 @@ export function App() {
     accountingAdvancedDiscoveryCloseout,
     setAccountingAdvancedDiscoveryCloseout,
   ] = useState<AccountingAdvancedDiscoveryCloseoutResponse | null>(null);
+  const [
+    accountingAdvancedMvpReadinessCloseout,
+    setAccountingAdvancedMvpReadinessCloseout,
+  ] = useState<AccountingAdvancedMvpReadinessCloseoutResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20693,6 +20699,7 @@ export function App() {
         nextAccountingLegalBooksReadinessPacket,
         nextAccountingFoundationCloseoutSummary,
         nextAccountingAdvancedDiscoveryCloseout,
+        nextAccountingAdvancedMvpReadinessCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -20914,6 +20921,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedMvpReadinessCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -20949,6 +20962,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21207,6 +21221,9 @@ export function App() {
         );
         setAccountingAdvancedDiscoveryCloseout(
           nextAccountingAdvancedDiscoveryCloseout,
+        );
+        setAccountingAdvancedMvpReadinessCloseout(
+          nextAccountingAdvancedMvpReadinessCloseout,
         );
       });
     } catch (error) {
@@ -35411,6 +35428,23 @@ export function App() {
                                   </div>
                                   <div className={styles.commercialCard}>
                                     <span className={styles.muted}>
+                                      Advanced MVP
+                                    </span>
+                                    <strong>
+                                      {accountingAdvancedMvpReadinessCloseout
+                                        ? humanizeKey(
+                                            accountingAdvancedMvpReadinessCloseout.finalDecision,
+                                          )
+                                        : 'sin closeout'}
+                                    </strong>
+                                    <span className={styles.muted}>
+                                      {accountingAdvancedMvpReadinessCloseout
+                                        ?.summary.approvedLaneCount ?? 0}{' '}
+                                      lanes
+                                    </span>
+                                  </div>
+                                  <div className={styles.commercialCard}>
+                                    <span className={styles.muted}>
                                       Ultimo ajuste
                                     </span>
                                     <strong>
@@ -35551,8 +35585,102 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedMvpReadinessCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced MVP Readiness 0.2
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedMvpReadinessCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Scope
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedMvpReadinessCloseout
+                                              .scopeRegistry.summary
+                                              .readyForDesignLaneCount
+                                          }{' '}
+                                          ready
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Contador
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedMvpReadinessCloseout
+                                              .scopeDecisionRecord.summary
+                                              .approvedLaneCount
+                                          }{' '}
+                                          aprobadas
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Ledger
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedMvpReadinessCloseout
+                                              .ledgerDesignWorkspace
+                                              .workspaceStatus,
+                                          )}
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Banco
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedMvpReadinessCloseout
+                                              .bankEvidenceBoundary.summary
+                                              .needsExternalProofCount
+                                          }{' '}
+                                          pruebas
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Audit
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedMvpReadinessCloseout
+                                              .auditTrailReadinessPacket.summary
+                                              .evidenceRefCount
+                                          }{' '}
+                                          refs
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedMvpReadinessCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedMvpReadinessCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedDiscoveryCloseout?.nextStep ??
+                                  {accountingAdvancedMvpReadinessCloseout?.nextStep ??
+                                    accountingAdvancedDiscoveryCloseout?.nextStep ??
                                     accountingFoundationCloseoutSummary?.nextStep ??
                                     lastAccountingFinancialStatementFinalReviewPacket?.nextStep ??
                                     accountingLegalBooksReadinessPacket?.nextStep ??

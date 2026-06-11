@@ -22,6 +22,8 @@ import {
   CreateTenantAccountingOpeningBalanceJournalEntryUseCase,
   GetTenantAccountingAccountantDiscoveryWorkspaceUseCase,
   GetTenantAccountingAccountantHandoffWorkspaceUseCase,
+  GetTenantAccountingAdvancedMvpScopeDecisionRecordUseCase,
+  GetTenantAccountingAdvancedMvpScopeRegistryUseCase,
   GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
   GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
@@ -33,6 +35,7 @@ import {
   GetTenantAccountingCloseoutCertificationReadinessUseCase,
   GetTenantAccountingFoundationCloseoutSummaryUseCase,
   GetTenantAccountingFormalNeedsClassifierUseCase,
+  GetTenantAccountingCertifiedBankEvidenceBoundaryUseCase,
   GetTenantAccountingLegalBooksReadinessPacketUseCase,
   GetTenantAccountingPeriodCloseoutTimelineUseCase,
   GetTenantAccountingPeriodNarrativeReportUseCase,
@@ -42,6 +45,7 @@ import {
   GetTenantAccountingJournalDraftPreviewUseCase,
   GetTenantAccountingLedgerRegistryWorkspaceUseCase,
   GetTenantAccountingLedgerPreviewWorkspaceUseCase,
+  GetTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase,
   GetTenantAccountingOpeningBalanceControlRegistryUseCase,
   GetTenantAccountingOpeningBalanceWorkspaceUseCase,
   GetTenantAccountingOperationalCommandCenterUseCase,
@@ -69,6 +73,8 @@ import {
   RequestTenantAccountingAdjustmentRecommendationPacketUseCase,
   RequestTenantAccountingAdvancedDiscoveryCloseoutUseCase,
   RequestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase,
+  RequestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase,
+  RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -204,6 +210,74 @@ import { AccountingController } from './accounting.controller';
           getTenantAccountingFormalNeedsClassifierUseCase,
           getTenantAccountingAccountantDiscoveryWorkspaceUseCase,
           requestTenantAccountingAdvancedDiscoveryReadinessPacketUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedMvpScopeRegistryUseCase,
+      inject: [RequestTenantAccountingAdvancedDiscoveryCloseoutUseCase],
+      useFactory: (requestTenantAccountingAdvancedDiscoveryCloseoutUseCase) =>
+        new GetTenantAccountingAdvancedMvpScopeRegistryUseCase(
+          requestTenantAccountingAdvancedDiscoveryCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedMvpScopeDecisionRecordUseCase,
+      inject: [GetTenantAccountingAdvancedMvpScopeRegistryUseCase],
+      useFactory: (getTenantAccountingAdvancedMvpScopeRegistryUseCase) =>
+        new GetTenantAccountingAdvancedMvpScopeDecisionRecordUseCase(
+          getTenantAccountingAdvancedMvpScopeRegistryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase,
+      inject: [GetTenantAccountingAdvancedMvpScopeDecisionRecordUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedMvpScopeDecisionRecordUseCase,
+      ) =>
+        new GetTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase(
+          getTenantAccountingAdvancedMvpScopeDecisionRecordUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingCertifiedBankEvidenceBoundaryUseCase,
+      inject: [GetTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase],
+      useFactory: (
+        getTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingCertifiedBankEvidenceBoundaryUseCase(
+          getTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase,
+      inject: [GetTenantAccountingCertifiedBankEvidenceBoundaryUseCase],
+      useFactory: (getTenantAccountingCertifiedBankEvidenceBoundaryUseCase) =>
+        new RequestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase(
+          getTenantAccountingCertifiedBankEvidenceBoundaryUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase,
+      inject: [
+        GetTenantAccountingAdvancedMvpScopeRegistryUseCase,
+        GetTenantAccountingAdvancedMvpScopeDecisionRecordUseCase,
+        GetTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase,
+        GetTenantAccountingCertifiedBankEvidenceBoundaryUseCase,
+        RequestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedMvpScopeRegistryUseCase,
+        getTenantAccountingAdvancedMvpScopeDecisionRecordUseCase,
+        getTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase,
+        getTenantAccountingCertifiedBankEvidenceBoundaryUseCase,
+        requestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase(
+          getTenantAccountingAdvancedMvpScopeRegistryUseCase,
+          getTenantAccountingAdvancedMvpScopeDecisionRecordUseCase,
+          getTenantAccountingMinimumLedgerCloseoutDesignWorkspaceUseCase,
+          getTenantAccountingCertifiedBankEvidenceBoundaryUseCase,
+          requestTenantAccountingAdvancedAuditTrailReadinessPacketUseCase,
         ),
     },
     {

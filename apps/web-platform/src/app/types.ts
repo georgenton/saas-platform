@@ -3769,6 +3769,132 @@ export interface AccountingAdvancedDiscoveryCloseoutResponse {
   guardrails: string[];
 }
 
+export interface AccountingAdvancedMvpReadinessCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  scopeRegistry: {
+    registryStatus: string;
+    lanes: Array<{
+      key: string;
+      label: string;
+      status: string;
+      readinessStatus: string;
+      evidenceRefs: string[];
+      rationale: string;
+      guardrail: string;
+    }>;
+    summary: {
+      laneCount: number;
+      candidateLaneCount: number;
+      readyForDesignLaneCount: number;
+      blockedLaneCount: number;
+      outOfScopeLaneCount: number;
+    };
+    blockers: string[];
+    nextStep: string;
+    guardrails: string[];
+  };
+  scopeDecisionRecord: {
+    recordStatus: string;
+    decisions: Array<{
+      laneKey: string;
+      label: string;
+      decision: string;
+      status: string;
+      rationale: string;
+      expectedEvidence: string;
+      risk: string;
+    }>;
+    summary: {
+      decisionCount: number;
+      approvedLaneCount: number;
+      needsEvidenceLaneCount: number;
+      rejectedLaneCount: number;
+    };
+    blockers: string[];
+    nextStep: string;
+    guardrails: string[];
+  };
+  ledgerDesignWorkspace: {
+    workspaceStatus: string;
+    designChecks: Array<{
+      key: string;
+      label: string;
+      status: string;
+      source: string;
+      requirement: string;
+    }>;
+    summary: {
+      checkCount: number;
+      readyCheckCount: number;
+      needsReviewCheckCount: number;
+      blockedCheckCount: number;
+    };
+    blockers: string[];
+    nextStep: string;
+    guardrails: string[];
+  };
+  bankEvidenceBoundary: {
+    boundaryStatus: string;
+    boundaryRows: Array<{
+      key: string;
+      label: string;
+      status: string;
+      platformCanDo: string;
+      requiresExternalProof: string;
+      guardrail: string;
+    }>;
+    summary: {
+      rowCount: number;
+      readyRowCount: number;
+      needsExternalProofCount: number;
+      blockedRowCount: number;
+    };
+    blockers: string[];
+    nextStep: string;
+    guardrails: string[];
+  };
+  auditTrailReadinessPacket: {
+    packetStatus: string;
+    auditSections: Array<{
+      key: string;
+      label: string;
+      status: string;
+      evidenceRefs: string[];
+      auditUse: string;
+    }>;
+    summary: {
+      sectionCount: number;
+      readySectionCount: number;
+      blockedSectionCount: number;
+      evidenceRefCount: number;
+    };
+    blockers: string[];
+    nextStep: string;
+    guardrails: string[];
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    approvedLaneCount: number;
+    auditEvidenceRefCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

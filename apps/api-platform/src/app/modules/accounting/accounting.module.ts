@@ -41,6 +41,10 @@ import {
   GetTenantAccountingAdvancedExternalAccountantPortalShellUseCase,
   GetTenantAccountingAdvancedMultiPeriodFinancialStatementWorkspaceUseCase,
   GetTenantAccountingAdvancedPoliciesClosingTemplateRegistryUseCase,
+  GetTenantAccountingAdvancedFormalArtifactDraftRegistryUseCase,
+  GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
+  GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
+  GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
   GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
   GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
@@ -99,6 +103,8 @@ import {
   RequestTenantAccountingAdvancedGraduationCloseoutUseCase,
   RequestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase,
+  RequestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase,
+  RequestTenantAccountingAdvancedFormalProductRiskGuardrailPackUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -553,6 +559,75 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase(
           requestTenantAccountingAdvancedFormalBooksDraftSigningBoundaryPacketUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
+      inject: [
+        RequestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedFormalProductScopeContractUseCase(
+          requestTenantAccountingAdvancedCertifiedBankReconciliationReadinessCloseoutUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
+      inject: [GetTenantAccountingAdvancedFormalProductScopeContractUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedFormalProductScopeContractUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase(
+          getTenantAccountingAdvancedFormalProductScopeContractUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedFormalArtifactDraftRegistryUseCase,
+      inject: [
+        GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedFormalArtifactDraftRegistryUseCase(
+          getTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
+      inject: [GetTenantAccountingAdvancedFormalArtifactDraftRegistryUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedFormalArtifactDraftRegistryUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase(
+          getTenantAccountingAdvancedFormalArtifactDraftRegistryUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedFormalProductRiskGuardrailPackUseCase,
+      inject: [
+        GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedFormalProductRiskGuardrailPackUseCase(
+          getTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase,
+      inject: [
+        RequestTenantAccountingAdvancedFormalProductRiskGuardrailPackUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingAdvancedFormalProductRiskGuardrailPackUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase(
+          requestTenantAccountingAdvancedFormalProductRiskGuardrailPackUseCase,
         ),
     },
     {

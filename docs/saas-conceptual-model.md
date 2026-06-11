@@ -1937,6 +1937,38 @@ legalize books, certify bank feeds, sign financial statements or replace a
 contador/auditor. It prepares the professional boundaries that a later formal
 Accounting Advanced product would need.
 
+### Accounting Advanced formal product design 0.7
+
+After formal readiness 0.6, Accounting Advanced can design the first formal
+product without issuing formal artifacts yet. This layer is the approved
+blueprint package: it says what will be built, who is responsible for each
+professional act, which draft artifacts exist, how review moves, and what risks
+must stay visibly controlled.
+
+1. `Formal Product Scope Contract`
+   - converts formal readiness into an explicit scope of included modules and
+     excluded/statutory boundaries
+2. `Professional Responsibility Assignment Matrix`
+   - assigns platform, operator, external accountant, auditor and legal
+     representative responsibilities before any formal workflow exists
+3. `Formal Artifact Draft Registry`
+   - catalogs draft journal book, ledger book, financial statement,
+     certified-reconciliation and adjustment-pack artifacts without issuing them
+4. `Professional Review Workflow Design`
+   - designs submit, review, request-changes, approve-draft, reject and external
+     signoff-required transitions
+5. `Formal Product Risk & Compliance Guardrail Pack`
+   - packages no-accountant-replacement, no automatic book legalization, no bank
+     certification without external proof, no auto adjustment posting and no
+     signed-statement generation controls
+6. `Accounting Advanced Formal Product Design Closeout`
+   - decides whether 0.8 can begin formal artifact drafting, needs scope review,
+     must return to formal readiness hardening or should not design the product
+
+Guardrail: formal product design 0.7 still does not create official artifacts,
+post formal adjustments, legalize books, certify bank feeds or sign statements.
+It only makes the next artifact-drafting layer structurally safe.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2025,6 +2057,10 @@ product. Its current scope is intentionally operational and review-oriented:
     previews multi-period statements, packages formal books signing boundaries
     and closes certified bank reconciliation readiness without performing
     statutory accounting.
+25. Accounting Advanced formal product design 0.7 as the first blueprint layer
+    for a formal product. It defines scope, professional responsibility,
+    artifact registry, review workflow and risk guardrails before any official
+    artifact drafting, signature, certification or legalization is implemented.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

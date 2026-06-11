@@ -70,6 +70,11 @@ import {
   GetTenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceUseCase,
   GetTenantAccountingAdvancedAcceptanceDecisionWorkspaceUseCase,
   GetTenantAccountingAdvancedInternalAcceptanceCommandCenterUseCase,
+  GetTenantAccountingAdvancedFormalRecordAssemblyAnchorUseCase,
+  GetTenantAccountingAdvancedAcceptedArtifactBinderUseCase,
+  GetTenantAccountingAdvancedFormalRecordIndexWorkspaceUseCase,
+  GetTenantAccountingAdvancedRecordConsistencyReviewWorkspaceUseCase,
+  GetTenantAccountingAdvancedFormalRecordAssemblyCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -141,6 +146,7 @@ import {
   RequestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase,
   RequestTenantAccountingAdvancedExternalExecutionTrackingCloseoutUseCase,
   RequestTenantAccountingAdvancedExternalResultIntakeCloseoutUseCase,
+  RequestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -247,6 +253,12 @@ import {
   AccountingAdvancedAcceptanceDecisionWorkspaceResponseDto,
   AccountingAdvancedInternalAcceptanceCommandCenterResponseDto,
   AccountingAdvancedExternalResultIntakeCloseoutResponseDto,
+  AccountingAdvancedFormalRecordAssemblyAnchorResponseDto,
+  AccountingAdvancedAcceptedArtifactBinderResponseDto,
+  AccountingAdvancedFormalRecordIndexWorkspaceResponseDto,
+  AccountingAdvancedRecordConsistencyReviewWorkspaceResponseDto,
+  AccountingAdvancedFormalRecordAssemblyCommandCenterResponseDto,
+  AccountingAdvancedFormalRecordAssemblyCloseoutResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -331,6 +343,12 @@ import {
   toAccountingAdvancedAcceptanceDecisionWorkspaceResponseDto,
   toAccountingAdvancedInternalAcceptanceCommandCenterResponseDto,
   toAccountingAdvancedExternalResultIntakeCloseoutResponseDto,
+  toAccountingAdvancedFormalRecordAssemblyAnchorResponseDto,
+  toAccountingAdvancedAcceptedArtifactBinderResponseDto,
+  toAccountingAdvancedFormalRecordIndexWorkspaceResponseDto,
+  toAccountingAdvancedRecordConsistencyReviewWorkspaceResponseDto,
+  toAccountingAdvancedFormalRecordAssemblyCommandCenterResponseDto,
+  toAccountingAdvancedFormalRecordAssemblyCloseoutResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -687,6 +705,12 @@ export class AccountingController {
     private readonly getTenantAccountingAdvancedAcceptanceDecisionWorkspaceUseCase: GetTenantAccountingAdvancedAcceptanceDecisionWorkspaceUseCase,
     private readonly getTenantAccountingAdvancedInternalAcceptanceCommandCenterUseCase: GetTenantAccountingAdvancedInternalAcceptanceCommandCenterUseCase,
     private readonly requestTenantAccountingAdvancedExternalResultIntakeCloseoutUseCase: RequestTenantAccountingAdvancedExternalResultIntakeCloseoutUseCase,
+    private readonly getTenantAccountingAdvancedFormalRecordAssemblyAnchorUseCase: GetTenantAccountingAdvancedFormalRecordAssemblyAnchorUseCase,
+    private readonly getTenantAccountingAdvancedAcceptedArtifactBinderUseCase: GetTenantAccountingAdvancedAcceptedArtifactBinderUseCase,
+    private readonly getTenantAccountingAdvancedFormalRecordIndexWorkspaceUseCase: GetTenantAccountingAdvancedFormalRecordIndexWorkspaceUseCase,
+    private readonly getTenantAccountingAdvancedRecordConsistencyReviewWorkspaceUseCase: GetTenantAccountingAdvancedRecordConsistencyReviewWorkspaceUseCase,
+    private readonly getTenantAccountingAdvancedFormalRecordAssemblyCommandCenterUseCase: GetTenantAccountingAdvancedFormalRecordAssemblyCommandCenterUseCase,
+    private readonly requestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase: RequestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -2748,6 +2772,148 @@ export class AccountingController {
         );
 
       return toAccountingAdvancedExternalResultIntakeCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-record-assembly/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalRecordAssemblyAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalRecordAssemblyAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedFormalRecordAssemblyAnchorUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalRecordAssemblyAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-record-assembly/accepted-artifact-binder')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedAcceptedArtifactBinder(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedAcceptedArtifactBinderResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedAcceptedArtifactBinderUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedAcceptedArtifactBinderResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-record-assembly/record-index')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalRecordIndexWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalRecordIndexWorkspaceResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedFormalRecordIndexWorkspaceUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalRecordIndexWorkspaceResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-record-assembly/consistency-review')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedRecordConsistencyReviewWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedRecordConsistencyReviewWorkspaceResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedRecordConsistencyReviewWorkspaceUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedRecordConsistencyReviewWorkspaceResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-record-assembly/command-center')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalRecordAssemblyCommandCenter(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalRecordAssemblyCommandCenterResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedFormalRecordAssemblyCommandCenterUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalRecordAssemblyCommandCenterResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-formal-record-assembly/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedFormalRecordAssemblyCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalRecordAssemblyCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedFormalRecordAssemblyCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

@@ -293,6 +293,12 @@ export type AccountingAdvancedExternalResultIntakeDecision =
   | 'return_to_external_tracking'
   | 'return_to_external_handoff'
   | 'do_not_accept_external_results';
+export type AccountingAdvancedFormalRecordAssemblyDecision =
+  | 'ready_for_formal_record_closeout'
+  | 'needs_record_consistency_review'
+  | 'return_to_internal_acceptance'
+  | 'return_to_external_tracking'
+  | 'do_not_assemble_formal_record';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -2741,6 +2747,205 @@ export interface TenantAccountingAdvancedExternalResultIntakeCloseoutView {
     returnedArtifactCount: number;
     criteriaCount: number;
     decisionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalRecordAssemblyAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  assemblyStatus: AccountingReadinessStatus;
+  resultIntakeCloseout: TenantAccountingAdvancedExternalResultIntakeCloseoutView;
+  recordGates: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    recordType:
+      | 'financial_statement'
+      | 'certified_reconciliation'
+      | 'formal_books'
+      | 'adjustment_evidence';
+    assemblyState:
+      | 'ready_for_binder'
+      | 'pending_acceptance'
+      | 'observed_result'
+      | 'rejected_result'
+      | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    gateCount: number;
+    readyGateCount: number;
+    needsReviewGateCount: number;
+    blockedGateCount: number;
+    acceptedDecisionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedAcceptedArtifactBinderView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  binderStatus: AccountingReadinessStatus;
+  assemblyAnchor: TenantAccountingAdvancedFormalRecordAssemblyAnchorView;
+  binders: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    recordGateKey: string;
+    recordType:
+      | 'financial_statement'
+      | 'certified_reconciliation'
+      | 'formal_books'
+      | 'adjustment_evidence';
+    acceptedArtifactRefs: string[];
+    evidenceRefs: string[];
+    blockerRefs: string[];
+  }>;
+  summary: {
+    binderCount: number;
+    readyBinderCount: number;
+    needsReviewBinderCount: number;
+    blockedBinderCount: number;
+    acceptedArtifactRefCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalRecordIndexWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  indexStatus: AccountingReadinessStatus;
+  artifactBinder: TenantAccountingAdvancedAcceptedArtifactBinderView;
+  indexSections: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    binderKey: string;
+    sectionType:
+      | 'approved_draft'
+      | 'external_result'
+      | 'internal_acceptance'
+      | 'evidence_trace'
+      | 'unresolved_blockers';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    needsReviewSectionCount: number;
+    blockedSectionCount: number;
+    binderCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  reviewStatus: AccountingReadinessStatus;
+  recordIndex: TenantAccountingAdvancedFormalRecordIndexWorkspaceView;
+  consistencyChecks: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    binderKey: string;
+    checkType:
+      | 'artifact_match'
+      | 'actor_match'
+      | 'evidence_completeness'
+      | 'decision_trace'
+      | 'period_tenant_alignment';
+    resolutionRoute:
+      | 'no_resolution_required'
+      | 'return_to_internal_acceptance'
+      | 'return_to_external_tracking'
+      | 'return_to_external_handoff';
+    blockerRefs: string[];
+  }>;
+  summary: {
+    checkCount: number;
+    readyCheckCount: number;
+    needsReviewCheckCount: number;
+    blockedCheckCount: number;
+    routedCheckCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalRecordAssemblyCommandCenterView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  commandStatus: AccountingReadinessStatus;
+  consistencyReview: TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView;
+  commandLanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    metric: string;
+    count: number;
+  }>;
+  suggestedDecision: AccountingAdvancedFormalRecordAssemblyDecision;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+    assembledRecordCount: number;
+    inconsistentRecordCount: number;
+    readyForCloseoutCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedFormalRecordAssemblyCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  assemblyAnchor: TenantAccountingAdvancedFormalRecordAssemblyAnchorView;
+  artifactBinder: TenantAccountingAdvancedAcceptedArtifactBinderView;
+  recordIndex: TenantAccountingAdvancedFormalRecordIndexWorkspaceView;
+  consistencyReview: TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView;
+  commandCenter: TenantAccountingAdvancedFormalRecordAssemblyCommandCenterView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: AccountingAdvancedFormalRecordAssemblyDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    recordGateCount: number;
+    binderCount: number;
+    indexSectionCount: number;
+    consistencyCheckCount: number;
   };
   blockers: string[];
   nextStep: string;

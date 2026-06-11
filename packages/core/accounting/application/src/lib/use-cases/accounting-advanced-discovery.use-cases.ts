@@ -13,6 +13,7 @@ import {
   AccountingAdvancedExternalExecutionHandoffDecision,
   AccountingAdvancedExternalExecutionTrackingDecision,
   AccountingAdvancedExternalResultIntakeDecision,
+  AccountingAdvancedFormalRecordAssemblyDecision,
   AccountingAdvancedFormalModuleKey,
   AccountingAdvancedProfessionalOwner,
   AccountingAdvancedPilotEnrollmentStatus,
@@ -93,12 +94,18 @@ import {
   TenantAccountingAdvancedExternalObservationResolutionQueueView,
   TenantAccountingAdvancedExternalResultIntakeAnchorView,
   TenantAccountingAdvancedExternalResultIntakeCloseoutView,
+  TenantAccountingAdvancedAcceptedArtifactBinderView,
+  TenantAccountingAdvancedFormalRecordAssemblyAnchorView,
+  TenantAccountingAdvancedFormalRecordAssemblyCloseoutView,
+  TenantAccountingAdvancedFormalRecordAssemblyCommandCenterView,
+  TenantAccountingAdvancedFormalRecordIndexWorkspaceView,
   TenantAccountingAdvancedInternalAcceptanceCommandCenterView,
   TenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
   TenantAccountingAdvancedReturnedArtifactRegistryView,
+  TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
   TenantAccountingFormalNeedsClassifierView,
   TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView,
@@ -6819,6 +6826,414 @@ export class RequestTenantAccountingAdvancedExternalResultIntakeCloseoutUseCase 
   }
 }
 
+export class GetTenantAccountingAdvancedFormalRecordAssemblyAnchorUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedExternalResultIntakeCloseoutUseCase: RequestTenantAccountingAdvancedExternalResultIntakeCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalRecordAssemblyAnchorView> {
+    const resultIntakeCloseout =
+      await this.requestTenantAccountingAdvancedExternalResultIntakeCloseoutUseCase.execute(
+        input,
+      );
+    const recordGates: TenantAccountingAdvancedFormalRecordAssemblyAnchorView['recordGates'] =
+      resultIntakeCloseout.decisionWorkspace.decisions.map((decision) =>
+        formalRecordGate(
+          `record_${decision.key}`,
+          `${decision.label} formal record gate`,
+          decision.status,
+          recordTypeFromArtifactKey(decision.artifactKey),
+          decision.decision === 'accepted_for_internal_record'
+            ? 'ready_for_binder'
+            : decision.decision === 'return_to_external_tracking'
+              ? 'observed_result'
+              : decision.decision === 'return_to_handoff'
+                ? 'rejected_result'
+                : 'pending_acceptance',
+          [decision.artifactKey],
+        ),
+      );
+    const blockers =
+      resultIntakeCloseout.finalDecision === 'ready_for_formal_record_assembly'
+        ? [...resultIntakeCloseout.blockers]
+        : unique([
+            ...resultIntakeCloseout.blockers,
+            `External result intake decision is ${resultIntakeCloseout.finalDecision}.`,
+          ]);
+    const assemblyStatus = resolveStatus(
+      recordGates.map((gate) => gate.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      assemblyStatus,
+      resultIntakeCloseout,
+      recordGates,
+      summary: {
+        gateCount: recordGates.length,
+        readyGateCount: recordGates.filter((gate) => gate.status === 'ready')
+          .length,
+        needsReviewGateCount: recordGates.filter(
+          (gate) => gate.status === 'needs_review',
+        ).length,
+        blockedGateCount: recordGates.filter(
+          (gate) => gate.status === 'blocked',
+        ).length,
+        acceptedDecisionCount:
+          resultIntakeCloseout.decisionWorkspace.summary.acceptedDecisionCount,
+      },
+      blockers,
+      nextStep:
+        assemblyStatus === 'blocked'
+          ? 'Volver a intake 1.4 antes de ensamblar record formal.'
+          : 'Agrupar artifacts aceptados en binders internos.',
+      guardrails: [
+        'Formal Record Assembly 1.5 ensambla expediente interno; no emite libros oficiales.',
+        'Solo artifacts aceptados internamente pueden entrar al binder formal.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedAcceptedArtifactBinderUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedFormalRecordAssemblyAnchorUseCase: GetTenantAccountingAdvancedFormalRecordAssemblyAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedAcceptedArtifactBinderView> {
+    const assemblyAnchor =
+      await this.getTenantAccountingAdvancedFormalRecordAssemblyAnchorUseCase.execute(
+        input,
+      );
+    const binders = assemblyAnchor.recordGates.map((gate) =>
+      acceptedArtifactBinder(
+        `binder_${gate.key}`,
+        `${gate.label} binder`,
+        gate.status,
+        gate.key,
+        gate.recordType,
+        gate.assemblyState === 'ready_for_binder' ? gate.evidenceRefs : [],
+        gate.evidenceRefs,
+        gate.status === 'ready' ? [] : [`${gate.key}_binder_pending`],
+      ),
+    );
+    const blockers = [...assemblyAnchor.blockers];
+    const binderStatus = resolveStatus(
+      binders.map((binder) => binder.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      binderStatus,
+      assemblyAnchor,
+      binders,
+      summary: {
+        binderCount: binders.length,
+        readyBinderCount: binders.filter((binder) => binder.status === 'ready')
+          .length,
+        needsReviewBinderCount: binders.filter(
+          (binder) => binder.status === 'needs_review',
+        ).length,
+        blockedBinderCount: binders.filter(
+          (binder) => binder.status === 'blocked',
+        ).length,
+        acceptedArtifactRefCount: binders.flatMap(
+          (binder) => binder.acceptedArtifactRefs,
+        ).length,
+      },
+      blockers,
+      nextStep: 'Construir indice formal del expediente ensamblado.',
+      guardrails: [
+        'Accepted Artifact Binder agrupa referencias; no transforma artifacts en oficiales.',
+        'Los blockers viajan al indice formal para revision posterior.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedFormalRecordIndexWorkspaceUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedAcceptedArtifactBinderUseCase: GetTenantAccountingAdvancedAcceptedArtifactBinderUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalRecordIndexWorkspaceView> {
+    const artifactBinder =
+      await this.getTenantAccountingAdvancedAcceptedArtifactBinderUseCase.execute(
+        input,
+      );
+    const indexSections =
+      artifactBinder.binders.flatMap((binder) => [
+        formalRecordIndexSection(`draft_${binder.key}`, `${binder.label} approved draft`, binder.status, binder.key, 'approved_draft', binder.evidenceRefs),
+        formalRecordIndexSection(`external_${binder.key}`, `${binder.label} external result`, binder.status, binder.key, 'external_result', binder.acceptedArtifactRefs),
+        formalRecordIndexSection(`acceptance_${binder.key}`, `${binder.label} internal acceptance`, binder.status, binder.key, 'internal_acceptance', binder.evidenceRefs),
+        formalRecordIndexSection(`trace_${binder.key}`, `${binder.label} evidence trace`, binder.status, binder.key, 'evidence_trace', binder.evidenceRefs),
+      ]);
+    const blockers = [...artifactBinder.blockers];
+    const indexStatus = resolveStatus(
+      indexSections.map((section) => section.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      indexStatus,
+      artifactBinder,
+      indexSections,
+      summary: {
+        sectionCount: indexSections.length,
+        readySectionCount: indexSections.filter(
+          (section) => section.status === 'ready',
+        ).length,
+        needsReviewSectionCount: indexSections.filter(
+          (section) => section.status === 'needs_review',
+        ).length,
+        blockedSectionCount: indexSections.filter(
+          (section) => section.status === 'blocked',
+        ).length,
+        binderCount: artifactBinder.summary.binderCount,
+      },
+      blockers,
+      nextStep: 'Revisar consistencia del record formal ensamblado.',
+      guardrails: [
+        'Formal Record Index organiza secciones; no publica ni archiva oficialmente.',
+        'El indice conserva evidencia y blockers para auditoria posterior.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedRecordConsistencyReviewWorkspaceUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedFormalRecordIndexWorkspaceUseCase: GetTenantAccountingAdvancedFormalRecordIndexWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView> {
+    const recordIndex =
+      await this.getTenantAccountingAdvancedFormalRecordIndexWorkspaceUseCase.execute(
+        input,
+      );
+    const consistencyChecks =
+      recordIndex.artifactBinder.binders.flatMap((binder) => [
+        recordConsistencyCheck(`artifact_${binder.key}`, `${binder.label} artifact match`, binder.status, binder.key, 'artifact_match', binder.status === 'ready' ? 'no_resolution_required' : 'return_to_internal_acceptance', binder.blockerRefs),
+        recordConsistencyCheck(`actor_${binder.key}`, `${binder.label} actor match`, binder.status, binder.key, 'actor_match', binder.status === 'ready' ? 'no_resolution_required' : 'return_to_external_tracking', binder.blockerRefs),
+        recordConsistencyCheck(`evidence_${binder.key}`, `${binder.label} evidence completeness`, binder.status, binder.key, 'evidence_completeness', binder.status === 'ready' ? 'no_resolution_required' : 'return_to_internal_acceptance', binder.blockerRefs),
+        recordConsistencyCheck(`decision_${binder.key}`, `${binder.label} decision trace`, binder.status, binder.key, 'decision_trace', binder.status === 'ready' ? 'no_resolution_required' : 'return_to_internal_acceptance', binder.blockerRefs),
+        recordConsistencyCheck(`period_${binder.key}`, `${binder.label} period tenant alignment`, binder.status, binder.key, 'period_tenant_alignment', binder.status === 'ready' ? 'no_resolution_required' : 'return_to_external_handoff', binder.blockerRefs),
+      ]);
+    const blockers = [...recordIndex.blockers];
+    const reviewStatus = resolveStatus(
+      consistencyChecks.map((checkItem) => checkItem.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      reviewStatus,
+      recordIndex,
+      consistencyChecks,
+      summary: {
+        checkCount: consistencyChecks.length,
+        readyCheckCount: consistencyChecks.filter(
+          (checkItem) => checkItem.status === 'ready',
+        ).length,
+        needsReviewCheckCount: consistencyChecks.filter(
+          (checkItem) => checkItem.status === 'needs_review',
+        ).length,
+        blockedCheckCount: consistencyChecks.filter(
+          (checkItem) => checkItem.status === 'blocked',
+        ).length,
+        routedCheckCount: consistencyChecks.filter(
+          (checkItem) =>
+            checkItem.resolutionRoute !== 'no_resolution_required',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Consolidar record assembly en command center.',
+      guardrails: [
+        'Consistency review valida coherencia; no certifica balances.',
+        'Cualquier inconsistencia debe volver a la capa de origen.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedFormalRecordAssemblyCommandCenterUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedRecordConsistencyReviewWorkspaceUseCase: GetTenantAccountingAdvancedRecordConsistencyReviewWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalRecordAssemblyCommandCenterView> {
+    const consistencyReview =
+      await this.getTenantAccountingAdvancedRecordConsistencyReviewWorkspaceUseCase.execute(
+        input,
+      );
+    const { recordIndex } = consistencyReview;
+    const { artifactBinder } = recordIndex;
+    const commandLanes: TenantAccountingAdvancedFormalRecordAssemblyCommandCenterView['commandLanes'] =
+      [
+        formalRecordCommandLane('binders', 'Accepted artifact binders', artifactBinder.binderStatus, 'binders', artifactBinder.summary.binderCount),
+        formalRecordCommandLane('index_sections', 'Formal record index', recordIndex.indexStatus, 'sections', recordIndex.summary.sectionCount),
+        formalRecordCommandLane('consistency_checks', 'Consistency checks', consistencyReview.reviewStatus, 'checks', consistencyReview.summary.checkCount),
+      ];
+    const blockers = unique([
+      ...artifactBinder.blockers,
+      ...recordIndex.blockers,
+      ...consistencyReview.blockers,
+    ]);
+    const commandStatus = resolveStatus(
+      commandLanes.map((lane) => lane.status),
+      blockers,
+    );
+    const suggestedDecision = formalRecordAssemblyDecisionFromStatus(
+      commandStatus,
+      consistencyReview,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      commandStatus,
+      consistencyReview,
+      commandLanes,
+      suggestedDecision,
+      summary: {
+        laneCount: commandLanes.length,
+        readyLaneCount: commandLanes.filter((lane) => lane.status === 'ready')
+          .length,
+        needsReviewLaneCount: commandLanes.filter(
+          (lane) => lane.status === 'needs_review',
+        ).length,
+        blockedLaneCount: commandLanes.filter(
+          (lane) => lane.status === 'blocked',
+        ).length,
+        assembledRecordCount: artifactBinder.summary.readyBinderCount,
+        inconsistentRecordCount: consistencyReview.summary.routedCheckCount,
+        readyForCloseoutCount: consistencyReview.summary.readyCheckCount,
+      },
+      blockers,
+      nextStep:
+        suggestedDecision === 'ready_for_formal_record_closeout'
+          ? 'Preparar 1.6 Formal Record Closeout & Archive Readiness.'
+          : suggestedDecision === 'needs_record_consistency_review'
+            ? 'Resolver consistencia antes de cerrar record formal.'
+            : suggestedDecision === 'return_to_internal_acceptance'
+              ? 'Volver a 1.4 para corregir aceptacion interna.'
+              : 'Volver a tracking externo si el resultado no sostiene el record.',
+      guardrails: [
+        'Command center organiza ensamblaje; no archiva oficialmente.',
+        'El closeout formal debe ocurrir en una capa posterior.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedFormalRecordAssemblyCommandCenterUseCase: GetTenantAccountingAdvancedFormalRecordAssemblyCommandCenterUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalRecordAssemblyCloseoutView> {
+    const commandCenter =
+      await this.getTenantAccountingAdvancedFormalRecordAssemblyCommandCenterUseCase.execute(
+        input,
+      );
+    const { consistencyReview } = commandCenter;
+    const { recordIndex } = consistencyReview;
+    const { artifactBinder } = recordIndex;
+    const { assemblyAnchor } = artifactBinder;
+    const closeoutChecklist: TenantAccountingAdvancedFormalRecordAssemblyCloseoutView['closeoutChecklist'] =
+      [
+        formalRecordAssemblyCloseoutCheck('assembly_anchor', 'Formal record assembly anchor', assemblyAnchor.assemblyStatus, ['advanced_formal_record_assembly_anchor']),
+        formalRecordAssemblyCloseoutCheck('artifact_binder', 'Accepted artifact binder', artifactBinder.binderStatus, ['advanced_accepted_artifact_binder']),
+        formalRecordAssemblyCloseoutCheck('record_index', 'Formal record index workspace', recordIndex.indexStatus, ['advanced_formal_record_index_workspace']),
+        formalRecordAssemblyCloseoutCheck('consistency_review', 'Record consistency review workspace', consistencyReview.reviewStatus, ['advanced_record_consistency_review_workspace']),
+        formalRecordAssemblyCloseoutCheck('assembly_command_center', 'Formal record assembly command center', commandCenter.commandStatus, ['advanced_formal_record_assembly_command_center']),
+      ];
+    const blockers = unique([
+      ...assemblyAnchor.blockers,
+      ...artifactBinder.blockers,
+      ...recordIndex.blockers,
+      ...consistencyReview.blockers,
+      ...commandCenter.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(
+      closeoutChecklist.map((item) => item.status),
+      blockers,
+    );
+    const finalDecision = formalRecordAssemblyDecisionFromStatus(
+      closeoutStatus,
+      consistencyReview,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      assemblyAnchor,
+      artifactBinder,
+      recordIndex,
+      consistencyReview,
+      commandCenter,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        blockedChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+        recordGateCount: assemblyAnchor.summary.gateCount,
+        binderCount: artifactBinder.summary.binderCount,
+        indexSectionCount: recordIndex.summary.sectionCount,
+        consistencyCheckCount: consistencyReview.summary.checkCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'ready_for_formal_record_closeout'
+          ? 'Iniciar 1.6 Formal Record Closeout & Archive Readiness.'
+          : finalDecision === 'needs_record_consistency_review'
+            ? 'Resolver consistencia antes del closeout formal.'
+            : finalDecision === 'return_to_internal_acceptance'
+              ? 'Volver a 1.4 para corregir aceptacion interna.'
+              : finalDecision === 'return_to_external_tracking'
+                ? 'Volver a 1.3 para corregir tracking externo.'
+                : 'No ensamblar record formal para este periodo.',
+      guardrails: [
+        'Formal record assembly closeout no emite libros ni estados financieros oficiales.',
+        'Archive readiness debe validar cierre antes de cualquier custodia formal.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -8106,6 +8521,121 @@ function externalResultIntakeDecisionFromStatus(
     return 'ready_for_formal_record_assembly';
   }
   return 'do_not_accept_external_results';
+}
+
+function formalRecordGate(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  recordType: TenantAccountingAdvancedFormalRecordAssemblyAnchorView['recordGates'][number]['recordType'],
+  assemblyState: TenantAccountingAdvancedFormalRecordAssemblyAnchorView['recordGates'][number]['assemblyState'],
+  evidenceRefs: string[],
+): TenantAccountingAdvancedFormalRecordAssemblyAnchorView['recordGates'][number] {
+  return { key, label, status, recordType, assemblyState, evidenceRefs };
+}
+
+function acceptedArtifactBinder(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  recordGateKey: string,
+  recordType: TenantAccountingAdvancedAcceptedArtifactBinderView['binders'][number]['recordType'],
+  acceptedArtifactRefs: string[],
+  evidenceRefs: string[],
+  blockerRefs: string[],
+): TenantAccountingAdvancedAcceptedArtifactBinderView['binders'][number] {
+  return {
+    key,
+    label,
+    status,
+    recordGateKey,
+    recordType,
+    acceptedArtifactRefs,
+    evidenceRefs,
+    blockerRefs,
+  };
+}
+
+function formalRecordIndexSection(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  binderKey: string,
+  sectionType: TenantAccountingAdvancedFormalRecordIndexWorkspaceView['indexSections'][number]['sectionType'],
+  evidenceRefs: string[],
+): TenantAccountingAdvancedFormalRecordIndexWorkspaceView['indexSections'][number] {
+  return { key, label, status, binderKey, sectionType, evidenceRefs };
+}
+
+function recordConsistencyCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  binderKey: string,
+  checkType: TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView['consistencyChecks'][number]['checkType'],
+  resolutionRoute: TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView['consistencyChecks'][number]['resolutionRoute'],
+  blockerRefs: string[],
+): TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView['consistencyChecks'][number] {
+  return {
+    key,
+    label,
+    status,
+    binderKey,
+    checkType,
+    resolutionRoute,
+    blockerRefs,
+  };
+}
+
+function formalRecordCommandLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  metric: string,
+  count: number,
+): TenantAccountingAdvancedFormalRecordAssemblyCommandCenterView['commandLanes'][number] {
+  return { key, label, status, metric, count };
+}
+
+function formalRecordAssemblyCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantAccountingAdvancedFormalRecordAssemblyCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function recordTypeFromArtifactKey(
+  artifactKey: string,
+): TenantAccountingAdvancedFormalRecordAssemblyAnchorView['recordGates'][number]['recordType'] {
+  if (artifactKey.includes('certification')) {
+    return 'certified_reconciliation';
+  }
+  if (artifactKey.includes('legalization')) {
+    return 'formal_books';
+  }
+  if (artifactKey.includes('adjustment')) {
+    return 'adjustment_evidence';
+  }
+  return 'financial_statement';
+}
+
+function formalRecordAssemblyDecisionFromStatus(
+  status: AccountingReadinessStatus,
+  consistencyReview: TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView,
+  blockers: string[],
+): AccountingAdvancedFormalRecordAssemblyDecision {
+  if (blockers.length > 0 || status === 'blocked') {
+    return 'return_to_internal_acceptance';
+  }
+  if (consistencyReview.summary.routedCheckCount > 0) {
+    return 'needs_record_consistency_review';
+  }
+  if (consistencyReview.summary.readyCheckCount > 0) {
+    return 'ready_for_formal_record_closeout';
+  }
+  return 'do_not_assemble_formal_record';
 }
 
 function formalProductDesignDecisionFromStatus(

@@ -4824,6 +4824,86 @@ export interface AccountingAdvancedExternalResultIntakeCloseoutResponse {
   guardrails: string[];
 }
 
+export interface AccountingAdvancedFormalRecordAssemblyCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  assemblyAnchor: {
+    assemblyStatus: string;
+    summary: {
+      gateCount: number;
+      readyGateCount: number;
+      needsReviewGateCount: number;
+      blockedGateCount: number;
+      acceptedDecisionCount: number;
+    };
+  };
+  artifactBinder: {
+    binderStatus: string;
+    summary: {
+      binderCount: number;
+      readyBinderCount: number;
+      needsReviewBinderCount: number;
+      blockedBinderCount: number;
+      acceptedArtifactRefCount: number;
+    };
+  };
+  recordIndex: {
+    indexStatus: string;
+    summary: {
+      sectionCount: number;
+      readySectionCount: number;
+      needsReviewSectionCount: number;
+      blockedSectionCount: number;
+      binderCount: number;
+    };
+  };
+  consistencyReview: {
+    reviewStatus: string;
+    summary: {
+      checkCount: number;
+      readyCheckCount: number;
+      needsReviewCheckCount: number;
+      blockedCheckCount: number;
+      routedCheckCount: number;
+    };
+  };
+  commandCenter: {
+    commandStatus: string;
+    suggestedDecision: string;
+    summary: {
+      laneCount: number;
+      readyLaneCount: number;
+      needsReviewLaneCount: number;
+      blockedLaneCount: number;
+      assembledRecordCount: number;
+      inconsistentRecordCount: number;
+      readyForCloseoutCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    recordGateCount: number;
+    binderCount: number;
+    indexSectionCount: number;
+    consistencyCheckCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

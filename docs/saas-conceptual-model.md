@@ -2189,6 +2189,37 @@ Guardrail: intake 1.4 accepts results only into an internal review path. It does
 not assemble formal records, issue official books, certify balances or replace
 the professional acceptance step.
 
+### Accounting Advanced formal record assembly 1.5
+
+After external result intake and internal acceptance 1.4, Accounting Advanced can
+assemble accepted artifacts into an internal formal record package. This layer is
+the binder: it groups accepted artifacts, builds the record index and reviews
+consistency before any archive or official issuance step.
+
+1. `Formal Record Assembly Anchor`
+   - converts internal acceptance closeout into record gates for financial
+     statements, certified reconciliation, formal books and adjustment evidence
+2. `Accepted Artifact Binder`
+   - groups accepted artifact references, evidence and blockers into internal
+     binder packets
+3. `Formal Record Index Workspace`
+   - builds sections for approved draft, external result, internal acceptance,
+     evidence trace and unresolved blockers
+4. `Record Consistency Review Workspace`
+   - checks artifact match, actor match, evidence completeness, decision trace
+     and tenant-period alignment
+5. `Formal Record Assembly Command Center`
+   - consolidates binders, index sections and consistency checks into one
+     operating surface
+6. `Formal Record Assembly Closeout`
+   - decides whether the tenant-period is ready for formal record closeout,
+     needs consistency review, returns to acceptance/tracking or should not
+     assemble a formal record
+
+Guardrail: assembly 1.5 organizes the internal formal record package only. It
+does not archive, emit official books, issue financial statements, certify
+balances or replace professional accounting judgment.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2309,6 +2340,9 @@ product. Its current scope is intentionally operational and review-oriented:
     the receiving desk. It registers returned artifacts, evaluates internal
     acceptance criteria and decisions, and prepares formal record assembly
     without assembling or issuing official records.
+33. Accounting Advanced formal record assembly 1.5 as the internal binder. It
+    groups accepted artifacts, builds a formal index and reviews consistency
+    without archiving, issuing official books or certifying balances.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

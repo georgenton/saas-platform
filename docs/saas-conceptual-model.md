@@ -2158,6 +2158,37 @@ Guardrail: tracking 1.3 observes and validates external progress only. It does
 not send packets, sign, certify, legalize, accept returned artifacts as official
 or replace the internal acceptance step.
 
+### Accounting Advanced external result intake and internal acceptance 1.4
+
+After external execution tracking 1.3, Accounting Advanced can open the internal
+intake window for returned results. This layer is the receiving desk: it records
+returned artifacts, checks internal acceptance criteria and decides whether each
+result can enter the internal record assembly path.
+
+1. `External Result Intake Anchor`
+   - converts tracking closeout into intake gates for results ready, pending,
+     observed, rejected or insufficient
+2. `Returned Artifact Registry`
+   - registers signed, certified, legalized, observed or rejected artifact
+     references without storing them as official records
+3. `Internal Acceptance Criteria Workspace`
+   - checks actor identity, evidence completeness, approved artifact match and
+     traceability match
+4. `Acceptance Decision Workspace`
+   - decides whether each result is accepted for internal record, needs review,
+     returns to tracking, returns to handoff or is rejected for the period
+5. `Internal Acceptance Command Center`
+   - consolidates returned artifacts, criteria and acceptance decisions into one
+     operating surface
+6. `External Result Intake & Internal Acceptance Closeout`
+   - decides whether the tenant-period is ready for formal record assembly,
+     needs acceptance review, returns to tracking/handoff or should not accept
+     external results
+
+Guardrail: intake 1.4 accepts results only into an internal review path. It does
+not assemble formal records, issue official books, certify balances or replace
+the professional acceptance step.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2274,6 +2305,10 @@ product. Its current scope is intentionally operational and review-oriented:
     tower. It tracks lanes, status events, returned evidence and observations
     without accepting external results as official or replacing internal
     acceptance.
+32. Accounting Advanced external result intake and internal acceptance 1.4 as
+    the receiving desk. It registers returned artifacts, evaluates internal
+    acceptance criteria and decisions, and prepares formal record assembly
+    without assembling or issuing official records.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

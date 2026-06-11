@@ -142,6 +142,7 @@ import {
   fetchAccountingAdvancedSignatureCertificationBoundaryCloseout,
   fetchAccountingAdvancedExternalExecutionHandoffCloseout,
   fetchAccountingAdvancedExternalExecutionTrackingCloseout,
+  fetchAccountingAdvancedExternalResultIntakeCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -506,6 +507,7 @@ import {
   AccountingAdvancedSignatureCertificationBoundaryCloseoutResponse,
   AccountingAdvancedExternalExecutionHandoffCloseoutResponse,
   AccountingAdvancedExternalExecutionTrackingCloseoutResponse,
+  AccountingAdvancedExternalResultIntakeCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2637,6 +2639,12 @@ export function App() {
     useState<AccountingAdvancedExternalExecutionTrackingCloseoutResponse | null>(
       null,
     );
+  const [
+    accountingAdvancedExternalResultIntakeCloseout,
+    setAccountingAdvancedExternalResultIntakeCloseout,
+  ] = useState<AccountingAdvancedExternalResultIntakeCloseoutResponse | null>(
+    null,
+  );
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20797,6 +20805,7 @@ export function App() {
         nextAccountingAdvancedSignatureCertificationBoundaryCloseout,
         nextAccountingAdvancedExternalExecutionHandoffCloseout,
         nextAccountingAdvancedExternalExecutionTrackingCloseout,
+        nextAccountingAdvancedExternalResultIntakeCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21090,6 +21099,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchAccountingAdvancedExternalResultIntakeCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21125,6 +21140,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21429,6 +21445,9 @@ export function App() {
         );
         setAccountingAdvancedExternalExecutionTrackingCloseout(
           nextAccountingAdvancedExternalExecutionTrackingCloseout,
+        );
+        setAccountingAdvancedExternalResultIntakeCloseout(
+          nextAccountingAdvancedExternalResultIntakeCloseout,
         );
       });
     } catch (error) {
@@ -37092,8 +37111,111 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {accountingAdvancedExternalResultIntakeCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Accounting Advanced External Result
+                                        Intake & Internal Acceptance 1.4
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          accountingAdvancedExternalResultIntakeCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Intake gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedExternalResultIntakeCloseout
+                                              .intakeAnchor.summary
+                                              .readyGateCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedExternalResultIntakeCloseout
+                                              .intakeAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Artifacts
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedExternalResultIntakeCloseout
+                                              .artifactRegistry.summary
+                                              .artifactCount
+                                          }{' '}
+                                          returned
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Criterios
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedExternalResultIntakeCloseout
+                                              .criteriaWorkspace.summary
+                                              .readyCriteriaCount
+                                          }
+                                          /
+                                          {
+                                            accountingAdvancedExternalResultIntakeCloseout
+                                              .criteriaWorkspace.summary
+                                              .criteriaCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Aceptados
+                                        </span>
+                                        <strong>
+                                          {
+                                            accountingAdvancedExternalResultIntakeCloseout
+                                              .decisionWorkspace.summary
+                                              .acceptedDecisionCount
+                                          }{' '}
+                                          decisions
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Command
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedExternalResultIntakeCloseout
+                                              .commandCenter.suggestedDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            accountingAdvancedExternalResultIntakeCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {accountingAdvancedExternalResultIntakeCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedExternalExecutionTrackingCloseout?.nextStep ??
+                                  {accountingAdvancedExternalResultIntakeCloseout?.nextStep ??
+                                    accountingAdvancedExternalExecutionTrackingCloseout?.nextStep ??
                                     accountingAdvancedExternalExecutionHandoffCloseout?.nextStep ??
                                     accountingAdvancedSignatureCertificationBoundaryCloseout?.nextStep ??
                                     accountingAdvancedFormalApprovalWorkflowCloseout?.nextStep ??

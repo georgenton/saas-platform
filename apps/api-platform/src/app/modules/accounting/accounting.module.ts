@@ -71,6 +71,11 @@ import {
   GetTenantAccountingAdvancedReturnedEvidenceValidationWorkspaceUseCase,
   GetTenantAccountingAdvancedExternalObservationResolutionQueueUseCase,
   GetTenantAccountingAdvancedExternalExecutionTrackingCommandCenterUseCase,
+  GetTenantAccountingAdvancedExternalResultIntakeAnchorUseCase,
+  GetTenantAccountingAdvancedReturnedArtifactRegistryUseCase,
+  GetTenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceUseCase,
+  GetTenantAccountingAdvancedAcceptanceDecisionWorkspaceUseCase,
+  GetTenantAccountingAdvancedInternalAcceptanceCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -141,6 +146,7 @@ import {
   RequestTenantAccountingAdvancedSignatureCertificationBoundaryCloseoutUseCase,
   RequestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase,
   RequestTenantAccountingAdvancedExternalExecutionTrackingCloseoutUseCase,
+  RequestTenantAccountingAdvancedExternalResultIntakeCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -1082,6 +1088,71 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantAccountingAdvancedExternalExecutionTrackingCloseoutUseCase(
           getTenantAccountingAdvancedExternalExecutionTrackingCommandCenterUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedExternalResultIntakeAnchorUseCase,
+      inject: [
+        RequestTenantAccountingAdvancedExternalExecutionTrackingCloseoutUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingAdvancedExternalExecutionTrackingCloseoutUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedExternalResultIntakeAnchorUseCase(
+          requestTenantAccountingAdvancedExternalExecutionTrackingCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedReturnedArtifactRegistryUseCase,
+      inject: [GetTenantAccountingAdvancedExternalResultIntakeAnchorUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedExternalResultIntakeAnchorUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedReturnedArtifactRegistryUseCase(
+          getTenantAccountingAdvancedExternalResultIntakeAnchorUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceUseCase,
+      inject: [GetTenantAccountingAdvancedReturnedArtifactRegistryUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedReturnedArtifactRegistryUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceUseCase(
+          getTenantAccountingAdvancedReturnedArtifactRegistryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedAcceptanceDecisionWorkspaceUseCase,
+      inject: [
+        GetTenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedAcceptanceDecisionWorkspaceUseCase(
+          getTenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedInternalAcceptanceCommandCenterUseCase,
+      inject: [GetTenantAccountingAdvancedAcceptanceDecisionWorkspaceUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedAcceptanceDecisionWorkspaceUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedInternalAcceptanceCommandCenterUseCase(
+          getTenantAccountingAdvancedAcceptanceDecisionWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedExternalResultIntakeCloseoutUseCase,
+      inject: [GetTenantAccountingAdvancedInternalAcceptanceCommandCenterUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedInternalAcceptanceCommandCenterUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedExternalResultIntakeCloseoutUseCase(
+          getTenantAccountingAdvancedInternalAcceptanceCommandCenterUseCase,
         ),
     },
     {

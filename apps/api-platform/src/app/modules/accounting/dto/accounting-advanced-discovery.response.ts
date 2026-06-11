@@ -54,6 +54,7 @@ import {
   TenantAccountingAdvancedFormalApprovalEvidencePackView,
   TenantAccountingAdvancedFormalApprovalWorkflowAnchorView,
   TenantAccountingAdvancedFormalApprovalWorkflowCloseoutView,
+  TenantAccountingAdvancedAcceptanceDecisionWorkspaceView,
   TenantAccountingAdvancedCertificationRequirementWorkspaceView,
   TenantAccountingAdvancedFormalSignatoryRegistryView,
   TenantAccountingAdvancedLegalizationBoundaryPacketView,
@@ -71,9 +72,14 @@ import {
   TenantAccountingAdvancedExternalExecutionTrackingCommandCenterView,
   TenantAccountingAdvancedExternalExecutorAssignmentMatrixView,
   TenantAccountingAdvancedExternalObservationResolutionQueueView,
+  TenantAccountingAdvancedExternalResultIntakeAnchorView,
+  TenantAccountingAdvancedExternalResultIntakeCloseoutView,
+  TenantAccountingAdvancedInternalAcceptanceCommandCenterView,
+  TenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
+  TenantAccountingAdvancedReturnedArtifactRegistryView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
   TenantAccountingFormalNeedsClassifierView,
   TenantAccountingMinimumLedgerCloseoutDesignWorkspaceView,
@@ -235,6 +241,18 @@ export type AccountingAdvancedExternalExecutionTrackingCommandCenterResponseDto 
   Serialized<TenantAccountingAdvancedExternalExecutionTrackingCommandCenterView>;
 export type AccountingAdvancedExternalExecutionTrackingCloseoutResponseDto =
   Serialized<TenantAccountingAdvancedExternalExecutionTrackingCloseoutView>;
+export type AccountingAdvancedExternalResultIntakeAnchorResponseDto =
+  Serialized<TenantAccountingAdvancedExternalResultIntakeAnchorView>;
+export type AccountingAdvancedReturnedArtifactRegistryResponseDto =
+  Serialized<TenantAccountingAdvancedReturnedArtifactRegistryView>;
+export type AccountingAdvancedInternalAcceptanceCriteriaWorkspaceResponseDto =
+  Serialized<TenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceView>;
+export type AccountingAdvancedAcceptanceDecisionWorkspaceResponseDto =
+  Serialized<TenantAccountingAdvancedAcceptanceDecisionWorkspaceView>;
+export type AccountingAdvancedInternalAcceptanceCommandCenterResponseDto =
+  Serialized<TenantAccountingAdvancedInternalAcceptanceCommandCenterView>;
+export type AccountingAdvancedExternalResultIntakeCloseoutResponseDto =
+  Serialized<TenantAccountingAdvancedExternalResultIntakeCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -701,6 +719,42 @@ export function toAccountingAdvancedExternalExecutionTrackingCommandCenterRespon
 export function toAccountingAdvancedExternalExecutionTrackingCloseoutResponseDto(
   view: TenantAccountingAdvancedExternalExecutionTrackingCloseoutView,
 ): AccountingAdvancedExternalExecutionTrackingCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedExternalResultIntakeAnchorResponseDto(
+  view: TenantAccountingAdvancedExternalResultIntakeAnchorView,
+): AccountingAdvancedExternalResultIntakeAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedReturnedArtifactRegistryResponseDto(
+  view: TenantAccountingAdvancedReturnedArtifactRegistryView,
+): AccountingAdvancedReturnedArtifactRegistryResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedInternalAcceptanceCriteriaWorkspaceResponseDto(
+  view: TenantAccountingAdvancedInternalAcceptanceCriteriaWorkspaceView,
+): AccountingAdvancedInternalAcceptanceCriteriaWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedAcceptanceDecisionWorkspaceResponseDto(
+  view: TenantAccountingAdvancedAcceptanceDecisionWorkspaceView,
+): AccountingAdvancedAcceptanceDecisionWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedInternalAcceptanceCommandCenterResponseDto(
+  view: TenantAccountingAdvancedInternalAcceptanceCommandCenterView,
+): AccountingAdvancedInternalAcceptanceCommandCenterResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedExternalResultIntakeCloseoutResponseDto(
+  view: TenantAccountingAdvancedExternalResultIntakeCloseoutView,
+): AccountingAdvancedExternalResultIntakeCloseoutResponseDto {
   return serialize(view);
 }
 

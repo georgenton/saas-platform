@@ -1200,6 +1200,12 @@ const [
   advancedExternalObservationResolutionQueue,
   advancedExternalExecutionTrackingCommandCenter,
   advancedExternalExecutionTrackingCloseout,
+  advancedExternalResultIntakeAnchor,
+  advancedReturnedArtifactRegistry,
+  advancedInternalAcceptanceCriteriaWorkspace,
+  advancedAcceptanceDecisionWorkspace,
+  advancedInternalAcceptanceCommandCenter,
+  advancedExternalResultIntakeCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1730,6 +1736,48 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-external-result-intake/anchor?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-external-result-intake/returned-artifact-registry?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-external-result-intake/internal-acceptance-criteria?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-external-result-intake/acceptance-decision-workspace?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-external-result-intake/internal-acceptance-command-center?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-external-result-intake/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2056,6 +2104,30 @@ assertStatus(
   'accounting advanced external execution tracking closeout',
   advancedExternalExecutionTrackingCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced external result intake anchor',
+  advancedExternalResultIntakeAnchor.intakeStatus,
+);
+assertStatus(
+  'accounting advanced returned artifact registry',
+  advancedReturnedArtifactRegistry.registryStatus,
+);
+assertStatus(
+  'accounting advanced internal acceptance criteria workspace',
+  advancedInternalAcceptanceCriteriaWorkspace.criteriaStatus,
+);
+assertStatus(
+  'accounting advanced acceptance decision workspace',
+  advancedAcceptanceDecisionWorkspace.decisionStatus,
+);
+assertStatus(
+  'accounting advanced internal acceptance command center',
+  advancedInternalAcceptanceCommandCenter.commandStatus,
+);
+assertStatus(
+  'accounting advanced external result intake closeout',
+  advancedExternalResultIntakeCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2100,6 +2172,11 @@ if (
 ) {
   throw new Error(
     'advanced-external-execution-tracking/closeout no devolvio checklist[].',
+  );
+}
+if (!Array.isArray(advancedExternalResultIntakeCloseout.closeoutChecklist)) {
+  throw new Error(
+    'advanced-external-result-intake/closeout no devolvio checklist[].',
   );
 }
 printLine(

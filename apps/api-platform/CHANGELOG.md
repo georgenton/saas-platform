@@ -1,5 +1,14 @@
 # api-platform
 
+## 0.107.43
+
+### Patch Changes
+
+- 5734420: Add Accounting Advanced External Execution Handoff 1.2 with handoff anchor,
+  executor assignment matrix, evidence bundle, instruction pack, return evidence
+  intake, closeout API, dashboard wiring, conceptual model updates, and smoke
+  coverage.
+
 ## 0.107.42
 
 ### Patch Changes

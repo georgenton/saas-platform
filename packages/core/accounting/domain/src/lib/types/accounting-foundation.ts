@@ -276,6 +276,11 @@ export type AccountingAdvancedSignatureCertificationBoundaryDecision =
   | 'needs_signatory_evidence'
   | 'return_to_formal_approval'
   | 'do_not_execute_formal_acts';
+export type AccountingAdvancedExternalExecutionHandoffDecision =
+  | 'ready_for_external_execution_tracking'
+  | 'needs_executor_assignment'
+  | 'return_to_signature_boundary'
+  | 'do_not_handoff_formal_acts';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -2159,6 +2164,184 @@ export interface TenantAccountingAdvancedSignatureCertificationBoundaryCloseoutV
     missingEvidenceCount: number;
     certificationRequirementCount: number;
     legalizationItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedExternalExecutionHandoffAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  signatureCertificationCloseout: TenantAccountingAdvancedSignatureCertificationBoundaryCloseoutView;
+  handoffGates: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+    externalAct: 'signature' | 'certification' | 'legalization';
+    handoffBoundary: string;
+  }>;
+  summary: {
+    gateCount: number;
+    readyGateCount: number;
+    needsReviewGateCount: number;
+    blockedGateCount: number;
+    signatoryCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedExternalExecutorAssignmentMatrixView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  matrixStatus: AccountingReadinessStatus;
+  handoffAnchor: TenantAccountingAdvancedExternalExecutionHandoffAnchorView;
+  assignments: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    externalAct: 'signature' | 'certification' | 'legalization';
+    executorRole:
+      | 'external_accountant'
+      | 'auditor'
+      | 'legal_representative'
+      | 'bank_certifier'
+      | 'legalization_authority';
+    responsibility: string;
+  }>;
+  summary: {
+    assignmentCount: number;
+    readyAssignmentCount: number;
+    needsReviewAssignmentCount: number;
+    blockedAssignmentCount: number;
+    externalExecutorCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedExecutionHandoffEvidenceBundleView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  bundleStatus: AccountingReadinessStatus;
+  executorMatrix: TenantAccountingAdvancedExternalExecutorAssignmentMatrixView;
+  bundles: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    assignmentKey: string;
+    artifactRefs: string[];
+    evidenceRefs: string[];
+    blockerRefs: string[];
+  }>;
+  summary: {
+    bundleCount: number;
+    readyBundleCount: number;
+    needsReviewBundleCount: number;
+    blockedBundleCount: number;
+    blockerRefCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedExternalExecutionInstructionPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  evidenceBundle: TenantAccountingAdvancedExecutionHandoffEvidenceBundleView;
+  instructions: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    assignmentKey: string;
+    instruction: string;
+    expectedReturnEvidence: string[];
+  }>;
+  summary: {
+    instructionCount: number;
+    readyInstructionCount: number;
+    needsReviewInstructionCount: number;
+    blockedInstructionCount: number;
+    expectedReturnEvidenceCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedExecutionReturnEvidenceIntakeView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  intakeStatus: AccountingReadinessStatus;
+  instructionPack: TenantAccountingAdvancedExternalExecutionInstructionPackView;
+  returnChannels: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    expectedStatus:
+      | 'signed'
+      | 'certified'
+      | 'legalized'
+      | 'rejected'
+      | 'observed'
+      | 'insufficient_evidence';
+    requiredEvidence: string[];
+  }>;
+  summary: {
+    channelCount: number;
+    readyChannelCount: number;
+    needsReviewChannelCount: number;
+    blockedChannelCount: number;
+    requiredEvidenceCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedExternalExecutionHandoffCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  handoffAnchor: TenantAccountingAdvancedExternalExecutionHandoffAnchorView;
+  executorMatrix: TenantAccountingAdvancedExternalExecutorAssignmentMatrixView;
+  evidenceBundle: TenantAccountingAdvancedExecutionHandoffEvidenceBundleView;
+  instructionPack: TenantAccountingAdvancedExternalExecutionInstructionPackView;
+  returnEvidenceIntake: TenantAccountingAdvancedExecutionReturnEvidenceIntakeView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: AccountingAdvancedExternalExecutionHandoffDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    assignmentCount: number;
+    bundleCount: number;
+    instructionCount: number;
+    returnChannelCount: number;
   };
   blockers: string[];
   nextStep: string;

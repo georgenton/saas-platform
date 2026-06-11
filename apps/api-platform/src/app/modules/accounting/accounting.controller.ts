@@ -55,6 +55,11 @@ import {
   GetTenantAccountingAdvancedLegalizationBoundaryPacketUseCase,
   GetTenantAccountingAdvancedSignatureCertificationBoundaryAnchorUseCase,
   GetTenantAccountingAdvancedSignatureEvidenceReadinessPackUseCase,
+  GetTenantAccountingAdvancedExternalExecutionHandoffAnchorUseCase,
+  GetTenantAccountingAdvancedExternalExecutorAssignmentMatrixUseCase,
+  GetTenantAccountingAdvancedExecutionHandoffEvidenceBundleUseCase,
+  GetTenantAccountingAdvancedExternalExecutionInstructionPackUseCase,
+  GetTenantAccountingAdvancedExecutionReturnEvidenceIntakeUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -123,6 +128,7 @@ import {
   RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase,
   RequestTenantAccountingAdvancedSignatureCertificationBoundaryCloseoutUseCase,
+  RequestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -211,6 +217,12 @@ import {
   AccountingAdvancedSignatureCertificationBoundaryAnchorResponseDto,
   AccountingAdvancedSignatureCertificationBoundaryCloseoutResponseDto,
   AccountingAdvancedSignatureEvidenceReadinessPackResponseDto,
+  AccountingAdvancedExternalExecutionHandoffAnchorResponseDto,
+  AccountingAdvancedExternalExecutorAssignmentMatrixResponseDto,
+  AccountingAdvancedExecutionHandoffEvidenceBundleResponseDto,
+  AccountingAdvancedExternalExecutionInstructionPackResponseDto,
+  AccountingAdvancedExecutionReturnEvidenceIntakeResponseDto,
+  AccountingAdvancedExternalExecutionHandoffCloseoutResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -277,6 +289,12 @@ import {
   toAccountingAdvancedSignatureCertificationBoundaryAnchorResponseDto,
   toAccountingAdvancedSignatureCertificationBoundaryCloseoutResponseDto,
   toAccountingAdvancedSignatureEvidenceReadinessPackResponseDto,
+  toAccountingAdvancedExternalExecutionHandoffAnchorResponseDto,
+  toAccountingAdvancedExternalExecutorAssignmentMatrixResponseDto,
+  toAccountingAdvancedExecutionHandoffEvidenceBundleResponseDto,
+  toAccountingAdvancedExternalExecutionInstructionPackResponseDto,
+  toAccountingAdvancedExecutionReturnEvidenceIntakeResponseDto,
+  toAccountingAdvancedExternalExecutionHandoffCloseoutResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -615,6 +633,12 @@ export class AccountingController {
     private readonly getTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase: GetTenantAccountingAdvancedCertificationRequirementWorkspaceUseCase,
     private readonly getTenantAccountingAdvancedLegalizationBoundaryPacketUseCase: GetTenantAccountingAdvancedLegalizationBoundaryPacketUseCase,
     private readonly requestTenantAccountingAdvancedSignatureCertificationBoundaryCloseoutUseCase: RequestTenantAccountingAdvancedSignatureCertificationBoundaryCloseoutUseCase,
+    private readonly getTenantAccountingAdvancedExternalExecutionHandoffAnchorUseCase: GetTenantAccountingAdvancedExternalExecutionHandoffAnchorUseCase,
+    private readonly getTenantAccountingAdvancedExternalExecutorAssignmentMatrixUseCase: GetTenantAccountingAdvancedExternalExecutorAssignmentMatrixUseCase,
+    private readonly getTenantAccountingAdvancedExecutionHandoffEvidenceBundleUseCase: GetTenantAccountingAdvancedExecutionHandoffEvidenceBundleUseCase,
+    private readonly getTenantAccountingAdvancedExternalExecutionInstructionPackUseCase: GetTenantAccountingAdvancedExternalExecutionInstructionPackUseCase,
+    private readonly getTenantAccountingAdvancedExecutionReturnEvidenceIntakeUseCase: GetTenantAccountingAdvancedExecutionReturnEvidenceIntakeUseCase,
+    private readonly requestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase: RequestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -2240,6 +2264,150 @@ export class AccountingController {
         );
 
       return toAccountingAdvancedSignatureCertificationBoundaryCloseoutResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-external-execution-handoff/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedExternalExecutionHandoffAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedExternalExecutionHandoffAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedExternalExecutionHandoffAnchorUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedExternalExecutionHandoffAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-external-execution-handoff/executor-assignment-matrix')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedExternalExecutorAssignmentMatrix(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedExternalExecutorAssignmentMatrixResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedExternalExecutorAssignmentMatrixUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedExternalExecutorAssignmentMatrixResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-external-execution-handoff/evidence-bundle')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedExecutionHandoffEvidenceBundle(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedExecutionHandoffEvidenceBundleResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedExecutionHandoffEvidenceBundleUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedExecutionHandoffEvidenceBundleResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-external-execution-handoff/instruction-pack')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedExternalExecutionInstructionPack(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedExternalExecutionInstructionPackResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedExternalExecutionInstructionPackUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedExternalExecutionInstructionPackResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-external-execution-handoff/return-evidence-intake')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedExecutionReturnEvidenceIntake(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedExecutionReturnEvidenceIntakeResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedExecutionReturnEvidenceIntakeUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedExecutionReturnEvidenceIntakeResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-external-execution-handoff/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedExternalExecutionHandoffCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedExternalExecutionHandoffCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedExternalExecutionHandoffCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toAccountingAdvancedExternalExecutionHandoffCloseoutResponseDto(
         view,
       );
     } catch (error) {

@@ -261,6 +261,11 @@ export type AccountingAdvancedFormalArtifactDraftingDecision =
   | 'needs_draft_evidence'
   | 'return_to_formal_product_design'
   | 'do_not_draft_formal_artifacts';
+export type AccountingAdvancedProfessionalReviewExecutionDecision =
+  | 'ready_for_formal_approval_workflow'
+  | 'needs_more_changes'
+  | 'return_to_artifact_drafting'
+  | 'do_not_advance_formal_artifacts';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -1597,6 +1602,194 @@ export interface TenantAccountingAdvancedFormalArtifactDraftingCloseoutView {
     bookDraftCount: number;
     statementDraftCount: number;
     reconciliationDraftCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedProfessionalReviewExecutionAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  draftingCloseout: TenantAccountingAdvancedFormalArtifactDraftingCloseoutView;
+  reviewGates: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+    professionalOwner: AccountingAdvancedProfessionalOwner;
+    gate: string;
+  }>;
+  summary: {
+    gateCount: number;
+    readyGateCount: number;
+    needsReviewGateCount: number;
+    blockedGateCount: number;
+    draftArtifactCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedAccountantDraftReviewRoomView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  roomStatus: AccountingReadinessStatus;
+  reviewAnchor: TenantAccountingAdvancedProfessionalReviewExecutionAnchorView;
+  reviewRows: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    artifactType:
+      | 'adjustment_pack'
+      | 'journal_book'
+      | 'ledger_book'
+      | 'financial_statement'
+      | 'certified_reconciliation';
+    reviewer: AccountingAdvancedProfessionalOwner;
+    finding: string;
+    preliminaryDecision:
+      | 'approve_for_recommendation'
+      | 'request_changes'
+      | 'needs_external_signoff'
+      | 'reject_draft';
+  }>;
+  summary: {
+    reviewRowCount: number;
+    approveForRecommendationCount: number;
+    changeRequestCount: number;
+    externalSignoffCount: number;
+    rejectedDraftCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedReviewChangeRequestPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  reviewRoom: TenantAccountingAdvancedAccountantDraftReviewRoomView;
+  changeRequests: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    sourceReviewKey: string;
+    requestedBy: AccountingAdvancedProfessionalOwner;
+    requiredAction: string;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    changeRequestCount: number;
+    readyChangeRequestCount: number;
+    needsReviewChangeRequestCount: number;
+    blockedChangeRequestCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedProfessionalApprovalRecommendationPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  changeRequestPack: TenantAccountingAdvancedReviewChangeRequestPackView;
+  recommendations: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    artifactType:
+      | 'adjustment_pack'
+      | 'journal_book'
+      | 'ledger_book'
+      | 'financial_statement'
+      | 'certified_reconciliation';
+    recommendation:
+      | 'recommend_approval'
+      | 'require_changes_first'
+      | 'require_auditor_review'
+      | 'do_not_approve';
+    requiredOwner: AccountingAdvancedProfessionalOwner;
+    rationale: string;
+  }>;
+  summary: {
+    recommendationCount: number;
+    recommendApprovalCount: number;
+    requireChangesCount: number;
+    requireAuditorReviewCount: number;
+    doNotApproveCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedReviewExecutionCommandCenterView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  commandStatus: AccountingReadinessStatus;
+  approvalRecommendationPack: TenantAccountingAdvancedProfessionalApprovalRecommendationPackView;
+  lanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    owner: AccountingAdvancedProfessionalOwner;
+    primaryMetric: string;
+    nextAction: string;
+  }>;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+    recommendationCount: number;
+    changeRequestCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  reviewAnchor: TenantAccountingAdvancedProfessionalReviewExecutionAnchorView;
+  reviewRoom: TenantAccountingAdvancedAccountantDraftReviewRoomView;
+  changeRequestPack: TenantAccountingAdvancedReviewChangeRequestPackView;
+  approvalRecommendationPack: TenantAccountingAdvancedProfessionalApprovalRecommendationPackView;
+  commandCenter: TenantAccountingAdvancedReviewExecutionCommandCenterView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: AccountingAdvancedProfessionalReviewExecutionDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    reviewRowCount: number;
+    changeRequestCount: number;
+    recommendationCount: number;
+    readyLaneCount: number;
   };
   blockers: string[];
   nextStep: string;

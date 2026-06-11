@@ -42,6 +42,12 @@ import {
   TenantAccountingAdvancedFormalArtifactDraftingAnchorView,
   TenantAccountingAdvancedFormalArtifactDraftingCloseoutView,
   TenantAccountingAdvancedFormalBooksDraftWorkspaceView,
+  TenantAccountingAdvancedAccountantDraftReviewRoomView,
+  TenantAccountingAdvancedProfessionalApprovalRecommendationPackView,
+  TenantAccountingAdvancedProfessionalReviewExecutionAnchorView,
+  TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView,
+  TenantAccountingAdvancedReviewChangeRequestPackView,
+  TenantAccountingAdvancedReviewExecutionCommandCenterView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
@@ -145,6 +151,18 @@ export type AccountingAdvancedCertifiedReconciliationDraftPackResponseDto =
   Serialized<TenantAccountingAdvancedCertifiedReconciliationDraftPackView>;
 export type AccountingAdvancedFormalArtifactDraftingCloseoutResponseDto =
   Serialized<TenantAccountingAdvancedFormalArtifactDraftingCloseoutView>;
+export type AccountingAdvancedProfessionalReviewExecutionAnchorResponseDto =
+  Serialized<TenantAccountingAdvancedProfessionalReviewExecutionAnchorView>;
+export type AccountingAdvancedAccountantDraftReviewRoomResponseDto =
+  Serialized<TenantAccountingAdvancedAccountantDraftReviewRoomView>;
+export type AccountingAdvancedReviewChangeRequestPackResponseDto =
+  Serialized<TenantAccountingAdvancedReviewChangeRequestPackView>;
+export type AccountingAdvancedProfessionalApprovalRecommendationPackResponseDto =
+  Serialized<TenantAccountingAdvancedProfessionalApprovalRecommendationPackView>;
+export type AccountingAdvancedReviewExecutionCommandCenterResponseDto =
+  Serialized<TenantAccountingAdvancedReviewExecutionCommandCenterView>;
+export type AccountingAdvancedProfessionalReviewExecutionCloseoutResponseDto =
+  Serialized<TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -431,6 +449,42 @@ export function toAccountingAdvancedCertifiedReconciliationDraftPackResponseDto(
 export function toAccountingAdvancedFormalArtifactDraftingCloseoutResponseDto(
   view: TenantAccountingAdvancedFormalArtifactDraftingCloseoutView,
 ): AccountingAdvancedFormalArtifactDraftingCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedProfessionalReviewExecutionAnchorResponseDto(
+  view: TenantAccountingAdvancedProfessionalReviewExecutionAnchorView,
+): AccountingAdvancedProfessionalReviewExecutionAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedAccountantDraftReviewRoomResponseDto(
+  view: TenantAccountingAdvancedAccountantDraftReviewRoomView,
+): AccountingAdvancedAccountantDraftReviewRoomResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedReviewChangeRequestPackResponseDto(
+  view: TenantAccountingAdvancedReviewChangeRequestPackView,
+): AccountingAdvancedReviewChangeRequestPackResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedProfessionalApprovalRecommendationPackResponseDto(
+  view: TenantAccountingAdvancedProfessionalApprovalRecommendationPackView,
+): AccountingAdvancedProfessionalApprovalRecommendationPackResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedReviewExecutionCommandCenterResponseDto(
+  view: TenantAccountingAdvancedReviewExecutionCommandCenterView,
+): AccountingAdvancedReviewExecutionCommandCenterResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedProfessionalReviewExecutionCloseoutResponseDto(
+  view: TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView,
+): AccountingAdvancedProfessionalReviewExecutionCloseoutResponseDto {
   return serialize(view);
 }
 

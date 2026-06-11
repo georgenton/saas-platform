@@ -47,6 +47,10 @@ import {
   GetTenantAccountingAdvancedCertifiedReconciliationDraftPackUseCase,
   GetTenantAccountingAdvancedFinancialStatementsDraftPackUseCase,
   GetTenantAccountingAdvancedFormalBooksDraftWorkspaceUseCase,
+  GetTenantAccountingAdvancedAccountantDraftReviewRoomUseCase,
+  GetTenantAccountingAdvancedProfessionalReviewExecutionAnchorUseCase,
+  GetTenantAccountingAdvancedReviewChangeRequestPackUseCase,
+  GetTenantAccountingAdvancedReviewExecutionCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -111,6 +115,8 @@ import {
   RequestTenantAccountingAdvancedFormalProductDesignCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalProductRiskGuardrailPackUseCase,
   RequestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase,
+  RequestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase,
+  RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -697,6 +703,75 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase(
           getTenantAccountingAdvancedCertifiedReconciliationDraftPackUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedProfessionalReviewExecutionAnchorUseCase,
+      inject: [
+        RequestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedProfessionalReviewExecutionAnchorUseCase(
+          requestTenantAccountingAdvancedFormalArtifactDraftingCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedAccountantDraftReviewRoomUseCase,
+      inject: [
+        GetTenantAccountingAdvancedProfessionalReviewExecutionAnchorUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedProfessionalReviewExecutionAnchorUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedAccountantDraftReviewRoomUseCase(
+          getTenantAccountingAdvancedProfessionalReviewExecutionAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedReviewChangeRequestPackUseCase,
+      inject: [GetTenantAccountingAdvancedAccountantDraftReviewRoomUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedAccountantDraftReviewRoomUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedReviewChangeRequestPackUseCase(
+          getTenantAccountingAdvancedAccountantDraftReviewRoomUseCase,
+        ),
+    },
+    {
+      provide:
+        RequestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase,
+      inject: [GetTenantAccountingAdvancedReviewChangeRequestPackUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedReviewChangeRequestPackUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase(
+          getTenantAccountingAdvancedReviewChangeRequestPackUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedReviewExecutionCommandCenterUseCase,
+      inject: [
+        RequestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedReviewExecutionCommandCenterUseCase(
+          requestTenantAccountingAdvancedProfessionalApprovalRecommendationPackUseCase,
+        ),
+    },
+    {
+      provide:
+        RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase,
+      inject: [GetTenantAccountingAdvancedReviewExecutionCommandCenterUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedReviewExecutionCommandCenterUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase(
+          getTenantAccountingAdvancedReviewExecutionCommandCenterUseCase,
         ),
     },
     {

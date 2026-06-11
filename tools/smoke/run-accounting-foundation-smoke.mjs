@@ -1170,6 +1170,12 @@ const [
   advancedFinancialStatementsDraftPack,
   advancedCertifiedReconciliationDraftPack,
   advancedFormalDraftingCloseout,
+  advancedProfessionalReviewAnchor,
+  advancedAccountantDraftReviewRoom,
+  advancedReviewChangeRequestPack,
+  advancedProfessionalApprovalRecommendationPack,
+  advancedReviewExecutionCommandCenter,
+  advancedProfessionalReviewCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1494,6 +1500,48 @@ const [
     path: accountingPath(`/advanced-formal-drafting/closeout?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-professional-review/anchor?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-professional-review/accountant-review-room?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-professional-review/change-request-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-professional-review/approval-recommendation-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-professional-review/command-center?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-professional-review/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -1700,6 +1748,30 @@ assertStatus(
   'accounting advanced formal drafting closeout',
   advancedFormalDraftingCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced professional review anchor',
+  advancedProfessionalReviewAnchor.anchorStatus,
+);
+assertStatus(
+  'accounting advanced accountant draft review room',
+  advancedAccountantDraftReviewRoom.roomStatus,
+);
+assertStatus(
+  'accounting advanced review change request pack',
+  advancedReviewChangeRequestPack.packStatus,
+);
+assertStatus(
+  'accounting advanced professional approval recommendation pack',
+  advancedProfessionalApprovalRecommendationPack.packStatus,
+);
+assertStatus(
+  'accounting advanced review execution command center',
+  advancedReviewExecutionCommandCenter.commandStatus,
+);
+assertStatus(
+  'accounting advanced professional review closeout',
+  advancedProfessionalReviewCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -1720,6 +1792,11 @@ if (!Array.isArray(advancedFormalDesignCloseout.closeoutChecklist)) {
 }
 if (!Array.isArray(advancedFormalDraftingCloseout.closeoutChecklist)) {
   throw new Error('advanced-formal-drafting/closeout no devolvio checklist[].');
+}
+if (!Array.isArray(advancedProfessionalReviewCloseout.closeoutChecklist)) {
+  throw new Error(
+    'advanced-professional-review/closeout no devolvio checklist[].',
+  );
 }
 printLine(
   'foundation pack v2',

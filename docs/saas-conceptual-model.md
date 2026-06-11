@@ -2001,6 +2001,37 @@ not post formal adjustments, emit legal books, certify bank reconciliation,
 generate signed statements, file taxes or replace the external accountant,
 auditor or legal representative.
 
+### Accounting Advanced professional review execution 0.9
+
+After formal artifact drafting 0.8, Accounting Advanced can execute the first
+professional review loop over those drafts without approving them formally yet.
+This layer is the review table: the accountant, auditor or legal representative
+can inspect drafts, request changes and recommend next steps, but the platform
+still does not sign, certify, legalize or issue official artifacts.
+
+1. `Professional Review Execution Anchor`
+   - checks that drafting 0.8 produced traceable drafts, visible reviewers,
+     preserved boundaries and enough evidence to begin review
+2. `Accountant Draft Review Room`
+   - organizes professional findings across adjustment packs, journal/ledger
+     drafts, financial statements and certified-reconciliation drafts
+3. `Review Change Request Pack`
+   - converts review findings into traceable change requests owned by operator,
+     accountant, auditor or legal representative
+4. `Professional Approval Recommendation Pack`
+   - separates recommend-approval, require-changes, require-auditor-review and
+     do-not-approve recommendations without turning them into approvals
+5. `Review Execution Command Center`
+   - consolidates gates, review rows, requested changes and recommendations into
+     one operational view
+6. `Professional Review Execution Closeout`
+   - decides whether the drafts can move to formal approval workflow, need more
+     changes, must return to artifact drafting or should not advance
+
+Guardrail: professional review execution 0.9 is still pre-approval. It captures
+professional review and recommendations, but does not approve, sign, certify,
+legalize, file or replace external professional judgment.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2097,6 +2128,10 @@ product. Its current scope is intentionally operational and review-oriented:
     layer for formal artifacts. It assembles adjustment, journal/ledger,
     financial-statement and certified-reconciliation drafts for professional
     review without posting, signing, certifying, legalizing or filing anything.
+27. Accounting Advanced professional review execution 0.9 as the first
+    professional-review layer over formal drafts. It records review findings,
+    change requests, approval recommendations and command-center status without
+    approving, signing, certifying, legalizing or filing official artifacts.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

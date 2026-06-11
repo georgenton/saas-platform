@@ -32,6 +32,11 @@ import {
   GetTenantAccountingAdvancedPilotEnrollmentUseCase,
   GetTenantAccountingAdvancedPilotEvidenceSnapshotUseCase,
   GetTenantAccountingAdvancedPilotRunbookUseCase,
+  GetTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase,
+  GetTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase,
+  GetTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase,
+  GetTenantAccountingAdvancedPilotLearningRegistryUseCase,
+  GetTenantAccountingAdvancedProductGraduationMatrixUseCase,
   GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
   GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
@@ -87,6 +92,7 @@ import {
   RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase,
   RequestTenantAccountingAdvancedPilotCloseoutUseCase,
   RequestTenantAccountingAdvancedPilotOutcomePacketUseCase,
+  RequestTenantAccountingAdvancedGraduationCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -414,6 +420,68 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantAccountingAdvancedPilotCloseoutUseCase(
           requestTenantAccountingAdvancedPilotOutcomePacketUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedPilotLearningRegistryUseCase,
+      inject: [RequestTenantAccountingAdvancedPilotCloseoutUseCase],
+      useFactory: (requestTenantAccountingAdvancedPilotCloseoutUseCase) =>
+        new GetTenantAccountingAdvancedPilotLearningRegistryUseCase(
+          requestTenantAccountingAdvancedPilotCloseoutUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase,
+      inject: [GetTenantAccountingAdvancedPilotLearningRegistryUseCase],
+      useFactory: (getTenantAccountingAdvancedPilotLearningRegistryUseCase) =>
+        new GetTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase(
+          getTenantAccountingAdvancedPilotLearningRegistryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedProductGraduationMatrixUseCase,
+      inject: [
+        GetTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedProductGraduationMatrixUseCase(
+          getTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase,
+        ),
+    },
+    {
+      provide: GetTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase,
+      inject: [GetTenantAccountingAdvancedProductGraduationMatrixUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedProductGraduationMatrixUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase(
+          getTenantAccountingAdvancedProductGraduationMatrixUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase,
+      inject: [GetTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase],
+      useFactory: (
+        getTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase,
+      ) =>
+        new GetTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase(
+          getTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantAccountingAdvancedGraduationCloseoutUseCase,
+      inject: [
+        GetTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase,
+      ],
+      useFactory: (
+        getTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase,
+      ) =>
+        new RequestTenantAccountingAdvancedGraduationCloseoutUseCase(
+          getTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase,
         ),
     },
     {

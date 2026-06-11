@@ -4058,6 +4058,84 @@ export interface AccountingAdvancedPilotCloseoutResponse {
   guardrails: string[];
 }
 
+export interface AccountingAdvancedGraduationCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  learningRegistry: {
+    registryStatus: string;
+    summary: {
+      learningCount: number;
+      readyLearningCount: number;
+      hardeningLearningCount: number;
+      blockedLearningCount: number;
+      evidenceRefCount: number;
+    };
+    nextStep: string;
+  };
+  acceptanceCriteria: {
+    criteriaStatus: string;
+    summary: {
+      criteriaCount: number;
+      acceptedCriteriaCount: number;
+      needsReviewCriteriaCount: number;
+      blockedCriteriaCount: number;
+    };
+    nextStep: string;
+  };
+  graduationMatrix: {
+    matrixStatus: string;
+    finalDecision: string;
+    summary: {
+      rowCount: number;
+      graduateRowCount: number;
+      extendPilotRowCount: number;
+      hardeningRowCount: number;
+      doNotGraduateRowCount: number;
+    };
+    nextStep: string;
+  };
+  formalBooksBoundary: {
+    blueprintStatus: string;
+    summary: {
+      rowCount: number;
+      readyRowCount: number;
+      needsReviewRowCount: number;
+      blockedRowCount: number;
+    };
+    nextStep: string;
+  };
+  certifiedBankFeedBoundary: {
+    blueprintStatus: string;
+    summary: {
+      rowCount: number;
+      readyRowCount: number;
+      needsExternalProofCount: number;
+      blockedRowCount: number;
+    };
+    nextStep: string;
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    acceptanceCriteriaCount: number;
+    boundaryRowCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

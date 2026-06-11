@@ -26,6 +26,11 @@ import {
   GetTenantAccountingAdvancedPilotEnrollmentUseCase,
   GetTenantAccountingAdvancedPilotEvidenceSnapshotUseCase,
   GetTenantAccountingAdvancedPilotRunbookUseCase,
+  GetTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase,
+  GetTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase,
+  GetTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase,
+  GetTenantAccountingAdvancedPilotLearningRegistryUseCase,
+  GetTenantAccountingAdvancedProductGraduationMatrixUseCase,
   GetTenantAccountingAdvancedDiscoveryAnchorUseCase,
   GetTenantAccountingAdvancedDiscoveryIntakeUseCase,
   GetTenantAccountingAuditTrailWorkspaceUseCase,
@@ -81,6 +86,7 @@ import {
   RequestTenantAccountingAdvancedMvpReadinessCloseoutUseCase,
   RequestTenantAccountingAdvancedPilotCloseoutUseCase,
   RequestTenantAccountingAdvancedPilotOutcomePacketUseCase,
+  RequestTenantAccountingAdvancedGraduationCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -129,6 +135,12 @@ import {
   AccountingAdvancedPilotEvidenceSnapshotResponseDto,
   AccountingAdvancedPilotOutcomePacketResponseDto,
   AccountingAdvancedPilotRunbookResponseDto,
+  AccountingAdvancedCertifiedBankFeedBoundaryBlueprintResponseDto,
+  AccountingAdvancedExternalAccountantAcceptanceCriteriaResponseDto,
+  AccountingAdvancedFormalBooksBoundaryBlueprintResponseDto,
+  AccountingAdvancedGraduationCloseoutResponseDto,
+  AccountingAdvancedPilotLearningRegistryResponseDto,
+  AccountingAdvancedProductGraduationMatrixResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
   AccountingFormalNeedsClassifierResponseDto,
   AccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto,
@@ -153,6 +165,12 @@ import {
   toAccountingAdvancedPilotEvidenceSnapshotResponseDto,
   toAccountingAdvancedPilotOutcomePacketResponseDto,
   toAccountingAdvancedPilotRunbookResponseDto,
+  toAccountingAdvancedCertifiedBankFeedBoundaryBlueprintResponseDto,
+  toAccountingAdvancedExternalAccountantAcceptanceCriteriaResponseDto,
+  toAccountingAdvancedFormalBooksBoundaryBlueprintResponseDto,
+  toAccountingAdvancedGraduationCloseoutResponseDto,
+  toAccountingAdvancedPilotLearningRegistryResponseDto,
+  toAccountingAdvancedProductGraduationMatrixResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
   toAccountingFormalNeedsClassifierResponseDto,
   toAccountingMinimumLedgerCloseoutDesignWorkspaceResponseDto,
@@ -447,6 +465,12 @@ export class AccountingController {
     private readonly getTenantAccountingAdvancedPilotRunbookUseCase: GetTenantAccountingAdvancedPilotRunbookUseCase,
     private readonly requestTenantAccountingAdvancedPilotOutcomePacketUseCase: RequestTenantAccountingAdvancedPilotOutcomePacketUseCase,
     private readonly requestTenantAccountingAdvancedPilotCloseoutUseCase: RequestTenantAccountingAdvancedPilotCloseoutUseCase,
+    private readonly getTenantAccountingAdvancedPilotLearningRegistryUseCase: GetTenantAccountingAdvancedPilotLearningRegistryUseCase,
+    private readonly getTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase: GetTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase,
+    private readonly getTenantAccountingAdvancedProductGraduationMatrixUseCase: GetTenantAccountingAdvancedProductGraduationMatrixUseCase,
+    private readonly getTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase: GetTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase,
+    private readonly getTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase: GetTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase,
+    private readonly requestTenantAccountingAdvancedGraduationCloseoutUseCase: RequestTenantAccountingAdvancedGraduationCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -1052,6 +1076,172 @@ export class AccountingController {
         });
 
       return toAccountingAdvancedPilotCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-graduation/learning-registry')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedGraduationLearningRegistry(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedPilotLearningRegistryResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedPilotLearningRegistryUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedPilotLearningRegistryResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-graduation/accountant-acceptance-criteria')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedGraduationAccountantAcceptanceCriteria(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedExternalAccountantAcceptanceCriteriaResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedExternalAccountantAcceptanceCriteriaUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedExternalAccountantAcceptanceCriteriaResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-graduation/product-matrix')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedGraduationProductMatrix(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedProductGraduationMatrixResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedProductGraduationMatrixUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedProductGraduationMatrixResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-graduation/formal-books-boundary')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedGraduationFormalBooksBoundary(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedFormalBooksBoundaryBlueprintResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedFormalBooksBoundaryBlueprintUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedFormalBooksBoundaryBlueprintResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-graduation/certified-bank-feed-boundary')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedGraduationCertifiedBankFeedBoundary(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedCertifiedBankFeedBoundaryBlueprintResponseDto> {
+    try {
+      const view =
+        await this.getTenantAccountingAdvancedCertifiedBankFeedBoundaryBlueprintUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedCertifiedBankFeedBoundaryBlueprintResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/advanced-graduation/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getAdvancedGraduationCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<AccountingAdvancedGraduationCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantAccountingAdvancedGraduationCloseoutUseCase.execute(
+          {
+            tenantSlug,
+            period,
+            year: Number.parseInt(year, 10),
+          },
+        );
+
+      return toAccountingAdvancedGraduationCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

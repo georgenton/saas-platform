@@ -48,6 +48,12 @@ import {
   TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView,
   TenantAccountingAdvancedReviewChangeRequestPackView,
   TenantAccountingAdvancedReviewExecutionCommandCenterView,
+  TenantAccountingAdvancedApprovalAuthorityMatrixView,
+  TenantAccountingAdvancedApprovalDecisionWorkspaceView,
+  TenantAccountingAdvancedFormalApprovalCommandCenterView,
+  TenantAccountingAdvancedFormalApprovalEvidencePackView,
+  TenantAccountingAdvancedFormalApprovalWorkflowAnchorView,
+  TenantAccountingAdvancedFormalApprovalWorkflowCloseoutView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
@@ -163,6 +169,18 @@ export type AccountingAdvancedReviewExecutionCommandCenterResponseDto =
   Serialized<TenantAccountingAdvancedReviewExecutionCommandCenterView>;
 export type AccountingAdvancedProfessionalReviewExecutionCloseoutResponseDto =
   Serialized<TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView>;
+export type AccountingAdvancedFormalApprovalWorkflowAnchorResponseDto =
+  Serialized<TenantAccountingAdvancedFormalApprovalWorkflowAnchorView>;
+export type AccountingAdvancedApprovalAuthorityMatrixResponseDto =
+  Serialized<TenantAccountingAdvancedApprovalAuthorityMatrixView>;
+export type AccountingAdvancedFormalApprovalEvidencePackResponseDto =
+  Serialized<TenantAccountingAdvancedFormalApprovalEvidencePackView>;
+export type AccountingAdvancedApprovalDecisionWorkspaceResponseDto =
+  Serialized<TenantAccountingAdvancedApprovalDecisionWorkspaceView>;
+export type AccountingAdvancedFormalApprovalCommandCenterResponseDto =
+  Serialized<TenantAccountingAdvancedFormalApprovalCommandCenterView>;
+export type AccountingAdvancedFormalApprovalWorkflowCloseoutResponseDto =
+  Serialized<TenantAccountingAdvancedFormalApprovalWorkflowCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -485,6 +503,42 @@ export function toAccountingAdvancedReviewExecutionCommandCenterResponseDto(
 export function toAccountingAdvancedProfessionalReviewExecutionCloseoutResponseDto(
   view: TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView,
 ): AccountingAdvancedProfessionalReviewExecutionCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalApprovalWorkflowAnchorResponseDto(
+  view: TenantAccountingAdvancedFormalApprovalWorkflowAnchorView,
+): AccountingAdvancedFormalApprovalWorkflowAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedApprovalAuthorityMatrixResponseDto(
+  view: TenantAccountingAdvancedApprovalAuthorityMatrixView,
+): AccountingAdvancedApprovalAuthorityMatrixResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalApprovalEvidencePackResponseDto(
+  view: TenantAccountingAdvancedFormalApprovalEvidencePackView,
+): AccountingAdvancedFormalApprovalEvidencePackResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedApprovalDecisionWorkspaceResponseDto(
+  view: TenantAccountingAdvancedApprovalDecisionWorkspaceView,
+): AccountingAdvancedApprovalDecisionWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalApprovalCommandCenterResponseDto(
+  view: TenantAccountingAdvancedFormalApprovalCommandCenterView,
+): AccountingAdvancedFormalApprovalCommandCenterResponseDto {
+  return serialize(view);
+}
+
+export function toAccountingAdvancedFormalApprovalWorkflowCloseoutResponseDto(
+  view: TenantAccountingAdvancedFormalApprovalWorkflowCloseoutView,
+): AccountingAdvancedFormalApprovalWorkflowCloseoutResponseDto {
   return serialize(view);
 }
 

@@ -8,6 +8,7 @@ import {
   AccountingAdvancedFormalProductDesignDecision,
   AccountingAdvancedFormalArtifactDraftingDecision,
   AccountingAdvancedProfessionalReviewExecutionDecision,
+  AccountingAdvancedFormalApprovalWorkflowDecision,
   AccountingAdvancedFormalModuleKey,
   AccountingAdvancedProfessionalOwner,
   AccountingAdvancedPilotEnrollmentStatus,
@@ -62,6 +63,12 @@ import {
   TenantAccountingAdvancedProfessionalReviewExecutionCloseoutView,
   TenantAccountingAdvancedReviewChangeRequestPackView,
   TenantAccountingAdvancedReviewExecutionCommandCenterView,
+  TenantAccountingAdvancedApprovalAuthorityMatrixView,
+  TenantAccountingAdvancedApprovalDecisionWorkspaceView,
+  TenantAccountingAdvancedFormalApprovalCommandCenterView,
+  TenantAccountingAdvancedFormalApprovalEvidencePackView,
+  TenantAccountingAdvancedFormalApprovalWorkflowAnchorView,
+  TenantAccountingAdvancedFormalApprovalWorkflowCloseoutView,
   TenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixView,
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingCertifiedBankEvidenceBoundaryView,
@@ -4714,6 +4721,395 @@ export class RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutU
   }
 }
 
+export class GetTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase: RequestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalApprovalWorkflowAnchorView> {
+    const professionalReviewCloseout =
+      await this.requestTenantAccountingAdvancedProfessionalReviewExecutionCloseoutUseCase.execute(
+        input,
+      );
+    const approvalGates: TenantAccountingAdvancedFormalApprovalWorkflowAnchorView['approvalGates'] =
+      [
+        formalApprovalGate('professional_review_closeout', 'Professional review closeout complete', professionalReviewCloseout.closeoutStatus, ['advanced_professional_review_execution_closeout'], 'external_accountant', 'Formal approval can only start from reviewed drafts.'),
+        formalApprovalGate('approval_recommendations', 'Approval recommendations available', professionalReviewCloseout.approvalRecommendationPack.packStatus, ['advanced_professional_approval_recommendation_pack'], 'external_accountant', 'Recommendations are input evidence, not approvals.'),
+        formalApprovalGate('change_requests', 'Change requests understood', professionalReviewCloseout.changeRequestPack.packStatus, ['advanced_review_change_request_pack'], 'operator', 'Open changes must be visible before approval decisions.'),
+        formalApprovalGate('external_signoff_boundary', 'External signoff boundary preserved', professionalReviewCloseout.commandCenter.commandStatus, ['advanced_review_execution_command_center'], 'auditor', 'Signature and certification remain outside this workflow.'),
+      ];
+    const blockers =
+      professionalReviewCloseout.finalDecision ===
+      'ready_for_formal_approval_workflow'
+        ? [...professionalReviewCloseout.blockers]
+        : unique([
+            ...professionalReviewCloseout.blockers,
+            `Professional review decision is ${professionalReviewCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(
+      approvalGates.map((gate) => gate.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      professionalReviewCloseout,
+      approvalGates,
+      summary: {
+        gateCount: approvalGates.length,
+        readyGateCount: approvalGates.filter((gate) => gate.status === 'ready')
+          .length,
+        needsReviewGateCount: approvalGates.filter(
+          (gate) => gate.status === 'needs_review',
+        ).length,
+        blockedGateCount: approvalGates.filter(
+          (gate) => gate.status === 'blocked',
+        ).length,
+        recommendationCount:
+          professionalReviewCloseout.summary.recommendationCount,
+      },
+      blockers,
+      nextStep:
+        anchorStatus === 'blocked'
+          ? 'Volver a review profesional antes de approval workflow.'
+          : 'Construir matriz de autoridad para aprobaciones formales.',
+      guardrails: [
+        'Formal Approval Workflow 1.0 decide aprobaciones internas de workflow; no firma ni certifica.',
+        'Cada aprobacion mantiene owner externo y boundary visible.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedApprovalAuthorityMatrixUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase: GetTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedApprovalAuthorityMatrixView> {
+    const approvalAnchor =
+      await this.getTenantAccountingAdvancedFormalApprovalWorkflowAnchorUseCase.execute(
+        input,
+      );
+    const authorities: TenantAccountingAdvancedApprovalAuthorityMatrixView['authorities'] =
+      [
+        approvalAuthority('adjustment_pack_authority', 'Adjustment pack approval authority', 'adjustment_pack', 'needs_review', 'external_accountant', 'Contador externo aprueba el paquete antes de cualquier posteo formal.'),
+        approvalAuthority('journal_book_authority', 'Journal book approval authority', 'journal_book', 'ready', 'external_accountant', 'Contador externo aprueba el diario antes de firma/legalizacion.'),
+        approvalAuthority('ledger_book_authority', 'Ledger book approval authority', 'ledger_book', 'needs_review', 'external_accountant', 'Contador externo valida mayor y saldos antes de firma/legalizacion.'),
+        approvalAuthority('financial_statement_authority', 'Financial statement approval authority', 'financial_statement', 'needs_review', 'legal_representative', 'Representante legal conserva aprobacion antes de firma.'),
+        approvalAuthority('certified_reconciliation_authority', 'Certified reconciliation approval authority', 'certified_reconciliation', 'needs_review', 'auditor', 'Auditor o tercero autorizado conserva certificacion bancaria.'),
+      ];
+    const blockers = [...approvalAnchor.blockers];
+    const matrixStatus = resolveStatus(
+      authorities.map((authority) => authority.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      matrixStatus,
+      approvalAnchor,
+      authorities,
+      summary: {
+        authorityCount: authorities.length,
+        accountantAuthorityCount: authorities.filter(
+          (authority) => authority.requiredOwner === 'external_accountant',
+        ).length,
+        auditorAuthorityCount: authorities.filter(
+          (authority) => authority.requiredOwner === 'auditor',
+        ).length,
+        legalRepresentativeAuthorityCount: authorities.filter(
+          (authority) => authority.requiredOwner === 'legal_representative',
+        ).length,
+        needsReviewAuthorityCount: authorities.filter(
+          (authority) => authority.status === 'needs_review',
+        ).length,
+      },
+      blockers,
+      nextStep:
+        'Armar evidencia requerida por autoridad antes de decision workspace.',
+      guardrails: [
+        'Authority matrix asigna llaves; no ejecuta aprobaciones.',
+        'La plataforma no aparece como aprobador profesional.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedFormalApprovalEvidencePackUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedApprovalAuthorityMatrixUseCase: GetTenantAccountingAdvancedApprovalAuthorityMatrixUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalApprovalEvidencePackView> {
+    const authorityMatrix =
+      await this.getTenantAccountingAdvancedApprovalAuthorityMatrixUseCase.execute(
+        input,
+      );
+    const evidenceItems = authorityMatrix.authorities.map((authority) =>
+      approvalEvidence(
+        `evidence_${authority.key}`,
+        `${authority.label} evidence`,
+        authority.status,
+        authority.artifactType,
+        ['advanced_professional_review_execution_closeout', authority.key],
+        `Confirmar si ${authority.requiredOwner} puede aprobar ${authority.artifactType} sin cruzar firma/certificacion.`,
+      ),
+    );
+    const blockers = [...authorityMatrix.blockers];
+    const packStatus = resolveStatus(
+      evidenceItems.map((item) => item.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      authorityMatrix,
+      evidenceItems,
+      summary: {
+        evidenceItemCount: evidenceItems.length,
+        readyEvidenceItemCount: evidenceItems.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        needsReviewEvidenceItemCount: evidenceItems.filter(
+          (item) => item.status === 'needs_review',
+        ).length,
+        blockedEvidenceItemCount: evidenceItems.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Abrir decision workspace con evidencia y autoridad visible.',
+      guardrails: [
+        'Evidence pack es expediente de aprobacion; no documento oficial.',
+        'Toda evidencia conserva boundary de firma/certificacion posterior.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedFormalApprovalEvidencePackUseCase: GetTenantAccountingAdvancedFormalApprovalEvidencePackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedApprovalDecisionWorkspaceView> {
+    const evidencePack =
+      await this.getTenantAccountingAdvancedFormalApprovalEvidencePackUseCase.execute(
+        input,
+      );
+    const decisions = evidencePack.evidenceItems.map((item) =>
+      approvalDecision(
+        `decision_${item.key}`,
+        `${item.label} decision`,
+        item.status,
+        item.artifactType,
+        approvalDecisionFromEvidence(item),
+        ownerFromArtifactType(item.artifactType),
+        approvalDecisionRationale(item),
+      ),
+    );
+    const blockers = [...evidencePack.blockers];
+    const workspaceStatus = resolveStatus(
+      decisions.map((decision) => decision.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      workspaceStatus,
+      evidencePack,
+      decisions,
+      summary: {
+        decisionCount: decisions.length,
+        approvedPendingSignatureCount: decisions.filter(
+          (decision) => decision.decision === 'approved_pending_signature',
+        ).length,
+        requiresChangesCount: decisions.filter(
+          (decision) => decision.decision === 'requires_changes',
+        ).length,
+        rejectedCount: decisions.filter((decision) => decision.decision === 'rejected')
+          .length,
+        requiresExternalSignoffCount: decisions.filter(
+          (decision) => decision.decision === 'requires_external_signoff',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Consolidar command center de approval workflow.',
+      guardrails: [
+        'Approved pending signature no equivale a firma ni legalizacion.',
+        'Decisiones de workflow pueden devolver artefactos a review profesional.',
+      ],
+    };
+  }
+}
+
+export class GetTenantAccountingAdvancedFormalApprovalCommandCenterUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase: GetTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalApprovalCommandCenterView> {
+    const decisionWorkspace =
+      await this.getTenantAccountingAdvancedApprovalDecisionWorkspaceUseCase.execute(
+        input,
+      );
+    const { evidencePack } = decisionWorkspace;
+    const { authorityMatrix } = evidencePack;
+    const { approvalAnchor } = authorityMatrix;
+    const lanes: TenantAccountingAdvancedFormalApprovalCommandCenterView['lanes'] =
+      [
+        formalApprovalLane('approval_anchor', 'Approval workflow anchor', approvalAnchor.anchorStatus, 'external_accountant', `${approvalAnchor.summary.readyGateCount}/${approvalAnchor.summary.gateCount} gates`, approvalAnchor.nextStep),
+        formalApprovalLane('authority_matrix', 'Approval authority matrix', authorityMatrix.matrixStatus, 'external_accountant', `${authorityMatrix.summary.authorityCount} authorities`, authorityMatrix.nextStep),
+        formalApprovalLane('evidence_pack', 'Formal approval evidence pack', evidencePack.packStatus, 'operator', `${evidencePack.summary.evidenceItemCount} evidence`, evidencePack.nextStep),
+        formalApprovalLane('decision_workspace', 'Approval decision workspace', decisionWorkspace.workspaceStatus, 'legal_representative', `${decisionWorkspace.summary.approvedPendingSignatureCount} approved`, decisionWorkspace.nextStep),
+      ];
+    const blockers = unique([
+      ...approvalAnchor.blockers,
+      ...authorityMatrix.blockers,
+      ...evidencePack.blockers,
+      ...decisionWorkspace.blockers,
+    ]);
+    const commandStatus = resolveStatus(
+      lanes.map((lane) => lane.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      commandStatus,
+      decisionWorkspace,
+      lanes,
+      summary: {
+        laneCount: lanes.length,
+        readyLaneCount: lanes.filter((lane) => lane.status === 'ready').length,
+        needsReviewLaneCount: lanes.filter(
+          (lane) => lane.status === 'needs_review',
+        ).length,
+        blockedLaneCount: lanes.filter((lane) => lane.status === 'blocked')
+          .length,
+        approvedPendingSignatureCount:
+          decisionWorkspace.summary.approvedPendingSignatureCount,
+        externalSignoffCount:
+          decisionWorkspace.summary.requiresExternalSignoffCount,
+      },
+      blockers,
+      nextStep: 'Cerrar approval workflow y decidir siguiente frontera.',
+      guardrails: [
+        'Command center no firma ni certifica; solo coordina aprobaciones internas.',
+        'La salida lista para firma debe pasar a una capa explicita de signature/certification.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantAccountingAdvancedFormalApprovalWorkflowCloseoutUseCase {
+  constructor(
+    private readonly getTenantAccountingAdvancedFormalApprovalCommandCenterUseCase: GetTenantAccountingAdvancedFormalApprovalCommandCenterUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantAccountingAdvancedFormalApprovalWorkflowCloseoutView> {
+    const commandCenter =
+      await this.getTenantAccountingAdvancedFormalApprovalCommandCenterUseCase.execute(
+        input,
+      );
+    const { decisionWorkspace } = commandCenter;
+    const { evidencePack } = decisionWorkspace;
+    const { authorityMatrix } = evidencePack;
+    const { approvalAnchor } = authorityMatrix;
+    const closeoutChecklist: TenantAccountingAdvancedFormalApprovalWorkflowCloseoutView['closeoutChecklist'] =
+      [
+        formalApprovalCloseoutCheck('approval_anchor', 'Formal approval workflow anchor', approvalAnchor.anchorStatus, ['advanced_formal_approval_workflow_anchor']),
+        formalApprovalCloseoutCheck('authority_matrix', 'Approval authority matrix', authorityMatrix.matrixStatus, ['advanced_approval_authority_matrix']),
+        formalApprovalCloseoutCheck('evidence_pack', 'Formal approval evidence pack', evidencePack.packStatus, ['advanced_formal_approval_evidence_pack']),
+        formalApprovalCloseoutCheck('decision_workspace', 'Approval decision workspace', decisionWorkspace.workspaceStatus, ['advanced_approval_decision_workspace']),
+        formalApprovalCloseoutCheck('command_center', 'Formal approval command center', commandCenter.commandStatus, ['advanced_formal_approval_command_center']),
+      ];
+    const blockers = unique([
+      ...approvalAnchor.blockers,
+      ...authorityMatrix.blockers,
+      ...evidencePack.blockers,
+      ...decisionWorkspace.blockers,
+      ...commandCenter.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(
+      closeoutChecklist.map((item) => item.status),
+      blockers,
+    );
+    const finalDecision = formalApprovalWorkflowDecisionFromStatus(
+      closeoutStatus,
+      decisionWorkspace,
+      commandCenter,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      approvalAnchor,
+      authorityMatrix,
+      evidencePack,
+      decisionWorkspace,
+      commandCenter,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        blockedChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+        authorityCount: authorityMatrix.summary.authorityCount,
+        evidenceItemCount: evidencePack.summary.evidenceItemCount,
+        decisionCount: decisionWorkspace.summary.decisionCount,
+        approvedPendingSignatureCount:
+          decisionWorkspace.summary.approvedPendingSignatureCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'ready_for_signature_and_certification'
+          ? 'Iniciar 1.1 Signature, Certification & Legalization Boundaries.'
+          : finalDecision === 'needs_external_approval'
+            ? 'Completar aprobaciones externas antes de firma/certificacion.'
+            : finalDecision === 'return_to_professional_review'
+              ? 'Volver a 0.9 para resolver hallazgos profesionales.'
+              : 'No aprobar artefactos formales para este periodo.',
+      guardrails: [
+        'Formal approval workflow closeout no firma, certifica, legaliza ni emite.',
+        'La siguiente capa debe separar firmas, certificaciones y legalizaciones como actos externos.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -5357,6 +5753,148 @@ function professionalReviewExecutionDecisionFromStatus(
     return 'needs_more_changes';
   }
   return 'ready_for_formal_approval_workflow';
+}
+
+function formalApprovalGate(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+  requiredOwner: AccountingAdvancedProfessionalOwner,
+  gate: string,
+): TenantAccountingAdvancedFormalApprovalWorkflowAnchorView['approvalGates'][number] {
+  return { key, label, status, evidenceRefs, requiredOwner, gate };
+}
+
+function approvalAuthority(
+  key: string,
+  label: string,
+  artifactType: TenantAccountingAdvancedApprovalAuthorityMatrixView['authorities'][number]['artifactType'],
+  status: AccountingReadinessStatus,
+  requiredOwner: AccountingAdvancedProfessionalOwner,
+  authorityBoundary: string,
+): TenantAccountingAdvancedApprovalAuthorityMatrixView['authorities'][number] {
+  return {
+    key,
+    label,
+    artifactType,
+    status,
+    requiredOwner,
+    authorityBoundary,
+  };
+}
+
+function approvalEvidence(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  artifactType: TenantAccountingAdvancedFormalApprovalEvidencePackView['evidenceItems'][number]['artifactType'],
+  evidenceRefs: string[],
+  approvalQuestion: string,
+): TenantAccountingAdvancedFormalApprovalEvidencePackView['evidenceItems'][number] {
+  return { key, label, status, artifactType, evidenceRefs, approvalQuestion };
+}
+
+function approvalDecision(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  artifactType: TenantAccountingAdvancedApprovalDecisionWorkspaceView['decisions'][number]['artifactType'],
+  decision: TenantAccountingAdvancedApprovalDecisionWorkspaceView['decisions'][number]['decision'],
+  decidedBy: AccountingAdvancedProfessionalOwner,
+  rationale: string,
+): TenantAccountingAdvancedApprovalDecisionWorkspaceView['decisions'][number] {
+  return { key, label, status, artifactType, decision, decidedBy, rationale };
+}
+
+function approvalDecisionFromEvidence(
+  item: TenantAccountingAdvancedFormalApprovalEvidencePackView['evidenceItems'][number],
+): TenantAccountingAdvancedApprovalDecisionWorkspaceView['decisions'][number]['decision'] {
+  if (item.status === 'ready') {
+    return 'approved_pending_signature';
+  }
+  if (
+    item.artifactType === 'financial_statement' ||
+    item.artifactType === 'certified_reconciliation'
+  ) {
+    return 'requires_external_signoff';
+  }
+  if (item.status === 'blocked') {
+    return 'rejected';
+  }
+  return 'requires_changes';
+}
+
+function ownerFromArtifactType(
+  artifactType: TenantAccountingAdvancedApprovalDecisionWorkspaceView['decisions'][number]['artifactType'],
+): AccountingAdvancedProfessionalOwner {
+  if (artifactType === 'financial_statement') {
+    return 'legal_representative';
+  }
+  if (artifactType === 'certified_reconciliation') {
+    return 'auditor';
+  }
+  return 'external_accountant';
+}
+
+function approvalDecisionRationale(
+  item: TenantAccountingAdvancedFormalApprovalEvidencePackView['evidenceItems'][number],
+): string {
+  if (item.status === 'ready') {
+    return 'Evidencia lista para aprobacion interna pendiente de firma/certificacion.';
+  }
+  if (
+    item.artifactType === 'financial_statement' ||
+    item.artifactType === 'certified_reconciliation'
+  ) {
+    return 'Requiere signoff externo antes de avanzar a firma/certificacion.';
+  }
+  if (item.status === 'blocked') {
+    return 'No debe aprobarse hasta resolver blockers de evidencia.';
+  }
+  return 'Debe resolver cambios profesionales antes de aprobacion.';
+}
+
+function formalApprovalLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  owner: AccountingAdvancedProfessionalOwner,
+  primaryMetric: string,
+  nextAction: string,
+): TenantAccountingAdvancedFormalApprovalCommandCenterView['lanes'][number] {
+  return { key, label, status, owner, primaryMetric, nextAction };
+}
+
+function formalApprovalCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantAccountingAdvancedFormalApprovalWorkflowCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function formalApprovalWorkflowDecisionFromStatus(
+  closeoutStatus: AccountingReadinessStatus,
+  decisionWorkspace: TenantAccountingAdvancedApprovalDecisionWorkspaceView,
+  commandCenter: TenantAccountingAdvancedFormalApprovalCommandCenterView,
+  blockers: string[],
+): AccountingAdvancedFormalApprovalWorkflowDecision {
+  if (blockers.length > 0 || closeoutStatus === 'blocked') {
+    return 'return_to_professional_review';
+  }
+  if (decisionWorkspace.summary.rejectedCount > 0) {
+    return 'do_not_approve_formal_artifacts';
+  }
+  if (
+    decisionWorkspace.summary.requiresChangesCount > 0 ||
+    decisionWorkspace.summary.requiresExternalSignoffCount > 0 ||
+    commandCenter.summary.needsReviewLaneCount > 0
+  ) {
+    return 'needs_external_approval';
+  }
+  return 'ready_for_signature_and_certification';
 }
 
 function formalProductDesignDecisionFromStatus(

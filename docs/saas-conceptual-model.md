@@ -2032,6 +2032,37 @@ Guardrail: professional review execution 0.9 is still pre-approval. It captures
 professional review and recommendations, but does not approve, sign, certify,
 legalize, file or replace external professional judgment.
 
+### Accounting Advanced formal approval workflow 1.0
+
+After professional review execution 0.9, Accounting Advanced can model the first
+formal approval workflow without crossing into signature, certification or
+legalization yet. This layer is the approval desk: it checks recommendations,
+authority, evidence and decisions, then decides whether artifacts are ready for
+the next boundary.
+
+1. `Formal Approval Workflow Anchor`
+   - checks professional review closeout, approval recommendations, change
+     requests and external signoff boundaries before approvals can start
+2. `Approval Authority Matrix`
+   - assigns approval authority by artifact type to accountant, auditor or legal
+     representative without making the platform an approver
+3. `Formal Approval Evidence Pack`
+   - packages reviewed drafts, recommendations, change evidence and guardrails
+     as an approval expediente, not an official artifact
+4. `Approval Decision Workspace`
+   - records recommended, approved-pending-signature, requires-changes, rejected
+     and requires-external-signoff decisions
+5. `Formal Approval Command Center`
+   - consolidates gates, authorities, evidence, decision state and next actions
+     for the formal approval workflow
+6. `Formal Approval Workflow Closeout`
+   - decides whether artifacts are ready for signature/certification, need
+     external approval, must return to review or should not be approved
+
+Guardrail: formal approval workflow 1.0 records internal approval decisions and
+authority boundaries only. It does not sign, certify, legalize, file, emit
+official artifacts or replace the external professional act.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2132,6 +2163,10 @@ product. Its current scope is intentionally operational and review-oriented:
     professional-review layer over formal drafts. It records review findings,
     change requests, approval recommendations and command-center status without
     approving, signing, certifying, legalizing or filing official artifacts.
+28. Accounting Advanced formal approval workflow 1.0 as the first controlled
+    approval layer over reviewed drafts. It records authority, evidence,
+    approval decisions and command-center status without signing, certifying,
+    legalizing, filing or emitting official artifacts.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

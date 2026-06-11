@@ -1176,6 +1176,12 @@ const [
   advancedProfessionalApprovalRecommendationPack,
   advancedReviewExecutionCommandCenter,
   advancedProfessionalReviewCloseout,
+  advancedFormalApprovalAnchor,
+  advancedApprovalAuthorityMatrix,
+  advancedFormalApprovalEvidencePack,
+  advancedApprovalDecisionWorkspace,
+  advancedFormalApprovalCommandCenter,
+  advancedFormalApprovalCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1542,6 +1548,44 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-formal-approval/anchor?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-approval/authority-matrix?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-approval/evidence-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-approval/decision-workspace?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/advanced-formal-approval/command-center?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/advanced-formal-approval/closeout?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -1772,6 +1816,30 @@ assertStatus(
   'accounting advanced professional review closeout',
   advancedProfessionalReviewCloseout.closeoutStatus,
 );
+assertStatus(
+  'accounting advanced formal approval anchor',
+  advancedFormalApprovalAnchor.anchorStatus,
+);
+assertStatus(
+  'accounting advanced approval authority matrix',
+  advancedApprovalAuthorityMatrix.matrixStatus,
+);
+assertStatus(
+  'accounting advanced formal approval evidence pack',
+  advancedFormalApprovalEvidencePack.packStatus,
+);
+assertStatus(
+  'accounting advanced approval decision workspace',
+  advancedApprovalDecisionWorkspace.workspaceStatus,
+);
+assertStatus(
+  'accounting advanced formal approval command center',
+  advancedFormalApprovalCommandCenter.commandStatus,
+);
+assertStatus(
+  'accounting advanced formal approval closeout',
+  advancedFormalApprovalCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -1797,6 +1865,9 @@ if (!Array.isArray(advancedProfessionalReviewCloseout.closeoutChecklist)) {
   throw new Error(
     'advanced-professional-review/closeout no devolvio checklist[].',
   );
+}
+if (!Array.isArray(advancedFormalApprovalCloseout.closeoutChecklist)) {
+  throw new Error('advanced-formal-approval/closeout no devolvio checklist[].');
 }
 printLine(
   'foundation pack v2',

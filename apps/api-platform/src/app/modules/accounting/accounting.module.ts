@@ -135,6 +135,11 @@ import {
   GetTenantFullAccountingAccountantDraftReviewRoomUseCase,
   GetTenantFullAccountingReviewChangeRequestPackUseCase,
   GetTenantFullAccountingReviewExecutionCommandCenterUseCase,
+  GetTenantFullAccountingFormalApprovalWorkflowAnchorUseCase,
+  GetTenantFullAccountingApprovalAuthorityMatrixUseCase,
+  GetTenantFullAccountingFormalApprovalEvidencePackUseCase,
+  GetTenantFullAccountingApprovalDecisionWorkspaceUseCase,
+  GetTenantFullAccountingFormalApprovalCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -219,6 +224,7 @@ import {
   RequestTenantFullAccountingFormalArtifactDraftingCloseoutUseCase,
   RequestTenantFullAccountingProfessionalApprovalRecommendationPackUseCase,
   RequestTenantFullAccountingProfessionalReviewExecutionCloseoutUseCase,
+  RequestTenantFullAccountingFormalApprovalWorkflowCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -1931,6 +1937,64 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantFullAccountingProfessionalReviewExecutionCloseoutUseCase(
           getTenantFullAccountingReviewExecutionCommandCenterUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingFormalApprovalWorkflowAnchorUseCase,
+      inject: [
+        RequestTenantFullAccountingProfessionalReviewExecutionCloseoutUseCase,
+      ],
+      useFactory: (
+        requestTenantFullAccountingProfessionalReviewExecutionCloseoutUseCase,
+      ) =>
+        new GetTenantFullAccountingFormalApprovalWorkflowAnchorUseCase(
+          requestTenantFullAccountingProfessionalReviewExecutionCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingApprovalAuthorityMatrixUseCase,
+      inject: [GetTenantFullAccountingFormalApprovalWorkflowAnchorUseCase],
+      useFactory: (
+        getTenantFullAccountingFormalApprovalWorkflowAnchorUseCase,
+      ) =>
+        new GetTenantFullAccountingApprovalAuthorityMatrixUseCase(
+          getTenantFullAccountingFormalApprovalWorkflowAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingFormalApprovalEvidencePackUseCase,
+      inject: [GetTenantFullAccountingApprovalAuthorityMatrixUseCase],
+      useFactory: (getTenantFullAccountingApprovalAuthorityMatrixUseCase) =>
+        new GetTenantFullAccountingFormalApprovalEvidencePackUseCase(
+          getTenantFullAccountingApprovalAuthorityMatrixUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingApprovalDecisionWorkspaceUseCase,
+      inject: [GetTenantFullAccountingFormalApprovalEvidencePackUseCase],
+      useFactory: (
+        getTenantFullAccountingFormalApprovalEvidencePackUseCase,
+      ) =>
+        new GetTenantFullAccountingApprovalDecisionWorkspaceUseCase(
+          getTenantFullAccountingFormalApprovalEvidencePackUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingFormalApprovalCommandCenterUseCase,
+      inject: [GetTenantFullAccountingApprovalDecisionWorkspaceUseCase],
+      useFactory: (getTenantFullAccountingApprovalDecisionWorkspaceUseCase) =>
+        new GetTenantFullAccountingFormalApprovalCommandCenterUseCase(
+          getTenantFullAccountingApprovalDecisionWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantFullAccountingFormalApprovalWorkflowCloseoutUseCase,
+      inject: [GetTenantFullAccountingFormalApprovalCommandCenterUseCase],
+      useFactory: (
+        getTenantFullAccountingFormalApprovalCommandCenterUseCase,
+      ) =>
+        new RequestTenantFullAccountingFormalApprovalWorkflowCloseoutUseCase(
+          getTenantFullAccountingFormalApprovalCommandCenterUseCase,
         ),
     },
     {

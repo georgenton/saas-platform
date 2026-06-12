@@ -119,6 +119,8 @@ import {
   TenantFullAccountingFormalLedgerDraftPackView,
   TenantFullAccountingProfessionalReviewExecutionAnchorView,
   TenantFullAccountingProfessionalReviewExecutionCloseoutView,
+  TenantFullAccountingFormalApprovalWorkflowAnchorView,
+  TenantFullAccountingFormalApprovalWorkflowCloseoutView,
   TenantFullAccountingFormalReadinessAnchorView,
   TenantFullAccountingFormalReadinessCloseoutView,
   TenantFullAccountingOfficialArtifactBoundaryRegistryView,
@@ -137,6 +139,10 @@ import {
   TenantFullAccountingPolicyTemplateRegistryView,
   TenantFullAccountingAccountantDraftReviewRoomView,
   TenantFullAccountingProfessionalApprovalRecommendationPackView,
+  TenantFullAccountingApprovalAuthorityMatrixView,
+  TenantFullAccountingApprovalDecisionWorkspaceView,
+  TenantFullAccountingFormalApprovalCommandCenterView,
+  TenantFullAccountingFormalApprovalEvidencePackView,
   TenantFullAccountingPostingApprovalDraftPackView,
   TenantFullAccountingBankReconciliationEvidenceDraftPackView,
   TenantFullAccountingReviewChangeRequestPackView,
@@ -469,6 +475,18 @@ export type FullAccountingReviewExecutionCommandCenterResponseDto =
   Serialized<TenantFullAccountingReviewExecutionCommandCenterView>;
 export type FullAccountingProfessionalReviewExecutionCloseoutResponseDto =
   Serialized<TenantFullAccountingProfessionalReviewExecutionCloseoutView>;
+export type FullAccountingFormalApprovalWorkflowAnchorResponseDto =
+  Serialized<TenantFullAccountingFormalApprovalWorkflowAnchorView>;
+export type FullAccountingApprovalAuthorityMatrixResponseDto =
+  Serialized<TenantFullAccountingApprovalAuthorityMatrixView>;
+export type FullAccountingFormalApprovalEvidencePackResponseDto =
+  Serialized<TenantFullAccountingFormalApprovalEvidencePackView>;
+export type FullAccountingApprovalDecisionWorkspaceResponseDto =
+  Serialized<TenantFullAccountingApprovalDecisionWorkspaceView>;
+export type FullAccountingFormalApprovalCommandCenterResponseDto =
+  Serialized<TenantFullAccountingFormalApprovalCommandCenterView>;
+export type FullAccountingFormalApprovalWorkflowCloseoutResponseDto =
+  Serialized<TenantFullAccountingFormalApprovalWorkflowCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1403,6 +1421,42 @@ export function toFullAccountingReviewExecutionCommandCenterResponseDto(
 export function toFullAccountingProfessionalReviewExecutionCloseoutResponseDto(
   view: TenantFullAccountingProfessionalReviewExecutionCloseoutView,
 ): FullAccountingProfessionalReviewExecutionCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalApprovalWorkflowAnchorResponseDto(
+  view: TenantFullAccountingFormalApprovalWorkflowAnchorView,
+): FullAccountingFormalApprovalWorkflowAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingApprovalAuthorityMatrixResponseDto(
+  view: TenantFullAccountingApprovalAuthorityMatrixView,
+): FullAccountingApprovalAuthorityMatrixResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalApprovalEvidencePackResponseDto(
+  view: TenantFullAccountingFormalApprovalEvidencePackView,
+): FullAccountingFormalApprovalEvidencePackResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingApprovalDecisionWorkspaceResponseDto(
+  view: TenantFullAccountingApprovalDecisionWorkspaceView,
+): FullAccountingApprovalDecisionWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalApprovalCommandCenterResponseDto(
+  view: TenantFullAccountingFormalApprovalCommandCenterView,
+): FullAccountingFormalApprovalCommandCenterResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalApprovalWorkflowCloseoutResponseDto(
+  view: TenantFullAccountingFormalApprovalWorkflowCloseoutView,
+): FullAccountingFormalApprovalWorkflowCloseoutResponseDto {
   return serialize(view);
 }
 

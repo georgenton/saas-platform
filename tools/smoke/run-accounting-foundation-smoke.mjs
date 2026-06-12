@@ -1278,6 +1278,12 @@ const [
   fullAccountingProfessionalApprovalRecommendationPack,
   fullAccountingReviewExecutionCommandCenter,
   fullAccountingProfessionalReviewExecutionCloseout,
+  fullAccountingFormalApprovalWorkflowAnchor,
+  fullAccountingApprovalAuthorityMatrix,
+  fullAccountingFormalApprovalEvidencePack,
+  fullAccountingApprovalDecisionWorkspace,
+  fullAccountingFormalApprovalCommandCenter,
+  fullAccountingFormalApprovalWorkflowCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2324,6 +2330,48 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-approval/anchor?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-approval/authority-matrix?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-approval/evidence-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-approval/decision-workspace?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-approval/command-center?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-approval/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2962,6 +3010,30 @@ assertStatus(
   'full accounting professional review execution closeout',
   fullAccountingProfessionalReviewExecutionCloseout.closeoutStatus,
 );
+assertStatus(
+  'full accounting formal approval workflow anchor',
+  fullAccountingFormalApprovalWorkflowAnchor.anchorStatus,
+);
+assertStatus(
+  'full accounting approval authority matrix',
+  fullAccountingApprovalAuthorityMatrix.matrixStatus,
+);
+assertStatus(
+  'full accounting formal approval evidence pack',
+  fullAccountingFormalApprovalEvidencePack.packStatus,
+);
+assertStatus(
+  'full accounting approval decision workspace',
+  fullAccountingApprovalDecisionWorkspace.workspaceStatus,
+);
+assertStatus(
+  'full accounting formal approval command center',
+  fullAccountingFormalApprovalCommandCenter.commandStatus,
+);
+assertStatus(
+  'full accounting formal approval workflow closeout',
+  fullAccountingFormalApprovalWorkflowCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -3079,6 +3151,11 @@ if (
 ) {
   throw new Error(
     'full-accounting-professional-review-execution/closeout no devolvio checklist[].',
+  );
+}
+if (!Array.isArray(fullAccountingFormalApprovalWorkflowCloseout.closeoutChecklist)) {
+  throw new Error(
+    'full-accounting-formal-approval/closeout no devolvio checklist[].',
   );
 }
 printLine(

@@ -1272,6 +1272,12 @@ const [
   fullAccountingBankReconciliationEvidenceDraftPack,
   fullAccountingTrialBalanceFinancialStatementDraftPack,
   fullAccountingFormalArtifactDraftingCloseout,
+  fullAccountingProfessionalReviewExecutionAnchor,
+  fullAccountingAccountantDraftReviewRoom,
+  fullAccountingReviewChangeRequestPack,
+  fullAccountingProfessionalApprovalRecommendationPack,
+  fullAccountingReviewExecutionCommandCenter,
+  fullAccountingProfessionalReviewExecutionCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2276,6 +2282,48 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-professional-review-execution/anchor?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-professional-review-execution/review-room?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-professional-review-execution/change-request-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-professional-review-execution/recommendation-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-professional-review-execution/command-center?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-professional-review-execution/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2890,6 +2938,30 @@ assertStatus(
   'full accounting formal artifact drafting closeout',
   fullAccountingFormalArtifactDraftingCloseout.closeoutStatus,
 );
+assertStatus(
+  'full accounting professional review execution anchor',
+  fullAccountingProfessionalReviewExecutionAnchor.anchorStatus,
+);
+assertStatus(
+  'full accounting accountant draft review room',
+  fullAccountingAccountantDraftReviewRoom.roomStatus,
+);
+assertStatus(
+  'full accounting review change request pack',
+  fullAccountingReviewChangeRequestPack.packStatus,
+);
+assertStatus(
+  'full accounting professional approval recommendation pack',
+  fullAccountingProfessionalApprovalRecommendationPack.packStatus,
+);
+assertStatus(
+  'full accounting review execution command center',
+  fullAccountingReviewExecutionCommandCenter.commandStatus,
+);
+assertStatus(
+  'full accounting professional review execution closeout',
+  fullAccountingProfessionalReviewExecutionCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2998,6 +3070,15 @@ if (
 ) {
   throw new Error(
     'full-accounting-formal-artifact-drafting/closeout no devolvio checklist[].',
+  );
+}
+if (
+  !Array.isArray(
+    fullAccountingProfessionalReviewExecutionCloseout.closeoutChecklist,
+  )
+) {
+  throw new Error(
+    'full-accounting-professional-review-execution/closeout no devolvio checklist[].',
   );
 }
 printLine(

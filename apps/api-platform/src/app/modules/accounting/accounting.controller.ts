@@ -125,6 +125,10 @@ import {
   GetTenantFullAccountingPostingApprovalDraftPackUseCase,
   GetTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase,
   GetTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase,
+  GetTenantFullAccountingProfessionalReviewExecutionAnchorUseCase,
+  GetTenantFullAccountingAccountantDraftReviewRoomUseCase,
+  GetTenantFullAccountingReviewChangeRequestPackUseCase,
+  GetTenantFullAccountingReviewExecutionCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -207,6 +211,8 @@ import {
   RequestTenantFullAccountingProductDesignCloseoutUseCase,
   RequestTenantFullAccountingFormalReadinessCloseoutUseCase,
   RequestTenantFullAccountingFormalArtifactDraftingCloseoutUseCase,
+  RequestTenantFullAccountingProfessionalApprovalRecommendationPackUseCase,
+  RequestTenantFullAccountingProfessionalReviewExecutionCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -379,6 +385,12 @@ import {
   FullAccountingBankReconciliationEvidenceDraftPackResponseDto,
   FullAccountingTrialBalanceFinancialStatementDraftPackResponseDto,
   FullAccountingFormalArtifactDraftingCloseoutResponseDto,
+  FullAccountingProfessionalReviewExecutionAnchorResponseDto,
+  FullAccountingAccountantDraftReviewRoomResponseDto,
+  FullAccountingReviewChangeRequestPackResponseDto,
+  FullAccountingProfessionalApprovalRecommendationPackResponseDto,
+  FullAccountingReviewExecutionCommandCenterResponseDto,
+  FullAccountingProfessionalReviewExecutionCloseoutResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -529,6 +541,12 @@ import {
   toFullAccountingBankReconciliationEvidenceDraftPackResponseDto,
   toFullAccountingTrialBalanceFinancialStatementDraftPackResponseDto,
   toFullAccountingFormalArtifactDraftingCloseoutResponseDto,
+  toFullAccountingProfessionalReviewExecutionAnchorResponseDto,
+  toFullAccountingAccountantDraftReviewRoomResponseDto,
+  toFullAccountingReviewChangeRequestPackResponseDto,
+  toFullAccountingProfessionalApprovalRecommendationPackResponseDto,
+  toFullAccountingReviewExecutionCommandCenterResponseDto,
+  toFullAccountingProfessionalReviewExecutionCloseoutResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -951,6 +969,12 @@ export class AccountingController {
     private readonly getTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase: GetTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase,
     private readonly getTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase: GetTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase,
     private readonly requestTenantFullAccountingFormalArtifactDraftingCloseoutUseCase: RequestTenantFullAccountingFormalArtifactDraftingCloseoutUseCase,
+    private readonly getTenantFullAccountingProfessionalReviewExecutionAnchorUseCase: GetTenantFullAccountingProfessionalReviewExecutionAnchorUseCase,
+    private readonly getTenantFullAccountingAccountantDraftReviewRoomUseCase: GetTenantFullAccountingAccountantDraftReviewRoomUseCase,
+    private readonly getTenantFullAccountingReviewChangeRequestPackUseCase: GetTenantFullAccountingReviewChangeRequestPackUseCase,
+    private readonly requestTenantFullAccountingProfessionalApprovalRecommendationPackUseCase: RequestTenantFullAccountingProfessionalApprovalRecommendationPackUseCase,
+    private readonly getTenantFullAccountingReviewExecutionCommandCenterUseCase: GetTenantFullAccountingReviewExecutionCommandCenterUseCase,
+    private readonly requestTenantFullAccountingProfessionalReviewExecutionCloseoutUseCase: RequestTenantFullAccountingProfessionalReviewExecutionCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -4501,6 +4525,138 @@ export class AccountingController {
           { tenantSlug, period, year: Number.parseInt(year, 10) },
         );
       return toFullAccountingFormalArtifactDraftingCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-professional-review-execution/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingProfessionalReviewExecutionAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingProfessionalReviewExecutionAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingProfessionalReviewExecutionAnchorUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingProfessionalReviewExecutionAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-professional-review-execution/review-room')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingAccountantDraftReviewRoom(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingAccountantDraftReviewRoomResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingAccountantDraftReviewRoomUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingAccountantDraftReviewRoomResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-professional-review-execution/change-request-pack')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingReviewChangeRequestPack(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingReviewChangeRequestPackResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingReviewChangeRequestPackUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingReviewChangeRequestPackResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(
+    ':slug/full-accounting-professional-review-execution/recommendation-pack',
+  )
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingProfessionalApprovalRecommendationPack(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingProfessionalApprovalRecommendationPackResponseDto> {
+    try {
+      const view =
+        await this.requestTenantFullAccountingProfessionalApprovalRecommendationPackUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingProfessionalApprovalRecommendationPackResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-professional-review-execution/command-center')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingReviewExecutionCommandCenter(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingReviewExecutionCommandCenterResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingReviewExecutionCommandCenterUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingReviewExecutionCommandCenterResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-professional-review-execution/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingProfessionalReviewExecutionCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingProfessionalReviewExecutionCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantFullAccountingProfessionalReviewExecutionCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingProfessionalReviewExecutionCloseoutResponseDto(
+        view,
+      );
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

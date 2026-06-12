@@ -2532,6 +2532,40 @@ approval, certification, signature and any official execution.
 Guardrail: formal artifact drafting 0.8 creates draft packets only. It does not
 post, approve, sign, certify, legalize, submit or file official artifacts.
 
+### Full Accounting professional review execution 0.9
+
+After formal artifact drafting 0.8, full Accounting can execute a professional
+review loop over ledger, posting, bank evidence, trial balance and financial
+statement drafts. This is the review table after the drafting table: the
+accountant, auditor or legal representative can inspect, request changes and
+recommend next steps, while formal approval, signature, certification and
+legalization remain out of scope.
+
+1. `Full Accounting Professional Review Execution Anchor`
+   - checks that draft packets are traceable, visible to professional reviewers
+     and bounded before review starts
+2. `Accountant Draft Review Room`
+   - organizes professional findings across ledger drafts, posting approvals,
+     bank evidence, trial balance, financial statement drafts and professional
+     boundaries
+3. `Review Change Request Pack`
+   - converts findings into traceable change requests with reviewer ownership,
+     required action and source evidence
+4. `Professional Approval Recommendation Pack`
+   - separates recommend-approval, require-changes, require-auditor-review and
+     do-not-approve recommendations without turning them into approvals
+5. `Review Execution Command Center`
+   - consolidates review gates, review rows, requested changes and professional
+     recommendations into one operational view
+6. `Full Accounting Professional Review Execution Closeout`
+   - decides whether to open formal approval workflow, continue professional
+     review, return to artifact drafting, return to formal readiness or stop
+     advancing formal artifacts
+
+Guardrail: professional review execution 0.9 is still pre-approval. It captures
+review findings, change requests and recommendations, but does not approve,
+post, sign, certify, legalize, submit or file official artifacts.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2688,6 +2722,10 @@ product. Its current scope is intentionally operational and review-oriented:
     assembles ledger, posting approval, bank evidence, trial balance and
     financial statement draft packets for professional review without posting,
     approving, signing, certifying, legalizing or filing official artifacts.
+44. Full Accounting professional review execution 0.9 as the review table. It
+    captures professional findings, change requests and recommendations across
+    the draft packets before any formal approval, signature, certification or
+    external legal act can open.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

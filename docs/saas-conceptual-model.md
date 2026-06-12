@@ -2437,6 +2437,37 @@ Guardrail: graduation 0.5 decides whether to design a product. It still does
 not post official entries, certify reconciliations, issue statutory statements,
 legalize books or replace accountant/auditor judgment.
 
+### Full Accounting product design 0.6
+
+After graduation 0.5, full Accounting can design the first product shape before
+formal readiness. This is the engineering table after the flight review board:
+it defines scope, responsibility, artifact boundaries and workflow controls
+without building official accounting execution yet.
+
+1. `Full Accounting Product Design Anchor`
+   - converts graduation closeout into product-design lanes for included,
+     limited, hardening, excluded and professional-boundary modules
+2. `Product Scope Contract`
+   - defines included, limited-pilot and excluded modules with entry and exit
+     criteria
+3. `Professional Responsibility Matrix`
+   - maps platform-assisted work, operator ownership, accountant approval,
+     auditor/legal boundaries and actions the system must never perform alone
+4. `Official Artifact Boundary Registry`
+   - separates internal packets, drafts, professional-review artifacts,
+     external-only artifacts and excluded artifacts
+5. `Workflow & Control Blueprint`
+   - designs intake, ledger preparation, posting approval, bank evidence,
+     trial-balance preview, accountant review and closeout recommendation
+     controls
+6. `Full Accounting Product Design Closeout`
+   - decides whether to open formal readiness, continue design, return to
+     graduation, return to controlled pilot or stop design
+
+Guardrail: product design 0.6 is still design-only. It does not create official
+postings, certified reconciliations, statutory financial statements, legal
+books or filings.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2583,6 +2614,9 @@ product. Its current scope is intentionally operational and review-oriented:
 40. Full Accounting graduation 0.5 as the flight review board. It uses pilot
     evidence, product scope, professional ownership and risk controls to decide
     whether a full Accounting product design should open.
+41. Full Accounting product design 0.6 as the engineering table. It defines
+    product scope, professional responsibility, artifact boundaries and workflow
+    controls before any formal readiness or official execution opens.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

@@ -19,6 +19,7 @@ import {
   FullAccountingCandidateDecision,
   FullAccountingControlledPilotDecision,
   FullAccountingGraduationDecision,
+  FullAccountingProductDesignDecision,
   FullAccountingMvpReadinessDecision,
   FullAccountingMvpOperationsDecision,
   AccountingAdvancedFormalModuleKey,
@@ -140,13 +141,19 @@ import {
   TenantFullAccountingGraduationCloseoutView,
   TenantFullAccountingGraduationEvidenceDossierView,
   TenantFullAccountingGraduationRiskControlPackView,
+  TenantFullAccountingOfficialArtifactBoundaryRegistryView,
   TenantFullAccountingLedgerWorkbenchMvpView,
   TenantFullAccountingPilotAccountantReviewRoomView,
   TenantFullAccountingPilotEnrollmentPeriodFreezeView,
   TenantFullAccountingPilotOutcomePacketView,
   TenantFullAccountingPilotRunbookWorkspaceView,
   TenantFullAccountingProductScopeGraduationMatrixView,
+  TenantFullAccountingProductDesignAnchorView,
+  TenantFullAccountingProductDesignCloseoutView,
+  TenantFullAccountingProductProfessionalResponsibilityMatrixView,
+  TenantFullAccountingProductScopeContractView,
   TenantFullAccountingProfessionalOperatingModelView,
+  TenantFullAccountingWorkflowControlBlueprintView,
   TenantFullAccountingPostingDraftLaneView,
   TenantFullAccountingBankReconciliationWorkbenchMvpView,
   TenantFullAccountingTrialBalancePreviewWorkbenchView,
@@ -10046,6 +10053,314 @@ export class RequestTenantFullAccountingGraduationCloseoutUseCase {
   }
 }
 
+export class GetTenantFullAccountingProductDesignAnchorUseCase {
+  constructor(
+    private readonly requestTenantFullAccountingGraduationCloseoutUseCase: RequestTenantFullAccountingGraduationCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingProductDesignAnchorView> {
+    const graduationCloseout =
+      await this.requestTenantFullAccountingGraduationCloseoutUseCase.execute(input);
+    const designLanes: TenantFullAccountingProductDesignAnchorView['designLanes'] = [
+      fullAccountingProductDesignLane('ledger_operations', 'Ledger operations design lane', graduationCloseout.productScopeMatrix.matrixStatus, 'graduated_module', 'include', ['full_accounting_product_scope_graduation_matrix']),
+      fullAccountingProductDesignLane('posting_workflow', 'Posting workflow design lane', graduationCloseout.professionalOperatingModel.modelStatus, 'graduated_module', 'include', ['full_accounting_professional_operating_model']),
+      fullAccountingProductDesignLane('professional_review', 'Professional review design lane', graduationCloseout.professionalOperatingModel.modelStatus, 'professional_boundary', 'professional_review', ['full_accounting_professional_operating_model']),
+      fullAccountingProductDesignLane('bank_reconciliation', 'Bank reconciliation limited design lane', graduationCloseout.productScopeMatrix.matrixStatus, 'pilot_module', 'limit', ['full_accounting_graduation_evidence_dossier']),
+      fullAccountingProductDesignLane('trial_balance_statements', 'Trial balance statements hardening lane', graduationCloseout.riskControlPack.packStatus, 'hardening_module', 'harden', ['full_accounting_graduation_risk_control_pack']),
+      fullAccountingProductDesignLane('legal_books', 'Legal books excluded design lane', 'ready', 'excluded_module', 'exclude', ['full_accounting_legal_books_boundary']),
+    ];
+    const blockers =
+      graduationCloseout.finalDecision === 'graduate_to_full_accounting_product_design'
+        ? [...graduationCloseout.blockers]
+        : unique([
+            ...graduationCloseout.blockers,
+            `Full Accounting graduation decision is ${graduationCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(designLanes.map((lane) => lane.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      graduationCloseout,
+      designLanes,
+      summary: {
+        laneCount: designLanes.length,
+        readyLaneCount: designLanes.filter((lane) => lane.status === 'ready').length,
+        includedLaneCount: designLanes.filter((lane) => lane.designMode === 'include').length,
+        limitedLaneCount: designLanes.filter((lane) => lane.designMode === 'limit').length,
+        excludedLaneCount: designLanes.filter((lane) => lane.designMode === 'exclude').length,
+        blockedLaneCount: designLanes.filter((lane) => lane.status === 'blocked').length,
+      },
+      blockers,
+      nextStep: 'Definir product scope contract.',
+      guardrails: [
+        'Product design 0.6 disena el producto; no ejecuta contabilidad oficial.',
+        'Los modulos excluidos no deben aparecer como artefactos oficiales.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingProductScopeContractUseCase {
+  constructor(
+    private readonly getTenantFullAccountingProductDesignAnchorUseCase: GetTenantFullAccountingProductDesignAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingProductScopeContractView> {
+    const productDesignAnchor =
+      await this.getTenantFullAccountingProductDesignAnchorUseCase.execute(input);
+    const scopeItems: TenantFullAccountingProductScopeContractView['scopeItems'] = [
+      fullAccountingProductScopeItem('ledger_operations', 'Ledger operations scope', productDesignAnchor.anchorStatus, 'ledger_operations', 'included', 'Graduation includes ledger operations.', 'Ledger operations design contract approved.', ['full_accounting_product_design_anchor']),
+      fullAccountingProductScopeItem('posting_workflow', 'Posting workflow scope', productDesignAnchor.anchorStatus, 'posting_workflow', 'included', 'Posting workflow has human approval boundary.', 'Posting workflow controls approved.', ['full_accounting_professional_operating_model']),
+      fullAccountingProductScopeItem('professional_review', 'Professional review scope', productDesignAnchor.anchorStatus, 'professional_review', 'included', 'External accountant review remains required.', 'Professional review workflow approved.', ['full_accounting_professional_operating_model']),
+      fullAccountingProductScopeItem('bank_reconciliation', 'Bank reconciliation limited scope', productDesignAnchor.anchorStatus, 'bank_reconciliation', 'limited_pilot', 'Bank evidence remains pilot-limited.', 'Certified bank reconciliation excluded.', ['full_accounting_graduation_risk_control_pack']),
+      fullAccountingProductScopeItem('trial_balance_statements', 'Trial balance statements limited scope', productDesignAnchor.anchorStatus, 'trial_balance_statements', 'limited_pilot', 'Statements remain previews.', 'Preview statement boundary approved.', ['full_accounting_graduation_evidence_dossier']),
+      fullAccountingProductScopeItem('legal_books', 'Legal books excluded scope', 'ready', 'legal_books', 'excluded', 'Legal books require statutory product.', 'Legal books remain excluded.', ['full_accounting_legal_books_boundary']),
+      fullAccountingProductScopeItem('statutory_certification', 'Statutory certification excluded scope', 'ready', 'statutory_certification', 'excluded', 'Certification requires external professional authority.', 'Certification remains external-only.', ['full_accounting_graduation_risk_control_pack']),
+    ];
+    const blockers = [...productDesignAnchor.blockers];
+    const contractStatus = resolveStatus(scopeItems.map((item) => item.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      contractStatus,
+      productDesignAnchor,
+      scopeItems,
+      summary: {
+        itemCount: scopeItems.length,
+        readyItemCount: scopeItems.filter((item) => item.status === 'ready').length,
+        includedItemCount: scopeItems.filter((item) => item.scopeMode === 'included').length,
+        limitedItemCount: scopeItems.filter((item) => item.scopeMode === 'limited_pilot').length,
+        excludedItemCount: scopeItems.filter((item) => item.scopeMode === 'excluded').length,
+      },
+      blockers,
+      nextStep: 'Definir professional responsibility matrix.',
+      guardrails: [
+        'Scope contract no habilita libros legales ni certificaciones.',
+        'Los modulos limited_pilot siguen sujetos a controles y revision profesional.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase {
+  constructor(
+    private readonly getTenantFullAccountingProductScopeContractUseCase: GetTenantFullAccountingProductScopeContractUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingProductProfessionalResponsibilityMatrixView> {
+    const scopeContract =
+      await this.getTenantFullAccountingProductScopeContractUseCase.execute(input);
+    const responsibilities: TenantFullAccountingProductProfessionalResponsibilityMatrixView['responsibilities'] = [
+      fullAccountingProductResponsibility('platform_assisted_ledger', 'Platform assisted ledger design', scopeContract.contractStatus, 'platform_assisted', 'platform', ['full_accounting_product_scope_contract']),
+      fullAccountingProductResponsibility('operator_ledger_review', 'Operator ledger review', scopeContract.contractStatus, 'operator_owned', 'operator', ['full_accounting_product_scope_contract']),
+      fullAccountingProductResponsibility('accountant_posting_approval', 'External accountant posting approval', scopeContract.contractStatus, 'external_accountant_approval', 'external_accountant', ['full_accounting_professional_operating_model']),
+      fullAccountingProductResponsibility('auditor_boundary', 'Auditor boundary', 'ready', 'auditor_boundary', 'auditor', ['full_accounting_graduation_risk_control_pack']),
+      fullAccountingProductResponsibility('legal_representative_boundary', 'Legal representative boundary', 'ready', 'legal_representative_boundary', 'legal_representative', ['full_accounting_legal_books_boundary']),
+      fullAccountingProductResponsibility('system_never_alone', 'System must never post or certify alone', 'ready', 'never_alone', 'platform', ['full_accounting_graduation_closeout']),
+    ];
+    const blockers = [...scopeContract.blockers];
+    const matrixStatus = resolveStatus(responsibilities.map((item) => item.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      matrixStatus,
+      scopeContract,
+      responsibilities,
+      summary: {
+        responsibilityCount: responsibilities.length,
+        readyResponsibilityCount: responsibilities.filter((item) => item.status === 'ready').length,
+        platformAssistedCount: responsibilities.filter((item) => item.responsibilityType === 'platform_assisted').length,
+        operatorOwnedCount: responsibilities.filter((item) => item.responsibilityType === 'operator_owned').length,
+        accountantApprovalCount: responsibilities.filter((item) => item.responsibilityType === 'external_accountant_approval').length,
+        neverAloneCount: responsibilities.filter((item) => item.responsibilityType === 'never_alone').length,
+      },
+      blockers,
+      nextStep: 'Definir official artifact boundary registry.',
+      guardrails: [
+        'La matriz exige humano para aprobaciones contables sensibles.',
+        'El sistema nunca debe postear, certificar o legalizar solo.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase {
+  constructor(
+    private readonly getTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase: GetTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingOfficialArtifactBoundaryRegistryView> {
+    const responsibilityMatrix =
+      await this.getTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase.execute(input);
+    const artifacts: TenantFullAccountingOfficialArtifactBoundaryRegistryView['artifacts'] = [
+      fullAccountingProductArtifact('ledger_draft_packet', 'Ledger draft packet', responsibilityMatrix.matrixStatus, 'ledger_draft_packet', 'internal', ['full_accounting_product_scope_contract']),
+      fullAccountingProductArtifact('posting_approval_packet', 'Posting approval packet', responsibilityMatrix.matrixStatus, 'posting_approval_packet', 'professional_review', ['full_accounting_product_professional_responsibility_matrix']),
+      fullAccountingProductArtifact('reconciliation_evidence_packet', 'Reconciliation evidence packet', responsibilityMatrix.matrixStatus, 'reconciliation_evidence_packet', 'draft', ['full_accounting_product_scope_contract']),
+      fullAccountingProductArtifact('trial_balance_preview', 'Trial balance preview', responsibilityMatrix.matrixStatus, 'trial_balance_preview', 'draft', ['full_accounting_product_scope_contract']),
+      fullAccountingProductArtifact('certified_reconciliation', 'Certified reconciliation', 'ready', 'certified_reconciliation', 'external_only', ['full_accounting_graduation_risk_control_pack']),
+      fullAccountingProductArtifact('signed_financial_statements', 'Signed financial statements', 'ready', 'signed_financial_statements', 'external_only', ['full_accounting_graduation_risk_control_pack']),
+      fullAccountingProductArtifact('legal_books', 'Legal books', 'ready', 'legal_books', 'excluded', ['full_accounting_legal_books_boundary']),
+      fullAccountingProductArtifact('statutory_filings', 'Statutory filings', 'ready', 'statutory_filings', 'excluded', ['full_accounting_graduation_closeout']),
+    ];
+    const blockers = [...responsibilityMatrix.blockers];
+    const registryStatus = resolveStatus(artifacts.map((artifact) => artifact.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      registryStatus,
+      responsibilityMatrix,
+      artifacts,
+      summary: {
+        artifactCount: artifacts.length,
+        readyArtifactCount: artifacts.filter((artifact) => artifact.status === 'ready').length,
+        internalArtifactCount: artifacts.filter((artifact) => artifact.artifactStatus === 'internal').length,
+        draftArtifactCount: artifacts.filter((artifact) => artifact.artifactStatus === 'draft').length,
+        professionalReviewArtifactCount: artifacts.filter((artifact) => artifact.artifactStatus === 'professional_review').length,
+        externalOnlyArtifactCount: artifacts.filter((artifact) => artifact.artifactStatus === 'external_only').length,
+        excludedArtifactCount: artifacts.filter((artifact) => artifact.artifactStatus === 'excluded').length,
+      },
+      blockers,
+      nextStep: 'Definir workflow and control blueprint.',
+      guardrails: [
+        'Artefactos external_only no son generados ni certificados por la plataforma.',
+        'Los previews no son estados financieros oficiales.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingWorkflowControlBlueprintUseCase {
+  constructor(
+    private readonly getTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase: GetTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingWorkflowControlBlueprintView> {
+    const artifactBoundaryRegistry =
+      await this.getTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase.execute(input);
+    const workflowStages: TenantFullAccountingWorkflowControlBlueprintView['workflowStages'] = [
+      fullAccountingWorkflowStage('intake', 'Accounting intake stage', artifactBoundaryRegistry.registryStatus, 'intake', 'evidence_completeness', ['accounting_intake_workspace']),
+      fullAccountingWorkflowStage('ledger_preparation', 'Ledger preparation stage', artifactBoundaryRegistry.registryStatus, 'ledger_preparation', 'evidence_completeness', ['full_accounting_product_scope_contract']),
+      fullAccountingWorkflowStage('posting_approval', 'Posting approval stage', artifactBoundaryRegistry.registryStatus, 'posting_approval', 'approval_required', ['full_accounting_product_professional_responsibility_matrix']),
+      fullAccountingWorkflowStage('bank_evidence_review', 'Bank evidence review stage', artifactBoundaryRegistry.registryStatus, 'bank_evidence_review', 'professional_review_gate', ['full_accounting_official_artifact_boundary_registry']),
+      fullAccountingWorkflowStage('trial_balance_preview', 'Trial balance preview stage', artifactBoundaryRegistry.registryStatus, 'trial_balance_preview', 'professional_review_gate', ['full_accounting_official_artifact_boundary_registry']),
+      fullAccountingWorkflowStage('accountant_review', 'Accountant review stage', artifactBoundaryRegistry.registryStatus, 'accountant_review', 'approval_required', ['full_accounting_product_professional_responsibility_matrix']),
+      fullAccountingWorkflowStage('closeout_recommendation', 'Closeout recommendation stage', 'ready', 'closeout_recommendation', 'rollback_condition', ['full_accounting_graduation_risk_control_pack']),
+    ];
+    const blockers = [...artifactBoundaryRegistry.blockers];
+    const blueprintStatus = resolveStatus(workflowStages.map((stage) => stage.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      blueprintStatus,
+      artifactBoundaryRegistry,
+      workflowStages,
+      summary: {
+        stageCount: workflowStages.length,
+        readyStageCount: workflowStages.filter((stage) => stage.status === 'ready').length,
+        approvalRequiredCount: workflowStages.filter((stage) => stage.controlType === 'approval_required').length,
+        rollbackConditionCount: workflowStages.filter((stage) => stage.controlType === 'rollback_condition').length,
+        evidenceCompletenessCount: workflowStages.filter((stage) => stage.controlType === 'evidence_completeness').length,
+        professionalReviewGateCount: workflowStages.filter((stage) => stage.controlType === 'professional_review_gate').length,
+      },
+      blockers,
+      nextStep: 'Cerrar Full Accounting product design 0.6.',
+      guardrails: [
+        'Workflow blueprint disena controles; no ejecuta cierres oficiales.',
+        'Professional review gate permanece antes de cualquier artefacto formal.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantFullAccountingProductDesignCloseoutUseCase {
+  constructor(
+    private readonly getTenantFullAccountingWorkflowControlBlueprintUseCase: GetTenantFullAccountingWorkflowControlBlueprintUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingProductDesignCloseoutView> {
+    const workflowControlBlueprint =
+      await this.getTenantFullAccountingWorkflowControlBlueprintUseCase.execute(input);
+    const { artifactBoundaryRegistry } = workflowControlBlueprint;
+    const { responsibilityMatrix } = artifactBoundaryRegistry;
+    const { scopeContract } = responsibilityMatrix;
+    const { productDesignAnchor } = scopeContract;
+    const closeoutChecklist: TenantFullAccountingProductDesignCloseoutView['closeoutChecklist'] = [
+      fullAccountingProductDesignCloseoutCheck('product_design_anchor', 'Full Accounting product design anchor', productDesignAnchor.anchorStatus, ['full_accounting_product_design_anchor']),
+      fullAccountingProductDesignCloseoutCheck('scope_contract', 'Product scope contract', scopeContract.contractStatus, ['full_accounting_product_scope_contract']),
+      fullAccountingProductDesignCloseoutCheck('responsibility_matrix', 'Professional responsibility matrix', responsibilityMatrix.matrixStatus, ['full_accounting_product_professional_responsibility_matrix']),
+      fullAccountingProductDesignCloseoutCheck('artifact_boundary_registry', 'Official artifact boundary registry', artifactBoundaryRegistry.registryStatus, ['full_accounting_official_artifact_boundary_registry']),
+      fullAccountingProductDesignCloseoutCheck('workflow_control_blueprint', 'Workflow and control blueprint', workflowControlBlueprint.blueprintStatus, ['full_accounting_workflow_control_blueprint']),
+    ];
+    const blockers = unique([
+      ...productDesignAnchor.blockers,
+      ...scopeContract.blockers,
+      ...responsibilityMatrix.blockers,
+      ...artifactBoundaryRegistry.blockers,
+      ...workflowControlBlueprint.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(closeoutChecklist.map((item) => item.status), blockers);
+    const finalDecision = fullAccountingProductDesignDecisionFromStatus(
+      closeoutStatus,
+      productDesignAnchor,
+      scopeContract,
+      responsibilityMatrix,
+      artifactBoundaryRegistry,
+      workflowControlBlueprint,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      productDesignAnchor,
+      scopeContract,
+      responsibilityMatrix,
+      artifactBoundaryRegistry,
+      workflowControlBlueprint,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter((item) => item.status === 'ready').length,
+        blockedChecklistCount: closeoutChecklist.filter((item) => item.status === 'blocked').length,
+        designLaneCount: productDesignAnchor.summary.laneCount,
+        scopeItemCount: scopeContract.summary.itemCount,
+        responsibilityCount: responsibilityMatrix.summary.responsibilityCount,
+        artifactCount: artifactBoundaryRegistry.summary.artifactCount,
+        workflowStageCount: workflowControlBlueprint.summary.stageCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'open_formal_readiness'
+          ? 'Preparar Full Accounting formal readiness 0.7.'
+          : finalDecision === 'continue_product_design'
+            ? 'Continuar product design antes de readiness formal.'
+            : finalDecision === 'return_to_graduation'
+              ? 'Volver a Full Accounting graduation 0.5.'
+              : finalDecision === 'return_to_controlled_pilot'
+                ? 'Volver a Full Accounting controlled pilot 0.4.'
+                : 'No disenar Full Accounting product por ahora.',
+      guardrails: [
+        'Product design closeout no crea postings, libros legales ni estados financieros oficiales.',
+        'Formal readiness debe abrirse separado antes de cualquier ejecucion formal.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -12115,6 +12430,101 @@ function fullAccountingGraduationDecisionFromStatus(
     return 'continue_controlled_pilot';
   }
   return 'do_not_graduate_full_accounting';
+}
+
+function fullAccountingProductDesignLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  laneType: TenantFullAccountingProductDesignAnchorView['designLanes'][number]['laneType'],
+  designMode: TenantFullAccountingProductDesignAnchorView['designLanes'][number]['designMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingProductDesignAnchorView['designLanes'][number] {
+  return { key, label, status, laneType, designMode, evidenceRefs };
+}
+
+function fullAccountingProductScopeItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  moduleType: TenantFullAccountingProductScopeContractView['scopeItems'][number]['moduleType'],
+  scopeMode: TenantFullAccountingProductScopeContractView['scopeItems'][number]['scopeMode'],
+  entryCriteria: string,
+  exitCriteria: string,
+  evidenceRefs: string[],
+): TenantFullAccountingProductScopeContractView['scopeItems'][number] {
+  return { key, label, status, moduleType, scopeMode, entryCriteria, exitCriteria, evidenceRefs };
+}
+
+function fullAccountingProductResponsibility(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  responsibilityType: TenantFullAccountingProductProfessionalResponsibilityMatrixView['responsibilities'][number]['responsibilityType'],
+  owner: AccountingAdvancedProfessionalOwner,
+  evidenceRefs: string[],
+): TenantFullAccountingProductProfessionalResponsibilityMatrixView['responsibilities'][number] {
+  return { key, label, status, responsibilityType, owner, evidenceRefs };
+}
+
+function fullAccountingProductArtifact(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  artifactType: TenantFullAccountingOfficialArtifactBoundaryRegistryView['artifacts'][number]['artifactType'],
+  artifactStatus: TenantFullAccountingOfficialArtifactBoundaryRegistryView['artifacts'][number]['artifactStatus'],
+  evidenceRefs: string[],
+): TenantFullAccountingOfficialArtifactBoundaryRegistryView['artifacts'][number] {
+  return { key, label, status, artifactType, artifactStatus, evidenceRefs };
+}
+
+function fullAccountingWorkflowStage(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  stageType: TenantFullAccountingWorkflowControlBlueprintView['workflowStages'][number]['stageType'],
+  controlType: TenantFullAccountingWorkflowControlBlueprintView['workflowStages'][number]['controlType'],
+  evidenceRefs: string[],
+): TenantFullAccountingWorkflowControlBlueprintView['workflowStages'][number] {
+  return { key, label, status, stageType, controlType, evidenceRefs };
+}
+
+function fullAccountingProductDesignCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantFullAccountingProductDesignCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function fullAccountingProductDesignDecisionFromStatus(
+  status: AccountingReadinessStatus,
+  productDesignAnchor: TenantFullAccountingProductDesignAnchorView,
+  scopeContract: TenantFullAccountingProductScopeContractView,
+  responsibilityMatrix: TenantFullAccountingProductProfessionalResponsibilityMatrixView,
+  artifactBoundaryRegistry: TenantFullAccountingOfficialArtifactBoundaryRegistryView,
+  workflowControlBlueprint: TenantFullAccountingWorkflowControlBlueprintView,
+  blockers: string[],
+): FullAccountingProductDesignDecision {
+  if (blockers.length > 0 || status === 'blocked') {
+    return 'return_to_graduation';
+  }
+  if (productDesignAnchor.summary.includedLaneCount === 0) {
+    return 'return_to_controlled_pilot';
+  }
+  if (
+    scopeContract.summary.includedItemCount > 0 &&
+    responsibilityMatrix.summary.accountantApprovalCount > 0 &&
+    artifactBoundaryRegistry.summary.excludedArtifactCount > 0 &&
+    workflowControlBlueprint.summary.professionalReviewGateCount > 0
+  ) {
+    return 'open_formal_readiness';
+  }
+  if (scopeContract.summary.limitedItemCount > 0) {
+    return 'continue_product_design';
+  }
+  return 'do_not_design_full_accounting_product';
 }
 
 function formalProductDesignDecisionFromStatus(

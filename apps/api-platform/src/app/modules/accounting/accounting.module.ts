@@ -116,6 +116,11 @@ import {
   GetTenantFullAccountingProductScopeGraduationMatrixUseCase,
   GetTenantFullAccountingProfessionalOperatingModelUseCase,
   GetTenantFullAccountingGraduationRiskControlPackUseCase,
+  GetTenantFullAccountingProductDesignAnchorUseCase,
+  GetTenantFullAccountingProductScopeContractUseCase,
+  GetTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase,
+  GetTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase,
+  GetTenantFullAccountingWorkflowControlBlueprintUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -195,6 +200,7 @@ import {
   RequestTenantFullAccountingMvpOperationsCloseoutUseCase,
   RequestTenantFullAccountingControlledPilotCloseoutUseCase,
   RequestTenantFullAccountingGraduationCloseoutUseCase,
+  RequestTenantFullAccountingProductDesignCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -1679,6 +1685,58 @@ import { AccountingController } from './accounting.controller';
       useFactory: (getTenantFullAccountingGraduationRiskControlPackUseCase) =>
         new RequestTenantFullAccountingGraduationCloseoutUseCase(
           getTenantFullAccountingGraduationRiskControlPackUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingProductDesignAnchorUseCase,
+      inject: [RequestTenantFullAccountingGraduationCloseoutUseCase],
+      useFactory: (requestTenantFullAccountingGraduationCloseoutUseCase) =>
+        new GetTenantFullAccountingProductDesignAnchorUseCase(
+          requestTenantFullAccountingGraduationCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingProductScopeContractUseCase,
+      inject: [GetTenantFullAccountingProductDesignAnchorUseCase],
+      useFactory: (getTenantFullAccountingProductDesignAnchorUseCase) =>
+        new GetTenantFullAccountingProductScopeContractUseCase(
+          getTenantFullAccountingProductDesignAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase,
+      inject: [GetTenantFullAccountingProductScopeContractUseCase],
+      useFactory: (getTenantFullAccountingProductScopeContractUseCase) =>
+        new GetTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase(
+          getTenantFullAccountingProductScopeContractUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase,
+      inject: [GetTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase],
+      useFactory: (
+        getTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase,
+      ) =>
+        new GetTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase(
+          getTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingWorkflowControlBlueprintUseCase,
+      inject: [GetTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase],
+      useFactory: (
+        getTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase,
+      ) =>
+        new GetTenantFullAccountingWorkflowControlBlueprintUseCase(
+          getTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantFullAccountingProductDesignCloseoutUseCase,
+      inject: [GetTenantFullAccountingWorkflowControlBlueprintUseCase],
+      useFactory: (getTenantFullAccountingWorkflowControlBlueprintUseCase) =>
+        new RequestTenantFullAccountingProductDesignCloseoutUseCase(
+          getTenantFullAccountingWorkflowControlBlueprintUseCase,
         ),
     },
     {

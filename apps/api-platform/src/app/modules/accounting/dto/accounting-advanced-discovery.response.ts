@@ -113,13 +113,19 @@ import {
   TenantFullAccountingGraduationCloseoutView,
   TenantFullAccountingGraduationEvidenceDossierView,
   TenantFullAccountingGraduationRiskControlPackView,
+  TenantFullAccountingOfficialArtifactBoundaryRegistryView,
   TenantFullAccountingLedgerWorkbenchMvpView,
   TenantFullAccountingPilotAccountantReviewRoomView,
   TenantFullAccountingPilotEnrollmentPeriodFreezeView,
   TenantFullAccountingPilotOutcomePacketView,
   TenantFullAccountingPilotRunbookWorkspaceView,
   TenantFullAccountingProductScopeGraduationMatrixView,
+  TenantFullAccountingProductDesignAnchorView,
+  TenantFullAccountingProductDesignCloseoutView,
+  TenantFullAccountingProductProfessionalResponsibilityMatrixView,
+  TenantFullAccountingProductScopeContractView,
   TenantFullAccountingProfessionalOperatingModelView,
+  TenantFullAccountingWorkflowControlBlueprintView,
   TenantFullAccountingPostingDraftLaneView,
   TenantFullAccountingBankReconciliationWorkbenchMvpView,
   TenantFullAccountingTrialBalancePreviewWorkbenchView,
@@ -397,6 +403,18 @@ export type FullAccountingGraduationRiskControlPackResponseDto =
   Serialized<TenantFullAccountingGraduationRiskControlPackView>;
 export type FullAccountingGraduationCloseoutResponseDto =
   Serialized<TenantFullAccountingGraduationCloseoutView>;
+export type FullAccountingProductDesignAnchorResponseDto =
+  Serialized<TenantFullAccountingProductDesignAnchorView>;
+export type FullAccountingProductScopeContractResponseDto =
+  Serialized<TenantFullAccountingProductScopeContractView>;
+export type FullAccountingProductProfessionalResponsibilityMatrixResponseDto =
+  Serialized<TenantFullAccountingProductProfessionalResponsibilityMatrixView>;
+export type FullAccountingOfficialArtifactBoundaryRegistryResponseDto =
+  Serialized<TenantFullAccountingOfficialArtifactBoundaryRegistryView>;
+export type FullAccountingWorkflowControlBlueprintResponseDto =
+  Serialized<TenantFullAccountingWorkflowControlBlueprintView>;
+export type FullAccountingProductDesignCloseoutResponseDto =
+  Serialized<TenantFullAccountingProductDesignCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1187,6 +1205,42 @@ export function toFullAccountingGraduationRiskControlPackResponseDto(
 export function toFullAccountingGraduationCloseoutResponseDto(
   view: TenantFullAccountingGraduationCloseoutView,
 ): FullAccountingGraduationCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingProductDesignAnchorResponseDto(
+  view: TenantFullAccountingProductDesignAnchorView,
+): FullAccountingProductDesignAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingProductScopeContractResponseDto(
+  view: TenantFullAccountingProductScopeContractView,
+): FullAccountingProductScopeContractResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingProductProfessionalResponsibilityMatrixResponseDto(
+  view: TenantFullAccountingProductProfessionalResponsibilityMatrixView,
+): FullAccountingProductProfessionalResponsibilityMatrixResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingOfficialArtifactBoundaryRegistryResponseDto(
+  view: TenantFullAccountingOfficialArtifactBoundaryRegistryView,
+): FullAccountingOfficialArtifactBoundaryRegistryResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingWorkflowControlBlueprintResponseDto(
+  view: TenantFullAccountingWorkflowControlBlueprintView,
+): FullAccountingWorkflowControlBlueprintResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingProductDesignCloseoutResponseDto(
+  view: TenantFullAccountingProductDesignCloseoutView,
+): FullAccountingProductDesignCloseoutResponseDto {
   return serialize(view);
 }
 

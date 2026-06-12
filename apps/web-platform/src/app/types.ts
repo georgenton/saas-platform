@@ -5439,6 +5439,89 @@ export interface FullAccountingGraduationCloseoutResponse {
   guardrails: string[];
 }
 
+export interface FullAccountingProductDesignCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  productDesignAnchor: {
+    anchorStatus: string;
+    summary: {
+      laneCount: number;
+      readyLaneCount: number;
+      includedLaneCount: number;
+      limitedLaneCount: number;
+      excludedLaneCount: number;
+      blockedLaneCount: number;
+    };
+  };
+  scopeContract: {
+    contractStatus: string;
+    summary: {
+      itemCount: number;
+      readyItemCount: number;
+      includedItemCount: number;
+      limitedItemCount: number;
+      excludedItemCount: number;
+    };
+  };
+  responsibilityMatrix: {
+    matrixStatus: string;
+    summary: {
+      responsibilityCount: number;
+      readyResponsibilityCount: number;
+      platformAssistedCount: number;
+      operatorOwnedCount: number;
+      accountantApprovalCount: number;
+      neverAloneCount: number;
+    };
+  };
+  artifactBoundaryRegistry: {
+    registryStatus: string;
+    summary: {
+      artifactCount: number;
+      readyArtifactCount: number;
+      internalArtifactCount: number;
+      draftArtifactCount: number;
+      professionalReviewArtifactCount: number;
+      externalOnlyArtifactCount: number;
+      excludedArtifactCount: number;
+    };
+  };
+  workflowControlBlueprint: {
+    blueprintStatus: string;
+    summary: {
+      stageCount: number;
+      readyStageCount: number;
+      approvalRequiredCount: number;
+      rollbackConditionCount: number;
+      evidenceCompletenessCount: number;
+      professionalReviewGateCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    designLaneCount: number;
+    scopeItemCount: number;
+    responsibilityCount: number;
+    artifactCount: number;
+    workflowStageCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;
